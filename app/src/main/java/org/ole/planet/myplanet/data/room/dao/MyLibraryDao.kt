@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.RawQuery
+import androidx.room.Transaction
 import androidx.sqlite.db.SupportSQLiteQuery
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.MyLibrary
@@ -145,7 +146,13 @@ interface MyLibraryDao {
     suspend fun getByResourceIdsNotUserPattern(resourceIds: List<String>, userPattern: String): List<MyLibrary>
 
     @Query("UPDATE my_library SET resourceOffline = 0 WHERE resourceId IN (:ids) AND resourceOffline = 1")
-    suspend fun markAsNotOfflineByResourceIds(ids: List<String>)
+    suspend fun markAsNotOfflineByResourceIdsInternal(ids: List<String>)
+
+    @Transaction
+    suspend fun markAsNotOfflineByResourceIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        ids.chunked(900).forEach { markAsNotOfflineByResourceIdsInternal(it) }
+    }
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(item: MyLibrary)
@@ -165,11 +172,17 @@ interface MyLibraryDao {
     @Query("SELECT id, title FROM my_library")
     suspend fun getLibraryTitles(): List<LibraryTitleProjection>
 
-    @Query(
-        "DELETE FROM my_library WHERE _rev IS NOT NULL AND _rev != '' AND isPrivate = 0 " +
-            "AND resourceId NOT IN (:currentResourceIds)"
-    )
-    suspend fun deleteStalePublicNotIn(currentResourceIds: List<String>)
+    @Query("SELECT resourceId FROM my_library WHERE _rev IS NOT NULL AND _rev != '' AND isPrivate = 0 AND resourceId IS NOT NULL")
+    suspend fun getStalePublicCandidateIds(): List<String>
+
+    @Query("DELETE FROM my_library WHERE _rev IS NOT NULL AND _rev != '' AND isPrivate = 0 AND resourceId IN (:ids)")
+    suspend fun deleteStalePublicByResourceIdsInternal(ids: List<String>)
+
+    @Transaction
+    suspend fun deleteStalePublicNotIn(currentResourceIds: List<String>) {
+        val stale = getStalePublicCandidateIds().toSet() - currentResourceIds.toSet()
+        stale.chunked(900).forEach { deleteStalePublicByResourceIdsInternal(it) }
+    }
 
     @Query("DELETE FROM my_library WHERE _rev IS NOT NULL AND _rev != '' AND isPrivate = 0")
     suspend fun deleteAllStalePublic()
