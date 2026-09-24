@@ -1,11 +1,12 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonArray
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.jsonArray
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.ole.planet.myplanet.utils.GsonUtils
 
 class DictionaryMapperTest {
 
@@ -26,7 +27,7 @@ class DictionaryMapperTest {
             ]
         """.trimIndent()
 
-        val jsonArray = GsonUtils.gson.fromJson(jsonString, JsonArray::class.java)
+        val jsonArray = Json.parseToJsonElement(jsonString).jsonArray
         val entities = DictionaryMapper.mapJsonArrayToEntities(jsonArray)
 
         assertEquals(1, entities.size)
@@ -51,7 +52,7 @@ class DictionaryMapperTest {
             ]
         """.trimIndent()
 
-        val jsonArray = GsonUtils.gson.fromJson(jsonString, JsonArray::class.java)
+        val jsonArray = Json.parseToJsonElement(jsonString).jsonArray
         val entities = DictionaryMapper.mapJsonArrayToEntities(jsonArray)
 
         assertEquals(2, entities.size)
@@ -60,7 +61,7 @@ class DictionaryMapperTest {
 
     @Test
     fun `mapJsonArrayToEntities handles empty json array`() {
-        val jsonArray = JsonArray()
+        val jsonArray = JsonArray(emptyList())
         val entities = DictionaryMapper.mapJsonArrayToEntities(jsonArray)
 
         assertTrue(entities.isEmpty())
@@ -69,7 +70,7 @@ class DictionaryMapperTest {
     @Test
     fun `mapJsonArrayToEntities handles missing fields with default empty strings`() {
         val jsonString = """[{}]"""
-        val jsonArray = GsonUtils.gson.fromJson(jsonString, JsonArray::class.java)
+        val jsonArray = Json.parseToJsonElement(jsonString).jsonArray
         val entities = DictionaryMapper.mapJsonArrayToEntities(jsonArray)
 
         assertEquals(1, entities.size)
@@ -82,5 +83,34 @@ class DictionaryMapperTest {
         assertEquals("", entity.definition)
         assertEquals("", entity.synonym)
         assertEquals("", entity.antonym)
+    }
+
+    @Test
+    fun `mapJsonArrayToEntities handles null, missing, numeric, and boolean fields as empty strings`() {
+        val jsonString = """
+            [
+                {
+                    "code": null,
+                    "advance_code": 123,
+                    "meaning": 1,
+                    "definition": true,
+                    "antonoym": "x"
+                }
+            ]
+        """.trimIndent()
+
+        val jsonArray = Json.parseToJsonElement(jsonString).jsonArray
+        val entities = DictionaryMapper.mapJsonArrayToEntities(jsonArray)
+
+        assertEquals(1, entities.size)
+        val entity = entities[0]
+        assertEquals("", entity.code)
+        assertEquals("", entity.language)
+        assertEquals("", entity.advanceCode)
+        assertEquals("", entity.meaning)
+        assertEquals("", entity.definition)
+        assertEquals("", entity.word)
+        assertEquals("", entity.synonym)
+        assertEquals("x", entity.antonym)
     }
 }
