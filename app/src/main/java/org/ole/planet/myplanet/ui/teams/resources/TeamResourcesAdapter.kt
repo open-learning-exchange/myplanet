@@ -1,25 +1,18 @@
 package org.ole.planet.myplanet.ui.teams.resources
 
 import android.content.Context
-import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnResourcesUpdateListener
@@ -29,10 +22,7 @@ import org.ole.planet.myplanet.ui.resources.ResourceCardHelper
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.LibraryType
 import org.ole.planet.myplanet.utils.LibraryTypeClassifier
-import org.ole.planet.myplanet.utils.PdfThumbnailLoader
-import org.ole.planet.myplanet.utils.Utilities
 
 class TeamResourcesAdapter(
     private val context: Context,
@@ -72,6 +62,7 @@ class TeamResourcesAdapter(
     override fun onViewRecycled(holder: ViewHolderTeamResources) {
         super.onViewRecycled(holder)
         holder.cancelPreviewJob()
+        ResourceCardHelper.showTypeIconOnly(context, holder.binding.ivCoverPreview, holder.binding.ivTypeIcon)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeamResources {
@@ -85,6 +76,8 @@ class TeamResourcesAdapter(
 
         val resource = getItem(adapterPosition)
         val type = LibraryTypeClassifier.classify(resource)
+        holder.cancelPreviewJob()
+        ResourceCardHelper.showTypeIconOnly(context, holder.binding.ivCoverPreview, holder.binding.ivTypeIcon)
 
         holder.binding.apply {
             tvTitle.text = resource.title
@@ -93,9 +86,8 @@ class TeamResourcesAdapter(
             ResourceCardHelper.setCoverColor(coverContainer, type)
             ivTypeIcon.setImageResource(ResourceCardHelper.typeIconRes(type))
 
-            ResourceCardHelper.showTypeIconOnly(context, ivCoverPreview, ivTypeIcon)
+            val libraryId = resource.id.takeIf { !it.isNullOrBlank() } ?: resource.resourceId
 
-            val libraryId = resource.id ?: resource.resourceId
             val address = resource.resourceLocalAddress
 
             holder.setPreviewJob(adapterScope.launch {
@@ -121,7 +113,6 @@ class TeamResourcesAdapter(
             flRemoveContainer.visibility = if (canRemoveResources) View.VISIBLE else View.GONE
             val removeDescription = context.getString(R.string.remove) + " " + (resource.title ?: "")
             flRemoveContainer.contentDescription = removeDescription
-            ivRemove.contentDescription = removeDescription
 
             flRemoveContainer.setOnClickListener {
             val currentPosition = holder.bindingAdapterPosition
@@ -131,12 +122,14 @@ class TeamResourcesAdapter(
                 }
             }
         }
-    fun removeResourceAt(position: Int) {
+    fun removeResourceAt(position: Int, onComplete: (() -> Unit)? = null) {
         if (position < 0 || position >= currentList.size) return
         val newList = currentList.toMutableList()
         newList.removeAt(position)
-        submitList(newList)
-        updateListener.onResourceListUpdated()
+        submitList(newList) {
+            updateListener.onResourceListUpdated()
+            onComplete?.invoke()
+        }
     }
 
     class ViewHolderTeamResources(val binding: RowTeamResourceBinding) : RecyclerView.ViewHolder(binding.root) {

@@ -42,16 +42,20 @@
 
             <FrameLayout
                 android:id="@+id/fl_remove_container"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_gravity="top|end"
-                android:layout_margin="2dp"
-                android:background="@drawable/bg_badge_circle"
                 android:clickable="true"
                 android:focusable="true"
                 android:importantForAccessibility="yes">
 
-            <ImageView
+            <View
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_badge_circle" />
+
+                <ImageView
                     android:id="@+id/iv_remove"
                     android:layout_width="16dp"
                     android:layout_height="16dp"

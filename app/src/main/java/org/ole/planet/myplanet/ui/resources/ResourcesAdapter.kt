@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.resources
 
 import android.content.Context
-import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,8 +11,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.widget.ImageViewCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -21,7 +18,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
 import org.ole.planet.myplanet.databinding.ItemLibraryGridBinding
@@ -31,12 +27,9 @@ import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.LibraryType
 import org.ole.planet.myplanet.utils.LibraryTypeClassifier
 import org.ole.planet.myplanet.utils.ListViewMode
-import org.ole.planet.myplanet.utils.PdfThumbnailLoader
 import org.ole.planet.myplanet.utils.StableIdGenerator
-import org.ole.planet.myplanet.utils.Utilities
 
 class ResourcesAdapter(
     private val context: Context,
@@ -193,8 +186,14 @@ class ResourcesAdapter(
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
         super.onViewRecycled(holder)
         when (holder) {
-            is GridViewHolder -> holder.cancelPreviewJob()
-            is ListViewHolder -> holder.cancelPreviewJob()
+            is GridViewHolder -> {
+                holder.cancelPreviewJob()
+                ResourceCardHelper.showTypeIconOnly(context, holder.binding.ivCoverPreview, holder.binding.ivTypeIcon)
+            }
+            is ListViewHolder -> {
+                holder.cancelPreviewJob()
+                ResourceCardHelper.showTypeIconOnly(context, holder.binding.ivCoverPreview, holder.binding.ivTypeIcon)
+            }
         }
     }
 
@@ -250,6 +249,7 @@ class ResourcesAdapter(
     }
 
     private fun bindGrid(holder: GridViewHolder, model: ResourceListModel) {
+        holder.cancelPreviewJob()
         val binding = holder.binding
         val type = LibraryTypeClassifier.classify(model.library)
         binding.title.text = model.item.title
@@ -280,6 +280,7 @@ class ResourcesAdapter(
     }
 
     private fun bindList(holder: ListViewHolder, model: ResourceListModel) {
+        holder.cancelPreviewJob()
         val binding = holder.binding
         val type = LibraryTypeClassifier.classify(model.library)
         binding.title.text = model.item.title
