@@ -145,7 +145,7 @@ Pin only when the assertion depends on the level, and say why in a comment so th
 | 26 (`O`) | `utils/NotificationUtilsTest.kt`, `utils/VersionUtilsTest.kt` (one method), `repository/TeamsRepositoryBulkInsertTransactionTest.kt` | notification channels exist only from `O`; the repository test needs to sit below `S` so `processDescription` short-circuits instead of reaching for `MainApplication.context` |
 | 27 (`O_MR1`) | `utils/SecurePrefsTest.kt` | keystore-backed prefs path |
 | 28 (`P`) | `utils/VersionUtilsTest.kt` (one method) | `VersionUtils` branches on `SDK_INT >= P` |
-| 32 | `data/room/dao/CourseDaoTest.kt`, `data/room/dao/ExamDaoTest.kt`, `ui/resources/ResourcesAdapterTest.kt`, `ui/resources/ResourcesFilterFragmentTest.kt`, `ui/enterprises/EnterprisesReportsFragmentTest.kt` | no reason stated in any of the five |
+| 32 | `ui/resources/ResourcesFilterFragmentTest.kt` | no reason stated |
 | 33 | `ui/chat/ChatAdapterTest.kt` | no reason stated |
 | 34 (`UPSIDE_DOWN_CAKE`) | `services/DownloadServiceTest.kt`, `services/DownloadServiceOnDownloadCompleteTest.kt`, `services/DownloadServiceResumeTest.kt`, `ui/life/LifeAdapterTest.kt`, `ui/sync/ServerAddressAdapterTest.kt`, `ui/voices/VoicesActionsTest.kt` | the three `DownloadService` classes assert the API-gated foreground-service/worker branches; the three UI ones state no reason |
 
