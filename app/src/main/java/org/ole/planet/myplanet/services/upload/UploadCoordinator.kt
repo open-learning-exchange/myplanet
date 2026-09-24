@@ -84,6 +84,8 @@ class UploadCoordinator @Inject constructor(
                 allSucceeded.isEmpty() -> UploadResult.Failure(allFailed)
                 else -> UploadResult.PartialSuccess(allSucceeded, allFailed)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Critical error during upload", e)
             UploadResult.Failure(
@@ -107,6 +109,8 @@ class UploadCoordinator @Inject constructor(
                     is UploadSerializer.Simple -> serializer.serialize(item)
                     is UploadSerializer.Async -> serializer.serialize(item)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Serialization failed for item", e)
                 return@mapNotNull null

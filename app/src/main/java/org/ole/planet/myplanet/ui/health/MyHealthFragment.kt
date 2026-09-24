@@ -69,6 +69,9 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
     var dialog: AlertDialog? = null
 
     private var searchJob: Job? = null
+    private var memberQuery = ""
+    private var memberSortField = "joinDate"
+    private var memberSortDescending = false
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -282,24 +285,30 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
             override fun onNothingSelected(p0: AdapterView<*>?) {}
 
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-                val (sortBy, sort) = when (p2) {
-                    0 -> "joinDate" to true
-                    1 -> "joinDate" to false
+                val (sortBy, descending) = when (p2) {
+                    0 -> "joinDate" to false
+                    1 -> "joinDate" to true
                     2 -> "name" to false
                     else -> "name" to true
                 }
-                viewModel.loadPatients(sortBy, sort)
+                memberSortField = sortBy
+                memberSortDescending = descending
+                viewModel.searchPatients(memberQuery, memberSortField, memberSortDescending)
             }
         }
     }
 
     private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, rv: RecyclerView) {
         searchJob?.cancel()
+        memberQuery = ""
         searchJob = etSearch.textChanges()
             .drop(1)
             .debounce(SEARCH_DEBOUNCE_MS)
             .distinctUntilChanged()
-            .onEach { query -> viewModel.searchPatients(query?.toString() ?: "", "joinDate", true) }
+            .onEach { query ->
+                memberQuery = query?.toString().orEmpty()
+                viewModel.searchPatients(memberQuery, memberSortField, memberSortDescending)
+            }
             .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 
