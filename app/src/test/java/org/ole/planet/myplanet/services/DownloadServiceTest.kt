@@ -26,6 +26,8 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import java.lang.reflect.Field
 import javax.inject.Provider
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,6 +38,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -305,5 +308,88 @@ class DownloadServiceTest {
         val resultBuilder = notificationBuilderField.get(service) as NotificationCompat.Builder
         assertSame("Existing notification builder instance should be reused", existingBuilder, resultBuilder)
         verify { existingBuilder.setContentText("Starting downloads (0/4)") }
+    }
+
+    @Test
+    fun `test cleanupProcessedUrls persists only after QUEUE_PERSIST_INTERVAL calls`() {
+        val service = spyk(DownloadService())
+        val prefsField = DownloadService::class.java.getDeclaredField("preferences\$delegate")
+        prefsField.isAccessible = true
+        prefsField.set(service, kotlin.lazyOf(mockPreferences))
+
+        val cleanupMethod = DownloadService::class.java.getDeclaredMethod("cleanupProcessedUrls", String::class.java)
+        cleanupMethod.isAccessible = true
+
+        repeat(9) { i ->
+            cleanupMethod.invoke(service, "http://example.com/file$i.pdf")
+        }
+        verify(exactly = 0) { mockPreferences.edit() }
+
+        cleanupMethod.invoke(service, "http://example.com/file9.pdf")
+        verify(exactly = 1) { mockPreferences.edit() }
+    }
+
+    @Test
+    fun `test onDestroy does not remove in-flight url from shared preferences`() {
+        val service = spyk(DownloadService())
+        val prefsField = DownloadService::class.java.getDeclaredField("preferences\$delegate")
+        prefsField.isAccessible = true
+        prefsField.set(service, kotlin.lazyOf(mockPreferences))
+
+        val pendingSet = mutableSetOf("http://example.com/completed.pdf", "http://example.com/in-flight.pdf")
+        every { mockPreferences.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, any()) } returns pendingSet
+        every { mockPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, any()) } returns emptySet()
+
+        val processedField = DownloadService::class.java.getDeclaredField("processedUrls")
+        processedField.isAccessible = true
+        val processedUrls = processedField.get(service) as MutableSet<String>
+        processedUrls.add("http://example.com/completed.pdf")
+        processedUrls.add("http://example.com/in-flight.pdf")
+
+        val cleanupMethod = DownloadService::class.java.getDeclaredMethod("cleanupProcessedUrls", String::class.java)
+        cleanupMethod.isAccessible = true
+        cleanupMethod.invoke(service, "http://example.com/completed.pdf")
+
+        val mockEditor = mockk<SharedPreferences.Editor>(relaxed = true)
+        every { mockPreferences.edit() } returns mockEditor
+
+        service.onDestroy()
+
+        val slotPending = slot<Set<String>>()
+        verify { mockEditor.putStringSet(DownloadService.PENDING_DOWNLOADS_KEY, capture(slotPending)) }
+        val remainingPending = slotPending.captured
+        assertFalse("Completed URL should be removed from SharedPreferences", remainingPending.contains("http://example.com/completed.pdf"))
+        assertTrue("In-flight URL should be retained in SharedPreferences for retry", remainingPending.contains("http://example.com/in-flight.pdf"))
+    }
+
+    @Test
+    fun `test processDownloadQueue persists when queue is empty even below interval`() {
+        val service = spyk(DownloadService())
+        every { service.stopSelf() } returns Unit
+        every { service.packageName } returns "org.ole.planet.myplanet"
+        every { service.applicationInfo } returns mockk(relaxed = true)
+        every { DownloadUtils.createChannels(any()) } returns Unit
+
+        mockkStatic(NotificationManagerCompat::class)
+        val mockCompat = mockk<NotificationManagerCompat>(relaxed = true)
+        every { NotificationManagerCompat.from(any()) } returns mockCompat
+
+        val prefsField = DownloadService::class.java.getDeclaredField("preferences\$delegate")
+        prefsField.isAccessible = true
+        prefsField.set(service, kotlin.lazyOf(mockPreferences))
+
+        every { mockPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, any()) } returns emptySet()
+        every { mockPreferences.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, any()) } returns emptySet()
+
+        val processMethod = DownloadService::class.java.getDeclaredMethod("processDownloadQueue", Continuation::class.java)
+        processMethod.isAccessible = true
+
+        val completion = object : Continuation<Any?> {
+            override val context = EmptyCoroutineContext
+            override fun resumeWith(result: Result<Any?>) {}
+        }
+        processMethod.invoke(service, completion)
+
+        verify(exactly = 1) { mockPreferences.edit() }
     }
 }
