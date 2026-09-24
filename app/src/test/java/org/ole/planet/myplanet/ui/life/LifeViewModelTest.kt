@@ -74,7 +74,7 @@ class LifeViewModelTest {
 
         assertEquals(listOf(item), viewModel.myLifeList.value)
         assertEquals(
-            MyLife.defaultItems("user_123", labelResolver).map { it.imageId },
+            LifeDefaults.defaultItems("user_123", labelResolver).map { it.imageId },
             defaults.captured.map { it.imageId }
         )
         coVerify(exactly = 1) { lifeRepository.getMyLifeByUserId("user_123", any()) }
