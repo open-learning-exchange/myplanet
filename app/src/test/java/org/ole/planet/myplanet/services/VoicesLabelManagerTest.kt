@@ -124,7 +124,27 @@ class VoicesLabelManagerTest {
         chip.performCloseIconClick()
         scope.advanceUntilIdle()
 
+        coVerify(timeout = 1000) { removeLabelFn("test-id", "Offer") }
+    }
+
+    @Test
+    fun testRemoveLabelActionTriggered_DuplicateDisplayNameLabels() = runTest {
+        voice.labels = listOf("Offer", "offer")
+
+        voicesLabelManager.showChips(binding, voice, true)
+
+        assertEquals(2, fbChips.childCount)
+        val secondChip = fbChips.getChildAt(1) as Chip
+        secondChip.performCloseIconClick()
+        scope.advanceUntilIdle()
+
         coVerify(timeout = 1000) { removeLabelFn("test-id", "offer") }
+
+        val firstChip = fbChips.getChildAt(0) as Chip
+        firstChip.performCloseIconClick()
+        scope.advanceUntilIdle()
+
+        coVerify(timeout = 1000) { removeLabelFn("test-id", "Offer") }
     }
 
     @Test
