@@ -76,6 +76,14 @@ interface MyLibraryDao {
     @Query("SELECT COUNT(*) FROM my_library WHERE title = :title COLLATE NOCASE")
     suspend fun countByTitle(title: String): Int
 
+    @Query("SELECT * FROM my_library WHERE resourceId IN (:resourceIds) ORDER BY rowid")
+    suspend fun getByResourceIdsByRowidInternal(resourceIds: List<String>): List<MyLibrary>
+
+    suspend fun getByResourceIdsByRowid(ids: List<String>): List<MyLibrary> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.distinct().chunked(900).flatMap { getByResourceIdsByRowidInternal(it) }
+    }
+
     @Query(
         "SELECT * FROM my_library " +
             "WHERE (resourceOffline = 0 OR (resourceLocalAddress IS NOT NULL AND _rev IS NOT downloadedRev))"
