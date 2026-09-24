@@ -87,7 +87,7 @@ class AchievementFragment : BaseContainerFragment() {
     private suspend fun loadAchievementDataAsync(): AchievementData {
         val uId = user?.id ?: return AchievementData()
         val pCode = user?.planetCode ?: return AchievementData()
-        return userRepository.getAchievementData(uId, pCode)
+        return viewModel.getAchievementData(uId, pCode)
     }
 
     private fun updateAchievementUI() {
@@ -103,7 +103,7 @@ class AchievementFragment : BaseContainerFragment() {
         super.onViewCreated(view, savedInstanceState)
         setupRealtimeSync()
         viewLifecycleOwner.lifecycleScope.launch {
-            user = userRepository.getUserModel()
+            user = viewModel.getUserModel()
             setupUserData()
             achievementData = loadAchievementDataAsync()
             updateAchievementUI()
@@ -202,7 +202,7 @@ class AchievementFragment : BaseContainerFragment() {
                 openResource(lib)
             } else {
                 viewLifecycleOwner.lifecycleScope.launch {
-                    resourcesRepository.downloadResources(listOf(lib))
+                    viewModel.downloadResources(listOf(lib))
                 }
             }
         }

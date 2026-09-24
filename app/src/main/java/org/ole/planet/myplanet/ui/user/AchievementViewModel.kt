@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.model.Achievement
+import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
@@ -89,5 +90,17 @@ class AchievementViewModel @Inject constructor(
 
     suspend fun getLibraryItemsByIds(ids: Collection<String>): List<MyLibrary> {
         return resourcesRepository.getLibraryItemsByIds(ids)
+    }
+
+    suspend fun getAchievementData(userId: String, planetCode: String): AchievementData {
+        return userRepository.getAchievementData(userId, planetCode)
+    }
+
+    suspend fun getUserModel(): UserEntity? {
+        return userRepository.getUserModel()
+    }
+
+    suspend fun downloadResources(libs: List<MyLibrary>): Boolean {
+        return resourcesRepository.downloadResources(libs)
     }
 }
