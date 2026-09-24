@@ -26,6 +26,8 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import java.lang.reflect.Field
 import javax.inject.Provider
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -305,5 +307,55 @@ class DownloadServiceTest {
         val resultBuilder = notificationBuilderField.get(service) as NotificationCompat.Builder
         assertSame("Existing notification builder instance should be reused", existingBuilder, resultBuilder)
         verify { existingBuilder.setContentText("Starting downloads (0/4)") }
+    }
+
+    @Test
+    fun `test cleanupProcessedUrls persists only after QUEUE_PERSIST_INTERVAL calls`() {
+        val service = spyk(DownloadService())
+        val prefsField = DownloadService::class.java.getDeclaredField("preferences\$delegate")
+        prefsField.isAccessible = true
+        prefsField.set(service, kotlin.lazyOf(mockPreferences))
+
+        val cleanupMethod = DownloadService::class.java.getDeclaredMethod("cleanupProcessedUrls")
+        cleanupMethod.isAccessible = true
+
+        repeat(9) {
+            cleanupMethod.invoke(service)
+        }
+        verify(exactly = 0) { mockPreferences.edit() }
+
+        cleanupMethod.invoke(service)
+        verify(exactly = 1) { mockPreferences.edit() }
+    }
+
+    @Test
+    fun `test processDownloadQueue persists when queue is empty even below interval`() {
+        val service = spyk(DownloadService())
+        every { service.stopSelf() } returns Unit
+        every { service.packageName } returns "org.ole.planet.myplanet"
+        every { service.applicationInfo } returns mockk(relaxed = true)
+        every { DownloadUtils.createChannels(any()) } returns Unit
+
+        mockkStatic(NotificationManagerCompat::class)
+        val mockCompat = mockk<NotificationManagerCompat>(relaxed = true)
+        every { NotificationManagerCompat.from(any()) } returns mockCompat
+
+        val prefsField = DownloadService::class.java.getDeclaredField("preferences\$delegate")
+        prefsField.isAccessible = true
+        prefsField.set(service, kotlin.lazyOf(mockPreferences))
+
+        every { mockPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, any()) } returns emptySet()
+        every { mockPreferences.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, any()) } returns emptySet()
+
+        val processMethod = DownloadService::class.java.getDeclaredMethod("processDownloadQueue", Continuation::class.java)
+        processMethod.isAccessible = true
+
+        val completion = object : Continuation<Any?> {
+            override val context = EmptyCoroutineContext
+            override fun resumeWith(result: Result<Any?>) {}
+        }
+        processMethod.invoke(service, completion)
+
+        verify(exactly = 1) { mockPreferences.edit() }
     }
 }
