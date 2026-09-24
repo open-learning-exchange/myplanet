@@ -14,21 +14,21 @@
 #      five. Cost scales with (sessions x context x wakes); this caps the first
 #      factor, which is the only one a hook can see up front.
 #
-#   2. THE BABYSIT LOOP. Refuse any brief that tells the spawned session to
-#      subscribe to PR activity or open a draft PR for itself. That instruction
-#      is what switches on the harness's self-re-arming, deliberately silent,
-#      hourly check-in — "re-arm silently", exit condition "PR merged or closed",
-#      which never fires because integration merges branches, not PRs. A lane
-#      that never subscribes cannot wake itself up. This is the actual fix; the
-#      concurrency cap is damage limitation.
+#   2. (removed) An earlier revision of this hook also refused any brief that
+#      told a lane to open a draft PR and subscribe to it. That was the model's
+#      own policy, not the user's, and it broke the working pattern: the draft
+#      PR is a lane's report and the only inbound channel to it. The user's
+#      rule is narrower and correct — **a harvested PR gets closed**. That is
+#      enforced in spawned-session-ledger.sh, which blocks the turn while a
+#      lane whose branch is already merged is still unarchived.
 #
-# Overriding is deliberate and visible: CLAUDE_SPAWN_MAX_LIVE=n, or
-# CLAUDE_SPAWN_ALLOW_BABYSIT=1. Neither is something to reach for quietly to get
-# a call through.
+# Override visibly with CLAUDE_SPAWN_MAX_LIVE=n. The cap is 5 because the user
+# works in rounds of 2-5 lanes; it exists to catch a runaway, not to second-guess
+# how they want to work.
 
 set -uo pipefail
 LEDGER="${CLAUDE_PROJECT_DIR:-.}/.claude/.spawned-sessions"
-MAX_LIVE="${CLAUDE_SPAWN_MAX_LIVE:-2}"
+MAX_LIVE="${CLAUDE_SPAWN_MAX_LIVE:-5}"
 payload="$(cat 2>/dev/null || true)"
 
 live=0
@@ -46,20 +46,4 @@ if [ "$live" -ge "$MAX_LIVE" ]; then
   exit 2
 fi
 
-if [ "${CLAUDE_SPAWN_ALLOW_BABYSIT:-0}" != "1" ] &&
-   printf '%s' "$payload" | grep -qiE 'subscribe_pr_activity|draft PR'; then
-  {
-    echo "BLOCKED: this brief tells the spawned session to watch a PR."
-    echo
-    echo "That switches on the harness's PR-babysitting loop: an hourly self"
-    echo "check-in that re-arms itself, is instructed to stay SILENT, and exits"
-    echo "only when the PR is merged or closed. Integration merges BRANCHES and"
-    echo "leaves PRs open, so it never exits. On 2026-09-24 five such sessions"
-    echo "woke 9-15 times each overnight on 480-717K-token contexts."
-    echo
-    echo "Remove the subscribe/draft-PR instruction. A lane reports by pushing"
-    echo "its branch; the integrator reads the branch. Nothing needs to watch."
-  } >&2
-  exit 2
-fi
 exit 0

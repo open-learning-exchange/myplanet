@@ -29,13 +29,27 @@
 # WHAT IT DOES
 #   PostToolUse  create_session   -> append the new session id to the ledger
 #   PostToolUse  archive_session  -> remove that id from the ledger
-#   Stop                          -> block the turn ending if any ledger entry
-#                                    is older than STALE_SECONDS
+#   Stop                          -> block the turn ending if a lane's BRANCH is
+#                                    already merged into HEAD while the lane is
+#                                    still on the ledger (harvested but not
+#                                    closed), or if an entry is simply ancient
 #
-# A fresh entry does NOT block: a lane legitimately runs for a while, and the
-# turn has to end so the user can get on with their day. What must never happen
-# again is a spawned session outliving the work by a night, so the threshold is
-# hours, not minutes.
+# THE RULE IS THE USER'S, and it is narrower than the one the model first wrote:
+# **never leave a PR open once it has been harvested.** Lanes are fine. Rounds of
+# 2-5 lanes are fine. Draft PRs are fine — a lane's PR is its report and the only
+# inbound channel to it. What is not fine is merging a lane's branch and walking
+# away, because the babysit loop's only exit is the PR being merged or closed,
+# and merging a BRANCH closes nothing.
+#
+# So the block fires on exactly that state: this lane's branch is contained in
+# HEAD, and the lane is still on the ledger. That is harvest time, and harvest
+# time happens inside an active turn, which is when a Stop hook can actually
+# fire. (The first version of this file keyed on elapsed hours alone, which
+# could not have caught the incident that prompted it: the damage happened
+# overnight while this session was idle and no Stop hook ran at all.)
+#
+# A fresh, unmerged entry does NOT block: a lane legitimately runs for a while
+# and the turn has to end so the user can get on with their day.
 #
 # TO OVERRIDE, deliberately: delete the ledger, or raise CLAUDE_SPAWN_STALE_SECONDS.
 # Both are visible acts. Silently editing the ledger to end a turn is the exact
@@ -58,18 +72,22 @@ except Exception: print("")
 
 record() {
   # The created session id is the first session_… in the tool response.
-  local id
-  id="$(printf '%s' "$payload" | grep -oE 'session_[A-Za-z0-9]{16,}' | head -1)"
+  local id branch
+  id="$(printf '%s' "$payload" | grep -oE 'session_[A-Za-z0-9]{6,}' | head -1)"
   [ -z "$id" ] && exit 0
+  # The lane's outcome branch, so Stop can ask whether it has been harvested.
+  branch="$(printf '%s' "$payload" \
+            | grep -oE '"(outcome_branch|branches)"[^"]*"[^"]+"' \
+            | sed -E 's/.*"([^"]+)"$/\1/' | head -1)"
   mkdir -p "$(dirname "$LEDGER")"
   grep -q "^$id " "$LEDGER" 2>/dev/null && exit 0
-  printf '%s %s\n' "$id" "$(date +%s)" >> "$LEDGER"
+  printf '%s %s %s\n' "$id" "$(date +%s)" "${branch:--}" >> "$LEDGER"
   exit 0
 }
 
 forget() {
   local id
-  id="$(printf '%s' "$payload" | grep -oE 'session_[A-Za-z0-9]{16,}' | head -1)"
+  id="$(printf '%s' "$payload" | grep -oE 'session_[A-Za-z0-9]{6,}' | head -1)"
   [ -z "$id" ] && exit 0
   [ -f "$LEDGER" ] || exit 0
   grep -v "^$id " "$LEDGER" > "$LEDGER.tmp" 2>/dev/null || true
@@ -81,23 +99,28 @@ forget() {
 
 check() {
   [ -s "$LEDGER" ] || exit 0
-  local now stale fresh id ts age
-  now="$(date +%s)"; stale=""; fresh=0
-  while read -r id ts _; do
+  local now stale harvested fresh id ts br age
+  now="$(date +%s)"; stale=""; harvested=""; fresh=0
+  while read -r id ts br; do
     [ -z "${id:-}" ] && continue
     age=$(( now - ${ts:-0} ))
-    if [ "$age" -ge "$STALE_SECONDS" ]; then
+    # Harvested: the lane's branch is already contained in HEAD.
+    if [ -n "${br:-}" ] && [ "$br" != "-" ] &&
+       git merge-base --is-ancestor "origin/$br" HEAD 2>/dev/null; then
+      harvested="$harvested  $id  ($br — merged into HEAD)"$'\n'
+    elif [ "$age" -ge "$STALE_SECONDS" ]; then
       stale="$stale  $id  (spawned $(( age / 3600 ))h ago)"$'\n'
     else
       fresh=$(( fresh + 1 ))
     fi
   done < "$LEDGER"
 
-  if [ -n "$stale" ]; then
+  if [ -n "$harvested" ] || [ -n "$stale" ]; then
     {
-      echo "BLOCKED: spawned sessions left running for $(( STALE_SECONDS / 3600 ))h or more."
-      echo
-      printf '%s' "$stale"
+      [ -n "$harvested" ] && echo "BLOCKED: harvested lanes still open." &&
+        printf '%s' "$harvested"
+      [ -n "$stale" ] && echo "BLOCKED: spawned sessions running $(( STALE_SECONDS / 3600 ))h+." &&
+        printf '%s' "$stale"
       echo
       echo "Each of these wakes itself hourly and reloads its whole context."
       echo "If its work is merged, archive it AND close its PR, now, in this turn:"
