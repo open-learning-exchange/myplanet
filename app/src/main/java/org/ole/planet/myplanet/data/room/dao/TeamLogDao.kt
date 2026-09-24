@@ -13,16 +13,23 @@ interface TeamLogDao {
     suspend fun getPendingUploads(): List<TeamLog>
 
     @Query("SELECT * FROM team_log WHERE type = 'teamVisit' AND time > :cutoff AND teamId IN (:teamIds)")
-    suspend fun getRecentTeamVisits(cutoff: Long, teamIds: List<String>): List<TeamLog>
+    suspend fun getRecentTeamVisitsInternal(cutoff: Long, teamIds: List<String>): List<TeamLog>
+
+    suspend fun getRecentTeamVisits(cutoff: Long, teamIds: List<String>): List<TeamLog> {
+        if (teamIds.isEmpty()) return emptyList()
+        return teamIds.distinct().chunked(900).flatMap { getRecentTeamVisitsInternal(cutoff, it) }
+    }
 
     @Query("SELECT * FROM team_log WHERE type = 'teamVisit' AND teamId = :teamId AND user IN (:userNames)")
-    suspend fun getTeamVisitsForUsers(teamId: String, userNames: List<String>): List<TeamLog>
+    suspend fun getTeamVisitsForUsersInternal(teamId: String, userNames: List<String>): List<TeamLog>
+
+    suspend fun getTeamVisitsForUsers(teamId: String, userNames: List<String>): List<TeamLog> {
+        if (userNames.isEmpty()) return emptyList()
+        return userNames.distinct().chunked(900).flatMap { getTeamVisitsForUsersInternal(teamId, it) }
+    }
 
     @Query("SELECT MAX(time) FROM team_log WHERE type = 'teamVisit' AND user IS :userName AND teamId IS :teamId")
     suspend fun getLastVisit(userName: String?, teamId: String?): Long?
-
-    @Query("SELECT * FROM team_log WHERE _id IN (:ids)")
-    suspend fun getByRemoteIds(ids: List<String>): List<TeamLog>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(log: TeamLog)
