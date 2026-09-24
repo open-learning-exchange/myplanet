@@ -83,20 +83,25 @@ class ServerAddressAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val serverAddress = getItem(position)
         holder.bind(serverAddress, position == selectedPosition) // ← only selectedPosition matters
-        holder.itemView.setOnClickListener {
-            if (isServerAlreadyConfigured && position != selectedPosition) {
-                // user is clicking a DIFFERENT server than currently selected → warn them
-                onClearDataDialog(serverAddress, position)
-            } else {
-                // either no server configured yet, or clicking the already selected one
-                onItemClick(serverAddress)
-                setSelectedPosition(position)
-            }
-        }
     }
 
     inner class ViewHolder(val binding: ItemServerAddressBinding) : RecyclerView.ViewHolder(binding.root) {
         private val button get() = binding.btnServerAddress
+
+        init {
+            itemView.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                val serverAddress = getItem(pos)
+                if (isServerAlreadyConfigured && pos != selectedPosition) {
+                    onClearDataDialog(serverAddress, pos)
+                } else {
+                    onItemClick(serverAddress)
+                    setSelectedPosition(pos)
+                }
+            }
+        }
+
         fun bind(serverAddress: ServerAddress, isSelected: Boolean) {
             button.text = serverAddress.name
             button.contentDescription =
