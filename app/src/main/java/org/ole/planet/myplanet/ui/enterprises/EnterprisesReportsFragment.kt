@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.FragmentReportsBinding
+import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
@@ -43,7 +44,7 @@ import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 class EnterprisesReportsFragment : BaseTeamFragment() {
     private var _binding: FragmentReportsBinding? = null
     private val binding get() = _binding!!
-    private var reports: List<MyTeam> = emptyList()
+    private var reports: List<FinanceReport> = emptyList()
     private lateinit var reportsAdapter: EnterprisesReportsAdapter
     private var scrollToLatestReport = false
     private var startTimeStamp: String? = null
@@ -211,7 +212,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         }
     }
 
-    private fun showEditReportDialog(currentReport: MyTeam) {
+    private fun showEditReportDialog(currentReport: FinanceReport) {
         val dialogAddReportBinding = DialogAddReportBinding.inflate(LayoutInflater.from(requireContext()))
         val v: View = dialogAddReportBinding.root
         selectedImageUri = null
@@ -255,7 +256,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         submit?.setOnClickListener {
             if (isValidReportForm(dialogAddReportBinding)) {
                 val reportId = currentReport._id
-                if (reportId.isNullOrBlank()) {
+                if (reportId.isBlank()) {
                     Snackbar.make(
                         binding.root,
                         "Failed to update report. Please try again.",
@@ -292,8 +293,8 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         }
     }
 
-    private fun showDeleteReportDialog(report: MyTeam) {
-        report._id?.let { reportId ->
+    private fun showDeleteReportDialog(report: FinanceReport) {
+        report._id.let { reportId ->
             requireContext().confirmDialog(
                 title = getString(R.string.delete_report),
                 message = getString(R.string.delete_record),
@@ -379,7 +380,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    private fun updatedReportsList(results: List<MyTeam>) {
+    private fun updatedReportsList(results: List<FinanceReport>) {
         if (_binding == null) return
         reports = results
         if (scrollToLatestReport && reports.isNotEmpty()) {
