@@ -4,10 +4,9 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.TextView
 import androidx.viewpager.widget.PagerAdapter
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.OnboardingItemBinding
 import org.ole.planet.myplanet.model.OnboardingItem
 
 class OnboardingAdapter(private val mContext: Context, private val onBoardItems: ArrayList<OnboardingItem>) : PagerAdapter() {
@@ -21,20 +20,17 @@ class OnboardingAdapter(private val mContext: Context, private val onBoardItems:
     }
 
     override fun instantiateItem(container: ViewGroup, position: Int): Any {
-        val itemView = LayoutInflater.from(mContext).inflate(R.layout.onboarding_item, container, false)
+        val binding = OnboardingItemBinding.inflate(LayoutInflater.from(mContext), container, false)
 
         val item = onBoardItems[position]
-        val imageView = itemView.findViewById<ImageView>(R.id.iv_onboard)
-        imageView.setImageResource(item.imageID)
-        val tvTitle = itemView.findViewById<TextView>(R.id.tv_header)
-        tvTitle.text = item.title
-        tvTitle.setTextColor(mContext.getColor(R.color.daynight_textColor))
-        val tvContent = itemView.findViewById<TextView>(R.id.tv_desc)
-        tvContent.text = item.description
-        tvContent.setTextColor(mContext.getColor(R.color.daynight_textColor))
-        container.addView(itemView)
+        binding.ivOnboard.setImageResource(item.imageID)
+        binding.tvHeader.text = item.title
+        binding.tvHeader.setTextColor(mContext.getColor(R.color.daynight_textColor))
+        binding.tvDesc.text = item.description
+        binding.tvDesc.setTextColor(mContext.getColor(R.color.daynight_textColor))
+        container.addView(binding.root)
 
-        return itemView
+        return binding.root
     }
 
     override fun destroyItem(container: ViewGroup, position: Int, `object`: Any) {
