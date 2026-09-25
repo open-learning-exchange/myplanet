@@ -1,0 +1,9 @@
+# Replaces the res/values-{lang}/strings.xml mechanism. The non-English files
+# here are derived from the Kotlin app's strings.xml by
+# tool/arb_from_strings_xml.dart; `crowdin.yml` no longer exists in this repo, so
+# nothing syncs them automatically.
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: false

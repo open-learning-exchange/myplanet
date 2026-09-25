@@ -1,0 +1,349 @@
+import 'package:drift/drift.dart' hide isNull, isNotNull;
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:myplanet/core/config/server_config.dart';
+import 'package:myplanet/core/providers/provider_retry.dart';
+import 'package:myplanet/core/system/device_identity.dart';
+import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/data/local/feedback_mapper.dart';
+import 'package:myplanet/l10n/app_localizations.dart';
+import 'package:myplanet/providers/app_providers.dart';
+import 'package:myplanet/providers/session_provider.dart';
+import 'package:myplanet/repository/feedback_uploader.dart';
+import 'package:myplanet/ui/feedback/feedback_create_screen.dart';
+import 'package:myplanet/ui/feedback/feedback_detail_screen.dart';
+
+/// These tests exist because the feedback screens each looked complete on
+/// their own while none of them reached the uploader. The create screen called
+/// the repository directly, so `queuePending()` — the only code that hands
+/// feedback to the outbox — was never called from the running app; replies and
+/// closures marked their row un-uploaded with nothing collecting it.
+///
+/// So the assertion here is deliberately not "the row was saved". It is "the
+/// outbox has an entry", which is the part that was missing and the part
+/// `flutter analyze` cannot notice.
+void main() {
+  const config = ServerConfig(
+    serverUrl: 'https://planet.example',
+    couchDbUrl: 'https://satellite:1234@planet.example:443',
+    pin: '1234',
+  );
+
+  final user = UserRow(
+    id: 'user-1',
+    name: 'ada',
+    rolesList: const ['manager'],
+    userAdmin: false,
+    joinDate: 0,
+    isArchived: false,
+    isUpdated: false,
+  );
+
+  Future<List<OutboxRow>> queued(AppDatabase database) =>
+      database.outboxDao.due(DateTime.now().millisecondsSinceEpoch + 1000);
+
+  testWidgets('filing feedback hands the row to the outbox', (tester) async {
+    final database = AppDatabase.memory();
+    addTearDown(database.close);
+
+    await tester.pumpWidget(
+      _wrap(database, user, config, const FeedbackCreateScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    // Urgency is picked because the form requires it — `fragment_feedback.xml`
+    // pre-checks neither radio and `FeedbackFragment.validateAndSaveData:96-99`
+    // refuses until one is chosen. The port used to default it to `'No'`, so
+    // these tests filed a value nobody selected.
+    await tester.tap(find.text('No'));
+    await tester.pump();
+    await tester.tap(find.text('Bug'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), 'Sync fails offline');
+    await tester.tap(find.text('Submit'));
+    await tester.pumpAndSettle();
+
+    final pending = await database.feedbackDao.getPending();
+    expect(pending, hasLength(1));
+
+    final entries = await queued(database);
+    expect(entries.map((row) => row.uploadType), [FeedbackUploader.type]);
+    expect(entries.single.itemId, pending.single.id);
+    // The PIN travels as a header at send time; the persisted endpoint must not
+    // carry it.
+    expect(entries.single.endpoint, isNot(contains('1234')));
+  });
+
+  testWidgets('a reply on an uploaded thread re-enters the outbox', (
+    tester,
+  ) async {
+    final database = AppDatabase.memory();
+    addTearDown(database.close);
+    await _seedUploaded(database);
+
+    await tester.pumpWidget(
+      _wrap(
+        database,
+        user,
+        config,
+        const FeedbackDetailScreen(feedbackId: 'feedback-1'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Nothing to send yet: the seeded row already reached the server.
+    expect(await queued(database), isEmpty);
+
+    await tester.enterText(find.byType(TextField), 'Still broken');
+    await tester.tap(find.byIcon(Icons.send));
+    await tester.pumpAndSettle();
+
+    expect(
+      await database.outboxDao.findOpen(FeedbackUploader.type, 'feedback-1'),
+      isNotNull,
+    );
+  });
+
+  testWidgets('a reply is signed by whoever is signed in', (tester) async {
+    // The divergence lives here, at the screen, not in the repository: Kotlin
+    // passes the *thread owner* (`FeedbackDetailActivity.kt:82` →
+    // `viewModel.addReply(feedbackId, message, feedback?.owner)`), so an admin
+    // answering ada's question posts a reply that reads as ada's — on the
+    // server and on every other device. A parity pass "restoring" that edits
+    // `session.name` to `feedback.owner` in `feedback_detail_screen.dart`, and
+    // no repository test can fail on it.
+    //
+    // The seeded thread is ada's while the session is the admin's, because the
+    // two names have to differ for the assertion to discriminate.
+    final database = AppDatabase.memory();
+    addTearDown(database.close);
+    await _seedUploaded(database);
+
+    final admin = UserRow(
+      id: 'user-2',
+      name: 'admin',
+      rolesList: const ['manager'],
+      userAdmin: false,
+      joinDate: 0,
+      isArchived: false,
+      isUpdated: false,
+    );
+
+    await tester.pumpWidget(
+      _wrap(
+        database,
+        admin,
+        config,
+        const FeedbackDetailScreen(feedbackId: 'feedback-1'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'looking into it');
+    await tester.tap(find.byIcon(Icons.send));
+    await tester.pumpAndSettle();
+
+    final row = await database.feedbackDao.getById('feedback-1');
+    final replies = FeedbackMapper.parseMessages(row!.messages);
+    expect(replies.last.message, 'looking into it');
+    expect(replies.last.user, 'admin');
+    expect(row.owner, 'ada', reason: 'the thread is still ada\'s');
+  });
+
+  testWidgets('closing a thread queues the status change', (tester) async {
+    final database = AppDatabase.memory();
+    addTearDown(database.close);
+    await _seedUploaded(database);
+
+    await tester.pumpWidget(
+      _wrap(
+        database,
+        user,
+        config,
+        const FeedbackDetailScreen(feedbackId: 'feedback-1'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.check));
+    await tester.pumpAndSettle();
+
+    expect(
+      (await database.feedbackDao.getById('feedback-1'))?.status,
+      'Closed',
+    );
+    expect(
+      await database.outboxDao.findOpen(FeedbackUploader.type, 'feedback-1'),
+      isNotNull,
+    );
+  });
+
+  testWidgets('a plain learner can close their own thread', (tester) async {
+    // **The gate the port invented, removed.** Kotlin attaches the close
+    // handler unconditionally (`FeedbackDetailActivity.kt:73-75`), the layout
+    // declares no `visibility` on the button, and `FeedbackDetailViewModel`
+    // has no user or role in scope. The only gating anywhere is status-based
+    // (`:96-102`).
+    //
+    // The port required `UserMapper.isManager`, and a non-manager's list is
+    // `watchByOwner` — so every thread they can open is one they filed. ada
+    // could ask her question, read the answer, and have no way to close it.
+    final database = AppDatabase.memory();
+    addTearDown(database.close);
+    await _seedUploaded(database);
+
+    final learner = UserRow(
+      id: 'user-3',
+      name: 'ada',
+      rolesList: const ['learner'],
+      userAdmin: false,
+      joinDate: 0,
+      isArchived: false,
+      isUpdated: false,
+    );
+
+    await tester.pumpWidget(
+      _wrap(
+        database,
+        learner,
+        config,
+        const FeedbackDetailScreen(feedbackId: 'feedback-1'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.check));
+    await tester.pumpAndSettle();
+
+    expect(
+      (await database.feedbackDao.getById('feedback-1'))?.status,
+      'Closed',
+    );
+    // And the close is durable, which is the port's own divergence the other
+    // way: Kotlin's `closeFeedback` writes the status and stops, so the row
+    // keeps `isUploaded = true`, the sweep never sees it, and the next pull
+    // reverts it. Removing the role gate must not quietly remove that too.
+    expect(
+      await database.outboxDao.findOpen(FeedbackUploader.type, 'feedback-1'),
+      isNotNull,
+    );
+  });
+
+  testWidgets('feedback is still saved when no server is configured', (
+    tester,
+  ) async {
+    final database = AppDatabase.memory();
+    addTearDown(database.close);
+
+    // A user who has not finished server setup should not lose what they typed;
+    // the row waits on disk for a later queue attempt.
+    await tester.pumpWidget(
+      _wrap(database, user, null, const FeedbackCreateScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    // Urgency is picked because the form requires it — `fragment_feedback.xml`
+    // pre-checks neither radio and `FeedbackFragment.validateAndSaveData:96-99`
+    // refuses until one is chosen. The port used to default it to `'No'`, so
+    // these tests filed a value nobody selected.
+    await tester.tap(find.text('No'));
+    await tester.pump();
+    await tester.tap(find.text('Bug'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), 'Sync fails offline');
+    await tester.tap(find.text('Submit'));
+    await tester.pumpAndSettle();
+
+    expect(await database.feedbackDao.getPending(), hasLength(1));
+    expect(await queued(database), isEmpty);
+  });
+}
+
+Future<void> _seedUploaded(AppDatabase database) {
+  return database.feedbackDao.upsert(
+    FeedbackEntriesCompanion.insert(
+      id: 'feedback-1',
+      rev: const Value('1-a'),
+      title: const Value('Sync fails offline'),
+      owner: const Value('ada'),
+      status: const Value('Open'),
+      messages: Value(
+        '[{"message":"Sync fails offline","time":"0","user":"ada"}]',
+      ),
+      isUploaded: const Value(true),
+    ),
+  );
+}
+
+/// The create screen pops itself on success, so these screens need a real
+/// router rather than a bare `home:` — `context.pop()` looks up a `GoRouter`.
+Widget _wrap(
+  AppDatabase database,
+  UserRow user,
+  ServerConfig? config,
+  Widget child,
+) {
+  final router = GoRouter(
+    initialLocation: '/list/screen',
+    routes: [
+      GoRoute(
+        path: '/list',
+        builder: (_, _) => const Scaffold(body: Text('list')),
+        routes: [GoRoute(path: 'screen', builder: (_, _) => child)],
+      ),
+    ],
+  );
+  return ProviderScope(
+    retry: noProviderRetry,
+    overrides: [
+      appDatabaseProvider.overrideWith((ref) => database),
+      sessionProvider.overrideWith(() => _TestSession(user)),
+      serverConfigProvider.overrideWith(() => _TestServerConfig(config)),
+      // `FeedbackUploader` reads device identity at queue time to stamp the
+      // document's origin (`addDocumentOrigin`). The real source reaches the
+      // platform channel and `planetPrefs`, neither of which the harness
+      // serves, and a throw there would leave the outbox empty — which is
+      // precisely what these tests assert against.
+      deviceIdentitySourceProvider.overrideWithValue(
+        const FixedDeviceIdentitySource(
+          DeviceIdentity(
+            androidId: 'android-1',
+            deviceName: 'Pixel',
+            customDeviceName: 'ada-phone',
+          ),
+        ),
+      ),
+    ],
+    child: MaterialApp.router(
+      routerConfig: router,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+    ),
+  );
+}
+
+class _TestSession extends SessionNotifier {
+  _TestSession(this.user);
+
+  final UserRow user;
+
+  @override
+  Future<UserRow?> build() async => user;
+}
+
+class _TestServerConfig extends ServerConfigNotifier {
+  _TestServerConfig(this.config);
+
+  final ServerConfig? config;
+
+  @override
+  ServerConfig? build() => config;
+}
