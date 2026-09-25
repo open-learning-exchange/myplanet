@@ -30,7 +30,7 @@ class RetryRepositoryImpl @Inject constructor(
     private val isProcessing = AtomicBoolean(false)
     private val mutex = Mutex()
 
-    override suspend fun enqueue(
+    override suspend fun recordFailure(
         uploadType: String,
         failure: RetryFailure,
         payload: String,
@@ -40,18 +40,18 @@ class RetryRepositoryImpl @Inject constructor(
         modelClassName: String,
         userId: String?
     ) {
-        val operation = RetryOperation.createFromRetryFailure(
-            uploadType, failure, payload, endpoint,
-            httpMethod, dbId, modelClassName, userId
-        )
-        retryDao.insert(operation)
-    }
-
-    override suspend fun updateAttempt(
-        operationId: String,
-        failure: RetryFailure
-    ) {
-        markFailed(operationId, failure.message, failure.httpCode)
+        mutex.withLock {
+            val existing = retryDao.findExisting(failure.itemId, uploadType)
+            if (existing != null) {
+                markFailed(existing.id, failure.message, failure.httpCode)
+            } else {
+                val operation = RetryOperation.createFromRetryFailure(
+                    uploadType, failure, payload, endpoint,
+                    httpMethod, dbId, modelClassName, userId
+                )
+                retryDao.insert(operation)
+            }
+        }
     }
 
     override suspend fun markInProgress(operationId: String) {
@@ -150,10 +150,6 @@ class RetryRepositoryImpl @Inject constructor(
     override suspend fun cleanup() {
         val cutoffTime = timeProvider.now() - 24 * 60 * 60 * 1000L
         retryDao.deleteOldCompleted(cutoffTime)
-    }
-
-    override suspend fun getExistingOperation(itemId: String, uploadType: String): RetryOperation? {
-        return retryDao.findExisting(itemId, uploadType)
     }
 
     override suspend fun deletePendingAndAbandonedOperations() {
