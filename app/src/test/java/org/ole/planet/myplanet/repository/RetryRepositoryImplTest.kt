@@ -116,8 +116,9 @@ class RetryRepositoryImplTest {
     fun `recordFailure concurrent calls for same item inserts only once`() = runTest {
         var existingRow: RetryOperation? = null
         coEvery { retryDao.findExisting("item1", "type1") } coAnswers {
+            val result = existingRow
             delay(10)
-            existingRow
+            result
         }
         coEvery { retryDao.insert(any()) } answers {
             val op = firstArg<RetryOperation>()
