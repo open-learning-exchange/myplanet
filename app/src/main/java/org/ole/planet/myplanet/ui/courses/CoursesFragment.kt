@@ -58,7 +58,6 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     private var toggleListButton: ImageButton? = null
     var userModel: UserEntity? = null
     private lateinit var confirmation: AlertDialog
-    private var selectionJob: Job? = null
     private val refreshJobs = mutableMapOf<String, Job>()
     private var pendingScrollState: Parcelable? = null
     private val viewModel: CoursesViewModel by viewModels()
@@ -97,7 +96,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         val userId = userModel?.id ?: return
         val snapshot = selectedItems?.filterNotNull() ?: return
         if (snapshot.isEmpty()) return
-        val courseIds = snapshot.mapNotNull { it.courseId.takeIf { id -> !id.isNullOrBlank() } ?: it.id.takeIf { id -> !id.isNullOrBlank() } ?: it._id }
+        val courseIds = snapshot.mapNotNull { it.courseId.takeIf { id -> !id.isNullOrBlank() } ?: it.id.takeIf { id -> id.isNotBlank() } ?: it._id }
         viewModel.removeCourses(courseIds, userId, deleteProgress) {
             if (isAdded) {
                 selectedItems?.clear()
@@ -349,13 +348,13 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         if (!::adapterCourses.isInitialized) return
         val f = CoursesSortFragment()
         f.setCurrentType(viewModel.currentSortType)
-        f.setListener(CoursesSortFragment.SortSelectionListener { type ->
+        f.setListener { type ->
             when (type) {
                 CoursesViewModel.SortType.DATE -> viewModel.toggleDateSort()
                 CoursesViewModel.SortType.TITLE -> viewModel.toggleTitleSort()
             }
             scrollToTop()
-        })
+        }
         f.show(childFragmentManager, "courses_sort")
     }
 
@@ -386,13 +385,14 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         val chipRow = requireView().findViewById<LinearLayout>(R.id.chip_filter_row)
         chipRow.removeAllViews()
         val options = requireContext().resources.getStringArray(R.array.progress_filter)
-        options.forEach { label ->
+        options.forEachIndexed { index, label ->
+            val key = PROGRESS_FILTER_KEYS.getOrElse(index) { "" }
             val chip = layoutInflater.inflate(R.layout.item_filter_chip, chipRow, false) as TextView
             chip.text = label
-            chip.tag = label
+            chip.tag = key
             chip.setOnClickListener {
                 if (::filterController.isInitialized) {
-                    filterController.setProgressFilter(if (label == options.first()) "" else label)
+                    filterController.setProgressFilter(key)
                 }
                 renderCourseChipSelection(chipRow)
             }
@@ -601,5 +601,9 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                 adapterCourses.notifyItemChangedById(id)
             }
         }
+    }
+
+    companion object {
+        private val PROGRESS_FILTER_KEYS = listOf("", "Not Started", "In Progress", "Completed")
     }
 }
