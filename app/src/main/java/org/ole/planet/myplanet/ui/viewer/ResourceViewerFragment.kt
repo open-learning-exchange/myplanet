@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
+import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.media.AudioManager
 import android.os.Bundle
@@ -30,6 +31,7 @@ import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
+import androidx.core.view.doOnLayout
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -74,6 +76,7 @@ import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.TTSManager
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.computePdfRenderSize
 
 @AndroidEntryPoint
 class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding>(FragmentResourceViewerBinding::inflate), AuthSessionUpdater.AuthCallback {
@@ -516,33 +519,38 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         val file = File(externalFilesDir, "ole/$filePath")
         if (!file.exists()) return
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val bitmap = withContext(dispatcherProvider.io) {
-                try {
-                    ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fileDescriptor ->
-                        PdfRenderer(fileDescriptor).use { pdfRenderer ->
-                            pdfRenderer.openPage(0).use { page ->
-                                val bmp = createBitmap(page.width, page.height)
-                                page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                                bmp
+        binding.root.doOnLayout { view ->
+            val targetW = view.width
+            viewLifecycleOwner.lifecycleScope.launch {
+                val bitmap = withContext(dispatcherProvider.io) {
+                    try {
+                        ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fileDescriptor ->
+                            PdfRenderer(fileDescriptor).use { pdfRenderer ->
+                                pdfRenderer.openPage(0).use { page ->
+                                    val (renderW, renderH) = computePdfRenderSize(page.width, page.height, targetW)
+                                    val bmp = createBitmap(renderW, renderH)
+                                    bmp.eraseColor(Color.WHITE)
+                                    page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                                    bmp
+                                }
                             }
                         }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to render PDF page", e)
+                        null
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to render PDF page", e)
-                    null
                 }
-            }
 
-            if (bitmap != null && isAdded) {
-                val pdfPlaceholder = binding.root.findViewById<TextView>(R.id.pdfPlaceholder)
-                pdfPlaceholder.visibility = View.GONE
-                val parent = pdfPlaceholder.parent as ViewGroup
-                val imageView = ImageView(requireContext())
-                imageView.setImageBitmap(bitmap)
-                imageView.scaleType = ImageView.ScaleType.FIT_CENTER
-                parent.addView(imageView, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0))
-                (imageView.layoutParams as LinearLayout.LayoutParams).weight = 1f
+                if (bitmap != null && isAdded) {
+                    val pdfPlaceholder = binding.root.findViewById<TextView>(R.id.pdfPlaceholder)
+                    pdfPlaceholder.visibility = View.GONE
+                    val parent = pdfPlaceholder.parent as ViewGroup
+                    val imageView = ImageView(requireContext())
+                    imageView.setImageBitmap(bitmap)
+                    imageView.scaleType = ImageView.ScaleType.FIT_CENTER
+                    parent.addView(imageView, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0))
+                    (imageView.layoutParams as LinearLayout.LayoutParams).weight = 1f
+                }
             }
         }
     }
