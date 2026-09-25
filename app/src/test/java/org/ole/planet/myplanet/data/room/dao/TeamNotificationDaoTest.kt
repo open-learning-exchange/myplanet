@@ -35,6 +35,7 @@ class TeamNotificationDaoTest {
     fun getByTypeAndParentIds_with1200IdsAndDuplicates_returnsAllMatchesWithoutDuplicates() = runBlocking {
         val notifications = (1..1200).map { i ->
             TeamNotification().apply {
+                id = "notif_$i"
                 parentId = "parent_$i"
                 type = "task"
                 lastCount = i
