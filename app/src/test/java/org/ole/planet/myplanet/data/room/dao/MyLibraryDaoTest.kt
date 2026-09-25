@@ -7,6 +7,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -105,35 +106,29 @@ class MyLibraryDaoTest {
 
     @Test
     fun getByCourseIds_handlesLargeInputAndDeduplicates() = runBlocking {
-        val items = (0 until 10).map { i ->
-            MyLibrary().apply {
-                id = "pk_$i"
-                courseId = "course_$i"
-            }
-        }
-        myLibraryDao.upsertAll(items)
+        val lib1 = MyLibrary().apply { id = "pk_0"; courseId = "course_0" }
+        val lib2 = MyLibrary().apply { id = "pk_1000"; courseId = "course_1000" }
+        myLibraryDao.upsertAll(listOf(lib1, lib2))
 
-        val queryIds = (0 until 1200).map { "course_${it % 10}" }
+        val queryIds = (0 until 1200).map { "course_$it" } + listOf("course_0", "course_1000")
         val result = myLibraryDao.getByCourseIds(queryIds)
 
-        assertEquals(10, result.size)
+        assertEquals(2, result.size)
+        assertTrue(result.any { it.courseId == "course_0" })
+        assertTrue(result.any { it.courseId == "course_1000" })
     }
 
     @Test
     fun getOfflineResourcesForCourses_handlesLargeInputAndDeduplicates() = runBlocking {
-        val items = (0 until 10).map { i ->
-            MyLibrary().apply {
-                id = "pk_$i"
-                courseId = "course_$i"
-                resourceOffline = false
-                resourceLocalAddress = "local/path_$i"
-            }
-        }
-        myLibraryDao.upsertAll(items)
+        val lib1 = MyLibrary().apply { id = "pk_0"; courseId = "course_0"; resourceOffline = false; resourceLocalAddress = "local/path_0" }
+        val lib2 = MyLibrary().apply { id = "pk_1000"; courseId = "course_1000"; resourceOffline = false; resourceLocalAddress = "local/path_1000" }
+        myLibraryDao.upsertAll(listOf(lib1, lib2))
 
-        val queryIds = (0 until 1200).map { "course_${it % 10}" }
+        val queryIds = (0 until 1200).map { "course_$it" } + listOf("course_0", "course_1000")
         val result = myLibraryDao.getOfflineResourcesForCourses(queryIds)
 
-        assertEquals(10, result.size)
+        assertEquals(2, result.size)
+        assertTrue(result.any { it.courseId == "course_0" })
+        assertTrue(result.any { it.courseId == "course_1000" })
     }
 }

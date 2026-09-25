@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.News
 
@@ -99,6 +100,7 @@ interface NewsDao {
     @Query("DELETE FROM news WHERE id IN (:ids)")
     suspend fun deleteByIdsInternal(ids: List<String>)
 
+    @Transaction
     suspend fun deleteByIds(ids: List<String>) {
         if (ids.isEmpty()) return
         ids.distinct().chunked(900).forEach { deleteByIdsInternal(it) }

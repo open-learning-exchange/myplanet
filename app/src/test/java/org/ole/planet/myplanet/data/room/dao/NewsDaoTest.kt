@@ -321,21 +321,25 @@ class NewsDaoTest {
 
     @Test
     fun getByIds_handlesLargeInputAndDeduplicates() = runBlocking {
-        val items = (0 until 10).map { News().apply { id = "news_$it" } }
-        newsDao.upsertAll(items)
+        val news1 = News().apply { id = "news_0" }
+        val news2 = News().apply { id = "news_1000" }
+        newsDao.upsertAll(listOf(news1, news2))
 
-        val queryIds = (0 until 1200).map { "news_${it % 10}" }
+        val queryIds = (0 until 1200).map { "news_$it" } + listOf("news_0", "news_1000")
         val result = newsDao.getByIds(queryIds)
 
-        assertEquals(10, result.size)
+        assertEquals(2, result.size)
+        assertTrue(result.any { it.id == "news_0" })
+        assertTrue(result.any { it.id == "news_1000" })
     }
 
     @Test
     fun deleteByIds_handlesLargeInputAndDeduplicates() = runBlocking {
-        val items = (0 until 10).map { News().apply { id = "news_$it" } }
-        newsDao.upsertAll(items)
+        val news1 = News().apply { id = "news_0" }
+        val news2 = News().apply { id = "news_1000" }
+        newsDao.upsertAll(listOf(news1, news2))
 
-        val queryIds = (0 until 1200).map { "news_${it % 10}" }
+        val queryIds = (0 until 1200).map { "news_$it" } + listOf("news_0", "news_1000")
         newsDao.deleteByIds(queryIds)
 
         val remaining = newsDao.getAll()

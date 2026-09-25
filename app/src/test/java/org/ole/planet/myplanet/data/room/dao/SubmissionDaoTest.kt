@@ -9,6 +9,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -90,12 +91,15 @@ class SubmissionDaoTest {
 
     @Test
     fun getByIds_handlesLargeInputAndDeduplicates() = runBlocking {
-        val items = (0 until 10).map { Submission(id = "sub_$it") }
-        submissionDao.upsertAll(items)
+        val sub1 = Submission(id = "sub_0")
+        val sub2 = Submission(id = "sub_1000")
+        submissionDao.upsertAll(listOf(sub1, sub2))
 
-        val queryIds = (0 until 1200).map { "sub_${it % 10}" }
+        val queryIds = (0 until 1200).map { "sub_$it" } + listOf("sub_0", "sub_1000")
         val result = submissionDao.getByIds(queryIds)
 
-        assertEquals(10, result.size)
+        assertEquals(2, result.size)
+        assertTrue(result.any { it.id == "sub_0" })
+        assertTrue(result.any { it.id == "sub_1000" })
     }
 }
