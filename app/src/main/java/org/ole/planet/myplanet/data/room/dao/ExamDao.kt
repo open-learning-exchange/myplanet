@@ -8,15 +8,33 @@ import org.ole.planet.myplanet.model.StepExam
 
 @Dao
 interface ExamDao {
-    @Query("SELECT * FROM exams WHERE id IN (:ids)") suspend fun getByIds(ids: List<String>): List<StepExam>
+    @Query("SELECT * FROM exams WHERE id IN (:ids)") suspend fun getByIdsInternal(ids: List<String>): List<StepExam>
+
+    suspend fun getByIds(ids: List<String>): List<StepExam> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.distinct().chunked(900).flatMap { getByIdsInternal(it) }
+    }
+
     @Query("SELECT * FROM exams WHERE id = :id LIMIT 1") suspend fun getById(id: String): StepExam?
     @Query("SELECT * FROM exams WHERE stepId = :stepId LIMIT 1") suspend fun getFirstByStepId(stepId: String): StepExam?
     @Query("SELECT * FROM exams WHERE courseId = :courseId") suspend fun getByCourseId(courseId: String): List<StepExam>
-    @Query("SELECT * FROM exams WHERE courseId IN (:courseIds)") suspend fun getByCourseIds(courseIds: List<String>): List<StepExam>
+    @Query("SELECT * FROM exams WHERE courseId IN (:courseIds)") suspend fun getByCourseIdsInternal(courseIds: List<String>): List<StepExam>
+
+    suspend fun getByCourseIds(courseIds: List<String>): List<StepExam> {
+        if (courseIds.isEmpty()) return emptyList()
+        return courseIds.distinct().chunked(900).flatMap { getByCourseIdsInternal(it) }
+    }
+
     @Query("SELECT * FROM exams WHERE courseId = :courseId AND type = :type") suspend fun getByCourseIdAndType(courseId: String, type: String): List<StepExam>
     @Query("SELECT COUNT(*) FROM exams WHERE courseId = :courseId AND type = :type") suspend fun countByCourseIdAndType(courseId: String, type: String): Int
     @Query("SELECT * FROM exams WHERE stepId = :stepId") suspend fun getByStepId(stepId: String): List<StepExam>
-    @Query("SELECT * FROM exams WHERE stepId IN (:stepIds)") suspend fun getByStepIds(stepIds: List<String>): List<StepExam>
+    @Query("SELECT * FROM exams WHERE stepId IN (:stepIds)") suspend fun getByStepIdsInternal(stepIds: List<String>): List<StepExam>
+
+    suspend fun getByStepIds(stepIds: List<String>): List<StepExam> {
+        if (stepIds.isEmpty()) return emptyList()
+        return stepIds.distinct().chunked(900).flatMap { getByStepIdsInternal(it) }
+    }
+
     @Query("SELECT * FROM exams WHERE stepId = :stepId AND type = :type") suspend fun getByStepIdAndType(stepId: String, type: String): List<StepExam>
     @Query("SELECT * FROM exams WHERE sourceSurveyId IS NOT NULL AND _rev IS NULL") suspend fun getPendingAdoptedSurveys(): List<StepExam>
     @Query("SELECT * FROM exams") suspend fun getAll(): List<StepExam>
@@ -25,7 +43,13 @@ interface ExamDao {
     @Query("SELECT * FROM exams WHERE type = :type AND name = :name LIMIT 1") suspend fun getByTypeAndName(type: String, name: String): StepExam?
     @Query("SELECT * FROM exams WHERE teamId = :teamId") suspend fun getByTeamId(teamId: String): List<StepExam>
     @Query("SELECT * FROM exams WHERE teamId = :teamId AND type = :type") suspend fun getByTeamIdAndType(teamId: String, type: String): List<StepExam>
-    @Query("SELECT * FROM exams WHERE type = :type AND (teamId = :teamId OR id IN (:submissionIds))") suspend fun getTeamOwnedSurveys(teamId: String, submissionIds: Collection<String>, type: String = "surveys"): List<StepExam>
+    @Query("SELECT * FROM exams WHERE type = :type AND (teamId = :teamId OR id IN (:submissionIds))") suspend fun getTeamOwnedSurveysInternal(teamId: String, submissionIds: Collection<String>, type: String = "surveys"): List<StepExam>
+
+    suspend fun getTeamOwnedSurveys(teamId: String, submissionIds: Collection<String>, type: String = "surveys"): List<StepExam> {
+        if (submissionIds.isEmpty()) return getTeamOwnedSurveysInternal(teamId, submissionIds, type)
+        return submissionIds.distinct().chunked(900).flatMap { getTeamOwnedSurveysInternal(teamId, it, type) }.distinctBy { it.id }
+    }
+
     @Query("SELECT * FROM exams WHERE type = :type AND isTeamShareAllowed = 1 AND id NOT IN (:excludedIds)") suspend fun getAdoptableTeamSurveys(excludedIds: Collection<String>, type: String = "surveys"): List<StepExam>
     @Query("SELECT * FROM exams WHERE type = :type AND isTeamShareAllowed = 1") suspend fun getAdoptableTeamSurveys(type: String = "surveys"): List<StepExam>
     @Query("SELECT * FROM exams WHERE type = :type AND isTeamShareAllowed = 0 AND (teamId IS NULL OR teamId = '')") suspend fun getIndividualSurveys(type: String = "surveys"): List<StepExam>

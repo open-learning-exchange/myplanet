@@ -175,4 +175,95 @@ class ExamDaoTest {
         val result = examDao.getIndividualSurveys()
         assertEquals(listOf("1", "4"), result.map { it.id })
     }
+
+    @Test
+    fun getByIds_with1200IdsAndDuplicates_returnsAllMatchesWithoutDuplicates() = runBlocking {
+        val exams = (1..1200).map { i ->
+            StepExam().apply {
+                id = "exam_$i"
+            }
+        }
+        examDao.upsertAll(exams)
+
+        val queryIds = (1..1200).map { i -> "exam_$i" } + listOf("exam_1", "exam_500", "exam_1200")
+        val results = examDao.getByIds(queryIds)
+
+        assertEquals(1200, results.size)
+        assertEquals((1..1200).map { i -> "exam_$i" }.toSet(), results.map { it.id }.toSet())
+    }
+
+    @Test
+    fun getByStepIds_with1200Ids_returnsAllMatches() = runBlocking {
+        val exams = (1..1200).map { i ->
+            StepExam().apply {
+                id = "exam_$i"
+                stepId = "step_$i"
+            }
+        }
+        examDao.upsertAll(exams)
+
+        val queryStepIds = (1..1200).map { i -> "step_$i" } + listOf("step_10")
+        val results = examDao.getByStepIds(queryStepIds)
+
+        assertEquals(1200, results.size)
+    }
+
+    @Test
+    fun getByCourseIds_with1200Ids_returnsAllMatches() = runBlocking {
+        val exams = (1..1200).map { i ->
+            StepExam().apply {
+                id = "exam_$i"
+                courseId = "course_$i"
+            }
+        }
+        examDao.upsertAll(exams)
+
+        val queryCourseIds = (1..1200).map { i -> "course_$i" } + listOf("course_5")
+        val results = examDao.getByCourseIds(queryCourseIds)
+
+        assertEquals(1200, results.size)
+    }
+
+    @Test
+    fun getTeamOwnedSurveys_with1200SubmissionIds_returnsTeamOwnedAndSubmissionSurveysWithoutDuplicates() = runBlocking {
+        val teamExam = StepExam().apply {
+            id = "team_exam"
+            type = "surveys"
+            teamId = "team1"
+        }
+        val submissionExams = (1..1200).map { i ->
+            StepExam().apply {
+                id = "sub_exam_$i"
+                type = "surveys"
+                teamId = "other_team"
+            }
+        }
+        examDao.upsertAll(listOf(teamExam) + submissionExams)
+
+        val querySubmissionIds = (1..1200).map { i -> "sub_exam_$i" } + listOf("sub_exam_1", "sub_exam_100")
+        val results = examDao.getTeamOwnedSurveys("team1", querySubmissionIds)
+
+        assertEquals(1201, results.size)
+        assertEquals((setOf("team_exam") + (1..1200).map { i -> "sub_exam_$i" }), results.map { it.id }.toSet())
+    }
+
+    @Test
+    fun getTeamOwnedSurveys_withEmptySubmissionIds_returnsTeamSurveys() = runBlocking {
+        val teamExam = StepExam().apply {
+            id = "team_exam"
+            type = "surveys"
+            teamId = "team1"
+        }
+        val otherExam = StepExam().apply {
+            id = "other_exam"
+            type = "surveys"
+            teamId = "team2"
+        }
+        examDao.upsertAll(listOf(teamExam, otherExam))
+
+        val results = examDao.getTeamOwnedSurveys("team1", emptyList())
+
+        assertEquals(1, results.size)
+        assertEquals("team_exam", results[0].id)
+    }
 }

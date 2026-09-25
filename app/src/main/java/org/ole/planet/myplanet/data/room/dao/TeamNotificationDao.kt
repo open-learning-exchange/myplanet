@@ -12,7 +12,12 @@ interface TeamNotificationDao {
     suspend fun updateCount(parentId: String, type: String, count: Int): Int
 
     @Query("SELECT * FROM team_notification WHERE type = :type AND parentId IN (:parentIds)")
-    suspend fun getByTypeAndParentIds(type: String, parentIds: List<String>): List<TeamNotification>
+    suspend fun getByTypeAndParentIdsInternal(type: String, parentIds: List<String>): List<TeamNotification>
+
+    suspend fun getByTypeAndParentIds(type: String, parentIds: List<String>): List<TeamNotification> {
+        if (parentIds.isEmpty()) return emptyList()
+        return parentIds.distinct().chunked(900).flatMap { getByTypeAndParentIdsInternal(type, it) }
+    }
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: TeamNotification)
