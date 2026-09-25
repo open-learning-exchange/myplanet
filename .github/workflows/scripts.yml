@@ -1,0 +1,33 @@
+name: myPlanet scripts
+
+on:
+  pull_request:
+    paths:
+      - '.github/scripts/**'
+      - '.github/workflows/scripts.yml'
+  push:
+    branches: [master]
+    paths:
+      - '.github/scripts/**'
+      - '.github/workflows/scripts.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  bats:
+    name: bats tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: install bats
+        run: |
+          git clone --depth=1 https://github.com/bats-core/bats-core.git /tmp/bats-core
+          /tmp/bats-core/install.sh /tmp/bats
+          echo "/tmp/bats/bin" >> "$GITHUB_PATH"
+
+      - name: run script tests
+        working-directory: .github/scripts
+        run: bats test_labels.bats
