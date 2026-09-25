@@ -12,9 +12,11 @@ import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.add
@@ -56,7 +58,7 @@ class SyncManagerTest {
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
     private val loginSyncManager: LoginSyncManager = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
-    private val testScope = TestScope(testDispatcher)
+    private lateinit var testScope: CoroutineScope
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = TestDispatcherProvider(testDispatcher)
     private val listener: OnSyncListener = mockk(relaxed = true)
@@ -68,6 +70,7 @@ class SyncManagerTest {
 
     @Before
     fun setup() {
+        testScope = CoroutineScope(testDispatcher + Job())
         mockkObject(MainApplication.Companion)
         every { MainApplication.createLog(any(), any()) } returns Unit
         coEvery { userRepository.getUserModel() } returns userModel
@@ -239,8 +242,8 @@ class SyncManagerTest {
         coEvery {
             apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true") })
         } coAnswers {
-            syncManager.cancelBackgroundSync()
-            awaitCancellation()
+            testScope.cancel()
+            throw CancellationException("Cancelled")
         }
 
         syncManager.start(listener, "sync", listOf())

@@ -87,7 +87,7 @@ class SyncManager @Inject constructor(
     private val timestampFormat = DateTimeFormatter.ofPattern("HH:mm:ss.SSS").withZone(ZoneId.systemDefault())
     private val isSyncing = AtomicBoolean(false)
     private var listener: OnSyncListener? = null
-    private var backgroundSync: Job? = null
+    internal var backgroundSync: Job? = null
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
     val syncStatus: StateFlow<SyncStatus> = _syncStatus
 
