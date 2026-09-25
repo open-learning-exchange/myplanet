@@ -12,6 +12,7 @@ import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
@@ -20,6 +21,9 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.view.updateLayoutParams
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
@@ -238,9 +242,22 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     exitSnackbar?.dismiss()
                     finish()
                 } else {
-                    exitSnackbar = Snackbar.make(binding.root, getString(R.string.press_back_again_to_exit), 2000)
-                        .setAction(getString(R.string.exit)) { finish() }
-                    exitSnackbar?.show()
+                    val snackbar = Snackbar.make(
+                        binding.root,
+                        getString(R.string.press_back_again_to_exit),
+                        2000
+                    ).setAction(getString(R.string.exit)) { finish() }
+                    val navBarBottom = ViewCompat.getRootWindowInsets(binding.root)
+                        ?.getInsets(WindowInsetsCompat.Type.navigationBars())?.bottom ?: 0
+                    snackbar.view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                        bottomMargin = navBarBottom
+                    }
+                    val textView = snackbar.view.findViewById<TextView>(
+                        com.google.android.material.R.id.snackbar_text
+                    )
+                    textView?.maxLines = 3
+                    exitSnackbar = snackbar
+                    snackbar.show()
                 }
             }
         })
