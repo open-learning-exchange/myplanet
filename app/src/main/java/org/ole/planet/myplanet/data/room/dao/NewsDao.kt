@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.News
 
@@ -28,7 +29,12 @@ interface NewsDao {
     suspend fun getAll(): List<News>
 
     @Query("SELECT * FROM news WHERE id IN (:ids)")
-    suspend fun getByIds(ids: List<String>): List<News>
+    suspend fun getByIdsInternal(ids: List<String>): List<News>
+
+    suspend fun getByIds(ids: List<String>): List<News> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.distinct().chunked(900).flatMap { getByIdsInternal(it) }
+    }
 
     @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND ((viewableBy = 'teams' COLLATE NOCASE AND viewableId = :teamId COLLATE NOCASE) OR viewIn LIKE :teamPattern ESCAPE '\\') ORDER BY time DESC")
     suspend fun getTopLevelByTeam(teamId: String, teamPattern: String): List<News>
@@ -92,5 +98,11 @@ interface NewsDao {
     suspend fun upsertAll(news: List<News>)
 
     @Query("DELETE FROM news WHERE id IN (:ids)")
-    suspend fun deleteByIds(ids: List<String>)
+    suspend fun deleteByIdsInternal(ids: List<String>)
+
+    @Transaction
+    suspend fun deleteByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        ids.distinct().chunked(900).forEach { deleteByIdsInternal(it) }
+    }
 }

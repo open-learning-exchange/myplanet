@@ -43,7 +43,12 @@ interface TeamDao {
     suspend fun getRootTeamsByType(type: String): List<MyTeam>
 
     @Query("SELECT * FROM teams WHERE (teamId IS NULL OR TRIM(teamId) = '') AND IFNULL(status, '') != 'archived' AND type = :type AND _id IN (:teamIds)")
-    suspend fun getRootTeamsByTypeAndIds(type: String, teamIds: Set<String>): List<MyTeam>
+    suspend fun getRootTeamsByTypeAndIdsInternal(type: String, teamIds: List<String>): List<MyTeam>
+
+    suspend fun getRootTeamsByTypeAndIds(type: String, teamIds: Set<String>): List<MyTeam> {
+        if (teamIds.isEmpty()) return emptyList()
+        return teamIds.toList().distinct().chunked(900).flatMap { getRootTeamsByTypeAndIdsInternal(type, it) }
+    }
 
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND resourceId = :resourceId AND docType = 'resourceLink' LIMIT 1")
     suspend fun getResourceLink(teamId: String, resourceId: String): MyTeam?

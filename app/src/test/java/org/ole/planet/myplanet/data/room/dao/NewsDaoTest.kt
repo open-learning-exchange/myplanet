@@ -318,4 +318,31 @@ class NewsDaoTest {
         // Must NOT match "teamX100Y" where _ and % would have acted as wildcards if unescaped
         assertFalse(newsDao.isSharedWith("chat_wildcard", patternSpecial))
     }
+
+    @Test
+    fun getByIds_handlesLargeInputAndDeduplicates() = runBlocking {
+        val news1 = News().apply { id = "news_0" }
+        val news2 = News().apply { id = "news_1000" }
+        newsDao.upsertAll(listOf(news1, news2))
+
+        val queryIds = (0 until 1200).map { "news_$it" } + listOf("news_0", "news_1000")
+        val result = newsDao.getByIds(queryIds)
+
+        assertEquals(2, result.size)
+        assertTrue(result.any { it.id == "news_0" })
+        assertTrue(result.any { it.id == "news_1000" })
+    }
+
+    @Test
+    fun deleteByIds_handlesLargeInputAndDeduplicates() = runBlocking {
+        val news1 = News().apply { id = "news_0" }
+        val news2 = News().apply { id = "news_1000" }
+        newsDao.upsertAll(listOf(news1, news2))
+
+        val queryIds = (0 until 1200).map { "news_$it" } + listOf("news_0", "news_1000")
+        newsDao.deleteByIds(queryIds)
+
+        val remaining = newsDao.getAll()
+        assertTrue(remaining.isEmpty())
+    }
 }

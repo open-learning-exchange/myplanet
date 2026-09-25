@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -213,5 +214,29 @@ class TeamDaoTest {
         assertEquals(20, projections[1].otherIncome)
         assertEquals(10, projections[1].wages)
         assertEquals(15, projections[1].otherExpenses)
+    }
+
+    @Test
+    fun getRootTeamsByTypeAndIds_handlesLargeInputAndDeduplicates() = runBlocking {
+        val team1 = MyTeam().apply {
+            _id = "team_0"
+            type = "community"
+            status = "active"
+            teamId = ""
+        }
+        val team2 = MyTeam().apply {
+            _id = "team_1000"
+            type = "community"
+            status = "active"
+            teamId = ""
+        }
+        teamDao.upsertAll(listOf(team1, team2))
+
+        val queryIds = (0 until 1200).map { "team_$it" }.toSet()
+        val result = teamDao.getRootTeamsByTypeAndIds("community", queryIds)
+
+        assertEquals(2, result.size)
+        assertTrue(result.any { it._id == "team_0" })
+        assertTrue(result.any { it._id == "team_1000" })
     }
 }
