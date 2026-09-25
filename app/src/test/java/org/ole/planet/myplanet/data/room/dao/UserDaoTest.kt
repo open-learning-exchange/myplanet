@@ -148,7 +148,7 @@ class UserDaoTest {
         val users = (1..1200).map { i -> createUser("user_$i", "remote_$i", "User $i") }
         userDao.upsertAll(users)
 
-        val deleteIds = (1..1200).map { "user_$i" } + listOf("user_1", "user_100")
+        val deleteIds = (1..1200).map { i -> "user_$i" } + listOf("user_1", "user_100")
         val deletedCount = userDao.deleteByIds(deleteIds)
 
         assertEquals(1200, deletedCount)

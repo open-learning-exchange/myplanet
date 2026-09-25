@@ -42,11 +42,11 @@ class TeamTaskDaoTest {
         }
         teamTaskDao.upsertAll(tasks)
 
-        val queryIds = (1..1200).map { "task_$i" } + listOf("task_1", "task_500")
+        val queryIds = (1..1200).map { i -> "task_$i" } + listOf("task_1", "task_500")
         val results = teamTaskDao.getByIds(queryIds)
 
         assertEquals(1200, results.size)
-        assertEquals((1..1200).map { "task_$i" }.toSet(), results.map { it.id }.toSet())
+        assertEquals((1..1200).map { i -> "task_$i" }.toSet(), results.map { it.id }.toSet())
     }
 
     @Test
@@ -59,11 +59,11 @@ class TeamTaskDaoTest {
         }
         teamTaskDao.upsertAll(tasks)
 
-        val queryTitles = (1..1200).map { "Title_$i" } + listOf("Title_1", "Title_200")
+        val queryTitles = (1..1200).map { i -> "Title_$i" } + listOf("Title_1", "Title_200")
         val results = teamTaskDao.getByTitles(queryTitles)
 
         assertEquals(1200, results.size)
-        assertEquals((1..1200).map { "Title_$i" }.toSet(), results.map { it.title }.toSet())
+        assertEquals((1..1200).map { i -> "Title_$i" }.toSet(), results.map { it.title }.toSet())
     }
 
     @Test
@@ -76,10 +76,10 @@ class TeamTaskDaoTest {
         }
         teamTaskDao.upsertAll(tasks)
 
-        val queryIds = (1..1200).map { "task_$i" } + listOf("task_1", "task_900")
+        val queryIds = (1..1200).map { i -> "task_$i" } + listOf("task_1", "task_900")
         teamTaskDao.markTasksNotified(queryIds)
 
-        val fetchedTasks = teamTaskDao.getByIds((1..1200).map { "task_$i" })
+        val fetchedTasks = teamTaskDao.getByIds((1..1200).map { i -> "task_$i" })
         assertEquals(1200, fetchedTasks.size)
         assertTrue(fetchedTasks.all { it.isNotified })
     }

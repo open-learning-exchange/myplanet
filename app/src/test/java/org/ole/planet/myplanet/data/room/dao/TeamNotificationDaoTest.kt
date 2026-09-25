@@ -42,10 +42,10 @@ class TeamNotificationDaoTest {
         }
         notifications.forEach { notificationDao.insert(it) }
 
-        val queryParentIds = (1..1200).map { "parent_$i" } + listOf("parent_1", "parent_500")
+        val queryParentIds = (1..1200).map { i -> "parent_$i" } + listOf("parent_1", "parent_500")
         val results = notificationDao.getByTypeAndParentIds("task", queryParentIds)
 
         assertEquals(1200, results.size)
-        assertEquals((1..1200).map { "parent_$i" }.toSet(), results.map { it.parentId }.toSet())
+        assertEquals((1..1200).map { i -> "parent_$i" }.toSet(), results.map { it.parentId }.toSet())
     }
 }
