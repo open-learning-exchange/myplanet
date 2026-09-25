@@ -12,9 +12,11 @@ import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.add
@@ -56,7 +58,7 @@ class SyncManagerTest {
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
     private val loginSyncManager: LoginSyncManager = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
-    private val testScope = TestScope(testDispatcher)
+    private lateinit var testScope: CoroutineScope
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = TestDispatcherProvider(testDispatcher)
     private val listener: OnSyncListener = mockk(relaxed = true)
@@ -68,6 +70,7 @@ class SyncManagerTest {
 
     @Before
     fun setup() {
+        testScope = CoroutineScope(testDispatcher + Job())
         mockkObject(MainApplication.Companion)
         every { MainApplication.createLog(any(), any()) } returns Unit
         coEvery { userRepository.getUserModel() } returns userModel
@@ -224,5 +227,30 @@ class SyncManagerTest {
         syncManager.start(listener, "sync", listOf())
 
         coVerify(exactly = 1) { resourcesRepository.removeDeletedResources(listOf("res_1", "res_2")) }
+    }
+
+    @Test
+    fun `resource batch fetch cancellation stops processing and does not report failure`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+
+        val totalRowsJson = kotlinx.serialization.json.buildJsonObject {
+            put("total_rows", 500)
+        }
+        val totalRowsResponse = Response.success(totalRowsJson)
+        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } returns totalRowsResponse
+
+        coEvery {
+            apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true") })
+        } coAnswers {
+            testScope.cancel()
+            throw CancellationException("Cancelled")
+        }
+
+        syncManager.start(listener, "sync", listOf())
+
+        coVerify(exactly = 1) {
+            apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true") })
+        }
+        verify(exactly = 0) { listener.onSyncFailed(any()) }
     }
 }
