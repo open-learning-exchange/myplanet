@@ -53,7 +53,11 @@ object ResourceCardHelper {
     }
 
     fun showTypeIconOnly(context: Context, ivPreview: ImageView, ivTypeIcon: ImageView) {
-        Glide.with(context).clear(ivPreview)
+        try {
+            Glide.with(context).clear(ivPreview)
+        } catch (_: Exception) {
+        } catch (_: AssertionError) {
+        }
         ivPreview.setImageDrawable(null)
         ivPreview.visibility = View.GONE
         ivTypeIcon.visibility = View.VISIBLE
