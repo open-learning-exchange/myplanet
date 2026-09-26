@@ -242,22 +242,10 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     exitSnackbar?.dismiss()
                     finish()
                 } else {
-                    val snackbar = Snackbar.make(
-                        binding.root,
-                        getString(R.string.press_back_again_to_exit),
-                        2000
-                    ).setAction(getString(R.string.exit)) { finish() }
-                    val navBarBottom = ViewCompat.getRootWindowInsets(binding.root)
-                        ?.getInsets(WindowInsetsCompat.Type.navigationBars())?.bottom ?: 0
-                    snackbar.view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                        bottomMargin = navBarBottom
-                    }
-                    val textView = snackbar.view.findViewById<TextView>(
-                        com.google.android.material.R.id.snackbar_text
-                    )
+                    exitSnackbar = Snackbar.make(binding.root, getString(R.string.press_back_again_to_exit), 2000)
+                        .setAction(getString(R.string.exit)) { finish() }
+                    exitSnackbar?.show()
                     textView?.maxLines = 3
-                    exitSnackbar = snackbar
-                    snackbar.show()
                 }
             }
         })
