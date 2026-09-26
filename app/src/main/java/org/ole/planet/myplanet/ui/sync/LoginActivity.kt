@@ -242,10 +242,18 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     exitSnackbar?.dismiss()
                     finish()
                 } else {
-                    exitSnackbar = Snackbar.make(binding.root, getString(R.string.press_back_again_to_exit), 2000)
-                        .setAction(getString(R.string.exit)) { finish() }
-                    exitSnackbar?.show()
+                    exitSnackbar = Snackbar.make(
+                        binding.root,
+                        getString(R.string.press_back_again_to_exit),
+                        2000
+                    ).setAction(getString(R.string.exit)) { finish() }
+                    
+                    val textView = exitSnackbar?.view?.findViewById<TextView>(
+                        com.google.android.material.R.id.snackbar_text
+                    )
                     textView?.maxLines = 3
+                    
+                    exitSnackbar?.show()
                 }
             }
         })
