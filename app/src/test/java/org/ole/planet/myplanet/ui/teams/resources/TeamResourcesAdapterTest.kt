@@ -71,7 +71,14 @@ class TeamResourcesAdapterTest {
             title = "Resource 2"
         }
 
-        adapter.submitList(listOf(resource1, resource2))
+        var submitCommitted = false
+        adapter.submitList(listOf(resource1, resource2)) {
+            submitCommitted = true
+        }
+
+        while (!submitCommitted) {
+            ShadowLooper.idleMainLooper()
+        }
 
         val removalCompleted = AtomicBoolean(false)
 
@@ -79,7 +86,9 @@ class TeamResourcesAdapterTest {
             removalCompleted.set(true)
         }
 
-        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+        while (!removalCompleted.get()) {
+            ShadowLooper.idleMainLooper()
+        }
 
         assertTrue(removalCompleted.get())
         assertEquals(1, adapter.currentList.size)
