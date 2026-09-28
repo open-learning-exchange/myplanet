@@ -49,7 +49,7 @@ object TimeUtils {
     }
 
     private fun dateTimeFormatter() =
-        formatterFor("EEE dd, MMMM yyyy , hh:mm a", ZoneId.systemDefault())
+        formatterFor("EEE dd, MMMM yyyy, hh:mm a", ZoneId.systemDefault())
 
     private fun tzFormatter() =
         formatterFor("yyyy-MM-dd HH:mm:ss", ZoneId.systemDefault(), locale = null)
