@@ -45,7 +45,6 @@ interface MeetupDao {
         return meetupIds.distinct().chunked(900).flatMap { chunk -> getByMeetupIdsInternal(chunk) }
     }
 
-    // Pending uploads: meetup was created locally (no server id yet) or was edited locally.
     @Query(
         "SELECT * FROM meetup WHERE meetupId IS NULL OR meetupId = '' OR updated = 1"
     )
