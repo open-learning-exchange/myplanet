@@ -178,7 +178,6 @@ object SecurePrefs {
                     }
                 }
             } catch (e: Exception) {
-                // If creation fails, maybe file is corrupted or key is lost.
                 null
             }
         }
