@@ -22,9 +22,6 @@ interface MyLibraryDao {
     @RawQuery
     suspend fun filterByTitleNormal(query: SupportSQLiteQuery): List<MyLibrary>
 
-    @Query("SELECT * FROM my_library")
-    suspend fun getAll(): List<MyLibrary>
-
     @Query("SELECT * FROM my_library WHERE id = :id LIMIT 1")
     suspend fun getById(id: String): MyLibrary?
 
