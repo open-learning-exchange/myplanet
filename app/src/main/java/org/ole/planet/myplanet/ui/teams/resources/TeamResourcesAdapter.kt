@@ -145,14 +145,18 @@ class TeamResourcesAdapter(
         }
     }
 
-    fun removeResourceAt(position: Int) {
+    fun removeResourceAt(
+        position: Int,
+        onComplete: (() -> Unit)? = null
+    ) {
         if (position !in currentList.indices) return
 
-        val updatedList = currentList.filterIndexed { index, _ -> index != position }
-        if (updatedList.size == currentList.size) return
+        val newList = currentList.toMutableList()
+        newList.removeAt(position)
 
-        submitList(updatedList) {
+        submitList(newList) {
             updateListener.onResourceListUpdated()
+            onComplete?.invoke()
         }
     }
 
