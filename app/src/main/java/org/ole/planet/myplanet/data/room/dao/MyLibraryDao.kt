@@ -37,9 +37,6 @@ interface MyLibraryDao {
     @Query("SELECT * FROM my_library WHERE id IN (:ids)")
     suspend fun getByIds(ids: List<String>): List<MyLibrary>
 
-    @Query("SELECT * FROM my_library WHERE _id IN (:ids)")
-    suspend fun getByUnderscoreIds(ids: List<String>): List<MyLibrary>
-
     @Query("SELECT * FROM my_library WHERE resourceId IN (:resourceIds)")
     suspend fun getByResourceIds(resourceIds: List<String>): List<MyLibrary>
 
@@ -152,9 +149,6 @@ interface MyLibraryDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<MyLibrary>)
-
-    @Query("DELETE FROM my_library WHERE id IN (:ids)")
-    suspend fun deleteByIds(ids: List<String>)
 
     @Query("SELECT id FROM my_library WHERE userId LIKE :userPattern ESCAPE '\\'")
     suspend fun getIdsForUserPattern(userPattern: String): List<String>
