@@ -209,6 +209,7 @@ dependencies {
 }
 dependencies {
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
+    implementation(project(':shared'))
     implementation platform(libs.kotlin.bom)
     implementation(libs.annotation)
     implementation(libs.appcompat)

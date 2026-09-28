@@ -18,6 +18,13 @@ kotlin {
         withHostTestBuilder {}.configure {}
     }
 
+    // Keeps commonMain honest: anything Android-only fails to compile here.
+    jvm {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
+    }
+
     sourceSets {
         commonTest.dependencies {
             implementation(kotlin("test"))
