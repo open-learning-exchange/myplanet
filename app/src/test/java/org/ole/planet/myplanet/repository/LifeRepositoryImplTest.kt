@@ -23,7 +23,6 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 class LifeRepositoryImplTest {
 
     private lateinit var myLifeDao: MyLifeDao
-    private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var mockSharedPreferences: SharedPreferences
     private lateinit var mockEditor: SharedPreferences.Editor
     private lateinit var json: Json
@@ -35,10 +34,8 @@ class LifeRepositoryImplTest {
     fun setUp() {
         Logger.getLogger("io.mockk").level = Level.OFF
         myLifeDao = mockk(relaxed = true)
-        sharedPrefManager = mockk(relaxed = true)
         mockSharedPreferences = mockk(relaxed = true)
         mockEditor = mockk(relaxed = true)
-        every { sharedPrefManager.rawPreferences } returns mockSharedPreferences
         every { mockSharedPreferences.edit() } returns mockEditor
         every { mockEditor.putString(any(), any()) } returns mockEditor
         every { mockEditor.apply() } returns Unit
@@ -51,7 +48,6 @@ class LifeRepositoryImplTest {
         lifeCache = LifeCache(mockSharedPreferences, json)
         repository = LifeRepositoryImpl(
             myLifeDao,
-            sharedPrefManager,
             lifeCache
         )
     }
@@ -173,9 +169,23 @@ class LifeRepositoryImplTest {
     fun updateVisibility_delegatesToDao() = runTest {
         val myLifeId = "life123"
 
-        repository.updateVisibility(false, myLifeId)
+        repository.updateVisibility(false, myLifeId, "user123")
 
         coVerify(exactly = 1) { myLifeDao.updateVisibility(myLifeId, false) }
+    }
+
+    @Test
+    fun updateVisibility_whenRowHasNoUserId_usesCallerUserIdForReloadAndCacheWrite() = runTest {
+        val myLifeId = "life123"
+        val callerUserId = "callerUser123"
+        val managedLife = MyLife().apply { _id = myLifeId; userId = null }
+        coEvery { myLifeDao.getByIds(listOf(myLifeId)) } returns listOf(managedLife)
+        coEvery { myLifeDao.getByUserId(callerUserId) } returns listOf(managedLife)
+
+        repository.updateVisibility(false, myLifeId, callerUserId)
+
+        coVerify(exactly = 1) { myLifeDao.getByUserId(callerUserId) }
+        coVerify(exactly = 1) { mockEditor.putString("myLifeCache_$callerUserId", any()) }
     }
 
     @Test
@@ -193,7 +203,7 @@ class LifeRepositoryImplTest {
         val updatedSlot = slot<List<MyLife>>()
         coEvery { myLifeDao.update(capture(updatedSlot)) } returns Unit
 
-        repository.updateMyLifeListOrder(list)
+        repository.updateMyLifeListOrder(list, "u")
 
         assertEquals(0, managedItem1.weight)
         assertEquals(1, managedItem2.weight)
@@ -203,10 +213,26 @@ class LifeRepositoryImplTest {
 
     @Test
     fun updateMyLifeListOrder_emptyList_doesNothing() = runTest {
-        repository.updateMyLifeListOrder(emptyList())
+        repository.updateMyLifeListOrder(emptyList(), "user123")
 
         coVerify(exactly = 0) { myLifeDao.getByIds(any()) }
         coVerify(exactly = 0) { myLifeDao.update(any()) }
+    }
+
+    @Test
+    fun updateMyLifeListOrder_whenRowHasNoUserId_usesCallerUserIdForReloadAndCacheWrite() = runTest {
+        val item1 = MyLife().apply { _id = "1"; weight = 0; userId = null }
+        val callerUserId = "callerUser123"
+        val list = listOf(item1)
+
+        val managedItem1 = MyLife().apply { _id = "1"; weight = 5; userId = null }
+        coEvery { myLifeDao.getByIds(listOf("1")) } returns listOf(managedItem1)
+        coEvery { myLifeDao.getByUserId(callerUserId) } returns listOf(managedItem1)
+
+        repository.updateMyLifeListOrder(list, callerUserId)
+
+        coVerify(exactly = 1) { myLifeDao.getByUserId(callerUserId) }
+        coVerify(exactly = 1) { mockEditor.putString("myLifeCache_$callerUserId", any()) }
     }
 
     @Test
