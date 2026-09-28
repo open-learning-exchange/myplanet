@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
@@ -40,6 +41,7 @@ class PersonalsRepositoryImplTest {
     private lateinit var personalDao: PersonalDao
     private lateinit var uploadRepository: UploadRepository
     private lateinit var deviceNameProvider: DeviceNameProvider
+    private lateinit var timeProvider: TimeProvider
     private lateinit var repository: PersonalsRepositoryImpl
 
     @Before
@@ -50,6 +52,9 @@ class PersonalsRepositoryImplTest {
         deviceNameProvider = mockk(relaxed = true)
         every { deviceNameProvider.getDeviceName() } returns "mock-device-name"
         every { deviceNameProvider.getCustomDeviceName() } returns "mock-custom-device-name"
+
+        timeProvider = mockk(relaxed = true)
+        every { timeProvider.now() } returns 1_700_000_000_000L
 
         mockkObject(UrlUtils)
         every { UrlUtils.header } returns "mock-header"
@@ -63,7 +68,7 @@ class PersonalsRepositoryImplTest {
         mockkObject(FileUtils)
         every { FileUtils.getFileNameFromUrl(any()) } returns "test.txt"
 
-        repository = PersonalsRepositoryImpl(personalDao, uploadRepository, deviceNameProvider)
+        repository = PersonalsRepositoryImpl(personalDao, uploadRepository, deviceNameProvider, timeProvider)
     }
 
     @After
@@ -115,6 +120,34 @@ class PersonalsRepositoryImplTest {
         assertEquals("Test Desc", captured.description)
         assertTrue(captured.id.isNotEmpty())
         assertEquals(captured.id, captured._id)
+    }
+
+    @Test
+    fun `savePersonalResource stores date from timeProvider`() = runTest {
+        val savedObjectSlot = slot<Personal>()
+        coEvery { personalDao.insert(capture(savedObjectSlot)) } returns Unit
+
+        repository.savePersonalResource(
+            title = "Test Title",
+            userId = "user1",
+            userName = "Test User",
+            path = "/path/to/file",
+            description = "Test Desc"
+        )
+
+        val captured = savedObjectSlot.captured
+        assertEquals(1_700_000_000_000L, captured.date)
+    }
+
+    @Test
+    fun `uploadPersonalDocument serializes uploadDate from timeProvider`() = runTest {
+        val personal = Personal().apply { id = "test-id" }
+        val bodySlot = slot<JsonObject>()
+        coEvery { uploadRepository.postUpload(any(), capture(bodySlot)) } returns Response.success(JsonObject())
+
+        repository.uploadPersonalDocument(personal)
+
+        assertEquals(1_700_000_000_000L, bodySlot.captured.get("uploadDate").asLong)
     }
 
     @Test
