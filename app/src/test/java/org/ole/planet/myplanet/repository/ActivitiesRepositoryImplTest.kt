@@ -70,7 +70,6 @@ class ActivitiesRepositoryImplTest {
     private lateinit var offlineActivityDao: OfflineActivityDao
     private lateinit var removedLogDao: RemovedLogDao
     private lateinit var searchActivityDao: org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-    private lateinit var userDao: org.ole.planet.myplanet.data.room.dao.UserDao
     private lateinit var deviceNameProvider: DeviceNameProvider
     private lateinit var dispatcherProvider: DispatcherProvider
     private val testDispatcher = StandardTestDispatcher()
@@ -102,7 +101,6 @@ class ActivitiesRepositoryImplTest {
         offlineActivityDao = mockk(relaxed = true)
         removedLogDao = mockk(relaxed = true)
         searchActivityDao = mockk(relaxed = true)
-        userDao = mockk(relaxed = true)
         deviceNameProvider = mockk(relaxed = true)
         every { deviceNameProvider.getCustomDeviceName() } returns "mock_custom_device_provider"
         dispatcherProvider = TestDispatcherProvider(testDispatcher)
@@ -122,7 +120,6 @@ class ActivitiesRepositoryImplTest {
             offlineActivityDao,
             removedLogDao,
             searchActivityDao,
-            userDao,
             deviceNameProvider
         )
     }
@@ -218,7 +215,7 @@ class ActivitiesRepositoryImplTest {
             parentCode = "parent"
             planetCode = "planet"
         }
-        coEvery { userDao.getByName("user1") } returns mockUser
+        coEvery { userRepository.getUserByName("user1") } returns mockUser
 
         val slot = slot<CourseActivity>()
         repository.logCourseVisit("course1", "Course Title", "user1")
@@ -272,6 +269,38 @@ class ActivitiesRepositoryImplTest {
         coEvery { offlineActivityDao.getLastVisit("john") } returns 2000L
         val result = repository.getLastVisit("john")
         assertEquals(2000L, result)
+    }
+
+    @Test
+    fun `getLastVisits returns map of last visits`() = runTest {
+        val userNames = listOf("john", "alice")
+        coEvery { offlineActivityDao.getLastVisits(userNames) } returns listOf(
+            org.ole.planet.myplanet.data.room.dao.UserLastVisit("john", 1000L),
+            org.ole.planet.myplanet.data.room.dao.UserLastVisit("alice", 2000L)
+        )
+
+        val result = repository.getLastVisits(userNames)
+
+        assertEquals(2, result.size)
+        assertEquals(1000L, result["john"])
+        assertEquals(2000L, result["alice"])
+    }
+
+    @Test
+    fun `getOfflineVisitCounts returns map of visit counts`() = runTest {
+        val userIds = listOf("u1", "u2")
+        coEvery {
+            offlineActivityDao.countByUserIdsAndType(userIds, UserSessionManager.KEY_LOGIN)
+        } returns listOf(
+            org.ole.planet.myplanet.data.room.dao.UserCount("u1", 5),
+            org.ole.planet.myplanet.data.room.dao.UserCount("u2", 3)
+        )
+
+        val result = repository.getOfflineVisitCounts(userIds)
+
+        assertEquals(2, result.size)
+        assertEquals(5, result["u1"])
+        assertEquals(3, result["u2"])
     }
 
     @Test
