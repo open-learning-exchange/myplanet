@@ -317,7 +317,7 @@ class PersonalsRepositoryImplTest {
 
         val result = repository.uploadPersonal(personal)
 
-        assertEquals("Resource already uploaded", result)
+        assertEquals(PersonalUploadResult.AlreadyUploaded("Resource already uploaded"), result)
     }
 
     @Test
@@ -336,7 +336,7 @@ class PersonalsRepositoryImplTest {
 
         val result = repository.uploadPersonal(personal)
 
-        assertEquals("Personal resource uploaded successfully", result)
+        assertEquals(PersonalUploadResult.Success("Personal resource uploaded successfully"), result)
         coVerify { uploadRepository.postUpload(any(), any()) }
         coVerify(exactly = 0) { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) }
     }
@@ -358,7 +358,7 @@ class PersonalsRepositoryImplTest {
 
         val result = repository.uploadPersonal(personal)
 
-        assertEquals("Personal resource uploaded successfully", result)
+        assertEquals(PersonalUploadResult.Success("Personal resource uploaded successfully"), result)
         coVerify { uploadRepository.postUpload(any(), any()) }
         coVerify(exactly = 1) {
             uploadRepository.uploadAttachment(
@@ -384,13 +384,20 @@ class PersonalsRepositoryImplTest {
             addProperty("id", "new-id")
         }
         coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success(mockResponseObject)
+        val causeException = RuntimeException("network dropped")
         coEvery {
             uploadRepository.uploadAttachment(any(), any(), any(), any(), any())
-        } throws RuntimeException("network dropped")
+        } throws causeException
 
         val result = repository.uploadPersonal(personal)
 
-        assertTrue(result.startsWith("Uploaded document but failed to upload attachment"))
+        assertEquals(
+            PersonalUploadResult.AttachmentFailed(
+                "Uploaded document but failed to upload attachment: network dropped",
+                causeException
+            ),
+            result
+        )
         coVerify(exactly = 1) { personalDao.updateRemoteDocRef("test-id", "new-id", "new-rev") }
         coVerify(exactly = 0) { personalDao.updateUploadedStatus(any(), any(), any()) }
     }
@@ -410,7 +417,10 @@ class PersonalsRepositoryImplTest {
 
         val result = repository.uploadPersonal(personal)
 
-        assertEquals("Uploaded document but failed to upload attachment: HTTP 409", result)
+        assertEquals(
+            PersonalUploadResult.AttachmentFailed("Uploaded document but failed to upload attachment: HTTP 409"),
+            result
+        )
         coVerify(exactly = 0) { personalDao.updateUploadedStatus(any(), any(), any()) }
     }
 
@@ -434,7 +444,7 @@ class PersonalsRepositoryImplTest {
 
         val result = repository.uploadPersonal(personal)
 
-        assertEquals("Personal resource uploaded successfully", result)
+        assertEquals(PersonalUploadResult.Success("Personal resource uploaded successfully"), result)
         coVerify(exactly = 1) { personalDao.updateUploadedStatus("test-id", "new-id", "2-attachment") }
     }
 
@@ -451,7 +461,7 @@ class PersonalsRepositoryImplTest {
 
         val result = repository.uploadPersonal(personal)
 
-        assertEquals("Personal resource uploaded successfully", result)
+        assertEquals(PersonalUploadResult.Success("Personal resource uploaded successfully"), result)
         coVerify(exactly = 0) { uploadRepository.postUpload(any(), any()) }
         coVerify(exactly = 1) {
             uploadRepository.uploadAttachment(
@@ -476,7 +486,27 @@ class PersonalsRepositoryImplTest {
 
         val result = repository.uploadPersonal(personal)
 
-        assertEquals("Failed to upload personal resource: No response", result)
+        assertEquals(
+            PersonalUploadResult.DocumentFailed("Failed to upload personal resource: No response"),
+            result
+        )
+    }
+
+    @Test
+    fun `uploadPersonal returns DocumentFailed when postUpload throws exception`() = runTest {
+        val personal = Personal().apply {
+            id = "test-id"
+            isUploaded = false
+        }
+        val exception = RuntimeException("Connection failed")
+        coEvery { uploadRepository.postUpload(any(), any()) } throws exception
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals(
+            PersonalUploadResult.DocumentFailed("Unable to upload resource: Connection failed", exception),
+            result
+        )
     }
 
     @Test
