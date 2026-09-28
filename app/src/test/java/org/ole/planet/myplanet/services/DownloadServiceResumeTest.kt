@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.services
 
 import android.content.SharedPreferences
+import android.os.Build
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.every
@@ -38,10 +39,13 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.FileUtils
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.util.ReflectionHelpers
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], application = android.app.Application::class)
+@Config(application = android.app.Application::class)
 class DownloadServiceResumeTest {
+
+    private var originalSdkInt: Int = 0
 
     @get:Rule
     val temporaryFolder = org.junit.rules.TemporaryFolder()
@@ -123,6 +127,7 @@ class DownloadServiceResumeTest {
 
     @Before
     fun setUp() {
+        originalSdkInt = Build.VERSION.SDK_INT
         mockkStatic(android.util.Log::class)
         every { android.util.Log.d(any(), any()) } returns 0
         every { android.util.Log.e(any(), any()) } returns 0
@@ -141,6 +146,7 @@ class DownloadServiceResumeTest {
     @After
     fun tearDown() {
         unmockkAll()
+        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", originalSdkInt)
     }
 
     @Test

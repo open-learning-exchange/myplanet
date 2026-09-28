@@ -12,19 +12,17 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toKotlinx
 
 @Singleton
 class LoginSyncManager @Inject constructor(
@@ -32,6 +30,7 @@ class LoginSyncManager @Inject constructor(
     private val sharedPrefManager: SharedPrefManager,
     private val userSyncRepository: UserSyncRepository,
     private val apiInterface: ApiInterface,
+    private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider
 ) {
@@ -125,45 +124,7 @@ class LoginSyncManager @Inject constructor(
 
     fun syncAdmin() {
         applicationScope.launch {
-            try {
-                val `object` = JsonObject()
-                val selector = JsonObject()
-                selector.addProperty("isUserAdmin", true)
-                `object`.add("selector", selector)
-
-                val header = UrlUtils.header
-                if (header.isBlank()) {
-                    return@launch
-                }
-
-                val url = try {
-                    UrlUtils.getUrl() + "/_users/_find"
-                } catch (e: Exception) {
-                    Log.e("LoginSyncManager", "Error constructing find admin URL", e)
-                    return@launch
-                }
-
-                try {
-                    val response = apiInterface.postDoc(header, "application/json", url, `object`.toKotlinx().jsonObject)
-                    if (response.isSuccessful && response.body() != null) {
-                        val responseBody = response.body()?.toGson()
-                        sharedPrefManager.setCommunityLeaders("$responseBody")
-
-                        val array = GsonUtils.getJsonArray("docs", responseBody)
-                        if (!array.isEmpty()) {
-                            try {
-                                sharedPrefManager.setRawString("user_admin", GsonUtils.gson.toJson(array[0]))
-                            } catch (e: Exception) {
-                                Log.e("LoginSyncManager", "Error saving user_admin JSON", e)
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e("LoginSyncManager", "Admin sync request failed", e)
-                }
-            } catch (e: Exception) {
-                Log.e("LoginSyncManager", "Error in syncAdmin", e)
-            }
+            configurationsRepository.syncCommunityLeaders()
         }
     }
 
