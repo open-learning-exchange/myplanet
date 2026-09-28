@@ -78,10 +78,7 @@ class EnterprisesRepositoryImpl @Inject constructor(
 
     override suspend fun archiveReport(reportId: String) {
         if (reportId.isBlank()) return
-        updateTeamEntityById(reportId) { report ->
-            report.status = "archived"
-            report.updated = true
-        }
+        teamDao.archiveById(reportId)
     }
 
     override fun getReportsFlow(teamId: String): Flow<List<MyTeam>> {
@@ -131,10 +128,7 @@ class EnterprisesRepositoryImpl @Inject constructor(
             destFile.parentFile?.mkdirs()
             destFile.writeBytes(imageData)
         }
-        updateTeamEntityById(teamId) { team ->
-            team.imageName = imageName
-            team.updated = true
-        }
+        teamDao.setImageNameById(teamId, imageName)
     }
 
     private suspend fun updateTeamEntityById(id: String, updater: (MyTeam) -> Unit): Boolean {

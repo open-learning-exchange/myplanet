@@ -114,8 +114,6 @@ class EnterprisesRepositoryImplTest {
         val destFile = File(tempDir, "team_attachments/report-1/logo.png")
         every { storagePathResolver.resolveTeamAttachment(any(), "logo.png") } returns destFile
         every { timeProvider.now() } returns 12345L
-        val existingReport = MyTeam().apply { _id = "report-1" }
-        coEvery { teamDao.getById(any()) } returns existingReport
 
         val imageBytes = byteArrayOf(1, 2, 3, 4)
         val report = FinanceReportParams(
@@ -139,7 +137,24 @@ class EnterprisesRepositoryImplTest {
         assertTrue("attachment file should have been written", destFile.exists())
         assertArrayEquals(imageBytes, destFile.readBytes())
 
-        coVerify { teamDao.upsert(match { it.imageName == "logo.png" && it.updated }) }
+        coVerify { teamDao.setImageNameById(any(), "logo.png") }
+    }
+
+    @Test
+    fun `archiveReport calls archiveById and never upsert`() = runTest {
+        repository.archiveReport("r1")
+
+        coVerify(exactly = 1) { teamDao.archiveById("r1") }
+        coVerify(exactly = 0) { teamDao.upsert(any()) }
+    }
+
+    @Test
+    fun `blank reportId in archiveReport calls neither archiveById nor setImageNameById`() = runTest {
+        repository.archiveReport("")
+        repository.archiveReport("   ")
+
+        coVerify(exactly = 0) { teamDao.archiveById(any()) }
+        coVerify(exactly = 0) { teamDao.setImageNameById(any(), any()) }
     }
 
     @Test
