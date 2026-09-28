@@ -262,17 +262,19 @@ class ResourcesAdapter(
         holder.setPreviewJob(adapterScope.launch {
             val isOffline = model.item.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
             ResourceCardHelper.bindCover(
-                context = context,
-                ivPreview = binding.ivCoverPreview,
-                ivTypeIcon = binding.ivTypeIcon,
-                isOffline = isOffline,
-                address = model.library.resourceLocalAddress,
-                libraryId = model.library.id,
-                externalFilesDir = externalFilesDir,
-                coverWidthDp = GRID_COVER_WIDTH_DP,
-                dispatcherProvider = dispatcherProvider,
-                htmlCoverCache = htmlCoverCache,
-                fileLengthCache = fileLengthCache
+                CoverBindParams(
+                    context = context,
+                    ivPreview = binding.ivCoverPreview,
+                    ivTypeIcon = binding.ivTypeIcon,
+                    isOffline = isOffline,
+                    address = model.library.resourceLocalAddress,
+                    libraryId = model.library.id,
+                    externalFilesDir = externalFilesDir,
+                    coverWidthDp = GRID_COVER_WIDTH_DP,
+                    dispatcherProvider = dispatcherProvider,
+                    htmlCoverCache = htmlCoverCache,
+                    fileLengthCache = fileLengthCache
+                )
             )
             val fileSize = resourceFileLength(model)
             binding.tvMeta.text = ResourceCardHelper.buildMetaLine(context, type, model.library.language, fileSize)
@@ -294,17 +296,19 @@ class ResourcesAdapter(
         holder.setPreviewJob(adapterScope.launch {
             val isOffline = model.item.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
             ResourceCardHelper.bindCover(
-                context = context,
-                ivPreview = binding.ivCoverPreview,
-                ivTypeIcon = binding.ivTypeIcon,
-                isOffline = isOffline,
-                address = model.library.resourceLocalAddress,
-                libraryId = model.library.id,
-                externalFilesDir = externalFilesDir,
-                coverWidthDp = LIST_COVER_WIDTH_DP,
-                dispatcherProvider = dispatcherProvider,
-                htmlCoverCache = htmlCoverCache,
-                fileLengthCache = fileLengthCache
+                CoverBindParams(
+                    context = context,
+                    ivPreview = binding.ivCoverPreview,
+                    ivTypeIcon = binding.ivTypeIcon,
+                    isOffline = isOffline,
+                    address = model.library.resourceLocalAddress,
+                    libraryId = model.library.id,
+                    externalFilesDir = externalFilesDir,
+                    coverWidthDp = LIST_COVER_WIDTH_DP,
+                    dispatcherProvider = dispatcherProvider,
+                    htmlCoverCache = htmlCoverCache,
+                    fileLengthCache = fileLengthCache
+                )
             )
             val fileSize = resourceFileLength(model)
             binding.tvMeta.text = ResourceCardHelper.buildMetaLine(context, type, model.library.language, fileSize)
