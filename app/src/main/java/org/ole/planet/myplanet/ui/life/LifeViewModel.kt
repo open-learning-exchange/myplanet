@@ -43,7 +43,7 @@ class LifeViewModel @Inject constructor(
     fun updateVisibility(isVisible: Boolean, id: String) {
         viewModelScope.launch {
             val updatedList = withContext(dispatcherProvider.io) {
-                lifeRepository.updateVisibility(isVisible, id)
+                lifeRepository.updateVisibility(isVisible, id, resolveUserId())
             }
             _myLifeList.value = updatedList
         }
@@ -53,7 +53,7 @@ class LifeViewModel @Inject constructor(
         _myLifeList.value = list
         viewModelScope.launch {
             withContext(dispatcherProvider.io) {
-                lifeRepository.updateMyLifeListOrder(list)
+                lifeRepository.updateMyLifeListOrder(list, resolveUserId())
             }
         }
     }
