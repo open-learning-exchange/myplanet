@@ -70,7 +70,6 @@ class ActivitiesRepositoryImplTest {
     private lateinit var offlineActivityDao: OfflineActivityDao
     private lateinit var removedLogDao: RemovedLogDao
     private lateinit var searchActivityDao: org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-    private lateinit var userDao: org.ole.planet.myplanet.data.room.dao.UserDao
     private lateinit var deviceNameProvider: DeviceNameProvider
     private lateinit var dispatcherProvider: DispatcherProvider
     private val testDispatcher = StandardTestDispatcher()
@@ -102,7 +101,6 @@ class ActivitiesRepositoryImplTest {
         offlineActivityDao = mockk(relaxed = true)
         removedLogDao = mockk(relaxed = true)
         searchActivityDao = mockk(relaxed = true)
-        userDao = mockk(relaxed = true)
         deviceNameProvider = mockk(relaxed = true)
         every { deviceNameProvider.getCustomDeviceName() } returns "mock_custom_device_provider"
         dispatcherProvider = TestDispatcherProvider(testDispatcher)
@@ -122,7 +120,6 @@ class ActivitiesRepositoryImplTest {
             offlineActivityDao,
             removedLogDao,
             searchActivityDao,
-            userDao,
             deviceNameProvider
         )
     }
@@ -218,7 +215,7 @@ class ActivitiesRepositoryImplTest {
             parentCode = "parent"
             planetCode = "planet"
         }
-        coEvery { userDao.getByName("user1") } returns mockUser
+        coEvery { userRepository.getUserByName("user1") } returns mockUser
 
         val slot = slot<CourseActivity>()
         repository.logCourseVisit("course1", "Course Title", "user1")
