@@ -110,9 +110,9 @@ class PersonalsRepositoryImpl @Inject constructor(
         return `object`
     }
 
-    override suspend fun uploadPersonal(personal: Personal): String {
+    override suspend fun uploadPersonal(personal: Personal): PersonalUploadResult {
         if (personal.isUploaded) {
-            return "Resource already uploaded"
+            return PersonalUploadResult.AlreadyUploaded("Resource already uploaded")
         }
 
         try {
@@ -122,7 +122,7 @@ class PersonalsRepositoryImpl @Inject constructor(
                 existingId to existingRev
             } else {
                 val result = uploadPersonalDocument(personal)
-                    ?: return "Failed to upload personal resource: No response"
+                    ?: return PersonalUploadResult.DocumentFailed("Failed to upload personal resource: No response")
                 result
             }
 
@@ -142,21 +142,21 @@ class PersonalsRepositoryImpl @Inject constructor(
                     )
                 } catch (e: Exception) {
                     Log.w(TAG, "Attachment upload failed for ${personal.id}", e)
-                    return "Uploaded document but failed to upload attachment: ${e.message}"
+                    return PersonalUploadResult.AttachmentFailed("Uploaded document but failed to upload attachment: ${e.message}", e)
                 }
                 
                 if (!response.isSuccessful) {
                     Log.w(TAG, "Attachment upload failed for ${personal.id}: HTTP ${response.code()}")
-                    return "Uploaded document but failed to upload attachment: HTTP ${response.code()}"
+                    return PersonalUploadResult.AttachmentFailed("Uploaded document but failed to upload attachment: HTTP ${response.code()}")
                 }
                 finalRev = getString("rev", response.body()).ifBlank { rev }
             }
 
             updatePersonalAfterSync(personal.id, id, finalRev)
-            return "Personal resource uploaded successfully"
+            return PersonalUploadResult.Success("Personal resource uploaded successfully")
         } catch (e: Exception) {
             Log.w(TAG, "Unable to upload personal resource ${personal.id}", e)
-            return "Unable to upload resource: ${e.message}"
+            return PersonalUploadResult.DocumentFailed("Unable to upload resource: ${e.message}", e)
         }
     }
 
