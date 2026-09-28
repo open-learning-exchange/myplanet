@@ -12,6 +12,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.spyk
+import io.mockk.coVerify
 import io.mockk.unmockkAll
 import io.mockk.unmockkObject
 import io.mockk.verify
@@ -26,6 +27,7 @@ import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -142,5 +144,69 @@ class DownloadWorkerTest {
         assertTrue(result is androidx.work.ListenableWorker.Result.Success)
 
         unmockkObject(FileUtils)
+    }
+
+    @Test
+    fun `showProgressNotification reuses foreground promotion and calls canStartForegroundService only once across multiple ticks`() = runTest(testDispatcher) {
+        val url = "http://example.com/resources/123/file.txt"
+        every { preferences.getStringSet(any(), any()) } returns setOf(url)
+        every { workerParams.inputData.getString("urls_key") } returns "url_list_key"
+        every { workerParams.inputData.getBoolean("fromSync", false) } returns false
+
+        every { DownloadUtils.canStartForegroundService(any()) } returns true
+
+        mockkObject(FileUtils)
+        every { FileUtils.checkFileExist(context, url) } returns false
+        val tempFile = java.io.File.createTempFile("test_download", ".tmp")
+        tempFile.deleteOnExit()
+        every { FileUtils.getSDPathFromUrl(context, url) } returns tempFile
+
+        mockkStatic(android.os.SystemClock::class)
+        every { android.os.SystemClock.elapsedRealtime() } returnsMany listOf(1000L, 1600L, 2200L, 2800L, 3400L)
+
+        val bodyData = ByteArray(8192 * 3)
+        val responseBody = bodyData.toResponseBody(null)
+        coEvery { downloadRepository.downloadFileResponse(any(), any()) } returns DownloadResult.Success(responseBody, 200)
+
+        val result = worker.doWork()
+
+        assertTrue(result is androidx.work.ListenableWorker.Result.Success)
+        verify(exactly = 1) { DownloadUtils.canStartForegroundService(context) }
+        coVerify(atLeast = 3) { worker.setForeground(any()) }
+
+        unmockkObject(FileUtils)
+        io.mockk.unmockkStatic(android.os.SystemClock::class)
+    }
+
+    @Test
+    fun `showProgressNotification retries canStartForegroundService on subsequent tick when setForeground fails`() = runTest(testDispatcher) {
+        val url = "http://example.com/resources/123/file.txt"
+        every { preferences.getStringSet(any(), any()) } returns setOf(url)
+        every { workerParams.inputData.getString("urls_key") } returns "url_list_key"
+        every { workerParams.inputData.getBoolean("fromSync", false) } returns false
+
+        every { DownloadUtils.canStartForegroundService(any()) } returns true
+        coEvery { worker.setForeground(any()) } throws RuntimeException("Foreground promotion failed")
+
+        mockkObject(FileUtils)
+        every { FileUtils.checkFileExist(context, url) } returns false
+        val tempFile = java.io.File.createTempFile("test_download_fail", ".tmp")
+        tempFile.deleteOnExit()
+        every { FileUtils.getSDPathFromUrl(context, url) } returns tempFile
+
+        mockkStatic(android.os.SystemClock::class)
+        every { android.os.SystemClock.elapsedRealtime() } returnsMany listOf(1000L, 1600L, 2200L, 2800L)
+
+        val bodyData = ByteArray(8192 * 3)
+        val responseBody = bodyData.toResponseBody(null)
+        coEvery { downloadRepository.downloadFileResponse(any(), any()) } returns DownloadResult.Success(responseBody, 200)
+
+        val result = worker.doWork()
+
+        assertTrue(result is androidx.work.ListenableWorker.Result.Success)
+        verify(atLeast = 2) { DownloadUtils.canStartForegroundService(context) }
+
+        unmockkObject(FileUtils)
+        io.mockk.unmockkStatic(android.os.SystemClock::class)
     }
 }
