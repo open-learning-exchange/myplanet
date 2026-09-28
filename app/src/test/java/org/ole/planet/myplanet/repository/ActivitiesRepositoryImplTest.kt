@@ -275,6 +275,38 @@ class ActivitiesRepositoryImplTest {
     }
 
     @Test
+    fun `getLastVisits returns map of last visits`() = runTest {
+        val userNames = listOf("john", "alice")
+        coEvery { offlineActivityDao.getLastVisits(userNames) } returns listOf(
+            org.ole.planet.myplanet.data.room.dao.UserLastVisit("john", 1000L),
+            org.ole.planet.myplanet.data.room.dao.UserLastVisit("alice", 2000L)
+        )
+
+        val result = repository.getLastVisits(userNames)
+
+        assertEquals(2, result.size)
+        assertEquals(1000L, result["john"])
+        assertEquals(2000L, result["alice"])
+    }
+
+    @Test
+    fun `getOfflineVisitCounts returns map of visit counts`() = runTest {
+        val userIds = listOf("u1", "u2")
+        coEvery {
+            offlineActivityDao.countByUserIdsAndType(userIds, UserSessionManager.KEY_LOGIN)
+        } returns listOf(
+            org.ole.planet.myplanet.data.room.dao.UserCount("u1", 5),
+            org.ole.planet.myplanet.data.room.dao.UserCount("u2", 3)
+        )
+
+        val result = repository.getOfflineVisitCounts(userIds)
+
+        assertEquals(2, result.size)
+        assertEquals(5, result["u1"])
+        assertEquals(3, result["u2"])
+    }
+
+    @Test
     fun `logResourceOpen inserts resource activity`() = runTest {
         every { timeProvider.now() } returns 123456789L
         val slot = slot<ResourceActivity>()

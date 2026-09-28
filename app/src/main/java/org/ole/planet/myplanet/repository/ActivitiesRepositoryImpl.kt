@@ -154,6 +154,27 @@ class ActivitiesRepositoryImpl @Inject constructor(
         return offlineActivityDao.getLastVisit(userName)
     }
 
+    override suspend fun getLastVisits(userNames: List<String>): Map<String, Long> {
+        if (userNames.isEmpty()) return emptyMap()
+        return offlineActivityDao.getLastVisits(userNames)
+            .mapNotNull { visit ->
+                val name = visit.userName ?: return@mapNotNull null
+                val time = visit.lastVisit ?: return@mapNotNull null
+                name to time
+            }
+            .toMap()
+    }
+
+    override suspend fun getOfflineVisitCounts(userIds: List<String>): Map<String, Int> {
+        if (userIds.isEmpty()) return emptyMap()
+        return offlineActivityDao.countByUserIdsAndType(userIds, UserSessionManager.KEY_LOGIN)
+            .mapNotNull { userCount ->
+                val userId = userCount.userId ?: return@mapNotNull null
+                userId to userCount.count
+            }
+            .toMap()
+    }
+
     override suspend fun logResourceOpen(
         userName: String?,
         parentCode: String?,
