@@ -18,6 +18,7 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
+import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.MyTeam
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -31,6 +32,24 @@ class EnterprisesReportsFragmentTest {
         method.isAccessible = true
         return method.invoke(this) as String
     }
+
+    private fun createReport(id: String, description: String? = null) = FinanceReport(
+        _id = id,
+        _rev = "rev1",
+        status = "active",
+        description = description,
+        beginningBalance = 0,
+        sales = 0,
+        otherIncome = 0,
+        wages = 0,
+        otherExpenses = 0,
+        startDate = 1000L,
+        endDate = 2000L,
+        createdDate = 500L,
+        updatedDate = 600L,
+        updated = false,
+        imageName = null
+    )
 
     @Test
     fun `getEffectiveTeamName returns teamName from arguments when present`() {
@@ -75,7 +94,7 @@ class EnterprisesReportsFragmentTest {
         val binding = ReportListItemBinding.inflate(LayoutInflater.from(context))
         val viewHolder = EnterprisesReportsAdapter.ReportsViewHolder(binding)
 
-        adapter.submitList(listOf(MyTeam().apply { _id = "r1"; description = "Summary" })) {
+        adapter.submitList(listOf(createReport("r1", "Summary"))) {
             adapter.onBindViewHolder(viewHolder, 0)
             val expectedTitle = context.getString(R.string.team_financial_report, "Alpha Enterprise")
             assertEquals(expectedTitle, binding.tvReportTitle.text.toString())
