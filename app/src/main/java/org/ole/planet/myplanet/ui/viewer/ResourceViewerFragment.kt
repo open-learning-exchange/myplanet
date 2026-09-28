@@ -117,10 +117,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
             Utilities.toast(requireContext(), getString(R.string.recording_stopped))
             NotificationUtils.cancelAll(requireContext())
             if (::library.isInitialized) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    val id = library.id ?: return@launch
-                    viewModel.updateLibraryItemTranslationAudioPath(id, outputFile)
-                }
+                library.id?.let { viewModel.saveTranslationAudioPath(it, outputFile) }
             }
             binding.fabRecord.setImageResource(R.drawable.ic_mic)
         }
@@ -700,6 +697,9 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
     }
 
     override fun onDestroyView() {
+        if (::audioRecorder.isInitialized && audioRecorder.isRecording()) {
+            audioRecorder.stopRecording()
+        }
         saveCurrentPlaybackProgress()
         authSessionUpdater?.stop()
         exoPlayer?.release()
