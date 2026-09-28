@@ -550,8 +550,8 @@ class CoursesRepositoryImpl @Inject constructor(
         val step = courseStepDao.getById(stepId)
             ?: throw IllegalStateException("Step not found")
         val resources = myLibraryDao.getByStepId(stepId)
-        val stepExams = examDao.getByStepIdAndType(stepId, "courses").map { it }
-        val stepSurvey = examDao.getByStepIdAndType(stepId, "surveys").map { it }
+        val stepExams = examDao.getByStepIdAndType(stepId, "courses")
+        val stepSurvey = examDao.getByStepIdAndType(stepId, "surveys")
         val userHasCourse = isMyCourse(userId, step.courseId)
 
         val hasExam = if (stepExams.isNotEmpty()) {
@@ -909,7 +909,7 @@ class CoursesRepositoryImpl @Inject constructor(
         val steps = if (courseKey.isBlank()) {
             emptyList()
         } else {
-            courseStepDao.getByCourseId(courseKey).map { it }
+            courseStepDao.getByCourseId(courseKey)
         }
         return course.apply { courseSteps = steps.toMutableList(); setNumberOfSteps(steps.size) }
     }
