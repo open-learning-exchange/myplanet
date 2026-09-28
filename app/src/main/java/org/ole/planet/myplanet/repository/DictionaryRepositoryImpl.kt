@@ -1,13 +1,13 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonArray
 import javax.inject.Inject
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.GsonUtils
 
 class DictionaryRepositoryImpl @Inject constructor(
     private val dictionaryDao: DictionaryDao,
@@ -45,7 +45,7 @@ class DictionaryRepositoryImpl @Inject constructor(
 
                 try {
                     val data = dictionaryFileReader.readText()
-                    val json = data?.let { GsonUtils.gson.fromJson(it, JsonArray::class.java) }
+                    val json = data?.let { Json.parseToJsonElement(it).jsonArray }
                     if (json != null) {
                         val entities = DictionaryMapper.mapJsonArrayToEntities(json)
                         dictionaryDao.insertAll(entities)
