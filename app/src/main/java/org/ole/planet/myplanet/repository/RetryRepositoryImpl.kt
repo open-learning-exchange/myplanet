@@ -30,7 +30,7 @@ class RetryRepositoryImpl @Inject constructor(
     private val isProcessing = AtomicBoolean(false)
     private val mutex = Mutex()
 
-    override suspend fun enqueue(
+    override suspend fun recordFailure(
         uploadType: String,
         failure: RetryFailure,
         payload: String,
@@ -40,18 +40,18 @@ class RetryRepositoryImpl @Inject constructor(
         modelClassName: String,
         userId: String?
     ) {
-        val operation = RetryOperation.createFromRetryFailure(
-            uploadType, failure, payload, endpoint,
-            httpMethod, dbId, modelClassName, userId
-        )
-        retryDao.insert(operation)
-    }
-
-    override suspend fun updateAttempt(
-        operationId: String,
-        failure: RetryFailure
-    ) {
-        markFailed(operationId, failure.message, failure.httpCode)
+        mutex.withLock {
+            val existing = retryDao.findExisting(failure.itemId, uploadType)
+            if (existing != null) {
+                markFailed(existing.id, failure.message, failure.httpCode)
+            } else {
+                val operation = RetryOperation.createFromRetryFailure(
+                    uploadType, failure, payload, endpoint,
+                    httpMethod, dbId, modelClassName, userId
+                )
+                retryDao.insert(operation)
+            }
+        }
     }
 
     override suspend fun markInProgress(operationId: String) {
@@ -152,10 +152,6 @@ class RetryRepositoryImpl @Inject constructor(
         retryDao.deleteOldCompleted(cutoffTime)
     }
 
-    override suspend fun getExistingOperation(itemId: String, uploadType: String): RetryOperation? {
-        return retryDao.findExisting(itemId, uploadType)
-    }
-
     override suspend fun deletePendingAndAbandonedOperations() {
         retryDao.deletePendingAndAbandoned()
     }
@@ -166,22 +162,24 @@ class RetryRepositoryImpl @Inject constructor(
 
     override fun isCurrentlyProcessing(): Boolean = isProcessing.get()
 
-    override fun setProcessing(processing: Boolean) {
-        isProcessing.set(processing)
+    override fun tryStartProcessing(): Boolean = isProcessing.compareAndSet(false, true)
+
+    override fun finishProcessing() {
+        isProcessing.set(false)
     }
 
     override suspend fun safeClearQueue(): Boolean {
-        if (isProcessing.get()) {
+        if (!isProcessing.compareAndSet(false, true)) {
             return false
         }
 
-        return mutex.withLock {
-            if (isProcessing.get()) {
-                return@withLock false
+        return try {
+            mutex.withLock {
+                deletePendingAndAbandonedOperations()
+                true
             }
-
-            deletePendingAndAbandonedOperations()
-            true
+        } finally {
+            isProcessing.set(false)
         }
     }
 
