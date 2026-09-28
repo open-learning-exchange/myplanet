@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.services.upload
 import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import kotlinx.coroutines.CancellationException
+import kotlin.coroutines.cancellation.CancellationException
 import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.utils.UrlUtils
