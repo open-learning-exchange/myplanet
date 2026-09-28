@@ -20,6 +20,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -35,7 +36,8 @@ class VoicesViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
     private val dispatcherProvider: DispatcherProvider,
     private val userRepository: UserRepository,
-    private val resourcesRepository: ResourcesRepository
+    private val resourcesRepository: ResourcesRepository,
+    private val configurationsRepository: ConfigurationsRepository
 ) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository) {
 
     private val _searchQuery = MutableStateFlow("")
@@ -237,5 +239,7 @@ class VoicesViewModel @Inject constructor(
             }
         }
     }
+
+    fun getCommunityLeaders(): List<UserEntity> = configurationsRepository.getCommunityLeaders()
 
 }
