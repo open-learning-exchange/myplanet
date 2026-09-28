@@ -23,7 +23,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [32], application = android.app.Application::class)
+@Config(application = android.app.Application::class)
 class EnterprisesReportsFragmentTest {
 
     private fun BaseTeamFragment.callGetEffectiveTeamName(): String {
