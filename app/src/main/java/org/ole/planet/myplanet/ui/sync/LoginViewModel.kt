@@ -8,9 +8,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -19,6 +21,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 class LoginViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
     private val userRepository: UserRepository,
+    private val communityRepository: CommunityRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
@@ -75,5 +78,17 @@ class LoginViewModel @Inject constructor(
             userRepository.resetGuestAsMember(username)
             loadSavedUsers()
         }
+    }
+
+    suspend fun getUserByName(name: String): UserEntity? = userRepository.getUserByName(name)
+
+    suspend fun validateUsername(username: String): String? = userRepository.validateUsername(username)
+
+    suspend fun findUserByName(name: String): UserEntity? = userRepository.findUserByName(name)
+
+    suspend fun createGuestUser(username: String): UserEntity? = userRepository.createGuestUser(username)
+
+    suspend fun syncCommunityDocs(): Boolean = withContext(dispatcherProvider.io) {
+        communityRepository.syncCommunityDocs()
     }
 }
