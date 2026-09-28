@@ -1,13 +1,13 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Log
-import com.google.gson.JsonParser
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.RetryDao
@@ -15,7 +15,6 @@ import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.toKotlinx
 
 class RetryRepositoryImpl @Inject constructor(
     private val retryDao: RetryDao,
@@ -71,7 +70,7 @@ class RetryRepositoryImpl @Inject constructor(
 
         return try {
             val payload = try {
-                JsonParser.parseString(operation.serializedPayload).asJsonObject
+                Json.parseToJsonElement(operation.serializedPayload).jsonObject
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
                 Log.e(TAG, "Invalid payload for ${operation.id}, abandoning")
@@ -87,20 +86,19 @@ class RetryRepositoryImpl @Inject constructor(
                 "$baseUrl/${operation.endpoint}/${operation.dbId}"
             }
 
-            val kPayload = payload.toKotlinx().jsonObject
             val response = if (operation.httpMethod == "PUT" && !operation.dbId.isNullOrEmpty()) {
                 apiInterface.putDoc(
                     authHeader,
                     "application/json",
                     requestUrl,
-                    kPayload
+                    payload
                 )
             } else {
                 apiInterface.postDoc(
                     authHeader,
                     "application/json",
                     requestUrl,
-                    kPayload
+                    payload
                 )
             }
 
