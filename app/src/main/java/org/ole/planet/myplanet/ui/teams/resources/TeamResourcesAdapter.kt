@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnResourcesUpdateListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.ui.resources.CoverBindParams
 import org.ole.planet.myplanet.ui.resources.ResourceCardHelper
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -105,17 +106,19 @@ class TeamResourcesAdapter(
             holder.setPreviewJob(
                 adapterScope.launch {
                     ResourceCardHelper.bindCover(
-                        context = context,
-                        ivPreview = ivCoverPreview,
-                        ivTypeIcon = ivTypeIcon,
-                        isOffline = true,
-                        address = resource.resourceLocalAddress,
-                        libraryId = libraryId,
-                        externalFilesDir = externalFilesDir,
-                        coverWidthDp = COVER_WIDTH_DP,
-                        dispatcherProvider = dispatcherProvider,
-                        htmlCoverCache = htmlCoverCache,
-                        fileLengthCache = fileLengthCache
+                        CoverBindParams(
+                            context = context,
+                            ivPreview = ivCoverPreview,
+                            ivTypeIcon = ivTypeIcon,
+                            isOffline = true,
+                            address = resource.resourceLocalAddress,
+                            libraryId = libraryId,
+                            externalFilesDir = externalFilesDir,
+                            coverWidthDp = COVER_WIDTH_DP,
+                            dispatcherProvider = dispatcherProvider,
+                            htmlCoverCache = htmlCoverCache,
+                            fileLengthCache = fileLengthCache
+                        )
                     )
                 }
             )

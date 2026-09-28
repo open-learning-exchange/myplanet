@@ -19,6 +19,20 @@ import org.ole.planet.myplanet.utils.LibraryType
 import org.ole.planet.myplanet.utils.PdfThumbnailLoader
 import org.ole.planet.myplanet.utils.Utilities
 
+data class CoverBindParams(
+    val context: Context,
+    val ivPreview: ImageView,
+    val ivTypeIcon: ImageView,
+    val isOffline: Boolean,
+    val address: String?,
+    val libraryId: String?,
+    val externalFilesDir: File?,
+    val coverWidthDp: Int,
+    val dispatcherProvider: DispatcherProvider,
+    val htmlCoverCache: MutableMap<String, File?>? = null,
+    val fileLengthCache: MutableMap<String, Long?>? = null
+)
+
 object ResourceCardHelper {
 
     @ColorRes
@@ -59,143 +73,92 @@ object ResourceCardHelper {
         ivTypeIcon.visibility = View.VISIBLE
     }
 
-    suspend fun bindCover(
-        context: Context,
-        ivPreview: ImageView,
-        ivTypeIcon: ImageView,
-        isOffline: Boolean,
-        address: String?,
-        libraryId: String?,
-        externalFilesDir: File?,
-        coverWidthDp: Int,
-        dispatcherProvider: DispatcherProvider,
-        htmlCoverCache: MutableMap<String, File?>? = null,
-        fileLengthCache: MutableMap<String, Long?>? = null
-    ) {
-        if (!isOffline || address.isNullOrBlank() || libraryId.isNullOrBlank() || externalFilesDir == null) {
-            showTypeIconOnly(context, ivPreview, ivTypeIcon)
+    suspend fun bindCover(params: CoverBindParams) {
+        if (!params.isOffline || params.address.isNullOrBlank() || params.libraryId.isNullOrBlank() || params.externalFilesDir == null) {
+            showTypeIconOnly(params.context, params.ivPreview, params.ivTypeIcon)
             return
         }
 
-        val file = FileUtils.getLibraryFile(externalFilesDir, libraryId, address)
-        val mimeType = Utilities.getMimeType(address)
+        val file = FileUtils.getLibraryFile(params.externalFilesDir, params.libraryId, params.address)
+        val mimeType = Utilities.getMimeType(params.address)
         when {
-            mimeType?.startsWith("image") == true -> {
-                showTypeIconOnly(context, ivPreview, ivTypeIcon)
-                showImagePreview(context, ivPreview, ivTypeIcon, file, dispatcherProvider, fileLengthCache)
-            }
-            mimeType?.startsWith("video") == true -> {
-                showTypeIconOnly(context, ivPreview, ivTypeIcon)
-                showVideoPreview(context, ivPreview, ivTypeIcon, file, dispatcherProvider, fileLengthCache)
+            mimeType?.startsWith("image") == true || mimeType?.startsWith("video") == true -> {
+                showTypeIconOnly(params.context, params.ivPreview, params.ivTypeIcon)
+                showMediaPreview(params, file)
             }
             mimeType?.contains("pdf") == true -> {
-                showTypeIconOnly(context, ivPreview, ivTypeIcon)
-                val targetWidthPx = (coverWidthDp * context.resources.displayMetrics.density).toInt()
-                showPdfPreview(context, ivPreview, ivTypeIcon, file, targetWidthPx, dispatcherProvider)
+                showTypeIconOnly(params.context, params.ivPreview, params.ivTypeIcon)
+                val targetWidthPx = (params.coverWidthDp * params.context.resources.displayMetrics.density).toInt()
+                showPdfPreview(params, file, targetWidthPx)
             }
             mimeType?.contains("html") == true -> {
-                showTypeIconOnly(context, ivPreview, ivTypeIcon)
-                val resourceDir = File(externalFilesDir, "ole/$libraryId")
-                showHtmlPreview(context, ivPreview, ivTypeIcon, libraryId, resourceDir, dispatcherProvider, htmlCoverCache, fileLengthCache)
+                showTypeIconOnly(params.context, params.ivPreview, params.ivTypeIcon)
+                val resourceDir = File(params.externalFilesDir, "ole/${params.libraryId}")
+                showHtmlPreview(params, params.libraryId, resourceDir)
             }
             else -> {
-                showTypeIconOnly(context, ivPreview, ivTypeIcon)
+                showTypeIconOnly(params.context, params.ivPreview, params.ivTypeIcon)
             }
         }
     }
 
-    suspend fun showImagePreview(
-        context: Context,
-        ivPreview: ImageView,
-        ivTypeIcon: ImageView,
-        file: File,
-        dispatcherProvider: DispatcherProvider,
-        fileLengthCache: MutableMap<String, Long?>?
+    private suspend fun showMediaPreview(
+        params: CoverBindParams,
+        file: File
     ) {
-        if (cachedFileLength(file, dispatcherProvider, fileLengthCache) == null) {
-            showTypeIconOnly(context, ivPreview, ivTypeIcon)
+        if (cachedFileLength(file, params.dispatcherProvider, params.fileLengthCache) == null) {
+            showTypeIconOnly(params.context, params.ivPreview, params.ivTypeIcon)
             return
         }
-        ivTypeIcon.visibility = View.GONE
-        ivPreview.visibility = View.VISIBLE
-        Glide.with(context)
+        params.ivTypeIcon.visibility = View.GONE
+        params.ivPreview.visibility = View.VISIBLE
+        Glide.with(params.context)
             .load(file)
             .diskCacheStrategy(DiskCacheStrategy.ALL)
             .centerCrop()
             .placeholder(R.drawable.ole_logo)
             .error(R.drawable.ole_logo)
-            .into(ivPreview)
+            .into(params.ivPreview)
     }
 
-    suspend fun showVideoPreview(
-        context: Context,
-        ivPreview: ImageView,
-        ivTypeIcon: ImageView,
+    private suspend fun showPdfPreview(
+        params: CoverBindParams,
         file: File,
-        dispatcherProvider: DispatcherProvider,
-        fileLengthCache: MutableMap<String, Long?>?
+        targetWidthPx: Int
     ) {
-        if (cachedFileLength(file, dispatcherProvider, fileLengthCache) == null) {
-            showTypeIconOnly(context, ivPreview, ivTypeIcon)
-            return
-        }
-        ivTypeIcon.visibility = View.GONE
-        ivPreview.visibility = View.VISIBLE
-        Glide.with(context)
-            .load(file)
-            .diskCacheStrategy(DiskCacheStrategy.ALL)
-            .centerCrop()
-            .placeholder(R.drawable.ole_logo)
-            .error(R.drawable.ole_logo)
-            .into(ivPreview)
-    }
-
-    suspend fun showPdfPreview(
-        context: Context,
-        ivPreview: ImageView,
-        ivTypeIcon: ImageView,
-        file: File,
-        targetWidthPx: Int,
-        dispatcherProvider: DispatcherProvider
-    ) {
-        val exists = withContext(dispatcherProvider.io) { file.exists() }
+        val exists = withContext(params.dispatcherProvider.io) { file.exists() }
         if (!exists) {
-            showTypeIconOnly(context, ivPreview, ivTypeIcon)
+            showTypeIconOnly(params.context, params.ivPreview, params.ivTypeIcon)
             return
         }
-        Glide.with(context).clear(ivPreview)
-        val bitmap = PdfThumbnailLoader.firstPageBitmap(file, dispatcherProvider, targetWidthPx)
+        Glide.with(params.context).clear(params.ivPreview)
+        val bitmap = PdfThumbnailLoader.firstPageBitmap(file, params.dispatcherProvider, targetWidthPx)
 
         if (bitmap != null) {
-            ivTypeIcon.visibility = View.GONE
-            ivPreview.visibility = View.VISIBLE
-            ivPreview.setImageBitmap(bitmap)
+            params.ivTypeIcon.visibility = View.GONE
+            params.ivPreview.visibility = View.VISIBLE
+            params.ivPreview.setImageBitmap(bitmap)
         } else {
-            showTypeIconOnly(context, ivPreview, ivTypeIcon)
+            showTypeIconOnly(params.context, params.ivPreview, params.ivTypeIcon)
         }
     }
 
-    suspend fun showHtmlPreview(
-        context: Context,
-        ivPreview: ImageView,
-        ivTypeIcon: ImageView,
+    private suspend fun showHtmlPreview(
+        params: CoverBindParams,
         libraryId: String,
-        resourceDir: File,
-        dispatcherProvider: DispatcherProvider,
-        htmlCoverCache: MutableMap<String, File?>?,
-        fileLengthCache: MutableMap<String, Long?>?
+        resourceDir: File
     ) {
-        val coverImage = if (htmlCoverCache != null && htmlCoverCache.containsKey(libraryId)) {
-            htmlCoverCache[libraryId]
+        val coverImage = if (params.htmlCoverCache != null && params.htmlCoverCache.containsKey(libraryId)) {
+            params.htmlCoverCache[libraryId]
         } else {
-            withContext(dispatcherProvider.io) { FileUtils.findHtmlCoverImage(resourceDir) }.also {
-                htmlCoverCache?.set(libraryId, it)
+            withContext(params.dispatcherProvider.io) { FileUtils.findHtmlCoverImage(resourceDir) }.also {
+                params.htmlCoverCache?.set(libraryId, it)
             }
         }
         if (coverImage != null) {
-            showImagePreview(context, ivPreview, ivTypeIcon, coverImage, dispatcherProvider, fileLengthCache)
+            showMediaPreview(params, coverImage)
         } else {
-            showTypeIconOnly(context, ivPreview, ivTypeIcon)
+            showTypeIconOnly(params.context, params.ivPreview, params.ivTypeIcon)
         }
     }
 
