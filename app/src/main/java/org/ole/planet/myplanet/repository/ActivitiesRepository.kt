@@ -31,6 +31,8 @@ interface ActivitiesRepository {
     suspend fun logLogout(userName: String?)
     suspend fun getGlobalLastVisit(): Long?
     suspend fun getLastVisit(userName: String): Long?
+    suspend fun getLastVisits(userNames: List<String>): Map<String, Long>
+    suspend fun getOfflineVisitCounts(userIds: List<String>): Map<String, Int>
     suspend fun logResourceOpen(userName: String?, parentCode: String?, planetCode: String?, title: String?, resourceId: String?, type: String?)
     suspend fun getProfileActivityStats(userName: String): ProfileActivityStats
     suspend fun recordSyncActivity(userId: String)
