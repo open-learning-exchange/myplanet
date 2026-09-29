@@ -115,10 +115,7 @@ class ChatRepositoryImplTest {
     @Test
     fun getLatestRev_findsHighestRevByNumericPrefix() = runTest {
         val id = "123"
-        val item1 = ChatHistory().apply { _rev = "1-abc" }
-        val item2 = ChatHistory().apply { _rev = "10-def" }
-        val item3 = ChatHistory().apply { _rev = "2-ghi" }
-        coEvery { chatDao.getByDocId(id) } returns listOf(item1, item2, item3)
+        coEvery { chatDao.getRevsByDocId(id) } returns listOf("1-abc", "10-def", "2-ghi")
 
         val result = chatRepository.getLatestRev(id)
 
@@ -300,10 +297,10 @@ class ChatRepositoryImplTest {
     fun getLatestRev_returnsNullWhenNoRowsExist() = runTest {
         val id = "empty_id"
         coEvery { chatDao.getRevsByDocId(id) } returns emptyList()
-        coEvery { chatDao.getByDocId(id) } returns emptyList()
 
         val result = chatRepository.getLatestRev(id)
 
         assertNull(result)
+        coVerify(exactly = 0) { chatDao.getByDocId(any()) }
     }
 }
