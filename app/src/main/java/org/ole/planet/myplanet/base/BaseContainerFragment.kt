@@ -20,6 +20,7 @@ import androidx.appcompat.view.ContextThemeWrapper
 import androidx.appcompat.widget.AppCompatRatingBar
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
@@ -33,7 +34,8 @@ import org.ole.planet.myplanet.base.BasePermissionActivity.Companion.hasInstallP
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.repository.ResourceUrlsResponse
+import org.ole.planet.myplanet.ui.resources.HtmlOpenOutcome
+import org.ole.planet.myplanet.ui.resources.ResourceOpenViewModel
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.UserSessionManager.Companion.KEY_RESOURCE_DOWNLOAD
@@ -54,6 +56,8 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     lateinit var prefData: SharedPrefManager
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
+
+    private val resourceOpenViewModel: ResourceOpenViewModel by viewModels()
 
     private var timesRated: TextView? = null
     var rating: TextView? = null
@@ -149,8 +153,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
             val rb = this
             viewLifecycleOwner.lifecycleScope.launch {
-                val userModel = userRepository.getUserModel()
-                if (userModel?.isGuest() == false) {
+                if (!resourceOpenViewModel.isGuestUser()) {
                     rb.setOnClickListener {
                         homeItemClickListener?.showRatingDialog(type, id, title, listener)
                     }
@@ -197,9 +200,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             if (indexExists) {
                 val resourceId = items.resourceId
                 if (resourceId != null) {
-                    resourcesRepository.reconcileHtmlResourceOffline(resourceId)
+                    resourceOpenViewModel.reconcileHtmlOffline(resourceId)
                 }
-                resourcesRepository.trackResourceOpen(items)
+                resourceOpenViewModel.trackOpen(items)
                 val intent = Intent(activity, WebViewActivity::class.java)
                 intent.putExtra("RESOURCE_ID", items.id)
                 intent.putExtra("LOCAL_ADDRESS", items.resourceLocalAddress)
@@ -209,23 +212,17 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 return@launch
             }
 
-            val resourceId = items.resourceId
-            if (resourceId == null) {
-                Utilities.toast(activity, getString(R.string.resource_not_found_in_database))
-                return@launch
-            }
-
-            when (val result = resourcesRepository.getHtmlResourceDownloadUrls(resourceId)) {
-                is ResourceUrlsResponse.Success -> {
-                    startDownloadWithAutoOpen(ArrayList(result.urls), items)
+            when (val outcome = resourceOpenViewModel.resolveHtmlDownloadUrls(items.resourceId)) {
+                is HtmlOpenOutcome.DownloadNeeded -> {
+                    startDownloadWithAutoOpen(ArrayList(outcome.urls), items)
                 }
-                is ResourceUrlsResponse.ResourceNotFound -> {
+                is HtmlOpenOutcome.ResourceNotFound -> {
                     Utilities.toast(activity, getString(R.string.resource_not_found_in_database))
                 }
-                is ResourceUrlsResponse.NoAttachments -> {
+                is HtmlOpenOutcome.NoAttachments -> {
                     Utilities.toast(activity, getString(R.string.resource_has_no_attachments))
                 }
-                is ResourceUrlsResponse.Error -> {
+                is HtmlOpenOutcome.Error -> {
                     Utilities.toast(activity, getString(R.string.unable_to_download_resource))
                 }
             }
@@ -235,12 +232,12 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private fun openNonHtmlResource(items: MyLibrary) {
         viewLifecycleOwner.lifecycleScope.launch {
             val matchingItems = items.resourceLocalAddress?.let {
-                resourcesRepository.getLibraryItemsByLocalAddress(it)
+                resourceOpenViewModel.findByLocalAddress(it)
             } ?: emptyList()
 
             val offlineItem = matchingItems.firstOrNull { it.isResourceOffline() }
             if (offlineItem != null) {
-                resourcesRepository.trackResourceOpen(offlineItem)
+                resourceOpenViewModel.trackOpen(offlineItem)
                 ResourceOpener.openFileType(requireActivity(), offlineItem, "offline")
                 return@launch
             }
@@ -252,11 +249,11 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
             when {
                 items.isResourceOffline() -> {
-                    resourcesRepository.trackResourceOpen(items)
+                    resourceOpenViewModel.trackOpen(items)
                     ResourceOpener.openFileType(requireActivity(), items, "offline")
                 }
                 isVideo || isAudio -> {
-                    resourcesRepository.trackResourceOpen(items)
+                    resourceOpenViewModel.trackOpen(items)
                     ResourceOpener.openFileType(requireActivity(), items, "online")
                     val arrayList = arrayListOf(UrlUtils.getUrl(items))
                     DownloadUtils.openPriorityDownloadService(requireContext(), arrayList)
