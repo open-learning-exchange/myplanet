@@ -125,6 +125,13 @@ class ResourcesViewModel @Inject constructor(
         facets.putIfAbsent(value.lowercase(Locale.ROOT), value)
     }
 
+    private fun addMediumFacetValue(facets: MutableMap<String, String>, raw: String?) {
+        val value = raw?.trim() ?: return
+        if (value.isEmpty()) return
+        val canonical = MediumUtils.getCanonicalMedium(value)
+        facets.putIfAbsent(canonical.lowercase(Locale.ROOT), canonical)
+    }
+
     suspend fun getFilterFacets(libraries: List<MyLibrary>): Map<String, Set<String>> =
         withContext(dispatcherProvider.default) {
             val languages = linkedMapOf<String, String>()
@@ -135,7 +142,7 @@ class ResourcesViewModel @Inject constructor(
             libraries.forEach { library ->
                 library.language?.let { addFacetValue(languages, it) }
                 library.subject?.forEach { addFacetValue(subjects, it) }
-                library.mediaType?.let { addFacetValue(mediums, it) }
+                library.mediaType?.let { addMediumFacetValue(mediums, it) }
                 library.level?.forEach { addFacetValue(levels, it) }
             }
 

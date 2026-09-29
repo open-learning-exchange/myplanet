@@ -218,10 +218,21 @@ class ResourcesViewModelTest {
 
         assertEquals(setOf("English", "Spanish"), facets["languages"])
         assertEquals(setOf("Math", "Science", "History"), facets["subjects"])
-        assertEquals(setOf("PDF", "Video"), facets["mediums"])
+        assertEquals(setOf("pdf", "video"), facets["mediums"])
         assertEquals(setOf("Primary", "Secondary"), facets["levels"])
     }
 
+
+    @Test
+    fun `getFilterFacets canonicalizes medium values into single canonical entries`() = runTest {
+        val lib1 = MyLibrary().apply { mediaType = "video" }
+        val lib2 = MyLibrary().apply { mediaType = "video/mp4" }
+        val lib3 = MyLibrary().apply { mediaType = "mp4" }
+
+        val facets = viewModel.getFilterFacets(listOf(lib1, lib2, lib3))
+
+        assertEquals(setOf("video"), facets["mediums"])
+    }
     @Test
     fun `filterIfChanged memoizes the criteria in the view model until resetFilter`() = runTest {
         val models = listOf(createResourceModel("a", 1), createResourceModel("b", 2))
