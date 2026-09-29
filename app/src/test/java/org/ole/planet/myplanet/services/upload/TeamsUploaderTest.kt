@@ -46,6 +46,8 @@ class TeamsUploaderTest {
     @Before
     fun setup() {
         mockkStatic(Log::class)
+        mockkStatic(android.net.Uri::class)
+        every { android.net.Uri.encode(any()) } answers { firstArg() }
         io.mockk.mockkObject(UrlUtils)
         every { UrlUtils.getUrl() } returns "http://mock.url"
         every { Log.d(any(), any()) } returns 0
