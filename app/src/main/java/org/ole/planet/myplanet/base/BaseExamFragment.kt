@@ -21,7 +21,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.noties.markwon.editor.MarkwonEditor
 import io.noties.markwon.editor.MarkwonEditorTextWatcher
 import java.util.Date
-import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -29,7 +28,6 @@ import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.exam.ExamTakingViewModel
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
@@ -42,8 +40,6 @@ import org.ole.planet.myplanet.utils.Utilities
 @AndroidEntryPoint
 abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var exam: StepExam? = null
-    @Inject
-    lateinit var submissionsRepository: SubmissionsRepository
     private val viewModel: ExamTakingViewModel by viewModels()
     var stepId: String? = null
     var id: String? = ""
