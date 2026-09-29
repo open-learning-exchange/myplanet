@@ -94,24 +94,29 @@ class EventsRepositoryImpl @Inject constructor(
         return getMeetupById(meetupId)
     }
 
+    override suspend fun insertMeetupsFromSync(docs: List<JsonObject>) {
+        if (docs.isEmpty()) return
+        val ids = docs.map { GsonUtils.getString("_id", it) }
+        val existingByMeetupId = meetupDao.getByMeetupIds(ids).associateBy { it.meetupId }
+
+        val meetupsToInsert = docs.mapNotNull { meetupDoc ->
+            val id = GsonUtils.getString("_id", meetupDoc)
+            val existing = existingByMeetupId[id]
+            if (existing?.updated == true) {
+                null
+            } else {
+                Meetup.fromJson(meetupDoc, "", existing)
+            }
+        }
+        if (meetupsToInsert.isNotEmpty()) {
+            meetupDao.upsertAll(meetupsToInsert)
+        }
+    }
+
     override suspend fun batchInsertMeetups(documents: List<JsonObject>): Int {
         if (documents.isEmpty()) return 0
         return try {
-            val ids = documents.map { GsonUtils.getString("_id", it) }
-            val existingByMeetupId = meetupDao.getByMeetupIds(ids).associateBy { it.meetupId }
-
-            val meetupsToInsert = documents.mapNotNull { meetupDoc ->
-                val id = GsonUtils.getString("_id", meetupDoc)
-                val existing = existingByMeetupId[id]
-                if (existing?.updated == true) {
-                    null
-                } else {
-                    Meetup.fromJson(meetupDoc, "", existing)
-                }
-            }
-            if (meetupsToInsert.isNotEmpty()) {
-                meetupDao.upsertAll(meetupsToInsert)
-            }
+            insertMeetupsFromSync(documents)
             documents.size
         } catch (e: Exception) {
             e.printStackTrace()
