@@ -114,16 +114,7 @@ class SyncRepositoryImpl @Inject constructor(
 
         try {
             val array = getJsonArray(shelfData.key, shelfDoc)
-            if (array.isEmpty()) return 0
-
-            val validIds = mutableListOf<String>()
-            for (element in array) {
-                if (element !is JsonNull) {
-                    validIds.add(element.asString)
-                }
-            }
-
-            if (validIds.isEmpty()) return 0
+            val validIds = array.filterNot { it is JsonNull }.map { it.asString }
 
             val batchSizer = AdaptiveBatchProcessor(initialSize = 50)
             var i = 0
