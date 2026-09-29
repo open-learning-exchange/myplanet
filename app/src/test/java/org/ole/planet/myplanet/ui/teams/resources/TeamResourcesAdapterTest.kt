@@ -79,11 +79,21 @@ class TeamResourcesAdapterTest {
             removalCompleted.set(true)
         }
 
-        ShadowLooper.idleMainLooper()
+        // AsyncListDiffer diffs non-empty lists on a background executor and posts the
+        // commit to the main looper, so a single idle can run before the result arrives.
+        idleMainLooperUntil { removalCompleted.get() }
         assertTrue(removalCompleted.get())
         assertEquals(1, adapter.currentList.size)
         assertEquals("res_2", adapter.currentList[0].id)
         assertTrue(isUpdatedCalled)
+    }
+
+    private fun idleMainLooperUntil(timeoutMs: Long = 5_000, condition: () -> Boolean) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (!condition() && System.currentTimeMillis() < deadline) {
+            ShadowLooper.idleMainLooper()
+            Thread.sleep(10)
+        }
     }
 
     @Test
