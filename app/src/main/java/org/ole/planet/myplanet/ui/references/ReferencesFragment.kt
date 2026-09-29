@@ -27,6 +27,7 @@ class ReferencesFragment : BaseBindingFragment<FragmentReferenceBinding>(Fragmen
             Reference(getString(R.string.english_dictionary), R.drawable.ic_dictionary)
         )
         binding.rvReferences.layoutManager = GridLayoutManager(activity, 3)
+        binding.rvReferences.setHasFixedSize(true)
         binding.rvReferences.adapter = ReferencesAdapter()
         setRecyclerAdapter(list)
         return view
