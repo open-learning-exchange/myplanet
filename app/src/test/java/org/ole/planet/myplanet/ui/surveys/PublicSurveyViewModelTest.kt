@@ -91,8 +91,11 @@ class PublicSurveyViewModelTest {
         coEvery { surveysRepository.fetchPublicSurvey("url", "team1", "survey123") } returns response
         coEvery { surveysRepository.saveSurveyFromPublicApi(any()) } returns Unit
 
+        val loadEventDeferred = async { viewModel.events.first() }
         viewModel.loadSurvey("url", "team1", "survey123")
         testDispatcher.scheduler.advanceUntilIdle()
+        val loadEvent = loadEventDeferred.await()
+        assertTrue(loadEvent is PublicSurveyEvent.SurveyLoaded)
 
         val submission = Submission().apply {
             id = "sub1"
@@ -108,13 +111,13 @@ class PublicSurveyViewModelTest {
         }
         coEvery { surveysRepository.submitPublicSurvey("url", "team1", "survey123", mockAnswers, any()) } returns true
 
-        val deferredEvent = async { viewModel.events.first() }
+        val uploadEventDeferred = async { viewModel.events.first() }
 
         viewModel.uploadCompletedSubmission("url", "team1", "survey123")
         testDispatcher.scheduler.advanceUntilIdle()
 
         coVerify { surveysRepository.submitPublicSurvey("url", "team1", "survey123", mockAnswers, any()) }
-        val event = deferredEvent.await()
+        val event = uploadEventDeferred.await()
         assertTrue(event is PublicSurveyEvent.UploadFinished)
         assertTrue((event as PublicSurveyEvent.UploadFinished).success)
     }
