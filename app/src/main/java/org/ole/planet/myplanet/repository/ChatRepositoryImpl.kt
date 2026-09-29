@@ -135,9 +135,8 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getLatestRev(id: String): String? {
-        return chatDao.getByDocId(id)
-            .maxByOrNull { rev -> rev._rev?.split("-")?.get(0)?.toIntOrNull() ?: 0 }
-            ?._rev
+        val revs = chatDao.getRevsByDocId(id).ifEmpty { chatDao.getByDocId(id).map { it._rev } }
+        return revs.maxByOrNull { rev -> rev?.split("-")?.get(0)?.toIntOrNull() ?: 0 }
     }
 
     private suspend fun saveNewChat(chat: JsonObject) {

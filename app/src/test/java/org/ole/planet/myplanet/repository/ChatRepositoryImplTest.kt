@@ -15,6 +15,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -263,5 +264,46 @@ class ChatRepositoryImplTest {
         assertTrue(result["news_2"]!!.isEmpty())
         assertTrue(result["news_3"]!!.isEmpty())
         assertTrue(result["news_4"]!!.isEmpty())
+    }
+
+    @Test
+    fun getLatestRev_spansDigitBoundary() = runTest {
+        val id = "digit_boundary_id"
+        coEvery { chatDao.getRevsByDocId(id) } returns listOf("9-abc", "10-def")
+
+        val result = chatRepository.getLatestRev(id)
+
+        assertEquals("10-def", result)
+    }
+
+    @Test
+    fun getLatestRev_handlesNullRevAmongValidRevs() = runTest {
+        val id = "null_rev_id"
+        coEvery { chatDao.getRevsByDocId(id) } returns listOf("1-abc", null, "2-def")
+
+        val result = chatRepository.getLatestRev(id)
+
+        assertEquals("2-def", result)
+    }
+
+    @Test
+    fun getLatestRev_handlesRevWithNoLeadingInteger() = runTest {
+        val id = "no_leading_int_id"
+        coEvery { chatDao.getRevsByDocId(id) } returns listOf("invalid_rev", "5-abc", "no-leading-int")
+
+        val result = chatRepository.getLatestRev(id)
+
+        assertEquals("5-abc", result)
+    }
+
+    @Test
+    fun getLatestRev_returnsNullWhenNoRowsExist() = runTest {
+        val id = "empty_id"
+        coEvery { chatDao.getRevsByDocId(id) } returns emptyList()
+        coEvery { chatDao.getByDocId(id) } returns emptyList()
+
+        val result = chatRepository.getLatestRev(id)
+
+        assertNull(result)
     }
 }
