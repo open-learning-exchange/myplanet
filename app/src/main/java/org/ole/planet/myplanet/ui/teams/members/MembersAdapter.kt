@@ -142,7 +142,8 @@ class MembersAdapter(
                 memberData.profileLastVisit,
                 "${member.firstName} ${member.lastName}",
                 member.level.toString(),
-                member.userImage
+                member.userImage,
+                id = member.id
             )
             FragmentNavigator.replaceFragment(
                 activity.supportFragmentManager,

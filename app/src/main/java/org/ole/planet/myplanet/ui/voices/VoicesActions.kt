@@ -15,26 +15,17 @@ import com.bumptech.glide.Glide
 import com.google.android.material.textfield.TextInputLayout
 import com.google.gson.JsonObject
 import java.io.File
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.AlertInputBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.VoicesEditActions
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 object VoicesActions {
-    private val dateFormatter: DateTimeFormatter =
-        DateTimeFormatter.ofPattern("MMMM dd, yyyy hh:mm a", Locale.getDefault())
-            .withZone(ZoneId.systemDefault())
-
     data class EditDialogComponents(
         val binding: AlertInputBinding,
         val view: View,
@@ -211,24 +202,21 @@ object VoicesActions {
         }
     }
 
-    suspend fun showMemberDetails(
-        userModel: UserEntity?,
-        activitiesRepository: ActivitiesRepository
+    fun showMemberDetails(
+        userModel: UserEntity?
     ): MembersDetailFragment? {
         if (userModel == null) return null
         val userName = "${userModel.firstName} ${userModel.lastName}".trim().ifBlank { userModel.name }
-        val visitStats = activitiesRepository.getMemberVisitStats(userModel.id, userModel.name)
         val fragment = MembersDetailFragment.newInstance(
-            userName.toString(),
-            userModel.email.toString(),
-            userModel.dob.toString().substringBefore("T"),
-            userModel.language.toString(),
-            userModel.phoneNumber.toString(),
-            visitStats.offlineVisitCount.toString(),
-            (visitStats.lastVisit?.let { dateFormatter.format(Instant.ofEpochMilli(it)) } ?: "No logout record found"),
-            "${userModel.firstName} ${userModel.lastName}",
-            userModel.level.toString(),
-            userModel.userImage
+            name = userName.toString(),
+            email = userModel.email.toString(),
+            dob = userModel.dob.toString().substringBefore("T"),
+            language = userModel.language.toString(),
+            phone = userModel.phoneNumber.toString(),
+            username = "${userModel.firstName} ${userModel.lastName}",
+            memberLevel = userModel.level.toString(),
+            imageUrl = userModel.userImage,
+            id = userModel.id
         )
         return fragment
     }

@@ -3,13 +3,22 @@ package org.ole.planet.myplanet.ui.teams.members
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.widget.AppCompatTextView
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.FragmentMemberDetailBinding
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.ImageUtils
 
+@AndroidEntryPoint
 class MembersDetailFragment : BaseBindingFragment<FragmentMemberDetailBinding>(FragmentMemberDetailBinding::inflate) {
+    private val viewModel: MembersDetailViewModel by viewModels()
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -17,6 +26,8 @@ class MembersDetailFragment : BaseBindingFragment<FragmentMemberDetailBinding>(F
             val fullName = args.getString("member_name")?.trim()
             val username = args.getString("username")?.trim()
             val imageUrl = args.getString("profile_photo_url")
+            val memberId = args.getString("member_id")
+
             binding.tvProfileName.text = if (fullName.isNullOrEmpty()) username else fullName
             ImageUtils.loadProfileImage(
                 imageUrl,
@@ -29,9 +40,21 @@ class MembersDetailFragment : BaseBindingFragment<FragmentMemberDetailBinding>(F
             setFieldOrHide(binding.tvDetailDob, args.getString("detail_dob"))
             setFieldOrHide(binding.tvDetailLanguage, args.getString("detail_language"))
             setFieldOrHide(binding.tvProfilePhone, args.getString("profile_phone"))
-            setFieldOrHide(binding.tvNumberOfVisits, args.getString("number_of_visits"))
-            setFieldOrHide(binding.tvLastLogin, args.getString("last_login"))
             setFieldOrHide(binding.tvLevel, args.getString("user_level"))
+
+            if (!memberId.isNullOrEmpty()) {
+                viewModel.loadMemberVisitStats(memberId, username)
+            }
+
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel.visitStats.collect { statsMap ->
+                        val stats = memberId?.let { statsMap[it] } ?: MemberVisitStatsUiState()
+                        setFieldOrHide(binding.tvNumberOfVisits, stats.numberOfVisits)
+                        setFieldOrHide(binding.tvLastLogin, stats.lastLogin)
+                    }
+                }
+            }
         }
 
         binding.btnClose.setOnClickListener {
@@ -55,7 +78,6 @@ class MembersDetailFragment : BaseBindingFragment<FragmentMemberDetailBinding>(F
         }
     }
 
-
     companion object {
         fun newInstance(
             name: String,
@@ -63,13 +85,15 @@ class MembersDetailFragment : BaseBindingFragment<FragmentMemberDetailBinding>(F
             dob: String,
             language: String,
             phone: String,
-            visits: String,
-            lastLogin: String,
+            visits: String = "",
+            lastLogin: String = "",
             username: String,
             memberLevel: String,
-            imageUrl: String?
+            imageUrl: String?,
+            id: String? = null
         ) = MembersDetailFragment().apply {
             arguments = Bundle().apply {
+                putString("member_id", id)
                 putString("member_name", name)
                 putString("profile_email", email)
                 putString("detail_dob", dob)

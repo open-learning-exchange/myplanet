@@ -59,7 +59,8 @@ internal class CommunityLeadersAdapter(
                 lastLogin = "",
                 username = leader.name ?: "",
                 memberLevel = leader.level ?: "",
-                imageUrl = null
+                imageUrl = null,
+                id = leader.id
             )
             FragmentNavigator.replaceFragment(
                 activity.supportFragmentManager,
