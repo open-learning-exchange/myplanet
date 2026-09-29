@@ -27,7 +27,6 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.Calendar
 import java.util.Locale
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.DialogAddTransactionBinding
@@ -211,7 +210,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             Calendar.getInstance().apply {
                 timeInMillis = localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
             }
-        } catch (e: DateTimeParseException) {
+        } catch (_: DateTimeParseException) {
             null
         }
     }
@@ -287,7 +286,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     private fun addTransaction() {
         AlertDialog.Builder(requireActivity()).setView(setUpAlertUi()).setTitle(R.string.add_transaction)
             .setPositiveButton("Submit") { _: DialogInterface?, _: Int ->
-                val type = addTransactionBinding.spnType.selectedItem.toString()
+                val type = if (addTransactionBinding.spnType.selectedItemPosition == 1) "Debit" else "Credit"
                 val note = "${addTransactionBinding.tlNote.editText?.text}".trim { it <= ' ' }
                 val amount = "${addTransactionBinding.tlAmount.editText?.text}".trim { it <= ' ' }
                 if (note.isEmpty()) {
