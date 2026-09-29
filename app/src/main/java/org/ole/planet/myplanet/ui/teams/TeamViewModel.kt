@@ -7,11 +7,13 @@ import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.CreateTeamRequest
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.model.TeamTask
@@ -26,6 +28,12 @@ sealed class TeamActionResult {
     object NameExists : TeamActionResult()
 }
 
+enum class TeamJoinState {
+    JOINABLE,
+    PENDING,
+    LEAVE
+}
+
 @HiltViewModel
 class TeamViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
@@ -38,7 +46,58 @@ class TeamViewModel @Inject constructor(
     private val _taskList = MutableStateFlow<List<TeamTask>>(emptyList())
     val taskList: StateFlow<List<TeamTask>> = _taskList
 
+    private val _teamDetail = MutableStateFlow<MyTeam?>(null)
+    val teamDetail: StateFlow<MyTeam?> = _teamDetail.asStateFlow()
+
+    private val _memberCount = MutableStateFlow<Int>(0)
+    val memberCount: StateFlow<Int> = _memberCount.asStateFlow()
+
+    private val _joinState = MutableStateFlow<TeamJoinState>(TeamJoinState.JOINABLE)
+    val joinState: StateFlow<TeamJoinState> = _joinState.asStateFlow()
+
     fun getTeamUpdateFlow() = realtimeSyncManager.updatesFor("teams")
+
+    fun loadTeamDetail(
+        primaryTeamId: String,
+        fallbackTeamId: String? = null,
+        isMyTeam: Boolean = false,
+        userId: String? = null
+    ) {
+        viewModelScope.launch {
+            val resolvedTeam = withContext(dispatcherProvider.io) {
+                when {
+                    primaryTeamId.isNotEmpty() -> teamsRepository.getTeamByIdOrTeamId(primaryTeamId)
+                    !fallbackTeamId.isNullOrEmpty() -> teamsRepository.getTeamById(fallbackTeamId)
+                    else -> null
+                }
+            }
+            _teamDetail.value = resolvedTeam
+
+            val teamId = resolvedTeam?._id
+            val count = if (!teamId.isNullOrEmpty()) {
+                withContext(dispatcherProvider.io) {
+                    teamsRepository.getJoinedMemberCount(teamId)
+                }
+            } else {
+                0
+            }
+            _memberCount.value = count
+
+            val pending = if (!teamId.isNullOrEmpty() && !userId.isNullOrEmpty()) {
+                withContext(dispatcherProvider.io) {
+                    teamsRepository.hasPendingRequest(teamId, userId)
+                }
+            } else {
+                false
+            }
+
+            _joinState.value = when {
+                isMyTeam -> TeamJoinState.LEAVE
+                pending -> TeamJoinState.PENDING
+                else -> TeamJoinState.JOINABLE
+            }
+        }
+    }
 
     fun loadTasks(teamId: String) {
         loadTaskJob?.cancel()
@@ -120,6 +179,7 @@ class TeamViewModel @Inject constructor(
     }
 
     fun requestToJoin(teamId: String, userId: String?, userPlanetCode: String?, teamType: String?) {
+        _joinState.value = TeamJoinState.PENDING
         val currentList = _teamData.value.toMutableList()
         val index = currentList.indexOfFirst { it._id == teamId }
         if (index != -1) {
@@ -135,18 +195,37 @@ class TeamViewModel @Inject constructor(
 
         viewModelScope.launch {
             teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
-            teamsRepository.recordTeamActivity()
+            recordTeamActivity()
             loadTeams(currentFromDashboard, currentType, currentUserId)
         }
     }
 
     fun leaveTeam(teamId: String, userId: String?) {
+        _joinState.value = TeamJoinState.JOINABLE
         viewModelScope.launch {
             teamsRepository.leaveTeam(teamId, userId)
             loadTeams(currentFromDashboard, currentType, currentUserId)
         }
         viewModelScope.launch {
             teamsRepository.recordTeamActivity()
+        }
+    }
+
+    fun recordTeamActivity() {
+        viewModelScope.launch {
+            teamsRepository.recordTeamActivity()
+        }
+    }
+
+    fun logTeamVisit(
+        teamId: String,
+        userName: String?,
+        userPlanetCode: String?,
+        userParentCode: String?,
+        teamType: String?
+    ) {
+        viewModelScope.launch {
+            teamsRepository.logTeamVisit(teamId, userName, userPlanetCode, userParentCode, teamType)
         }
     }
 
