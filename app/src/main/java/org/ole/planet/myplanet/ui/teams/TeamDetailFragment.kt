@@ -56,7 +56,6 @@ class TeamDetailFragment : BaseTeamFragment() {
     private var directTeamId: String? = null
     private val teamLastPage = mutableMapOf<String, String>()
     private var pageConfigs: List<TeamPageConfig> = emptyList()
-    private var loadTeamJob: Job? = null
 
     private fun pageIndexById(pageId: String?): Int? {
         pageId ?: return null
@@ -224,13 +223,15 @@ class TeamDetailFragment : BaseTeamFragment() {
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     team?.let { currentTeam ->
                         user?.let { currentUser ->
-                            val teamId = currentTeam._id ?: return@let
-                            teamViewModel.leaveTeam(teamId, currentUser.id)
-                            Utilities.toast(activity, getString(R.string.left_team))
-                            val lastPageId =
-                                currentTeam._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
-                            setupViewPager(false, lastPageId)
-                            binding.llActionButtons.visibility = View.GONE
+                            viewLifecycleOwner.lifecycleScope.launch {
+                                val teamId = currentTeam._id ?: return@launch
+                                teamViewModel.leaveTeam(teamId, currentUser.id)
+                                Utilities.toast(activity, getString(R.string.left_team))
+                                val lastPageId =
+                                    currentTeam._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
+                                setupViewPager(false, lastPageId)
+                                binding.llActionButtons.visibility = View.GONE
+                            }
                         }
                     }
                 }.setNegativeButton(R.string.no, null).show()
@@ -311,7 +312,8 @@ class TeamDetailFragment : BaseTeamFragment() {
             return
         }
 
-        val teamId = team?._id ?: teamViewModel.teamDetail.value?._id
+        val currentTeam = team ?: (teamViewModel.teamDetailState.value as? TeamDetailState.Success)?.team
+        val teamId = currentTeam?._id
         if (teamId.isNullOrEmpty()) return
 
         when (state) {
@@ -325,7 +327,7 @@ class TeamDetailFragment : BaseTeamFragment() {
                 binding.btnLeave.setOnClickListener {
                     val userId = user?.id
                     val userPlanetCode = user?.planetCode
-                    val teamType = team?.teamType
+                    val teamType = currentTeam?.teamType
                     teamViewModel.requestToJoin(teamId, userId, userPlanetCode, teamType)
                 }
             }
@@ -337,42 +339,51 @@ class TeamDetailFragment : BaseTeamFragment() {
     }
 
     private fun observeViewModel() {
-        collectWhenStarted(teamViewModel.teamDetail) { updatedTeam ->
-            val primaryTeamId = requireArguments().getString("id") ?: ""
-            if (shouldQueryRealm(primaryTeamId) && updatedTeam == null) {
-                binding.loadingIndicator?.visibility = View.GONE
-                Snackbar.make(
-                    binding.root,
-                    getString(R.string.no_team_available),
-                    Snackbar.LENGTH_LONG
-                ).show()
-                return@collectWhenStarted
-            }
-
-            updatedTeam?.let {
-                team = it
-                directTeamName = it.name
-                directTeamType = it.type
-                requireArguments().apply {
-                    putString("teamName", it.name)
-                    putString("teamType", it.type)
+        collectWhenStarted(teamViewModel.teamDetailState) { state ->
+            when (state) {
+                is TeamDetailState.Loading -> {
+                    binding.loadingIndicator?.visibility = View.VISIBLE
+                    binding.contentLayout?.visibility = View.GONE
                 }
+                is TeamDetailState.NotFound -> {
+                    binding.loadingIndicator?.visibility = View.GONE
+                    binding.contentLayout?.visibility = View.VISIBLE
+                    Snackbar.make(
+                        binding.root,
+                        getString(R.string.no_team_available),
+                        Snackbar.LENGTH_LONG
+                    ).show()
+                }
+                is TeamDetailState.Success -> {
+                    val updatedTeam = state.team
+                    val previousTeamId = team?._id
+                    team = updatedTeam
+                    directTeamName = updatedTeam.name
+                    directTeamType = updatedTeam.type
+                    requireArguments().apply {
+                        putString("teamName", updatedTeam.name)
+                        putString("teamType", updatedTeam.type)
+                    }
 
-                binding.loadingIndicator?.visibility = View.GONE
-                binding.contentLayout?.visibility = View.VISIBLE
+                    binding.loadingIndicator?.visibility = View.GONE
+                    binding.contentLayout?.visibility = View.VISIBLE
 
-                val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
-                val user = userSessionManager.getUserModel()
-                setupTeamDetails(isMyTeam, user)
+                    val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
+                    val user = userSessionManager.getUserModel()
+                    setupTeamDetails(isMyTeam, user)
 
-                val lastPageId = it._id?.let { id -> teamLastPage[id] } ?: arguments?.getString("navigateToPage")
-                setupViewPager(isMyTeam, lastPageId)
+                    if (previousTeamId != updatedTeam._id || binding.viewPager2.adapter == null) {
+                        val lastPageId = updatedTeam._id?.let { id -> teamLastPage[id] } ?: arguments?.getString("navigateToPage")
+                        setupViewPager(isMyTeam, lastPageId)
+                    }
 
-                updateJoinButtonState(teamViewModel.joinState.value, user)
+                    updateJoinButtonState(teamViewModel.joinState.value, user)
+                }
             }
         }
 
         collectWhenStarted(teamViewModel.memberCount) { count ->
+            if (count == null) return@collectWhenStarted
             val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
             if (isMyTeam) {
                 if (count <= 1) {
@@ -428,8 +439,6 @@ class TeamDetailFragment : BaseTeamFragment() {
     }
 
     override fun onDestroyView() {
-        loadTeamJob?.cancel()
-        loadTeamJob = null
         super.onDestroyView()
         _binding = null
     }

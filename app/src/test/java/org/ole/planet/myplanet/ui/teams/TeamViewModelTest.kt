@@ -170,6 +170,21 @@ class TeamViewModelTest {
     }
 
     @Test
+    fun `teamDetailState starts as Loading`() = runTest(testDispatcher) {
+        assertEquals(TeamDetailState.Loading, viewModel.teamDetailState.value)
+    }
+
+    @Test
+    fun `loadTeamDetail emits NotFound when repository returns null`() = runTest(testDispatcher) {
+        coEvery { teamsRepository.getTeamByIdOrTeamId("invalidTeam") } returns null
+
+        viewModel.loadTeamDetail(primaryTeamId = "invalidTeam", fallbackTeamId = null, isMyTeam = false, userId = "user1")
+        advanceUntilIdle()
+
+        assertEquals(TeamDetailState.NotFound, viewModel.teamDetailState.value)
+    }
+
+    @Test
     fun `loadTeamDetail emits member count for a team`() = runTest(testDispatcher) {
         val team = MyTeam().apply { _id = "team1" }
         coEvery { teamsRepository.getTeamByIdOrTeamId("team1") } returns team
@@ -179,6 +194,7 @@ class TeamViewModelTest {
         viewModel.loadTeamDetail(primaryTeamId = "team1", fallbackTeamId = null, isMyTeam = false, userId = "user1")
         advanceUntilIdle()
 
+        assertEquals(TeamDetailState.Success(team), viewModel.teamDetailState.value)
         assertEquals(5, viewModel.memberCount.value)
     }
 
@@ -229,6 +245,19 @@ class TeamViewModelTest {
         advanceUntilIdle()
 
         coVerify(exactly = 1) { teamsRepository.recordTeamActivity() }
+    }
+
+    @Test
+    fun `leaveTeam executes repository leave and activity recording`() = runTest(testDispatcher) {
+        coEvery { teamsRepository.leaveTeam("team1", "user1") } returns Unit
+        coEvery { teamsRepository.recordTeamActivity() } returns Unit
+
+        viewModel.leaveTeam("team1", "user1")
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { teamsRepository.leaveTeam("team1", "user1") }
+        coVerify(exactly = 1) { teamsRepository.recordTeamActivity() }
+        assertEquals(TeamJoinState.JOINABLE, viewModel.joinState.value)
     }
 
     @Test

@@ -34,6 +34,12 @@ enum class TeamJoinState {
     LEAVE
 }
 
+sealed class TeamDetailState {
+    object Loading : TeamDetailState()
+    data class Success(val team: MyTeam) : TeamDetailState()
+    object NotFound : TeamDetailState()
+}
+
 @HiltViewModel
 class TeamViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
@@ -46,11 +52,11 @@ class TeamViewModel @Inject constructor(
     private val _taskList = MutableStateFlow<List<TeamTask>>(emptyList())
     val taskList: StateFlow<List<TeamTask>> = _taskList
 
-    private val _teamDetail = MutableStateFlow<MyTeam?>(null)
-    val teamDetail: StateFlow<MyTeam?> = _teamDetail.asStateFlow()
+    private val _teamDetailState = MutableStateFlow<TeamDetailState>(TeamDetailState.Loading)
+    val teamDetailState: StateFlow<TeamDetailState> = _teamDetailState.asStateFlow()
 
-    private val _memberCount = MutableStateFlow<Int>(0)
-    val memberCount: StateFlow<Int> = _memberCount.asStateFlow()
+    private val _memberCount = MutableStateFlow<Int?>(null)
+    val memberCount: StateFlow<Int?> = _memberCount.asStateFlow()
 
     private val _joinState = MutableStateFlow<TeamJoinState>(TeamJoinState.JOINABLE)
     val joinState: StateFlow<TeamJoinState> = _joinState.asStateFlow()
@@ -63,6 +69,7 @@ class TeamViewModel @Inject constructor(
         isMyTeam: Boolean = false,
         userId: String? = null
     ) {
+        _teamDetailState.value = TeamDetailState.Loading
         viewModelScope.launch {
             val resolvedTeam = withContext(dispatcherProvider.io) {
                 when {
@@ -71,9 +78,17 @@ class TeamViewModel @Inject constructor(
                     else -> null
                 }
             }
-            _teamDetail.value = resolvedTeam
 
-            val teamId = resolvedTeam?._id
+            if (resolvedTeam == null) {
+                _teamDetailState.value = TeamDetailState.NotFound
+                _memberCount.value = 0
+                _joinState.value = if (isMyTeam) TeamJoinState.LEAVE else TeamJoinState.JOINABLE
+                return@launch
+            }
+
+            _teamDetailState.value = TeamDetailState.Success(resolvedTeam)
+
+            val teamId = resolvedTeam._id
             val count = if (!teamId.isNullOrEmpty()) {
                 withContext(dispatcherProvider.io) {
                     teamsRepository.getJoinedMemberCount(teamId)
@@ -196,18 +211,22 @@ class TeamViewModel @Inject constructor(
         viewModelScope.launch {
             teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
             recordTeamActivity()
-            loadTeams(currentFromDashboard, currentType, currentUserId)
+            if (currentUserId != null) {
+                loadTeams(currentFromDashboard, currentType, currentUserId)
+            }
         }
     }
 
     fun leaveTeam(teamId: String, userId: String?) {
         _joinState.value = TeamJoinState.JOINABLE
         viewModelScope.launch {
-            teamsRepository.leaveTeam(teamId, userId)
-            loadTeams(currentFromDashboard, currentType, currentUserId)
-        }
-        viewModelScope.launch {
-            teamsRepository.recordTeamActivity()
+            withContext(dispatcherProvider.io) {
+                teamsRepository.leaveTeam(teamId, userId)
+                teamsRepository.recordTeamActivity()
+            }
+            if (currentUserId != null) {
+                loadTeams(currentFromDashboard, currentType, currentUserId)
+            }
         }
     }
 
