@@ -165,6 +165,47 @@ class TeamDaoTest {
     }
 
     @Test
+    fun `archiveById hides row from observeNonArchivedReportsByTeamId and sets isUpdated`() = runBlocking {
+        val initial = report("r1", teamId = "team1", createdDate = 100L).apply {
+            updated = false
+        }
+        teamDao.upsert(initial)
+
+        val updatedRows = teamDao.archiveById("r1")
+        assertEquals(1, updatedRows)
+
+        val reports = teamDao.observeNonArchivedReportsByTeamId("team1").first()
+        assertEquals(0, reports.size)
+
+        val updatedTeams = teamDao.getUpdatedTeams()
+        assertEquals(1, updatedTeams.size)
+        assertEquals("r1", updatedTeams[0]._id)
+        assertEquals("archived", updatedTeams[0].status)
+    }
+
+    @Test
+    fun `setImageNameById changes only imageName and isUpdated leaving other columns intact`() = runBlocking {
+        val initial = report("r1", teamId = "team1", createdDate = 100L).apply {
+            description = "original desc"
+            sales = 500
+            updated = false
+            imageName = "old_logo.png"
+        }
+        teamDao.upsert(initial)
+
+        val updatedRows = teamDao.setImageNameById("r1", "new_logo.png")
+        assertEquals(1, updatedRows)
+
+        val updatedEntity = teamDao.getById("r1")!!
+        assertEquals("new_logo.png", updatedEntity.imageName)
+        assertEquals(true, updatedEntity.updated)
+        assertEquals("original desc", updatedEntity.description)
+        assertEquals(500, updatedEntity.sales)
+        assertEquals("team1", updatedEntity.teamId)
+        assertEquals(100L, updatedEntity.createdDate)
+    }
+
+    @Test
     fun `getNonArchivedReportCsvProjectionsByTeamId projects fields and orders descending`() = runBlocking {
         val r1 = report("r1", createdDate = 100L).apply {
             startDate = 10L

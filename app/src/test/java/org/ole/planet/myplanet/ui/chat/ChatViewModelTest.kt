@@ -2,7 +2,9 @@ package org.ole.planet.myplanet.ui.chat
 
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -27,6 +29,8 @@ import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.ChatResult
+import org.ole.planet.myplanet.repository.CommunityConfiguration
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
@@ -41,6 +45,7 @@ class ChatViewModelTest {
     private lateinit var userRepository: UserRepository
     private lateinit var teamsRepository: TeamsRepository
     private lateinit var voicesRepository: VoicesRepository
+    private lateinit var configurationsRepository: ConfigurationsRepository
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var dispatcherProvider: TestDispatcherProvider
     private lateinit var realtimeSyncManager: RealtimeSyncManager
@@ -53,10 +58,11 @@ class ChatViewModelTest {
         userRepository = mockk(relaxed = true)
         teamsRepository = mockk(relaxed = true)
         voicesRepository = mockk(relaxed = true)
+        configurationsRepository = mockk(relaxed = true)
         dispatcherProvider = TestDispatcherProvider(testDispatcher)
         realtimeSyncManager = mockk(relaxed = true)
         io.mockk.every { realtimeSyncManager.updatesFor("chats") } returns dataUpdateFlow
-        viewModel = ChatViewModel(chatRepository, userRepository, teamsRepository, voicesRepository, dispatcherProvider, realtimeSyncManager)
+        viewModel = ChatViewModel(chatRepository, userRepository, teamsRepository, voicesRepository, dispatcherProvider, realtimeSyncManager, configurationsRepository)
     }
 
     @After
@@ -200,15 +206,14 @@ class ChatViewModelTest {
         coEvery { teamsRepository.getTeamSummaries("user123") } returns listOf(team)
         coEvery { teamsRepository.getShareableEnterpriseSummaries("user123") } returns listOf(team)
         coEvery { teamsRepository.getTeamSummaryById("community1@parent1") } returns team
+        every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("parent1", "community1", null)
 
         val job = launch(testDispatcher) {
             viewModel.screenData.collect {}
         }
 
         viewModel.loadChatHistoryScreenData(
-            userId = "user123",
-            parentCode = "parent1",
-            communityName = "community1"
+            userId = "user123"
         )
 
         testScheduler.advanceUntilIdle()
@@ -238,8 +243,9 @@ class ChatViewModelTest {
         val chat2 = ChatHistory().apply { title = "Chat 2" }
 
         coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)
+        every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("", "", null)
 
-        viewModel.loadChatHistoryScreenData("user123", null, null)
+        viewModel.loadChatHistoryScreenData("user123")
         testScheduler.advanceUntilIdle()
 
         viewModel.searchChats("Chat 1", isFullSearch = false, isQuestion = false)
@@ -268,12 +274,11 @@ class ChatViewModelTest {
         coEvery { chatRepository.getChatHistoryForUser("Cached User") } returns listOf(conversation)
         coEvery { teamsRepository.getTeamSummaries(any()) } returns emptyList()
         coEvery { teamsRepository.getShareableEnterpriseSummaries(any()) } returns emptyList()
+        every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("parent1", "community1", null)
 
         // First call to populate cache
         viewModel.loadChatHistoryScreenData(
-            userId = "user123",
-            parentCode = "parent1",
-            communityName = "community1"
+            userId = "user123"
         )
         testScheduler.advanceUntilIdle()
 
@@ -286,9 +291,7 @@ class ChatViewModelTest {
 
         // Second call should use cache
         viewModel.loadChatHistoryScreenData(
-            userId = "user123",
-            parentCode = "parent1",
-            communityName = "community1"
+            userId = "user123"
         )
         testScheduler.advanceUntilIdle()
 
@@ -304,6 +307,19 @@ class ChatViewModelTest {
         coVerify(exactly = 0) { teamsRepository.getTeamSummaries(any()) }
 
         job.cancel()
+    }
+
+    @Test
+    fun `two consecutive loadChatHistoryScreenData calls read getCommunityConfiguration twice`() = runTest {
+        every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("parent1", "community1", null)
+
+        viewModel.loadChatHistoryScreenData("user123")
+        testScheduler.advanceUntilIdle()
+
+        viewModel.loadChatHistoryScreenData("user123")
+        testScheduler.advanceUntilIdle()
+
+        verify(exactly = 2) { configurationsRepository.getCommunityConfiguration() }
     }
 
     @Test

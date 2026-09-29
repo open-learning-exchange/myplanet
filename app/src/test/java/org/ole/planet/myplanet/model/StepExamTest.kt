@@ -90,6 +90,68 @@ class StepExamTest {
     }
 
     @Test
+    fun testInsertCourseStepsExams_questionsThree() {
+        val examJson = JsonObject().apply {
+            addProperty("_id", "exam3")
+            add("questions", JsonArray().apply {
+                add(JsonObject())
+                add(JsonObject())
+                add(JsonObject())
+            })
+        }
+
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+
+        assertEquals(3, result.noOfQuestions)
+    }
+
+    @Test
+    fun testInsertCourseStepsExams_questionsNull() {
+        val examJson = JsonObject().apply {
+            addProperty("_id", "examNull")
+            add("questions", com.google.gson.JsonNull.INSTANCE)
+        }
+
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+
+        assertEquals(0, result.noOfQuestions)
+    }
+
+    @Test
+    fun testInsertCourseStepsExams_questionsObject() {
+        val examJson = JsonObject().apply {
+            addProperty("_id", "examObj")
+            add("questions", JsonObject())
+        }
+
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+
+        assertEquals(0, result.noOfQuestions)
+    }
+
+    @Test
+    fun testInsertCourseStepsExams_questionsMissing() {
+        val examJson = JsonObject().apply {
+            addProperty("_id", "examMissing")
+        }
+
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+
+        assertEquals(0, result.noOfQuestions)
+    }
+
+    @Test
+    fun testInsertCourseStepsExams_missingTypeDefaultsToExam() {
+        val examJson = JsonObject().apply {
+            addProperty("_id", "examNoType")
+        }
+
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+
+        assertEquals("exam", result.type)
+    }
+
+    @Test
     fun testSerializeExam() {
         val exam = StepExam().apply {
             id = "exam1"
