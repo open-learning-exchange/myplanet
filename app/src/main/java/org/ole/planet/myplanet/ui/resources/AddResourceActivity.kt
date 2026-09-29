@@ -7,8 +7,8 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.EditText
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
@@ -152,23 +152,23 @@ class AddResourceActivity : AppCompatActivity() {
             lifecycleScope.launch {
                 val request = LocalResourceRequest(
                     title = title,
-                    addedBy = binding.tvAddedBy.text.toString().trim(),
+                    addedBy = null,
                     author = binding.etAuthor.text.toString().trim(),
                     year = binding.etYear.text.toString().trim(),
                     description = binding.etDescription.text.toString().trim(),
                     publisher = binding.etPublisher.text.toString().trim(),
                     linkToLicense = binding.etLinkToLicense.text.toString().trim(),
-                    openWith = if (binding.spnOpenWith.selectedItemPosition > 0) binding.spnOpenWith.selectedItem.toString() else "",
-                    language = if (binding.spnLang.selectedItemPosition > 0) binding.spnLang.selectedItem.toString() else "",
-                    mediaType = if (binding.spnMedia.selectedItemPosition > 0) binding.spnMedia.selectedItem.toString() else "",
-                    resourceType = if (binding.spnResourceType.selectedItemPosition > 0) binding.spnResourceType.selectedItem.toString() else "",
+                    openWith = null,
+                    language = null,
+                    mediaType = null,
+                    resourceType = null,
                     subjects = subjects,
                     levels = levels,
-                    resourceFor = resourceFor,
-                    resourceUrl = resourceUrl,
-                    userId = userModel?.id,
-                    isPrivateTeamResource = binding.cbPrivateResource.isChecked && teamId != null,
-                    teamId = teamId
+                    resourceFor = null,
+                    resourceUrl = null,
+                    userId = null,
+                    isPrivateTeamResource = false,
+                    teamId = null
                 )
                 val result = viewModel.updateResource(resourceId, request)
                 if (result.isSuccess) {

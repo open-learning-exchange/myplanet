@@ -16,16 +16,12 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.repository.LocalResourceRequest
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
-import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AddLocalResourceViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
-
-    private val testDispatcher = mainDispatcherRule.testDispatcher
-    private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     private val resourcesRepository = mockk<ResourcesRepository>(relaxed = true)
     private lateinit var viewModel: AddLocalResourceViewModel
@@ -71,7 +67,7 @@ class AddLocalResourceViewModelTest {
     }
 
     @Test
-    fun `duplicate title blocks save or returns failure`() = runTest {
+    fun `saveResource handles failure result when duplicate title exists`() = runTest {
         val request = LocalResourceRequest(
             title = "Duplicate Title",
             addedBy = "User",
@@ -131,25 +127,27 @@ class AddLocalResourceViewModelTest {
     }
 
     @Test
-    fun `updateResource handles successful update`() = runTest {
+    fun `updateResource maps request fields and handles successful update`() = runTest {
         val resourceId = "res123"
+        val subjectsList = listOf("Math", "Science")
+        val levelsList = listOf("Primary", "Secondary")
         val request = LocalResourceRequest(
             title = "Updated Title",
-            addedBy = "User",
+            addedBy = null,
             author = "Updated Author",
             year = "2024",
             description = "Updated Desc",
             publisher = "Updated Publisher",
             linkToLicense = "Updated License",
-            openWith = "",
-            language = "",
-            mediaType = "",
-            resourceType = "",
-            subjects = listOf("Math"),
-            levels = listOf("Primary"),
+            openWith = null,
+            language = null,
+            mediaType = null,
+            resourceType = null,
+            subjects = subjectsList,
+            levels = levelsList,
             resourceFor = null,
             resourceUrl = null,
-            userId = "user1",
+            userId = null,
             isPrivateTeamResource = false,
             teamId = null
         )
@@ -162,18 +160,75 @@ class AddLocalResourceViewModelTest {
                 description = "Updated Desc",
                 publisher = "Updated Publisher",
                 linkToLicense = "Updated License",
-                subjects = listOf("Math"),
-                levels = listOf("Primary")
+                subjects = subjectsList,
+                levels = levelsList
             )
         } returns Result.success(Unit)
 
         val result = viewModel.updateResource(resourceId, request)
 
         assertTrue(result.isSuccess)
+        coVerify(exactly = 1) {
+            resourcesRepository.updateLocalResource(
+                resourceId = resourceId,
+                title = "Updated Title",
+                author = "Updated Author",
+                year = "2024",
+                description = "Updated Desc",
+                publisher = "Updated Publisher",
+                linkToLicense = "Updated License",
+                subjects = subjectsList,
+                levels = levelsList
+            )
+        }
     }
 
     @Test
-    fun `saveResource or updateResource handles failed UploadResult`() = runTest {
+    fun `updateResource handles failure result`() = runTest {
+        val resourceId = "res123"
+        val request = LocalResourceRequest(
+            title = "Updated Title",
+            addedBy = null,
+            author = "Updated Author",
+            year = "2024",
+            description = "Updated Desc",
+            publisher = "Updated Publisher",
+            linkToLicense = "Updated License",
+            openWith = null,
+            language = null,
+            mediaType = null,
+            resourceType = null,
+            subjects = listOf("Math"),
+            levels = listOf("Primary"),
+            resourceFor = null,
+            resourceUrl = null,
+            userId = null,
+            isPrivateTeamResource = false,
+            teamId = null
+        )
+        val updateFailure = Exception("Failed to update resource")
+        coEvery {
+            resourcesRepository.updateLocalResource(
+                resourceId = resourceId,
+                title = "Updated Title",
+                author = "Updated Author",
+                year = "2024",
+                description = "Updated Desc",
+                publisher = "Updated Publisher",
+                linkToLicense = "Updated License",
+                subjects = listOf("Math"),
+                levels = listOf("Primary")
+            )
+        } returns Result.failure(updateFailure)
+
+        val result = viewModel.updateResource(resourceId, request)
+
+        assertTrue(result.isFailure)
+        assertEquals(updateFailure, result.exceptionOrNull())
+    }
+
+    @Test
+    fun `saveResource handles failed upload or save result`() = runTest {
         val request = LocalResourceRequest(
             title = "Failed Resource",
             addedBy = "User",
