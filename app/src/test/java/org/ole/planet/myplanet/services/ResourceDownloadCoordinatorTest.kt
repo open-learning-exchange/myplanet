@@ -48,6 +48,7 @@ class ResourceDownloadCoordinatorTest {
         applicationScope = TestScope(testDispatcher)
 
         mockkObject(DownloadUtils)
+        every { DownloadUtils.openDownloadService(any(), any(), any()) } returns Unit
 
         coordinator = ResourceDownloadCoordinator(
             configurationsRepository,
