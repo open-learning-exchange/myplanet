@@ -1,26 +1,28 @@
 package org.ole.planet.myplanet.services.upload
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.runTest
+import io.mockk.unmockkObject
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertTrue
-import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.MyTeam
@@ -31,6 +33,7 @@ import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TeamsUploaderTest {
@@ -47,12 +50,13 @@ class TeamsUploaderTest {
     @Before
     fun setup() {
         mockkStatic(Log::class)
-        mockkStatic(android.net.Uri::class)
-        every { android.net.Uri.encode(any()) } answers { firstArg() }
+        mockkStatic(Uri::class)
+        every { Uri.encode(any()) } answers { firstArg() }
         mockkObject(FileUtils)
         every { FileUtils.getMimeType(any()) } returns "image/png"
-        io.mockk.mockkObject(UrlUtils)
+        mockkObject(UrlUtils)
         every { UrlUtils.getUrl() } returns "http://mock.url"
+        every { UrlUtils.header } returns "Basic mock-header"
         every { Log.d(any(), any()) } returns 0
         every { Log.e(any(), any()) } returns 0
         every { Log.e(any(), any(), any()) } returns 0
@@ -70,7 +74,7 @@ class TeamsUploaderTest {
     @After
     fun tearDown() {
         unmockkAll()
-        io.mockk.unmockkObject(UrlUtils)
+        unmockkObject(UrlUtils)
     }
 
     @Test
@@ -82,12 +86,12 @@ class TeamsUploaderTest {
         every { teamsSyncRepository.get() } returns mockRepo
         coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam1, mockTeam2, mockTeam3)
 
-        val bulkResponse = com.google.gson.JsonArray().apply {
+        val bulkResponse = JsonArray().apply {
             add(JsonObject().apply { addProperty("id", "team1"); addProperty("rev", "rev1") })
             add(JsonObject().apply { addProperty("id", "team2"); addProperty("error", "conflict") })
             add(JsonObject().apply { addProperty("id", "team3"); addProperty("rev", "rev3") })
         }
-        coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.success(bulkResponse)
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns Response.success(bulkResponse)
 
         coEvery { retryQueue.queueFailedOperation(any(), any(), any(), any(), any(), any(), any()) } returns Unit
         coEvery { mockRepo.markTeamsUploaded(any()) } returns Unit
@@ -109,10 +113,10 @@ class TeamsUploaderTest {
         every { teamsSyncRepository.get() } returns mockRepo
         coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
 
-        val bulkResponse = com.google.gson.JsonArray().apply {
+        val bulkResponse = JsonArray().apply {
             add(JsonObject().apply { addProperty("id", "serverGeneratedId1"); addProperty("rev", "rev1") })
         }
-        coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.success(bulkResponse)
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns Response.success(bulkResponse)
         coEvery { mockRepo.markTeamsUploaded(any()) } returns Unit
 
         teamsUploader.uploadTeams()
@@ -165,12 +169,12 @@ class TeamsUploaderTest {
         every { teamsSyncRepository.get() } returns mockRepo
         coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
 
-        val bulkResponse = com.google.gson.JsonArray().apply {
+        val bulkResponse = JsonArray().apply {
             add(JsonObject().apply { addProperty("id", "team1"); addProperty("rev", "rev1") })
         }
-        coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.success(bulkResponse)
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns Response.success(bulkResponse)
 
-        io.mockk.mockkObject(MyTeam)
+        mockkObject(MyTeam)
         val mockFile = mockk<File>()
         every { MyTeam.getAttachmentFile(context, "team1", "image.png") } returns mockFile
         every { mockFile.exists() } returns true
@@ -184,7 +188,7 @@ class TeamsUploaderTest {
         } catch (e: Exception) {
             caught = e
         } finally {
-            io.mockk.unmockkObject(MyTeam)
+            unmockkObject(MyTeam)
         }
 
         assertTrue("Expected CancellationException, got $caught", caught is CancellationException || (caught != null && caught.cause is CancellationException))
@@ -198,12 +202,12 @@ class TeamsUploaderTest {
         every { teamsSyncRepository.get() } returns mockRepo
         coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
 
-        val bulkResponse = com.google.gson.JsonArray().apply {
+        val bulkResponse = JsonArray().apply {
             add(JsonObject().apply { addProperty("id", "team1"); addProperty("rev", "rev1") })
         }
-        coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.success(bulkResponse)
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns Response.success(bulkResponse)
 
-        io.mockk.mockkObject(MyTeam)
+        mockkObject(MyTeam)
         val mockFile = mockk<File>()
         every { MyTeam.getAttachmentFile(context, "team1", "image.png") } returns mockFile
         every { mockFile.exists() } returns true
@@ -216,6 +220,6 @@ class TeamsUploaderTest {
 
         coVerify(exactly = 1) { mockRepo.markTeamsUploaded(mapOf("team1" to "rev1")) }
 
-        io.mockk.unmockkObject(MyTeam)
+        unmockkObject(MyTeam)
     }
 }

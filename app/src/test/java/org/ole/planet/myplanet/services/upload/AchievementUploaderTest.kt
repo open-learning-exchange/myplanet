@@ -15,7 +15,6 @@ import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertTrue
@@ -52,6 +51,7 @@ class AchievementUploaderTest {
         mockkObject(FileUtils)
 
         every { UrlUtils.getUrl() } returns "http://mock.url"
+        every { UrlUtils.header } returns "Basic mock-header"
         every { Log.e(any(), any()) } returns 0
         every { Log.e(any(), any(), any()) } returns 0
 
