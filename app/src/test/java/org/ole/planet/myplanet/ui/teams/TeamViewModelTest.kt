@@ -170,8 +170,25 @@ class TeamViewModelTest {
     }
 
     @Test
-    fun `teamDetailState starts as Loading`() = runTest(testDispatcher) {
+    fun `teamDetailState starts as Loading and joinState as UNKNOWN`() = runTest(testDispatcher) {
         assertEquals(TeamDetailState.Loading, viewModel.teamDetailState.value)
+        assertEquals(TeamJoinState.UNKNOWN, viewModel.joinState.value)
+    }
+
+    @Test
+    fun `loadTeamDetail does not emit Loading when refreshing an already loaded team`() = runTest(testDispatcher) {
+        val team = MyTeam().apply { _id = "team1" }
+        coEvery { teamsRepository.getTeamByIdOrTeamId("team1") } returns team
+        coEvery { teamsRepository.getJoinedMemberCount("team1") } returns 2
+        coEvery { teamsRepository.hasPendingRequest("team1", "user1") } returns false
+
+        viewModel.loadTeamDetail(primaryTeamId = "team1", fallbackTeamId = null, isMyTeam = false, userId = "user1")
+        advanceUntilIdle()
+
+        assertEquals(TeamDetailState.Success(team), viewModel.teamDetailState.value)
+
+        viewModel.loadTeamDetail(primaryTeamId = "team1", fallbackTeamId = null, isMyTeam = false, userId = "user1")
+        assertEquals(TeamDetailState.Success(team), viewModel.teamDetailState.value)
     }
 
     @Test

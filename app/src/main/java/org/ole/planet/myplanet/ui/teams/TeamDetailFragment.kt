@@ -216,7 +216,12 @@ class TeamDetailFragment : BaseTeamFragment() {
         binding.btnAddDoc.isEnabled = true
         binding.btnAddDoc.visibility = View.VISIBLE
         binding.btnLeave.isEnabled = true
-        binding.btnLeave.visibility = View.VISIBLE
+        val memberCount = teamViewModel.memberCount.value
+        binding.btnLeave.visibility = if (memberCount != null && memberCount <= 1) {
+            View.GONE
+        } else {
+            View.VISIBLE
+        }
 
         binding.btnLeave.setOnClickListener {
             MaterialAlertDialogBuilder(requireContext(), R.style.CustomAlertDialog).setMessage(R.string.confirm_exit)
@@ -306,6 +311,8 @@ class TeamDetailFragment : BaseTeamFragment() {
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
         if (isMyTeam) return
 
+        if (state == TeamJoinState.UNKNOWN) return
+
         if (user?.id?.startsWith("guest") == true) {
             binding.btnLeave.isEnabled = false
             binding.btnLeave.visibility = View.GONE
@@ -335,6 +342,7 @@ class TeamDetailFragment : BaseTeamFragment() {
                 binding.btnLeave.text = getString(R.string.leave)
                 binding.btnLeave.isEnabled = true
             }
+            TeamJoinState.UNKNOWN -> {}
         }
     }
 

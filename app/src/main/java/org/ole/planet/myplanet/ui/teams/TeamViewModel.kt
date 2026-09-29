@@ -29,6 +29,7 @@ sealed class TeamActionResult {
 }
 
 enum class TeamJoinState {
+    UNKNOWN,
     JOINABLE,
     PENDING,
     LEAVE
@@ -58,7 +59,7 @@ class TeamViewModel @Inject constructor(
     private val _memberCount = MutableStateFlow<Int?>(null)
     val memberCount: StateFlow<Int?> = _memberCount.asStateFlow()
 
-    private val _joinState = MutableStateFlow<TeamJoinState>(TeamJoinState.JOINABLE)
+    private val _joinState = MutableStateFlow<TeamJoinState>(TeamJoinState.UNKNOWN)
     val joinState: StateFlow<TeamJoinState> = _joinState.asStateFlow()
 
     fun getTeamUpdateFlow() = realtimeSyncManager.updatesFor("teams")
@@ -69,7 +70,9 @@ class TeamViewModel @Inject constructor(
         isMyTeam: Boolean = false,
         userId: String? = null
     ) {
-        _teamDetailState.value = TeamDetailState.Loading
+        if (_teamDetailState.value !is TeamDetailState.Success) {
+            _teamDetailState.value = TeamDetailState.Loading
+        }
         viewModelScope.launch {
             val resolvedTeam = withContext(dispatcherProvider.io) {
                 when {
@@ -85,8 +88,6 @@ class TeamViewModel @Inject constructor(
                 _joinState.value = if (isMyTeam) TeamJoinState.LEAVE else TeamJoinState.JOINABLE
                 return@launch
             }
-
-            _teamDetailState.value = TeamDetailState.Success(resolvedTeam)
 
             val teamId = resolvedTeam._id
             val count = if (!teamId.isNullOrEmpty()) {
@@ -111,6 +112,8 @@ class TeamViewModel @Inject constructor(
                 pending -> TeamJoinState.PENDING
                 else -> TeamJoinState.JOINABLE
             }
+
+            _teamDetailState.value = TeamDetailState.Success(resolvedTeam)
         }
     }
 
