@@ -15,9 +15,14 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import java.io.File
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import org.junit.After
+import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.repository.TeamUploadData
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadRepository
@@ -146,5 +151,59 @@ class TeamsUploaderTest {
 
         coVerify(exactly = 1) { uploadRepository.postUploadArray("http://mock.url/teams/_bulk_docs", any()) }
         coVerify(exactly = 1) { retryQueue.queueFailedOperation(uploadType = "MyTeam", error = any(), payload = any(), endpoint = "teams", httpMethod = "POST", dbId = "team1", modelClassName = "MyTeam") }
+    }
+
+    @Test
+    fun `uploadTeamImageAttachment propagates CancellationException`() = testScope.runTest {
+        val mockTeam = TeamUploadData("team1", JsonObject(), false, "image.png")
+        val mockRepo = mockk<TeamsSyncRepository>(relaxed = true)
+        every { teamsSyncRepository.get() } returns mockRepo
+        coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
+
+        val bulkResponse = com.google.gson.JsonArray().apply {
+            add(JsonObject().apply { addProperty("id", "team1"); addProperty("rev", "rev1") })
+        }
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.success(bulkResponse)
+
+        io.mockk.mockkObject(MyTeam)
+        val mockFile = mockk<File>()
+        every { MyTeam.getAttachmentFile(context, "team1", "image.png") } returns mockFile
+        every { mockFile.exists() } returns true
+
+        coEvery { uploadRepository.uploadResource(any(), any(), any()) } throws CancellationException("Upload cancelled")
+
+        assertThrows(CancellationException::class.java) {
+            teamsUploader.uploadTeams()
+        }
+
+        io.mockk.unmockkObject(MyTeam)
+    }
+
+    @Test
+    fun `uploadTeamImageAttachment falls back to old rev on ordinary exception`() = testScope.runTest {
+        val mockTeam = TeamUploadData("team1", JsonObject(), false, "image.png")
+        val mockRepo = mockk<TeamsSyncRepository>(relaxed = true)
+        every { teamsSyncRepository.get() } returns mockRepo
+        coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
+
+        val bulkResponse = com.google.gson.JsonArray().apply {
+            add(JsonObject().apply { addProperty("id", "team1"); addProperty("rev", "rev1") })
+        }
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.success(bulkResponse)
+
+        io.mockk.mockkObject(MyTeam)
+        val mockFile = mockk<File>()
+        every { MyTeam.getAttachmentFile(context, "team1", "image.png") } returns mockFile
+        every { mockFile.exists() } returns true
+
+        coEvery { uploadRepository.uploadResource(any(), any(), any()) } throws IOException("Attachment upload failed")
+        coEvery { mockRepo.markTeamsUploaded(any()) } returns Unit
+
+        teamsUploader.uploadTeams()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { mockRepo.markTeamsUploaded(mapOf("team1" to "rev1")) }
+
+        io.mockk.unmockkObject(MyTeam)
     }
 }
