@@ -153,7 +153,7 @@ class TeamsUploaderTest {
         coVerify(exactly = 1) { retryQueue.queueFailedOperation(uploadType = "MyTeam", error = any(), payload = any(), endpoint = "teams", httpMethod = "POST", dbId = "team1", modelClassName = "MyTeam") }
     }
 
-    @Test(expected = CancellationException::class)
+    @Test
     fun `uploadTeamImageAttachment propagates CancellationException`() = runTest(testDispatcher) {
         val mockTeam = TeamUploadData("team1", JsonObject(), false, "image.png")
         val mockRepo = mockk<TeamsSyncRepository>(relaxed = true)
@@ -172,11 +172,16 @@ class TeamsUploaderTest {
 
         coEvery { uploadRepository.uploadResource(any(), any(), any()) } throws CancellationException("Upload cancelled")
 
+        var caughtCancellation = false
         try {
             teamsUploader.uploadTeams()
+        } catch (e: CancellationException) {
+            caughtCancellation = true
         } finally {
             io.mockk.unmockkObject(MyTeam)
         }
+
+        assertTrue("Expected CancellationException to be caught", caughtCancellation)
     }
 
     @Test

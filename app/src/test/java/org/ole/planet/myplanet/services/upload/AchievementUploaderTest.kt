@@ -19,9 +19,10 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertTrue
-import org.junit.Assert.fail
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserAchievementsRepository
 import org.ole.planet.myplanet.utils.FileUtils
@@ -31,6 +32,10 @@ import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AchievementUploaderTest {
+
+    @Rule
+    @JvmField
+    val temporaryFolder = TemporaryFolder()
 
     private val context: Context = mockk(relaxed = true)
     private val userAchievementsRepository: UserAchievementsRepository = mockk(relaxed = true)
@@ -63,7 +68,7 @@ class AchievementUploaderTest {
         unmockkAll()
     }
 
-    @Test(expected = CancellationException::class)
+    @Test
     fun `uploadAchievement propagates CancellationException and halts further uploads`() = runTest(testDispatcher) {
         val achievement1 = JsonObject().apply { addProperty("_id", "ach1") }
         val achievement2 = JsonObject().apply { addProperty("_id", "ach2") }
@@ -71,12 +76,16 @@ class AchievementUploaderTest {
 
         coEvery { uploadRepository.putUpload("http://mock.url/achievements/ach1", achievement1) } throws CancellationException("Sync cancelled")
 
+        var caughtCancellation = false
         try {
             achievementUploader.uploadAchievement()
-        } finally {
-            coVerify(exactly = 1) { uploadRepository.putUpload("http://mock.url/achievements/ach1", achievement1) }
-            coVerify(exactly = 0) { uploadRepository.putUpload("http://mock.url/achievements/ach2", achievement2) }
+        } catch (e: CancellationException) {
+            caughtCancellation = true
         }
+
+        assertTrue("Expected CancellationException to be caught", caughtCancellation)
+        coVerify(exactly = 1) { uploadRepository.putUpload("http://mock.url/achievements/ach1", achievement1) }
+        coVerify(exactly = 0) { uploadRepository.putUpload("http://mock.url/achievements/ach2", achievement2) }
     }
 
     @Test
@@ -96,7 +105,7 @@ class AchievementUploaderTest {
         coVerify(exactly = 1) { userAchievementsRepository.markAchievementUploaded("ach2", "rev2") }
     }
 
-    @Test(expected = CancellationException::class)
+    @Test
     fun `uploadCvAttachment propagates CancellationException`() = runTest(testDispatcher) {
         val achievement = JsonObject().apply {
             addProperty("_id", "ach1")
@@ -107,12 +116,21 @@ class AchievementUploaderTest {
         val successResponse = Response.success(JsonObject().apply { addProperty("rev", "rev1") })
         coEvery { uploadRepository.putUpload("http://mock.url/achievements/ach1", achievement) } returns successResponse
 
-        every { FileUtils.getOlePath(context) } returns "/mock/path/"
-        val mockFile = mockk<File>()
-        every { mockFile.exists() } returns true
+        val cvFolder = temporaryFolder.newFolder("cv")
+        val resumeFile = File(cvFolder, "resume.pdf")
+        resumeFile.createNewFile()
+
+        every { FileUtils.getOlePath(context) } returns temporaryFolder.root.absolutePath + "/"
 
         coEvery { uploadRepository.uploadResource(any(), any(), any()) } throws CancellationException("Cancelled")
 
-        achievementUploader.uploadAchievement()
+        var caughtCancellation = false
+        try {
+            achievementUploader.uploadAchievement()
+        } catch (e: CancellationException) {
+            caughtCancellation = true
+        }
+
+        assertTrue("Expected CancellationException to be caught", caughtCancellation)
     }
 }
