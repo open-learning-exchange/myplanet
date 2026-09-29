@@ -83,6 +83,19 @@ class VoicesActionsTest {
         assertEquals(false, launched) // positive button not clicked yet
     }
 
+    private fun fullyPopulatedUser() = UserEntity().apply {
+        id = "user123"
+        name = "john_doe"
+        firstName = "John"
+        lastName = "Doe"
+        email = "john@example.com"
+        dob = "2000-01-01T00:00:00"
+        language = "en"
+        phoneNumber = "1234567890"
+        level = "Level 1"
+        userImage = "image_url"
+    }
+
     @Test
     fun `showMemberDetails returns null for null user`() = runTest {
         val result = VoicesActions.showMemberDetails(null)
@@ -91,18 +104,7 @@ class VoicesActionsTest {
 
     @Test
     fun `showMemberDetails constructs fragment for user`() = runTest {
-        val user = UserEntity().apply {
-            id = "user123"
-            name = "john_doe"
-            firstName = "John"
-            lastName = "Doe"
-            email = "john@example.com"
-            dob = "2000-01-01T00:00:00"
-            language = "en"
-            phoneNumber = "1234567890"
-            level = "Level 1"
-            userImage = "image_url"
-        }
+        val user = fullyPopulatedUser()
 
         val fragment = VoicesActions.showMemberDetails(user)
 
@@ -114,18 +116,7 @@ class VoicesActionsTest {
 
     @Test
     fun `showMemberDetails sets user details in fragment arguments`() = runTest {
-        val user = UserEntity().apply {
-            id = "user123"
-            name = "john_doe"
-            firstName = "John"
-            lastName = "Doe"
-            email = "john@example.com"
-            dob = "2000-01-01T00:00:00"
-            language = "en"
-            phoneNumber = "1234567890"
-            level = "Level 1"
-            userImage = "image_url"
-        }
+        val user = fullyPopulatedUser()
 
         val fragment = VoicesActions.showMemberDetails(user)
 
