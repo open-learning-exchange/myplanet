@@ -15,6 +15,7 @@ import android.view.inputmethod.InputMethodManager
 import android.webkit.URLUtil
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
@@ -57,6 +58,8 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
     @Inject
     lateinit var userRepository: UserRepository
+
+    private val viewModel: ProcessUserDataViewModel by viewModels()
 
     val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
         DialogUtils.CustomProgressDialog(this)
@@ -190,7 +193,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     private fun uploadLoginData() {
-        val flow = syncRepository.uploadLoginData()
+        val flow = viewModel.uploadLoginData()
 
         collectWhenStarted(flow.takeWhile { value ->
             if (value is SyncUiState.Success) {
@@ -208,7 +211,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        val flow = syncRepository.uploadBulkData()
+        val flow = viewModel.uploadBulkData()
 
         collectWhenStarted(flow.takeWhile { value ->
             if (value is SyncUiState.Success) {
@@ -251,7 +254,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     fun fetchAndLogUserSecurityData(name: String, securityCallback: OnChangedListener? = null) {
         lifecycleScope.launch {
             try {
-                userRepository.fetchUserSecurityData(name)
+                viewModel.fetchUserSecurityData(name)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
