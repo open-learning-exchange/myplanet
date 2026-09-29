@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.repository
 import android.util.Log
 import com.google.gson.JsonObject
 import java.io.File
-import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -14,6 +13,7 @@ import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.GsonUtils.getString
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.distinctByContent
@@ -21,7 +21,8 @@ import org.ole.planet.myplanet.utils.distinctByContent
 class PersonalsRepositoryImpl @Inject constructor(
     private val personalDao: PersonalDao,
     private val uploadRepository: UploadRepository,
-    private val deviceNameProvider: DeviceNameProvider
+    private val deviceNameProvider: DeviceNameProvider,
+    private val timeProvider: TimeProvider
 ) : PersonalsRepository {
 
     override suspend fun personalTitleExists(title: String, userId: String?): Boolean {
@@ -42,7 +43,7 @@ class PersonalsRepositoryImpl @Inject constructor(
             this.userId = userId
             this.userName = userName
             this.path = path
-            this.date = Date().time
+            this.date = timeProvider.now()
             this.description = description
         }
         personalDao.insert(personal)
@@ -94,7 +95,7 @@ class PersonalsRepositoryImpl @Inject constructor(
     private fun serialize(personal: Personal): JsonObject {
         val `object` = JsonObject()
         `object`.addProperty("title", personal.title)
-        `object`.addProperty("uploadDate", System.currentTimeMillis())
+        `object`.addProperty("uploadDate", timeProvider.now())
         `object`.addProperty("createdDate", personal.date)
         `object`.addProperty("filename", FileUtils.getFileNameFromUrl(personal.path))
         `object`.addProperty("author", personal.userName)
@@ -111,9 +112,9 @@ class PersonalsRepositoryImpl @Inject constructor(
         return `object`
     }
 
-    override suspend fun uploadPersonal(personal: Personal): String {
+    override suspend fun uploadPersonal(personal: Personal): PersonalUploadResult {
         if (personal.isUploaded) {
-            return "Resource already uploaded"
+            return PersonalUploadResult.AlreadyUploaded("Resource already uploaded")
         }
 
         try {
@@ -123,7 +124,7 @@ class PersonalsRepositoryImpl @Inject constructor(
                 existingId to existingRev
             } else {
                 val result = uploadPersonalDocument(personal)
-                    ?: return "Failed to upload personal resource: No response"
+                    ?: return PersonalUploadResult.DocumentFailed("Failed to upload personal resource: No response")
                 result
             }
 
@@ -143,7 +144,7 @@ class PersonalsRepositoryImpl @Inject constructor(
                     )
                 } catch (e: Exception) {
                     Log.w(TAG, "Attachment upload failed for ${personal.id}", e)
-                    return "Uploaded document but failed to upload attachment: ${e.message}"
+                    return PersonalUploadResult.AttachmentFailed("Uploaded document but failed to upload attachment: ${e.message}", e)
                 }
 
                 when (result) {
@@ -152,20 +153,20 @@ class PersonalsRepositoryImpl @Inject constructor(
                     }
                     is NetworkResult.Error -> {
                         Log.w(TAG, "Attachment upload failed for ${personal.id}: HTTP ${result.code}")
-                        return "Uploaded document but failed to upload attachment: HTTP ${result.code}"
+                        return PersonalUploadResult.AttachmentFailed("Uploaded document but failed to upload attachment: HTTP ${result.code}")
                     }
                     is NetworkResult.Exception -> {
                         Log.w(TAG, "Attachment upload failed for ${personal.id}", result.exception)
-                        return "Uploaded document but failed to upload attachment: ${result.exception.message}"
+                        return PersonalUploadResult.AttachmentFailed("Uploaded document but failed to upload attachment: ${result.exception.message}", result.exception)
                     }
                 }
             }
 
             updatePersonalAfterSync(personal.id, id, finalRev)
-            return "Personal resource uploaded successfully"
+            return PersonalUploadResult.Success("Personal resource uploaded successfully")
         } catch (e: Exception) {
             Log.w(TAG, "Unable to upload personal resource ${personal.id}", e)
-            return "Unable to upload resource: ${e.message}"
+            return PersonalUploadResult.DocumentFailed("Unable to upload resource: ${e.message}", e)
         }
     }
 
