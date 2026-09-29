@@ -50,7 +50,6 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
-import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
@@ -64,8 +63,6 @@ import org.ole.planet.myplanet.utils.DialogUtils.getUpdateDialog
 import org.ole.planet.myplanet.utils.DialogUtils.showAlert
 import org.ole.planet.myplanet.utils.DialogUtils.showSnack
 import org.ole.planet.myplanet.utils.DialogUtils.showWifiSettingDialog
-import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
-import org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName
@@ -131,9 +128,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     @Inject
     lateinit var communityRepository: CommunityRepository
-
-    @Inject
-    open lateinit var resourcesRepository: ResourcesRepository
 
     @Inject
     lateinit var resourceDownloadCoordinator: ResourceDownloadCoordinator
@@ -563,19 +557,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         prefData.setIsAlternativeUrl(false)
                     }
 
-                    val links = configurationsRepository.getQueuedDownloads()
-                    if (links.isNotEmpty()) {
-                        openDownloadService(context, ArrayList(links), true)
-                    }
-
-                    val betaAutoDownload = prefData.getBetaAutoDownload()
-                    if (betaAutoDownload) {
-                        withContext(dispatcherProvider.io) {
-                            resourceDownloadCoordinator.startBackgroundDownload(
-                                downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
-                            )
-                        }
-                    }
+                    resourceDownloadCoordinator.runPostSyncDownloads()
 
                     cancelAll(activityContext)
 

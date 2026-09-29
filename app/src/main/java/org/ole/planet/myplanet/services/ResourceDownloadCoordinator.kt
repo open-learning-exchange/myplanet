@@ -9,11 +9,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DownloadUtils
 
 @Singleton
 class ResourceDownloadCoordinator @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository,
+    private val resourcesRepository: ResourcesRepository,
+    private val prefData: SharedPrefManager,
     @ApplicationContext private val context: Context,
     @ApplicationScope private val applicationScope: CoroutineScope
 ) {
@@ -24,6 +27,20 @@ class ResourceDownloadCoordinator @Inject constructor(
                     DownloadUtils.openDownloadService(context, urls, false)
                 }
             }
+        }
+    }
+
+    suspend fun runPostSyncDownloads() {
+        val links = configurationsRepository.getQueuedDownloads()
+        if (links.isNotEmpty()) {
+            DownloadUtils.openDownloadService(context, ArrayList(links), true)
+        }
+
+        val betaAutoDownload = prefData.getBetaAutoDownload()
+        if (betaAutoDownload) {
+            startBackgroundDownload(
+                DownloadUtils.downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
+            )
         }
     }
 }
