@@ -19,7 +19,8 @@ import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import org.junit.After
-import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.MyTeam
@@ -39,7 +40,6 @@ class TeamsUploaderTest {
     private val retryQueue: RetryQueue = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
-    private val testScope = TestScope(testDispatcher)
 
     private lateinit var teamsUploader: TeamsUploader
 
@@ -69,7 +69,7 @@ class TeamsUploaderTest {
     }
 
     @Test
-    fun `uploadTeams handles bulk success`() = testScope.runTest {
+    fun `uploadTeams handles bulk success`() = runTest(testDispatcher) {
         val mockTeam1 = TeamUploadData("team1", JsonObject(), false, null)
         val mockTeam2 = TeamUploadData("team2", JsonObject(), false, null)
         val mockTeam3 = TeamUploadData("team3", JsonObject(), true, null)
@@ -98,7 +98,7 @@ class TeamsUploaderTest {
     }
 
     @Test
-    fun `uploadTeams keys uploadedTeams by local team id when response id differs`() = testScope.runTest {
+    fun `uploadTeams keys uploadedTeams by local team id when response id differs`() = runTest(testDispatcher) {
         val mockTeam = TeamUploadData("localTeam1", JsonObject(), false, null)
         val mockRepo = mockk<TeamsSyncRepository>(relaxed = true)
         every { teamsSyncRepository.get() } returns mockRepo
@@ -117,7 +117,7 @@ class TeamsUploaderTest {
     }
 
     @Test
-    fun `uploadTeams handles bulk network failure`() = testScope.runTest {
+    fun `uploadTeams handles bulk network failure`() = runTest(testDispatcher) {
         val mockRepo = mockk<TeamsSyncRepository>(relaxed = true)
         every { teamsSyncRepository.get() } returns mockRepo
 
@@ -136,7 +136,7 @@ class TeamsUploaderTest {
     }
 
     @Test
-    fun `uploadTeams handles bulk exception`() = testScope.runTest {
+    fun `uploadTeams handles bulk exception`() = runTest(testDispatcher) {
         val mockRepo = mockk<TeamsSyncRepository>(relaxed = true)
         every { teamsSyncRepository.get() } returns mockRepo
 
@@ -153,8 +153,8 @@ class TeamsUploaderTest {
         coVerify(exactly = 1) { retryQueue.queueFailedOperation(uploadType = "MyTeam", error = any(), payload = any(), endpoint = "teams", httpMethod = "POST", dbId = "team1", modelClassName = "MyTeam") }
     }
 
-    @Test
-    fun `uploadTeamImageAttachment propagates CancellationException`() = testScope.runTest {
+    @Test(expected = CancellationException::class)
+    fun `uploadTeamImageAttachment propagates CancellationException`() = runTest(testDispatcher) {
         val mockTeam = TeamUploadData("team1", JsonObject(), false, "image.png")
         val mockRepo = mockk<TeamsSyncRepository>(relaxed = true)
         every { teamsSyncRepository.get() } returns mockRepo
@@ -172,15 +172,15 @@ class TeamsUploaderTest {
 
         coEvery { uploadRepository.uploadResource(any(), any(), any()) } throws CancellationException("Upload cancelled")
 
-        assertThrows(CancellationException::class.java) {
+        try {
             teamsUploader.uploadTeams()
+        } finally {
+            io.mockk.unmockkObject(MyTeam)
         }
-
-        io.mockk.unmockkObject(MyTeam)
     }
 
     @Test
-    fun `uploadTeamImageAttachment falls back to old rev on ordinary exception`() = testScope.runTest {
+    fun `uploadTeamImageAttachment falls back to old rev on ordinary exception`() = runTest(testDispatcher) {
         val mockTeam = TeamUploadData("team1", JsonObject(), false, "image.png")
         val mockRepo = mockk<TeamsSyncRepository>(relaxed = true)
         every { teamsSyncRepository.get() } returns mockRepo
