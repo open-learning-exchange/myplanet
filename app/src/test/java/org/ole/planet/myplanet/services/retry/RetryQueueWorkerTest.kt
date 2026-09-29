@@ -324,7 +324,7 @@ class RetryQueueWorkerTest {
     fun doWork_returnsSuccess_onTimeoutCancellationException() = runTest {
         MainApplication.isSyncRunning.set(false)
         coEvery { retryQueue.tryStartProcessing() } returns true
-        coEvery { retryQueue.getPendingOperations() } throws TimeoutCancellationException("Batch timed out", mockk(relaxed = true))
+        coEvery { retryQueue.getPendingOperations() } throws mockk<TimeoutCancellationException>(relaxed = true)
 
         val result = worker.doWork()
 
