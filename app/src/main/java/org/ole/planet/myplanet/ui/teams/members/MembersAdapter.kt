@@ -129,22 +129,7 @@ class MembersAdapter(
 
         holder.itemView.setOnClickListener {
             val activity = it.context as AppCompatActivity
-            val userName = "${member.firstName} ${member.lastName}".trim().ifBlank {
-                member.name
-            }
-            val fragment = MembersDetailFragment.newInstance(
-                MemberDetailArgs(
-                    id = member.id,
-                    name = userName.toString(),
-                    email = member.email.toString(),
-                    dob = member.dob.toString().substringBefore("T"),
-                    language = member.language.toString(),
-                    phone = member.phoneNumber.toString(),
-                    username = "${member.firstName} ${member.lastName}",
-                    memberLevel = member.level.toString(),
-                    imageUrl = member.userImage
-                )
-            )
+            val fragment = MembersDetailFragment.newInstance(MemberDetailArgs.fromUser(member))
             FragmentNavigator.replaceFragment(
                 activity.supportFragmentManager,
                 R.id.fragment_container,

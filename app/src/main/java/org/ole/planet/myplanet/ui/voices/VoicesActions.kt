@@ -207,21 +207,7 @@ object VoicesActions {
         userModel: UserEntity?
     ): MembersDetailFragment? {
         if (userModel == null) return null
-        val userName = "${userModel.firstName} ${userModel.lastName}".trim().ifBlank { userModel.name }
-        val fragment = MembersDetailFragment.newInstance(
-            MemberDetailArgs(
-                id = userModel.id,
-                name = userName.toString(),
-                email = userModel.email.toString(),
-                dob = userModel.dob.toString().substringBefore("T"),
-                language = userModel.language.toString(),
-                phone = userModel.phoneNumber.toString(),
-                username = "${userModel.firstName} ${userModel.lastName}",
-                memberLevel = userModel.level.toString(),
-                imageUrl = userModel.userImage
-            )
-        )
-        return fragment
+        return MembersDetailFragment.newInstance(MemberDetailArgs.fromUser(userModel))
     }
 
 }
