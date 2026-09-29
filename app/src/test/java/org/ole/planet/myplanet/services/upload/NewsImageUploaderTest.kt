@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services.upload
 
+import android.content.Context
 import android.text.TextUtils
 import android.util.Log
 import com.google.gson.Gson
@@ -20,6 +21,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.repository.NewsUploadData
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -35,6 +37,7 @@ import retrofit2.Response
 @OptIn(ExperimentalCoroutinesApi::class)
 class NewsImageUploaderTest {
 
+    private val context: Context = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val voicesRepository: VoicesRepository = mockk(relaxed = true)
@@ -48,6 +51,7 @@ class NewsImageUploaderTest {
 
     @Before
     fun setup() {
+        MainApplication.testContext = context
         mockkStatic(Log::class)
         every { Log.d(any(), any()) } returns 0
         every { Log.e(any(), any()) } returns 0
@@ -77,6 +81,7 @@ class NewsImageUploaderTest {
 
     @After
     fun tearDown() {
+        MainApplication.testContext = null
         unmockkAll()
     }
 
