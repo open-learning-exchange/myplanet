@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -41,6 +42,8 @@ class UploadToShelfService @Inject constructor(
                 }
 
                 uploadToShelf(listener)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 withContext(dispatcherProvider.main) {
                     listener.onSuccess("Error during user data sync: ${e.localizedMessage}")
@@ -59,6 +62,8 @@ class UploadToShelfService @Inject constructor(
                     userSyncRepository.checkAndUploadUser(userModel, password) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
                 }
                 uploadSingleUserToShelf(userName, listener)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 withContext(dispatcherProvider.main) {
                     listener.onSuccess("Error during user data sync: ${e.localizedMessage}")
@@ -83,6 +88,8 @@ class UploadToShelfService @Inject constructor(
                 withContext(dispatcherProvider.main) {
                     listener?.onSuccess("Health data for user $userId uploaded successfully")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Throwable) {
                 withContext(dispatcherProvider.main) {
                     listener?.onSuccess("Error uploading health data for user $userId: ${e.localizedMessage}")
@@ -123,8 +130,9 @@ class UploadToShelfService @Inject constructor(
             withContext(dispatcherProvider.main) {
                 listener.onSuccess("Single user shelf sync completed successfully")
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
             withContext(dispatcherProvider.main) {
                 listener.onSuccess("Unable to update document: ${e.localizedMessage}")
             }
