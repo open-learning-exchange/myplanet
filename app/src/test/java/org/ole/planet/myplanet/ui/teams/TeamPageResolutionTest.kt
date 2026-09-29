@@ -1,29 +1,21 @@
 package org.ole.planet.myplanet.ui.teams
 
-import android.os.Bundle
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
-import io.mockk.every
-import io.mockk.mockk
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.ole.planet.myplanet.callback.OnTeamPageListener
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class TeamPageResolutionTest {
 
-    private class DummyTeamPageFragment(
-        val fragmentType: String?
-    ) : Fragment(), OnTeamPageListener {
+    class TeamPageFragment : Fragment(), OnTeamPageListener {
         var addDocumentCalled = false
         var addCourseCalled = false
-
-        override fun getArguments(): Bundle? {
-            if (fragmentType == null) return null
-            val bundle = mockk<Bundle>()
-            every { bundle.getString("fragmentType") } returns fragmentType
-            return bundle
-        }
 
         override fun onAddDocument() {
             addDocumentCalled = true
@@ -34,45 +26,43 @@ class TeamPageResolutionTest {
         }
     }
 
-    private class NonTeamPageFragment : Fragment()
+    class PlainFragment : Fragment()
 
-    private fun resolvePageListener(fragments: List<Fragment>, targetPageId: String): OnTeamPageListener? {
-        return fragments.firstOrNull {
-            it is OnTeamPageListener && it.arguments?.getString("fragmentType") == targetPageId
-        } as? OnTeamPageListener
+    private fun teamPageFragment(fragmentType: String?) = TeamPageFragment().apply {
+        if (fragmentType != null) {
+            arguments = bundleOf(FRAGMENT_TYPE_KEY to fragmentType)
+        }
     }
 
     @Test
     fun `resolves matching OnTeamPageListener fragment by fragmentType`() {
-        val courseFragment = DummyTeamPageFragment("courses")
-        val resourceFragment = DummyTeamPageFragment("resources")
-        val otherFragment = NonTeamPageFragment()
+        val coursesFragment = teamPageFragment(TeamPageConfig.CoursesPage.id)
+        val resourcesFragment = teamPageFragment(TeamPageConfig.ResourcesPage.id)
+        val fragments = listOf(PlainFragment(), coursesFragment, resourcesFragment)
 
-        val fragments = listOf(otherFragment, courseFragment, resourceFragment)
+        val resolved = resolveTeamPageListener(fragments, TeamPageConfig.ResourcesPage.id)
 
-        val resolved = resolvePageListener(fragments, "resources")
-        assertEquals(resourceFragment, resolved)
-
+        assertSame(resourcesFragment, resolved)
         resolved?.onAddDocument()
-        assertTrue(resourceFragment.addDocumentCalled)
+        assertTrue(resourcesFragment.addDocumentCalled)
     }
 
     @Test
-    fun `returns null when no matching OnTeamPageListener fragment exists`() {
-        val courseFragment = DummyTeamPageFragment("courses")
-        val nonTeamFragment = NonTeamPageFragment()
+    fun `returns null when no fragment carries the target fragmentType`() {
+        val fragments = listOf(PlainFragment(), teamPageFragment(TeamPageConfig.CoursesPage.id))
 
-        val fragments = listOf(nonTeamFragment, courseFragment)
-
-        val resolved = resolvePageListener(fragments, "documents")
-        assertNull(resolved)
+        assertNull(resolveTeamPageListener(fragments, TeamPageConfig.DocumentsPage.id))
     }
 
     @Test
-    fun `returns null and does not throw when fragment list is empty`() {
-        val fragments = emptyList<Fragment>()
+    fun `ignores team page fragments without arguments`() {
+        val fragments = listOf(teamPageFragment(null))
 
-        val resolved = resolvePageListener(fragments, "courses")
-        assertNull(resolved)
+        assertNull(resolveTeamPageListener(fragments, TeamPageConfig.CoursesPage.id))
+    }
+
+    @Test
+    fun `returns null when fragment list is empty`() {
+        assertNull(resolveTeamPageListener(emptyList(), TeamPageConfig.CoursesPage.id))
     }
 }

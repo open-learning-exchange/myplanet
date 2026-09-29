@@ -92,7 +92,7 @@ class TeamPagerAdapter(
             args.putString("id", teamId)
         }
 
-        args.putString("fragmentType", page.id)
+        args.putString(FRAGMENT_TYPE_KEY, page.id)
         args.putInt("fragmentPosition", position)
 
         return fragment
