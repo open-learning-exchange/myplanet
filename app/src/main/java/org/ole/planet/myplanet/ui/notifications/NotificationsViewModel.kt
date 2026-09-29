@@ -14,24 +14,20 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Notification
 import org.ole.planet.myplanet.model.NotificationListItem
 import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.repository.NotificationsRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TaskNotificationUtils
 
 @HiltViewModel
 class NotificationsViewModel @Inject constructor(
     private val notificationsRepository: NotificationsRepository,
-    @ApplicationContext private val context: Context,
-    private val dispatcherProvider: DispatcherProvider
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
@@ -69,19 +65,14 @@ class NotificationsViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private var currentFilter: String = "all"
-    private var loadJob: Job? = null
 
     fun loadNotifications(userId: String, filter: String, isAdmin: Boolean = false) {
         currentFilter = filter
-        loadJob?.cancel()
-        loadJob = viewModelScope.launch {
+        viewModelScope.launch {
             val enrichment = notificationsRepository.getEnrichedNotifications(userId, filter, isAdmin)
-            val formatted = withContext(dispatcherProvider.default) {
-                enrichment.payloads.map {
-                    formatNotification(it, enrichment.taskTeamNames, enrichment.joinRequestDetails, enrichment.parsedTaskDates)
-                }
+            _notifications.value = enrichment.payloads.map {
+                formatNotification(it, enrichment.taskTeamNames, enrichment.joinRequestDetails, enrichment.parsedTaskDates)
             }
-            _notifications.value = formatted
             _unreadCount.value = enrichment.unreadCount
         }
     }

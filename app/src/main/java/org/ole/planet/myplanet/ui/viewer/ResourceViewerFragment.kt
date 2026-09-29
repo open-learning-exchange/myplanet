@@ -595,29 +595,18 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         if (!file.exists()) return
 
         val (text, truncated) = withContext(dispatcherProvider.io) {
-            val buf = CharArray(MAX_TEXT_VIEWER_CHARS + 1)
-            var n = 0
-            file.bufferedReader().use { r ->
-                while (n < buf.size) {
-                    val read = r.read(buf, n, buf.size - n)
-                    if (read == -1) break
-                    n += read
-                }
+            val raw = file.readText()
+            if (raw.length > MAX_TEXT_VIEWER_CHARS) {
+                raw.substring(0, MAX_TEXT_VIEWER_CHARS) to true
+            } else {
+                raw to false
             }
-            val isTruncated = n > MAX_TEXT_VIEWER_CHARS
-            val content = String(buf, 0, minOf(n, MAX_TEXT_VIEWER_CHARS))
-            content to isTruncated
         }
 
         if (!isAdded) return
 
         if (type == ResourceType.MARKDOWN) {
-            val ctx = textContent.context
-            val spanned = withContext(dispatcherProvider.default) {
-                MarkdownUtils.parseMarkdown(ctx, text)
-            }
-            if (!isAdded) return
-            MarkdownUtils.setParsedMarkdown(textContent, spanned)
+            MarkdownUtils.setMarkdownText(textContent, text)
         } else {
             textContent.text = text
         }

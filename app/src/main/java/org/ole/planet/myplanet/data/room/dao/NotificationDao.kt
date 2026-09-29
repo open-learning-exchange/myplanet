@@ -37,32 +37,16 @@ interface NotificationDao {
     suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean): List<AppNotification>
 
     @Query("SELECT * FROM notifications WHERE id IN (:ids)")
-    suspend fun getByIdsInternal(ids: List<String>): List<AppNotification>
-
-    suspend fun getByIds(ids: List<String>): List<AppNotification> {
-        if (ids.isEmpty()) return emptyList()
-        return ids.chunked(900).flatMap { chunk -> getByIdsInternal(chunk) }
-    }
+    suspend fun getByIds(ids: List<String>): List<AppNotification>
 
     @Query("SELECT id FROM notifications WHERE id IN (:ids)")
-    suspend fun getIdsByIdsInternal(ids: List<String>): List<String>
-
-    suspend fun getIdsByIds(ids: List<String>): List<String> {
-        if (ids.isEmpty()) return emptyList()
-        return ids.chunked(900).flatMap { chunk -> getIdsByIdsInternal(chunk) }
-    }
+    suspend fun getIdsByIds(ids: List<String>): List<String>
 
     @Query("SELECT id FROM notifications WHERE userId = :userId AND isRead = 0")
     suspend fun getUnreadIds(userId: String): List<String>
 
     @Query("UPDATE notifications SET isRead = 1, createdAt = :createdAt, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE id IN (:ids)")
-    suspend fun markAsReadInternal(ids: List<String>, createdAt: Date): Int
-
-    @Transaction
-    suspend fun markAsRead(ids: List<String>, createdAt: Date): Int {
-        if (ids.isEmpty()) return 0
-        return ids.chunked(900).sumOf { chunk -> markAsReadInternal(chunk, createdAt) }
-    }
+    suspend fun markAsRead(ids: List<String>, createdAt: Date): Int
 
     @Query("UPDATE notifications SET isRead = 1, createdAt = :createdAt, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE userId = :userId AND isRead = 0")
     suspend fun markAllUnreadAsRead(userId: String, createdAt: Date): Int
@@ -116,11 +100,5 @@ interface NotificationDao {
     }
 
     @Query("DELETE FROM notifications WHERE id IN (:ids)")
-    suspend fun deleteByIdsInternal(ids: List<String>): Int
-
-    @Transaction
-    suspend fun deleteByIds(ids: List<String>): Int {
-        if (ids.isEmpty()) return 0
-        return ids.chunked(900).sumOf { chunk -> deleteByIdsInternal(chunk) }
-    }
+    suspend fun deleteByIds(ids: List<String>): Int
 }

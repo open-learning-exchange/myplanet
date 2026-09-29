@@ -275,7 +275,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     customProgressDialog.setText(getString(R.string.please_wait))
                     customProgressDialog.show()
                     lifecycleScope.launch {
-                        val user = loginViewModel.getUserByName(username)
+                        val user = userRepository.getUserByName(username)
                         if (user == null || !user.isArchived) {
                             submitForm(username, password)
                         } else {
@@ -318,7 +318,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         binding.btnGuestLogin.setOnClickListener {
             if (getUrl() != "/db") {
                 binding.inputName.setText(R.string.empty_text)
-                showGuestLoginDialog(loginViewModel)
+                showGuestLoginDialog(userRepository)
             } else {
                 toast(this, getString(R.string.please_enter_server_url_first))
                 settingDialog()
@@ -370,7 +370,9 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         setUpLanguageButton()
         if (NetworkUtils.isNetworkConnected) {
             lifecycleScope.launch {
-                loginViewModel.syncCommunityDocs()
+                withContext(dispatcherProvider.io) {
+                    communityRepository.syncCommunityDocs()
+                }
             }
         }
         val usernameFlow = binding.inputName.textChanges()
@@ -584,7 +586,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         } else {
             if (user.source == "guest"){
                 lifecycleScope.launch {
-                    val model = loginViewModel.createGuestUser(user.name ?: "")
+                    val model = userRepository.createGuestUser(user.name ?: "")
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                     } else {
@@ -626,7 +628,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             positiveButton.setOnClickListener {
                 positiveButton.isEnabled = false
                 lifecycleScope.launch {
-                    val model = loginViewModel.createGuestUser(username)
+                    val model = userRepository.createGuestUser(username)
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                         positiveButton.isEnabled = true

@@ -109,12 +109,14 @@ class RetryQueueWorker @AssistedInject constructor(
         }
 
         // Check if already processing
-        if (!retryQueue.tryStartProcessing()) {
+        if (retryQueue.isCurrentlyProcessing()) {
             Log.d(TAG, "Retry queue is already being processed, skipping")
             return Result.success()
         }
 
         return try {
+            retryQueue.setProcessing(true)
+
             val pendingOperations = retryQueue.getPendingOperations()
 
             if (pendingOperations.isEmpty()) {
@@ -166,7 +168,7 @@ class RetryQueueWorker @AssistedInject constructor(
             Log.e(TAG, "Error during retry processing", e)
             Result.retry()
         } finally {
-            retryQueue.finishProcessing()
+            retryQueue.setProcessing(false)
         }
     }
 

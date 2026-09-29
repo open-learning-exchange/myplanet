@@ -11,11 +11,12 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.Utilities.toast
 import org.ole.planet.myplanet.utils.textChanges
 
 @OptIn(FlowPreview::class)
-fun LoginActivity.showGuestLoginDialog(viewModel: LoginViewModel) {
+fun LoginActivity.showGuestLoginDialog(userRepository: UserRepository) {
     val binding = AlertGuestLoginBinding.inflate(LayoutInflater.from(this))
     val view: View = binding.root
 
@@ -35,7 +36,7 @@ fun LoginActivity.showGuestLoginDialog(viewModel: LoginViewModel) {
                 if (input.isEmpty()) {
                     binding.etUserName.error = null
                 } else {
-                    val error = viewModel.validateUsername(input)
+                    val error = userRepository.validateUsername(input)
                     binding.etUserName.error = error
                 }
             }
@@ -54,9 +55,9 @@ fun LoginActivity.showGuestLoginDialog(viewModel: LoginViewModel) {
     login.setOnClickListener {
         val username = binding.etUserName.text.toString().trim { it <= ' ' }
         lifecycleScope.launch {
-            val error = viewModel.validateUsername(username)
+            val error = userRepository.validateUsername(username)
             if (error == null) {
-                val existingUser = viewModel.findUserByName(username)
+                val existingUser = userRepository.findUserByName(username)
                 dialog.dismiss()
                 if (existingUser != null) {
                     when {
@@ -64,7 +65,7 @@ fun LoginActivity.showGuestLoginDialog(viewModel: LoginViewModel) {
                         existingUser._id?.contains("org.couchdb.user:") == true -> showUserAlreadyMemberDialog(username)
                     }
                 } else {
-                    val model = viewModel.createGuestUser(username)
+                    val model = userRepository.createGuestUser(username)
                     if (model == null) {
                         toast(this@showGuestLoginDialog, getString(R.string.unable_to_login))
                     } else {

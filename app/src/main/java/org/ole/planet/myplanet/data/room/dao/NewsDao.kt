@@ -22,12 +22,7 @@ interface NewsDao {
     suspend fun getByUnderscoreId(underscoreId: String): News?
 
     @Query("SELECT * FROM news WHERE _id IN (:underscoreIds)")
-    suspend fun getByUnderscoreIdsInternal(underscoreIds: List<String>): List<News>
-
-    suspend fun getByUnderscoreIds(underscoreIds: List<String>): List<News> {
-        if (underscoreIds.isEmpty()) return emptyList()
-        return underscoreIds.distinct().chunked(900).flatMap { chunk -> getByUnderscoreIdsInternal(chunk) }
-    }
+    suspend fun getByUnderscoreIds(underscoreIds: List<String>): List<News>
 
     @Query("SELECT * FROM news")
     suspend fun getAll(): List<News>

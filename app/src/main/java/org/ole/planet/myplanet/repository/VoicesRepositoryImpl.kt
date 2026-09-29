@@ -493,13 +493,11 @@ class VoicesRepositoryImpl @Inject constructor(
     override suspend fun countTopLevelByTeams(teamIds: List<String>): Map<String, Long> {
         if (teamIds.isEmpty()) return emptyMap()
         val counts = teamIds.associateWith { 0L }.toMutableMap()
-        val patterns = teamIds.map { it to "\"_id\":\"$it\"" }
         newsDao.getTopLevelTeamMembership(teamIds).forEach { row ->
-            val isTeamsViewable = row.viewableBy.equals("teams", ignoreCase = true)
-            patterns.forEach { (teamId, pattern) ->
-                val matchesViewable = isTeamsViewable &&
+            teamIds.forEach { teamId ->
+                val matchesViewable = row.viewableBy.equals("teams", ignoreCase = true) &&
                     row.viewableId.equals(teamId, ignoreCase = true)
-                val matchesViewIn = row.viewIn?.contains(pattern, ignoreCase = true) == true
+                val matchesViewIn = row.viewIn?.contains("\"_id\":\"$teamId\"", ignoreCase = true) == true
                 if (matchesViewable || matchesViewIn) {
                     counts[teamId] = (counts[teamId] ?: 0L) + 1L
                 }

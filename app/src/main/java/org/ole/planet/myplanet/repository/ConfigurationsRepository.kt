@@ -22,7 +22,6 @@ interface ConfigurationsRepository {
     fun getCommunityName(): String
     fun getCommunityConfiguration(): CommunityConfiguration
     fun getCommunityLeaders(): List<UserEntity>
-    suspend fun syncCommunityLeaders()
     fun clearPreferences()
     suspend fun ensureServerUrlUpdated()
     suspend fun clearFirstRunStorageAndSetFlag(hasWritePermission: Boolean)

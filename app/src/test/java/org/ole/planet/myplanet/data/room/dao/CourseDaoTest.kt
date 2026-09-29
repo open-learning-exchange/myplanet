@@ -14,8 +14,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.model.MyCourse
+import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
+@Config(sdk = [32])
 class CourseDaoTest {
     private lateinit var database: AppDatabase
     private lateinit var courseDao: CourseDao
