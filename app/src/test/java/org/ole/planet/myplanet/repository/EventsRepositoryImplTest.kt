@@ -248,4 +248,18 @@ class EventsRepositoryImplTest {
             // Expected exception propagated
         }
     }
+
+    @Test
+    fun updateMeetupCancellationException() = runTest {
+        val meetup = Meetup().apply { id = "m1" }
+        coEvery { meetupDao.getById("m1") } returns meetup
+        coEvery { meetupDao.upsert(any()) } throws CancellationException("cancelled")
+
+        try {
+            repository.updateMeetup("m1", "t", "d", 0L, 0L, "st", "et", "loc", "link", "rec")
+            org.junit.Assert.fail("Expected CancellationException to be thrown")
+        } catch (_: CancellationException) {
+            // Expected exception propagated
+        }
+    }
 }

@@ -54,8 +54,10 @@ class EventsRepositoryImpl @Inject constructor(
             meetup.updated = true
             meetupDao.upsert(meetup)
             true
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "updateMeetup failed", e)
             false
         }
     }
