@@ -2,24 +2,20 @@ package org.ole.planet.myplanet.repository
 
 import android.util.Log
 import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
-import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.model.Community
-import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.toGson
 
 @Singleton
 class CommunityRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
-    private val communityDao: CommunityDao,
-    private val meetupDao: MeetupDao
-) : CommunityRepository, CommunitySyncWriter {
+    private val communityDao: CommunityDao
+) : CommunityRepository {
 
     override suspend fun replaceAll(rows: JsonArray) {
         val communities = mutableListOf<Community>()
@@ -60,25 +56,6 @@ class CommunityRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Log.w(TAG, "syncCommunityDocs failed", e)
             false
-        }
-    }
-
-    override suspend fun insertMeetupsFromSync(docs: List<JsonObject>) {
-        if (docs.isEmpty()) return
-        val ids = docs.map { GsonUtils.getString("_id", it) }
-        val existingByMeetupId = meetupDao.getByMeetupIds(ids).associateBy { it.meetupId }
-
-        val meetupsToInsert = docs.mapNotNull { meetupDoc ->
-            val id = GsonUtils.getString("_id", meetupDoc)
-            val existing = existingByMeetupId[id]
-            if (existing?.updated == true) {
-                null
-            } else {
-                Meetup.fromJson(meetupDoc, "", existing)
-            }
-        }
-        if (meetupsToInsert.isNotEmpty()) {
-            meetupDao.upsertAll(meetupsToInsert)
         }
     }
 
