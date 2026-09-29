@@ -318,4 +318,23 @@ class NewsDaoTest {
         // Must NOT match "teamX100Y" where _ and % would have acted as wildcards if unescaped
         assertFalse(newsDao.isSharedWith("chat_wildcard", patternSpecial))
     }
+
+    @Test
+    fun getByUnderscoreIds_handlesEmptyInputAndLargeChunkedList() = runBlocking {
+        val emptyResult = newsDao.getByUnderscoreIds(emptyList())
+        assertTrue(emptyResult.isEmpty())
+
+        val items = (1..1200).map { i ->
+            News().apply {
+                id = "id_$i"
+                _id = "underscore_id_$i"
+            }
+        }
+        newsDao.upsertAll(items)
+
+        val underscoreIds = items.mapNotNull { it._id }
+        val result = newsDao.getByUnderscoreIds(underscoreIds)
+        assertEquals(1200, result.size)
+        assertEquals(underscoreIds.toSet(), result.mapNotNull { it._id }.toSet())
+    }
 }

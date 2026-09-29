@@ -26,6 +26,7 @@ import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Provider
 import kotlin.math.roundToInt
@@ -84,11 +85,13 @@ class DownloadService : Service() {
     private var fromSync = false
     private var lastNotificationUpdateTime = 0L
     private var currentFileProgress = 0
-    private val processedUrls = mutableSetOf<String>()
+    private val processedUrls: MutableSet<String> = ConcurrentHashMap.newKeySet()
+    private val completedUrls: MutableSet<String> = ConcurrentHashMap.newKeySet()
     private var sessionTotalCount = 0
     private var sessionCompletedCount = 0
     private var isCurrentDownloadPriority = false
     private var isQueueRunning = false
+    private var processedSinceLastPersist = 0
 
     @Volatile
     private var cachedRemainingCount = 0
@@ -144,6 +147,7 @@ class DownloadService : Service() {
                 if (sessionCompletedCount > 0) {
                     showCompletionNotification(false)
                 }
+                persistProcessedUrls()
                 stopSelf()
                 return
             }
@@ -160,7 +164,7 @@ class DownloadService : Service() {
 
             if (succeeded) sessionCompletedCount++
 
-            cleanupProcessedUrls()
+            cleanupProcessedUrls(nextUrl.url)
         }
     }
 
@@ -181,16 +185,28 @@ class DownloadService : Service() {
         return allUrls.count { it !in processedUrls }
     }
 
-    private fun cleanupProcessedUrls() {
+    private fun persistProcessedUrls() {
+        val completed = completedUrls.toSet()
         val remainingPriority = preferences.getStringSet(PRIORITY_DOWNLOADS_KEY, emptySet())?.toMutableSet() ?: mutableSetOf()
-        remainingPriority.removeAll(processedUrls)
+        remainingPriority.removeAll(completed)
         val remainingPending = preferences.getStringSet(PENDING_DOWNLOADS_KEY, emptySet())?.toMutableSet() ?: mutableSetOf()
-        remainingPending.removeAll(processedUrls)
+        remainingPending.removeAll(completed)
         preferences.edit {
             putStringSet(PRIORITY_DOWNLOADS_KEY, remainingPriority)
             putStringSet(PENDING_DOWNLOADS_KEY, remainingPending)
         }
+        processedSinceLastPersist = 0
+    }
+
+    private fun cleanupProcessedUrls(url: String = "") {
+        if (url.isNotEmpty()) {
+            completedUrls.add(url)
+        }
+        processedSinceLastPersist++
         cachedRemainingCount = getRemainingCount()
+        if (processedSinceLastPersist >= QUEUE_PERSIST_INTERVAL) {
+            persistProcessedUrls()
+        }
     }
 
     private fun updateNotificationForBatchDownload() {
@@ -600,6 +616,11 @@ class DownloadService : Service() {
 
     override fun onDestroy() {
         try {
+            persistProcessedUrls()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error persisting processed URLs", e)
+        }
+        try {
             stopForeground(Service.STOP_FOREGROUND_REMOVE)
         } catch (e: Exception) {
             Log.e(TAG, "Error stopping foreground service", e)
@@ -611,6 +632,7 @@ class DownloadService : Service() {
 
     companion object {
         private const val TAG = "DownloadService"
+        private const val QUEUE_PERSIST_INTERVAL = 10
         private const val STORAGE_HEADROOM_BYTES = 100L * 1024 * 1024
         private const val BUFFER_SIZE = 1024 * 16
         const val PREFS_NAME = "MyPrefsFile"
