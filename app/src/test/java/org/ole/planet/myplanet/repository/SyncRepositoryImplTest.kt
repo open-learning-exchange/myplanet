@@ -308,14 +308,29 @@ class SyncRepositoryImplTest {
     }
 
     @Test(expected = CancellationException::class)
-    fun `processShelfParallel rethrows CancellationException when shelf fetch fails with CancellationException`() = runTest {
-        coEvery {
-            apiInterface.getJsonObject(any(), match { it.contains("/shelf/shelf123") })
-        } coAnswers {
-            coroutineContext[kotlinx.coroutines.Job]?.cancel()
-            throw CancellationException("Cancelled")
+    fun `processShelfParallel rethrows CancellationException when shelf dispatch handler fails with CancellationException`() = runTest {
+        val shelfId = "shelf123"
+        val shelfDoc = buildJsonObject {
+            put("_id", shelfId)
+            putJsonArray("resourceIds") { add("res1") }
         }
 
-        syncRepository.processShelfParallel("shelf123")
+        coEvery {
+            apiInterface.getJsonObject(any(), match { it.contains("/shelf/$shelfId") })
+        } returns Response.success(shelfDoc)
+
+        val doc1 = buildJsonObject { put("_id", "res1") }
+        val row1 = buildJsonObject { put("doc", doc1) }
+        val rows = buildJsonArray { add(row1) }
+        val body = buildJsonObject { put("rows", rows) }
+        coEvery {
+            apiInterface.postDoc(any(), any(), any(), any())
+        } returns Response.success(body)
+
+        coEvery {
+            resourcesRepository.batchInsertMyLibrary(shelfId, any())
+        } throws CancellationException("Shelf insertion cancelled")
+
+        syncRepository.processShelfParallel(shelfId)
     }
 }
