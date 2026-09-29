@@ -196,7 +196,11 @@ object FileUtils {
 
     fun getFileExtension(address: String?): String {
         if (address.isNullOrBlank()) return ""
-        val cleanAddress = address.substringBefore('?').substringBefore('#')
+        val cleanAddress = if (address.startsWith("http://", ignoreCase = true) || address.startsWith("https://", ignoreCase = true)) {
+            address.substringBefore('?').substringBefore('#')
+        } else {
+            address
+        }
         return File(cleanAddress).extension.lowercase()
     }
 

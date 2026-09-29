@@ -10,8 +10,8 @@ object MediumUtils {
         val lower = medium.lowercase(Locale.ROOT).trim()
         return when {
             lower.contains("pdf") -> "pdf"
-            lower.contains("video") || lower == "mp4" -> "video"
             lower.contains("audio") || lower == "mp3" -> "audio"
+            lower.contains("video") || lower == "mp4" -> "video"
             lower.contains("image") || lower.contains("graphic") -> "image"
             lower.contains("html") -> "html"
             lower.contains("book") || lower == "epub" || lower == "textbook" -> "book"

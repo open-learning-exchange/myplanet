@@ -37,7 +37,7 @@ object LibraryTypeClassifier {
 
         return mediaType.startsWith("image") ||
                 mediaType.contains("html") ||
-                mediaType.startsWith("text") ||
+                mediaType.startsWith("text/") ||
                 extension in nonBookExtensions
     }
 }
