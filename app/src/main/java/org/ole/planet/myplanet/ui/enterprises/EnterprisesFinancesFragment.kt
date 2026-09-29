@@ -12,6 +12,7 @@ import android.widget.DatePicker
 import android.widget.ImageView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.ConcatAdapter
@@ -225,8 +226,11 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
     private fun filterDataByDateRange(fromDate: String, toDate: String) {
         try {
-            val start = LocalDate.parse(fromDate, dateFormatter).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-            val end = LocalDate.parse(toDate, dateFormatter).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            val (start, end) = inclusiveDayRange(
+                LocalDate.parse(fromDate, dateFormatter),
+                LocalDate.parse(toDate, dateFormatter),
+                ZoneId.systemDefault()
+            )
             currentStartDate = start
             currentEndDate = end
             observeTransactions()
@@ -414,5 +418,12 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
     companion object {
         private const val TAG = "EnterprisesFinancesFragment"
+
+        @VisibleForTesting
+        internal fun inclusiveDayRange(from: LocalDate, to: LocalDate, zone: ZoneId): Pair<Long, Long> {
+            val start = from.atStartOfDay(zone).toInstant().toEpochMilli()
+            val end = to.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
+            return start to end
+        }
     }
 }
