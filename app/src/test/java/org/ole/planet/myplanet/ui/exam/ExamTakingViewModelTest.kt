@@ -4,7 +4,8 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -18,17 +19,16 @@ import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
-import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ExamTakingViewModelTest {
 
-    private val testDispatcher = StandardTestDispatcher()
+    private val testDispatcher = UnconfinedTestDispatcher()
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
-    private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
+    private val applicationScope = TestScope(testDispatcher)
 
     private lateinit var submissionsRepository: SubmissionsRepository
     private lateinit var coursesRepository: CoursesRepository
@@ -43,7 +43,8 @@ class ExamTakingViewModelTest {
         viewModel = ExamTakingViewModel(
             submissionsRepository,
             coursesRepository,
-            surveysRepository
+            surveysRepository,
+            applicationScope
         )
     }
 
@@ -136,7 +137,7 @@ class ExamTakingViewModelTest {
     }
 
     @Test
-    fun `addSubmissionPhoto delegates to repository`() = runTest {
+    fun `addSubmissionPhoto delegates to repository on applicationScope`() = runTest {
         val submitId = "submit123"
         val examId = "exam123"
         val courseId = "course123"
@@ -144,7 +145,7 @@ class ExamTakingViewModelTest {
         val photoPath = "/path/to/photo.jpg"
 
         viewModel.addSubmissionPhoto(submitId, examId, courseId, memberId, photoPath)
-        advanceUntilIdle()
+        applicationScope.advanceUntilIdle()
 
         coVerify(exactly = 1) {
             submissionsRepository.addSubmissionPhoto(

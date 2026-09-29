@@ -1,10 +1,11 @@
 package org.ole.planet.myplanet.ui.exam
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.CoursesRepository
@@ -15,7 +16,8 @@ import org.ole.planet.myplanet.repository.SurveysRepository
 class ExamTakingViewModel @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val coursesRepository: CoursesRepository,
-    private val surveysRepository: SurveysRepository
+    private val surveysRepository: SurveysRepository,
+    @ApplicationScope private val applicationScope: CoroutineScope
 ) : ViewModel() {
 
     suspend fun getSubmissionById(id: String): Submission? {
@@ -41,7 +43,7 @@ class ExamTakingViewModel @Inject constructor(
         memberId: String?,
         photoPath: String?
     ) {
-        viewModelScope.launch {
+        applicationScope.launch {
             submissionsRepository.addSubmissionPhoto(
                 submissionId,
                 examId,
