@@ -72,6 +72,7 @@ class TeamResourcesAdapterTest {
         }
 
         adapter.submitList(listOf(resource1, resource2))
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
 
         val removalCompleted = AtomicBoolean(false)
 
