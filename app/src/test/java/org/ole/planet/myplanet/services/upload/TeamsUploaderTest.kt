@@ -184,6 +184,7 @@ class TeamsUploaderTest {
         }
 
         assertTrue("Expected CancellationException, got $caught", caught is CancellationException)
+        coVerify(exactly = 0) { mockRepo.markTeamsUploaded(any()) }
     }
 
     @Test
