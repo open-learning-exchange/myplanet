@@ -69,8 +69,8 @@ class HealthViewModel @Inject constructor(
     private var currentPatientId: String? = null
 
     @OptIn(FlowPreview::class)
-    val healthSyncUpdates: Flow<Unit> = realtimeSyncManager.dataUpdateFlow
-        .filter { it.table == HEALTH_TABLE && it.shouldRefreshUI }
+    val healthSyncUpdates: Flow<Unit> = realtimeSyncManager.updatesFor(HEALTH_TABLE)
+        .filter { it.shouldRefreshUI }
         .debounce(SYNC_REFRESH_DEBOUNCE_MS)
         .map { }
 
