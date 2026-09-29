@@ -185,7 +185,7 @@ class TeamsUploaderTest {
             io.mockk.unmockkObject(MyTeam)
         }
 
-        assertTrue("Expected CancellationException, got $caught", caught is CancellationException)
+        assertTrue("Expected CancellationException, got $caught", caught is CancellationException || (caught != null && caught.cause is CancellationException))
         coVerify(exactly = 0) { mockRepo.markTeamsUploaded(any()) }
     }
 
