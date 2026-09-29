@@ -95,4 +95,20 @@ class ResourceActivityDaoTest {
         assertEquals("Valid Resource", result?.title)
         assertEquals(1, result?.openCount)
     }
+
+    @Test
+    fun getMostOpenedResource_handlesRenamedResourceDeterministically() = runBlocking {
+        dao.insert(createActivity("john", "pdf", "resRenamed", "Old Title"))
+        dao.insert(createActivity("john", "pdf", "resRenamed", "New Title"))
+
+        val result1 = dao.getMostOpenedResource("john", "pdf")
+        assertNotNull(result1)
+        assertEquals("New Title", result1?.title)
+        assertEquals(2, result1?.openCount)
+
+        val result2 = dao.getMostOpenedResource("john", "pdf")
+        assertNotNull(result2)
+        assertEquals("New Title", result2?.title)
+        assertEquals(2, result2?.openCount)
+    }
 }
