@@ -70,19 +70,16 @@ class TeamResourcesAdapterTest {
             id = "res_2"
             title = "Resource 2"
         }
-
-        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+        adapter.submitList(listOf(resource1, resource2))
+        ShadowLooper.idleMainLooper()
 
         val removalCompleted = AtomicBoolean(false)
 
-        adapter.submitList(listOf(resource1, resource2)) {
-            adapter.removeResourceAt(0) {
-                removalCompleted.set(true)
-            }
+        adapter.removeResourceAt(0) {
+            removalCompleted.set(true)
         }
 
-        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
-
+        ShadowLooper.idleMainLooper()
         assertTrue(removalCompleted.get())
         assertEquals(1, adapter.currentList.size)
         assertEquals("res_2", adapter.currentList[0].id)
