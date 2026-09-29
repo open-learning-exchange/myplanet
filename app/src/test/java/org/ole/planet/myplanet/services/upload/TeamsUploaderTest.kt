@@ -48,6 +48,8 @@ class TeamsUploaderTest {
         mockkStatic(Log::class)
         mockkStatic(android.net.Uri::class)
         every { android.net.Uri.encode(any()) } answers { firstArg() }
+        mockkStatic(org.ole.planet.myplanet.utils.FileUtils::class)
+        every { org.ole.planet.myplanet.utils.FileUtils.getMimeType(any()) } returns "image/png"
         io.mockk.mockkObject(UrlUtils)
         every { UrlUtils.getUrl() } returns "http://mock.url"
         every { Log.d(any(), any()) } returns 0
@@ -162,11 +164,10 @@ class TeamsUploaderTest {
         every { teamsSyncRepository.get() } returns mockRepo
         coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
 
-        coEvery { uploadRepository.postUploadArray(any(), any()) } coAnswers {
-            val element = JsonObject().apply { addProperty("id", "team1"); addProperty("rev", "rev1") }
-            val bulkResponse = com.google.gson.JsonArray().apply { add(element) }
-            retrofit2.Response.success(bulkResponse)
+        val bulkResponse = com.google.gson.JsonArray().apply {
+            add(JsonObject().apply { addProperty("id", "team1"); addProperty("rev", "rev1") })
         }
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.success(bulkResponse)
 
         io.mockk.mockkObject(MyTeam)
         val mockFile = mockk<File>()
