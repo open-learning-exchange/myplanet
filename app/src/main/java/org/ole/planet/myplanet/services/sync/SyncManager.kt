@@ -38,7 +38,6 @@ import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyCourse.Companion.saveConcatenatedLinksToPrefs
-import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SyncRepository
@@ -46,15 +45,16 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils.getInt
-import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
-import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
-import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.GsonUtils.getInt
+import org.ole.planet.myplanet.utils.GsonUtils.getJsonArray
+import org.ole.planet.myplanet.utils.GsonUtils.getJsonObject
+import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.NotificationUtils.cancel
 import org.ole.planet.myplanet.utils.NotificationUtils.create
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.toGson
 
 @Singleton
 class SyncManager @Inject constructor(
@@ -291,7 +291,7 @@ class SyncManager @Inject constructor(
             val url = UrlUtils.getUrl()
             val header = UrlUtils.header
 
-            val newIds: MutableList<String?> = ArrayList()
+            val newIds: MutableList<String> = ArrayList()
             var totalRows = 0
             var hadBatchFailure = false
 
@@ -300,7 +300,7 @@ class SyncManager @Inject constructor(
             ApiClient.executeWithRetryAndWrap {
                 apiInterface.getJsonObject(header, "$url/resources/_all_docs?limit=0")
             }?.let { response ->
-                response.body()?.let { body ->
+                response.body()?.toGson()?.let { body ->
                     totalRows = getInt("total_rows", body)
                 }
             }
@@ -326,7 +326,7 @@ class SyncManager @Inject constructor(
                     ApiClient.executeWithRetryAndWrap {
                         apiInterface.getJsonObject(header, "$url/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip")
                     }?.let {
-                        response = it.body()
+                        response = it.body()?.toGson()
                     }
                     val batchApiDuration = SystemClock.elapsedRealtime() - batchApiStartTime
 
@@ -408,16 +408,15 @@ class SyncManager @Inject constructor(
             try {
                 syncTimeLogger.startProcess("resource_cleanup")
                 val cleanupStartTime = SystemClock.elapsedRealtime()
-                val validNewIds = newIds.filter { !it.isNullOrBlank() }
                 if (hadBatchFailure) {
                     syncTimeLogger.logDetail("resource_sync", "Skipping delete-cleanup: one or more batches failed, id list is incomplete")
-                } else if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
-                    resourcesRepository.removeDeletedResources(validNewIds)
+                } else if (newIds.isNotEmpty()) {
+                    resourcesRepository.removeDeletedResources(newIds)
                 }
                 val cleanupDuration = SystemClock.elapsedRealtime() - cleanupStartTime
                 syncTimeLogger.endProcess("resource_cleanup")
                 if (cleanupDuration > 100) {
-                    syncTimeLogger.logDbOperation("delete_cleanup", "resources", cleanupDuration, newIds.size - validNewIds.size)
+                    syncTimeLogger.logDbOperation("delete_cleanup", "resources", cleanupDuration, newIds.size)
                 }
             } catch (e: Exception) {
                 Log.e("SyncManager", "Resource cleanup failed", e)
@@ -447,43 +446,6 @@ class SyncManager @Inject constructor(
         }
     }
 
-    private suspend fun getShelvesWithDataBatchOptimized(): List<String> {
-        val shelvesWithData = mutableListOf<String>()
-        val cachedShelves = syncRepository.getCachedShelvesWithData()
-        if (cachedShelves.isNotEmpty()) {
-            return cachedShelves
-        }
-
-        val url = UrlUtils.getUrl()
-        val header = UrlUtils.header
-
-        val allShelves = ApiClient.executeWithRetryAndWrap {
-            apiInterface.getDocuments(header, "$url/shelf/_all_docs")
-        }?.body()?.rows ?: return emptyList()
-
-        coroutineScope {
-            val semaphore = Semaphore(8)
-            val checkJobs = allShelves.chunked(25).map { shelfBatch ->
-                async(dispatcherProvider.io) {
-                    semaphore.withPermit {
-                        checkShelfBatchForDataOptimized(shelfBatch)
-                    }
-                }
-            }
-
-            checkJobs.awaitAll().flatten().let { validShelves ->
-                shelvesWithData.addAll(validShelves)
-            }
-        }
-
-        syncRepository.cacheShelvesWithData(shelvesWithData)
-        return shelvesWithData
-    }
-
-    private suspend fun checkShelfBatchForDataOptimized(shelfBatch: List<Rows>): List<String> {
-        return userSyncRepository.checkShelfBatchForDataOptimized(shelfBatch.mapNotNull { it.id })
-    }
-
     private suspend fun myLibraryTransactionSync() {
 
         val librarySyncStartTime = SystemClock.elapsedRealtime()
@@ -495,7 +457,7 @@ class SyncManager @Inject constructor(
         try {
             syncTimeLogger.startProcess("library_get_shelves")
             val shelvesStartTime = SystemClock.elapsedRealtime()
-            val shelvesWithData = getShelvesWithDataBatchOptimized()
+            val shelvesWithData = syncRepository.getShelvesWithData()
             val shelvesDuration = SystemClock.elapsedRealtime() - shelvesStartTime
             syncTimeLogger.endProcess("library_get_shelves", shelvesWithData.size)
             syncPerf { "    Library: Found ${shelvesWithData.size} shelves with data in ${shelvesDuration}ms" }

@@ -189,6 +189,45 @@ class StorageCategoryViewModelTest {
         assertEquals(Unit, viewModel.deleteCompleteEvent.first())
     }
 
+    @Test
+    fun `toggling item updates checkedCount and allChecked consistently`() = runTest(testDispatcher) {
+        loadItems(items)
+
+        var state = viewModel.uiState.value
+        assertEquals(0, state.checkedCount)
+        assertFalse(state.allChecked)
+
+        viewModel.toggleItemChecked("r1")
+        state = viewModel.uiState.value
+        assertEquals(1, state.checkedCount)
+        assertFalse(state.allChecked)
+
+        viewModel.toggleItemChecked("r2")
+        state = viewModel.uiState.value
+        assertEquals(2, state.checkedCount)
+        assertFalse(state.allChecked)
+
+        viewModel.toggleItemChecked("r3")
+        state = viewModel.uiState.value
+        assertEquals(3, state.checkedCount)
+        assertTrue(state.allChecked)
+
+        viewModel.toggleItemChecked("r1")
+        state = viewModel.uiState.value
+        assertEquals(2, state.checkedCount)
+        assertFalse(state.allChecked)
+    }
+
+    @Test
+    fun `empty list yields allChecked false`() = runTest(testDispatcher) {
+        loadItems(emptyList())
+
+        val state = viewModel.uiState.value
+        assertEquals(0, state.checkedCount)
+        assertEquals(0, state.items.size)
+        assertFalse(state.allChecked)
+    }
+
     private fun TestScope.loadItems(loaded: List<OfflineResourceItem>) {
         coEvery {
             resourcesRepository.getOfflineResourceItems(olePath, any(), any())

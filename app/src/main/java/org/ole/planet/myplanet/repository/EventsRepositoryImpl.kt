@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 
 @Singleton
@@ -21,6 +21,11 @@ class EventsRepositoryImpl @Inject constructor(
 
     override suspend fun getMeetupsForTeam(teamId: String): List<Meetup> {
         return meetupDao.getByTeamId(teamId)
+    }
+
+    override suspend fun getMeetupsForTeams(teamIds: List<String>): List<Meetup> {
+        if (teamIds.isEmpty()) return emptyList()
+        return meetupDao.getByTeamIds(teamIds)
     }
 
     override suspend fun updateMeetup(
@@ -89,24 +94,29 @@ class EventsRepositoryImpl @Inject constructor(
         return getMeetupById(meetupId)
     }
 
+    override suspend fun insertMeetupsFromSync(docs: List<JsonObject>) {
+        if (docs.isEmpty()) return
+        val ids = docs.map { GsonUtils.getString("_id", it) }
+        val existingByMeetupId = meetupDao.getByMeetupIds(ids).associateBy { it.meetupId }
+
+        val meetupsToInsert = docs.mapNotNull { meetupDoc ->
+            val id = GsonUtils.getString("_id", meetupDoc)
+            val existing = existingByMeetupId[id]
+            if (existing?.updated == true) {
+                null
+            } else {
+                Meetup.fromJson(meetupDoc, "", existing)
+            }
+        }
+        if (meetupsToInsert.isNotEmpty()) {
+            meetupDao.upsertAll(meetupsToInsert)
+        }
+    }
+
     override suspend fun batchInsertMeetups(documents: List<JsonObject>): Int {
         if (documents.isEmpty()) return 0
         return try {
-            val ids = documents.map { JsonUtils.getString("_id", it) }
-            val existingByMeetupId = meetupDao.getByMeetupIds(ids).associateBy { it.meetupId }
-
-            val meetupsToInsert = documents.mapNotNull { meetupDoc ->
-                val id = JsonUtils.getString("_id", meetupDoc)
-                val existing = existingByMeetupId[id]
-                if (existing?.updated == true) {
-                    null
-                } else {
-                    Meetup.fromJson(meetupDoc, "", existing)
-                }
-            }
-            if (meetupsToInsert.isNotEmpty()) {
-                meetupDao.upsertAll(meetupsToInsert)
-            }
+            insertMeetupsFromSync(documents)
             documents.size
         } catch (e: Exception) {
             e.printStackTrace()

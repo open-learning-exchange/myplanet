@@ -17,8 +17,9 @@ import org.ole.planet.myplanet.base.BaseBindingBottomSheetFragment
 import org.ole.planet.myplanet.databinding.FragmentStorageCategoryDetailBinding
 import org.ole.planet.myplanet.databinding.ItemDownloadedResourceBinding
 import org.ole.planet.myplanet.model.OfflineResourceItem
-import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.model.StorageCategoryType
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
+import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -97,7 +98,7 @@ class StorageCategoryDetailFragment : BaseBindingBottomSheetFragment<FragmentSto
         viewModel.loadResources(
             olePath = olePath,
             extensions = category?.extensions ?: emptySet(),
-            allKnownExtensions = StorageCategories.allKnownExtensions
+            allKnownExtensions = StorageCategoryType.allKnownExtensions
         )
     }
 

@@ -27,6 +27,8 @@ class MembersAdapter(
     private val actionListener: OnMemberActionListener
 ) : ListAdapter<JoinedMemberData, MembersAdapter.MembersViewHolder>(DIFF_CALLBACK) {
     private val avatarSize: Int by lazy { context.resources.getDimensionPixelSize(R.dimen._40dp) }
+    private val teamLeaderLabel: String by lazy { context.getString(R.string.team_leader) }
+    private val noVisitLabel: String by lazy { context.getString(R.string.no_visit) }
     private var isLoggedInUserTeamLeader: Boolean = false
 
     fun setUserId(userId: String?) {
@@ -74,7 +76,7 @@ class MembersAdapter(
                             val isLeader = payload.getBoolean(PAYLOAD_KEY_LEADER)
                             holder.binding.tvIsLeader.visibility = if (isLeader) View.VISIBLE else View.GONE
                             if (isLeader) {
-                                holder.binding.tvIsLeader.text = context.getString(R.string.team_leader)
+                                holder.binding.tvIsLeader.text = teamLeaderLabel
                             }
                         } else {
                             unhandled = true
@@ -108,7 +110,7 @@ class MembersAdapter(
         val lastVisitDate = if (memberData.lastVisitDate != null) {
             TimeUtils.getFormattedShortDate(memberData.lastVisitDate)
         } else {
-            context.getString(R.string.no_visit)
+            noVisitLabel
         }
         binding.tvLastVisit.text = context.getString(
             R.string.last_visit,
@@ -118,7 +120,7 @@ class MembersAdapter(
 
         if (memberData.isLeader) {
             binding.tvIsLeader.visibility = View.VISIBLE
-            binding.tvIsLeader.text = context.getString(R.string.team_leader)
+            binding.tvIsLeader.text = teamLeaderLabel
         } else {
             binding.tvIsLeader.visibility = View.GONE
         }

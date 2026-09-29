@@ -6,30 +6,20 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.databinding.FragmentFeedbackListBinding
 import org.ole.planet.myplanet.model.Feedback
-import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
-import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
-import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class FeedbackListFragment : BaseBindingFragment<FragmentFeedbackListBinding>(FragmentFeedbackListBinding::inflate), OnChangedListener, RealtimeSyncMixin {
+class FeedbackListFragment : BaseBindingFragment<FragmentFeedbackListBinding>(FragmentFeedbackListBinding::inflate), OnChangedListener {
 
     private val viewModel: FeedbackListViewModel by viewModels()
 
-    @Inject
-    lateinit var realtimeSyncManager: RealtimeSyncManager
-
     private lateinit var feedbackAdapter: FeedbackAdapter
-    private lateinit var realtimeSyncHelper: RealtimeSyncHelper
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -44,13 +34,7 @@ class FeedbackListFragment : BaseBindingFragment<FragmentFeedbackListBinding>(Fr
                 feedbackFragment.show(childFragmentManager, "")
             }
         }
-        setupRealtimeSync()
         return view
-    }
-
-    private fun setupRealtimeSync() {
-        realtimeSyncHelper = RealtimeSyncHelper(this, this, realtimeSyncManager)
-        realtimeSyncHelper.setupRealtimeSync()
     }
 
     private fun refreshFeedbackListData() {
@@ -93,16 +77,4 @@ class FeedbackListFragment : BaseBindingFragment<FragmentFeedbackListBinding>(Fr
         binding.tvStatus.visibility = visibility
         binding.tvOpenDate.visibility = visibility
     }
-
-    override fun getWatchedTables(): List<String> = listOf("feedback")
-
-    override fun onDataUpdated(table: String, update: TableDataUpdate) {
-        if (table == "feedback" && update.shouldRefreshUI) {
-            refreshFeedbackListData()
-        }
-    }
-
-    override fun shouldAutoRefresh(table: String): Boolean = false
-
-    override fun getSyncRecyclerView(): RecyclerView? = if (_binding != null) binding.rvFeedback else null
 }

@@ -80,6 +80,17 @@ class CoursesViewModelTest {
     }
 
     @Test
+    fun testLoadCourses_GetCourseProgressFailure_HandledGracefully() = runTest {
+        io.mockk.coEvery { progressRepository.getCourseProgress(any(), any()) } throws RuntimeException("Progress fetch failed")
+        val initialState = viewModel.coursesState.value
+
+        viewModel.loadCourses(false, "u1")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(initialState, viewModel.coursesState.value)
+    }
+
+    @Test
     fun testLoadCourses_NotMyCoursesLib_StillCallsGetCourseProgress() = runTest {
         viewModel.loadCourses(false, "u1")
         testDispatcher.scheduler.advanceUntilIdle()

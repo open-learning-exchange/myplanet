@@ -195,7 +195,7 @@ object FileUtils {
     }
 
     fun getFileExtension(address: String?): String {
-        return address?.let { File(it).extension.lowercase() } ?: ""
+        return address?.substringAfterLast('/')?.substringAfterLast('.', "")?.lowercase() ?: ""
     }
 
     fun installApk(activity: Context, file: String?) {

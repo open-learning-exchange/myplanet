@@ -5,6 +5,8 @@ import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.RetryInterceptor
@@ -43,22 +45,38 @@ class NetworkModuleTest {
     @Test
     fun `provideStandardOkHttpClient returns OkHttpClient configured with ConnectionPool and Dispatcher`() {
         val mockRetryInterceptor = mockk<RetryInterceptor>(relaxed = true)
-        val okHttpClient = NetworkModule.provideStandardOkHttpClient(mockRetryInterceptor)
+        val connectionPool = NetworkModule.provideConnectionPool()
+        val okHttpClient = NetworkModule.provideStandardOkHttpClient(mockRetryInterceptor, connectionPool)
 
         assertNotNull(okHttpClient)
         assertEquals(20, okHttpClient.dispatcher.maxRequestsPerHost)
-        assertNotNull(okHttpClient.connectionPool)
+        assertSame(connectionPool, okHttpClient.connectionPool)
     }
 
     @Test
     fun `provideReachabilityOkHttpClient probes with short timeouts and no retries`() {
-        val okHttpClient = NetworkModule.provideReachabilityOkHttpClient()
+        val connectionPool = NetworkModule.provideConnectionPool()
+        val okHttpClient = NetworkModule.provideReachabilityOkHttpClient(connectionPool)
 
         assertEquals(5_000, okHttpClient.connectTimeoutMillis)
         assertEquals(5_000, okHttpClient.readTimeoutMillis)
+        assertSame(connectionPool, okHttpClient.connectionPool)
         assertTrue(
             "A reachability probe must not retry, or an unreachable server takes tens of seconds to report",
             okHttpClient.interceptors.none { it is RetryInterceptor }
         )
+    }
+
+    @Test
+    fun `provided clients share supplied connectionPool instance but use different dispatcher instances`() {
+        val mockRetryInterceptor = mockk<RetryInterceptor>(relaxed = true)
+        val connectionPool = NetworkModule.provideConnectionPool()
+        val standardClient = NetworkModule.provideStandardOkHttpClient(mockRetryInterceptor, connectionPool)
+        val reachabilityClient = NetworkModule.provideReachabilityOkHttpClient(connectionPool)
+
+        assertSame(connectionPool, standardClient.connectionPool)
+        assertSame(connectionPool, reachabilityClient.connectionPool)
+        assertSame(standardClient.connectionPool, reachabilityClient.connectionPool)
+        assertNotSame(standardClient.dispatcher, reachabilityClient.dispatcher)
     }
 }

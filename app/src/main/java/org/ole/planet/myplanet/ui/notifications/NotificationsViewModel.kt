@@ -11,22 +11,27 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Notification
 import org.ole.planet.myplanet.model.NotificationListItem
 import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.repository.NotificationsRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TaskNotificationUtils
 
 @HiltViewModel
 class NotificationsViewModel @Inject constructor(
     private val notificationsRepository: NotificationsRepository,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
@@ -64,14 +69,19 @@ class NotificationsViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private var currentFilter: String = "all"
+    private var loadJob: Job? = null
 
     fun loadNotifications(userId: String, filter: String, isAdmin: Boolean = false) {
         currentFilter = filter
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             val enrichment = notificationsRepository.getEnrichedNotifications(userId, filter, isAdmin)
-            _notifications.value = enrichment.payloads.map {
-                formatNotification(it, enrichment.taskTeamNames, enrichment.joinRequestDetails, enrichment.parsedTaskDates)
+            val formatted = withContext(dispatcherProvider.default) {
+                enrichment.payloads.map {
+                    formatNotification(it, enrichment.taskTeamNames, enrichment.joinRequestDetails, enrichment.parsedTaskDates)
+                }
             }
+            _notifications.value = formatted
             _unreadCount.value = enrichment.unreadCount
         }
     }
@@ -104,14 +114,21 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
+    private fun applyAndCountUnread(
+        ids: Set<String>,
+        transform: (List<Notification>) -> List<Notification>
+    ): Int {
+        val previous = _notifications.getAndUpdate(transform)
+        return previous.count { it.id in ids && !it.isRead }
+    }
+
     fun markSelectedAsRead() {
         val ids = _selectedIds.value
         if (ids.isEmpty()) return
         viewModelScope.launch {
             val markedIds = notificationsRepository.markNotificationsAsRead(ids)
             if (markedIds.isNotEmpty()) {
-                val wasUnreadCount = _notifications.value.count { it.id in markedIds && !it.isRead }
-                _notifications.update { currentList ->
+                val wasUnreadCount = applyAndCountUnread(markedIds) { currentList ->
                     if (currentFilter == "unread") {
                         currentList.filterNot { it.id in markedIds }
                     } else {
@@ -130,8 +147,7 @@ class NotificationsViewModel @Inject constructor(
         viewModelScope.launch {
             val deletedIds = notificationsRepository.deleteNotifications(ids)
             if (deletedIds.isNotEmpty()) {
-                val wasUnreadCount = _notifications.value.count { it.id in deletedIds && !it.isRead }
-                _notifications.update { it.filterNot { n -> n.id in deletedIds } }
+                val wasUnreadCount = applyAndCountUnread(deletedIds) { it.filterNot { n -> n.id in deletedIds } }
                 _unreadCount.update { maxOf(0, it - wasUnreadCount) }
                 _selectedIds.value = emptySet()
             }
@@ -183,9 +199,6 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    private fun List<Notification>.markAsRead(id: String): List<Notification> {
-        return map { if (it.id == id && !it.isRead) it.copy(isRead = true) else it }
-    }
     private fun List<Notification>.markAsRead(ids: Set<String>): List<Notification> {
         return map { if (it.id in ids && !it.isRead) it.copy(isRead = true) else it }
     }
@@ -200,8 +213,8 @@ class NotificationsViewModel @Inject constructor(
             val t = notif.type.lowercase(Locale.ROOT)
             if (t in NotificationsRepository.KNOWN_TYPES) t else "notification"
         }
-        val orderedTypes = (TYPE_ORDER.filter { grouped.containsKey(it) } +
-                grouped.keys.filter { it !in TYPE_ORDER }).distinct()
+        val orderedTypes = TYPE_ORDER.filter { grouped.containsKey(it) } +
+                grouped.keys.filter { it !in TYPE_ORDER }
         return orderedTypes.mapNotNull { type ->
             val items = grouped[type] ?: return@mapNotNull null
             val unreadCount = items.count { !it.isRead }

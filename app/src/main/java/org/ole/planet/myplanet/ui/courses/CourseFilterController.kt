@@ -3,10 +3,7 @@ package org.ole.planet.myplanet.ui.courses
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.EditText
-import android.widget.Spinner
 import android.widget.TextView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -39,51 +36,24 @@ class CourseFilterController(
     val filterState: StateFlow<FilterState> = _filterState.asStateFlow()
 
     private lateinit var etSearch: EditText
-    private lateinit var spnGrade: Spinner
-    private lateinit var spnSubject: Spinner
     private lateinit var tvSelected: TextView
     private var layoutSearch: View? = null
     private var scrollChipFilter: View? = null
     private var layoutViewToggle: View? = null
     private var progressFilter: String = ""
+    private var grade: String = ""
+    private var subject: String = ""
     val searchTags: MutableList<TagEntity> = ArrayList()
     private var searchTextWatcher: TextWatcher? = null
-    private var spinnerListener: AdapterView.OnItemSelectedListener? = null
     private var searchJob: Job? = null
 
     fun setup() {
         etSearch = rootView.findViewById(R.id.et_search)
-        spnGrade = rootView.findViewById(R.id.spn_grade)
-        spnSubject = rootView.findViewById(R.id.spn_subject)
         tvSelected = rootView.findViewById(R.id.tv_selected)
         layoutSearch = rootView.findViewById(R.id.layout_search) ?: (etSearch.parent as? View)
         scrollChipFilter = rootView.findViewById(R.id.scroll_chip_filter) ?: (rootView.findViewById<View>(R.id.chip_filter_row)?.parent as? View)
         layoutViewToggle = rootView.findViewById(R.id.layout_view_toggle) ?: (rootView.findViewById<View>(R.id.toggle_grid)?.parent as? View)
-        setupSpinners()
         setupSearchWatcher()
-        setupClearTagsButton()
-    }
-
-    private fun setupSpinners() {
-        val ctx = rootView.context
-        val gradeAdapter = ArrayAdapter.createFromResource(ctx, R.array.grade_level, R.layout.spinner_item)
-        gradeAdapter.setDropDownViewResource(R.layout.custom_simple_list_item_1)
-        spnGrade.adapter = gradeAdapter
-
-        val subjectAdapter = ArrayAdapter.createFromResource(ctx, R.array.subject_level, R.layout.spinner_item)
-        subjectAdapter.setDropDownViewResource(R.layout.custom_simple_list_item_1)
-        spnSubject.adapter = subjectAdapter
-
-        spinnerListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, i: Int, l: Long) {
-                if (view == null) return
-                _filterState.value = currentState()
-                onScrollToTop()
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
-        spnGrade.onItemSelectedListener = spinnerListener
-        spnSubject.onItemSelectedListener = spinnerListener
     }
 
     fun setProgressFilter(value: String) {
@@ -92,44 +62,31 @@ class CourseFilterController(
         onScrollToTop()
     }
 
-    fun restoreFilterState(state: FilterState) {
-        val listener = spinnerListener
-        if (::spnGrade.isInitialized) spnGrade.onItemSelectedListener = null
-        if (::spnSubject.isInitialized) spnSubject.onItemSelectedListener = null
+    fun currentGrade(): String = grade
+    fun currentSubject(): String = subject
 
+    fun setGradeSubject(newGrade: String, newSubject: String) {
+        grade = newGrade
+        subject = newSubject
+        _filterState.value = currentState()
+        onScrollToTop()
+    }
+
+    fun restoreFilterState(state: FilterState) {
         restoreSearchText(state.searchText)
-        if (::spnGrade.isInitialized) {
-            restoreSpinnerSelection(spnGrade, state.grade)
-        }
-        if (::spnSubject.isInitialized) {
-            restoreSpinnerSelection(spnSubject, state.subject)
-        }
+        grade = state.grade
+        subject = state.subject
         restoreTags(state.tags, state.tagNames)
         progressFilter = state.progressFilter
         if (::tvSelected.isInitialized) {
             refreshTagText()
         }
-
-        if (::spnGrade.isInitialized) spnGrade.onItemSelectedListener = listener
-        if (::spnSubject.isInitialized) spnSubject.onItemSelectedListener = listener
-
         _filterState.value = currentState()
     }
 
     private fun restoreSearchText(searchText: String) {
         if (::etSearch.isInitialized && etSearch.text.toString() != searchText) {
             etSearch.setText(searchText)
-        }
-    }
-
-    private fun restoreSpinnerSelection(spinner: Spinner, targetValue: String) {
-        val adapter = spinner.adapter ?: return
-        for (i in 0 until adapter.count) {
-            val itemStr = adapter.getItem(i).toString()
-            if (itemStr == targetValue || (targetValue.isEmpty() && i == 0)) {
-                spinner.setSelection(i)
-                break
-            }
         }
     }
 
@@ -168,13 +125,6 @@ class CourseFilterController(
         etSearch.addTextChangedListener(searchTextWatcher)
     }
 
-    private fun setupClearTagsButton() {
-        rootView.findViewById<View>(R.id.btn_clear_tags)?.setOnClickListener {
-            rootView.findViewById<View>(R.id.card_filter)?.visibility = View.GONE
-            clearAll()
-        }
-    }
-
     fun addTag(tag: TagEntity) {
         addTagInternal(tag)
         _filterState.value = currentState()
@@ -201,8 +151,8 @@ class CourseFilterController(
         searchTags.clear()
         etSearch.setText("")
         tvSelected.text = ""
-        spnGrade.setSelection(0)
-        spnSubject.setSelection(0)
+        grade = ""
+        subject = ""
         progressFilter = ""
         _filterState.value = currentState()
         onScrollToTop()
@@ -211,8 +161,6 @@ class CourseFilterController(
     fun filterApplied(): Boolean = currentState().isActive
 
     fun currentState(): FilterState {
-        val grade = spnGrade.selectedItem?.toString()?.takeIf { it != "All" } ?: ""
-        val subject = spnSubject.selectedItem?.toString()?.takeIf { it != "All" } ?: ""
         return FilterState(
             searchText = etSearch.text.toString().trim(),
             grade = grade,
@@ -238,7 +186,7 @@ class CourseFilterController(
             rootView.findViewById<View>(R.id.toggle_grid)?.visibility = visibility
             rootView.findViewById<View>(R.id.toggle_list)?.visibility = visibility
         }
-        rootView.findViewById<View>(R.id.filter)?.visibility = visibility
+        rootView.findViewById<View>(R.id.sort_filter_capsule)?.visibility = visibility
         if (!visible) tvSelected.visibility = View.GONE
     }
 
@@ -253,8 +201,5 @@ class CourseFilterController(
         searchJob?.cancel()
         searchTextWatcher?.let { etSearch.removeTextChangedListener(it) }
         searchTextWatcher = null
-        spnGrade.onItemSelectedListener = null
-        spnSubject.onItemSelectedListener = null
-        spinnerListener = null
     }
 }

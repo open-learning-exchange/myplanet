@@ -24,6 +24,9 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject as KJsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -32,12 +35,16 @@ import org.junit.Test
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.UserDao
+import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.VersionUtils
 import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -54,6 +61,7 @@ class UserRepositoryImplTest {
     private lateinit var activitiesRepository: ActivitiesRepository
     private lateinit var activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>
     private lateinit var userDao: UserDao
+    private lateinit var deviceNameProvider: DeviceNameProvider
 
     private lateinit var repository: UserRepositoryImpl
 
@@ -64,6 +72,9 @@ class UserRepositoryImplTest {
         mockkObject(UrlUtils)
         every { UrlUtils.header } returns "Basic auth"
         every { UrlUtils.getUrl() } returns "http://test.url"
+
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "mock_unique_id"
 
         mockkStatic(Log::class)
         every { Log.e(any(), any()) } returns 0
@@ -88,6 +99,7 @@ class UserRepositoryImplTest {
         every { dispatcherProvider.unconfined } returns testDispatcher
 
         userDao = mockk(relaxed = true)
+        deviceNameProvider = mockk(relaxed = true)
 
         repository = UserRepositoryImpl(
             settings,
@@ -107,13 +119,15 @@ class UserRepositoryImplTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             userDao,
-            mockk(relaxed = true)
+            mockk(relaxed = true),
+            deviceNameProvider
         )
     }
 
     @After
     fun tearDown() {
         unmockkObject(UrlUtils)
+        unmockkObject(NetworkUtils)
         unmockkStatic(Log::class)
     }
 
@@ -191,7 +205,7 @@ class UserRepositoryImplTest {
         every { context.getString(R.string.unable_to_create_user_user_already_exists) } returns errorMessage
 
         // Mock API response to simulate user already exists
-        val existsResponseBody = JsonObject().apply { addProperty("_id", "some_id") }
+        val existsResponseBody = buildJsonObject { put("_id", "some_id") }
         val response = Response.success(existsResponseBody)
         coEvery { apiInterface.getJsonObject("Basic auth", userUrl) } returns response
 
@@ -214,20 +228,22 @@ class UserRepositoryImplTest {
         every { context.getString(R.string.user_created_successfully) } returns successMessage
 
         // 1. User doesn't exist check
-        val notExistsResponseBody = JsonObject()
+        val notExistsResponseBody = KJsonObject(emptyMap())
         val notFoundResponse = Response.success(notExistsResponseBody)
         coEvery { apiInterface.getJsonObject("Basic auth", userUrl) } returns notFoundResponse
 
         // 2. User creation mock
-        val createdResponseBody = JsonObject().apply { addProperty("id", id) }
+        val createdResponseBody = buildJsonObject { put("id", id) }
         val createdResponse = Response.success(createdResponseBody)
-        coEvery { apiInterface.putDoc(null, "application/json", userUrl, userObj) } returns createdResponse
+        coEvery {
+            apiInterface.putDoc(null, "application/json", userUrl, buildJsonObject { put("name", userName) })
+        } returns createdResponse
 
         // 3. User save to db fetch
         val userFetchUrl = "http://test.url/_users/$id"
-        val userFetchResponse = Response.success(JsonObject().apply {
-            addProperty("_id", id)
-            addProperty("name", userName)
+        val userFetchResponse = Response.success(buildJsonObject {
+            put("_id", id)
+            put("name", userName)
         })
         coEvery { apiInterface.getJsonObject("Basic auth", userFetchUrl) } returns userFetchResponse
 
@@ -355,12 +371,12 @@ class UserRepositoryImplTest {
         }
         coEvery { userDao.getById("user1") } returns user
 
-        val validPayload = JsonObject().apply {
-            addProperty("firstName", "NewFirst")
-            addProperty("lastName", "NewLast")
-            addProperty("email", "test@example.com")
-        }
-        repository.updateProfileFields("user1", validPayload)
+        val update = ProfileFieldsUpdate(
+            firstName = "NewFirst",
+            lastName = "NewLast",
+            email = "test@example.com"
+        )
+        repository.updateProfileFields("user1", update)
 
         val slot = slot<UserEntity>()
         coVerify { userDao.upsert(capture(slot)) }
@@ -393,7 +409,43 @@ class UserRepositoryImplTest {
     }
 
     @Test
-    fun `updateProfileFields handles empty objects and converts primitive values while skipping nulls`() = runTest(testDispatcher) {
+    fun `createMember carries deviceNameProvider device name and injected context android id`() = runTest(testDispatcher) {
+        mockkObject(VersionUtils)
+        every { VersionUtils.getAndroidId(any()) } returns "mock_android_id"
+        every { deviceNameProvider.getCustomDeviceName() } returns "mock_device_name"
+
+        val spyRepository = spyk(repository)
+        val jsonSlot = slot<JsonObject>()
+        coEvery { spyRepository.becomeMember(capture(jsonSlot)) } returns Pair(true, "success")
+
+        val memberInfo = MemberInfo(
+            username = "testuser",
+            password = "password123",
+            rePassword = "password123",
+            fName = "John",
+            lName = "Doe",
+            mName = "M",
+            email = "test@example.com",
+            language = "en",
+            level = "1",
+            phoneNumber = "123456",
+            birthDate = "2000-01-01",
+            gender = "male"
+        )
+
+        spyRepository.createMember(memberInfo)
+
+        val builtJson = jsonSlot.captured
+        assertEquals("mock_android_id", builtJson.get("uniqueAndroidId").asString)
+        assertEquals("mock_device_name", builtJson.get("customDeviceName").asString)
+        verify { VersionUtils.getAndroidId(context) }
+        verify { deviceNameProvider.getCustomDeviceName() }
+
+        unmockkObject(VersionUtils)
+    }
+
+    @Test
+    fun `updateProfileFields handles empty update objects and leaves fields untouched while setting isUpdated true`() = runTest(testDispatcher) {
         val user = UserEntity().apply {
             id = "user1"
             firstName = "OriginalFirst"
@@ -401,18 +453,13 @@ class UserRepositoryImplTest {
         }
         coEvery { userDao.getById("user1") } returns user
 
-        val payload = JsonObject().apply {
-            add("firstName", com.google.gson.JsonNull.INSTANCE)
-            addProperty("lastName", "UpdatedLast")
-            addProperty("age", 25)
-        }
-        repository.updateProfileFields("user1", payload)
+        val update = ProfileFieldsUpdate()
+        repository.updateProfileFields("user1", update)
 
         val slot = slot<UserEntity>()
         coVerify { userDao.upsert(capture(slot)) }
         assertEquals("OriginalFirst", slot.captured.firstName)
-        assertEquals("UpdatedLast", slot.captured.lastName)
-        assertEquals("25", slot.captured.age)
+        assertEquals("OriginalLast", slot.captured.lastName)
         assertEquals(true, slot.captured.isUpdated)
     }
 }

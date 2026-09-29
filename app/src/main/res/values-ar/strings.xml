@@ -990,6 +990,7 @@
     <string name="location_colon">&#160;الموقع:</string>
     <string name="recurring_colon">&#160;متكرر:</string>
     <string name="created_by_colon">&#160;تم إنشاؤه بواسطة:</string>
+    <string name="team_colon">&#160;الفريق:</string>
     <string name="you_want_to_connect_to_a_different_server">تريد الاتصال بخادم مختلف. امسح بيانات التطبيق للمتابعة</string>
     <string name="are_you_sure_you_want_to_clear_data">هل أنت متأكد أنك تريد مسح جميع البيانات؟</string>
     <string name="feedback_list">قائمة التغذية الراجعة</string>

@@ -111,7 +111,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
         val context: Context get() = testContext ?: instance.applicationContext
         var syncFailedCount = 0
-        var isCollectionSwitchOn = false
         var showDownload = false
         val isSyncRunning = AtomicBoolean(false)
         private var _listener: WeakReference<OnTeamPageListener>? = null

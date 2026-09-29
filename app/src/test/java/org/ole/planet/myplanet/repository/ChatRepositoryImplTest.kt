@@ -23,11 +23,11 @@ import org.ole.planet.myplanet.data.room.dao.ChatDao
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatResponse
-import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.CouchDBResponse
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.ServerReachabilityProvider
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -37,13 +37,14 @@ class ChatRepositoryImplTest {
     private val chatApiService: ChatApiService = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+    private val serverReachabilityProvider: ServerReachabilityProvider = mockk(relaxed = true)
     private val testDispatcher = kotlinx.coroutines.test.StandardTestDispatcher()
     private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {
         every { sharedPrefManager.rawPreferences } returns mockk(relaxed = true)
-        chatRepository = ChatRepositoryImpl(chatDao, chatApiService, serverUrlMapper, sharedPrefManager, dispatcherProvider, Gson())
+        chatRepository = ChatRepositoryImpl(chatDao, chatApiService, serverUrlMapper, sharedPrefManager, dispatcherProvider, serverReachabilityProvider, Gson())
     }
 
     @After

@@ -6,11 +6,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.model.MyLife
-import org.ole.planet.myplanet.services.SharedPrefManager
 
 class LifeRepositoryImpl @Inject constructor(
     private val myLifeDao: MyLifeDao,
-    private val sharedPrefManager: SharedPrefManager,
     private val lifeCache: LifeCache
 ) : LifeRepository {
 
@@ -20,19 +18,19 @@ class LifeRepositoryImpl @Inject constructor(
         return userId?.takeIf { it.isNotBlank() && it != "--" }
     }
 
-    override suspend fun updateVisibility(isVisible: Boolean, myLifeId: String): List<MyLife> {
+    override suspend fun updateVisibility(isVisible: Boolean, myLifeId: String, userId: String?): List<MyLife> {
         myLifeDao.updateVisibility(myLifeId, isVisible)
         val managedLives = myLifeDao.getByIds(listOf(myLifeId))
-        val rawUserId = managedLives.firstOrNull()?.userId ?: sharedPrefManager.getUserId()
+        val rawUserId = managedLives.firstOrNull()?.userId ?: userId
         val effectiveUserId = normalizeUserId(rawUserId)
         val updatedLives = getMyLifeByUserId(effectiveUserId)
         lifeCache.write(effectiveUserId ?: "--", updatedLives)
         return updatedLives
     }
 
-    override suspend fun updateMyLifeListOrder(list: List<MyLife>) {
+    override suspend fun updateMyLifeListOrder(list: List<MyLife>, userId: String?) {
         if (list.isEmpty()) return
-        val rawUserId = list.firstOrNull()?.userId ?: sharedPrefManager.getUserId()
+        val rawUserId = list.firstOrNull()?.userId ?: userId
         val effectiveUserId = normalizeUserId(rawUserId)
         val idToIndex = buildMap(list.size) {
             list.forEachIndexed { index, item ->
@@ -67,9 +65,12 @@ class LifeRepositoryImpl @Inject constructor(
             ?: listOf(userId, isVisible, weight)
     }
 
+    private fun List<MyLife>.dedupedByKey(): List<MyLife> = distinctBy { it.dedupKey() }
+
     override suspend fun getMyLifeByUserId(userId: String?, defaultItems: List<MyLife>): List<MyLife> {
         val effectiveUserId = normalizeUserId(userId)
-        val items = myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
+        suspend fun loadItems() = myLifeDao.getByUserId(effectiveUserId).dedupedByKey()
+        val items = loadItems()
         if (items.isNotEmpty() || defaultItems.isEmpty()) {
             return items
         }
@@ -77,12 +78,12 @@ class LifeRepositoryImpl @Inject constructor(
         if (seeded.isNotEmpty()) {
             return seeded
         }
-        return myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
+        return loadItems()
     }
 
     private suspend fun getVisibleMyLifeByUserId(userId: String?): List<MyLife> {
         val effectiveUserId = normalizeUserId(userId)
-        return myLifeDao.getVisibleByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
+        return myLifeDao.getVisibleByUserId(effectiveUserId).dedupedByKey()
     }
 
     override suspend fun getMyLifeForDashboard(userId: String, seedBase: List<MyLife>): List<MyLife> {

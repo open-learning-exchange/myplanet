@@ -12,7 +12,6 @@ import org.ole.planet.myplanet.repository.ChatRepositoryImpl
 import org.ole.planet.myplanet.repository.ChatSyncWriter
 import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.CommunityRepositoryImpl
-import org.ole.planet.myplanet.repository.CommunitySyncWriter
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepositoryImpl
 import org.ole.planet.myplanet.repository.CoursesRepository
@@ -65,6 +64,7 @@ import org.ole.planet.myplanet.repository.TeamsRepositoryImpl
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UploadRepositoryImpl
+import org.ole.planet.myplanet.repository.UserAchievementsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.repository.UserSyncRepository
@@ -106,10 +106,6 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindCommunityRepository(impl: CommunityRepositoryImpl): CommunityRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindCommunitySyncWriter(impl: CommunityRepositoryImpl): CommunitySyncWriter
 
     @Binds
     @Singleton
@@ -210,6 +206,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindUploadRepository(impl: UploadRepositoryImpl): UploadRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUserAchievementsRepository(impl: UserRepositoryImpl): UserAchievementsRepository
 
     @Binds
     @Singleton

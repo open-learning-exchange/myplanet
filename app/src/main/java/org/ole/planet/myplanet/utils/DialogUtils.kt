@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogProgressBinding
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
@@ -190,17 +189,17 @@ object DialogUtils {
         info: MyPlanet?,
         progressDialog: CustomProgressDialog?,
         scope: CoroutineScope,
-        configurationsRepository: ConfigurationsRepository
+        checkCheckSum: suspend (String) -> Boolean
     ): AlertDialog.Builder {
         return AlertDialog.Builder(context, R.style.CustomAlertDialog)
             .setTitle(R.string.new_version_of_my_planet_available)
             .setMessage(R.string.download_first_to_continue)
             .setNeutralButton(R.string.upgrade_local) { _, _ ->
-                startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), progressDialog, scope, configurationsRepository)
+                startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), progressDialog, scope, checkCheckSum)
             }
             .setPositiveButton(R.string.upgrade) { _, _ ->
                 info?.apkpath?.let { path ->
-                    startDownloadUpdate(context, path, progressDialog, scope, configurationsRepository)
+                    startDownloadUpdate(context, path, progressDialog, scope, checkCheckSum)
                 }
             }
     }
@@ -210,10 +209,10 @@ object DialogUtils {
         path: String,
         progressDialog: CustomProgressDialog?,
         scope: CoroutineScope,
-        configurationsRepository: ConfigurationsRepository
+        checkCheckSum: suspend (String) -> Boolean
     ) {
         scope.launch {
-            val checksumMatch = configurationsRepository.checkCheckSum(path)
+            val checksumMatch = checkCheckSum(path)
             if (checksumMatch) {
                 Utilities.toast(context, context.getString(R.string.apk_already_exists))
                 FileUtils.installApk(context, path)

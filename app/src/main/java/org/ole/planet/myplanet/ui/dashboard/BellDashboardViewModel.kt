@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.CoursesRepository
@@ -22,6 +21,7 @@ import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
+import org.ole.planet.myplanet.utils.ServerReachabilityProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 
 @HiltViewModel
@@ -32,7 +32,8 @@ class BellDashboardViewModel @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val userRepository: UserRepository,
     private val coursesRepository: CoursesRepository,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val serverReachabilityProvider: ServerReachabilityProvider
 ) : ViewModel() {
 
     companion object {
@@ -134,7 +135,7 @@ class BellDashboardViewModel @Inject constructor(
     }
 
     suspend fun checkServerConnection(serverUrl: String): Boolean {
-        val reachable = isServerReachable(serverUrl)
+        val reachable = serverReachabilityProvider.isServerReachable(serverUrl)
         updateNetworkStatus(if (reachable) NetworkStatus.Connected else NetworkStatus.Disconnected)
         return reachable
     }

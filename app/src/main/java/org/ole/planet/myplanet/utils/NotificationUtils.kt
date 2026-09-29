@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -37,6 +38,7 @@ data class NotificationConfig(
 )
 
 object NotificationUtils {
+    private const val TAG = "NotificationUtils"
     const val CHANNEL_GENERAL = "general_notifications"
     const val CHANNEL_SURVEYS = "survey_notifications"
     const val CHANNEL_TASKS = "task_notifications"
@@ -248,7 +250,7 @@ object NotificationUtils {
             val daysUntilDeadline = timeDiff / (1000 * 60 * 60 * 24)
             daysUntilDeadline <= 2
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "isTaskUrgent deadline parse failed", e)
             false
         }
     }
@@ -325,7 +327,7 @@ object NotificationUtils {
                 markNotificationAsShown(config.id)
                 true
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "showNotification failed", e)
                 false
             }
         }

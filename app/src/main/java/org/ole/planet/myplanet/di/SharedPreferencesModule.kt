@@ -10,7 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Qualifier
 import javax.inject.Singleton
-import com.google.gson.Gson
+import kotlinx.serialization.json.Json
 import org.ole.planet.myplanet.repository.LifeCache
 import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
@@ -56,8 +56,8 @@ object SharedPreferencesModule {
     @Singleton
     fun provideLifeCache(
         @AppPreferences preferences: SharedPreferences,
-        gson: Gson
+        json: Json
     ): LifeCache {
-        return LifeCache(preferences, gson)
+        return LifeCache(preferences, json)
     }
 }

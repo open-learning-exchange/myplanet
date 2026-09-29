@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.events
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -11,7 +12,8 @@ import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class EventsAdapter(
-    private val onMeetupClick: ((Meetup) -> Unit)? = null
+    private val onMeetupClick: ((Meetup) -> Unit)? = null,
+    private val teamNameProvider: ((Meetup) -> String?)? = null
 ) : ListAdapter<Meetup, EventsAdapter.EventsViewHolder>(
     DiffUtils.itemCallback<Meetup>(
         areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
@@ -63,6 +65,7 @@ class EventsAdapter(
                     }
                 }
             }
+            bindTeamName(binding, meetup)
             binding.root.setOnClickListener {
                 onMeetupClick?.invoke(meetup)
             }
@@ -82,8 +85,19 @@ class EventsAdapter(
         binding.tvLink.text = context.getString(R.string.message_placeholder, meetup.meetupLink)
         binding.tvRecurring.text = context.getString(R.string.message_placeholder, meetup.recurring)
         binding.tvCreator.text = context.getString(R.string.message_placeholder, meetup.creator)
+        bindTeamName(binding, meetup)
         binding.root.setOnClickListener {
             onMeetupClick?.invoke(meetup)
+        }
+    }
+
+    private fun bindTeamName(binding: ItemMeetupBinding, meetup: Meetup) {
+        val teamName = teamNameProvider?.invoke(meetup)
+        if (teamName.isNullOrEmpty()) {
+            binding.ltTeamName.visibility = View.GONE
+        } else {
+            binding.ltTeamName.visibility = View.VISIBLE
+            binding.tvTeamName.text = teamName
         }
     }
 

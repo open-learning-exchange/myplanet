@@ -106,6 +106,31 @@ class FeedbackRepositoryImplTest {
     }
 
     @Test
+    fun insertFromJson_withPendingLocalClose_keepsClosedStatus() = runTest {
+        val existing = Feedback().apply {
+            id = "fb1"
+            status = "Closed"
+            isUploaded = false
+            messages = "[]"
+        }
+        coEvery { feedbackDao.findById("fb1") } returns existing
+
+        val serverDoc = JsonObject().apply {
+            addProperty("_id", "fb1")
+            addProperty("status", "Open")
+            add("messages", JsonArray())
+        }
+
+        val saved = slot<Feedback>()
+        coEvery { feedbackDao.upsert(capture(saved)) } returns Unit
+
+        repository.insertFromJson(serverDoc)
+
+        assertEquals("Closed", saved.captured.status)
+        assertFalse(saved.captured.isUploaded)
+    }
+
+    @Test
     fun insertFromJson_withNoPendingLocalChanges_overwritesFromServer() = runTest {
         coEvery { feedbackDao.findById("fb1") } returns null
 
@@ -129,13 +154,14 @@ class FeedbackRepositoryImplTest {
     fun `getFeedback deduplicates byte-identical flow emissions for manager`() = runTest {
         val user = mockk<UserEntity> {
             every { isManager() } returns true
+            every { name } returns "managerName"
         }
         val f1 = Feedback().apply { id = "f1"; _rev = "rev1"; status = "Open"; isUploaded = true; messages = "[]" }
         val f2 = Feedback().apply { id = "f1"; _rev = "rev1"; status = "Open"; isUploaded = true; messages = "[]" }
         coEvery { feedbackDao.getAllSortedFlow() } returns flowOf(listOf(f1), listOf(f2))
 
         val emissions = mutableListOf<List<Feedback>>()
-        repository.getFeedback(user).collect { emissions.add(it) }
+        repository.getFeedback(user.name, user.isManager()).collect { emissions.add(it) }
 
         assertEquals(1, emissions.size)
     }
@@ -151,7 +177,7 @@ class FeedbackRepositoryImplTest {
         coEvery { feedbackDao.getByOwnerFlow("ownerName") } returns flowOf(listOf(f1), listOf(f2))
 
         val emissions = mutableListOf<List<Feedback>>()
-        repository.getFeedback(user).collect { emissions.add(it) }
+        repository.getFeedback(user.name, user.isManager()).collect { emissions.add(it) }
 
         assertEquals(1, emissions.size)
     }

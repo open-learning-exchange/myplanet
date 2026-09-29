@@ -1,25 +1,30 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonArray
 import java.util.UUID
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
-import org.ole.planet.myplanet.utils.JsonUtils
 
 object DictionaryMapper {
     fun mapJsonArrayToEntities(json: JsonArray): List<DictionaryEntity> {
         return json.map { js ->
-            val doc = js.asJsonObject
+            val doc = js.jsonObject
             DictionaryEntity(
                 id = UUID.randomUUID().toString(),
-                code = JsonUtils.getString("code", doc),
-                language = JsonUtils.getString("language", doc),
-                advanceCode = JsonUtils.getString("advance_code", doc),
-                word = JsonUtils.getString("word", doc),
-                meaning = JsonUtils.getString("meaning", doc),
-                definition = JsonUtils.getString("definition", doc),
-                synonym = JsonUtils.getString("synonym", doc),
-                antonym = JsonUtils.getString("antonoym", doc)
+                code = doc.str("code"),
+                language = doc.str("language"),
+                advanceCode = doc.str("advance_code"),
+                word = doc.str("word"),
+                meaning = doc.str("meaning"),
+                definition = doc.str("definition"),
+                synonym = doc.str("synonym"),
+                antonym = doc.str("antonoym")
             )
         }
     }
+
+    private fun JsonObject.str(key: String): String =
+        (this[key] as? JsonPrimitive)?.takeIf { it.isString }?.content ?: ""
 }

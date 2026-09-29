@@ -5,6 +5,8 @@ import android.widget.FrameLayout
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.mockk
+import io.mockk.spyk
+import io.mockk.verify
 import java.util.Locale
 import java.util.TimeZone
 import org.junit.Assert.assertEquals
@@ -247,6 +249,31 @@ class MembersAdapterTest {
             val expected = ApplicationProvider.getApplicationContext<android.content.Context>()
                 .getString(org.ole.planet.myplanet.R.string.no_visit)
             assertTrue(viewHolder.binding.tvLastVisit.text.toString().contains(expected))
+        }
+    }
+
+    @Test
+    fun testOnBindViewHolder_hoistedStringsResolvedOnceAcrossMultipleBinds() {
+        val spyContext = spyk(ApplicationProvider.getApplicationContext<android.content.Context>())
+        val spyAdapter = MembersAdapter(spyContext, currentUserId, actionListener)
+
+        val leaderUser = UserEntity(id = "user1", name = "Leader")
+        val memberUser = UserEntity(id = "user2", name = "Member")
+        val list = listOf(
+            JoinedMemberData(leaderUser, 0, null, "", "", isLeader = true),
+            JoinedMemberData(memberUser, 0, null, "", "", isLeader = false)
+        )
+
+        spyAdapter.submitList(list) {
+            val parent = FrameLayout(spyContext)
+            val vh0 = spyAdapter.onCreateViewHolder(parent, 0)
+            val vh1 = spyAdapter.onCreateViewHolder(parent, 0)
+
+            spyAdapter.onBindViewHolder(vh0, 0)
+            spyAdapter.onBindViewHolder(vh1, 1)
+
+            verify(exactly = 1) { spyContext.getString(org.ole.planet.myplanet.R.string.team_leader) }
+            verify(exactly = 1) { spyContext.getString(org.ole.planet.myplanet.R.string.no_visit) }
         }
     }
 }

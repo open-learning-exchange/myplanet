@@ -1,15 +1,37 @@
 package org.ole.planet.myplanet.model
 
+import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.mockk.every
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 class NewsTest {
+
+    // News logs its parse-failure fallbacks through android.util.Log, and GsonUtils logs on its
+    // own fallback path, neither of which has a JVM implementation in a plain unit test. The
+    // malformed-input cases below reach both, so Log needs stubbing. Mirrors HealthExaminationTest.
+    @Before
+    fun setUp() {
+        mockkStatic(Log::class)
+        every { Log.isLoggable(any(), any()) } returns true
+        every { Log.d(any(), any()) } returns 0
+        every { Log.w(any<String>(), any<String>(), any<Throwable>()) } returns 0
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
 
     @Test
     fun testUpdateMessage() {

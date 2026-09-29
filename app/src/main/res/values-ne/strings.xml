@@ -986,6 +986,7 @@
     <string name="location_colon">स्थान:&#160;</string>
     <string name="recurring_colon">आवर्तमान:&#160;</string>
     <string name="created_by_colon">बनाएको:&#160;</string>
+    <string name="team_colon">टोली:&#160;</string>
     <string name="you_want_to_connect_to_a_different_server">तपाईं अर्को सर्भरमा जडान गर्न चाहनुहुन्छ। अगाडि बढ्नका लागि एपको डेटा मेटाउनुहोस्</string>
     <string name="are_you_sure_you_want_to_clear_data">के तपाईं सबै डाटा हटाउन निश्चित हुनुहुन्छ?</string>
     <string name="feedback_list">प्रतिक्रिया सूची</string>

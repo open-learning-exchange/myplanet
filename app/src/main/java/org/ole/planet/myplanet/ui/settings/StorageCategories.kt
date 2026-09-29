@@ -2,32 +2,33 @@ package org.ole.planet.myplanet.ui.settings
 
 import androidx.annotation.StringRes
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.model.StorageCategoryType
 
 data class StorageCategory(
-    @StringRes val nameRes: Int,
-    val extensions: Set<String>
-)
+    val type: StorageCategoryType,
+    @StringRes val nameRes: Int
+) {
+    val extensions: Set<String> get() = type.extensions
+}
 
+/**
+ * Display side of [StorageCategoryType]: pairs each category with the string it is labelled with.
+ * The scanning rules themselves live in the model enum, so the repository layer never reaches in
+ * here for them.
+ */
 object StorageCategories {
 
-    val all: List<StorageCategory> = listOf(
-        StorageCategory(R.string.storage_videos, setOf("mp4", "mkv", "avi", "webm", "mov", "3gp", "flv")),
-        StorageCategory(R.string.storage_audio, setOf("mp3", "wav", "ogg", "m4a", "flac", "aac", "opus")),
-        StorageCategory(R.string.storage_pdfs, setOf("pdf")),
-        StorageCategory(R.string.storage_images, setOf("jpg", "jpeg", "png", "gif", "webp", "bmp")),
-        StorageCategory(R.string.storage_other, emptySet())
-    )
-    val allKnownExtensions: Set<String> = all.dropLast(1).flatMap { it.extensions }.toSet()
-
-    const val OTHER_INDEX: Int = 4
-
-    private val extensionToIndex: Map<String, Int> = buildMap {
-        all.forEachIndexed { index, category ->
-            category.extensions.forEach { ext ->
-                if (!containsKey(ext)) put(ext, index)
-            }
-        }
+    val all: List<StorageCategory> = StorageCategoryType.entries.map { type ->
+        StorageCategory(type, type.nameRes)
     }
-
-    fun indexOf(extension: String): Int = extensionToIndex[extension.lowercase()] ?: OTHER_INDEX
 }
+
+@get:StringRes
+private val StorageCategoryType.nameRes: Int
+    get() = when (this) {
+        StorageCategoryType.VIDEOS -> R.string.storage_videos
+        StorageCategoryType.AUDIO -> R.string.storage_audio
+        StorageCategoryType.PDFS -> R.string.storage_pdfs
+        StorageCategoryType.IMAGES -> R.string.storage_images
+        StorageCategoryType.OTHER -> R.string.storage_other
+    }

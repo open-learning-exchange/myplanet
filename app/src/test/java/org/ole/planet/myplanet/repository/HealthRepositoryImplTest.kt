@@ -15,6 +15,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -278,10 +279,10 @@ class HealthRepositoryImplTest {
             userId = "exam1" // Serialize uses userId as _id in the request
         })
 
-        val mockResponseObject = JsonObject().apply {
-            addProperty("id", "exam1")
-            addProperty("rev", "rev1")
-        }
+        val mockResponseObject = kotlinx.serialization.json.buildJsonObject {
+            put("id", "exam1")
+            put("rev", "rev1")
+    }
         val mockResponse = retrofit2.Response.success(mockResponseObject)
         coEvery { mockApiInterface.postDoc(any(), any(), any(), any()) } returns mockResponse
 
@@ -408,5 +409,79 @@ class HealthRepositoryImplTest {
         val result = repository.getDecryptedHealth(pojoGarbageData, user)
 
         assertEquals(null, result)
+    }
+
+    @Test
+    fun syncPendingHealthExaminations_fetches_uploads_and_marks_uploaded() = testScope.runTest {
+        mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        every { org.ole.planet.myplanet.utils.UrlUtils.header } returns "mock-header"
+        every { org.ole.planet.myplanet.utils.UrlUtils.getUrl() } returns "mock-url"
+
+        mockkStatic(android.text.TextUtils::class)
+        every { android.text.TextUtils.isEmpty(any()) } answers {
+            val str = firstArg<CharSequence?>()
+            str.isNullOrEmpty()
+        }
+
+        val examination = HealthExamination().apply {
+            _id = "exam1"
+            userId = "exam1"
+            isUpdated = true
+        }
+        coEvery { healthExaminationDao.getUpdated() } returns listOf(examination)
+
+        val mockResponseObject = kotlinx.serialization.json.buildJsonObject {
+            put("id", "exam1")
+            put("rev", "rev1")
+    }
+        val mockResponse = retrofit2.Response.success(mockResponseObject)
+        coEvery { mockApiInterface.postDoc(any(), any(), any(), any()) } returns mockResponse
+
+        repository.syncPendingHealthExaminations()
+        advanceUntilIdle()
+
+        coVerify { healthExaminationDao.getUpdated() }
+        coVerify { mockApiInterface.postDoc(any(), any(), any(), any()) }
+        coVerify { healthExaminationDao.markUploaded(mapOf("exam1" to "rev1")) }
+
+        unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        io.mockk.unmockkStatic(android.text.TextUtils::class)
+    }
+
+    @Test
+    fun syncPendingHealthExaminationsForUser_fetches_uploads_and_marks_uploaded() = testScope.runTest {
+        mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        every { org.ole.planet.myplanet.utils.UrlUtils.header } returns "mock-header"
+        every { org.ole.planet.myplanet.utils.UrlUtils.getUrl() } returns "mock-url"
+
+        mockkStatic(android.text.TextUtils::class)
+        every { android.text.TextUtils.isEmpty(any()) } answers {
+            val str = firstArg<CharSequence?>()
+            str.isNullOrEmpty()
+        }
+
+        val examination = HealthExamination().apply {
+            _id = "exam2"
+            userId = "user1"
+            isUpdated = true
+        }
+        coEvery { healthExaminationDao.getUpdatedForUser("user1") } returns listOf(examination)
+
+        val mockResponseObject = kotlinx.serialization.json.buildJsonObject {
+            put("id", "exam2")
+            put("rev", "rev2")
+    }
+        val mockResponse = retrofit2.Response.success(mockResponseObject)
+        coEvery { mockApiInterface.postDoc(any(), any(), any(), any()) } returns mockResponse
+
+        repository.syncPendingHealthExaminationsForUser("user1")
+        advanceUntilIdle()
+
+        coVerify { healthExaminationDao.getUpdatedForUser("user1") }
+        coVerify { mockApiInterface.postDoc(any(), any(), any(), any()) }
+        coVerify { healthExaminationDao.markUploaded(mapOf("exam2" to "rev2")) }
+
+        unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        io.mockk.unmockkStatic(android.text.TextUtils::class)
     }
 }

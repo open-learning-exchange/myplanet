@@ -22,7 +22,12 @@ interface NewsDao {
     suspend fun getByUnderscoreId(underscoreId: String): News?
 
     @Query("SELECT * FROM news WHERE _id IN (:underscoreIds)")
-    suspend fun getByUnderscoreIds(underscoreIds: List<String>): List<News>
+    suspend fun getByUnderscoreIdsInternal(underscoreIds: List<String>): List<News>
+
+    suspend fun getByUnderscoreIds(underscoreIds: List<String>): List<News> {
+        if (underscoreIds.isEmpty()) return emptyList()
+        return underscoreIds.distinct().chunked(900).flatMap { chunk -> getByUnderscoreIdsInternal(chunk) }
+    }
 
     @Query("SELECT * FROM news")
     suspend fun getAll(): List<News>
@@ -68,8 +73,8 @@ interface NewsDao {
     )
     suspend fun countDistinctCommunityVoiceDatesForUser(startTime: Long, endTime: Long, userId: String): Int
 
-    @Query("SELECT * FROM news WHERE newsId = :chatId")
-    suspend fun getByNewsId(chatId: String): List<News>
+    @Query("SELECT EXISTS(SELECT 1 FROM news WHERE newsId = :chatId AND viewIn LIKE :viewInPattern ESCAPE '\\')")
+    suspend fun isSharedWith(chatId: String, viewInPattern: String): Boolean
 
     @Query("SELECT COUNT(*) FROM news WHERE viewableBy = 'teams' AND viewableId = :teamId")
     suspend fun countTeamChats(teamId: String): Long

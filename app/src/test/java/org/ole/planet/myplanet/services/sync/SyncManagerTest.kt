@@ -17,6 +17,8 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -36,8 +38,10 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
+import org.ole.planet.myplanet.utils.UrlUtils
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -67,6 +71,11 @@ class SyncManagerTest {
         mockkObject(MainApplication.Companion)
         every { MainApplication.createLog(any(), any()) } returns Unit
         coEvery { userRepository.getUserModel() } returns userModel
+        UrlUtils.init(sharedPrefManager)
+        every { sharedPrefManager.getCouchdbUrl() } returns "http://localhost:5984/db"
+        every { sharedPrefManager.isAlternativeUrl() } returns false
+        every { sharedPrefManager.getUrlUser() } returns "admin"
+        every { sharedPrefManager.getUrlPwd() } returns "password"
 
         syncManager = SyncManager(
             context = context,
@@ -169,5 +178,51 @@ class SyncManagerTest {
         syncManager.start(listener, "sync", listOf())
 
         verify(exactly = 0) { android.util.Log.d("SyncPerf", any()) }
+    }
+
+    @Test
+    fun `resourceTransactionSync skips removeDeletedResources when batch failure occurs`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+
+        val totalRowsJson = kotlinx.serialization.json.buildJsonObject {
+            put("total_rows", 10)
+        }
+        val totalRowsResponse = Response.success(totalRowsJson)
+        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } returns totalRowsResponse
+        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true") }) } throws RuntimeException("Network error")
+
+        syncManager.start(listener, "sync", listOf())
+
+        coVerify(exactly = 0) { resourcesRepository.removeDeletedResources(any()) }
+    }
+
+    @Test
+    fun `resourceTransactionSync calls removeDeletedResources with full id list when batch succeeds`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+
+        val totalRowsJson = kotlinx.serialization.json.buildJsonObject {
+            put("total_rows", 2)
+        }
+        val totalRowsResponse = Response.success(totalRowsJson)
+        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } returns totalRowsResponse
+
+        val doc1 = kotlinx.serialization.json.buildJsonObject { put("_id", "res_1") }
+        val doc2 = kotlinx.serialization.json.buildJsonObject { put("_id", "res_2") }
+        val row1 = kotlinx.serialization.json.buildJsonObject { put("doc", doc1) }
+        val row2 = kotlinx.serialization.json.buildJsonObject { put("doc", doc2) }
+        val rowsArray = kotlinx.serialization.json.buildJsonArray {
+            add(row1)
+            add(row2)
+        }
+        val batchJson = kotlinx.serialization.json.buildJsonObject {
+            put("rows", rowsArray)
+        }
+        val batchResponse = Response.success(batchJson)
+        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true") }) } returns batchResponse
+        coEvery { resourcesRepository.batchInsertResources(any()) } returns listOf("res_1", "res_2")
+
+        syncManager.start(listener, "sync", listOf())
+
+        coVerify(exactly = 1) { resourcesRepository.removeDeletedResources(listOf("res_1", "res_2")) }
     }
 }

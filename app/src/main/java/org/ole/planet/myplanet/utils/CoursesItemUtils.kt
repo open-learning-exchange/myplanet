@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.drawable.GradientDrawable
 import android.view.View
 import android.widget.ImageView
+import androidx.annotation.VisibleForTesting
 import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -15,6 +16,15 @@ import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.MyCourse
 
 internal object CoursesItemUtils {
+    private val coverExistenceCache = FileExistenceCache()
+    var timeProvider: TimeProvider = SystemTimeProvider()
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal fun resetForTesting() {
+        timeProvider = SystemTimeProvider()
+        coverExistenceCache.clear()
+    }
+
     fun subjectColorRes(subject: CourseSubject): Int = when (subject) {
         CourseSubject.MATHEMATICS -> R.color.subject_math
         CourseSubject.LITERACY -> R.color.subject_literacy
@@ -57,7 +67,7 @@ internal object CoursesItemUtils {
     ) {
         setCoverColor(context, coverContainer, subject)
         val coverFile = MyCourse.getCoverImageFile(context, course.courseId, course.coverFileName)
-        val model: Any? = if (coverFile?.exists() == true) {
+        val model: Any? = if (coverExistenceCache.exists(coverFile, timeProvider.now())) {
             coverFile
         } else {
             UrlUtils.getCourseImageUrl(course.courseId, course.coverFileName)?.let { url ->

@@ -12,6 +12,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnStartDragListener
 import org.ole.planet.myplanet.model.MyLife
 import org.robolectric.RobolectricTestRunner
@@ -78,6 +79,20 @@ class LifeAdapterTest {
 
         val lifeHolder = holder as LifeAdapter.LifeViewHolder
         assertEquals("My Health", lifeHolder.binding.titleTextView.text.toString())
+    }
+
+    @Test
+    fun `onBindViewHolder sets contentDescription for all views at bind time`() {
+        val life = MyLife("ic_myhealth", "user1", "My Health").apply { isVisible = true }
+        adapter.submitList(listOf(life))
+
+        val parent = LinearLayout(context)
+        val holder = adapter.onCreateViewHolder(parent, 0) as LifeAdapter.LifeViewHolder
+        adapter.onBindViewHolder(holder, 0)
+
+        assertEquals(context.getString(R.string.icon, "My Health"), holder.imageView.contentDescription)
+        assertEquals(context.getString(R.string.drag, "My Health"), holder.dragImageButton.contentDescription)
+        assertEquals(context.getString(R.string.visibility_of, "My Health"), holder.visibility.contentDescription)
     }
 
     @Test

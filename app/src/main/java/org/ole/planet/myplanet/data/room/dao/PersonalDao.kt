@@ -38,6 +38,9 @@ interface PersonalDao {
     @Query("UPDATE my_personal SET isUploaded = 1, _id = :newId, _rev = :rev WHERE id = :id")
     suspend fun updateUploadedStatus(id: String, newId: String, rev: String)
 
+    @Query("UPDATE my_personal SET _id = :newId, _rev = :rev WHERE id = :id")
+    suspend fun updateRemoteDocRef(id: String, newId: String, rev: String)
+
     @Query("UPDATE my_personal SET title = COALESCE(:title, title), description = COALESCE(:description, description) WHERE _id = :id OR id = :id")
     suspend fun updateFields(id: String, title: String?, description: String?)
 }

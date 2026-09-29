@@ -117,6 +117,9 @@ class UserProfileViewModel @Inject constructor(
     private val _maxOpenedResource = MutableStateFlow("")
     val maxOpenedResource: StateFlow<String> = _maxOpenedResource.asStateFlow()
 
+    private val _connectedCommunityCode = MutableStateFlow("")
+    val connectedCommunityCode: StateFlow<String> = _connectedCommunityCode.asStateFlow()
+
     init {
         viewModelScope.launch {
             val fullName = userRepository.getUserModel()?.name ?: ""
@@ -126,6 +129,7 @@ class UserProfileViewModel @Inject constructor(
             _lastVisit.value = stats.lastVisit
             val count = stats.resourceOpenCount
             _numberOfResourceOpen.value = if (count == 0L) "" else "Resource opened $count times."
+            _connectedCommunityCode.value = userRepository.getConnectedCommunityCode()
         }
     }
 

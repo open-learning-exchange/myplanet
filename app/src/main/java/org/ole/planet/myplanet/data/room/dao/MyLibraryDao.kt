@@ -22,9 +22,6 @@ interface MyLibraryDao {
     @RawQuery
     suspend fun filterByTitleNormal(query: SupportSQLiteQuery): List<MyLibrary>
 
-    @Query("SELECT * FROM my_library")
-    suspend fun getAll(): List<MyLibrary>
-
     @Query("SELECT * FROM my_library WHERE id = :id LIMIT 1")
     suspend fun getById(id: String): MyLibrary?
 
@@ -36,9 +33,6 @@ interface MyLibraryDao {
 
     @Query("SELECT * FROM my_library WHERE id IN (:ids)")
     suspend fun getByIds(ids: List<String>): List<MyLibrary>
-
-    @Query("SELECT * FROM my_library WHERE _id IN (:ids)")
-    suspend fun getByUnderscoreIds(ids: List<String>): List<MyLibrary>
 
     @Query("SELECT * FROM my_library WHERE resourceId IN (:resourceIds)")
     suspend fun getByResourceIds(resourceIds: List<String>): List<MyLibrary>
@@ -75,6 +69,14 @@ interface MyLibraryDao {
 
     @Query("SELECT COUNT(*) FROM my_library WHERE title = :title COLLATE NOCASE")
     suspend fun countByTitle(title: String): Int
+
+    @Query("SELECT * FROM my_library WHERE resourceId IN (:resourceIds) ORDER BY rowid")
+    suspend fun getByResourceIdsByRowidInternal(resourceIds: List<String>): List<MyLibrary>
+
+    suspend fun getByResourceIdsByRowid(ids: List<String>): List<MyLibrary> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.distinct().chunked(900).flatMap { getByResourceIdsByRowidInternal(it) }
+    }
 
     @Query(
         "SELECT * FROM my_library " +
@@ -153,14 +155,14 @@ interface MyLibraryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<MyLibrary>)
 
-    @Query("DELETE FROM my_library WHERE id IN (:ids)")
-    suspend fun deleteByIds(ids: List<String>)
-
     @Query("SELECT id FROM my_library WHERE userId LIKE :userPattern ESCAPE '\\'")
     suspend fun getIdsForUserPattern(userPattern: String): List<String>
 
     @Query("SELECT resourceId, title FROM my_library WHERE resourceId IS NOT NULL")
     suspend fun getResourceTitles(): List<ResourceTitleProjection>
+
+    @Query("SELECT id, title FROM my_library")
+    suspend fun getLibraryTitles(): List<LibraryTitleProjection>
 
     @Query(
         "DELETE FROM my_library WHERE _rev IS NOT NULL AND _rev != '' AND isPrivate = 0 " +
@@ -174,5 +176,10 @@ interface MyLibraryDao {
 
 data class ResourceTitleProjection(
     val resourceId: String?,
+    val title: String?
+)
+
+data class LibraryTitleProjection(
+    val id: String,
     val title: String?
 )

@@ -8,7 +8,6 @@ import com.google.gson.JsonObject
 import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.data.api.ChatApiService
@@ -25,8 +24,8 @@ import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.ServerReachabilityProvider
 
 @Singleton
 class ChatRepositoryImpl @Inject constructor(
@@ -35,12 +34,13 @@ class ChatRepositoryImpl @Inject constructor(
     private val serverUrlMapper: ServerUrlMapper,
     private val sharedPrefManager: SharedPrefManager,
     private val dispatcherProvider: DispatcherProvider,
+    private val serverReachabilityProvider: ServerReachabilityProvider,
     @PlainGson private val gson: Gson
 ) : ChatRepository, ChatSyncWriter {
 
     @VisibleForTesting
     internal var reachabilityCheck: suspend (String) -> Boolean = { url ->
-        org.ole.planet.myplanet.MainApplication.isServerReachable(url)
+        serverReachabilityProvider.isServerReachable(url)
     }
 
     override suspend fun sendNewChatRequest(
@@ -155,8 +155,8 @@ class ChatRepositoryImpl @Inject constructor(
     override suspend fun insertChatHistoryFromSync(docs: List<JsonObject>) {
         val unwrappedDocs = mutableListOf<JsonObject>()
         for (j in docs) {
-            val jsonDoc = JsonUtils.getJsonObject("doc", j)
-            val id = JsonUtils.getString("_id", jsonDoc)
+            val jsonDoc = GsonUtils.getJsonObject("doc", j)
+            val id = GsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 unwrappedDocs.add(jsonDoc)
             }
@@ -169,17 +169,17 @@ class ChatRepositoryImpl @Inject constructor(
         // @Insert(REPLACE) upserts by primary key, replacing the whole row (including the embedded
         // conversations JSON), which subsumes the old "delete orphaned conversations" step.
         val entities = chats.map { json ->
-            val chatHistoryId = JsonUtils.getString("_id", json)
+            val chatHistoryId = GsonUtils.getString("_id", json)
             ChatHistory().apply {
                 id = chatHistoryId
                 _id = chatHistoryId
-                _rev = JsonUtils.getString("_rev", json)
-                title = JsonUtils.getString("title", json)
-                createdDate = "${JsonUtils.getLong("createdDate", json)}"
-                updatedDate = "${JsonUtils.getLong("updatedDate", json)}"
-                user = JsonUtils.getString("user", json)
-                aiProvider = JsonUtils.getString("aiProvider", json)
-                val conversationsArray = JsonUtils.getJsonArray("conversations", json)
+                _rev = GsonUtils.getString("_rev", json)
+                title = GsonUtils.getString("title", json)
+                createdDate = "${GsonUtils.getLong("createdDate", json)}"
+                updatedDate = "${GsonUtils.getLong("updatedDate", json)}"
+                user = GsonUtils.getString("user", json)
+                aiProvider = GsonUtils.getString("aiProvider", json)
+                val conversationsArray = GsonUtils.getJsonArray("conversations", json)
                 conversations = conversationsArray.map {
                     gson.fromJson(it, Conversation::class.java)
                 }

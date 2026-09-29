@@ -6,7 +6,6 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import io.mockk.verify
-import org.ole.planet.myplanet.services.VoicesLabelManager
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -19,8 +18,11 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
@@ -34,6 +36,7 @@ class VoicesViewModelTest {
     private lateinit var teamsRepository: TeamsRepository
     private lateinit var userRepository: org.ole.planet.myplanet.repository.UserRepository
     private lateinit var resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository
+    private lateinit var configurationsRepository: ConfigurationsRepository
     private lateinit var viewModel: VoicesViewModel
 
     private val testDispatcherProvider = object : DispatcherProvider {
@@ -50,7 +53,8 @@ class VoicesViewModelTest {
         teamsRepository = mockk(relaxed = true)
         userRepository = mockk(relaxed = true)
         resourcesRepository = mockk(relaxed = true)
-        viewModel = VoicesViewModel(voicesRepository, teamsRepository, testDispatcherProvider, userRepository, resourcesRepository)
+        configurationsRepository = mockk(relaxed = true)
+        viewModel = VoicesViewModel(voicesRepository, teamsRepository, testDispatcherProvider, userRepository, resourcesRepository, configurationsRepository)
     }
 
     @Test
@@ -233,21 +237,21 @@ class VoicesViewModelTest {
             images = """[{"resourceId":""}]"""
         }
 
-        coEvery { resourcesRepository.getLibraryItemsByIds(any()) } returns emptyList()
+        coEvery { resourcesRepository.getLibraryItemsByResourceIds(any()) } returns emptyList()
         coEvery { resourcesRepository.downloadResources(any()) } returns true
 
         viewModel.downloadReferencedResources(listOf(newsWithResource, newsWithEmptyImages, newsWithNoResourceId))
         advanceUntilIdle()
 
         coVerify {
-            resourcesRepository.getLibraryItemsByIds(match { it.contains("res-123") && it.size == 1 })
+            resourcesRepository.getLibraryItemsByResourceIds(match { it.contains("res-123") && it.size == 1 })
             resourcesRepository.downloadResources(any())
         }
     }
 
     @Test
     fun `test downloadReferencedResources does nothing for null news or empty list`() = runTest {
-        coEvery { resourcesRepository.getLibraryItemsByIds(any()) } returns emptyList()
+        coEvery { resourcesRepository.getLibraryItemsByResourceIds(any()) } returns emptyList()
         coEvery { resourcesRepository.downloadResources(any()) } returns true
 
         viewModel.downloadReferencedResources(listOf(null))
@@ -286,7 +290,7 @@ class VoicesViewModelTest {
     }
 
     @Test
-    fun `test filtering falls back to JsonUtils when parsedSharedTeamName is null`() = runTest {
+    fun `test filtering falls back to GsonUtils when parsedSharedTeamName is null`() = runTest {
         val newsWithoutMemo = News().apply {
             parsedSharedTeamName = null
             viewIn = """[{"name":"Team Z"}, {"name":"Team Z"}]"""
@@ -340,5 +344,16 @@ class VoicesViewModelTest {
         } finally {
             unmockkObject(VoicesLabelManager.Companion)
         }
+    }
+
+    @Test
+    fun `getCommunityLeaders delegates to configurationsRepository`() {
+        val mockLeaders = listOf(UserEntity().apply { name = "Leader 1" })
+        coEvery { configurationsRepository.getCommunityLeaders() } returns mockLeaders
+
+        val result = viewModel.getCommunityLeaders()
+
+        assertEquals(mockLeaders, result)
+        verify(exactly = 1) { configurationsRepository.getCommunityLeaders() }
     }
 }

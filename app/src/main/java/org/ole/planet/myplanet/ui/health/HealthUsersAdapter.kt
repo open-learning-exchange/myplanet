@@ -14,17 +14,21 @@ import org.ole.planet.myplanet.utils.TimeUtils
 class HealthUsersAdapter(private val clickListener: ((UserEntity) -> Unit)? = null) :
     ListAdapter<UserEntity, HealthUsersAdapter.ViewHolder>(DIFF_CALLBACK) {
 
+    private val dateCache = HashMap<Long, String>()
+
     companion object {
         private val DIFF_CALLBACK = DiffUtils.itemCallback<UserEntity>(
             areItemsTheSame = { old, new -> old.id == new.id },
             areContentsTheSame = { old, new ->
                 old.name == new.name &&
+                old.firstName == new.firstName &&
+                old.lastName == new.lastName &&
                 old.userImage == new.userImage &&
                 old.joinDate == new.joinDate
             },
             getChangePayload = { old, new ->
                 val diffs = mutableListOf<String>()
-                if (old.name != new.name) diffs.add("name")
+                if (old.name != new.name || old.firstName != new.firstName || old.lastName != new.lastName) diffs.add("name")
                 if (old.userImage != new.userImage) diffs.add("userImage")
                 if (old.joinDate != new.joinDate) diffs.add("joinDate")
                 if (diffs.isEmpty()) null else diffs
@@ -32,14 +36,20 @@ class HealthUsersAdapter(private val clickListener: ((UserEntity) -> Unit)? = nu
         )
     }
 
-    class ViewHolder(private val binding: ItemUserBinding, private val avatarSize: Int) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(user: UserEntity, clickListener: ((UserEntity) -> Unit)?) {
+    inner class ViewHolder(private val binding: ItemUserBinding, private val avatarSize: Int) : RecyclerView.ViewHolder(binding.root) {
+        init {
+            binding.root.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos != RecyclerView.NO_POSITION) {
+                    clickListener?.invoke(getItem(pos))
+                }
+            }
+        }
+
+        fun bind(user: UserEntity) {
             bindName(user)
             bindDate(user)
             bindImage(user)
-            binding.root.setOnClickListener {
-                clickListener?.invoke(user)
-            }
         }
 
         fun bindName(user: UserEntity) {
@@ -47,7 +57,8 @@ class HealthUsersAdapter(private val clickListener: ((UserEntity) -> Unit)? = nu
         }
 
         fun bindDate(user: UserEntity) {
-            binding.txtJoined.text = binding.root.context.getString(R.string.joined_colon, TimeUtils.formatDate(user.joinDate))
+            val formattedDate = dateCache.getOrPut(user.joinDate) { TimeUtils.formatDate(user.joinDate) }
+            binding.txtJoined.text = binding.root.context.getString(R.string.joined_colon, formattedDate)
         }
 
         fun bindImage(user: UserEntity) {
@@ -70,7 +81,7 @@ class HealthUsersAdapter(private val clickListener: ((UserEntity) -> Unit)? = nu
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(getItem(position), clickListener)
+        holder.bind(getItem(position))
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {

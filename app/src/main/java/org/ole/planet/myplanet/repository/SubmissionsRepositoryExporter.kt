@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import android.os.Environment
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.FileOutputStream
 import java.time.Instant
@@ -24,6 +25,7 @@ import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 
 internal class SubmissionsRepositoryExporter @Inject constructor(
+    @param:ApplicationContext private val context: Context,
     private val submissionDao: SubmissionDao,
     private val answerDao: AnswerDao,
     private val examDao: ExamDao,
@@ -43,7 +45,6 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
     }
 
     suspend fun generateSubmissionPdf(
-        context: Context,
         submissionId: String
     ): File? {
         return try {
@@ -129,7 +130,6 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
     }
 
     suspend fun generateMultipleSubmissionsPdf(
-        context: Context,
         submissionIds: List<String>,
         examTitle: String
     ): File? {

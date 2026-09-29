@@ -13,7 +13,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.ArrayList
-import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -53,6 +52,7 @@ class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(
         val view = super.onCreateView(inflater, container, savedInstanceState)
         userId = arguments?.getString("userId") ?: ""
         isAdmin = arguments?.getBoolean("isAdmin", false) ?: false
+        currentFilter = savedInstanceState?.getString(KEY_FILTER) ?: currentFilter
 
         adapter = NotificationsAdapter(
             onMarkAsReadClick = { notificationId -> viewModel.markAsRead(notificationId) },
@@ -69,14 +69,11 @@ class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(
         val spinnerAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item_right, optionsList)
         spinnerAdapter.setDropDownViewResource(R.layout.spinner_item)
         binding.status.adapter = spinnerAdapter
-        var isInitialSpinnerSelection = true
         binding.status.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                if (isInitialSpinnerSelection) {
-                    isInitialSpinnerSelection = false
-                    return
-                }
-                currentFilter = parent.getItemAtPosition(position).toString().lowercase(Locale.ROOT)
+                val filter = filterAt(position)
+                if (filter == currentFilter) return
+                currentFilter = filter
                 viewModel.loadNotifications(userId, currentFilter, isAdmin)
             }
             override fun onNothingSelected(parent: AdapterView<*>) {}
@@ -87,7 +84,7 @@ class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(
         binding.btnBulkDelete.setOnClickListener { viewModel.deleteSelected() }
         binding.btnCancelSelection.setOnClickListener { viewModel.clearSelection() }
 
-        viewModel.loadNotifications(userId, "all", isAdmin)
+        viewModel.loadNotifications(userId, currentFilter, isAdmin)
 
         collectWhenStarted(viewModel.groupedItems) { items ->
             adapter.submitList(items)
@@ -165,10 +162,22 @@ class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(
         )
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(KEY_FILTER, currentFilter)
+    }
+
     fun refreshNotificationsList() {
         if (::adapter.isInitialized && _binding != null) {
-            currentFilter = binding.status.selectedItem.toString().lowercase(Locale.ROOT)
+            currentFilter = filterAt(binding.status.selectedItemPosition)
             viewModel.loadNotifications(userId, currentFilter, isAdmin)
         }
+    }
+    
+    private fun filterAt(position: Int): String = FILTERS.getOrElse(position) { FILTERS.first() }
+
+    companion object {
+        private const val KEY_FILTER = "notifications_filter"
+        private val FILTERS = listOf("all", "read", "unread")
     }
 }

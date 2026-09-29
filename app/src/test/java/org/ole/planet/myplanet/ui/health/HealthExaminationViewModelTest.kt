@@ -38,6 +38,7 @@ class HealthExaminationViewModelTest {
     fun setup() {
         healthRepository = mockk()
         userRepository = mockk()
+        coEvery { userRepository.getUserModel() } returns null
         viewModel = HealthExaminationViewModel(
             healthRepository,
             userRepository,
@@ -173,6 +174,36 @@ class HealthExaminationViewModelTest {
         assertEquals(1, results.size)
         assertTrue(results.first())
         assertFalse(viewModel.isSaving.value)
+
+        job.cancel()
+    }
+
+    @Test
+    fun loadData_populatesCurrentUserAsExaminer_andUserAsPatient() = runTest {
+        val patientUser = mockk<UserEntity>()
+        val examinerUser = mockk<UserEntity>()
+        val mockPojo = mockk<HealthExamination>()
+        val mockHealth = mockk<MyHealth>()
+
+        coEvery { healthRepository.getHealthEntry("patient_id") } returns Pair(patientUser, mockPojo)
+        coEvery { userRepository.ensureUserSecurityKeys("patient_id") } returns patientUser
+        coEvery { userRepository.getUserModel() } returns examinerUser
+        coEvery { healthRepository.getDecryptedHealth(mockPojo, patientUser) } returns mockHealth
+        coEvery { healthRepository.getExaminationConditions(null) } returns emptyMap()
+
+        val states = mutableListOf<HealthExaminationState>()
+        val job = launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.state.toList(states)
+        }
+
+        viewModel.loadData("patient_id", null)
+        advanceUntilIdle()
+
+        val finalState = states.last()
+
+        assertFalse(finalState.isLoading)
+        assertEquals(patientUser, finalState.user)
+        assertEquals(examinerUser, finalState.currentUser)
 
         job.cancel()
     }

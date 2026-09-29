@@ -45,8 +45,7 @@ object ChatSearch {
         }
 
         var conversation: String?
-        val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
+        val normalizedQueryParts = s.split(" ").filterNot { it.isEmpty() }.map { Utilities.normalizeText(it) }
         val normalizedQuery = Utilities.normalizeText(s)
         val inTitleStartQuery = mutableListOf<ChatHistory>()
         val inTitleContainsQuery = mutableListOf<ChatHistory>()
@@ -57,10 +56,10 @@ object ChatSearch {
             run {
                 pChat.normalized.forEachIndexed { i, norm ->
                     conversation = norm ?: return@forEachIndexed
-                    if (conversation.startsWith(normalizedQuery, ignoreCase = true)) {
+                    if (conversation.startsWith(normalizedQuery)) {
                         if (i == 0) inTitleStartQuery.add(pChat.chat) else startsWithQuery.add(pChat.chat)
                         return@run
-                    } else if (normalizedQueryParts.all { conversation.contains(it, ignoreCase = true) }) {
+                    } else if (normalizedQueryParts.all { conversation.contains(it) }) {
                         if (i == 0) inTitleContainsQuery.add(pChat.chat) else containsQuery.add(pChat.chat)
                         return@run
                     }
@@ -86,17 +85,16 @@ object ChatSearch {
         }
 
         var title: String?
-        val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
+        val normalizedQueryParts = s.split(" ").filterNot { it.isEmpty() }.map { Utilities.normalizeText(it) }
         val normalizedQuery = Utilities.normalizeText(s)
         val startsWithQuery = mutableListOf<ChatHistory>()
         val containsQuery = mutableListOf<ChatHistory>()
 
         for (pChat in precomputedChats) {
             title = pChat.normalizedTitle ?: continue
-            if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+            if (title.startsWith(normalizedQuery)) {
                 startsWithQuery.add(pChat.chat)
-            } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
+            } else if (normalizedQueryParts.all { title.contains(it) }) {
                 containsQuery.add(pChat.chat)
             }
         }
