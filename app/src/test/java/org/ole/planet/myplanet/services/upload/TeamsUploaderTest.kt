@@ -160,28 +160,30 @@ class TeamsUploaderTest {
         every { teamsSyncRepository.get() } returns mockRepo
         coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
 
-        val bulkResponse = com.google.gson.JsonArray().apply {
-            add(JsonObject().apply { addProperty("id", "team1"); addProperty("rev", "rev1") })
+        coEvery { uploadRepository.postUploadArray(any(), any()) } coAnswers {
+            val element = JsonObject().apply { addProperty("id", "team1"); addProperty("rev", "rev1") }
+            val bulkResponse = com.google.gson.JsonArray().apply { add(element) }
+            retrofit2.Response.success(bulkResponse)
         }
-        coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.success(bulkResponse)
 
         io.mockk.mockkObject(MyTeam)
         val mockFile = mockk<File>()
         every { MyTeam.getAttachmentFile(context, "team1", "image.png") } returns mockFile
         every { mockFile.exists() } returns true
 
-        coEvery { uploadRepository.uploadResource(any(), any(), any()) } throws CancellationException("Upload cancelled")
+        val cancelExc = CancellationException("Upload cancelled")
+        coEvery { uploadRepository.uploadResource(any(), any(), any()) } throws cancelExc
 
-        var caughtCancellation = false
+        var caught: Exception? = null
         try {
             teamsUploader.uploadTeams()
-        } catch (e: CancellationException) {
-            caughtCancellation = true
+        } catch (e: Exception) {
+            caught = e
         } finally {
             io.mockk.unmockkObject(MyTeam)
         }
 
-        assertTrue("Expected CancellationException to be caught", caughtCancellation)
+        assertTrue("Expected CancellationException, got $caught", caught is CancellationException)
     }
 
     @Test
