@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.repository.TeamUploadData
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.services.retry.RetryQueue
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
@@ -48,8 +49,8 @@ class TeamsUploaderTest {
         mockkStatic(Log::class)
         mockkStatic(android.net.Uri::class)
         every { android.net.Uri.encode(any()) } answers { firstArg() }
-        mockkStatic(org.ole.planet.myplanet.utils.FileUtils::class)
-        every { org.ole.planet.myplanet.utils.FileUtils.getMimeType(any()) } returns "image/png"
+        mockkObject(FileUtils)
+        every { FileUtils.getMimeType(any()) } returns "image/png"
         io.mockk.mockkObject(UrlUtils)
         every { UrlUtils.getUrl() } returns "http://mock.url"
         every { Log.d(any(), any()) } returns 0
