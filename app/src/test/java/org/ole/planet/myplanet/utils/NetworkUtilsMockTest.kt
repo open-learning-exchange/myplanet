@@ -9,22 +9,41 @@ import android.net.NetworkCapabilities
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import dagger.hilt.android.EntryPointAccessors
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 class NetworkUtilsMockTest {
+
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkObject(MainApplication.Companion)
+            mockkStatic(EntryPointAccessors::class)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkAll()
+        }
+    }
+
     private lateinit var mockContext: Context
     private lateinit var mockWifiManager: WifiManager
     private lateinit var mockBluetoothManager: BluetoothManager
@@ -39,10 +58,8 @@ class NetworkUtilsMockTest {
         mockBluetoothAdapter = mockk(relaxed = true)
         mockConnectivityManager = mockk(relaxed = true)
 
-        mockkObject(MainApplication.Companion)
         every { MainApplication.context } returns mockContext
 
-        mockkStatic(EntryPointAccessors::class)
         val mockEntryPoint = mockk<CoreDependenciesEntryPoint>(relaxed = true)
         every { EntryPointAccessors.fromApplication(any(), CoreDependenciesEntryPoint::class.java) } returns mockEntryPoint
 
@@ -55,7 +72,7 @@ class NetworkUtilsMockTest {
 
     @After
     fun tearDown() {
-        unmockkAll()
+        clearAllMocks(answers = false, recordedCalls = true, childMocks = false, verificationMarks = true, exclusionRules = false)
         NetworkUtils.resetForTesting()
     }
 
