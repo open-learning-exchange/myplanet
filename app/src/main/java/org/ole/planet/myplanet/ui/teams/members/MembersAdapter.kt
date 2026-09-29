@@ -133,15 +133,17 @@ class MembersAdapter(
                 member.name
             }
             val fragment = MembersDetailFragment.newInstance(
-                name = userName.toString(),
-                email = member.email.toString(),
-                dob = member.dob.toString().substringBefore("T"),
-                language = member.language.toString(),
-                phone = member.phoneNumber.toString(),
-                username = "${member.firstName} ${member.lastName}",
-                memberLevel = member.level.toString(),
-                imageUrl = member.userImage,
-                id = member.id
+                MemberDetailArgs(
+                    id = member.id,
+                    name = userName.toString(),
+                    email = member.email.toString(),
+                    dob = member.dob.toString().substringBefore("T"),
+                    language = member.language.toString(),
+                    phone = member.phoneNumber.toString(),
+                    username = "${member.firstName} ${member.lastName}",
+                    memberLevel = member.level.toString(),
+                    imageUrl = member.userImage
+                )
             )
             FragmentNavigator.replaceFragment(
                 activity.supportFragmentManager,

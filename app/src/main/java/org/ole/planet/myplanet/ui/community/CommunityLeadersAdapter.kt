@@ -11,6 +11,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.ui.teams.members.MemberDetailArgs
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
 import org.ole.planet.myplanet.utils.DiffUtils
 
@@ -50,15 +51,17 @@ internal class CommunityLeadersAdapter(
         val activity = context as? FragmentActivity
         if (activity?.findViewById<View>(R.id.fragment_container) != null) {
             val fragment = MembersDetailFragment.newInstance(
-                name = leader.name ?: "",
-                email = leader.email ?: "",
-                dob = leader.dob ?: "",
-                language = leader.language ?: "",
-                phone = leader.phoneNumber ?: "",
-                username = leader.name ?: "",
-                memberLevel = leader.level ?: "",
-                imageUrl = null,
-                id = leader.id
+                MemberDetailArgs(
+                    id = leader.id,
+                    name = leader.name ?: "",
+                    email = leader.email ?: "",
+                    dob = leader.dob ?: "",
+                    language = leader.language ?: "",
+                    phone = leader.phoneNumber ?: "",
+                    username = leader.name ?: "",
+                    memberLevel = leader.level ?: "",
+                    imageUrl = null
+                )
             )
             FragmentNavigator.replaceFragment(
                 activity.supportFragmentManager,

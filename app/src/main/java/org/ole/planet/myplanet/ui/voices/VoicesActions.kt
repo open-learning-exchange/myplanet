@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.databinding.AlertInputBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.VoicesEditActions
+import org.ole.planet.myplanet.ui.teams.members.MemberDetailArgs
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -208,15 +209,17 @@ object VoicesActions {
         if (userModel == null) return null
         val userName = "${userModel.firstName} ${userModel.lastName}".trim().ifBlank { userModel.name }
         val fragment = MembersDetailFragment.newInstance(
-            name = userName.toString(),
-            email = userModel.email.toString(),
-            dob = userModel.dob.toString().substringBefore("T"),
-            language = userModel.language.toString(),
-            phone = userModel.phoneNumber.toString(),
-            username = "${userModel.firstName} ${userModel.lastName}",
-            memberLevel = userModel.level.toString(),
-            imageUrl = userModel.userImage,
-            id = userModel.id
+            MemberDetailArgs(
+                id = userModel.id,
+                name = userName.toString(),
+                email = userModel.email.toString(),
+                dob = userModel.dob.toString().substringBefore("T"),
+                language = userModel.language.toString(),
+                phone = userModel.phoneNumber.toString(),
+                username = "${userModel.firstName} ${userModel.lastName}",
+                memberLevel = userModel.level.toString(),
+                imageUrl = userModel.userImage
+            )
         )
         return fragment
     }

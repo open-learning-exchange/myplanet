@@ -72,27 +72,17 @@ class MembersDetailFragment : BaseBindingFragment<FragmentMemberDetailBinding>(F
     }
 
     companion object {
-        fun newInstance(
-            name: String,
-            email: String,
-            dob: String,
-            language: String,
-            phone: String,
-            username: String,
-            memberLevel: String,
-            imageUrl: String?,
-            id: String?
-        ) = MembersDetailFragment().apply {
+        fun newInstance(args: MemberDetailArgs) = MembersDetailFragment().apply {
             arguments = Bundle().apply {
-                putString("member_id", id)
-                putString("member_name", name)
-                putString("profile_email", email)
-                putString("detail_dob", dob)
-                putString("detail_language", language)
-                putString("profile_phone", phone)
-                putString("username", username)
-                putString("user_level", memberLevel)
-                putString("profile_photo_url", imageUrl)
+                putString("member_id", args.id)
+                putString("member_name", args.name)
+                putString("profile_email", args.email)
+                putString("detail_dob", args.dob)
+                putString("detail_language", args.language)
+                putString("profile_phone", args.phone)
+                putString("username", args.username)
+                putString("user_level", args.memberLevel)
+                putString("profile_photo_url", args.imageUrl)
             }
         }
     }
