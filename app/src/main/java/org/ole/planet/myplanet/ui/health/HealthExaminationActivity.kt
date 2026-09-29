@@ -15,7 +15,6 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.chip.Chip
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
-import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -252,10 +251,10 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             sign.allergies = "${binding.etAllergies.text}".trim { it <= ' ' }
             sign.createdBy = currentUser?._id
             examination?.bp = "${binding.etBloodpressure.text}".trim { it <= ' ' }
-            examination?.setTemperature(getFloat("${binding.etTemperature.text}".trim { it <= ' ' }))
+            examination?.setTemperature(parseVitalReading("${binding.etTemperature.text}".trim { it <= ' ' }))
             examination?.pulse = getInt("${binding.etPulseRate.text}".trim { it <= ' ' })
-            examination?.setWeight(getFloat("${binding.etWeight.text}".trim { it <= ' ' }))
-            examination?.height = getFloat("${binding.etHeight.text}".trim { it <= ' ' })
+            examination?.setWeight(parseVitalReading("${binding.etWeight.text}".trim { it <= ' ' }))
+            examination?.height = parseVitalReading("${binding.etHeight.text}".trim { it <= ' ' })
             otherConditions
             examination?.conditions = GsonUtils.gson.toJson(mapConditions)
             examination?.hearing = "${binding.etHearing.text}".trim { it <= ' ' }
@@ -314,17 +313,17 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         get() {
             val scrollView = binding.rootScrollView
 
-            val isValidTemp = (getFloat("${binding.etTemperature.text}".trim { it <= ' ' }) in 30.0..40.0 ||
-                        getFloat("${binding.etTemperature.text}".trim { it <= ' ' }) == 0f) &&
+            val isValidTemp = (parseVitalReading("${binding.etTemperature.text}".trim { it <= ' ' }) in 30.0..40.0 ||
+                        parseVitalReading("${binding.etTemperature.text}".trim { it <= ' ' }) == 0f) &&
                     "${binding.etTemperature.text}".trim { it <= ' ' }.isNotEmpty()
             val isValidPulse = (getInt("${binding.etPulseRate.text}".trim { it <= ' ' }) in 40..120 ||
-                    getFloat("${binding.etPulseRate.text}".trim { it <= ' ' }) == 0f) &&
+                    parseVitalReading("${binding.etPulseRate.text}".trim { it <= ' ' }) == 0f) &&
                     "${binding.etPulseRate.text}".trim { it <= ' ' }.isNotEmpty()
-            val isValidHeight = (getFloat("${binding.etHeight.text}".trim { it <= ' ' }) in 1.0..250.0 ||
-                    getFloat("${binding.etHeight.text}".trim { it <= ' ' }) == 0f) &&
+            val isValidHeight = (parseVitalReading("${binding.etHeight.text}".trim { it <= ' ' }) in 1.0..250.0 ||
+                    parseVitalReading("${binding.etHeight.text}".trim { it <= ' ' }) == 0f) &&
                     "${binding.etHeight.text}".trim { it <= ' ' }.isNotEmpty()
-            val isValidWeight = (getFloat("${binding.etWeight.text}".trim { it <= ' ' }) in 1.0..150.0 ||
-                    getFloat("${binding.etWeight.text}".trim { it <= ' ' }) == 0f) &&
+            val isValidWeight = (parseVitalReading("${binding.etWeight.text}".trim { it <= ' ' }) in 1.0..150.0 ||
+                    parseVitalReading("${binding.etWeight.text}".trim { it <= ' ' }) == 0f) &&
                     "${binding.etWeight.text}".trim { it <= ' ' }.isNotEmpty()
             if (!isValidTemp) {
                 binding.etTemperature.error = getString(R.string.invalid_input_must_be_between_30_and_40)
@@ -355,11 +354,6 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         } catch (e: Exception) {
             0
         }
-    }
-
-    private fun getFloat(trim: String): Float {
-        val value = trim.replace(',', '.').toFloatOrNull()?.takeIf { it.isFinite() } ?: return 0f
-        return (value * 10).roundToInt() / 10f
     }
 
     private fun createPojo() {
