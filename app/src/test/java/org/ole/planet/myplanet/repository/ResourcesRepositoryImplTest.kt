@@ -1178,6 +1178,81 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
+    fun `batchInsertResources batch reconciles HTML libraries and calls upsertAll once for changes`() = runTest {
+        val baseDir = kotlin.io.path.createTempDirectory("batch-html-test").toFile()
+        File(baseDir, "ole/res1").apply { mkdirs() }
+        File(baseDir, "ole/res1/index.html").writeText("<html></html>")
+        File(baseDir, "ole/res2").apply { mkdirs() }
+        File(baseDir, "ole/res2/index.html").writeText("<html></html>")
+        every { storagePathResolver.resolveOleDirectory() } returns File(baseDir, "ole")
+
+        val doc1 = com.google.gson.JsonObject().apply {
+            addProperty("_id", "res1")
+            addProperty("mediaType", "HTML")
+        }
+        val doc2 = com.google.gson.JsonObject().apply {
+            addProperty("_id", "res2")
+            addProperty("mediaType", "HTML")
+        }
+
+        val lib1 = MyLibrary().apply { id = "res1"; resourceId = "res1"; mediaType = "HTML"; resourceOffline = false; _rev = "1-a" }
+        val lib2 = MyLibrary().apply { id = "res2"; resourceId = "res2"; mediaType = "HTML"; resourceOffline = false; _rev = "1-b" }
+
+        coEvery { myLibraryDao.getByIds(listOf("res1", "res2")) } returns emptyList()
+        coEvery { myLibraryDao.getByResourceIdsByRowid(listOf("res1", "res2")) } returns listOf(lib1, lib2)
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+
+        try {
+            repository.batchInsertResources(listOf(doc1, doc2))
+
+            coVerify(exactly = 0) { myLibraryDao.getByResourceId(any()) }
+            // Expect exactly 2 upsertAll calls: 1 for inserting documents initially, 1 for reconcileHtmlLibraries with both items
+            coVerify(exactly = 2) { myLibraryDao.upsertAll(any()) }
+            coVerify(exactly = 1) {
+                myLibraryDao.upsertAll(match { list ->
+                    list.size == 2 && list.all { it.isResourceOffline() && it.resourceLocalAddress == "index.html" }
+                })
+            }
+        } finally {
+            baseDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `reconcileHtmlLibraries mutates only the first row returned by getByResourceIdsByRowid when rows share resourceId`() = runTest {
+        val baseDir = kotlin.io.path.createTempDirectory("batch-html-shared-test").toFile()
+        File(baseDir, "ole/shared_res").apply { mkdirs() }
+        File(baseDir, "ole/shared_res/index.html").writeText("<html></html>")
+        every { storagePathResolver.resolveOleDirectory() } returns File(baseDir, "ole")
+
+        val doc1 = com.google.gson.JsonObject().apply {
+            addProperty("_id", "shared_res")
+            addProperty("mediaType", "HTML")
+        }
+
+        val row1LowestRowid = MyLibrary().apply { id = "pk1"; resourceId = "shared_res"; mediaType = "HTML"; resourceOffline = false; _rev = "1-a" }
+        val row2HigherRowid = MyLibrary().apply { id = "pk2"; resourceId = "shared_res"; mediaType = "HTML"; resourceOffline = false; _rev = "1-b" }
+
+        coEvery { myLibraryDao.getByIds(listOf("shared_res")) } returns emptyList()
+        coEvery { myLibraryDao.getByResourceIdsByRowid(listOf("shared_res")) } returns listOf(row1LowestRowid, row2HigherRowid)
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+
+        try {
+            repository.batchInsertResources(listOf(doc1))
+
+            coVerify(exactly = 0) { myLibraryDao.getByResourceId(any()) }
+            coVerify(exactly = 1) {
+                myLibraryDao.upsertAll(match { list ->
+                    list.size == 1 && list[0].id == "pk1" && list[0].isResourceOffline()
+                })
+            }
+            assertFalse(row2HigherRowid.isResourceOffline())
+        } finally {
+            baseDir.deleteRecursively()
+        }
+    }
+
+    @Test
     fun `reconcileHtmlResourceOffline clears in-memory resource list cache`() = runTest {
         val externalFiles = temporaryFolder.newFolder("external_cache_test")
         val oleDir = File(externalFiles, "ole").apply { mkdirs() }
