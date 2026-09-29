@@ -90,33 +90,29 @@ class RetryQueueTest {
 
         retryQueue.queueFailedOperation("type", error, JsonObject(), "endpoint", modelClassName = "Model")
 
-        coVerify(exactly = 0) { retryRepository.getExistingOperation(any<String>(), any<String>()) }
-        coVerify(exactly = 0) { retryRepository.enqueue(any<String>(), any<RetryFailure>(), any<String>(), any<String>(), any<String>(), any<String>(), any<String>(), any<String>()) }
+        coVerify(exactly = 0) { retryRepository.recordFailure(any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
-    fun queueFailedOperation_retryableError_noExistingOp_enqueues() = runTest {
+    fun queueFailedOperation_retryableError_recordsFailure() = runTest {
         val error = UploadError("item1", Exception("fail"), retryable = true)
         val payload = JsonObject()
-        coEvery { retryRepository.getExistingOperation("item1", "type") } returns null
-        coEvery { retryRepository.enqueue(any(), any(), any(), any(), any(), any(), any(), any()) } returns Unit
+        coEvery { retryRepository.recordFailure(any(), any(), any(), any(), any(), any(), any(), any()) } returns Unit
 
         retryQueue.queueFailedOperation("type", error, payload, "endpoint", modelClassName = "Model")
 
-        coVerify(exactly = 1) { retryRepository.enqueue("type", RetryFailure(error.itemId, error.message, error.httpCode), payload.toString(), "endpoint", "POST", null, "Model", null) }
-    }
-
-    @Test
-    fun queueFailedOperation_retryableError_existingOp_updates() = runTest {
-        val error = UploadError("item1", Exception("fail"), retryable = true)
-        val existingOp = RetryOperation().apply { id = "op1" }
-        coEvery { retryRepository.getExistingOperation("item1", "type") } returns existingOp
-        coEvery { retryRepository.updateAttempt("op1", any()) } returns Unit
-
-        retryQueue.queueFailedOperation("type", error, JsonObject(), "endpoint", modelClassName = "Model")
-
-        coVerify(exactly = 1) { retryRepository.updateAttempt("op1", RetryFailure(error.itemId, error.message, error.httpCode)) }
-        coVerify(exactly = 0) { retryRepository.enqueue(any(), any(), any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 1) {
+            retryRepository.recordFailure(
+                "type",
+                RetryFailure(error.itemId, error.message, error.httpCode),
+                payload.toString(),
+                "endpoint",
+                "POST",
+                null,
+                "Model",
+                null
+            )
+        }
     }
 
 

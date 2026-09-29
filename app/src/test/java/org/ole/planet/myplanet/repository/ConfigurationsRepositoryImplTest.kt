@@ -118,16 +118,17 @@ class ConfigurationsRepositoryImplTest {
         every { sharedPrefManager.getCouchdbUrl() } returns "http://test.url"
         every { sharedPrefManager.getServerPin() } returns "1234"
 
+        UrlUtils.resetForTesting()
+
         val responseBody = "".toResponseBody("application/json".toMediaTypeOrNull())
         val response = Response.success(200, responseBody)
 
         coEvery { apiInterface.healthAccess(any()) } returns response
-        every { context.getString(R.string.server_sync_successfully) } returns "Success"
 
         val result = repository.checkHealth()
 
         coVerify { apiInterface.healthAccess(healthUrl) }
-        assertEquals("Success", result)
+        assertEquals(HealthCheckResult.Healthy, result)
     }
 
     @Test
@@ -142,12 +143,50 @@ class ConfigurationsRepositoryImplTest {
         every { sharedPrefManager.getCouchdbUrl() } returns "http://test.url"
         every { sharedPrefManager.getServerPin() } returns "1234"
 
+        UrlUtils.resetForTesting()
+
         coEvery { apiInterface.healthAccess(any()) } throws IOException("boom")
 
         val result = repository.checkHealth()
 
-        assertEquals("Network connection error", result)
+        assertEquals(HealthCheckResult.Failed("Network connection error"), result)
         verify { Log.e("ConfigurationsRepository", "Health access request failed", any<Throwable>()) }
+    }
+
+    @Test
+    fun `checkHealth returns NotConfigured when health URL is blank`() = runTest(testDispatcher) {
+        mockkObject(UrlUtils)
+        every { UrlUtils.getHealthAccessUrl(sharedPrefManager) } returns ""
+
+        val result = repository.checkHealth()
+
+        assertEquals(HealthCheckResult.NotConfigured, result)
+        unmockkObject(UrlUtils)
+    }
+
+    @Test
+    fun `checkHealth returns Failed when server returns 503`() = runTest(testDispatcher) {
+        val healthUrl = "http://test.url/healthaccess?p=1234"
+
+        val rawPrefs: SharedPreferences = mockk()
+        every { sharedPrefManager.rawPreferences } returns rawPrefs
+        every { rawPrefs.getString(any(), any()) } returns "http://test.url"
+        every { sharedPrefManager.getServerUrl() } returns "http://test.url"
+        every { sharedPrefManager.isAlternativeUrl() } returns false
+        every { sharedPrefManager.getCouchdbUrl() } returns "http://test.url"
+        every { sharedPrefManager.getServerPin() } returns "1234"
+
+        UrlUtils.resetForTesting()
+
+        val responseBody = "".toResponseBody("application/json".toMediaTypeOrNull())
+        val response = Response.error<ResponseBody>(503, responseBody)
+
+        coEvery { apiInterface.healthAccess(any()) } returns response
+
+        val result = repository.checkHealth()
+
+        coVerify { apiInterface.healthAccess(healthUrl) }
+        assertEquals(HealthCheckResult.Failed("Service temporarily unavailable"), result)
     }
 
     @Test
@@ -868,5 +907,51 @@ class ConfigurationsRepositoryImplTest {
         repository.clearPreferences()
 
         verify { sharedPrefManager.clearPreferences() }
+    }
+
+    @Test
+    fun `syncCommunityLeaders writes body JSON to setCommunityLeaders on success`() = runTest(testDispatcher) {
+        mockkObject(UrlUtils)
+        every { UrlUtils.header } returns "Basic header"
+        every { UrlUtils.getUrl() } returns "http://test.url"
+
+        val responseJson = kotlinx.serialization.json.buildJsonObject {
+            put("total_rows", 1)
+        }
+        coEvery { apiInterface.postDoc("Basic header", "application/json", "http://test.url/_users/_find", any()) } returns Response.success(responseJson)
+
+        repository.syncCommunityLeaders()
+
+        verify(exactly = 1) { sharedPrefManager.setCommunityLeaders("$responseJson") }
+
+        unmockkObject(UrlUtils)
+    }
+
+    @Test
+    fun `syncCommunityLeaders does not write when response is non-2xx`() = runTest(testDispatcher) {
+        mockkObject(UrlUtils)
+        every { UrlUtils.header } returns "Basic header"
+        every { UrlUtils.getUrl() } returns "http://test.url"
+
+        val errorResponseBody = "".toResponseBody("application/json".toMediaTypeOrNull())
+        coEvery { apiInterface.postDoc("Basic header", "application/json", "http://test.url/_users/_find", any()) } returns Response.error(500, errorResponseBody)
+
+        repository.syncCommunityLeaders()
+
+        verify(exactly = 0) { sharedPrefManager.setCommunityLeaders(any()) }
+
+        unmockkObject(UrlUtils)
+    }
+
+    @Test
+    fun `syncCommunityLeaders returns early and does not postDoc when header is blank`() = runTest(testDispatcher) {
+        mockkObject(UrlUtils)
+        every { UrlUtils.header } returns ""
+
+        repository.syncCommunityLeaders()
+
+        coVerify(exactly = 0) { apiInterface.postDoc(any(), any(), any(), any()) }
+
+        unmockkObject(UrlUtils)
     }
 }
