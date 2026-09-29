@@ -1,10 +1,12 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
@@ -122,8 +124,10 @@ class EventsRepositoryImpl @Inject constructor(
         return try {
             insertMeetupsFromSync(documents)
             documents.size
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "batchInsertMeetups failed", e)
             0
         }
     }
@@ -157,8 +161,10 @@ class EventsRepositoryImpl @Inject constructor(
         return try {
             meetupDao.upsert(meetup)
             true
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "createMeetup failed", e)
             false
         }
     }
@@ -174,5 +180,9 @@ class EventsRepositoryImpl @Inject constructor(
         meetup.updated = false
         meetupDao.upsert(meetup)
         return true
+    }
+
+    companion object {
+        private const val TAG = "EventsRepository"
     }
 }

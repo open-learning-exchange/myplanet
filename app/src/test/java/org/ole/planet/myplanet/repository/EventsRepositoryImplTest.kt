@@ -6,6 +6,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -197,6 +198,19 @@ class EventsRepositoryImplTest {
     }
 
     @Test
+    fun batchInsertMeetupsCancellationException() = runTest {
+        val docs = listOf(JsonObject().apply { addProperty("_id", "m1") })
+        coEvery { meetupDao.getByMeetupIds(any()) } throws CancellationException("cancelled")
+
+        try {
+            repository.batchInsertMeetups(docs)
+            org.junit.Assert.fail("Expected CancellationException to be thrown")
+        } catch (_: CancellationException) {
+            // Expected exception propagated
+        }
+    }
+
+    @Test
     fun createMeetup() = runTest {
         val params = MeetupCreationParams(
             "title", "link", "desc", "loc", "start", "end", null, "planet", "user", 1L, 2L, "teamId"
@@ -217,5 +231,21 @@ class EventsRepositoryImplTest {
 
         val result = repository.createMeetup(params)
         assertFalse(result)
+    }
+
+    @Test
+    fun createMeetupCancellationException() = runTest {
+        coEvery { meetupDao.upsert(any()) } throws CancellationException("cancelled")
+
+        val params = MeetupCreationParams(
+            "title", "link", "desc", "loc", "start", "end", null, "planet", "user", 1L, 2L, "teamId"
+        )
+
+        try {
+            repository.createMeetup(params)
+            org.junit.Assert.fail("Expected CancellationException to be thrown")
+        } catch (_: CancellationException) {
+            // Expected exception propagated
+        }
     }
 }
