@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.FinanceReportParams
-import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.repository.EnterprisesRepository
 
 sealed class ReportEvent {
@@ -97,7 +97,7 @@ class EnterprisesViewModel @Inject constructor(
         }
     }
 
-    fun getReportsFlow(teamId: String): Flow<List<MyTeam>> {
+    fun getReportsFlow(teamId: String): Flow<List<FinanceReport>> {
         return enterprisesRepository.getReportsFlow(teamId)
     }
 
