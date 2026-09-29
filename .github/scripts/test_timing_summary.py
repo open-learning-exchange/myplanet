@@ -124,14 +124,14 @@ def main() -> int:
     print("| --- | --- | --- | --- | --- |")
     for elapsed, name, count, median_val in classes[:TOP_N]:
         share = (elapsed / total * 100) if total else 0.0
-        print(f"| `{name}` | {elapsed:.1f} | {share:.1f}% | {count} | {median_val:.1f} |")
+        print(f"| `{name}` | {elapsed:.1f} | {share:.1f}% | {count} | {median_val:.2f} |")
     print()
     print(f"### {TOP_N} slowest classes per test (median, ≥3 tests)")
     print()
     print("| Class | Median s/test | Tests | Seconds |")
     print("| --- | --- | --- | --- |")
     for median_val, name, count, elapsed in classes_by_median[:TOP_N]:
-        print(f"| `{name}` | {median_val:.1f} | {count} | {elapsed:.1f} |")
+        print(f"| `{name}` | {median_val:.2f} | {count} | {elapsed:.1f} |")
     print()
     print(f"### {TOP_N} slowest individual tests")
     print()
