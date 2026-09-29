@@ -18,6 +18,8 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.VoicesLabelManager
@@ -34,6 +36,7 @@ class VoicesViewModelTest {
     private lateinit var teamsRepository: TeamsRepository
     private lateinit var userRepository: org.ole.planet.myplanet.repository.UserRepository
     private lateinit var resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository
+    private lateinit var configurationsRepository: ConfigurationsRepository
     private lateinit var viewModel: VoicesViewModel
 
     private val testDispatcherProvider = object : DispatcherProvider {
@@ -50,7 +53,8 @@ class VoicesViewModelTest {
         teamsRepository = mockk(relaxed = true)
         userRepository = mockk(relaxed = true)
         resourcesRepository = mockk(relaxed = true)
-        viewModel = VoicesViewModel(voicesRepository, teamsRepository, testDispatcherProvider, userRepository, resourcesRepository)
+        configurationsRepository = mockk(relaxed = true)
+        viewModel = VoicesViewModel(voicesRepository, teamsRepository, testDispatcherProvider, userRepository, resourcesRepository, configurationsRepository)
     }
 
     @Test
@@ -340,5 +344,16 @@ class VoicesViewModelTest {
         } finally {
             unmockkObject(VoicesLabelManager.Companion)
         }
+    }
+
+    @Test
+    fun `getCommunityLeaders delegates to configurationsRepository`() {
+        val mockLeaders = listOf(UserEntity().apply { name = "Leader 1" })
+        coEvery { configurationsRepository.getCommunityLeaders() } returns mockLeaders
+
+        val result = viewModel.getCommunityLeaders()
+
+        assertEquals(mockLeaders, result)
+        verify(exactly = 1) { configurationsRepository.getCommunityLeaders() }
     }
 }
