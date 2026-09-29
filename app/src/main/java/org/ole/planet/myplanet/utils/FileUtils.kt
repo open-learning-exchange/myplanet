@@ -19,13 +19,12 @@ import androidx.core.net.toUri
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
 import java.util.UUID
 import kotlin.math.roundToLong
 
 object FileUtils {
     private const val TAG = "FileUtils"
+    private val STRAY_PERCENT = Regex("%(?![0-9A-Fa-f]{2})")
 
     @Volatile private var cachedExternalFilesDir: File? = null
 
@@ -69,9 +68,14 @@ object FileUtils {
         return getResourceRelativePathFromSegments(parseUrlSegments(url))
     }
 
+    // Decode each segment once, but keep a segment whose "%" isn't a valid escape (e.g. "50% off.pdf")
+    // as-is: Uri.pathSegments would turn that "%" into a replacement character.
     private fun parseUrlSegments(url: String?): List<String>? {
         return try {
-            url?.toUri()?.pathSegments
+            url?.toUri()?.encodedPath
+                ?.split('/')
+                ?.filter { it.isNotEmpty() }
+                ?.map { if (STRAY_PERCENT.containsMatchIn(it)) it else Uri.decode(it) }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to parse path segments from url", e)
             null
@@ -84,32 +88,19 @@ object FileUtils {
         return if (idx != -1 && idx + 1 < segments.size) segments[idx + 1] else ""
     }
 
+    // Segments are already decoded by parseUrlSegments; decoding again turned "+" into a space
+    // and threw on a literal "%", so the saved file name stopped matching resourceLocalAddress.
     private fun getResourceRelativePathFromSegments(segments: List<String>?): String {
         if (segments == null) return ""
-        return try {
-            val idx = segments.indexOf("resources")
-            if (idx != -1 && idx + 2 < segments.size) {
-                segments.subList(idx + 2, segments.size).joinToString("/") {
-                    URLDecoder.decode(it, StandardCharsets.UTF_8.name())
-                }
-            } else {
-                getFileNameFromSegments(segments)
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to resolve resource relative path from url", e)
+        val idx = segments.indexOf("resources")
+        return if (idx != -1 && idx + 2 < segments.size) {
+            segments.subList(idx + 2, segments.size).joinToString("/")
+        } else {
             getFileNameFromSegments(segments)
         }
     }
 
-    private fun getFileNameFromSegments(segments: List<String>?): String {
-        val lastSegment = segments?.lastOrNull() ?: return ""
-        return try {
-            URLDecoder.decode(lastSegment, StandardCharsets.UTF_8.name())
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to decode file name from url segment", e)
-            ""
-        }
-    }
+    private fun getFileNameFromSegments(segments: List<String>?): String = segments?.lastOrNull().orEmpty()
 
     /**
      * Resolves an HTML resource's entry file (e.g. from `openWhichFile`, which may nest the
@@ -173,25 +164,9 @@ object FileUtils {
         return path.substringAfterLast('/')
     }
 
-    fun getFileNameFromUrl(url: String?): String {
-        return try {
-            val segments = url?.toUri()?.pathSegments
-            getFileNameFromSegments(segments)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to extract file name from url", e)
-            ""
-        }
-    }
+    fun getFileNameFromUrl(url: String?): String = getFileNameFromSegments(parseUrlSegments(url))
 
-    fun getIdFromUrl(url: String?): String {
-        return try {
-            val segments = url?.toUri()?.pathSegments
-            getIdFromSegments(segments)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to extract resource id from url", e)
-            ""
-        }
-    }
+    fun getIdFromUrl(url: String?): String = getIdFromSegments(parseUrlSegments(url))
 
     fun getFileExtension(address: String?): String {
         return address?.substringAfterLast('/')?.substringAfterLast('.', "")?.lowercase() ?: ""
