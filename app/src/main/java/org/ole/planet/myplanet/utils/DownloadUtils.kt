@@ -211,7 +211,6 @@ object DownloadUtils {
 
     fun canStartForegroundService(context: Context): Boolean {
         return when {
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.O -> true
             Build.VERSION.SDK_INT < Build.VERSION_CODES.S -> {
                 isAppInForeground(context)
             }

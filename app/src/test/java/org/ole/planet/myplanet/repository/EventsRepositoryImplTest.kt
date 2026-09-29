@@ -38,6 +38,17 @@ class EventsRepositoryImplTest {
     }
 
     @Test
+    fun getMeetupsForUser() = runTest {
+        coEvery { meetupDao.getByUserId("user1") } returns listOf(Meetup().apply { id = "1"; userId = "user1" })
+
+        val result = repository.getMeetupsForUser("user1")
+
+        assertEquals(1, result.size)
+        assertEquals("1", result[0].id)
+        coVerify { meetupDao.getByUserId("user1") }
+    }
+
+    @Test
     fun getMeetupsForTeam() = runTest {
         coEvery { meetupDao.getByTeamId("team1") } returns listOf(Meetup().apply { id = "1" })
 
@@ -161,6 +172,19 @@ class EventsRepositoryImplTest {
         assertEquals(1, count)
 
         coVerify(exactly = 0) { meetupDao.upsertAll(any()) }
+    }
+
+    @Test
+    fun insertMeetupsFromSyncPropagatesDaoException() = runTest {
+        val docs = listOf(JsonObject().apply { addProperty("_id", "m1") })
+        coEvery { meetupDao.getByMeetupIds(any()) } throws SilentException("boom")
+
+        try {
+            repository.insertMeetupsFromSync(docs)
+            org.junit.Assert.fail("Expected SilentException to be thrown")
+        } catch (_: SilentException) {
+            // Expected exception propagated
+        }
     }
 
     @Test
