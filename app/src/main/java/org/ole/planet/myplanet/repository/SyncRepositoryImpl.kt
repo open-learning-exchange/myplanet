@@ -10,10 +10,13 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserDataUploadScheduler
 import org.ole.planet.myplanet.services.UserDataWorker
@@ -38,6 +41,7 @@ class SyncRepositoryImpl @Inject constructor(
     private val coursesRepository: CoursesRepository,
     private val eventsRepository: EventsSyncWriter,
     private val teamsSyncRepository: TeamsSyncRepository,
+    private val userSyncRepository: dagger.Lazy<UserSyncRepository>,
     private val transactionSyncManager: dagger.Lazy<TransactionSyncManager>,
     private val syncTimeLogger: SyncTimeLogger,
     private val sharedPrefManager: SharedPrefManager,
@@ -201,7 +205,44 @@ class SyncRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getCachedShelvesWithData(): List<String> {
+    override suspend fun getShelvesWithData(): List<String> {
+        val shelvesWithData = mutableListOf<String>()
+        val cachedShelves = getCachedShelvesWithData()
+        if (cachedShelves.isNotEmpty()) {
+            return cachedShelves
+        }
+
+        val url = UrlUtils.getUrl()
+        val header = UrlUtils.header
+
+        val allShelves = ApiClient.executeWithRetryAndWrap {
+            apiInterface.getDocuments(header, "$url/shelf/_all_docs")
+        }?.body()?.rows ?: return emptyList()
+
+        coroutineScope {
+            val semaphore = Semaphore(8)
+            val checkJobs = allShelves.chunked(25).map { shelfBatch ->
+                async(dispatcherProvider.io) {
+                    semaphore.withPermit {
+                        checkShelfBatchForDataOptimized(shelfBatch)
+                    }
+                }
+            }
+
+            checkJobs.awaitAll().flatten().let { validShelves ->
+                shelvesWithData.addAll(validShelves)
+            }
+        }
+
+        cacheShelvesWithData(shelvesWithData)
+        return shelvesWithData
+    }
+
+    private suspend fun checkShelfBatchForDataOptimized(shelfBatch: List<Rows>): List<String> {
+        return userSyncRepository.get().checkShelfBatchForDataOptimized(shelfBatch.mapNotNull { it.id })
+    }
+
+    internal fun getCachedShelvesWithData(): List<String> {
         val cacheTime = sharedPrefManager.getRawLong(CACHE_KEY_SHELVES_CACHE_TIME, 0)
         val now = timeProvider.now()
 
@@ -214,7 +255,7 @@ class SyncRepositoryImpl @Inject constructor(
         return emptyList()
     }
 
-    override fun cacheShelvesWithData(shelves: List<String>) {
+    internal fun cacheShelvesWithData(shelves: List<String>) {
         sharedPrefManager.setRawString(CACHE_KEY_SHELVES_WITH_DATA, shelves.joinToString(","))
         sharedPrefManager.setRawLong(CACHE_KEY_SHELVES_CACHE_TIME, timeProvider.now())
     }
