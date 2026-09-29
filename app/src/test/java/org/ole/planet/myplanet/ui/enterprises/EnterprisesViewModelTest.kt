@@ -10,13 +10,31 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.repository.EnterprisesRepository
 
 class EnterprisesViewModelTest {
 
     private lateinit var enterprisesRepository: EnterprisesRepository
     private lateinit var viewModel: EnterprisesViewModel
+
+    private fun createReport(id: String) = FinanceReport(
+        _id = id,
+        _rev = "rev1",
+        status = "active",
+        description = "desc",
+        beginningBalance = 0,
+        sales = 0,
+        otherIncome = 0,
+        wages = 0,
+        otherExpenses = 0,
+        startDate = 1000L,
+        endDate = 2000L,
+        createdDate = 500L,
+        updatedDate = 600L,
+        updated = false,
+        imageName = null
+    )
 
     @Before
     fun setUp() {
@@ -27,7 +45,7 @@ class EnterprisesViewModelTest {
     @Test
     fun `getReportsFlow returns flow from repository non-suspendingly`() {
         val teamId = "team123"
-        val expectedReports = listOf(MyTeam().apply { _id = "report1" })
+        val expectedReports = listOf(createReport("report1"))
         val flow = flowOf(expectedReports)
 
         every { enterprisesRepository.getReportsFlow(teamId) } returns flow
