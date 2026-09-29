@@ -22,6 +22,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -309,6 +310,23 @@ class SyncRepositoryImplTest {
         val retrievedShelves = syncRepository.getCachedShelvesWithData()
 
         assertEquals(inputShelves, retrievedShelves)
+    }
+
+    @Test
+    fun `syncDashboardKeyId rethrows CancellationException instead of returning an error state`() = runTest {
+        coEvery {
+            transactionSyncManager.get().syncDashboardKeyId(any())
+        } throws CancellationException("Dashboard sync cancelled")
+
+        var rethrown = false
+        var state: SyncUiState? = null
+        try {
+            state = syncRepository.syncDashboardKeyId("learner")
+        } catch (_: CancellationException) {
+            rethrown = true
+        }
+
+        assertTrue("expected CancellationException to propagate, got state $state", rethrown)
     }
 
     @Test(expected = CancellationException::class)

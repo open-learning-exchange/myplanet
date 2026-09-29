@@ -196,6 +196,8 @@ class SyncRepositoryImpl @Inject constructor(
         return try {
             transactionSyncManager.get().syncDashboardKeyId(role)
             SyncUiState.Success(null)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             SyncUiState.Error(e.message)
         }
