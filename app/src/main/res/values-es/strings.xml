@@ -1027,6 +1027,7 @@
     <string name="dark_mode">Modo oscuro</string>
     <string name="last_visit">Última visita: %1$s</string>
     <string name="no_visit">sin visita</string>
+    <string name="no_logout_record_found">No se encontró registro de cierre de sesión</string>
     <string name="dark_mode_off">Desactivado</string>
     <string name="dark_mode_on">Activado</string>
     <string name="dark_mode_follow_system">Seguir el sistema</string>

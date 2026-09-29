@@ -43,8 +43,8 @@ class MembersAdapterTest {
             name = "User 2"
         )
         val list = listOf(
-            JoinedMemberData(user1, 0, null, "", "", true),
-            JoinedMemberData(user2, 0, null, "", "", false)
+            JoinedMemberData(user1, 0, null, true),
+            JoinedMemberData(user2, 0, null, false)
         )
 
         var payloadEmitted: Any? = null
@@ -72,8 +72,8 @@ class MembersAdapterTest {
             name = "User 2"
         )
         val multiList = listOf(
-            JoinedMemberData(user1, 0, null, "", "", true), // Logged in user
-            JoinedMemberData(user2, 0, null, "", "", false)
+            JoinedMemberData(user1, 0, null, true), // Logged in user
+            JoinedMemberData(user2, 0, null, false)
         )
 
         adapter.submitList(multiList) {
@@ -106,8 +106,8 @@ class MembersAdapterTest {
             name = "User 2"
         )
         val multiList = listOf(
-            JoinedMemberData(user1, 0, null, "", "", true),
-            JoinedMemberData(user2, 0, null, "", "", false)
+            JoinedMemberData(user1, 0, null, true),
+            JoinedMemberData(user2, 0, null, false)
         )
 
         adapter.submitList(multiList) {
@@ -136,7 +136,7 @@ class MembersAdapterTest {
             name = "Alice Example"
         )
         val list = listOf(
-            JoinedMemberData(user, 0, null, "", "", true)
+            JoinedMemberData(user, 0, null, true)
         )
 
         adapter.submitList(list) {
@@ -156,7 +156,7 @@ class MembersAdapterTest {
             name = null
         )
         val list = listOf(
-            JoinedMemberData(user, 0, null, "", "", true)
+            JoinedMemberData(user, 0, null, true)
         )
 
         adapter.submitList(list) {
@@ -176,7 +176,7 @@ class MembersAdapterTest {
             name = "User 1"
         )
         val list = listOf(
-            JoinedMemberData(user1, 0, null, "", "", true)
+            JoinedMemberData(user1, 0, null, true)
         )
 
         adapter.submitList(list) {
@@ -210,7 +210,7 @@ class MembersAdapterTest {
             // March 11, 2024, 00:00:00 UTC -> "11 Mar 2024" in the short (dd MMM yyyy) format
             val timestamp = 1710115200000L
             val list = listOf(
-                JoinedMemberData(user1, 0, timestamp, "", "", false)
+                JoinedMemberData(user1, 0, timestamp, false)
             )
 
             adapter.submitList(list) {
@@ -236,7 +236,7 @@ class MembersAdapterTest {
             name = "User 1"
         )
         val list = listOf(
-            JoinedMemberData(user1, 0, null, "", "", false)
+            JoinedMemberData(user1, 0, null, false)
         )
 
         adapter.submitList(list) {
@@ -260,8 +260,8 @@ class MembersAdapterTest {
         val leaderUser = UserEntity(id = "user1", name = "Leader")
         val memberUser = UserEntity(id = "user2", name = "Member")
         val list = listOf(
-            JoinedMemberData(leaderUser, 0, null, "", "", isLeader = true),
-            JoinedMemberData(memberUser, 0, null, "", "", isLeader = false)
+            JoinedMemberData(leaderUser, 0, null, isLeader = true),
+            JoinedMemberData(memberUser, 0, null, isLeader = false)
         )
 
         spyAdapter.submitList(list) {

@@ -1027,6 +1027,7 @@
     <string name="member_description">%1$s (%2$d visites)</string>
     <string name="last_visit">Dernière visite: %1$s</string>
     <string name="no_visit">Pas de visite</string>
+    <string name="no_logout_record_found">Aucun enregistrement de déconnexion trouvé</string>
     <string name="dark_mode">Mode Sombre</string>
     <string name="dark_mode_off">Désactivé</string>
     <string name="dark_mode_on">Activé</string>

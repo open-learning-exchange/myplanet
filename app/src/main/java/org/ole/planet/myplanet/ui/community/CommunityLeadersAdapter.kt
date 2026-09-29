@@ -55,8 +55,6 @@ internal class CommunityLeadersAdapter(
                 dob = leader.dob ?: "",
                 language = leader.language ?: "",
                 phone = leader.phoneNumber ?: "",
-                visits = "",
-                lastLogin = "",
                 username = leader.name ?: "",
                 memberLevel = leader.level ?: "",
                 imageUrl = null,

@@ -14,9 +14,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 
+/**
+ * Visit stats for the member currently on screen. A `null` field means the value could not be
+ * resolved (no member id to count visits for, or no recorded logout), so the row is hidden rather
+ * than filled with a placeholder.
+ */
 data class MemberVisitStatsUiState(
-    val numberOfVisits: String = "0",
-    val lastLogin: String = "No logout record found"
+    val numberOfVisits: String?,
+    val lastLogin: String?
 )
 
 @HiltViewModel
@@ -24,8 +29,10 @@ class MembersDetailViewModel @Inject constructor(
     private val activitiesRepository: ActivitiesRepository
 ) : ViewModel() {
 
-    private val _visitStats = MutableStateFlow<Map<String, MemberVisitStatsUiState>>(emptyMap())
-    val visitStats: StateFlow<Map<String, MemberVisitStatsUiState>> = _visitStats.asStateFlow()
+    private val _visitStats = MutableStateFlow<MemberVisitStatsUiState?>(null)
+    val visitStats: StateFlow<MemberVisitStatsUiState?> = _visitStats.asStateFlow()
+
+    private var loadRequested = false
 
     private val dateFormatter: DateTimeFormatter by lazy {
         DateTimeFormatter.ofPattern("MMMM dd, yyyy hh:mm a", Locale.getDefault())
@@ -33,17 +40,15 @@ class MembersDetailViewModel @Inject constructor(
     }
 
     fun loadMemberVisitStats(memberId: String?, username: String?) {
-        if (memberId.isNullOrEmpty()) return
+        if (memberId.isNullOrEmpty() && username.isNullOrEmpty()) return
+        if (loadRequested) return
+        loadRequested = true
         viewModelScope.launch {
             val stats = activitiesRepository.getMemberVisitStats(memberId, username)
-            val formattedLastLogin = stats.lastVisit?.let {
-                dateFormatter.format(Instant.ofEpochMilli(it))
-            } ?: "No logout record found"
-            val uiState = MemberVisitStatsUiState(
-                numberOfVisits = stats.offlineVisitCount.toString(),
-                lastLogin = formattedLastLogin
+            _visitStats.value = MemberVisitStatsUiState(
+                numberOfVisits = if (memberId.isNullOrEmpty()) null else stats.offlineVisitCount.toString(),
+                lastLogin = stats.lastVisit?.let { dateFormatter.format(Instant.ofEpochMilli(it)) }
             )
-            _visitStats.value = _visitStats.value + (memberId to uiState)
         }
     }
 }

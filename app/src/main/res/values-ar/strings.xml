@@ -1030,6 +1030,7 @@
     <string name="member_description"><![CDATA[(\u200E%2$d زيارة) \u200E%1$s]]></string>
     <string name="last_visit">الزيارة الأخيرة: %1$s</string>
     <string name="no_visit">لا زيارة</string>
+    <string name="no_logout_record_found">لم يتم العثور على سجل تسجيل خروج</string>
     <string name="dark_mode">الوضع الداكن</string>
     <string name="dark_mode_off">إيقاف</string>
     <string name="dark_mode_on">تشغيل</string>

@@ -1030,6 +1030,7 @@
     <string name="member_description">%1$s (%2$d visits)</string>
     <string name="last_visit">Last visit: %1$s</string>
     <string name="no_visit">No visit</string>
+    <string name="no_logout_record_found">No logout record found</string>
     <string name="dark_mode">Dark mode</string>
     <string name="dark_mode_off">Off</string>
     <string name="dark_mode_on">On</string>

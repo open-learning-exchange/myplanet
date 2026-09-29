@@ -4,16 +4,13 @@ import android.os.Bundle
 import android.view.View
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.FragmentMemberDetailBinding
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.ImageUtils
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class MembersDetailFragment : BaseBindingFragment<FragmentMemberDetailBinding>(FragmentMemberDetailBinding::inflate) {
@@ -42,18 +39,14 @@ class MembersDetailFragment : BaseBindingFragment<FragmentMemberDetailBinding>(F
             setFieldOrHide(binding.tvProfilePhone, args.getString("profile_phone"))
             setFieldOrHide(binding.tvLevel, args.getString("user_level"))
 
-            if (!memberId.isNullOrEmpty()) {
-                viewModel.loadMemberVisitStats(memberId, username)
-            }
+            viewModel.loadMemberVisitStats(memberId, username)
 
-            viewLifecycleOwner.lifecycleScope.launch {
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    viewModel.visitStats.collect { statsMap ->
-                        val stats = memberId?.let { statsMap[it] } ?: MemberVisitStatsUiState()
-                        setFieldOrHide(binding.tvNumberOfVisits, stats.numberOfVisits)
-                        setFieldOrHide(binding.tvLastLogin, stats.lastLogin)
-                    }
-                }
+            collectWhenStarted(viewModel.visitStats) { stats ->
+                setFieldOrHide(binding.tvNumberOfVisits, stats?.numberOfVisits)
+                setFieldOrHide(
+                    binding.tvLastLogin,
+                    stats?.let { it.lastLogin ?: getString(R.string.no_logout_record_found) }
+                )
             }
         }
 
@@ -85,12 +78,10 @@ class MembersDetailFragment : BaseBindingFragment<FragmentMemberDetailBinding>(F
             dob: String,
             language: String,
             phone: String,
-            visits: String = "",
-            lastLogin: String = "",
             username: String,
             memberLevel: String,
             imageUrl: String?,
-            id: String? = null
+            id: String?
         ) = MembersDetailFragment().apply {
             arguments = Bundle().apply {
                 putString("member_id", id)
@@ -99,8 +90,6 @@ class MembersDetailFragment : BaseBindingFragment<FragmentMemberDetailBinding>(F
                 putString("detail_dob", dob)
                 putString("detail_language", language)
                 putString("profile_phone", phone)
-                putString("number_of_visits", visits)
-                putString("last_login", lastLogin)
                 putString("username", username)
                 putString("user_level", memberLevel)
                 putString("profile_photo_url", imageUrl)
