@@ -20,6 +20,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -27,7 +28,7 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 
 @HiltViewModel
 class VoicesViewModel @Inject constructor(
@@ -35,7 +36,8 @@ class VoicesViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
     private val dispatcherProvider: DispatcherProvider,
     private val userRepository: UserRepository,
-    private val resourcesRepository: ResourcesRepository
+    private val resourcesRepository: ResourcesRepository,
+    private val configurationsRepository: ConfigurationsRepository
 ) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository) {
 
     private val _searchQuery = MutableStateFlow("")
@@ -95,6 +97,20 @@ class VoicesViewModel @Inject constructor(
         }
     }
 
+    private fun buildDynamicLabelMap(list: List<News?>): Map<String, String> {
+        val dynamicLabelDisplayToValue = mutableMapOf<String, String>()
+        list.forEach { news ->
+            news?.labels?.forEach { label ->
+                if (!labelDisplayToValue.containsValue(label)) {
+                    val labelName = Constants.LABEL_VALUE_TO_NAME[label]
+                        ?: VoicesLabelManager.formatLabelValue(label)
+                    dynamicLabelDisplayToValue.putIfAbsent(labelName, label)
+                }
+            }
+        }
+        return dynamicLabelDisplayToValue
+    }
+
     private fun filterNews(
         list: List<News?>,
         query: String,
@@ -103,19 +119,8 @@ class VoicesViewModel @Inject constructor(
         val labelFiltered = if (selectedLabel == "All") {
             list
         } else {
-            val dynamicLabelDisplayToValue = mutableMapOf<String, String>()
-            list.forEach { news ->
-                news?.labels?.forEach { label ->
-                    if (!labelDisplayToValue.containsValue(label)) {
-                        val labelName = Constants.LABEL_VALUE_TO_NAME[label]
-                            ?: VoicesLabelManager.formatLabelValue(label)
-                        dynamicLabelDisplayToValue.putIfAbsent(labelName, label)
-                    }
-                }
-            }
-
-            val resolvedLabelValue = labelDisplayToValue[selectedLabel]
-                ?: dynamicLabelDisplayToValue[selectedLabel]
+            val staticLabelValue = labelDisplayToValue[selectedLabel]
+            val resolvedLabelValue = staticLabelValue ?: buildDynamicLabelMap(list)[selectedLabel]
 
             list.filter { news ->
                 when {
@@ -126,7 +131,7 @@ class VoicesViewModel @Inject constructor(
                         news?.labels?.contains(resolvedLabelValue) == true
                     }
                     else -> {
-                        JsonUtils.extractSharedTeamName(news) == selectedLabel
+                        (news?.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)) == selectedLabel
                     }
                 }
             }
@@ -200,7 +205,7 @@ class VoicesViewModel @Inject constructor(
         allLabels.add("Shared Chat")
 
         newsList.forEach { news ->
-            val sharedTeamName = JsonUtils.extractSharedTeamName(news)
+            val sharedTeamName = news?.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)
             if (sharedTeamName.isNotEmpty()) {
                 allLabels.add(sharedTeamName)
             }
@@ -221,7 +226,7 @@ class VoicesViewModel @Inject constructor(
             val images = news?.imagesArray
             if (images?.isEmpty() == false) {
                 val ob = images[0]?.asJsonObject
-                val resourceId = JsonUtils.getString("resourceId", ob?.asJsonObject)
+                val resourceId = GsonUtils.getString("resourceId", ob?.asJsonObject)
                 if (!resourceId.isNullOrBlank()) {
                     resourceIds.add(resourceId)
                 }
@@ -229,10 +234,12 @@ class VoicesViewModel @Inject constructor(
         }
         viewModelScope.launch {
             if (resourceIds.isNotEmpty()) {
-                val libraries = resourcesRepository.getLibraryItemsByIds(resourceIds)
+                val libraries = resourcesRepository.getLibraryItemsByResourceIds(resourceIds)
                 resourcesRepository.downloadResources(libraries)
             }
         }
     }
+
+    fun getCommunityLeaders(): List<UserEntity> = configurationsRepository.getCommunityLeaders()
 
 }

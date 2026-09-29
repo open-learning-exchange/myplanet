@@ -15,7 +15,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.callback.OnChangedListener
@@ -124,13 +123,14 @@ class BecomeMemberActivity : BaseActivity() {
                     startUpload("becomeMember", userName, securityCallback)
 
                     if (result.second == getString(R.string.not_connect_to_planet_created_user_offline)) {
-                        Utilities.toast(MainApplication.context, result.second)
+                        Utilities.toast(this@BecomeMemberActivity, result.second)
                         securityCallback.onChanged()
                     }
                     Utilities.toast(this@BecomeMemberActivity, result.second)
                 } else {
                     Utilities.toast(this@BecomeMemberActivity, result.second)
                     customProgressDialog.dismiss()
+                    activityBecomeMemberBinding.btnSubmit.isEnabled = true
                 }
             }
         }
@@ -171,14 +171,18 @@ class BecomeMemberActivity : BaseActivity() {
         }
 
         activityBecomeMemberBinding.btnSubmit.setOnClickListener {
+            activityBecomeMemberBinding.btnSubmit.isEnabled = false
             val info = collectMemberInfo()
             lifecycleScope.launch {
                 val error = userRepository.validateUsername(info.username)
                 withContext(dispatcherProvider.main) {
                     if (error != null) {
                         activityBecomeMemberBinding.etUsername.error = error
+                        activityBecomeMemberBinding.btnSubmit.isEnabled = true
                     } else if (validateMemberInfo(info)) {
                         addMember(info)
+                    } else {
+                        activityBecomeMemberBinding.btnSubmit.isEnabled = true
                     }
                 }
             }

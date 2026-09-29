@@ -8,17 +8,16 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.ArrayList
-import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.status_options
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNotificationsListener
 import org.ole.planet.myplanet.databinding.FragmentNotificationsBinding
@@ -34,12 +33,10 @@ import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class NotificationsFragment : Fragment() {
+class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(FragmentNotificationsBinding::inflate) {
     @Inject
     lateinit var timeProvider: TimeProvider
 
-    private var _binding: FragmentNotificationsBinding? = null
-    private val binding get() = _binding!!
     private val viewModel: NotificationsViewModel by viewModels()
     private lateinit var adapter: NotificationsAdapter
     private lateinit var userId: String
@@ -52,9 +49,10 @@ class NotificationsFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         userId = arguments?.getString("userId") ?: ""
         isAdmin = arguments?.getBoolean("isAdmin", false) ?: false
+        currentFilter = savedInstanceState?.getString(KEY_FILTER) ?: currentFilter
 
         adapter = NotificationsAdapter(
             onMarkAsReadClick = { notificationId -> viewModel.markAsRead(notificationId) },
@@ -71,14 +69,11 @@ class NotificationsFragment : Fragment() {
         val spinnerAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item_right, optionsList)
         spinnerAdapter.setDropDownViewResource(R.layout.spinner_item)
         binding.status.adapter = spinnerAdapter
-        var isInitialSpinnerSelection = true
         binding.status.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                if (isInitialSpinnerSelection) {
-                    isInitialSpinnerSelection = false
-                    return
-                }
-                currentFilter = parent.getItemAtPosition(position).toString().lowercase(Locale.ROOT)
+                val filter = filterAt(position)
+                if (filter == currentFilter) return
+                currentFilter = filter
                 viewModel.loadNotifications(userId, currentFilter, isAdmin)
             }
             override fun onNothingSelected(parent: AdapterView<*>) {}
@@ -89,7 +84,7 @@ class NotificationsFragment : Fragment() {
         binding.btnBulkDelete.setOnClickListener { viewModel.deleteSelected() }
         binding.btnCancelSelection.setOnClickListener { viewModel.clearSelection() }
 
-        viewModel.loadNotifications(userId, "all", isAdmin)
+        viewModel.loadNotifications(userId, currentFilter, isAdmin)
 
         collectWhenStarted(viewModel.groupedItems) { items ->
             adapter.submitList(items)
@@ -115,7 +110,7 @@ class NotificationsFragment : Fragment() {
             binding.tvSelectedCount.text = getString(R.string.selected_count, count)
         }
 
-        return binding.root
+        return view
     }
 
     private fun handleNotificationClick(notification: Notification) {
@@ -167,15 +162,22 @@ class NotificationsFragment : Fragment() {
         )
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(KEY_FILTER, currentFilter)
+    }
+
     fun refreshNotificationsList() {
         if (::adapter.isInitialized && _binding != null) {
-            currentFilter = binding.status.selectedItem.toString().lowercase(Locale.ROOT)
+            currentFilter = filterAt(binding.status.selectedItemPosition)
             viewModel.loadNotifications(userId, currentFilter, isAdmin)
         }
     }
+    
+    private fun filterAt(position: Int): String = FILTERS.getOrElse(position) { FILTERS.first() }
 
-    override fun onDestroyView() {
-        _binding = null
-        super.onDestroyView()
+    companion object {
+        private const val KEY_FILTER = "notifications_filter"
+        private val FILTERS = listOf("all", "read", "unread")
     }
 }

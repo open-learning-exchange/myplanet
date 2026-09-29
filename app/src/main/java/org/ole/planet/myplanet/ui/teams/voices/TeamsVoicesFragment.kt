@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.teams.voices
 
 import android.content.res.Configuration
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
@@ -19,7 +21,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
 import org.ole.planet.myplanet.model.News
-import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.VoicePostingPolicy
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.toVoicePostingPolicy
@@ -220,8 +221,10 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                             try {
                                 val result = viewModel.getReplyCount(newsId)
                                 onResult(result)
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
-                                e.printStackTrace()
+                                Log.w(TAG, "getReplyCount failed", e)
                             }
                         }
                         return@VoicesAdapter { job.cancel() }
@@ -250,7 +253,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope, dispatcherProvider),
                     labelManager = labelManager,
                     voicesEditActions = voicesRepository,
-                    leadersList = UserEntity.parseLeadersJson(sharedPrefManager.getCommunityLeaders()),
+                    leadersList = viewModel.getCommunityLeaders(),
                     setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
                 )
             }
@@ -259,7 +262,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
             realmNewsList?.let { adapterNews?.submitList(it.filterNotNull()) }
             binding.rvDiscussion.adapter = adapterNews
             shouldScrollToTopNextUpdate = false
-            showNoData(binding.tvNodata, realmNewsList?.filterNotNull()?.size ?: 0, "discussions")
+            showNoData(binding.tvNodata, realmNewsList?.count { it != null } ?: 0, "discussions")
         } else {
             (existingAdapter as? VoicesAdapter)?.let { adapter ->
                 adapter.setCurrentUser(user)
@@ -270,7 +273,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                             shouldScrollToTopNextUpdate = false
                         }
                     }
-                    showNoData(binding.tvNodata, it.filterNotNull().size, "discussions")
+                    showNoData(binding.tvNodata, it.count { news -> news != null }, "discussions")
                 }
             }
         }
@@ -283,5 +286,9 @@ class TeamsVoicesFragment : BaseTeamFragment() {
     override fun onDestroyView() {
         _binding = null
         super.onDestroyView()
+    }
+
+    companion object {
+        private const val TAG = "TeamsVoicesFragment"
     }
 }

@@ -23,11 +23,11 @@ import org.ole.planet.myplanet.data.room.dao.ChatDao
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatResponse
-import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.CouchDBResponse
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.ServerReachabilityProvider
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -37,13 +37,14 @@ class ChatRepositoryImplTest {
     private val chatApiService: ChatApiService = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+    private val serverReachabilityProvider: ServerReachabilityProvider = mockk(relaxed = true)
     private val testDispatcher = kotlinx.coroutines.test.StandardTestDispatcher()
     private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {
         every { sharedPrefManager.rawPreferences } returns mockk(relaxed = true)
-        chatRepository = ChatRepositoryImpl(chatDao, chatApiService, serverUrlMapper, sharedPrefManager, dispatcherProvider, Gson())
+        chatRepository = ChatRepositoryImpl(chatDao, chatApiService, serverUrlMapper, sharedPrefManager, dispatcherProvider, serverReachabilityProvider, Gson())
     }
 
     @After
@@ -82,57 +83,33 @@ class ChatRepositoryImplTest {
     }
 
     @Test
-    fun getChatHistoryForUser_delegatesToDao() = runTest {
+    fun getChatHistoryForUser_delegatesToDaoAndSortsByRepositoryOrdering() = runTest {
         val userName = "testUser"
-        val mockHistoryList = listOf(ChatHistory().apply { user = userName })
-        coEvery { chatDao.getByUser(userName) } returns mockHistoryList
+        val oldestChat = ChatHistory().apply {
+            user = userName
+            createdDate = "1000"
+            updatedDate = "1000"
+        }
+        val middleChat = ChatHistory().apply {
+            user = userName
+            createdDate = "2000"
+            updatedDate = "1500"
+        }
+        val newestChat = ChatHistory().apply {
+            user = userName
+            createdDate = "1000"
+            updatedDate = "3000"
+        }
+
+        val reversedDaoList = listOf(oldestChat, middleChat, newestChat)
+        coEvery { chatDao.getByUser(userName) } returns reversedDaoList
 
         val result = chatRepository.getChatHistoryForUser(userName)
 
-        assertEquals(mockHistoryList, result)
+        assertEquals(listOf(newestChat, middleChat, oldestChat), result)
         coVerify(exactly = 1) { chatDao.getByUser(userName) }
     }
 
-    @Test
-    fun `searchChats by title correctly filters list`() = runTest(testDispatcher) {
-        val chat1 = ChatHistory().apply { title = "First Chat" }
-        val chat2 = ChatHistory().apply { title = "Second Discussion" }
-        val chats = listOf(chat1, chat2)
-
-        val result = chatRepository.searchChats("First", ChatSearchMode.TITLE, chats)
-
-        assertEquals(1, result.size)
-        assertEquals("First Chat", result[0].title)
-    }
-
-    @Test
-    fun `searchChats by full conversation filters by question`() = runTest(testDispatcher) {
-        val chat1 = ChatHistory().apply {
-            title = "Chat 1"
-            conversations = listOf(Conversation().apply { query = "How is the weather?" })
-        }
-        val chat2 = ChatHistory().apply {
-            title = "Chat 2"
-            conversations = listOf(Conversation().apply { query = "Tell me a joke." })
-        }
-        val chats = listOf(chat1, chat2)
-
-        val result = chatRepository.searchChats("weather", ChatSearchMode.QUESTION, chats)
-
-        assertEquals(1, result.size)
-        assertEquals("Chat 1", result[0].title)
-    }
-
-    @Test
-    fun `searchChats with empty query returns empty when filtered list logic is applied`() = runTest(testDispatcher) {
-        val chat1 = ChatHistory().apply { title = "Chat 1" }
-        val chat2 = ChatHistory().apply { title = "Chat 2" }
-        val chats = listOf(chat1, chat2)
-
-        val result = chatRepository.searchChats("", ChatSearchMode.TITLE, chats)
-
-        assertEquals(2, result.size)
-    }
 
     @Test
     fun getLatestRev_findsHighestRevByNumericPrefix() = runTest {

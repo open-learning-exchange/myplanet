@@ -11,22 +11,20 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingBottomSheetFragment
 import org.ole.planet.myplanet.databinding.FragmentStorageCategoryDetailBinding
 import org.ole.planet.myplanet.databinding.ItemDownloadedResourceBinding
 import org.ole.planet.myplanet.model.OfflineResourceItem
-import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.model.StorageCategoryType
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
+import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
-    private var _binding: FragmentStorageCategoryDetailBinding? = null
-    private val binding get() = _binding!!
-
+class StorageCategoryDetailFragment : BaseBindingBottomSheetFragment<FragmentStorageCategoryDetailBinding>(FragmentStorageCategoryDetailBinding::inflate) {
     private val viewModel: StorageCategoryViewModel by viewModels()
 
     private var categoryLabel: String = ""
@@ -61,11 +59,6 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
             skipCollapsed = true
         }
         return dialog
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentStorageCategoryDetailBinding.inflate(inflater, container, false)
-        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -105,7 +98,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         viewModel.loadResources(
             olePath = olePath,
             extensions = category?.extensions ?: emptySet(),
-            allKnownExtensions = StorageCategories.allKnownExtensions
+            allKnownExtensions = StorageCategoryType.allKnownExtensions
         )
     }
 
@@ -212,10 +205,5 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
                 super.onBindViewHolder(holder, position, payloads)
             }
         }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
     }
 }

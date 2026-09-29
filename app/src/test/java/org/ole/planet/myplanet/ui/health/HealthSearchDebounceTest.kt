@@ -26,6 +26,7 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.textChanges
 import org.robolectric.RobolectricTestRunner
@@ -49,7 +50,7 @@ class HealthSearchDebounceTest {
     fun setup() {
         userRepository = mockk()
         healthRepository = mockk()
-        viewModel = HealthViewModel(userRepository, healthRepository)
+        viewModel = HealthViewModel(userRepository, healthRepository, RealtimeSyncManager())
         coEvery { healthRepository.searchPatients(any(), any(), any()) } returns emptyList()
     }
 

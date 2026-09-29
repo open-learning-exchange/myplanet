@@ -1,12 +1,37 @@
 package org.ole.planet.myplanet.model
 
+import android.util.Log
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import io.mockk.every
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 
 class NewsTest {
+
+    // News logs its parse-failure fallbacks through android.util.Log, and GsonUtils logs on its
+    // own fallback path, neither of which has a JVM implementation in a plain unit test. The
+    // malformed-input cases below reach both, so Log needs stubbing. Mirrors HealthExaminationTest.
+    @Before
+    fun setUp() {
+        mockkStatic(Log::class)
+        every { Log.isLoggable(any(), any()) } returns true
+        every { Log.d(any(), any()) } returns 0
+        every { Log.w(any<String>(), any<String>(), any<Throwable>()) } returns 0
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
 
     @Test
     fun testUpdateMessage() {
@@ -81,7 +106,6 @@ class NewsTest {
     fun testCreateNewsWithNewsKeyAndConversations() {
         val map = HashMap<String?, String>()
         map["message"] = "News message"
-        val conversationsJson = "[{'_id':'1','query':'Q1','response':'R1'}]"
         map["news"] = "{'_id':'news_123','conversations':'[{\"query\":\"Q1\",\"response\":\"R1\"}]'}"
 
         val news = News.createNews(map, null, null)
@@ -94,10 +118,6 @@ class NewsTest {
 
     @Test
     fun testCreateNewsWithNullNewsKey() {
-        val map = HashMap<String?, String>()
-        map["message"] = "News message"
-        map["news"] = null.toString() // Or map directly with key having null value if using map that allows null values
-
         val mapWithNull = HashMap<String?, String?>()
         mapWithNull["message"] = "Test"
         @Suppress("UNCHECKED_CAST")
@@ -105,5 +125,103 @@ class NewsTest {
 
         assertNull(news.newsId)
         assertNull(news.newsRev)
+    }
+
+    @Test
+    fun `imagesArray memoizes parsed JsonArray when called multiple times`() {
+        val news = News()
+        val jsonString = """[{"resourceId":"res123"}]"""
+        news.images = jsonString
+
+        val firstCall = news.imagesArray
+        assertNotNull(firstCall)
+        assertEquals(1, firstCall.size())
+        assertEquals("res123", firstCall[0].asJsonObject.get("resourceId").asString)
+
+        val secondCall = news.imagesArray
+        assertEquals(firstCall, secondCall)
+    }
+
+    @Test
+    fun `imagesArray defensive copy prevents mutating cached instance`() {
+        val news = News()
+        news.images = """[{"resourceId":"res123"}]"""
+
+        val firstCall = news.imagesArray
+        firstCall.add(JsonObject().apply { addProperty("resourceId", "mutated") })
+        assertEquals(2, firstCall.size())
+
+        val secondCall = news.imagesArray
+        assertEquals(1, secondCall.size())
+        assertEquals("res123", secondCall[0].asJsonObject.get("resourceId").asString)
+    }
+
+    @Test
+    fun `imagesArray invalidates cache and re-parses when images is reassigned`() {
+        val news = News()
+        news.images = """[{"resourceId":"res123"}]"""
+
+        val firstCall = news.imagesArray
+        assertEquals("res123", firstCall[0].asJsonObject.get("resourceId").asString)
+
+        news.images = """[{"resourceId":"res456"}]"""
+
+        val secondCall = news.imagesArray
+        assertEquals(1, secondCall.size())
+        assertEquals("res456", secondCall[0].asJsonObject.get("resourceId").asString)
+
+        news.images = null
+        val thirdCall = news.imagesArray
+        assertTrue(thirdCall.isEmpty)
+    }
+
+    @Test
+    fun `imagesArray returns empty JsonArray for null images string`() {
+        val news = News()
+        news.images = null
+
+        val result = news.imagesArray
+        assertNotNull(result)
+        assertTrue(result.isEmpty)
+    }
+
+    @Test
+    fun `isCommunityNews uses parsedViewIn if present even when viewIn is null or empty`() {
+        val news = News()
+        val communityArray = JsonArray().apply {
+            add(JsonObject().apply {
+                addProperty("section", "community")
+            })
+        }
+        news.parsedViewIn = communityArray
+        news.viewIn = null
+
+        assertTrue(news.isCommunityNews)
+
+        news.viewIn = """[{"section":"other"}]"""
+        assertTrue(news.isCommunityNews)
+    }
+
+    @Test
+    fun `isCommunityNews falls back to viewIn parsing when parsedViewIn is null`() {
+        val news = News()
+        news.parsedViewIn = null
+        news.viewIn = """[{"section":"community"}]"""
+
+        assertTrue(news.isCommunityNews)
+
+        news.viewIn = """[{"section":"my_courses"}]"""
+        assertFalse(news.isCommunityNews)
+    }
+
+    @Test
+    fun `isCommunityNews handles null or invalid viewIn gracefully`() {
+        val news = News()
+        news.viewIn = null
+        news.parsedViewIn = null
+        assertFalse(news.isCommunityNews)
+
+        news.viewIn = "not a valid json"
+        assertFalse(news.isCommunityNews)
     }
 }

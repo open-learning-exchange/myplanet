@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.life
 
-import android.content.Context
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -24,22 +23,20 @@ import org.ole.planet.myplanet.utils.TestDispatcherProvider
 @OptIn(ExperimentalCoroutinesApi::class)
 class LifeViewModelTest {
 
-    private lateinit var context: Context
     private lateinit var lifeRepository: LifeRepository
     private lateinit var userRepository: UserRepository
     private lateinit var viewModel: LifeViewModel
     private val testDispatcher = StandardTestDispatcher()
     private val testDispatcherProvider = TestDispatcherProvider(testDispatcher)
+    private val labelResolver: (Int) -> String = { "mock_string_$it" }
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        context = mockk(relaxed = true)
         lifeRepository = mockk(relaxed = true)
         userRepository = mockk(relaxed = true)
 
         viewModel = LifeViewModel(
-            context,
             lifeRepository,
             userRepository,
             testDispatcherProvider
@@ -57,7 +54,7 @@ class LifeViewModelTest {
         val item = MyLife("img1", "user_123", "Item 1")
         coEvery { lifeRepository.getMyLifeByUserId("user_123", any()) } returns listOf(item)
 
-        viewModel.loadMyLifeList()
+        viewModel.loadMyLifeList(labelResolver)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(listOf(item), viewModel.myLifeList.value)
@@ -72,12 +69,12 @@ class LifeViewModelTest {
         val defaults = slot<List<MyLife>>()
         coEvery { lifeRepository.getMyLifeByUserId("user_123", capture(defaults)) } returns listOf(item)
 
-        viewModel.loadMyLifeList()
+        viewModel.loadMyLifeList(labelResolver)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(listOf(item), viewModel.myLifeList.value)
         assertEquals(
-            MyLife.defaultItems("user_123", context::getString).map { it.imageId },
+            MyLife.defaultItems("user_123", labelResolver).map { it.imageId },
             defaults.captured.map { it.imageId }
         )
         coVerify(exactly = 1) { lifeRepository.getMyLifeByUserId("user_123", any()) }
@@ -86,25 +83,27 @@ class LifeViewModelTest {
 
     @Test
     fun `updateVisibility calls repository and directly updates myLifeList without re-querying`() = runTest {
+        coEvery { userRepository.getCurrentUserId() } returns "user_123"
         val updatedItem = MyLife("img1", "user_123", "Item 1").apply { isVisible = true }
-        coEvery { lifeRepository.updateVisibility(true, "item_1") } returns listOf(updatedItem)
+        coEvery { lifeRepository.updateVisibility(true, "item_1", "user_123") } returns listOf(updatedItem)
 
         viewModel.updateVisibility(true, "item_1")
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(listOf(updatedItem), viewModel.myLifeList.value)
-        coVerify(exactly = 1) { lifeRepository.updateVisibility(true, "item_1") }
+        coVerify(exactly = 1) { lifeRepository.updateVisibility(true, "item_1", "user_123") }
         coVerify(exactly = 0) { lifeRepository.getMyLifeByUserId(any(), any()) }
     }
 
     @Test
     fun `updateMyLifeListOrder calls repository and updates state flow`() = runTest {
+        coEvery { userRepository.getCurrentUserId() } returns "user_123"
         val list = listOf(MyLife("img1", "user_123", "Item 1"))
         viewModel.updateMyLifeListOrder(list)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(list, viewModel.myLifeList.value)
-        coVerify(exactly = 1) { lifeRepository.updateMyLifeListOrder(list) }
+        coVerify(exactly = 1) { lifeRepository.updateMyLifeListOrder(list, "user_123") }
     }
 
     @Test
@@ -113,7 +112,7 @@ class LifeViewModelTest {
         val item = MyLife("img1", null, "Item 1")
         coEvery { lifeRepository.getMyLifeByUserId(null, any()) } returns listOf(item)
 
-        viewModel.loadMyLifeList()
+        viewModel.loadMyLifeList(labelResolver)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(listOf(item), viewModel.myLifeList.value)
@@ -127,7 +126,7 @@ class LifeViewModelTest {
         coEvery { userRepository.getUserModel() } returns UserEntity("userFromRepo", name = "Test User")
         coEvery { lifeRepository.getMyLifeByUserId("userFromRepo", any()) } returns listOf(item)
 
-        viewModel.loadMyLifeList()
+        viewModel.loadMyLifeList(labelResolver)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(listOf(item), viewModel.myLifeList.value)
@@ -140,7 +139,7 @@ class LifeViewModelTest {
         coEvery { userRepository.getUserModel() } returns null
         coEvery { lifeRepository.getMyLifeByUserId(null, any()) } returns emptyList()
 
-        viewModel.loadMyLifeList()
+        viewModel.loadMyLifeList(labelResolver)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(emptyList<MyLife>(), viewModel.myLifeList.value)

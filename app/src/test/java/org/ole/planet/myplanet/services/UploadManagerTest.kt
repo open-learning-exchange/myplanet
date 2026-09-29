@@ -103,7 +103,6 @@ class UploadManagerTest {
 
         uploadManager = spyk(
             UploadManager(
-                context,
                 gson,
                 uploadCoordinator,
                 uploadRepository,
@@ -386,6 +385,84 @@ class UploadManagerTest {
         advanceUntilIdle()
 
         coVerify { listener.onSuccess("Resource upload failed: $errorMessage") }
+    }
+
+    @Test
+    fun `uploadResource uploads attachments on UploadResult Success`() = testScope.runTest {
+        val uploadedItem = org.ole.planet.myplanet.services.upload.UploadedItem(
+            localId = "lib1",
+            remoteId = "remote1",
+            remoteRev = "rev1",
+            response = JsonObject()
+        )
+        val library = MyLibrary().apply { id = "lib1" }
+        coEvery { uploadCoordinator.uploadRoom<MyLibrary>(any()) } returns UploadResult.Success(1, listOf(uploadedItem))
+        coEvery { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) } returns listOf(library)
+
+        val listener = mockk<OnSuccessListener>(relaxed = true)
+        uploadManager.uploadResource(listener)
+        advanceUntilIdle()
+
+        coVerify { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) }
+        coVerify { listener.onSuccess("Uploaded 1 resources successfully") }
+    }
+
+    @Test
+    fun `uploadResource uploads attachments on UploadResult PartialSuccess`() = testScope.runTest {
+        val uploadedItem = org.ole.planet.myplanet.services.upload.UploadedItem(
+            localId = "lib1",
+            remoteId = "remote1",
+            remoteRev = "rev1",
+            response = JsonObject()
+        )
+        val mockError = UploadError("lib2", Exception("Failed"), false)
+        val library = MyLibrary().apply { id = "lib1" }
+        coEvery { uploadCoordinator.uploadRoom<MyLibrary>(any()) } returns UploadResult.PartialSuccess(
+            succeeded = listOf(uploadedItem),
+            failed = listOf(mockError)
+        )
+        coEvery { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) } returns listOf(library)
+
+        val listener = mockk<OnSuccessListener>(relaxed = true)
+        uploadManager.uploadResource(listener)
+        advanceUntilIdle()
+
+        coVerify { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) }
+        coVerify { listener.onSuccess("Partial success: 1 succeeded, 1 failed") }
+    }
+
+    @Test
+    fun `uploadResource uploads attachments even when listener is null`() = testScope.runTest {
+        val uploadedItem = org.ole.planet.myplanet.services.upload.UploadedItem(
+            localId = "lib1",
+            remoteId = "remote1",
+            remoteRev = "rev1",
+            response = JsonObject()
+        )
+        val library = MyLibrary().apply {
+            id = "lib1"
+            resourceLocalAddress = "file.pdf"
+        }
+        coEvery { uploadCoordinator.uploadRoom<MyLibrary>(any()) } returns UploadResult.Success(1, listOf(uploadedItem))
+        coEvery { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) } returns listOf(library)
+        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns retrofit2.Response.success(JsonObject())
+
+        uploadManager.uploadResource(null)
+        advanceUntilIdle()
+
+        coVerify { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) }
+        coVerify(timeout = 1000) { uploadRepository.uploadAttachment(any(), any(), "remote1", "rev1", any()) }
+    }
+
+    @Test
+    fun `uploadResource skips fetching libraries when items empty`() = testScope.runTest {
+        coEvery { uploadCoordinator.uploadRoom<MyLibrary>(any()) } returns UploadResult.Success(0, emptyList())
+        val listener = mockk<OnSuccessListener>(relaxed = true)
+        uploadManager.uploadResource(listener)
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { resourcesRepository.getLibraryItemsByIds(any()) }
+        coVerify { listener.onSuccess("Uploaded 0 resources successfully") }
     }
 
 }

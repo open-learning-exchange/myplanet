@@ -24,7 +24,6 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -51,8 +50,6 @@ class NotificationActionReceiverTest {
         testDispatcher = StandardTestDispatcher()
         testScope = TestScope(testDispatcher)
 
-        MainApplication.applicationScope = testScope
-
         mockContext = spyk(ApplicationProvider.getApplicationContext<Context>())
         every { mockContext.startActivity(any()) } returns Unit
 
@@ -71,6 +68,7 @@ class NotificationActionReceiverTest {
         receiver = spyk(NotificationActionReceiver().apply {
             notificationsRepository = mockNotificationsRepository
             dispatcherProvider = mockDispatcherProvider
+            applicationScope = testScope
         })
         try {
             val injectedField = Hilt_NotificationActionReceiver::class.java.getDeclaredField("injected")
@@ -161,6 +159,27 @@ class NotificationActionReceiverTest {
         assert(targetIntent?.getStringExtra("related_id") == relatedId)
 
         verify { mockNotificationUtils.clearNotification(notificationId) }
+        verify { pendingResult.finish() }
+    }
+
+    @Test
+    fun `test onReceive calls finish when notification action throws exception`() = testScope.runTest {
+        val notificationId = "test_id"
+        val mockIntent = Intent(NotificationUtils.ACTION_MARK_AS_READ)
+        mockIntent.putExtra(NotificationUtils.EXTRA_NOTIFICATION_ID, notificationId)
+
+        mockkStatic(android.util.Log::class)
+        every { android.util.Log.e(any(), any(), any()) } returns 0
+
+        every { mockNotificationUtils.clearNotification(notificationId) } throws RuntimeException("Clear error")
+
+        val pendingResult = mockk<BroadcastReceiver.PendingResult>(relaxed = true)
+        every { receiver.goAsync() } returns pendingResult
+
+        receiver.onReceive(mockContext, mockIntent)
+        advanceUntilIdle()
+
+        verify { android.util.Log.e("NotificationActionReceiver", "broadcast work failed", any()) }
         verify { pendingResult.finish() }
     }
 }

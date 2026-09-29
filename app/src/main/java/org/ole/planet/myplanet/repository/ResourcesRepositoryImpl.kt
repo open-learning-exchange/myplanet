@@ -11,34 +11,43 @@ import java.io.IOException
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.SearchActivity
+import org.ole.planet.myplanet.model.StorageCategoryType
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TagItem
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.StoragePathResolver
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.distinctByContent
 
 class ResourcesRepositoryImpl @Inject constructor(
@@ -55,7 +64,11 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository>,
     private val userSessionManager: UserSessionManager,
     private val configurationsRepository: ConfigurationsRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val deviceNameProvider: DeviceNameProvider,
+    private val timeProvider: TimeProvider,
+    @param:ApplicationScope private val appScope: CoroutineScope,
+    private val storagePathResolver: StoragePathResolver
 ) : ResourcesRepository {
 
     // Shelf membership is stored as a JSON userId list; match a single entry with LIKE %"id"%.
@@ -67,8 +80,8 @@ class ResourcesRepositoryImpl @Inject constructor(
         return "%\"$escaped\"%"
     }
 
-    override suspend fun getAllLibraries(): List<MyLibrary> {
-        return myLibraryDao.getAll()
+    override suspend fun getLibraryTitles(): List<LibraryTitleProjection> {
+        return myLibraryDao.getLibraryTitles()
     }
 
     override suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<MyLibrary> {
@@ -114,17 +127,18 @@ class ResourcesRepositoryImpl @Inject constructor(
 
         val matching = myLibraryDao.filterByTitleNormal(SimpleSQLiteQuery(queryBuilder.toString(), bindArgs.toTypedArray()))
 
-        val startsWithQuery = mutableListOf<MyLibrary>()
         val containsQuery = mutableListOf<MyLibrary>()
-        for (item in matching) {
-            val titleNormal = item.titleNormal ?: continue
-            if (titleNormal.startsWith(normalizedQuery)) {
-                startsWithQuery.add(item)
-            } else {
-                containsQuery.add(item)
+        return buildList(matching.size) {
+            for (item in matching) {
+                val titleNormal = item.titleNormal ?: continue
+                if (titleNormal.startsWith(normalizedQuery)) {
+                    add(item)
+                } else {
+                    containsQuery.add(item)
+                }
             }
+            addAll(containsQuery)
         }
-        return startsWithQuery + containsQuery
     }
 
     override suspend fun getResourceById(id: String): MyLibrary? {
@@ -177,7 +191,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun getLibraryItemsByIds(ids: Collection<String>): List<MyLibrary> {
         if (ids.isEmpty()) return emptyList()
-        return myLibraryDao.getByUnderscoreIds(ids.toList())
+        return myLibraryDao.getByIds(ids.toList())
     }
 
     override suspend fun getLibraryItemsByResourceIds(ids: Collection<String>): List<MyLibrary> {
@@ -383,26 +397,32 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun reconcileHtmlResourceOffline(resourceId: String) {
-        val library = myLibraryDao.getByResourceId(resourceId) ?: return
+    private suspend fun applyHtmlOffline(library: MyLibrary, resourceId: String): Boolean {
         if (library.isResourceOffline()) {
-            return
+            return false
         }
         val entryFile = library.openWhichFile?.takeIf { it.isNotBlank() } ?: "index.html"
-        val directory = File(MainApplication.context.getExternalFilesDir(null), "ole/$resourceId")
+        val directory = File(storagePathResolver.resolveOleDirectory(), resourceId)
         val entryExists = withContext(dispatcherProvider.io) {
             FileUtils.resolveHtmlEntryFile(directory, entryFile)?.exists() == true
         }
         if (!entryExists) {
-            return
+            return false
         }
         library.resourceOffline = true
         library.downloadedRev = library._rev
         if (library.resourceLocalAddress.isNullOrBlank()) {
             library.resourceLocalAddress = entryFile
         }
-        myLibraryDao.upsert(library)
-        clearResourceListCache()
+        return true
+    }
+
+    override suspend fun reconcileHtmlResourceOffline(resourceId: String) {
+        val library = myLibraryDao.getByResourceId(resourceId) ?: return
+        if (applyHtmlOffline(library, resourceId)) {
+            myLibraryDao.upsert(library)
+            clearResourceListCache()
+        }
     }
 
     private suspend fun markResourceOfflineByResourceId(resourceId: String, relativePath: String) {
@@ -451,7 +471,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             add("level", getJsonArrayFromList(levels))
             add("mediaType", getJsonArrayFromList(mediums))
         }
-        val filterPayload = JsonUtils.gson.toJson(filter)
+        val filterPayload = GsonUtils.gson.toJson(filter)
 
         searchActivityDao.insert(
             SearchActivity(
@@ -494,7 +514,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val files = libraryList ?: getAllLibrariesToSync()
         val urls = DownloadUtils.downloadAllFiles(files)
 
-        MainApplication.applicationScope.launch {
+        appScope.launch {
             if (configurationsRepository.checkServerAvailability()) {
                 if (urls.isNotEmpty()) {
                     DownloadUtils.openDownloadService(context, urls, false)
@@ -619,7 +639,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun batchInsertMyLibrary(shelfId: String?, documents: List<JsonObject>): Int {
         var processedCount = 0
 
-        val resourceIds = documents.mapNotNull { JsonUtils.getString("_id", it).takeIf { id -> id.isNotBlank() } }
+        val resourceIds = documents.mapNotNull { GsonUtils.getString("_id", it).takeIf { id -> id.isNotBlank() } }
         val existingItems = mutableMapOf<String, MyLibrary>()
         if (resourceIds.isNotEmpty()) {
             resourceIds.chunked(900).forEach { chunk ->
@@ -630,12 +650,13 @@ class ResourcesRepositoryImpl @Inject constructor(
         val librariesToUpsert = mutableListOf<MyLibrary>()
         documents.forEach { doc ->
             try {
-                val resourceId = JsonUtils.getString("_id", doc)
+                val resourceId = GsonUtils.getString("_id", doc)
                 val existing = existingItems[resourceId]
                 val library = MyLibrary.insertMyLibrary(
                     MyLibrary.Companion.InsertParams(
                         doc = doc,
                         spm = sharedPrefManager,
+                        context = context,
                         userId = shelfId,
                         existing = existing
                     )
@@ -660,11 +681,15 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun batchInsertResources(documents: List<JsonObject>): List<String> {
         val savedIds = mutableListOf<String>()
 
-        val validDocs = documents.filter {
-            val _id = JsonUtils.getString("_id", it)
-            _id.isNotBlank() && !_id.startsWith("_design")
+        val validDocs = ArrayList<Pair<JsonObject, String>>(documents.size)
+        val resourceIds = ArrayList<String>(documents.size)
+        for (doc in documents) {
+            val id = GsonUtils.getString("_id", doc)
+            if (id.isNotBlank() && !id.startsWith("_design")) {
+                validDocs.add(doc to id)
+                resourceIds.add(id)
+            }
         }
-        val resourceIds = validDocs.map { JsonUtils.getString("_id", it) }
         val existingItems = mutableMapOf<String, MyLibrary>()
         if (resourceIds.isNotEmpty()) {
             resourceIds.chunked(900).forEach { chunk ->
@@ -673,14 +698,14 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
 
         val librariesToUpsert = mutableListOf<MyLibrary>()
-        validDocs.forEach { doc ->
+        validDocs.forEach { (doc, _id) ->
             try {
-                val _id = JsonUtils.getString("_id", doc)
                 val existing = existingItems[_id]
                 val library = MyLibrary.insertMyLibrary(
                     MyLibrary.Companion.InsertParams(
                         doc = doc,
                         spm = sharedPrefManager,
+                        context = context,
                         existing = existing
                     )
                 )
@@ -703,15 +728,34 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     // Detects HTML resources already present on disk from a prior install/sync that never got a resourceLocalAddress.
     private suspend fun reconcileHtmlLibraries(libraries: List<MyLibrary>) {
-        libraries.forEach { library ->
-            if (library.mediaType == "HTML" && library.resourceLocalAddress.isNullOrBlank()) {
-                val resourceId = library.resourceId ?: return@forEach
-                try {
-                    reconcileHtmlResourceOffline(resourceId)
-                } catch (e: Exception) {
-                    Log.w("ResourcesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
+        val qualifyingIds = libraries
+            .filter { it.mediaType == "HTML" && it.resourceLocalAddress.isNullOrBlank() }
+            .mapNotNull { it.resourceId }
+            .distinct()
+
+        if (qualifyingIds.isEmpty()) return
+
+        val rows = myLibraryDao.getByResourceIdsByRowid(qualifyingIds)
+        val firstRowByResourceId = rows
+            .filter { it.resourceId != null }
+            .groupBy { it.resourceId!! }
+            .mapValues { (_, list) -> list.first() }
+
+        val changed = mutableListOf<MyLibrary>()
+        qualifyingIds.forEach { resourceId ->
+            val library = firstRowByResourceId[resourceId] ?: return@forEach
+            try {
+                if (applyHtmlOffline(library, resourceId)) {
+                    changed.add(library)
                 }
+            } catch (e: Exception) {
+                Log.w("ResourcesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
             }
+        }
+
+        if (changed.isNotEmpty()) {
+            myLibraryDao.upsertAll(changed)
+            clearResourceListCache()
         }
     }
 
@@ -839,7 +883,12 @@ class ResourcesRepositoryImpl @Inject constructor(
 
         val titleMap = getResourceTitlesMap()
 
-        val grouped = mutableMapOf<String, MutableList<File>>()
+        class ResourceAccumulator {
+            val filePaths = mutableListOf<String>()
+            var totalSize = 0L
+        }
+
+        val grouped = mutableMapOf<String, ResourceAccumulator>()
         oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
             val ext = file.extension.lowercase()
             val matchesCategory = if (extensions.isEmpty()) {
@@ -849,14 +898,16 @@ class ResourcesRepositoryImpl @Inject constructor(
             }
             if (matchesCategory) {
                 val resourceId = file.parentFile?.name ?: return@forEach
-                grouped.getOrPut(resourceId) { mutableListOf() }.add(file)
+                val accumulator = grouped.getOrPut(resourceId) { ResourceAccumulator() }
+                accumulator.filePaths.add(file.absolutePath)
+                accumulator.totalSize += file.length()
             }
         }
 
-        return@withContext grouped.map { (resourceId, files) ->
-            val totalSize = files.sumOf { it.length() }
+        return@withContext grouped.map { (resourceId, accumulator) ->
+            accumulator.filePaths.sort()
             val title = titleMap[resourceId]?.takeIf { it.isNotBlank() } ?: context.getString(R.string.storage_unknown_resource)
-            OfflineResourceItem(resourceId, title, files.map { it.absolutePath }, totalSize)
+            OfflineResourceItem(resourceId, title, accumulator.filePaths, accumulator.totalSize)
         }.sortedBy { it.title }
     }
 
@@ -873,8 +924,63 @@ class ResourcesRepositoryImpl @Inject constructor(
         markResourcesAsNotOffline(deletedIds)
     }
 
+    override suspend fun getStorageBreakdown(oleDir: File): StorageBreakdown = withContext(dispatcherProvider.io) {
+        val sizes = LongArray(StorageCategoryType.entries.size)
+        val counts = IntArray(StorageCategoryType.entries.size)
+
+        if (!oleDir.exists() || !oleDir.isDirectory) return@withContext StorageBreakdown(0L, sizes, counts)
+
+        var total = 0L
+
+        oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
+            val index = StorageCategoryType.indexOf(file.extension)
+            val size = file.length()
+            total += size
+            sizes[index] += size
+            counts[index]++
+        }
+        StorageBreakdown(total, sizes, counts)
+    }
+
     override suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String> {
         return myLibraryDao.getPrivateImagesCreatedAfter(timestamp)
             .mapNotNull { it.resourceRemoteAddress }
+    }
+
+    override fun serializeForUpload(library: MyLibrary, user: UserEntity?): JsonObject {
+        val personal = library
+        return JsonObject().apply {
+            addProperty("title", personal.title)
+            addProperty("uploadDate", timeProvider.now())
+            addProperty("createdDate", personal.createdDate)
+            addProperty("filename", FileUtils.getFileNameFromUrl(personal.resourceLocalAddress))
+            addProperty("author", personal.author ?: "")
+            addProperty("addedBy", user?.id)
+            addProperty("medium", personal.medium)
+            addProperty("description", personal.description)
+            addProperty("year", personal.year)
+            addProperty("language", personal.language)
+            addProperty("publisher", personal.publisher ?: "")
+            addProperty("linkToLicense", personal.linkToLicense ?: "")
+            add("subject", GsonUtils.getAsJsonArray(personal.subject))
+            add("level", GsonUtils.getAsJsonArray(personal.level))
+            addProperty("resourceType", personal.resourceType)
+            addProperty("openWith", personal.openWith)
+            addProperty("mediaType", personal.mediaType ?: "other")
+            add("resourceFor", GsonUtils.getAsJsonArray(personal.resourceFor))
+            addProperty("private", personal.isPrivate)
+            if (personal.isPrivate && personal.privateFor != null) {
+                val privateForObj = JsonObject()
+                privateForObj.addProperty("teams", personal.privateFor)
+                add("privateFor", privateForObj)
+            }
+            addProperty("isDownloadable", true)
+            addProperty("sourcePlanet", user?.planetCode)
+            addProperty("resideOn", user?.planetCode)
+            addProperty("updatedDate", timeProvider.now())
+            addDocumentOrigin()
+            addProperty("deviceName", NetworkUtils.getDeviceName())
+            addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
+        }
     }
 }

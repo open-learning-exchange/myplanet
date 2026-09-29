@@ -208,6 +208,27 @@ object UrlUtils {
         return "$url$path"
     }
 
+    /** Strips the userinfo (user:password@) from a URL so it is safe to log. */
+    fun redactForLog(url: String?): String {
+        if (url.isNullOrBlank()) return "<unparseable url>"
+        return try {
+            val uri = android.net.Uri.parse(url)
+            val scheme = uri.scheme
+            val host = uri.host
+            if (scheme.isNullOrEmpty() || host.isNullOrEmpty()) {
+                "<unparseable url>"
+            } else {
+                val portStr = if (uri.port != -1) ":${uri.port}" else ""
+                val path = uri.path.orEmpty()
+                val queryStr = if (uri.query != null) "?${uri.query}" else ""
+                val fragmentStr = if (uri.fragment != null) "#${uri.fragment}" else ""
+                "$scheme://$host$portStr$path$queryStr$fragmentStr"
+            }
+        } catch (e: Exception) {
+            "<unparseable url>"
+        }
+    }
+
     fun getUserInfo(userInfo: String?): Pair<String, String> {
         val info = userInfo?.split(":")?.dropLastWhile { it.isEmpty() }
         return if (info != null && info.size > 1) {

@@ -16,7 +16,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.UserEntity
@@ -26,7 +25,6 @@ import org.ole.planet.myplanet.utils.SystemTimeProvider
 class EventsRepositoryImplTest {
 
     private lateinit var meetupDao: MeetupDao
-    private lateinit var userDao: UserDao
     private lateinit var repository: EventsRepositoryImpl
 
     class SilentException(message: String) : Exception(message) {
@@ -36,8 +34,7 @@ class EventsRepositoryImplTest {
     @Before
     fun setup() {
         meetupDao = mockk(relaxed = true)
-        userDao = mockk(relaxed = true)
-        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userDao, Gson())
+        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, Gson())
     }
 
     @Test
@@ -48,6 +45,26 @@ class EventsRepositoryImplTest {
 
         assertEquals(1, result.size)
         assertEquals("1", result[0].id)
+    }
+
+    @Test
+    fun getMeetupsForTeams() = runTest {
+        coEvery { meetupDao.getByTeamIds(listOf("team1", "team2")) } returns listOf(
+            Meetup().apply { id = "1"; teamId = "team1" },
+            Meetup().apply { id = "2"; teamId = "team2" }
+        )
+
+        val result = repository.getMeetupsForTeams(listOf("team1", "team2"))
+
+        assertEquals(2, result.size)
+    }
+
+    @Test
+    fun getMeetupsForTeamsReturnsEmptyForEmptyInput() = runTest {
+        val result = repository.getMeetupsForTeams(emptyList())
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { meetupDao.getByTeamIds(any()) }
     }
 
     @Test
@@ -65,10 +82,7 @@ class EventsRepositoryImplTest {
 
     @Test
     fun getJoinedMembers() = runTest {
-        coEvery { meetupDao.getMemberUserIdsByMeetupId("meetup1") } returns listOf(
-            "user1", "user2", "user1"
-        )
-        coEvery { userDao.getUsersByAnyIds(any()) } returns listOf(
+        coEvery { meetupDao.getJoinedMembersByMeetupId("meetup1") } returns listOf(
             UserEntity(id = "user1"),
             UserEntity(id = "user2", _id = "remote-user2")
         )
@@ -147,6 +161,19 @@ class EventsRepositoryImplTest {
         assertEquals(1, count)
 
         coVerify(exactly = 0) { meetupDao.upsertAll(any()) }
+    }
+
+    @Test
+    fun insertMeetupsFromSyncPropagatesDaoException() = runTest {
+        val docs = listOf(JsonObject().apply { addProperty("_id", "m1") })
+        coEvery { meetupDao.getByMeetupIds(any()) } throws SilentException("boom")
+
+        try {
+            repository.insertMeetupsFromSync(docs)
+            org.junit.Assert.fail("Expected SilentException to be thrown")
+        } catch (_: SilentException) {
+            // Expected exception propagated
+        }
     }
 
     @Test

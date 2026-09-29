@@ -8,6 +8,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkAll
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
@@ -22,8 +23,8 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao.UploadedPhoto
 import org.ole.planet.myplanet.model.SubmitPhotos
+import org.ole.planet.myplanet.repository.PhotoUpload
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.utils.FileUtils
@@ -123,8 +124,43 @@ class PhotoUploaderTest {
         assertNull(result)
         assertEquals("expected the semaphore to be saturated", 6, maxConcurrentRequests)
 
-        val expectedMarks = (1..10).map { i -> UploadedPhoto("photo-$i", "1-rev", "doc-$i") }
+        val expectedMarks = (1..10).map { i -> PhotoUpload("photo-$i", "1-rev", "doc-$i") }
         coVerify(exactly = 1) { submissionsRepository.markPhotosUploadedBatch(expectedMarks) }
+    }
+
+    @Test
+    fun `uploadSubmitPhotos passes PhotoUpload with response id mapped to remoteId`() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        photoUploader = PhotoUploader(
+            submissionsRepository = submissionsRepository,
+            dispatcherProvider = TestDispatcherProvider(testDispatcher),
+            scope = this,
+            uploadRepository = uploadRepository
+        )
+
+        val photos = listOf(
+            "local-photo-1" to JsonObject()
+        )
+        coEvery { submissionsRepository.getUnuploadedPhotos() } returns photos
+
+        val responseObj = JsonObject().apply {
+            addProperty("id", "remote-1")
+            addProperty("rev", "2-abc")
+        }
+        coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success(responseObj)
+
+        val slot = slot<List<PhotoUpload>>()
+        coEvery { submissionsRepository.markPhotosUploadedBatch(capture(slot)) } returns Unit
+
+        val result = photoUploader.uploadSubmitPhotos(null)
+
+        assertNull(result)
+        val capturedList = slot.captured
+        assertEquals(1, capturedList.size)
+        val captured = capturedList.single()
+        assertEquals("local-photo-1", captured.photoId)
+        assertEquals("2-abc", captured.rev)
+        assertEquals("remote-1", captured.remoteId)
     }
 
     @Test
@@ -162,8 +198,8 @@ class PhotoUploaderTest {
         assertNull(result)
 
         val expectedMarks = listOf(
-            UploadedPhoto("photo-1", "1-rev", "doc-1"),
-            UploadedPhoto("photo-3", "1-rev", "doc-3")
+            PhotoUpload("photo-1", "1-rev", "doc-1"),
+            PhotoUpload("photo-3", "1-rev", "doc-3")
         )
         coVerify(exactly = 1) { submissionsRepository.markPhotosUploadedBatch(expectedMarks) }
     }
@@ -203,7 +239,7 @@ class PhotoUploaderTest {
         val result = photoUploader.uploadSubmitPhotos(listener)
 
         assertNull(result)
-        val expectedMarks = listOf(UploadedPhoto("photo-1", "1-rev", "doc-1"))
+        val expectedMarks = listOf(PhotoUpload("photo-1", "1-rev", "doc-1"))
         coVerify(exactly = 1) { submissionsRepository.markPhotosUploadedBatch(expectedMarks) }
 
         testScheduler.advanceUntilIdle()

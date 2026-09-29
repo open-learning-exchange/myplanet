@@ -9,6 +9,7 @@ import android.graphics.PorterDuff
 import android.net.Uri
 import android.os.Build
 import android.text.TextUtils
+import android.util.Log
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.webkit.URLUtil
@@ -19,6 +20,7 @@ import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -99,7 +101,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             try {
                 customProgressDialog.dismiss()
             } catch (e: IllegalArgumentException) {
-                e.printStackTrace()
+                Log.w(TAG, "safelyDismissDialog failed", e)
             }
         }
     }
@@ -138,13 +140,15 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:$port"
         }
 
-        prefData.setServerPin(password)
-        prefData.setUrlScheme(uri.scheme ?: "")
-        prefData.setUrlHost(uri.host ?: "")
-        prefData.setServerUrl(url)
-        prefData.setCouchdbUrl(couchdbURL)
-        prefData.setUrlUser(urlUser)
-        prefData.setUrlPwd(urlPwd)
+        prefData.saveServerConfig(
+            serverPin = password,
+            urlScheme = uri.scheme ?: "",
+            urlHost = uri.host ?: "",
+            serverUrl = url,
+            couchdbUrl = couchdbURL,
+            urlUser = urlUser,
+            urlPwd = urlPwd
+        )
 
         return UrlUtils.dbUrl(couchdbURL)
     }
@@ -236,6 +240,8 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     companion object {
+        private const val TAG = "ProcessUserDataActivity"
+
         fun getUserInfo(uri: Uri): Array<String> {
             val (u, p) = UrlUtils.getUserInfo(uri.userInfo)
             return arrayOf(u, p)
@@ -246,8 +252,10 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         lifecycleScope.launch {
             try {
                 userRepository.fetchUserSecurityData(name)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "fetchAndLogUserSecurityData failed", e)
             } finally {
                 withContext(dispatcherProvider.main) {
                     securityCallback?.onChanged()

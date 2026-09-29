@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.data.api
 
-import com.google.gson.JsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.model.ChatResponse
@@ -19,7 +20,12 @@ import retrofit2.http.Url
 interface ApiInterface {
     @Streaming
     @GET
-    suspend fun downloadFile(@Header("Authorization") header: String?, @Url fileUrl: String?): Response<ResponseBody>
+    suspend fun downloadFile(
+        @Header("Authorization") header: String?,
+        @Url fileUrl: String?,
+        @Header("Range") range: String? = null,
+        @Header("If-Range") ifRange: String? = null
+    ): Response<ResponseBody>
 
     @GET
     suspend fun getDocuments(@Header("Authorization") header: String?, @Url url: String?): Response<DocumentResponse>
@@ -31,7 +37,7 @@ interface ApiInterface {
     suspend fun postDoc(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<JsonObject>
 
     @POST
-    suspend fun postDocArray(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<com.google.gson.JsonArray>
+    suspend fun postDocArray(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Response<JsonArray>
 
     @PUT
     suspend fun uploadResource(@HeaderMap headerMap: Map<String, String>, @Url url: String?, @Body body: RequestBody?): Response<JsonObject>

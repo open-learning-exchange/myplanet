@@ -2,25 +2,28 @@ package org.ole.planet.myplanet.repository
 
 import java.util.UUID
 import javax.inject.Inject
-import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.AppVersionProvider
 import org.ole.planet.myplanet.utils.CrashLogStore
 
 class DiagnosticsRepositoryImpl @Inject constructor(
     private val apkLogDao: ApkLogDao,
     private val userRepository: UserRepository,
-    private val sharedPrefManager: SharedPrefManager
+    private val sharedPrefManager: SharedPrefManager,
+    private val appVersionProvider: AppVersionProvider
 ) : DiagnosticsRepository {
 
     override suspend fun getPendingApkLogs(): List<ApkLog> {
         return apkLogDao.getPending()
     }
 
-    override suspend fun markApkLogUploaded(localId: String, rev: String): Boolean {
-        return apkLogDao.markUploaded(localId, rev) != 0
+    override suspend fun markApkLogsUploaded(updates: List<ApkLogUpload>): Set<String> {
+        if (updates.isEmpty()) return emptySet()
+        val daoUpdates = updates.map { ApkLogDao.UploadUpdate(it.id, it.rev) }
+        return apkLogDao.markUploadedBatch(daoUpdates)
     }
 
     private fun buildApkLog(
@@ -59,7 +62,7 @@ class DiagnosticsRepositoryImpl @Inject constructor(
             val log = buildApkLog(
                 resolveParentCode(model),
                 resolvePlanetCode(model),
-                BuildConfig.VERSION_NAME,
+                appVersionProvider.versionName,
                 model?.id,
                 time,
                 type,
@@ -77,7 +80,7 @@ class DiagnosticsRepositoryImpl @Inject constructor(
         if (pendingLogs.isEmpty()) return true
         return try {
             val model = userRepository.getUserModel()
-            val versionName = BuildConfig.VERSION_NAME
+            val versionName = appVersionProvider.versionName
             val parentCode = resolveParentCode(model)
             val planetCode = resolvePlanetCode(model)
 

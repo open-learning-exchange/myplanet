@@ -240,4 +240,49 @@ class FeedbackTest {
         feedback.setMessages(jsonArray)
         assertEquals("second", feedback.message)
     }
+
+    @Test
+    fun testMessageListConsecutiveReadsReturnEqualContent() {
+        val feedback = Feedback()
+        feedback.messages = """
+            [
+              {"message": "msg0", "user": "user0", "time": "time0"},
+              {"message": "msg1", "user": "user1", "time": "time1"}
+            ]
+        """.trimIndent()
+
+        val read1 = feedback.messageList
+        val read2 = feedback.messageList
+
+        assertEquals(read1, read2)
+        assertTrue(read1 === read2)
+    }
+
+    @Test
+    fun testMessageListReflectsWriteBetweenReads() {
+        val feedback = Feedback()
+        feedback.messages = """
+            [
+              {"message": "msg0", "user": "user0", "time": "time0"},
+              {"message": "msg1", "user": "user1", "time": "time1"}
+            ]
+        """.trimIndent()
+
+        val read1 = feedback.messageList
+        assertEquals(1, read1?.size)
+        assertEquals("msg1", read1?.get(0)?.message)
+
+        feedback.messages = """
+            [
+              {"message": "msg0", "user": "user0", "time": "time0"},
+              {"message": "msg1_updated", "user": "user1", "time": "time1"},
+              {"message": "msg2", "user": "user2", "time": "time2"}
+            ]
+        """.trimIndent()
+
+        val read2 = feedback.messageList
+        assertEquals(2, read2?.size)
+        assertEquals("msg1_updated", read2?.get(0)?.message)
+        assertEquals("msg2", read2?.get(1)?.message)
+    }
 }

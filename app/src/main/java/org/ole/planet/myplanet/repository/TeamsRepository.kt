@@ -33,12 +33,6 @@ data class TeamMemberStatus(
     val hasPendingRequest: Boolean
 )
 
-data class JoinRequestNotification(
-    val requesterName: String,
-    val teamName: String,
-    val requestId: String
-)
-
 data class TeamUploadData(
     val teamId: String?,
     val serialized: JsonObject,

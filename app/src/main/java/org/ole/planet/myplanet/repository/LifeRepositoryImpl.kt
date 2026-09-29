@@ -1,48 +1,36 @@
 package org.ole.planet.myplanet.repository
 
-import androidx.core.content.edit
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.model.MyLife
-import org.ole.planet.myplanet.services.SharedPrefManager
 
-data class CachedMyLifeItem(
-    var imageId: String?,
-    var title: String?,
-    var isVisible: Boolean,
-    var weight: Int
-)
 class LifeRepositoryImpl @Inject constructor(
     private val myLifeDao: MyLifeDao,
-    private val sharedPrefManager: SharedPrefManager,
-    private val gson: Gson
+    private val lifeCache: LifeCache
 ) : LifeRepository {
 
-    private val MY_LIFE_CACHE_PREFIX = "myLifeCache_"
     private val seedMutex = Mutex()
 
     private fun normalizeUserId(userId: String?): String? {
         return userId?.takeIf { it.isNotBlank() && it != "--" }
     }
 
-    override suspend fun updateVisibility(isVisible: Boolean, myLifeId: String): List<MyLife> {
+    override suspend fun updateVisibility(isVisible: Boolean, myLifeId: String, userId: String?): List<MyLife> {
         myLifeDao.updateVisibility(myLifeId, isVisible)
         val managedLives = myLifeDao.getByIds(listOf(myLifeId))
-        val rawUserId = managedLives.firstOrNull()?.userId ?: sharedPrefManager.getUserId()
+        val rawUserId = managedLives.firstOrNull()?.userId ?: userId
         val effectiveUserId = normalizeUserId(rawUserId)
         val updatedLives = getMyLifeByUserId(effectiveUserId)
-        cacheMyLifeItems(effectiveUserId ?: "--", updatedLives)
+        lifeCache.write(effectiveUserId ?: "--", updatedLives)
         return updatedLives
     }
 
-    override suspend fun updateMyLifeListOrder(list: List<MyLife>) {
+    override suspend fun updateMyLifeListOrder(list: List<MyLife>, userId: String?) {
         if (list.isEmpty()) return
-        val rawUserId = list.firstOrNull()?.userId ?: sharedPrefManager.getUserId()
+        val rawUserId = list.firstOrNull()?.userId ?: userId
         val effectiveUserId = normalizeUserId(rawUserId)
         val idToIndex = buildMap(list.size) {
             list.forEachIndexed { index, item ->
@@ -67,7 +55,7 @@ class LifeRepositoryImpl @Inject constructor(
             myLifeDao.update(changed)
         }
         val updatedLives = getMyLifeByUserId(effectiveUserId)
-        cacheMyLifeItems(effectiveUserId ?: "--", updatedLives)
+        lifeCache.write(effectiveUserId ?: "--", updatedLives)
     }
 
     private fun MyLife.dedupKey(): Any {
@@ -77,9 +65,12 @@ class LifeRepositoryImpl @Inject constructor(
             ?: listOf(userId, isVisible, weight)
     }
 
+    private fun List<MyLife>.dedupedByKey(): List<MyLife> = distinctBy { it.dedupKey() }
+
     override suspend fun getMyLifeByUserId(userId: String?, defaultItems: List<MyLife>): List<MyLife> {
         val effectiveUserId = normalizeUserId(userId)
-        val items = myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
+        suspend fun loadItems() = myLifeDao.getByUserId(effectiveUserId).dedupedByKey()
+        val items = loadItems()
         if (items.isNotEmpty() || defaultItems.isEmpty()) {
             return items
         }
@@ -87,12 +78,12 @@ class LifeRepositoryImpl @Inject constructor(
         if (seeded.isNotEmpty()) {
             return seeded
         }
-        return myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
+        return loadItems()
     }
 
     private suspend fun getVisibleMyLifeByUserId(userId: String?): List<MyLife> {
         val effectiveUserId = normalizeUserId(userId)
-        return myLifeDao.getVisibleByUserId(effectiveUserId).distinctBy { it.dedupKey() }.sortedBy { it.weight }
+        return myLifeDao.getVisibleByUserId(effectiveUserId).dedupedByKey()
     }
 
     override suspend fun getMyLifeForDashboard(userId: String, seedBase: List<MyLife>): List<MyLife> {
@@ -106,38 +97,25 @@ class LifeRepositoryImpl @Inject constructor(
         }
 
         val cacheKey = effectiveUserId ?: "--"
-        val json = sharedPrefManager.rawPreferences.getString("$MY_LIFE_CACHE_PREFIX$cacheKey", null)
-        if (json != null) {
-            val cached: List<CachedMyLifeItem>? = try {
-                val type = object : TypeToken<List<CachedMyLifeItem>>() {}.type
-                gson.fromJson(json, type)
-            } catch (e: Exception) {
-                null
-            }
-            if (cached != null) {
-                return cached.mapNotNull { item ->
-                    if (item.isVisible) {
-                        MyLife(item.imageId, effectiveUserId, item.title).apply {
-                            isVisible = item.isVisible
-                            weight = item.weight
-                        }
-                    } else {
-                        null
+        val cached = lifeCache.read(cacheKey)
+        if (cached != null) {
+            return cached.mapNotNull { item ->
+                if (item.isVisible) {
+                    MyLife(item.imageId, effectiveUserId, item.title).apply {
+                        isVisible = item.isVisible
+                        weight = item.weight
                     }
-                }.sortedBy { it.weight }
-            }
+                } else {
+                    null
+                }
+            }.sortedBy { it.weight }
         }
 
         val seeded = seedMyLifeIfEmpty(effectiveUserId, seedBase).ifEmpty {
             getMyLifeByUserId(effectiveUserId)
         }
-        cacheMyLifeItems(cacheKey, seeded)
+        lifeCache.write(cacheKey, seeded)
         return seeded.filter { it.isVisible }.sortedBy { it.weight }
-    }
-
-    private fun cacheMyLifeItems(userId: String, items: List<MyLife>) {
-        val cached = items.map { CachedMyLifeItem(it.imageId, it.title, it.isVisible, it.weight) }
-        sharedPrefManager.rawPreferences.edit { putString("$MY_LIFE_CACHE_PREFIX$userId", gson.toJson(cached)) }
     }
 
     override suspend fun seedMyLifeIfEmpty(userId: String?, items: List<MyLife>): List<MyLife> {

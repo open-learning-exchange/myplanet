@@ -33,11 +33,11 @@ class UploadToShelfService @Inject constructor(
             try {
                 val userModels = userRepository.getPendingSyncUsers(100)
 
-                if (userModels.isEmpty()) return@launch
-
-                val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
-                userModels.forEach { model ->
-                    userSyncRepository.checkAndUploadUser(model, password) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
+                if (userModels.isNotEmpty()) {
+                    val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
+                    userModels.forEach { model ->
+                        userSyncRepository.checkAndUploadUser(model, password) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
+                    }
                 }
 
                 uploadToShelf(listener)
@@ -69,9 +69,7 @@ class UploadToShelfService @Inject constructor(
 
     fun uploadHealth() {
         appScope.launch(dispatcherProvider.io) {
-            val myHealths = healthRepository.getUpdatedHealthExaminations()
-            val uploadedHealths = healthRepository.uploadHealthData(myHealths)
-            healthRepository.markHealthExaminationsUploaded(uploadedHealths)
+            healthRepository.syncPendingHealthExaminations()
         }
     }
 
@@ -80,9 +78,7 @@ class UploadToShelfService @Inject constructor(
             try {
                 if (userId.isNullOrEmpty()) return@launch
 
-                val myHealths = healthRepository.getUpdatedHealthForUser(userId)
-                val uploadedHealths = healthRepository.uploadHealthData(myHealths)
-                healthRepository.markHealthExaminationsUploaded(uploadedHealths)
+                healthRepository.syncPendingHealthExaminationsForUser(userId)
 
                 withContext(dispatcherProvider.main) {
                     listener?.onSuccess("Health data for user $userId uploaded successfully")

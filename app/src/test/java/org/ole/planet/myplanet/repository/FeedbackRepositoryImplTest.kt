@@ -19,17 +19,32 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FeedbackRepositoryImplTest {
 
     private lateinit var feedbackDao: FeedbackDao
+    private lateinit var timeProvider: TimeProvider
     private lateinit var repository: FeedbackRepositoryImpl
 
     @Before
     fun setup() {
         feedbackDao = mockk(relaxed = true)
-        repository = FeedbackRepositoryImpl(feedbackDao, Gson())
+        timeProvider = mockk(relaxed = true)
+        repository = FeedbackRepositoryImpl(feedbackDao, Gson(), timeProvider)
+    }
+
+    @Test
+    fun createFeedback_usesTimeProviderNow() {
+        every { timeProvider.now() } returns 123456789L
+
+        val feedback = repository.createFeedback("user1", "High", "Bug", "Test message", null, null)
+
+        assertEquals(123456789L, feedback.openTime)
+        val messages = Gson().fromJson(feedback.messages, JsonArray::class.java)
+        assertEquals(1, messages.size())
+        assertEquals("123456789", messages[0].asJsonObject["time"].asString)
     }
 
     @Test
@@ -46,6 +61,7 @@ class FeedbackRepositoryImplTest {
 
     @Test
     fun addReply_marksFeedbackPendingSoItGetsUploaded() = runTest {
+        every { timeProvider.now() } returns 987654321L
         val feedback = Feedback().apply {
             id = "fb1"
             isUploaded = true
@@ -61,6 +77,7 @@ class FeedbackRepositoryImplTest {
         val messages = Gson().fromJson(updated.captured.messages, JsonArray::class.java)
         assertEquals(1, messages.size())
         assertEquals("a reply", messages[0].asJsonObject["message"].asString)
+        assertEquals("987654321", messages[0].asJsonObject["time"].asString)
     }
 
     @Test
@@ -89,6 +106,31 @@ class FeedbackRepositoryImplTest {
     }
 
     @Test
+    fun insertFromJson_withPendingLocalClose_keepsClosedStatus() = runTest {
+        val existing = Feedback().apply {
+            id = "fb1"
+            status = "Closed"
+            isUploaded = false
+            messages = "[]"
+        }
+        coEvery { feedbackDao.findById("fb1") } returns existing
+
+        val serverDoc = JsonObject().apply {
+            addProperty("_id", "fb1")
+            addProperty("status", "Open")
+            add("messages", JsonArray())
+        }
+
+        val saved = slot<Feedback>()
+        coEvery { feedbackDao.upsert(capture(saved)) } returns Unit
+
+        repository.insertFromJson(serverDoc)
+
+        assertEquals("Closed", saved.captured.status)
+        assertFalse(saved.captured.isUploaded)
+    }
+
+    @Test
     fun insertFromJson_withNoPendingLocalChanges_overwritesFromServer() = runTest {
         coEvery { feedbackDao.findById("fb1") } returns null
 
@@ -112,13 +154,14 @@ class FeedbackRepositoryImplTest {
     fun `getFeedback deduplicates byte-identical flow emissions for manager`() = runTest {
         val user = mockk<UserEntity> {
             every { isManager() } returns true
+            every { name } returns "managerName"
         }
         val f1 = Feedback().apply { id = "f1"; _rev = "rev1"; status = "Open"; isUploaded = true; messages = "[]" }
         val f2 = Feedback().apply { id = "f1"; _rev = "rev1"; status = "Open"; isUploaded = true; messages = "[]" }
         coEvery { feedbackDao.getAllSortedFlow() } returns flowOf(listOf(f1), listOf(f2))
 
         val emissions = mutableListOf<List<Feedback>>()
-        repository.getFeedback(user).collect { emissions.add(it) }
+        repository.getFeedback(user.name, user.isManager()).collect { emissions.add(it) }
 
         assertEquals(1, emissions.size)
     }
@@ -134,7 +177,7 @@ class FeedbackRepositoryImplTest {
         coEvery { feedbackDao.getByOwnerFlow("ownerName") } returns flowOf(listOf(f1), listOf(f2))
 
         val emissions = mutableListOf<List<Feedback>>()
-        repository.getFeedback(user).collect { emissions.add(it) }
+        repository.getFeedback(user.name, user.isManager()).collect { emissions.add(it) }
 
         assertEquals(1, emissions.size)
     }

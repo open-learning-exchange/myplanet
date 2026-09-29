@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.google.gson.reflect.TypeToken
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
@@ -16,9 +17,10 @@ import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.CourseProgress
 import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.CoursesProgressRow
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 
 class ProgressRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
@@ -106,6 +108,44 @@ class ProgressRepositoryImpl @Inject constructor(
         return arr
     }
 
+    override suspend fun getCourseProgressRows(userId: String?): List<CoursesProgressRow> = withContext(dispatcherProvider.default) {
+        val jsonArray = fetchCourseData(userId)
+        parseCourseProgressRows(jsonArray)
+    }
+
+    private fun parseCourseProgressRows(jsonArray: JsonArray): List<CoursesProgressRow> {
+        return jsonArray.mapNotNull { element ->
+            if (!element.isJsonObject) return@mapNotNull null
+            val obj = element.asJsonObject
+
+            val courseId = if (obj.has("courseId") && !obj.get("courseId").isJsonNull) obj.get("courseId").asString else null
+            val courseName = if (obj.has("courseName") && !obj.get("courseName").isJsonNull) obj.get("courseName").asString else null
+            if (courseId == null || courseName == null) return@mapNotNull null
+
+            val progressObj = obj.get("progress")?.takeIf { it.isJsonObject }?.asJsonObject
+            val progressCurrent = progressObj?.get("current")?.takeIf { !it.isJsonNull }?.asInt
+            val progressMax = progressObj?.get("max")?.takeIf { !it.isJsonNull }?.asInt
+
+            val mistakes = obj.get("mistakes")?.takeIf { !it.isJsonNull }?.asInt
+
+            val stepMistakeElem = obj.get("stepMistake")
+            val stepMistake: Map<String, Int>? = if (stepMistakeElem != null && !stepMistakeElem.isJsonNull) {
+                GsonUtils.gson.fromJson(stepMistakeElem, stepMistakeMapType)
+            } else {
+                null
+            }
+
+            CoursesProgressRow(
+                courseId = courseId,
+                courseName = courseName,
+                progressCurrent = progressCurrent,
+                progressMax = progressMax,
+                mistakes = mistakes,
+                stepMistake = stepMistake
+            )
+        }
+    }
+
     override suspend fun getCurrentProgress(
         steps: List<CourseStep?>?, userId: String?, courseId: String?
     ): Int {
@@ -167,7 +207,7 @@ class ProgressRepositoryImpl @Inject constructor(
                     }
                 }
             }
-            obj.add("stepMistake", JsonUtils.gson.toJsonTree(mistakesMap).asJsonObject)
+            obj.add("stepMistake", GsonUtils.gson.toJsonTree(mistakesMap).asJsonObject)
             obj.addProperty("mistakes", totalMistakes)
         }
     }
@@ -191,11 +231,9 @@ class ProgressRepositoryImpl @Inject constructor(
             val courseProgressRecords = progressByCourse[course.courseId].orEmpty()
 
             // Count UNIQUE steps that are passed (matches web: step.passed === true)
-            val passedStepNumbers = courseProgressRecords
-                .filter { it.passed }
-                .map { it.stepNum }
-                .toSet()
-            val passedSteps = passedStepNumbers.size
+            val passedSteps = courseProgressRecords
+                .mapNotNullTo(HashSet()) { if (it.passed) it.stepNum else null }
+                .size
             val totalSteps = course.courseSteps?.size ?: 0
 
             // Web logic: ALL steps must be passed AND course must have at least one step
@@ -244,7 +282,7 @@ class ProgressRepositoryImpl @Inject constructor(
         existingProgress: CourseProgress?,
         localRecord: CourseProgress?
     ): CourseProgress {
-        val docId = JsonUtils.getString("_id", act)
+        val docId = GsonUtils.getString("_id", act)
         val localPassed = localRecord?.passed ?: false
         val courseProgress = existingProgress
             ?: localRecord
@@ -252,17 +290,17 @@ class ProgressRepositoryImpl @Inject constructor(
 
         courseProgress.id = docId
         courseProgress._id = docId
-        courseProgress._rev = JsonUtils.getString("_rev", act)
+        courseProgress._rev = GsonUtils.getString("_rev", act)
         if (courseProgress.passed != true) {
-            courseProgress.passed = JsonUtils.getBoolean("passed", act) || localPassed
+            courseProgress.passed = GsonUtils.getBoolean("passed", act) || localPassed
         }
-        courseProgress.stepNum = JsonUtils.getInt("stepNum", act)
-        courseProgress.userId = JsonUtils.getString("userId", act)
-        courseProgress.parentCode = JsonUtils.getString("parentCode", act)
-        courseProgress.courseId = JsonUtils.getString("courseId", act)
-        courseProgress.createdOn = JsonUtils.getString("createdOn", act)
-        courseProgress.createdDate = JsonUtils.getLong("createdDate", act)
-        courseProgress.updatedDate = JsonUtils.getLong("updatedDate", act)
+        courseProgress.stepNum = GsonUtils.getInt("stepNum", act)
+        courseProgress.userId = GsonUtils.getString("userId", act)
+        courseProgress.parentCode = GsonUtils.getString("parentCode", act)
+        courseProgress.courseId = GsonUtils.getString("courseId", act)
+        courseProgress.createdOn = GsonUtils.getString("createdOn", act)
+        courseProgress.createdDate = GsonUtils.getLong("createdDate", act)
+        courseProgress.updatedDate = GsonUtils.getLong("updatedDate", act)
         return courseProgress
     }
 
@@ -278,17 +316,21 @@ class ProgressRepositoryImpl @Inject constructor(
         val syncKeys = docs.map { act ->
             CourseProgressSyncKeys(
                 doc = act,
-                docId = JsonUtils.getString("_id", act),
-                courseId = JsonUtils.getString("courseId", act),
-                userId = JsonUtils.getString("userId", act),
-                stepNum = JsonUtils.getInt("stepNum", act)
+                docId = GsonUtils.getString("_id", act),
+                courseId = GsonUtils.getString("courseId", act),
+                userId = GsonUtils.getString("userId", act),
+                stepNum = GsonUtils.getInt("stepNum", act)
             )
         }
 
         val docIds = syncKeys.mapNotNullTo(LinkedHashSet()) { keys -> keys.docId.takeIf { it.isNotEmpty() } }.toList()
-        val courseIds = syncKeys.mapNotNullTo(LinkedHashSet()) { keys -> keys.courseId.takeIf { it.isNotEmpty() } }.toList()
-        val userIds = syncKeys.mapNotNullTo(LinkedHashSet()) { keys -> keys.userId.takeIf { it.isNotEmpty() } }.toList()
-        val stepNums = syncKeys.mapTo(LinkedHashSet()) { keys -> keys.stepNum }.toList()
+        val requestedTuples = syncKeys.mapNotNull { keys ->
+            if (keys.courseId.isNotEmpty() && keys.userId.isNotEmpty()) {
+                Triple(keys.courseId, keys.userId, keys.stepNum)
+            } else {
+                null
+            }
+        }.distinct()
 
         val existingProgresses = if (docIds.isNotEmpty()) {
             courseProgressDao.getByIds(docIds).associateBy { it.id }
@@ -296,8 +338,8 @@ class ProgressRepositoryImpl @Inject constructor(
             emptyMap()
         }
 
-        val localRecords = if (courseIds.isNotEmpty() && userIds.isNotEmpty() && stepNums.isNotEmpty()) {
-            courseProgressDao.getByCourseUsersAndSteps(courseIds, userIds, stepNums)
+        val localRecords = if (requestedTuples.isNotEmpty()) {
+            courseProgressDao.getByCourseUsersAndSteps(requestedTuples)
         } else {
             emptyList()
         }
@@ -323,7 +365,7 @@ class ProgressRepositoryImpl @Inject constructor(
     override fun findProgressForCourse(courseData: JsonArray, courseId: String): JsonObject? {
         courseData.forEach { element ->
             val course = element.asJsonObject
-            if (JsonUtils.getString("courseId", course) == courseId) {
+            if (GsonUtils.getString("courseId", course) == courseId) {
                 return course.getAsJsonObject("progress")
             }
         }
@@ -336,5 +378,9 @@ class ProgressRepositoryImpl @Inject constructor(
 
     override suspend fun markCourseProgressUploaded(localId: String, remoteId: String, rev: String): Boolean {
         return courseProgressDao.markUploaded(localId, remoteId, rev) != 0
+    }
+
+    companion object {
+        private val stepMistakeMapType = object : TypeToken<Map<String, Int>>() {}.type
     }
 }

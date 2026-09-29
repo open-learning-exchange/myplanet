@@ -1,16 +1,8 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import android.os.SystemClock
 import android.util.Log
-import androidx.work.ExistingWorkPolicy
-import androidx.work.OneTimeWorkRequest
-import androidx.work.WorkInfo
-import androidx.work.WorkManager
-import androidx.work.workDataOf
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.async
@@ -18,36 +10,43 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.UserDataUploadScheduler
 import org.ole.planet.myplanet.services.UserDataWorker
 import org.ole.planet.myplanet.services.sync.AdaptiveBatchProcessor
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
-import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
-import org.ole.planet.myplanet.utils.JsonUtils.gson
+import org.ole.planet.myplanet.utils.GsonUtils.getJsonArray
+import org.ole.planet.myplanet.utils.GsonUtils.getJsonObject
+import org.ole.planet.myplanet.utils.GsonUtils.gson
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @Singleton
 class SyncRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val apiInterface: ApiInterface,
     private val dispatcherProvider: DispatcherProvider,
     private val resourcesRepository: ResourcesRepository,
     private val coursesRepository: CoursesRepository,
     private val eventsRepository: EventsSyncWriter,
     private val teamsSyncRepository: TeamsSyncRepository,
+    private val userSyncRepository: dagger.Lazy<UserSyncRepository>,
     private val transactionSyncManager: dagger.Lazy<TransactionSyncManager>,
     private val syncTimeLogger: SyncTimeLogger,
     private val sharedPrefManager: SharedPrefManager,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val userDataUploadScheduler: UserDataUploadScheduler
 ) : SyncRepository {
 
     private val shelfDispatchMap: Map<String, suspend (String?, List<JsonObject>) -> Int> by lazy {
@@ -58,39 +57,12 @@ class SyncRepositoryImpl @Inject constructor(
             "teams" to { _, docs -> teamsSyncRepository.batchInsertMyTeams(docs) }
         )
     }
+
     override fun uploadLoginData(): Flow<SyncUiState> =
-        enqueueUserDataUpload("UploadUserData_Login", UserDataWorker.UPLOAD_TYPE_LOGIN)
+        userDataUploadScheduler.enqueueUserDataUpload("UploadUserData_Login", UserDataWorker.UPLOAD_TYPE_LOGIN)
 
     override fun uploadBulkData(): Flow<SyncUiState> =
-        enqueueUserDataUpload("UploadUserData_Bulk", UserDataWorker.UPLOAD_TYPE_BULK)
-
-    private fun enqueueUserDataUpload(uniqueWorkName: String, uploadType: String): Flow<SyncUiState> {
-        val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
-            .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to uploadType))
-            .build()
-        val workManager = WorkManager.getInstance(context)
-        workManager.enqueueUniqueWork(
-            uniqueWorkName,
-            ExistingWorkPolicy.REPLACE,
-            workRequest
-        )
-        return workManager.getWorkInfoByIdFlow(workRequest.id).map { workInfo ->
-            mapWorkInfoToState(workInfo)
-        }
-    }
-
-    private fun mapWorkInfoToState(workInfo: WorkInfo?): SyncUiState {
-        return when (workInfo?.state) {
-            WorkInfo.State.SUCCEEDED -> {
-                val message = workInfo.outputData.getString(UserDataWorker.KEY_SUCCESS_MESSAGE)
-                SyncUiState.Success(message)
-            }
-            WorkInfo.State.FAILED -> SyncUiState.Error("Upload failed")
-            WorkInfo.State.CANCELLED -> SyncUiState.Error("Upload cancelled")
-            WorkInfo.State.RUNNING -> SyncUiState.Loading
-            else -> SyncUiState.Idle
-        }
-    }
+        userDataUploadScheduler.enqueueUserDataUpload("UploadUserData_Bulk", UserDataWorker.UPLOAD_TYPE_BULK)
 
     override suspend fun processShelfParallel(shelfId: String): Int {
         var processedItems = 0
@@ -104,7 +76,7 @@ class SyncRepositoryImpl @Inject constructor(
                         "${UrlUtils.getUrl()}/shelf/$shelfId"
                     )
                 }?.let {
-                    doc = it.body()
+                    doc = it.body()?.toGson()
                 }
                 coroutineContext.ensureActive()
                 doc
@@ -156,7 +128,7 @@ class SyncRepositoryImpl @Inject constructor(
 
             while (i < validIds.size) {
                 batchNum++
-                val batchStartTime = SystemClock.elapsedRealtime()
+                val batchStartTime = timeProvider.elapsedRealtime()
 
                 val end = minOf(i + batchSizer.currentSize, validIds.size)
                 val batch = validIds.subList(i, end)
@@ -166,14 +138,19 @@ class SyncRepositoryImpl @Inject constructor(
                 keysObject.add("keys", gson.toJsonTree(batch))
 
                 // API call
-                val apiStartTime = SystemClock.elapsedRealtime()
+                val apiStartTime = timeProvider.elapsedRealtime()
                 var response: JsonObject? = null
                 ApiClient.executeWithRetryAndWrap {
-                    apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject)
+                    apiInterface.postDoc(
+                        UrlUtils.header,
+                        "application/json",
+                        "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true",
+                        keysObject.toKotlinx().jsonObject
+                    )
                 }?.let {
-                    response = it.body()
+                    response = it.body()?.toGson()
                 }
-                val apiDuration = SystemClock.elapsedRealtime() - apiStartTime
+                val apiDuration = timeProvider.elapsedRealtime() - apiStartTime
 
                 if (response == null) {
                     batchSizer.recordFailure()
@@ -197,16 +174,16 @@ class SyncRepositoryImpl @Inject constructor(
                 }
 
                 if (documentsToProcess.isNotEmpty()) {
-                    val realmStartTime = SystemClock.elapsedRealtime()
+                    val realmStartTime = timeProvider.elapsedRealtime()
                     val handler = shelfDispatchMap[shelfData.type]
                     if (handler != null) {
                         processedCount += handler(shelfId, documentsToProcess)
                     }
-                    val realmDuration = SystemClock.elapsedRealtime() - realmStartTime
+                    val realmDuration = timeProvider.elapsedRealtime() - realmStartTime
                     logger.logDbOperation("shelf_insert", shelfData.type, realmDuration, documentsToProcess.size)
                 }
 
-                val batchDuration = SystemClock.elapsedRealtime() - batchStartTime
+                val batchDuration = timeProvider.elapsedRealtime() - batchStartTime
                 if (batchDuration > 1000) {
                     logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} batch $batchNum ($end/${validIds.size} ids): ${batchDuration}ms for ${documentsToProcess.size} docs")
                 }
@@ -228,7 +205,44 @@ class SyncRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getCachedShelvesWithData(): List<String> {
+    override suspend fun getShelvesWithData(): List<String> {
+        val shelvesWithData = mutableListOf<String>()
+        val cachedShelves = getCachedShelvesWithData()
+        if (cachedShelves.isNotEmpty()) {
+            return cachedShelves
+        }
+
+        val url = UrlUtils.getUrl()
+        val header = UrlUtils.header
+
+        val allShelves = ApiClient.executeWithRetryAndWrap {
+            apiInterface.getDocuments(header, "$url/shelf/_all_docs")
+        }?.body()?.rows ?: return emptyList()
+
+        coroutineScope {
+            val semaphore = Semaphore(8)
+            val checkJobs = allShelves.chunked(25).map { shelfBatch ->
+                async(dispatcherProvider.io) {
+                    semaphore.withPermit {
+                        checkShelfBatchForDataOptimized(shelfBatch)
+                    }
+                }
+            }
+
+            checkJobs.awaitAll().flatten().let { validShelves ->
+                shelvesWithData.addAll(validShelves)
+            }
+        }
+
+        cacheShelvesWithData(shelvesWithData)
+        return shelvesWithData
+    }
+
+    private suspend fun checkShelfBatchForDataOptimized(shelfBatch: List<Rows>): List<String> {
+        return userSyncRepository.get().checkShelfBatchForDataOptimized(shelfBatch.mapNotNull { it.id })
+    }
+
+    internal fun getCachedShelvesWithData(): List<String> {
         val cacheTime = sharedPrefManager.getRawLong(CACHE_KEY_SHELVES_CACHE_TIME, 0)
         val now = timeProvider.now()
 
@@ -241,7 +255,7 @@ class SyncRepositoryImpl @Inject constructor(
         return emptyList()
     }
 
-    override fun cacheShelvesWithData(shelves: List<String>) {
+    internal fun cacheShelvesWithData(shelves: List<String>) {
         sharedPrefManager.setRawString(CACHE_KEY_SHELVES_WITH_DATA, shelves.joinToString(","))
         sharedPrefManager.setRawLong(CACHE_KEY_SHELVES_CACHE_TIME, timeProvider.now())
     }

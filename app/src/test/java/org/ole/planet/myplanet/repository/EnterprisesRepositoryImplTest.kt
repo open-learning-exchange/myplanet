@@ -1,29 +1,28 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkObject
-import io.mockk.unmockkObject
 import io.mockk.verify
+import java.io.File
 import java.nio.file.Files
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.TeamDao
+import org.ole.planet.myplanet.model.EnterpriseReportCsvProjection
+import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
@@ -31,24 +30,19 @@ import org.ole.planet.myplanet.utils.TimeUtils
 @OptIn(ExperimentalCoroutinesApi::class)
 class EnterprisesRepositoryImplTest {
 
+    private val storagePathResolver: StoragePathResolver = mockk(relaxed = true)
     private val teamDao: TeamDao = mockk(relaxed = true)
     private val timeProvider: TimeProvider = mockk(relaxed = true)
-    private val context: Context = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = TestDispatcherProvider(UnconfinedTestDispatcher())
 
     private val repository = EnterprisesRepositoryImpl(
-        context, teamDao, timeProvider, dispatcherProvider
+        storagePathResolver, teamDao, timeProvider, dispatcherProvider
     )
-
-    @After
-    fun tearDown() {
-        unmockkObject(FileUtils)
-    }
 
     @Test
     fun `getReportsFlow delegates to observeNonArchivedReportsByTeamId`() = runTest {
         val teamId = "team123"
-        val expectedReports = listOf(
+        val rawReports = listOf(
             MyTeam().apply {
                 _id = "report1"
                 createdDate = 2000L
@@ -58,8 +52,12 @@ class EnterprisesRepositoryImplTest {
                 createdDate = 1000L
             }
         )
+        val expectedReports = listOf(
+            FinanceReport(_id="report1", _rev=null, status=null, description=null, beginningBalance=0, sales=0, otherIncome=0, wages=0, otherExpenses=0, startDate=0L, endDate=0L, createdDate=2000L, updatedDate=0L, updated=false, imageName=null),
+            FinanceReport(_id="report2", _rev=null, status=null, description=null, beginningBalance=0, sales=0, otherIncome=0, wages=0, otherExpenses=0, startDate=0L, endDate=0L, createdDate=1000L, updatedDate=0L, updated=false, imageName=null)
+        )
 
-        every { teamDao.observeNonArchivedReportsByTeamId(teamId) } returns flowOf(expectedReports)
+        every { teamDao.observeNonArchivedReportsByTeamId(teamId) } returns flowOf(rawReports)
 
         val result = repository.getReportsFlow(teamId).first()
 
@@ -70,23 +68,19 @@ class EnterprisesRepositoryImplTest {
     @Test
     fun `exportReportsAsCsv calculates correct profitLoss and endingBalance`() = runTest {
         val teamId = "team123"
-        val report = MyTeam().apply {
-            startDate = 1000L
-            endDate = 2000L
-            createdDate = 3000L
-            updatedDate = 4000L
-            beginningBalance = 100
-            sales = 50
-            otherIncome = 20
-            wages = 10
+        val reportProjection = EnterpriseReportCsvProjection(
+            startDate = 1000L,
+            endDate = 2000L,
+            createdDate = 3000L,
+            updatedDate = 4000L,
+            beginningBalance = 100,
+            sales = 50,
+            otherIncome = 20,
+            wages = 10,
             otherExpenses = 15
-        }
-        val archivedReport = MyTeam().apply {
-            status = "archived"
-            createdDate = 4000L
-        }
+        )
 
-        coEvery { teamDao.getNonArchivedReportsByTeamId(teamId) } returns listOf(report)
+        coEvery { teamDao.getNonArchivedReportCsvProjectionsByTeamId(teamId) } returns listOf(reportProjection)
 
         val result = repository.exportReportsAsCsv(teamId, "Test Team")
 
@@ -120,12 +114,11 @@ class EnterprisesRepositoryImplTest {
     }
 
     @Test
-    fun `addReport with image writes attachment using injected context`() = runTest {
-        val oleDir = Files.createTempDirectory("enterprises_ole").toFile()
-        mockkObject(FileUtils)
-        every { FileUtils.getOlePath(context) } returns "${oleDir.absolutePath}/"
+    fun `addReport with image writes attachment using storagePathResolver`() = runTest {
+        val tempDir = Files.createTempDirectory("enterprises_test").toFile()
+        val destFile = File(tempDir, "team_attachments/report-1/logo.png")
+        every { storagePathResolver.resolveTeamAttachment(any(), "logo.png") } returns destFile
         every { timeProvider.now() } returns 12345L
-        coEvery { teamDao.getById(any()) } returns MyTeam().apply { _id = "report-1" }
 
         val imageBytes = byteArrayOf(1, 2, 3, 4)
         val report = FinanceReportParams(
@@ -146,14 +139,54 @@ class EnterprisesRepositoryImplTest {
 
         repository.addReport(report)
 
-        // The injected context must flow into FileUtils.getOlePath (mocked above) so the
-        // attachment lands under our temp dir; the report id is a random UUID, so locate
-        // the written file by name within the ole tree.
-        val writtenFile = oleDir.walkTopDown().firstOrNull { it.name == "logo.png" }
-        assertTrue("attachment file should have been written via injected context", writtenFile != null)
-        assertArrayEquals(imageBytes, writtenFile!!.readBytes())
+        assertTrue("attachment file should have been written", destFile.exists())
+        assertArrayEquals(imageBytes, destFile.readBytes())
 
-        coVerify { teamDao.upsert(any()) }
+        coVerify { teamDao.setImageNameById(any(), "logo.png") }
+    }
+
+    @Test
+    fun `archiveReport calls archiveById and never upsert`() = runTest {
+        repository.archiveReport("r1")
+
+        coVerify(exactly = 1) { teamDao.archiveById("r1") }
+        coVerify(exactly = 0) { teamDao.upsert(any()) }
+    }
+
+    @Test
+    fun `blank reportId in archiveReport calls neither archiveById nor setImageNameById`() = runTest {
+        repository.archiveReport("")
+        repository.archiveReport("   ")
+
+        coVerify(exactly = 0) { teamDao.archiveById(any()) }
+        coVerify(exactly = 0) { teamDao.setImageNameById(any(), any()) }
+    }
+
+    @Test
+    fun `addReport short-circuits image attachment update when resolveTeamAttachment returns null`() = runTest {
+        every { storagePathResolver.resolveTeamAttachment(any(), any()) } returns null
+        every { timeProvider.now() } returns 12345L
+
+        val report = FinanceReportParams(
+            description = "desc",
+            beginningBalance = 0,
+            sales = 0,
+            otherIncome = 0,
+            wages = 0,
+            otherExpenses = 0,
+            startDate = 0L,
+            endDate = 0L,
+            teamId = "team-1",
+            teamType = "team",
+            teamPlanetCode = "code",
+            imageName = "logo.png",
+            imageData = byteArrayOf(1, 2, 3),
+        )
+
+        repository.addReport(report)
+
+        // The first upsert happens for addReport itself, but teamDao.getById / second upsert for image attachment must not happen
+        coVerify(exactly = 0) { teamDao.getById(any()) }
     }
 
     @Test
@@ -163,7 +196,7 @@ class EnterprisesRepositoryImplTest {
         every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(r1), listOf(r2))
 
-        val emissions = mutableListOf<List<MyTeam>>()
+        val emissions = mutableListOf<List<FinanceReport>>()
         repository.getReportsFlow("team1").collect { emissions.add(it) }
 
         assertEquals(1, emissions.size)
@@ -176,7 +209,7 @@ class EnterprisesRepositoryImplTest {
         every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(before), listOf(after))
 
-        val emissions = mutableListOf<List<MyTeam>>()
+        val emissions = mutableListOf<List<FinanceReport>>()
         repository.getReportsFlow("team1").collect { emissions.add(it) }
 
         assertEquals(2, emissions.size)
@@ -191,7 +224,7 @@ class EnterprisesRepositoryImplTest {
         every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(before), listOf(after))
 
-        val emissions = mutableListOf<List<MyTeam>>()
+        val emissions = mutableListOf<List<FinanceReport>>()
         repository.getReportsFlow("team1").collect { emissions.add(it) }
 
         assertEquals(2, emissions.size)
@@ -206,7 +239,7 @@ class EnterprisesRepositoryImplTest {
         every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(r1), listOf(r1, r2))
 
-        val emissions = mutableListOf<List<MyTeam>>()
+        val emissions = mutableListOf<List<FinanceReport>>()
         repository.getReportsFlow("team1").collect { emissions.add(it) }
 
         assertEquals(2, emissions.size)
@@ -221,11 +254,26 @@ class EnterprisesRepositoryImplTest {
         every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(r2, r1))
 
-        val emissions = mutableListOf<List<MyTeam>>()
+        val emissions = mutableListOf<List<FinanceReport>>()
         repository.getReportsFlow("team1").collect { emissions.add(it) }
 
         assertEquals(1, emissions.size)
         assertEquals(listOf("r2", "r1"), emissions[0].map { it._id })
+    }
+
+    @Test
+    fun `getReportsFlow emits when createdDate changes`() = runTest {
+        val before = report("r1", "rev1", createdDate = 100L)
+        val after = report("r1", "rev1", createdDate = 200L)
+        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
+            flowOf(listOf(before), listOf(after))
+
+        val emissions = mutableListOf<List<FinanceReport>>()
+        repository.getReportsFlow("team1").collect { emissions.add(it) }
+
+        assertEquals(2, emissions.size)
+        assertEquals(100L, emissions[0][0].createdDate)
+        assertEquals(200L, emissions[1][0].createdDate)
     }
 
     private fun report(

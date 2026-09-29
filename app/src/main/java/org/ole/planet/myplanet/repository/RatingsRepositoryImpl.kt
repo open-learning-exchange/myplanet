@@ -10,35 +10,12 @@ import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.RatingPromptLog
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 
 class RatingsRepositoryImpl @Inject constructor(
     private val gson: Gson,
     private val ratingDao: RatingDao,
 ) : RatingsRepository {
-
-    override suspend fun getRatings(type: String?, userId: String?): HashMap<String?, JsonObject> {
-        val ratings = ratingDao.getByType(type)
-        val aggregated = aggregateRatings(ratings, userId)
-        val map = HashMap<String?, JsonObject>(Math.ceil(aggregated.size / 0.75).toInt())
-        for ((item, aggregation) in aggregated) {
-            map[item] = aggregation.toJson()
-        }
-        return map
-    }
-
-    override suspend fun getRatingsById(type: String, resourceId: String?, userId: String?): RatingSummary? {
-        if (resourceId == null) return null
-        return getRatingSummary(type, resourceId, userId)
-    }
-
-    override suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject> {
-        return getRatings("course", userId)
-    }
-
-    override suspend fun getResourceRatings(userId: String?): HashMap<String?, JsonObject> {
-        return getRatings("resource", userId)
-    }
 
     override suspend fun isRatingPrompted(userId: String, resourceId: String): Boolean {
         return ratingDao.isRatingPrompted(userId = userId, item = resourceId, type = "resource")
@@ -106,23 +83,23 @@ class RatingsRepositoryImpl @Inject constructor(
             // that bloat the stored blob past SQLite's ~2MB CursorWindow limit, crashing later
             // `SELECT *` reads with SQLiteBlobTooBigException. Attachments aren't needed to
             // round-trip a rating on upload, so drop them before persisting.
-            val userObject = JsonUtils.getJsonObject("user", act).apply { remove("_attachments") }
+            val userObject = GsonUtils.getJsonObject("user", act).apply { remove("_attachments") }
             Rating().apply {
-                _rev = JsonUtils.getString("_rev", act)
-                _id = JsonUtils.getString("_id", act)
-                id = JsonUtils.getString("_id", act)
-                time = JsonUtils.getLong("time", act)
-                title = JsonUtils.getString("title", act)
-                type = JsonUtils.getString("type", act)
-                item = JsonUtils.getString("item", act)
-                rate = JsonUtils.getInt("rate", act)
+                _rev = GsonUtils.getString("_rev", act)
+                _id = GsonUtils.getString("_id", act)
+                id = GsonUtils.getString("_id", act)
+                time = GsonUtils.getLong("time", act)
+                title = GsonUtils.getString("title", act)
+                type = GsonUtils.getString("type", act)
+                item = GsonUtils.getString("item", act)
+                rate = GsonUtils.getInt("rate", act)
                 isUpdated = false
-                comment = JsonUtils.getString("comment", act)
-                user = JsonUtils.gson.toJson(userObject)
-                userId = JsonUtils.getString("_id", userObject)
-                parentCode = JsonUtils.getString("parentCode", act)
-                planetCode = JsonUtils.getString("planetCode", act)
-                createdOn = JsonUtils.getString("createdOn", act)
+                comment = GsonUtils.getString("comment", act)
+                user = GsonUtils.gson.toJson(userObject)
+                userId = GsonUtils.getString("_id", userObject)
+                parentCode = GsonUtils.getString("parentCode", act)
+                planetCode = GsonUtils.getString("planetCode", act)
+                createdOn = GsonUtils.getString("createdOn", act)
             }
         }
         ratingDao.upsertAll(entities)
@@ -170,41 +147,6 @@ class RatingsRepositoryImpl @Inject constructor(
             this.type = type
             item = itemId
             this.title = title
-        }
-    }
-
-    private fun aggregateRatings(
-        ratings: Iterable<Rating>,
-        userId: String?
-    ): Map<String?, RatingAggregation> {
-        val aggregationMap = LinkedHashMap<String?, RatingAggregation>()
-        for (rating in ratings) {
-            val item = rating.item
-            val aggregation = aggregationMap.getOrPut(item) { RatingAggregation() }
-            aggregation.totalRating += rating.rate
-            aggregation.totalCount += 1
-            if (userId != null && userId == rating.userId) {
-                aggregation.ratingByUser = rating.rate
-            }
-        }
-        return aggregationMap
-    }
-
-    private data class RatingAggregation(
-        var totalRating: Int = 0,
-        var totalCount: Int = 0,
-        var ratingByUser: Int? = null
-    ) {
-        fun toJson(): JsonObject {
-            val `object` = JsonObject()
-            if (ratingByUser != null) {
-                `object`.addProperty("ratingByUser", ratingByUser)
-            }
-            if (totalCount > 0) {
-                `object`.addProperty("averageRating", totalRating.toFloat() / totalCount)
-                `object`.addProperty("total", totalCount)
-            }
-            return `object`
         }
     }
 

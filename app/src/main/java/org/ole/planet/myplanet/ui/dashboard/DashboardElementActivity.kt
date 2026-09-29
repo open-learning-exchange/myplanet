@@ -5,18 +5,17 @@ import android.os.Bundle
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.MenuItem
+import androidx.activity.viewModels
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.afollestad.materialdialogs.MaterialDialog
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import javax.inject.Inject
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
-import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
@@ -31,8 +30,7 @@ import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 
 abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBackStackChangedListener {
-    @Inject
-    lateinit var activitiesRepository: ActivitiesRepository
+    private val dashboardElementViewModel: DashboardElementViewModel by viewModels()
     lateinit var navigationView: BottomNavigationView
     private lateinit var goOnline: MenuItem
 
@@ -105,19 +103,19 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         val dialog = builder.build()
         currentDialog = dialog
         lifecycleScope.launch {
-            val userModel = profileDbHandler.getUserModel()
+            val userModel = dashboardElementViewModel.currentUser()
             if (userModel?.id?.startsWith("guest") == true) {
                 DialogUtils.guestDialog(this@DashboardElementActivity)
                 return@launch
             }
             checkMinApk(url, serverPin, "DashboardActivity")
-            activitiesRepository.recordSyncUserChallengeAction("${userModel?.id}")
+            dashboardElementViewModel.recordUserChallengeAction("${userModel?.id}")
         }
     }
 
     fun logout() {
         lifecycleScope.launch {
-            profileDbHandler.logoutAsync()
+            dashboardElementViewModel.logout()
             withContext(dispatcherProvider.io) { SecurePrefs.clearCredentials(this@DashboardElementActivity) }
             prefData.setLoggedIn(false)
             prefData.setNotificationShown(false)

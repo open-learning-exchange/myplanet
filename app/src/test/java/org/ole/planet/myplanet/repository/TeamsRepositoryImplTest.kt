@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
+import androidx.room.withTransaction
 import com.google.gson.Gson
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -622,13 +623,15 @@ class TeamsRepositoryImplTest {
         val logNullTime = TeamLog().apply { user = "Bob"; time = null }
 
         coEvery { teamLogDao.getTeamVisitsForUsers(teamId, listOf("Alice", "Bob", "Charlie")) } returns listOf(log1, log2, log3, logNullTime)
-        coEvery { activitiesRepository.getLastVisit("Alice") } returns 5000L
-        coEvery { activitiesRepository.getLastVisit("Bob") } returns null
-        coEvery { activitiesRepository.getLastVisit("Charlie") } returns null
+        coEvery { activitiesRepository.getLastVisits(listOf("Alice", "Bob", "Charlie")) } returns mapOf("Alice" to 5000L)
+        coEvery { activitiesRepository.getOfflineVisitCounts(listOf("user1", "user2", "user3")) } returns mapOf("user1" to 5)
 
         val result = teamsRepository.getJoinedMembersWithVisitInfo(teamId)
 
         assertEquals(3, result.size)
+
+        coVerify(exactly = 1) { activitiesRepository.getLastVisits(listOf("Alice", "Bob", "Charlie")) }
+        coVerify(exactly = 1) { activitiesRepository.getOfflineVisitCounts(listOf("user1", "user2", "user3")) }
 
         // Leader (Alice) should be first
         val aliceData = result[0]
@@ -636,6 +639,7 @@ class TeamsRepositoryImplTest {
         assertEquals(3L, aliceData.visitCount)
         assertEquals(3000L, aliceData.lastVisitDate)
         assertEquals(true, aliceData.isLeader)
+        assertEquals("5", aliceData.offlineVisits)
 
         // Bob: 1 log with null time
         val bobData = result[1]
@@ -643,6 +647,8 @@ class TeamsRepositoryImplTest {
         assertEquals(1L, bobData.visitCount)
         assertEquals(0L, bobData.lastVisitDate) // null log.time resolves to 0L
         assertEquals(false, bobData.isLeader)
+        assertEquals("0", bobData.offlineVisits)
+        assertEquals("No logout record found", bobData.profileLastVisit)
 
         // Charlie: 0 logs
         val charlieData = result[2]
@@ -650,5 +656,85 @@ class TeamsRepositoryImplTest {
         assertEquals(0L, charlieData.visitCount)
         assertEquals(null, charlieData.lastVisitDate)
         assertEquals(false, charlieData.isLeader)
+        assertEquals("0", charlieData.offlineVisits)
+        assertEquals("No logout record found", charlieData.profileLastVisit)
+    }
+
+    @Test
+    fun `markTeamsUploaded calls getByIds and never calls getAll`() = runTest(testDispatcher) {
+        val uploadedTeams = mapOf("team1" to "rev1", "team2" to "rev2")
+        val team1 = MyTeam().apply { _id = "team1"; name = "Team 1" }
+        val team2 = MyTeam().apply { _id = "team2"; name = "Team 2" }
+
+        coEvery { teamDao.getByIds(listOf("team1", "team2")) } returns listOf(team1, team2)
+
+        teamsRepository.markTeamsUploaded(uploadedTeams)
+
+        coVerify(exactly = 1) { teamDao.getByIds(listOf("team1", "team2")) }
+        coVerify(exactly = 0) { teamDao.getAll() }
+        coVerify(exactly = 1) { teamDao.upsertAll(any()) }
+    }
+
+    @Test
+    fun `bulkInsertFromSync calls getByIds and never calls getAll`() = runTest(testDispatcher) {
+        io.mockk.mockkStatic("androidx.room.RoomDatabaseKt")
+        val blockSlot = io.mockk.slot<suspend () -> Unit>()
+        coEvery { appDatabase.withTransaction(capture(blockSlot)) } coAnswers {
+            blockSlot.captured.invoke()
+        }
+
+        val jsonArray = com.google.gson.JsonArray().apply {
+            add(com.google.gson.JsonObject().apply {
+                add("doc", com.google.gson.JsonObject().apply {
+                    addProperty("_id", "team1")
+                    addProperty("name", "Team 1")
+                })
+            })
+            add(com.google.gson.JsonObject().apply {
+                add("doc", com.google.gson.JsonObject().apply {
+                    addProperty("_id", "team2")
+                    addProperty("name", "Team 2")
+                })
+            })
+        }
+        val team1 = MyTeam().apply { _id = "team1"; name = "Team 1" }
+        val team2 = MyTeam().apply { _id = "team2"; name = "Team 2" }
+
+        coEvery { teamDao.getByIds(listOf("team1", "team2")) } returns listOf(team1, team2)
+
+        teamsRepository.bulkInsertFromSync(jsonArray)
+
+        coVerify(exactly = 1) { teamDao.getByIds(listOf("team1", "team2")) }
+        coVerify(exactly = 0) { teamDao.getAll() }
+
+        io.mockk.unmockkStatic("androidx.room.RoomDatabaseKt")
+    }
+
+    @Test
+    fun `getByIds chunking splits 1200 ids into three calls of 500, 500, and 200`() = runTest(testDispatcher) {
+        val ids = (1..1200).map { "team_$it" }
+        val uploadedTeams = ids.associateWith { "rev_$it" }
+
+        coEvery { teamDao.getByIds(any()) } answers {
+            val chunk = firstArg<List<String>>()
+            chunk.map { id -> MyTeam().apply { _id = id } }
+        }
+
+        teamsRepository.markTeamsUploaded(uploadedTeams)
+
+        coVerify(exactly = 1) { teamDao.getByIds(ids.subList(0, 500)) }
+        coVerify(exactly = 1) { teamDao.getByIds(ids.subList(500, 1000)) }
+        coVerify(exactly = 1) { teamDao.getByIds(ids.subList(1000, 1200)) }
+        coVerify(exactly = 0) { teamDao.getAll() }
+    }
+
+    @Test
+    fun `empty id input performs no DAO read at all`() = runTest(testDispatcher) {
+        teamsRepository.markTeamsUploaded(emptyMap())
+        teamsRepository.bulkInsertFromSync(com.google.gson.JsonArray())
+        teamsRepository.batchInsertMyTeams(emptyList())
+
+        coVerify(exactly = 0) { teamDao.getByIds(any()) }
+        coVerify(exactly = 0) { teamDao.getAll() }
     }
 }

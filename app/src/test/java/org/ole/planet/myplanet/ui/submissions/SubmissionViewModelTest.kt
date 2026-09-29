@@ -4,6 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -13,10 +14,14 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.mockito.ArgumentMatchers.anyList
+import org.mockito.ArgumentMatchers.anyMap
+import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.model.SubmissionRowProjection
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -41,6 +46,50 @@ class SubmissionViewModelTest {
         Dispatchers.setMain(testDispatcher)
         submissionsRepository = mock(SubmissionsRepository::class.java)
         userRepository = mock(UserRepository::class.java)
+
+        runBlocking {
+            `when`(submissionsRepository.getSubmissionProjections(anyList(), anyString(), anyString(), anyString(), anyMap())).thenAnswer { invocation ->
+                val subs = invocation.getArgument<List<Submission>>(0)
+                val uid = invocation.getArgument<String>(1)
+                val type = invocation.getArgument<String>(2)
+                val query = invocation.getArgument<String>(3)
+                val examMap = invocation.getArgument<Map<String?, StepExam>>(4)
+
+                var filtered = when (type) {
+                    "survey" -> subs.filter { it.userId == uid && it.type == "survey" }
+                    "survey_submission" -> subs.filter {
+                        it.userId == uid && it.type == "survey" && it.status != "pending"
+                    }
+                    else -> subs.filter { it.userId == uid && it.type != "survey" }
+                }.sortedByDescending { it.lastUpdateTime }
+
+                if (query.isNotEmpty()) {
+                    val examIds = examMap.mapNotNullTo(HashSet()) { (id, exam) ->
+                        if (exam.name?.contains(query, ignoreCase = true) == true) id else null
+                    }
+                    filtered = filtered.filter { examIds.contains(it.parentId) }
+                }
+
+                val uniqueRawSubmissions = mutableListOf<Submission>()
+                val submissionCountMap = HashMap<String?, Int>()
+                for (group in filtered.groupBy { it.parentId }.values) {
+                    val newest = group.maxByOrNull { it.lastUpdateTime } ?: continue
+                    uniqueRawSubmissions.add(newest)
+                    submissionCountMap[newest.id] = group.size
+                }
+
+                val userIds = uniqueRawSubmissions.mapNotNull { it.userId }.distinct()
+                val fallbackUsersMap = runBlocking { userRepository.getUsersByIds(userIds) }.associateBy { it.id }
+
+                uniqueRawSubmissions.map { sub ->
+                    val name = submissionsRepository.getNormalizedSubmitterName(sub)
+                    val fallback = sub.userId?.let { fallbackUsersMap[it]?.name }
+                    val submitterName = name ?: fallback ?: ""
+                    val count = submissionCountMap[sub.id] ?: 1
+                    SubmissionRowProjection(sub, submitterName, count)
+                }.sortedByDescending { it.submission.lastUpdateTime }
+            }
+        }
     }
 
     @After

@@ -6,13 +6,15 @@ import android.view.View
 import androidx.appcompat.R as AppCompatR
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.mockk.spyk
+import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
-import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.ui.enterprises.EnterprisesReportsAdapter.Companion.PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED
 
 @RunWith(AndroidJUnit4::class)
@@ -21,6 +23,33 @@ class EnterprisesReportsAdapterTest {
     private lateinit var adapter: EnterprisesReportsAdapter
     private lateinit var context: Context
     private lateinit var timeProvider: org.ole.planet.myplanet.utils.TestTimeProvider
+
+    private fun createReport(
+        id: String,
+        description: String? = null,
+        beginningBalance: Int = 0,
+        sales: Int = 0,
+        otherIncome: Int = 0,
+        wages: Int = 0,
+        otherExpenses: Int = 0,
+        imageName: String? = null
+    ) = FinanceReport(
+        _id = id,
+        _rev = "rev1",
+        status = "active",
+        description = description,
+        beginningBalance = beginningBalance,
+        sales = sales,
+        otherIncome = otherIncome,
+        wages = wages,
+        otherExpenses = otherExpenses,
+        startDate = 1000L,
+        endDate = 2000L,
+        createdDate = 500L,
+        updatedDate = 600L,
+        updated = false,
+        imageName = imageName
+    )
 
     @Before
     fun setUp() {
@@ -32,8 +61,8 @@ class EnterprisesReportsAdapterTest {
 
     @Test
     fun testSetNonTeamMember_emitsPayload() {
-        val team1 = MyTeam().apply { _id = "team1" }
-        val team2 = MyTeam().apply { _id = "team2" }
+        val team1 = createReport("team1")
+        val team2 = createReport("team2")
         val list = listOf(team1, team2)
 
         var payloadEmitted: Any? = null
@@ -52,7 +81,7 @@ class EnterprisesReportsAdapterTest {
 
     @Test
     fun testOnBindViewHolder_withPayload_updatesButtonVisibility() {
-        val team1 = MyTeam().apply { _id = "team1" }
+        val team1 = createReport("team1")
         val list = listOf(team1)
 
         adapter.submitList(list) {
@@ -77,7 +106,7 @@ class EnterprisesReportsAdapterTest {
 
     @Test
     fun testOnBindViewHolder_withUnknownPayload_fallsBackToFullBind() {
-        val team1 = MyTeam().apply { _id = "team1" }
+        val team1 = createReport("team1")
         val list = listOf(team1)
 
         adapter.submitList(list) {
@@ -97,13 +126,14 @@ class EnterprisesReportsAdapterTest {
 
     @Test
     fun testReportTotals_calculatesIncomeExpensesProfitLossAndEndingBalance() {
-        val report = MyTeam().apply {
-            sales = 500
-            otherIncome = 100
-            wages = 200
-            otherExpenses = 50
+        val report = createReport(
+            id = "r1",
+            sales = 500,
+            otherIncome = 100,
+            wages = 200,
+            otherExpenses = 50,
             beginningBalance = 1000
-        }
+        )
 
         val totals = reportTotals(report)
 
@@ -115,13 +145,14 @@ class EnterprisesReportsAdapterTest {
 
     @Test
     fun testReportTotals_withNegativeBeginningBalance_calculatesEndingBalanceCorrectly() {
-        val report = MyTeam().apply {
-            sales = 200
-            otherIncome = 50
-            wages = 100
-            otherExpenses = 50
+        val report = createReport(
+            id = "r1",
+            sales = 200,
+            otherIncome = 50,
+            wages = 100,
+            otherExpenses = 50,
             beginningBalance = -500
-        }
+        )
 
         val totals = reportTotals(report)
 
@@ -133,14 +164,14 @@ class EnterprisesReportsAdapterTest {
 
     @Test
     fun testOnBindViewHolder_bindsReportTotalsToViews() {
-        val report = MyTeam().apply {
-            _id = "report1"
-            sales = 300
-            otherIncome = 50
-            wages = 100
-            otherExpenses = 20
+        val report = createReport(
+            id = "report1",
+            sales = 300,
+            otherIncome = 50,
+            wages = 100,
+            otherExpenses = 20,
             beginningBalance = -100
-        }
+        )
 
         adapter.submitList(listOf(report)) {
             val binding = ReportListItemBinding.inflate(LayoutInflater.from(context))
@@ -157,10 +188,10 @@ class EnterprisesReportsAdapterTest {
 
     @Test
     fun testBindReportImage_missingFile_visibilityGone() {
-        val report = MyTeam().apply {
-            _id = "report1"
+        val report = createReport(
+            id = "report1",
             imageName = "missing.jpg"
-        }
+        )
 
         adapter.submitList(listOf(report)) {
             val binding = ReportListItemBinding.inflate(LayoutInflater.from(context))
@@ -183,10 +214,10 @@ class EnterprisesReportsAdapterTest {
             val imageFile = java.io.File(teamAttachmentsDir, "report.jpg")
             imageFile.createNewFile()
 
-            val report = MyTeam().apply {
-                _id = "report1"
+            val report = createReport(
+                id = "report1",
                 imageName = "report.jpg"
-            }
+            )
 
             adapter.submitList(listOf(report)) {
                 val binding = ReportListItemBinding.inflate(LayoutInflater.from(context))
@@ -226,10 +257,10 @@ class EnterprisesReportsAdapterTest {
             val teamAttachmentsDir = java.io.File(tempDir, "team_attachments/report1").apply { mkdirs() }
             val imageFile = java.io.File(teamAttachmentsDir, "report.jpg")
 
-            val report = MyTeam().apply {
-                _id = "report1"
+            val report = createReport(
+                id = "report1",
                 imageName = "report.jpg"
-            }
+            )
 
             adapter.submitList(listOf(report)) {
                 val binding = ReportListItemBinding.inflate(LayoutInflater.from(context))
@@ -256,6 +287,28 @@ class EnterprisesReportsAdapterTest {
         } finally {
             io.mockk.unmockkObject(org.ole.planet.myplanet.utils.FileUtils)
             tempDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun testOnBindViewHolder_hoistedReportTitleResolvedOnceAcrossMultipleBinds() {
+        val spyContext = spyk(context)
+        val spyAdapter = EnterprisesReportsAdapter(spyContext, "Test Team", {}, {}, timeProvider)
+
+        val report1 = createReport("report1")
+        val report2 = createReport("report2")
+        val list = listOf(report1, report2)
+
+        spyAdapter.submitList(list) {
+            val binding1 = ReportListItemBinding.inflate(LayoutInflater.from(spyContext))
+            val viewHolder1 = EnterprisesReportsAdapter.ReportsViewHolder(binding1)
+            val binding2 = ReportListItemBinding.inflate(LayoutInflater.from(spyContext))
+            val viewHolder2 = EnterprisesReportsAdapter.ReportsViewHolder(binding2)
+
+            spyAdapter.onBindViewHolder(viewHolder1, 0)
+            spyAdapter.onBindViewHolder(viewHolder2, 1)
+
+            verify(exactly = 1) { spyContext.getString(R.string.team_financial_report, "Test Team") }
         }
     }
 }

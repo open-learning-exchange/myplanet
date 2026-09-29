@@ -33,17 +33,15 @@ class UserSessionManager @Inject constructor(
         withContext(dispatcherProvider.io) {
             SecurePrefs.saveCredentials(context, sharedPrefManager.rawPreferences, user?.name, password)
         }
-        sharedPrefManager.setUserId(user?.id ?: "")
-        sharedPrefManager.setUserName(user?.name ?: "")
-        sharedPrefManager.rawPreferences.edit().apply {
-            remove("password")
-            putString("firstName", user?.firstName)
-            putString("lastName", user?.lastName)
-            putString("middleName", user?.middleName)
-            user?.userAdmin?.let { putBoolean("isUserAdmin", it) }
-            putLong("lastLogin", timeProvider.now())
-            apply()
-        }
+        sharedPrefManager.saveUserInfo(
+            userId = user?.id ?: "",
+            userName = user?.name ?: "",
+            firstName = user?.firstName,
+            lastName = user?.lastName,
+            middleName = user?.middleName,
+            isUserAdmin = user?.userAdmin,
+            lastLogin = timeProvider.now()
+        )
     }
 
     fun onLogin() {

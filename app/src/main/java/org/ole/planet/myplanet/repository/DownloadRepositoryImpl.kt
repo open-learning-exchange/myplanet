@@ -23,15 +23,18 @@ class DownloadRepositoryImpl @Inject constructor(
         private val URL_REGEX = Regex("url=([^}]*)")
     }
 
-    override suspend fun downloadFileResponse(url: String, authHeader: String): DownloadResult = withContext(dispatcherProvider.io) {
+    override suspend fun downloadFileResponse(url: String, authHeader: String, resumeOffset: Long, ifRange: String?): DownloadResult = withContext(dispatcherProvider.io) {
         try {
-            val response = apiInterface.downloadFile(authHeader, url)
+            val rangeHeader = if (resumeOffset > 0) "bytes=$resumeOffset-" else null
+            val ifRangeHeader = if (resumeOffset > 0) ifRange else null
+            val response = apiInterface.downloadFile(authHeader, url, rangeHeader, ifRangeHeader)
             if (response.isSuccessful) {
                 val responseBody = response.body()
                 if (responseBody == null) {
                     return@withContext DownloadResult.Error("Empty response body")
                 } else {
-                    return@withContext DownloadResult.Success(responseBody)
+                    val validator = response.headers()["ETag"] ?: response.headers()["Last-Modified"]
+                    return@withContext DownloadResult.Success(responseBody, response.code(), validator)
                 }
             } else {
                 val errorMessage = when (response.code()) {
@@ -39,6 +42,7 @@ class DownloadRepositoryImpl @Inject constructor(
                     403 -> "Forbidden - Access denied"
                     404 -> "File not found"
                     408 -> "Request timeout"
+                    416 -> "Requested range not satisfiable"
                     500 -> "Server error"
                     502 -> "Bad gateway"
                     503 -> "Service unavailable"

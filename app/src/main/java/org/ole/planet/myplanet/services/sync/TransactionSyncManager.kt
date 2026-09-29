@@ -20,16 +20,19 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatSyncWriter
-import org.ole.planet.myplanet.repository.CommunitySyncWriter
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.EventsSyncWriter
 import org.ole.planet.myplanet.repository.FeedbackSyncWriter
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
@@ -46,13 +49,16 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
-import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
-import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.GsonUtils.getJsonArray
+import org.ole.planet.myplanet.utils.GsonUtils.getJsonObject
+import org.ole.planet.myplanet.utils.GsonUtils.getString
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @Singleton
 class TransactionSyncManager @Inject constructor(
@@ -71,7 +77,7 @@ class TransactionSyncManager @Inject constructor(
     private val ratingsRepository: RatingsRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val coursesRepository: CoursesRepository,
-    private val communityRepository: CommunitySyncWriter,
+    private val eventsSyncWriter: EventsSyncWriter,
     private val healthRepository: HealthRepository,
     private val progressRepository: ProgressRepository,
     private val surveysRepository: SurveysRepository,
@@ -84,13 +90,17 @@ class TransactionSyncManager @Inject constructor(
     // same inserts that take ~1ms/doc uncontended balloon to >100ms/doc under contention. This
     // mutex serializes only the DB-write portion of each batch; network fetches still overlap.
     private val dbWriteMutex = Mutex()
+
+    companion object {
+        private const val MAX_CONCURRENT_ATTACHMENT_DOWNLOADS = 6
+    }
     
     private val tableSyncHandlers: Map<String, suspend (JsonArray) -> Unit> = mapOf(
         "news" to { arr -> voicesRepository.insertNewsList(extractDocs(arr)) },
         "feedback" to { arr -> feedbackRepository.insertFeedbackList(extractDocs(arr)) },
         "chat_history" to { arr -> chatRepository.insertChatHistoryFromSync(arr.map { it.asJsonObject }) },
         "tablet_users" to { arr -> userSyncRepository.insertUsersFromSync(arr.map { it.asJsonObject }) },
-        "meetups" to { arr -> communityRepository.insertMeetupsFromSync(extractDocs(arr)) },
+        "meetups" to { arr -> eventsSyncWriter.insertMeetupsFromSync(extractDocs(arr)) },
         "login_activities" to { arr -> activitiesRepository.insertLoginActivitiesFromSync(extractDocs(arr)) },
         "courses_progress" to { arr -> progressRepository.insertCourseProgressFromSync(extractDocs(arr)) },
         "ratings" to { arr -> ratingsRepository.insertRatingsFromSync(extractDocs(arr)) },
@@ -156,7 +166,7 @@ class TransactionSyncManager @Inject constructor(
             if (ob != null && ob.rows?.isNotEmpty() == true) {
                 val r = ob.rows?.firstOrNull()
                 r?.id?.let { id ->
-                    val jsonDoc = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/$table/$id").body()
+                    val jsonDoc = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/$table/$id").body()?.toGson()
                     val key = getString("key", jsonDoc)
                     val iv = getString("iv", jsonDoc)
 
@@ -226,14 +236,14 @@ class TransactionSyncManager @Inject constructor(
                     authHeader,
                     "application/json",
                     "$url/$table/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",
-                    JsonObject() // Empty body for GET-style query
+                    JsonObject().toKotlinx().jsonObject // Empty body for GET-style query
                 )
                 val batchApiDuration = SystemClock.elapsedRealtime() - batchApiStartTime
                 if (response.body() == null || !response.isSuccessful) {
                     Log.d("SyncPerf", "  ✗ Failed $table batch $batchNumber: HTTP ${response.code()}")
                     break
                 }
-                val arr = getJsonArray("rows", response.body())
+                val arr = getJsonArray("rows", response.body()?.toGson())
                 if (arr.isEmpty()) {
                     syncCompletedFully = true
                     break
@@ -327,6 +337,7 @@ class TransactionSyncManager @Inject constructor(
 
     private suspend fun downloadCvAttachmentsFromBatch(arr: JsonArray) = coroutineScope {
         val inProgress = mutableSetOf<String>()
+        val semaphore = Semaphore(MAX_CONCURRENT_ATTACHMENT_DOWNLOADS)
         for (j in arr) {
             val jsonDoc = getJsonObject("doc", j.asJsonObject)
             val docId = getString("_id", jsonDoc)
@@ -338,13 +349,14 @@ class TransactionSyncManager @Inject constructor(
                     FileUtils.getOlePath(context) + "cv/$resumeFileName"
                 )
                 if (!destFile.exists() && inProgress.add(resumeFileName)) {
-                    launch { downloadCvAttachment(docId, destFile) }
+                    launch { semaphore.withPermit { downloadCvAttachment(docId, destFile) } }
                 }
             }
         }
     }
 
     private suspend fun downloadTeamAttachmentsFromBatch(arr: JsonArray) = coroutineScope {
+        val semaphore = Semaphore(MAX_CONCURRENT_ATTACHMENT_DOWNLOADS)
         for (j in arr) {
             val jsonDoc = getJsonObject("doc", j.asJsonObject)
             val docId = getString("_id", jsonDoc)
@@ -354,12 +366,13 @@ class TransactionSyncManager @Inject constructor(
             val destFile = MyTeam
                 .getAttachmentFile(context, docId, attachmentName) ?: continue
             if (!destFile.exists()) {
-                launch { downloadTeamAttachment(docId, attachmentName, destFile) }
+                launch { semaphore.withPermit { downloadTeamAttachment(docId, attachmentName, destFile) } }
             }
         }
     }
 
     private suspend fun downloadCourseCoversFromBatch(arr: JsonArray) = coroutineScope {
+        val semaphore = Semaphore(MAX_CONCURRENT_ATTACHMENT_DOWNLOADS)
         for (j in arr) {
             val jsonDoc = getJsonObject("doc", j.asJsonObject)
             val docId = getString("_id", jsonDoc)
@@ -370,7 +383,7 @@ class TransactionSyncManager @Inject constructor(
                 val destFile = MyCourse
                     .getCoverImageFile(context, docId, coverFileName) ?: continue
                 if (!destFile.exists()) {
-                    launch { downloadCourseCover(docId, coverFileName, destFile) }
+                    launch { semaphore.withPermit { downloadCourseCover(docId, coverFileName, destFile) } }
                 }
             }
         }
@@ -446,10 +459,10 @@ class TransactionSyncManager @Inject constructor(
                         UrlUtils.header,
                         "application/json",
                         "${UrlUtils.getUrl()}/notifications/${notification.id}",
-                        body
+                        body.toKotlinx().jsonObject
                     )
                     if (response.isSuccessful) {
-                        val newRev = response.body()?.get("rev")?.asString
+                        val newRev = JsonUtils.getString("rev", response.body()).takeIf { it.isNotEmpty() }
                         Pair(notification.id, newRev)
                     } else null
                 } catch (e: Exception) {

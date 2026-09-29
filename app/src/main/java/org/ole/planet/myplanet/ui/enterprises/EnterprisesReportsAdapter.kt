@@ -9,8 +9,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
+import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.FileExistenceCache
 import org.ole.planet.myplanet.utils.ImageViewerUtils
 import org.ole.planet.myplanet.utils.SystemTimeProvider
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -19,20 +21,20 @@ import org.ole.planet.myplanet.utils.TimeUtils
 class EnterprisesReportsAdapter(
     private val context: Context,
     private val teamName: String?,
-    private val onEdit: (MyTeam) -> Unit,
-    private val onDelete: (MyTeam) -> Unit,
+    private val onEdit: (FinanceReport) -> Unit,
+    private val onDelete: (FinanceReport) -> Unit,
     private val timeProvider: TimeProvider = SystemTimeProvider(),
-) : ListAdapter<MyTeam, EnterprisesReportsAdapter.ReportsViewHolder>(diffCallback) {
+) : ListAdapter<FinanceReport, EnterprisesReportsAdapter.ReportsViewHolder>(diffCallback) {
     private var nonTeamMember = false
-    private val attachmentExistsCache = HashMap<String, Pair<Boolean, Long>>()
-    private val cacheTtlMs = 5000L
+    private val attachmentPresenceCache = FileExistenceCache()
+    private val reportTitle: String by lazy { context.getString(R.string.team_financial_report, teamName) }
 
     override fun onCurrentListChanged(
-        previousList: MutableList<MyTeam>,
-        currentList: MutableList<MyTeam>
+        previousList: MutableList<FinanceReport>,
+        currentList: MutableList<FinanceReport>
     ) {
         super.onCurrentListChanged(previousList, currentList)
-        attachmentExistsCache.clear()
+        attachmentPresenceCache.clear()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReportsViewHolder {
@@ -62,7 +64,7 @@ class EnterprisesReportsAdapter(
         val binding = holder.binding
         setNonTeamMemberVisibility(binding)
         val report = getItem(position)
-        binding.tvReportTitle.text = context.getString(R.string.team_financial_report, teamName)
+        binding.tvReportTitle.text = reportTitle
         report?.let {
             val totals = reportTotals(it)
             with(binding) {
@@ -105,21 +107,9 @@ class EnterprisesReportsAdapter(
         holder.binding.delete.setOnClickListener(null)
     }
 
-    private fun bindReportImage(binding: ReportListItemBinding, report: MyTeam) {
+    private fun bindReportImage(binding: ReportListItemBinding, report: FinanceReport) {
         val imageFile = MyTeam.getAttachmentFile(context, report._id, report.imageName)
-        val now = timeProvider.now()
-        val exists = if (imageFile != null) {
-            val cached = attachmentExistsCache[imageFile.absolutePath]
-            if (cached != null && now - cached.second < cacheTtlMs) {
-                cached.first
-            } else {
-                val freshExists = imageFile.exists()
-                attachmentExistsCache[imageFile.absolutePath] = Pair(freshExists, now)
-                freshExists
-            }
-        } else {
-            false
-        }
+        val exists = attachmentPresenceCache.exists(imageFile, timeProvider.now())
 
         if (imageFile != null && exists) {
             binding.reportImage.visibility = View.VISIBLE
@@ -157,7 +147,7 @@ class EnterprisesReportsAdapter(
 
     companion object {
         const val PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED = "PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED"
-        val diffCallback = DiffUtils.itemCallback<MyTeam>(
+        val diffCallback = DiffUtils.itemCallback<FinanceReport>(
             areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
             areContentsTheSame = { oldItem, newItem ->
                 oldItem.startDate == newItem.startDate &&
@@ -183,7 +173,7 @@ internal data class ReportTotals(
     val endingBalance: Int
 )
 
-internal fun reportTotals(report: MyTeam): ReportTotals {
+internal fun reportTotals(report: FinanceReport): ReportTotals {
     val totalIncome = report.sales + report.otherIncome
     val totalExpenses = report.wages + report.otherExpenses
     val profitLoss = totalIncome - totalExpenses

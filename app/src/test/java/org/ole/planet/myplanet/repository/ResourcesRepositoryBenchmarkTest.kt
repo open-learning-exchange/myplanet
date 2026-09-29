@@ -51,7 +51,11 @@ class ResourcesRepositoryBenchmarkTest {
             teamsRepositoryLazy,
             userSessionManager,
             configurationsRepository,
-            dispatcherProvider
+            dispatcherProvider,
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true)
         )
     }
 

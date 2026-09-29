@@ -18,11 +18,11 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.AppVersionProvider
 import org.ole.planet.myplanet.utils.CrashLogStore
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -30,7 +30,10 @@ class DiagnosticsRepositoryImplTest {
     private lateinit var apkLogDao: ApkLogDao
     private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var userRepository: UserRepository
+    private lateinit var appVersionProvider: AppVersionProvider
     private lateinit var repository: DiagnosticsRepositoryImpl
+
+    private val testVersionName = "1.2.3-test"
 
     @After
     fun tearDown() {
@@ -42,11 +45,13 @@ class DiagnosticsRepositoryImplTest {
         apkLogDao = mockk(relaxed = true)
         sharedPrefManager = mockk()
         userRepository = mockk()
+        appVersionProvider = mockk()
 
         every { sharedPrefManager.getParentCode() } returns "parent-123"
         every { sharedPrefManager.getPlanetCode() } returns "planet-456"
+        every { appVersionProvider.versionName } returns testVersionName
 
-        repository = DiagnosticsRepositoryImpl(apkLogDao, userRepository, sharedPrefManager)
+        repository = DiagnosticsRepositoryImpl(apkLogDao, userRepository, sharedPrefManager, appVersionProvider)
     }
 
     @Test
@@ -67,7 +72,7 @@ class DiagnosticsRepositoryImplTest {
         assertEquals("", log.page)
         assertEquals("parent-123", log.parentCode)
         assertEquals("planet-456", log.createdOn)
-        assertEquals(BuildConfig.VERSION_NAME, log.version)
+        assertEquals(testVersionName, log.version)
         assertEquals("user-1", log.userId)
         assertNotNull(log.id)
         assertTrue(log.id.isNotEmpty())
@@ -129,7 +134,7 @@ class DiagnosticsRepositoryImplTest {
         assertEquals("", first.page)
         assertEquals("parent-123", first.parentCode)
         assertEquals("planet-456", first.createdOn)
-        assertEquals(BuildConfig.VERSION_NAME, first.version)
+        assertEquals(testVersionName, first.version)
         assertEquals("user-1", first.userId)
         assertNotNull(first.id)
         assertTrue(first.id.isNotEmpty())
@@ -236,5 +241,31 @@ class DiagnosticsRepositoryImplTest {
         }
         verify(exactly = 0) { sharedPrefManager.getParentCode() }
         verify(exactly = 0) { sharedPrefManager.getPlanetCode() }
+    }
+
+    @Test
+    fun `markApkLogsUploaded returns empty set when updates is empty`() = runTest {
+        val result = repository.markApkLogsUploaded(emptyList())
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { apkLogDao.markUploadedBatch(any()) }
+    }
+
+    @Test
+    fun `markApkLogsUploaded delegates batch updates to apkLogDao`() = runTest {
+        val updates = listOf(
+            ApkLogUpload("log-1", "rev-1"),
+            ApkLogUpload("log-2", "rev-2")
+        )
+        val expectedDaoUpdates = listOf(
+            ApkLogDao.UploadUpdate("log-1", "rev-1"),
+            ApkLogDao.UploadUpdate("log-2", "rev-2")
+        )
+        coEvery { apkLogDao.markUploadedBatch(expectedDaoUpdates) } returns setOf("log-2")
+
+        val unapplied = repository.markApkLogsUploaded(updates)
+
+        assertEquals(setOf("log-2"), unapplied)
+        coVerify(exactly = 1) { apkLogDao.markUploadedBatch(expectedDaoUpdates) }
     }
 }

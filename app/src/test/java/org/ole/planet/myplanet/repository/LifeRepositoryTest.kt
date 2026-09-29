@@ -1,9 +1,7 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.Gson
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -28,13 +26,10 @@ class LifeRepositoryTest {
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
         myLifeDao = mockk(relaxed = true)
-        val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
-        every { sharedPrefManager.rawPreferences } returns mockk(relaxed = true)
+        val lifeCache: LifeCache = mockk(relaxed = true)
         repository = LifeRepositoryImpl(
             myLifeDao,
-            sharedPrefManager,
-            Gson()
-
+            lifeCache
         )
     }
 
@@ -42,7 +37,7 @@ class LifeRepositoryTest {
     fun updateVisibility_delegatesToDao() = runTest {
         val myLifeId = "missing123"
 
-        repository.updateVisibility(true, myLifeId)
+        repository.updateVisibility(true, myLifeId, "user123")
 
         coVerify(exactly = 1) { myLifeDao.updateVisibility(myLifeId, true) }
     }
@@ -57,7 +52,7 @@ class LifeRepositoryTest {
         val managedItem2 = MyLife().apply { _id = "2"; weight = 99 }
         coEvery { myLifeDao.getByIds(any()) } returns listOf(managedItem1, managedItem2)
 
-        repository.updateMyLifeListOrder(listOf(listItem))
+        repository.updateMyLifeListOrder(listOf(listItem), "user123")
 
         // Weights unchanged because neither managed id appears in the reorder list.
         assertEquals(99, managedItem1.weight)

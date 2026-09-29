@@ -53,7 +53,6 @@ class InlineResourceAdapter(
 ) {
 
     private var externalFilesDir: File? = null
-    private val textCache = mutableMapOf<String, String>()
     private val htmlCoverCache = mutableMapOf<String, File?>()
 
     private var adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
@@ -82,16 +81,11 @@ class InlineResourceAdapter(
 
     override fun onCurrentListChanged(previousList: MutableList<MyLibrary>, currentList: MutableList<MyLibrary>) {
         super.onCurrentListChanged(previousList, currentList)
-        val dir = externalFilesDir ?: return
         val currentMap = currentList.associateBy { it.id }
 
         previousList.forEach { prev ->
             val current = currentMap[prev.id]
             if (current == null || current.resourceLocalAddress != prev.resourceLocalAddress) {
-                val address = prev.resourceLocalAddress ?: return@forEach
-                val file = FileUtils.getLibraryFile(dir, prev.id, address)
-                val prefix = file.absolutePath
-                textCache.keys.removeAll { it.startsWith(prefix) }
                 htmlCoverCache.remove(prev.id)
             }
         }
@@ -108,7 +102,6 @@ class InlineResourceAdapter(
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
         adapterScope.cancel()
-        textCache.clear()
         htmlCoverCache.clear()
     }
 
@@ -183,27 +176,34 @@ class InlineResourceAdapter(
                 binding.ivStatus.visibility = View.VISIBLE
                 binding.ivStatus.setImageResource(R.drawable.ic_eye)
 
+                val dir = externalFilesDir ?: FileUtils.getExternalFilesDir(context)
                 val mimeType = Utilities.getMimeType(resource.resourceLocalAddress)
+
+                if (mimeType?.contains("html") == true) {
+                    showHtmlPreview(binding, context, resource.id, File(dir, "ole/${resource.id}"))
+                    return@launch
+                }
+
                 val resourceFile = File(
-                    externalFilesDir,
+                    dir,
                     "ole/${resource.id}/${resource.resourceLocalAddress}"
                 )
 
+                val exists = withContext(dispatcherProvider.io) { resourceFile.exists() }
+
                 when {
-                    mimeType?.startsWith("image") == true -> showImagePreview(binding, context, resourceFile)
-                    mimeType?.startsWith("video") == true -> showVideoPreview(binding, context, resourceFile)
-                    mimeType?.contains("pdf") == true -> showPdfPreview(holder, resourceFile)
-                    mimeType?.startsWith("audio") == true -> showAudioPreview(holder, resourceFile)
-                    mimeType?.contains("html") == true -> showHtmlPreview(binding, context, resource.id, File(externalFilesDir, "ole/${resource.id}"))
-                    mimeType?.contains("csv") == true || resource.resourceLocalAddress?.endsWith(".csv") == true -> showCsvPreview(holder, resourceFile)
-                    mimeType?.startsWith("text") == true || resource.resourceLocalAddress?.endsWith(".txt") == true || resource.resourceLocalAddress?.endsWith(".md") == true -> showTextPreview(holder, resourceFile)
+                    mimeType?.startsWith("image") == true -> showImagePreview(binding, context, resourceFile, exists)
+                    mimeType?.startsWith("video") == true -> showVideoPreview(binding, context, resourceFile, exists)
+                    mimeType?.contains("pdf") == true -> showPdfPreview(holder, resourceFile, exists)
+                    mimeType?.startsWith("audio") == true -> showAudioPreview(holder, resourceFile, exists)
+                    mimeType?.contains("csv") == true || resource.resourceLocalAddress?.endsWith(".csv") == true -> showCsvPreview(holder, resourceFile, exists)
+                    mimeType?.startsWith("text") == true || resource.resourceLocalAddress?.endsWith(".txt") == true || resource.resourceLocalAddress?.endsWith(".md") == true -> showTextPreview(holder, resourceFile, exists)
                 }
             }
         })
     }
 
-    private suspend fun showImagePreview(binding: ItemInlineResourceBinding, context: Context, file: File) {
-        val exists = withContext(dispatcherProvider.io) { file.exists() }
+    private suspend fun showImagePreview(binding: ItemInlineResourceBinding, context: Context, file: File, exists: Boolean) {
         if (exists) {
             val (widthPx, heightPx) = getPreviewDimensions(context)
             binding.ivResourcePreview.visibility = View.VISIBLE
@@ -218,9 +218,8 @@ class InlineResourceAdapter(
         }
     }
 
-    private suspend fun showVideoPreview(binding: ItemInlineResourceBinding, context: Context, file: File) {
+    private suspend fun showVideoPreview(binding: ItemInlineResourceBinding, context: Context, file: File, exists: Boolean) {
         binding.videoThumbnailContainer.visibility = View.VISIBLE
-        val exists = withContext(dispatcherProvider.io) { file.exists() }
         if (exists) {
             val (widthPx, heightPx) = getPreviewDimensions(context)
             Glide.with(context)
@@ -232,8 +231,7 @@ class InlineResourceAdapter(
         }
     }
 
-    private suspend fun showPdfPreview(holder: ViewHolder, file: File) {
-        val exists = withContext(dispatcherProvider.io) { file.exists() }
+    private suspend fun showPdfPreview(holder: ViewHolder, file: File, exists: Boolean) {
         if (!exists) return
         val context = holder.itemView.context
         val targetWidthPx = (PDF_PREVIEW_WIDTH_DP * context.resources.displayMetrics.density).toInt()
@@ -269,55 +267,29 @@ class InlineResourceAdapter(
         }
     }
 
-    private suspend fun showAudioPreview(holder: ViewHolder, file: File) {
+    private suspend fun showAudioPreview(holder: ViewHolder, file: File, exists: Boolean) {
         holder.binding.audioPreviewContainer.visibility = View.VISIBLE
-        val cacheKey = getFileCacheKeyIfExist(file) ?: return
-        val cachedDuration = textCache[cacheKey]
-        val durationText = if (cachedDuration != null) {
-            cachedDuration
-        } else {
-            previewLoader.getAudioPreview(file).also { textCache[cacheKey] = it }
-        }
-        holder.binding.tvAudioDuration.text = durationText
+        if (!exists) return
+        holder.binding.tvAudioDuration.text = previewLoader.getAudioPreview(file)
     }
 
-    private suspend fun showCsvPreview(holder: ViewHolder, file: File) {
-        val cacheKey = getFileCacheKeyIfExist(file) ?: return
-        val cachedPreview = textCache[cacheKey]
-        val preview = if (cachedPreview != null) {
-            cachedPreview
-        } else {
-            previewLoader.getCsvPreview(file)?.also { textCache[cacheKey] = it }
-        }
+    private suspend fun showCsvPreview(holder: ViewHolder, file: File, exists: Boolean) {
+        if (!exists) return
+        val preview = previewLoader.getCsvPreview(file)
         if (!preview.isNullOrEmpty()) {
             holder.binding.tvTextPreview.visibility = View.VISIBLE
             holder.binding.tvTextPreview.text = preview
         }
     }
 
-    private suspend fun showTextPreview(holder: ViewHolder, file: File) {
-        val cacheKey = getFileCacheKeyIfExist(file) ?: return
-        val cachedText = textCache[cacheKey]
-        val text = if (cachedText != null) {
-            cachedText
-        } else {
-            previewLoader.getTextPreview(file)?.also { textCache[cacheKey] = it }
-        }
+    private suspend fun showTextPreview(holder: ViewHolder, file: File, exists: Boolean) {
+        if (!exists) return
+        val text = previewLoader.getTextPreview(file)
         if (!text.isNullOrEmpty()) {
             holder.binding.tvTextPreview.visibility = View.VISIBLE
             holder.binding.tvTextPreview.text = text
         }
     }
-
-    private suspend fun getFileCacheKeyIfExist(file: File): String? = withContext(dispatcherProvider.io) {
-        if (file.exists()) {
-            getCacheKey(file)
-        } else {
-            null
-        }
-    }
-
-    private fun getCacheKey(file: File): String = "${file.absolutePath}_${file.lastModified()}_${file.length()}"
 
     private fun getPreviewDimensions(context: Context): Pair<Int, Int> {
         val widthPx = context.resources.displayMetrics.widthPixels

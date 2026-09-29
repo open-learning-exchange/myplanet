@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
 data class UploadDocParams(
@@ -69,7 +69,7 @@ open class FileUploader(
 
     private fun onDataReceived(`object`: JsonObject?, listener: OnSuccessListener) {
         if (`object` != null) {
-            if (JsonUtils.getBoolean("ok", `object`)) {
+            if (GsonUtils.getBoolean("ok", `object`)) {
                 listener.onSuccess("Uploaded successfully")
                 return
             }

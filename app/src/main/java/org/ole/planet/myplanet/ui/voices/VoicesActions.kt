@@ -15,8 +15,9 @@ import com.bumptech.glide.Glide
 import com.google.android.material.textfield.TextInputLayout
 import com.google.gson.JsonObject
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
@@ -26,11 +27,13 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.VoicesEditActions
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 object VoicesActions {
-    private val dateFormatter = ThreadLocal.withInitial { SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()) }
+    private val dateFormatter: DateTimeFormatter =
+        DateTimeFormatter.ofPattern("MMMM dd, yyyy hh:mm a", Locale.getDefault())
+            .withZone(ZoneId.systemDefault())
 
     data class EditDialogComponents(
         val binding: AlertInputBinding,
@@ -60,8 +63,8 @@ object VoicesActions {
         if (!imageUrls.isNullOrEmpty()) {
             imageUrls.forEach { imageUrl ->
                 try {
-                    val imgObject = JsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
-                    val path = JsonUtils.getString("imageUrl", imgObject)
+                    val imgObject = GsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
+                    val path = GsonUtils.getString("imageUrl", imgObject)
                     if (path.isNotEmpty()) {
                         addImageWithRemoveIcon(context, path, imageLayout, imagesToRemove)
                     }
@@ -222,7 +225,7 @@ object VoicesActions {
             userModel.language.toString(),
             userModel.phoneNumber.toString(),
             visitStats.offlineVisitCount.toString(),
-            (visitStats.lastVisit?.let { dateFormatter.get()?.format(Date(it)) } ?: "No logout record found"),
+            (visitStats.lastVisit?.let { dateFormatter.format(Instant.ofEpochMilli(it)) } ?: "No logout record found"),
             "${userModel.firstName} ${userModel.lastName}",
             userModel.level.toString(),
             userModel.userImage

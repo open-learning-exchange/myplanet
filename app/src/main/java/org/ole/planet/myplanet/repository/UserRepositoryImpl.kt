@@ -16,6 +16,7 @@ import java.util.Date
 import java.util.UUID
 import java.util.regex.Pattern
 import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -29,7 +30,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import org.ole.planet.myplanet.MainApplication
+import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.AchievementDao
@@ -50,17 +51,21 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.RetryUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
+@Singleton
 class UserRepositoryImpl @Inject constructor(
     @param:AppPreferences private val settings: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
@@ -79,7 +84,8 @@ class UserRepositoryImpl @Inject constructor(
     private val removedLogDao: RemovedLogDao,
     private val achievementDao: AchievementDao,
     private val userDao: UserDao,
-    private val realtimeSyncManager: RealtimeSyncManager
+    private val realtimeSyncManager: RealtimeSyncManager,
+    private val deviceNameProvider: DeviceNameProvider
 ) : UserRepository, UserSyncRepository {
     override val achievementUpdates: Flow<Unit> = realtimeSyncManager.dataUpdateFlow
         .filter { it.table == "achievements" && it.shouldRefreshUI }
@@ -145,11 +151,13 @@ class UserRepositoryImpl @Inject constructor(
             ?.takeIf { !it._id.isNullOrBlank() && !it.id.startsWith("guest") }
     }
 
-    private fun buildGuestUserJson(username: String): JsonObject {
+    private suspend fun buildGuestUserJson(username: String): JsonObject {
         return JsonObject().apply {
             addProperty("_id", "guest_$username")
             addProperty("name", username)
             addProperty("firstName", username)
+            addProperty("planetCode", getConnectedCommunityCode())
+            addProperty("parentCode", sharedPrefManager.getParentCode())
             add("roles", JsonArray().apply { add("guest") })
         }
     }
@@ -166,8 +174,16 @@ class UserRepositoryImpl @Inject constructor(
         return sortUsers(getAllUsers(), fieldName, descending)
     }
 
+    private fun searchPattern(query: String): String {
+        val escaped = query
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_")
+        return "%$escaped%"
+    }
+
     override suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<UserEntity> {
-        val users = userDao.search(query)
+        val users = userDao.search(searchPattern(query))
         return sortUsers(users, sortField, descending)
     }
 
@@ -182,93 +198,93 @@ class UserRepositoryImpl @Inject constructor(
     private fun applyJsonToUser(jsonDoc: JsonObject?, user: UserEntity, settings: SharedPreferences) {
         if (jsonDoc == null) return
 
-        val planetCodes = JsonUtils.getString("planetCode", jsonDoc)
-        val rolesArray = JsonUtils.getJsonArray("roles", jsonDoc)
-        val newId = JsonUtils.getString("_id", jsonDoc)
+        val planetCodes = GsonUtils.getString("planetCode", jsonDoc)
+        val rolesArray = GsonUtils.getJsonArray("roles", jsonDoc)
+        val newId = GsonUtils.getString("_id", jsonDoc)
 
         user.apply {
             if (id.isNullOrBlank()) {
                 id = if (newId.isEmpty()) { UUID.randomUUID().toString() } else { newId }
             }
-            _rev = JsonUtils.getString("_rev", jsonDoc)
+            _rev = GsonUtils.getString("_rev", jsonDoc)
             _id = newId
-            name = JsonUtils.getString("name", jsonDoc)
+            name = GsonUtils.getString("name", jsonDoc)
             setRoles(mutableListOf<String>().apply {
                 for (i in 0 until rolesArray.size()) {
-                    add(JsonUtils.getString(rolesArray, i))
+                    add(GsonUtils.getString(rolesArray, i))
                 }
             })
-            userAdmin = JsonUtils.getBoolean("isUserAdmin", jsonDoc)
-            val newJoinDate = JsonUtils.getLong("joinDate", jsonDoc)
+            userAdmin = GsonUtils.getBoolean("isUserAdmin", jsonDoc)
+            val newJoinDate = GsonUtils.getLong("joinDate", jsonDoc)
             if (newJoinDate != 0L || joinDate == 0L) {
                 joinDate = newJoinDate
             }
 
-            val newFirstName = JsonUtils.getString("firstName", jsonDoc)
+            val newFirstName = GsonUtils.getString("firstName", jsonDoc)
             if (newFirstName.isNotEmpty() || firstName.isNullOrEmpty()) {
                 firstName = newFirstName
             }
 
-            val newLastName = JsonUtils.getString("lastName", jsonDoc)
+            val newLastName = GsonUtils.getString("lastName", jsonDoc)
             if (newLastName.isNotEmpty() || lastName.isNullOrEmpty()) {
                 lastName = newLastName
             }
 
-            val newMiddleName = JsonUtils.getString("middleName", jsonDoc)
+            val newMiddleName = GsonUtils.getString("middleName", jsonDoc)
             if (newMiddleName.isNotEmpty() || middleName.isNullOrEmpty()) {
                 middleName = newMiddleName
             }
 
-            val newEmail = JsonUtils.getString("email", jsonDoc)
+            val newEmail = GsonUtils.getString("email", jsonDoc)
             if (newEmail.isNotEmpty() || email.isNullOrEmpty()) {
                 email = newEmail
             }
 
-            val newPhoneNumber = JsonUtils.getString("phoneNumber", jsonDoc)
+            val newPhoneNumber = GsonUtils.getString("phoneNumber", jsonDoc)
             if (newPhoneNumber.isNotEmpty() || phoneNumber.isNullOrEmpty()) {
                 phoneNumber = newPhoneNumber
             }
 
-            val newLevel = JsonUtils.getString("level", jsonDoc)
+            val newLevel = GsonUtils.getString("level", jsonDoc)
             if (newLevel.isNotEmpty() || level.isNullOrEmpty()) {
                 level = newLevel
             }
 
-            val newLanguage = JsonUtils.getString("language", jsonDoc)
+            val newLanguage = GsonUtils.getString("language", jsonDoc)
             if (newLanguage.isNotEmpty() || language.isNullOrEmpty()) {
                 language = newLanguage
             }
 
-            val newGender = JsonUtils.getString("gender", jsonDoc)
+            val newGender = GsonUtils.getString("gender", jsonDoc)
             if (newGender.isNotEmpty() || gender.isNullOrEmpty()) {
                 gender = newGender
             }
 
-            val newDob = JsonUtils.getString("birthDate", jsonDoc)
+            val newDob = GsonUtils.getString("birthDate", jsonDoc)
             if (newDob.isNotEmpty() || dob.isNullOrEmpty()) {
                 dob = newDob
             }
 
-            val newBirthPlace = JsonUtils.getString("birthPlace", jsonDoc)
+            val newBirthPlace = GsonUtils.getString("birthPlace", jsonDoc)
             if (newBirthPlace.isNotEmpty() || birthPlace.isNullOrEmpty()) {
                 birthPlace = newBirthPlace
             }
 
-            val newAge = JsonUtils.getString("age", jsonDoc)
+            val newAge = GsonUtils.getString("age", jsonDoc)
             if (newAge.isNotEmpty() || age.isNullOrEmpty()) {
                 age = newAge
             }
             planetCode = planetCodes
-            parentCode = JsonUtils.getString("parentCode", jsonDoc)
+            parentCode = GsonUtils.getString("parentCode", jsonDoc)
             if (_id?.isEmpty() == true) {
-                password = JsonUtils.getString("password", jsonDoc)
+                password = GsonUtils.getString("password", jsonDoc)
             }
-            password_scheme = JsonUtils.getString("password_scheme", jsonDoc)
-            iterations = JsonUtils.getString("iterations", jsonDoc)
-            derived_key = JsonUtils.getString("derived_key", jsonDoc)
-            salt = JsonUtils.getString("salt", jsonDoc)
+            password_scheme = GsonUtils.getString("password_scheme", jsonDoc)
+            iterations = GsonUtils.getString("iterations", jsonDoc)
+            derived_key = GsonUtils.getString("derived_key", jsonDoc)
+            salt = GsonUtils.getString("salt", jsonDoc)
             isShowTopbar = true
-            isArchived = JsonUtils.getBoolean("isArchived", jsonDoc)
+            isArchived = GsonUtils.getBoolean("isArchived", jsonDoc)
             addImageUrl(jsonDoc)
         }
 
@@ -294,8 +310,8 @@ class UserRepositoryImpl @Inject constructor(
     private suspend fun buildUserFromJson(jsonDoc: JsonObject?, users: List<UserEntity>? = null): UserEntity? {
         if (jsonDoc == null) return null
         return try {
-            val id = JsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()
-            val userName = JsonUtils.getString("name", jsonDoc)
+            val id = GsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()
+            val userName = GsonUtils.getString("name", jsonDoc)
             val existingUser = if (users != null) {
                 users.firstOrNull { it.id == id || it._id == id }
             } else {
@@ -370,7 +386,7 @@ class UserRepositoryImpl @Inject constructor(
             }
 
             if (response.isSuccessful && response.body() != null) {
-                val userDoc = response.body()
+                val userDoc = response.body()?.toGson()
                 val derivedKey = userDoc?.get("derived_key")?.asString
                 val salt = userDoc?.get("salt")?.asString
                 val passwordScheme = userDoc?.get("password_scheme")?.asString
@@ -456,36 +472,34 @@ class UserRepositoryImpl @Inject constructor(
         return upsertUser(user)
     }
 
-    override suspend fun updateProfileFields(userId: String?, payload: JsonObject) {
+    override suspend fun updateProfileFields(userId: String?, update: ProfileFieldsUpdate) {
         if (userId.isNullOrBlank()) {
             return
         }
 
         val model = getUserByAnyId(userId) ?: return
-        payload.entrySet().forEach { (key, value) ->
-            if (value != null && !value.isJsonNull && value.isJsonPrimitive) {
-                val strValue = value.asString
-                when (key) {
-                    "firstName" -> model.firstName = strValue
-                    "lastName" -> model.lastName = strValue
-                    "middleName" -> model.middleName = strValue
-                    "email" -> model.email = strValue
-                    "language" -> model.language = strValue
-                    "phoneNumber" -> model.phoneNumber = strValue
-                    "birthDate" -> model.dob = strValue
-                    "birthPlace" -> model.birthPlace = strValue
-                    "level" -> model.level = strValue
-                    "gender" -> model.gender = strValue
-                    "age" -> model.age = strValue
-                }
-            }
-        }
+        update.firstName?.let { model.firstName = it }
+        update.lastName?.let { model.lastName = it }
+        update.middleName?.let { model.middleName = it }
+        update.email?.let { model.email = it }
+        update.language?.let { model.language = it }
+        update.phoneNumber?.let { model.phoneNumber = it }
+        update.birthDate?.let { model.dob = it }
+        update.birthPlace?.let { model.birthPlace = it }
+        update.level?.let { model.level = it }
+        update.gender?.let { model.gender = it }
+        update.age?.let { model.age = it }
+
         model.isUpdated = true
         upsertUser(model)
     }
 
     override suspend fun getCurrentUserId(): String? {
         return sharedPrefManager.getUserId().takeIf { it.isNotBlank() }
+    }
+
+    override suspend fun getConnectedCommunityCode(): String {
+        return sharedPrefManager.getPlanetCode().ifBlank { sharedPrefManager.getCommunityName() }
     }
 
     override suspend fun getUserModel(): UserEntity? {
@@ -522,8 +536,8 @@ class UserRepositoryImpl @Inject constructor(
             addProperty("type", "user")
             addProperty("betaEnabled", false)
             addDocumentOrigin()
-            addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
-            addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
+            addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context))
+            addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
             val roles = JsonArray().apply { add("learner") }
             add("roles", roles)
         }
@@ -544,15 +558,16 @@ class UserRepositoryImpl @Inject constructor(
                     apiInterface.getJsonObject(header, userUrl)
                 }
 
-                if (existsResponse.isSuccessful && existsResponse.body()?.has("_id") == true) {
+                if (existsResponse.isSuccessful && existsResponse.body()?.toGson()?.has("_id") == true) {
                     Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
                 } else {
                     val createResponse = withContext(dispatcherProvider.io) {
-                        apiInterface.putDoc(null, "application/json", userUrl, obj)
+                        apiInterface.putDoc(null, "application/json", userUrl, obj.toKotlinx().jsonObject)
                     }
+                    val createBody = createResponse.body()?.toGson()
 
-                    if (createResponse.isSuccessful && createResponse.body()?.has("id") == true) {
-                        val id = createResponse.body()?.get("id")?.asString ?: ""
+                    if (createResponse.isSuccessful && createBody?.has("id") == true) {
+                        val id = createBody.get("id")?.asString ?: ""
 
                         appScope.launch {
                             uploadToShelf(obj)
@@ -588,7 +603,7 @@ class UserRepositoryImpl @Inject constructor(
     private suspend fun uploadToShelf(obj: JsonObject) {
         try {
             val url = UrlUtils.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString
-            apiInterface.putDoc(null, "application/json", url, JsonObject())
+            apiInterface.putDoc(null, "application/json", url, JsonObject().toKotlinx().jsonObject)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -605,7 +620,7 @@ class UserRepositoryImpl @Inject constructor(
                 ensureActive()
 
                 if (response.isSuccessful) {
-                    response.body()?.let { saveUser(it, null, null) }
+                    response.body()?.toGson()?.let { saveUser(it, null, null) }
                 } else {
                     null
                 }
@@ -632,7 +647,7 @@ class UserRepositoryImpl @Inject constructor(
         try {
             val response = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")
             if (response.body() != null) {
-                val jsonObject = response.body()
+                val jsonObject = response.body()?.toGson()
                 val members = jsonObject?.getAsJsonObject("members")
                 val rolesArray: JsonArray = if (members?.has("roles") == true) {
                     members.getAsJsonArray("roles")
@@ -642,7 +657,7 @@ class UserRepositoryImpl @Inject constructor(
                 rolesArray.add("health")
                 members?.add("roles", rolesArray)
                 jsonObject?.add("members", members)
-                apiInterface.putDoc(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", jsonObject)
+                apiInterface.putDoc(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", jsonObject?.toKotlinx()?.jsonObject)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -673,7 +688,7 @@ class UserRepositoryImpl @Inject constructor(
 
         withContext(dispatcherProvider.io) {
             try {
-                apiInterface.putDoc(header, "application/json", dbUrl, JsonObject())
+                apiInterface.putDoc(header, "application/json", dbUrl, JsonObject().toKotlinx().jsonObject)
             } catch (e: Exception) {
                 null
             }
@@ -685,7 +700,7 @@ class UserRepositoryImpl @Inject constructor(
                 delayMs = retryDelayMs,
                 shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
             ) {
-                apiInterface.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)
+                apiInterface.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob.toKotlinx().jsonObject)
             }
         }
 
@@ -772,11 +787,11 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun uploadNewUser(model: UserEntity, updateHealthFn: suspend (String, String) -> Unit) {
         try {
             val obj = model.serialize()
-            val createResponse = apiInterface.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)
+            val createResponse = apiInterface.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj.toKotlinx().jsonObject)
 
             if (createResponse.isSuccessful) {
-                val id = createResponse.body()?.get("id")?.asString
-                val rev = createResponse.body()?.get("rev")?.asString
+                val id = JsonUtils.getString("id", createResponse.body()).takeIf { it.isNotEmpty() }
+                val rev = JsonUtils.getString("rev", createResponse.body()).takeIf { it.isNotEmpty() }
                 model._id = id
                 model._rev = rev
 
@@ -795,19 +810,19 @@ class UserRepositoryImpl @Inject constructor(
             val latestDocResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
 
             if (latestDocResponse.isSuccessful) {
-                val latestRev = latestDocResponse.body()?.get("_rev")?.asString
+                val latestRev = JsonUtils.getString("_rev", latestDocResponse.body()).takeIf { it.isNotEmpty() }
                 val obj = model.serialize()
                 val objMap = obj.entrySet().associate { (key, value) -> key to value }
                 val mutableObj = mutableMapOf<String, Any>().apply { putAll(objMap) }
                 latestRev?.let { rev -> mutableObj["_rev"] = rev as Any }
 
-                val jsonElement = JsonUtils.gson.toJsonTree(mutableObj)
+                val jsonElement = GsonUtils.gson.toJsonTree(mutableObj)
                 val jsonObject = jsonElement.asJsonObject
 
-                val updateResponse = apiInterface.putDoc(header, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", jsonObject)
+                val updateResponse = apiInterface.putDoc(header, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", jsonObject.toKotlinx().jsonObject)
 
                 if (updateResponse.isSuccessful) {
-                    val updatedRev = updateResponse.body()?.get("rev")?.asString
+                    val updatedRev = JsonUtils.getString("rev", updateResponse.body()).takeIf { it.isNotEmpty() }
                     markUserRevUpdated(model.id ?: "", updatedRev)
                 }
             }
@@ -962,7 +977,7 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun getAchievementData(userId: String, planetCode: String): AchievementData {
         val achievement = achievementDao.getById("$userId@$planetCode") ?: return AchievementData()
         val resourceIds = achievement.achievements?.mapNotNull { json ->
-            JsonUtils.gson.fromJson(json, JsonObject::class.java)
+            GsonUtils.gson.fromJson(json, JsonObject::class.java)
                 ?.getAsJsonArray("resources")
                 ?.mapNotNull { it.asJsonObject?.get("_id")?.asString }
         }?.flatten()?.distinct()?.toTypedArray() ?: emptyArray()
@@ -1059,8 +1074,8 @@ class UserRepositoryImpl @Inject constructor(
         val documentList = ArrayList<JsonObject>(docs.size)
         for (j in docs) {
             var jsonDoc = j
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = GsonUtils.getJsonObject("doc", jsonDoc)
+            val id = GsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }
@@ -1069,9 +1084,9 @@ class UserRepositoryImpl @Inject constructor(
         val idsToFetch = mutableSetOf<String>()
         val namesToFetch = mutableSetOf<String>()
         for (jsonDoc in documentList) {
-            val id = JsonUtils.getString("_id", jsonDoc)
+            val id = GsonUtils.getString("_id", jsonDoc)
             if (id.isNotEmpty()) idsToFetch.add(id)
-            val userName = JsonUtils.getString("name", jsonDoc)
+            val userName = GsonUtils.getString("name", jsonDoc)
             if (userName.isNotEmpty()) namesToFetch.add(userName)
         }
 
@@ -1104,8 +1119,8 @@ class UserRepositoryImpl @Inject constructor(
 
         for (jsonDoc in documentList) {
             try {
-                val id = JsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()
-                val userName = JsonUtils.getString("name", jsonDoc)
+                val id = GsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()
+                val userName = GsonUtils.getString("name", jsonDoc)
 
                 val existingUser = usersById[id]
                 val guestUser = if (existingUser == null && id.startsWith("org.couchdb.user:") && userName.isNotEmpty()) {
@@ -1172,16 +1187,16 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun uploadShelfData(user: UserEntity) {
         try {
-            val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${user._id}").body()
+            val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${user._id}").body()?.toGson()
             val myLibs = resourcesRepositoryLazy.get().getMyLibIds(user.id ?: "")
             val myCourseIds = coursesRepositoryLazy.get().getMyCourseIds(user.id ?: "")
             val shelfData = getShelfData(user.id, jsonDoc, myLibs, myCourseIds)
-            shelfData.addProperty("_rev", JsonUtils.getString("_rev", jsonDoc))
+            shelfData.addProperty("_rev", GsonUtils.getString("_rev", jsonDoc))
             apiInterface.putDoc(
                 UrlUtils.header,
                 "application/json",
                 "${UrlUtils.getUrl()}/shelf/${user._id}",
-                shelfData
+                shelfData.toKotlinx().jsonObject
             )
         } catch (e: Throwable) {
             e.printStackTrace()
@@ -1197,16 +1212,21 @@ class UserRepositoryImpl @Inject constructor(
         }
 
         val response = org.ole.planet.myplanet.data.api.ApiClient.executeWithRetryAndWrap {
-            apiInterface.postDoc(org.ole.planet.myplanet.utils.UrlUtils.header, "application/json", "${org.ole.planet.myplanet.utils.UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true", keysObject)
-        }?.body()
+            apiInterface.postDoc(
+                org.ole.planet.myplanet.utils.UrlUtils.header,
+                "application/json",
+                "${org.ole.planet.myplanet.utils.UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true",
+                keysObject.toKotlinx().jsonObject
+            )
+        }?.body()?.toGson()
 
         response?.let { responseBody ->
-            val rows = org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("rows", responseBody)
+            val rows = org.ole.planet.myplanet.utils.GsonUtils.getJsonArray("rows", responseBody)
             for (i in 0 until rows.size()) {
                 val row = rows[i].asJsonObject
                 if (row.has("doc")) {
-                    val doc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", row)
-                    val shelfId = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", doc)
+                    val doc = org.ole.planet.myplanet.utils.GsonUtils.getJsonObject("doc", row)
+                    val shelfId = org.ole.planet.myplanet.utils.GsonUtils.getString("_id", doc)
 
                     if (hasShelfDataUltraFast(doc)) {
                         shelvesWithData.add(shelfId)
@@ -1234,11 +1254,11 @@ class UserRepositoryImpl @Inject constructor(
         val myMeetups = Meetup.getMyMeetUpIds(userMeetups)
         val removedResources = removedLogDao.getRemovedDocIds("resources", userId).filterNotNull()
         val removedCourses = removedLogDao.getRemovedDocIds("courses", userId).filterNotNull()
-        val mergedResourceIds = mergeJsonArray(myLibs, JsonUtils.getJsonArray("resourceIds", jsonDoc), removedResources)
-        val mergedCourseIds = mergeJsonArray(myCourseIds, JsonUtils.getJsonArray("courseIds", jsonDoc), removedCourses)
+        val mergedResourceIds = mergeJsonArray(myLibs, GsonUtils.getJsonArray("resourceIds", jsonDoc), removedResources)
+        val mergedCourseIds = mergeJsonArray(myCourseIds, GsonUtils.getJsonArray("courseIds", jsonDoc), removedCourses)
         val `object` = JsonObject()
         `object`.addProperty("_id", sharedPrefManager.getUserId())
-        `object`.add("meetupIds", mergeJsonArray(myMeetups, JsonUtils.getJsonArray("meetupIds", jsonDoc), removedResources))
+        `object`.add("meetupIds", mergeJsonArray(myMeetups, GsonUtils.getJsonArray("meetupIds", jsonDoc), removedResources))
         `object`.add("resourceIds", mergedResourceIds)
         `object`.add("courseIds", mergedCourseIds)
         return `object`

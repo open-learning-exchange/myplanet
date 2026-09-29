@@ -80,6 +80,13 @@ class FreeSpaceWorkerTest {
         return File(dir, fileName).apply { writeText(content) }
     }
 
+   private fun emptyDirectoryByteSize(): Long {
+        val probe = File(oleDir, "probe-${System.nanoTime()}").apply { mkdirs() }
+        val size = probe.length()
+        probe.delete()
+        return size
+    }
+
     @Test
     fun `doWork deletes resource files then clears only their offline flags`() = runTest(testDispatcher) {
         val book = addResource("res1", "book.pdf")
@@ -138,5 +145,53 @@ class FreeSpaceWorkerTest {
         val result = worker.doWork()
 
         assertTrue(result is Result.Failure)
+    }
+
+    @Test
+    fun `doWork removes nested directory structure and accurately tracks deleted files and freed bytes`() = runTest(testDispatcher) {
+        val resDir = File(oleDir, "res1").apply { mkdirs() }
+        val file1 = File(resDir, "file1.txt").apply { writeText("hello") }
+        val subDir = File(resDir, "subdir").apply { mkdirs() }
+        val file2 = File(subDir, "file2.txt").apply { writeText("world") }
+        val file3 = File(resDir, "file3.txt").apply { writeText("foo") }
+
+        val expectedFreedBytes = file1.length() + file2.length() + file3.length() + emptyDirectoryByteSize() * 2
+
+        val result = worker.doWork()
+        advanceUntilIdle()
+
+        assertTrue(result is Result.Success)
+        assertFalse(file1.exists())
+        assertFalse(file2.exists())
+        assertFalse(file3.exists())
+        assertFalse(subDir.exists())
+        assertFalse(resDir.exists())
+
+        val outputData = (result as Result.Success).outputData
+        // Nodes deleted: file1.txt, file2.txt, file3.txt, subdir, res1 -> 5 items
+        assertEquals(5, outputData.getInt("deletedFiles", -1))
+        assertEquals(expectedFreedBytes, outputData.getLong("freedBytes", -1L))
+    }
+
+    @Test
+    fun `doWork handles file deleted out from under the walk without corrupting accounting`() = runTest(testDispatcher) {
+        val resDir = File(oleDir, "res1").apply { mkdirs() }
+        val file1 = File(resDir, "file1.txt").apply { writeText("hello") }
+        val file2 = File(resDir, "file2.txt").apply { writeText("disappearing") }
+
+        val expectedFreedBytes = file1.length() + emptyDirectoryByteSize()
+        file2.delete() // File disappears before walk processes it
+
+        val result = worker.doWork()
+        advanceUntilIdle()
+
+        assertTrue(result is Result.Success)
+        assertFalse(file1.exists())
+        assertFalse(resDir.exists())
+
+        val outputData = (result as Result.Success).outputData
+        // Nodes deleted: file1.txt, res1 -> 2 items (file2 was already gone)
+        assertEquals(2, outputData.getInt("deletedFiles", -1))
+        assertEquals(expectedFreedBytes, outputData.getLong("freedBytes", -1L))
     }
 }

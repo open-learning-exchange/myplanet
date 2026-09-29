@@ -7,6 +7,7 @@ import org.ole.planet.myplanet.model.UserEntity
 interface EventsRepository {
     suspend fun createMeetup(params: MeetupCreationParams): Boolean
     suspend fun getMeetupsForTeam(teamId: String): List<Meetup>
+    suspend fun getMeetupsForTeams(teamIds: List<String>): List<Meetup>
     suspend fun getMeetupById(meetupId: String): Meetup?
     suspend fun getMeetupByLocalId(id: String): Meetup?
     suspend fun getJoinedMembers(meetupId: String): List<UserEntity>

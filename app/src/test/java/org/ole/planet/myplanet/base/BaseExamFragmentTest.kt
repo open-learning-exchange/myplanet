@@ -7,8 +7,10 @@ import android.widget.EditText
 import androidx.fragment.app.FragmentActivity
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.spyk
+import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.noties.markwon.Markwon
@@ -19,6 +21,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.utils.MarkdownUtils
 
 class BaseExamFragmentTest {
 
@@ -33,7 +36,7 @@ class BaseExamFragmentTest {
 
     @Before
     fun setUp() {
-        mockkStatic(Markwon::class)
+        mockkObject(MarkdownUtils)
         mockkStatic(MarkwonEditor::class)
         mockkStatic(MarkwonEditorTextWatcher::class)
 
@@ -44,7 +47,7 @@ class BaseExamFragmentTest {
         val editor = mockk<MarkwonEditor>(relaxed = true)
         val markwonEditorTextWatcher = mockk<MarkwonEditorTextWatcher>(relaxed = true)
 
-        every { Markwon.create(any<Context>()) } returns markwon
+        every { MarkdownUtils.create(any<Context>()) } returns markwon
         every { MarkwonEditor.create(markwon) } returns editor
         every { MarkwonEditorTextWatcher.withProcess(editor) } returns markwonEditorTextWatcher
 
@@ -54,7 +57,7 @@ class BaseExamFragmentTest {
 
         val markwonField = BaseExamFragment::class.java.getDeclaredField("markwon\$delegate")
         markwonField.isAccessible = true
-        markwonField.set(fragment, lazy(LazyThreadSafetyMode.NONE) { Markwon.create(activity) })
+        markwonField.set(fragment, lazy(LazyThreadSafetyMode.NONE) { MarkdownUtils.create(activity) })
 
         val editorField = BaseExamFragment::class.java.getDeclaredField("markwonEditor\$delegate")
         editorField.isAccessible = true
@@ -68,7 +71,7 @@ class BaseExamFragmentTest {
 
     @After
     fun tearDown() {
-        unmockkStatic(Markwon::class)
+        unmockkObject(MarkdownUtils)
         unmockkStatic(MarkwonEditor::class)
         unmockkStatic(MarkwonEditorTextWatcher::class)
     }
@@ -80,7 +83,7 @@ class BaseExamFragmentTest {
         fragment.setMarkdownViewAndShowInput(editText, "textarea", "test textarea answer 2")
 
         verify { editText.visibility = View.VISIBLE }
-        verify(exactly = 1) { Markwon.create(activity) }
+        verify(exactly = 1) { MarkdownUtils.create(activity) }
         verify { MarkwonEditorTextWatcher.withProcess(any()) }
         verify { editText.addTextChangedListener(any<MarkwonEditorTextWatcher>()) }
         verify { editText.setText("test textarea answer") }
@@ -97,7 +100,7 @@ class BaseExamFragmentTest {
         fragment.setMarkdownViewAndShowInput(editText, "text", "test text answer")
 
         verify { editText.visibility = View.VISIBLE }
-        verify(exactly = 0) { Markwon.create(activity) }
+        verify(exactly = 0) { MarkdownUtils.create(activity) }
         verify { editText.addTextChangedListener(any<TextWatcher>()) }
         verify { editText.setText("test text answer") }
 

@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.utils
 import android.content.Context
 import android.text.Layout
 import android.text.Spannable
+import android.text.Spanned
 import android.text.TextPaint
 import android.text.method.LinkMovementMethod
 import android.text.style.AlignmentSpan
@@ -69,6 +70,17 @@ object MarkdownUtils {
         textView.movementMethod = linkMovementMethod
     }
 
+    fun parseMarkdown(context: Context, markdown: String): Spanned {
+        val markwon = create(context)
+        return markwon.toMarkdown(markdown)
+    }
+
+    fun setParsedMarkdown(textView: TextView, spanned: Spanned) {
+        val markwon = create(textView.context)
+        markwon.setParsedMarkdown(textView, spanned)
+        textView.movementMethod = linkMovementMethod
+    }
+
     private class CustomImageSpan(private val theme: MarkwonTheme, private val url: String) : ClickableSpan() {
         override fun onClick(widget: View) {
             ImageViewerUtils.showZoomableImage(widget.context, url)
@@ -86,6 +98,7 @@ object MarkdownUtils {
         height: Int = 100
     ): String {
         val content = markdownContent ?: return markdownContent.orEmpty()
+        if (!content.contains("![")) return content
         val matcher = imagePattern.matcher(content)
         val result = StringBuilder()
         var last = 0

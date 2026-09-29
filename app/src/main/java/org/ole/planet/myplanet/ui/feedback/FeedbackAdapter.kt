@@ -31,6 +31,7 @@ class FeedbackAdapter :
         )
     ) {
 
+    private val dateCache = HashMap<Long, String>()
     private var primaryColorStateList: ColorStateList? = null
     private var greyColorStateList: ColorStateList? = null
     private var statusText: String? = null
@@ -59,7 +60,7 @@ class FeedbackAdapter :
         binding.tvType.text = feedback.type
         binding.tvPriority.text = feedback.priority
         binding.tvStatus.text = feedback.status
-        val formattedDate = getFormattedDate(feedback.openTime)
+        val formattedDate = dateCache.getOrPut(feedback.openTime) { getFormattedDate(feedback.openTime) }
         val contentDescription = "${feedback.title}, ${feedback.type}, " +
                 "${statusText}: ${feedback.status}, ${priorityText}: ${feedback.priority}, " +
                 "${openDateText}: ${formattedDate}"

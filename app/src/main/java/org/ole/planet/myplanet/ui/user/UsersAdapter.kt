@@ -37,8 +37,6 @@ class UsersAdapter(
         }
     }
 
-    fun getList(): List<User> = currentList
-
     class ViewHolder(private val binding: UserListItemBinding, private val avatarSize: Int) : RecyclerView.ViewHolder(binding.root) {
         fun bindView(account: User) {
             if (account.fullName?.isEmpty() == true || account.fullName == " ") {

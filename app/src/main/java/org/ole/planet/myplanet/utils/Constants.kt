@@ -23,7 +23,6 @@ object Constants {
     const val KEY_LOGIN = "isLoggedIn"
     const val DICTIONARY_URL = "http://157.245.241.39:8000/output.json"
     var shelfDataList = mutableListOf<ShelfData>()
-    const val KEY_SYNC = "beta_wifi_switch"
     const val KEY_MEETUPS = "key_meetup"
     const val KEY_AUTOSYNC_ = "auto_sync_with_server"
     const val KEY_AUTOSYNC_WEEKLY = "force_weekly_sync"
@@ -72,13 +71,6 @@ object Constants {
     fun showBetaFeature(s: String, context: Context): Boolean {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
         return preferences.getBoolean("beta_function", false)
-    }
-
-    fun isBetaWifiFeatureEnabled(context: Context): Boolean {
-        val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-        val betaEnabled = preferences.getBoolean("beta_function", false)
-        val wifiSwitchEnabled = preferences.getBoolean(KEY_SYNC, false)
-        return betaEnabled && wifiSwitchEnabled
     }
 
     fun autoSynFeature(s: String?, context: Context): Boolean {

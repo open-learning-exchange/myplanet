@@ -10,7 +10,6 @@ import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
@@ -20,6 +19,7 @@ import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.model.TeamNotificationInfo
+import org.ole.planet.myplanet.utils.TaskNotificationUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
@@ -103,7 +103,7 @@ class NotificationsRepositoryImpl @Inject constructor(
                 this.relatedId = relatedId
                 if (valueChanged) {
                     this.isRead = false
-                    this.createdAt = Date()
+                    this.createdAt = Date(timeProvider.now())
                 }
             } ?: AppNotification().apply {
                 this.id = notificationId
@@ -111,7 +111,7 @@ class NotificationsRepositoryImpl @Inject constructor(
                 this.type = type
                 this.message = formattedMessage
                 this.relatedId = relatedId
-                this.createdAt = Date()
+                this.createdAt = Date(timeProvider.now())
             }
             notificationDao.upsert(notification)
         } else {
@@ -124,7 +124,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
         val existingIds = notificationDao.getIdsByIds(notificationIds.toList())
         if (existingIds.isEmpty()) return emptySet()
-        notificationDao.markAsRead(existingIds, Date())
+        notificationDao.markAsRead(existingIds, Date(timeProvider.now()))
         return existingIds.toSet()
     }
 
@@ -132,11 +132,11 @@ class NotificationsRepositoryImpl @Inject constructor(
         val actualUserId = userId ?: return emptySet()
         val unreadIds = notificationDao.getUnreadIds(actualUserId).toSet()
         if (unreadIds.isEmpty()) return emptySet()
-        notificationDao.markAllUnreadAsRead(actualUserId, Date())
+        notificationDao.markAllUnreadAsRead(actualUserId, Date(timeProvider.now()))
         return unreadIds
     }
 
-    override suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean): List<NotificationPayload> {
+    suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean = false): List<NotificationPayload> {
         val normalizedFilter = when (filter) {
             "read", "unread" -> filter
             else -> ""
@@ -159,6 +159,83 @@ class NotificationsRepositoryImpl @Inject constructor(
                 subType = it.subType
             )
         }
+    }
+
+    override suspend fun getEnrichedNotifications(userId: String, filter: String, isAdmin: Boolean): EnrichedNotifications {
+        val payloadNotifications = getNotifications(userId, filter, isAdmin)
+
+        val taskNotifications = mutableListOf<NotificationPayload>()
+        val joinRequestNotifications = mutableListOf<NotificationPayload>()
+        for (notification in payloadNotifications) {
+            if (notification.type.equals("task", ignoreCase = true)) {
+                taskNotifications.add(notification)
+            } else if (notification.type.equals("join_request", ignoreCase = true)) {
+                joinRequestNotifications.add(notification)
+            }
+        }
+
+        val taskIds = taskNotifications
+            .mapNotNull { it.relatedId }
+            .distinct()
+
+        val parsedTaskDates: Map<String, Pair<String, String>?> =
+            taskNotifications.associateBy({ it.id }, { TaskNotificationUtils.splitTitleAndDate(it.message) })
+
+        val taskTitles = taskNotifications
+            .mapNotNull { parsedTaskDates[it.id]?.first }
+            .distinct()
+
+        val joinRequestIds = joinRequestNotifications
+            .mapNotNull { it.relatedId }
+            .distinct()
+
+        val joinRequestsWithoutRelatedId = joinRequestNotifications
+            .filter { it.relatedId.isNullOrEmpty() }
+
+        val (taskTeamNames, joinRequestDetails, unreadCount) = coroutineScope {
+            val taskTeamNamesByIdsDeferred = async {
+                getTaskTeamNamesByTaskIds(taskIds)
+            }
+
+            val taskTeamNamesByTitlesDeferred = async {
+                if (taskTitles.isNotEmpty()) {
+                    getTaskTeamNamesByTaskTitles(taskTitles)
+                } else {
+                    emptyMap()
+                }
+            }
+
+            val joinRequestDetailsDeferred = async {
+                val details = getJoinRequestDetailsBatch(joinRequestIds).toMutableMap()
+                if (joinRequestsWithoutRelatedId.isNotEmpty()) {
+                    val fallbackDetail = getJoinRequestDetails(null)
+                    details[""] = fallbackDetail
+                }
+                details
+            }
+
+            val unreadCountDeferred = async {
+                getUnreadCount(userId, isAdmin)
+            }
+
+            val combinedTaskTeamNames = taskTeamNamesByTitlesDeferred.await().toMutableMap().apply {
+                putAll(taskTeamNamesByIdsDeferred.await())
+            }
+
+            Triple(
+                combinedTaskTeamNames,
+                joinRequestDetailsDeferred.await(),
+                unreadCountDeferred.await()
+            )
+        }
+
+        return EnrichedNotifications(
+            payloads = payloadNotifications,
+            taskTeamNames = taskTeamNames,
+            joinRequestDetails = joinRequestDetails,
+            parsedTaskDates = parsedTaskDates,
+            unreadCount = unreadCount
+        )
     }
 
     override suspend fun getTaskDetails(relatedId: String?): TaskNotificationResult? {
@@ -186,7 +263,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getJoinRequestDetails(relatedId: String?): Pair<String, String> {
+    private suspend fun getJoinRequestDetails(relatedId: String?): Pair<String, String> {
         val joinRequest = teamsRepository.get().getJoinRequestInfo(relatedId)
         val teamName = joinRequest?.teamId?.let { tid ->
             teamsRepository.get().getTeamLabelInfo(tid)?.name
@@ -197,7 +274,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         return Pair(requester?.name ?: "Unknown User", teamName)
     }
 
-    override suspend fun getTaskTeamNamesByTaskIds(taskIds: List<String>): Map<String, String> {
+    private suspend fun getTaskTeamNamesByTaskIds(taskIds: List<String>): Map<String, String> {
         if (taskIds.isEmpty()) return emptyMap()
         val map = mutableMapOf<String, String>()
 
@@ -221,7 +298,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         return map
     }
 
-    override suspend fun getJoinRequestDetailsBatch(relatedIds: List<String>): Map<String, Pair<String, String>> {
+    private suspend fun getJoinRequestDetailsBatch(relatedIds: List<String>): Map<String, Pair<String, String>> {
         if (relatedIds.isEmpty()) return emptyMap()
 
         val joinRequests = teamsRepository.get().getJoinRequestsInfo(relatedIds)
@@ -261,7 +338,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         return map
     }
 
-    override suspend fun getTaskTeamNamesByTaskTitles(taskTitles: List<String>): Map<String, String> {
+    private suspend fun getTaskTeamNamesByTaskTitles(taskTitles: List<String>): Map<String, String> {
         if (taskTitles.isEmpty()) return emptyMap()
         val map = mutableMapOf<String, String>()
 
@@ -286,18 +363,13 @@ class NotificationsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateTeamNotification(teamId: String, count: Int) {
-        val existing = teamNotificationDao.findByParentAndType(teamId, "chat")
-        if (existing != null) {
-            existing.lastCount = count
-            teamNotificationDao.update(existing)
-        } else {
-            val notification = TeamNotification().apply {
+        if (teamNotificationDao.updateCount(teamId, "chat", count) == 0) {
+            teamNotificationDao.insert(TeamNotification().apply {
                 id = UUID.randomUUID().toString()
                 parentId = teamId
                 type = "chat"
                 lastCount = count
-            }
-            teamNotificationDao.insert(notification)
+            })
         }
     }
 
@@ -315,22 +387,18 @@ class NotificationsRepositoryImpl @Inject constructor(
             }
         }
 
-        val chatCountsById = coroutineScope {
-            notificationsById.keys.map { teamId ->
-                async { teamId to voicesRepository.countTopLevelByTeam(teamId) }
-            }.awaitAll().toMap()
-        }
+        val chatCountsById = voicesRepository.countTopLevelByTeams(notificationsById.keys.toList())
 
         val current = timeProvider.now()
         val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
         val tasks = teamTaskDao.getTasksForUserBetween(userId, current, tomorrow.timeInMillis)
-        val hasTask = tasks.isNotEmpty()
+        val taskTeamIds = tasks.mapNotNull { it.teamId }.toSet()
 
         for (teamId in teamIds) {
             val notification = notificationsById[teamId]
             val chatCount = chatCountsById[teamId] ?: 0L
             val hasChat = notification != null && notification.lastCount < chatCount
-            notificationMap[teamId] = TeamNotificationInfo(hasTask, hasChat)
+            notificationMap[teamId] = TeamNotificationInfo(teamId in taskTeamIds, hasChat)
         }
         return notificationMap
     }
@@ -388,7 +456,7 @@ class NotificationsRepositoryImpl @Inject constructor(
             priority = doc.get("priority")?.asInt ?: 0
             rev = doc.get("_rev")?.asString
             isRead = doc.get("status")?.asString != "unread"
-            createdAt = doc.get("time")?.let { Date(it.asLong) } ?: Date()
+            createdAt = doc.get("time")?.let { Date(it.asLong) } ?: Date(timeProvider.now())
             isFromServer = true
         }
     }

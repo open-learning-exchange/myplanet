@@ -160,17 +160,16 @@ class SurveysRepositoryImplTest {
     }
 
     @Test
-    fun `getIndividualSurveys filters surveys without team and not shareable`() = runTest {
-        coEvery { examDao.getByType("surveys") } returns listOf(
-            StepExam(id = "survey1", isTeamShareAllowed = false, teamId = null), // Included
-            StepExam(id = "survey2", isTeamShareAllowed = true, teamId = null), // Excluded (shareable)
-            StepExam(id = "survey3", isTeamShareAllowed = false, teamId = "team1"), // Excluded (has teamId)
-            StepExam(id = "survey4", isTeamShareAllowed = false, teamId = "") // Included (empty teamId)
+    fun `getIndividualSurveys delegates to examDao`() = runTest {
+        val expected = listOf(
+            StepExam(id = "survey1", isTeamShareAllowed = false, teamId = null),
+            StepExam(id = "survey4", isTeamShareAllowed = false, teamId = "")
         )
+        coEvery { examDao.getIndividualSurveys() } returns expected
 
         val result = repository.getIndividualSurveys()
 
-        assertEquals(listOf("survey1", "survey4"), result.map { it.id })
+        assertEquals(expected, result)
     }
 
     @Test

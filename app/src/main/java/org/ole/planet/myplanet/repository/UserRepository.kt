@@ -1,17 +1,26 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.model.Achievement
-import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 
-interface UserRepository {
-    val achievementUpdates: Flow<Unit>
+data class ProfileFieldsUpdate(
+    val firstName: String? = null,
+    val lastName: String? = null,
+    val middleName: String? = null,
+    val email: String? = null,
+    val language: String? = null,
+    val phoneNumber: String? = null,
+    val birthDate: String? = null,
+    val birthPlace: String? = null,
+    val level: String? = null,
+    val gender: String? = null,
+    val age: String? = null
+)
+
+interface UserRepository : UserAchievementsRepository {
     suspend fun getSavedUsers(): List<User>
     suspend fun upsertSavedUser(name: String?, encryptedPassword: String?, source: String, userProfile: String?, userName: String?)
     suspend fun resetGuestAsMember(username: String?)
@@ -63,7 +72,7 @@ interface UserRepository {
 
     suspend fun updateProfileFields(
         userId: String?,
-        payload: JsonObject
+        update: ProfileFieldsUpdate
     )
 
     suspend fun createMember(user: MemberInfo): Pair<Boolean, String>
@@ -71,6 +80,7 @@ interface UserRepository {
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
 
     suspend fun getCurrentUserId(): String?
+    suspend fun getConnectedCommunityCode(): String
     suspend fun getUserModel(): UserEntity?
     suspend fun getUserProfile(): UserEntity?
     suspend fun getUserImageUrl(): String?
@@ -81,24 +91,7 @@ interface UserRepository {
     suspend fun hasAtLeastOneUser(): Boolean
     suspend fun hasUserSyncAction(userId: String?): Boolean
     suspend fun hasActiveUserSyncAction(): Boolean
-    suspend fun initializeAchievement(achievementId: String): Achievement?
-    suspend fun updateAchievement(
-        achievementId: String,
-        header: String,
-        goals: String,
-        purpose: String,
-        sendToNation: String,
-        achievements: JsonArray,
-        references: JsonArray,
-        createdOn: String,
-        username: String,
-        parentCode: String,
-        resumeFileName: String = ""
-    )
     suspend fun markUserUploaded(userId: String, id: String, rev: String)
     suspend fun markUserKeyIvSaved(userId: String, key: String, iv: String?)
     suspend fun markUserRevUpdated(userId: String, rev: String?)
-    suspend fun getAchievementData(userId: String, planetCode: String): AchievementData
-    suspend fun getAchievementsForUpload(): List<JsonObject>
-    suspend fun markAchievementUploaded(id: String, rev: String?)
 }

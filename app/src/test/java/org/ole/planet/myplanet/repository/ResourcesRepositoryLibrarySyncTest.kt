@@ -73,7 +73,11 @@ class ResourcesRepositoryLibrarySyncTest {
             mockk<dagger.Lazy<TeamsRepository>>(relaxed = true),
             mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true),
             mockk<org.ole.planet.myplanet.repository.ConfigurationsRepository>(relaxed = true),
-            mockk<org.ole.planet.myplanet.utils.DispatcherProvider>(relaxed = true)
+            mockk<org.ole.planet.myplanet.utils.DispatcherProvider>(relaxed = true),
+            mockk<org.ole.planet.myplanet.utils.DeviceNameProvider>(relaxed = true),
+            mockk<org.ole.planet.myplanet.utils.TimeProvider>(relaxed = true),
+            mockk<kotlinx.coroutines.CoroutineScope>(relaxed = true),
+            mockk<org.ole.planet.myplanet.utils.StoragePathResolver>(relaxed = true)
         )
     }
 
@@ -117,7 +121,7 @@ class ResourcesRepositoryLibrarySyncTest {
         assertTrue(merged!!.containsAll(listOf("shelfUserA", "shelfUserB")))
         assertEquals(2, merged.size)
         // Still a single row for the resource.
-        assertEquals(1, myLibraryDao.getAll().size)
+        assertEquals(1, myLibraryDao.countByTitle("Algebra"))
     }
 
     @Test

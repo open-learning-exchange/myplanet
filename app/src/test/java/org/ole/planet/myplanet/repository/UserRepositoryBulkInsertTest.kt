@@ -31,6 +31,7 @@ class UserRepositoryBulkInsertTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             userDao,
+            mockk(relaxed = true),
             mockk(relaxed = true)
         )
         coEvery { userDao.getUsersByAnyIds(any()) } returns emptyList()
@@ -77,6 +78,7 @@ class UserRepositoryBulkInsertTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             userDao,
+            mockk(relaxed = true),
             mockk(relaxed = true)
         )
 
@@ -123,6 +125,7 @@ class UserRepositoryBulkInsertTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             userDao,
+            mockk(relaxed = true),
             mockk(relaxed = true)
         )
         coEvery { userDao.getUsersByAnyIds(any()) } returns emptyList()

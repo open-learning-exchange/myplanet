@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 
 class PersonalsAdapter(private val context: Context) : ListAdapter<Personal, PersonalsViewHolder>(DIFF_CALLBACK) {
     private var listener: OnPersonalSelectedListener? = null
+    private val dateCache = HashMap<Long, String>()
 
     fun setListener(listener: OnPersonalSelectedListener?) {
         this.listener = listener
@@ -35,7 +36,7 @@ class PersonalsAdapter(private val context: Context) : ListAdapter<Personal, Per
         val item = getItem(position)
         binding.title.text = item.title
         binding.description.text = item.description
-        binding.date.text = getFormattedDate(item.date)
+        binding.date.text = dateCache.getOrPut(item.date) { getFormattedDate(item.date) }
         binding.imgDelete.setOnClickListener {
             val adapterPosition = holder.bindingAdapterPosition
             if (adapterPosition != RecyclerView.NO_POSITION) {

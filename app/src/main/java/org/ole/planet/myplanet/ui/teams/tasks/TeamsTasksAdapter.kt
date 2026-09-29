@@ -26,8 +26,6 @@ class TeamsTasksAdapter(
         this.listener = listener
     }
 
-    fun hasAssignee(id: String): Boolean = assigneeCache.containsKey(id)
-
     fun getKnownAssigneeIds(): Set<String> = assigneeCache.keys.toSet()
 
     fun updateAssignees(newAssignees: Map<String, String>) {
@@ -45,14 +43,14 @@ class TeamsTasksAdapter(
         binding.checkbox.setOnCheckedChangeListener(null)
         binding.checkbox.text = it.title
         binding.checkbox.isChecked = it.completed
-        if (!it.completed) {
+        if (!it.completed || it.completedTime <= 0) {
             binding.deadline.text =
                 context.getString(R.string.deadline_colon, formatDate(it.deadline))
         } else {
             binding.deadline.text = context.getString(
                 R.string.two_strings,
                 context.getString(R.string.deadline_colon, formatDate(it.deadline)),
-                context.getString(R.string.completed_colon, formatDate(it.deadline))
+                context.getString(R.string.completed_colon, formatDate(it.completedTime))
             )
         }
         showAssignee(binding, it)

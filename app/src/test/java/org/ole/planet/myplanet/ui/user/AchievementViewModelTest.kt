@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.user
 
 import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -20,9 +19,12 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.model.Achievement
+import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
@@ -102,7 +104,7 @@ class AchievementViewModelTest {
 
         val achievements = JsonArray()
         val references = JsonArray()
-        val profileFields = JsonObject().apply { addProperty("firstName", "John") }
+        val profileFields = ProfileFieldsUpdate(firstName = "John")
 
         viewModel.saveAchievement(
             AchievementSaveRequest(
@@ -140,11 +142,23 @@ class AchievementViewModelTest {
     }
 
     @Test
-    fun `getAllLibraries delegates to resourcesRepository`() = runTest(testDispatcher) {
-        val libraries = listOf(MyLibrary().apply { id = "r1"; title = "Lib 1" })
-        coEvery { resourcesRepository.getAllLibraries() } returns libraries
+    fun `getLibraryTitles delegates to resourcesRepository`() = runTest(testDispatcher) {
+        val titles = listOf(LibraryTitleProjection("r1", "Lib 1"))
+        coEvery { resourcesRepository.getLibraryTitles() } returns titles
 
-        val result = viewModel.getAllLibraries()
+        val result = viewModel.getLibraryTitles()
+
+        assertEquals(1, result.size)
+        assertEquals("r1", result[0].id)
+        assertEquals("Lib 1", result[0].title)
+    }
+
+    @Test
+    fun `getLibraryItemsByIds delegates to resourcesRepository`() = runTest(testDispatcher) {
+        val libraries = listOf(MyLibrary().apply { id = "r1"; title = "Lib 1" })
+        coEvery { resourcesRepository.getLibraryItemsByIds(listOf("r1")) } returns libraries
+
+        val result = viewModel.getLibraryItemsByIds(listOf("r1"))
 
         assertEquals(1, result.size)
         assertEquals("Lib 1", result[0].title)
@@ -166,5 +180,38 @@ class AchievementViewModelTest {
         assertEquals("user1", firstUser.id)
         assertEquals(achievement, firstAchievement)
         assertEquals(firstAchievement, viewModel.achievement.value)
+    }
+
+    @Test
+    fun `getAchievementData delegates to userRepository`() = runTest(testDispatcher) {
+        val achievementData = AchievementData()
+        coEvery { userRepository.getAchievementData("u1", "p1") } returns achievementData
+
+        val result = viewModel.getAchievementData("u1", "p1")
+
+        assertEquals(achievementData, result)
+        coVerify(exactly = 1) { userRepository.getAchievementData("u1", "p1") }
+    }
+
+    @Test
+    fun `getUserModel delegates to userRepository`() = runTest(testDispatcher) {
+        val user = UserEntity(id = "user1")
+        coEvery { userRepository.getUserModel() } returns user
+
+        val result = viewModel.getUserModel()
+
+        assertEquals(user, result)
+        coVerify(exactly = 1) { userRepository.getUserModel() }
+    }
+
+    @Test
+    fun `downloadResources delegates to resourcesRepository`() = runTest(testDispatcher) {
+        val libs = listOf(MyLibrary().apply { id = "r1" })
+        coEvery { resourcesRepository.downloadResources(libs) } returns true
+
+        val result = viewModel.downloadResources(libs)
+
+        assertEquals(true, result)
+        coVerify(exactly = 1) { resourcesRepository.downloadResources(libs) }
     }
 }
