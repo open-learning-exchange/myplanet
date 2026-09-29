@@ -98,19 +98,20 @@ class ResourceActivityDaoTest {
 
     @Test
     fun getMostOpenedResource_selectsMinTitleForRenamedResource() = runBlocking {
-        // Insert older row with "Alpha Title" and newer row with "Zeta Title".
-        // MIN(title) chooses "Alpha Title" (alphabetically smallest), proving MIN wins rather than insertion order / newest title.
+        // First inserted ("Mid Title"), MIN ("Alpha Title"), last inserted ("Zeta Title").
+        // Distinguishes MIN(title) from both first-inserted and last-inserted (newest) rows.
+        dao.insert(createActivity("john", "pdf", "resRenamed", "Mid Title"))
         dao.insert(createActivity("john", "pdf", "resRenamed", "Alpha Title"))
         dao.insert(createActivity("john", "pdf", "resRenamed", "Zeta Title"))
 
         val result1 = dao.getMostOpenedResource("john", "pdf")
         assertNotNull(result1)
         assertEquals("Alpha Title", result1?.title)
-        assertEquals(2, result1?.openCount)
+        assertEquals(3, result1?.openCount)
 
         val result2 = dao.getMostOpenedResource("john", "pdf")
         assertNotNull(result2)
         assertEquals("Alpha Title", result2?.title)
-        assertEquals(2, result2?.openCount)
+        assertEquals(3, result2?.openCount)
     }
 }
