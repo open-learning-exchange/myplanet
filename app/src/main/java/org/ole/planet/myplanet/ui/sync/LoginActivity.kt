@@ -12,6 +12,7 @@ import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
@@ -20,6 +21,9 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.view.updateLayoutParams
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
@@ -238,8 +242,17 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     exitSnackbar?.dismiss()
                     finish()
                 } else {
-                    exitSnackbar = Snackbar.make(binding.root, getString(R.string.press_back_again_to_exit), 2000)
-                        .setAction(getString(R.string.exit)) { finish() }
+                    exitSnackbar = Snackbar.make(
+                        binding.root,
+                        getString(R.string.press_back_again_to_exit),
+                        2000
+                    ).setAction(getString(R.string.exit)) { finish() }
+                    
+                    val textView = exitSnackbar?.view?.findViewById<TextView>(
+                        com.google.android.material.R.id.snackbar_text
+                    )
+                    textView?.maxLines = 3
+                    
                     exitSnackbar?.show()
                 }
             }
@@ -275,7 +288,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     customProgressDialog.setText(getString(R.string.please_wait))
                     customProgressDialog.show()
                     lifecycleScope.launch {
-                        val user = userRepository.getUserByName(username)
+                        val user = loginViewModel.getUserByName(username)
                         if (user == null || !user.isArchived) {
                             submitForm(username, password)
                         } else {
@@ -318,7 +331,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         binding.btnGuestLogin.setOnClickListener {
             if (getUrl() != "/db") {
                 binding.inputName.setText(R.string.empty_text)
-                showGuestLoginDialog(userRepository)
+                showGuestLoginDialog(loginViewModel)
             } else {
                 toast(this, getString(R.string.please_enter_server_url_first))
                 settingDialog()
@@ -370,9 +383,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         setUpLanguageButton()
         if (NetworkUtils.isNetworkConnected) {
             lifecycleScope.launch {
-                withContext(dispatcherProvider.io) {
-                    communityRepository.syncCommunityDocs()
-                }
+                loginViewModel.syncCommunityDocs()
             }
         }
         val usernameFlow = binding.inputName.textChanges()
@@ -586,7 +597,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         } else {
             if (user.source == "guest"){
                 lifecycleScope.launch {
-                    val model = userRepository.createGuestUser(user.name ?: "")
+                    val model = loginViewModel.createGuestUser(user.name ?: "")
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                     } else {
@@ -628,7 +639,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             positiveButton.setOnClickListener {
                 positiveButton.isEnabled = false
                 lifecycleScope.launch {
-                    val model = userRepository.createGuestUser(username)
+                    val model = loginViewModel.createGuestUser(username)
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                         positiveButton.isEnabled = true

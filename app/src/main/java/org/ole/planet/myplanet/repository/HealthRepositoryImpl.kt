@@ -1,11 +1,13 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
 import java.util.Date
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.supervisorScope
@@ -134,8 +136,10 @@ class HealthRepositoryImpl @Inject constructor(
                                 val rev = resBody.get("rev")?.asString
                                 return@async pojo._id to rev
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Throwable) {
-                            e.printStackTrace()
+                            Log.e("HealthRepository", "Failed to upload health data", e)
                         }
                         null
                     }
@@ -247,8 +251,10 @@ class HealthRepositoryImpl @Inject constructor(
             val iv = userModel?.iv ?: AndroidDecrypter.generateIv().also { newIv -> userModel?.iv = newIv }
             healthPojo.data = AndroidDecrypter.encrypt(gson.toJson(myHealth), key, iv)
             userModel?.let { userRepository.get().saveUser(it) }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("HealthRepository", "Failed to encrypt or save user health profile", e)
         }
         healthExaminationDao.upsert(healthPojo)
     }
