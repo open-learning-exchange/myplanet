@@ -10,13 +10,13 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.MemberInfo
+import org.ole.planet.myplanet.model.LearnerRegistrationInfo
 import org.ole.planet.myplanet.repository.UserRepository
 
 data class UsernameCheck(val input: String, val error: String?)
 
 @HiltViewModel
-class BecomeMemberViewModel @Inject constructor(
+class LearnerRegistrationViewModel @Inject constructor(
     private val userRepository: UserRepository
 ) : ViewModel() {
 
@@ -25,7 +25,7 @@ class BecomeMemberViewModel @Inject constructor(
 
     private var usernameValidationJob: Job? = null
 
-    suspend fun createMember(info: MemberInfo) = userRepository.createMember(info)
+    suspend fun createMember(info: LearnerRegistrationInfo) = userRepository.createMember(info)
 
     suspend fun validateUsername(username: String) = userRepository.validateUsername(username)
 

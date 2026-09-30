@@ -14,12 +14,12 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.model.MemberInfo
+import org.ole.planet.myplanet.model.LearnerRegistrationInfo
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class BecomeMemberViewModelTest {
+class LearnerRegistrationViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -27,12 +27,12 @@ class BecomeMemberViewModelTest {
     val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     private lateinit var userRepository: UserRepository
-    private lateinit var viewModel: BecomeMemberViewModel
+    private lateinit var viewModel: LearnerRegistrationViewModel
 
     @Before
     fun setup() {
         userRepository = mockk(relaxed = true)
-        viewModel = BecomeMemberViewModel(userRepository)
+        viewModel = LearnerRegistrationViewModel(userRepository)
     }
 
     @Test
@@ -88,7 +88,7 @@ class BecomeMemberViewModelTest {
 
     @Test
     fun `pass-through functions delegate to UserRepository`() = runTest {
-        val memberInfo = MemberInfo("user1", "pass123", "pass123", "John", "Doe", "", "john@example.com", "en", "level1", "123456", "2000-01-01", "male")
+        val memberInfo = LearnerRegistrationInfo("user1", "pass123", "pass123", "John", "Doe", "", "john@example.com", "en", "level1", "123456", "2000-01-01", "male")
         coEvery { userRepository.createMember(memberInfo) } returns Pair(true, "Created")
         coEvery { userRepository.validateUsername("user1") } returns null
 
