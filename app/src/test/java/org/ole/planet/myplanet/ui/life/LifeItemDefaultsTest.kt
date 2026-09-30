@@ -4,13 +4,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class LifeDefaultsTest {
+class LifeItemDefaultsTest {
 
     private val labelResolver: (Int) -> String = { "res_$it" }
 
     @Test
-    fun `defaultItems returns expected count and ordered imageIds`() {
-        val items = LifeDefaults.defaultItems("user_123", labelResolver)
+    fun `forUser returns expected count and ordered imageIds`() {
+        val items = LifeItemDefaults.forUser("user_123", labelResolver)
 
         assertEquals(7, items.size)
 
@@ -28,17 +28,17 @@ class LifeDefaultsTest {
     }
 
     @Test
-    fun `defaultItems applies userId and sets isVisible to true for all items`() {
+    fun `forUser applies userId and sets isVisible to true for all items`() {
         val userId = "user_456"
-        val items = LifeDefaults.defaultItems(userId, labelResolver)
+        val items = LifeItemDefaults.forUser(userId, labelResolver)
 
         assertTrue(items.all { it.userId == userId })
         assertTrue(items.all { it.isVisible })
     }
 
     @Test
-    fun `defaultItems handles null userId`() {
-        val items = LifeDefaults.defaultItems(null, labelResolver)
+    fun `forUser handles null userId`() {
+        val items = LifeItemDefaults.forUser(null, labelResolver)
 
         assertTrue(items.all { it.userId == null })
     }

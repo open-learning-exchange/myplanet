@@ -3,8 +3,8 @@ package org.ole.planet.myplanet.ui.life
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.MyLife
 
-object LifeDefaults {
-    private val defaultItemPairs = listOf(
+object LifeItemDefaults {
+    private val itemPairs = listOf(
         "ic_myhealth" to R.string.myhealth,
         "my_achievement" to R.string.achievements,
         "ic_submissions" to R.string.submission,
@@ -14,8 +14,8 @@ object LifeDefaults {
         "ic_mypersonals" to R.string.mypersonals
     )
 
-    fun defaultItems(userId: String?, resolveLabel: (Int) -> String): List<MyLife> =
-        defaultItemPairs.map { (imageId, stringRes) ->
+    fun forUser(userId: String?, resolveLabel: (Int) -> String): List<MyLife> =
+        itemPairs.map { (imageId, stringRes) ->
             MyLife(imageId, userId, resolveLabel(stringRes))
         }
 }
