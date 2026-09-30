@@ -24,6 +24,7 @@ import io.mockk.verify
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -298,6 +299,36 @@ class RetryQueueWorkerTest {
         assertEquals(Result.success(), result)
         // Only first batch of 50 operations should have completed
         coVerify(exactly = 50) { retryRepository.executeOperation(any()) }
+        coVerify(exactly = 1) { retryQueue.finishProcessing() }
+    }
+
+    @Test
+    fun doWork_rethrowsCancellationException_whenWorkerIsCancelled() = runTest {
+        MainApplication.isSyncRunning.set(false)
+        coEvery { retryQueue.tryStartProcessing() } returns true
+        coEvery { retryQueue.getPendingOperations() } throws CancellationException("Worker stopped")
+
+        var exceptionThrown = false
+        try {
+            worker.doWork()
+        } catch (e: CancellationException) {
+            exceptionThrown = true
+            assertEquals("Worker stopped", e.message)
+        }
+
+        assertEquals(true, exceptionThrown)
+        coVerify(exactly = 1) { retryQueue.finishProcessing() }
+    }
+
+    @Test
+    fun doWork_returnsSuccess_onTimeoutCancellationException() = runTest {
+        MainApplication.isSyncRunning.set(false)
+        coEvery { retryQueue.tryStartProcessing() } returns true
+        coEvery { retryQueue.getPendingOperations() } throws mockk<TimeoutCancellationException>(relaxed = true)
+
+        val result = worker.doWork()
+
+        assertEquals(Result.success(), result)
         coVerify(exactly = 1) { retryQueue.finishProcessing() }
     }
 
