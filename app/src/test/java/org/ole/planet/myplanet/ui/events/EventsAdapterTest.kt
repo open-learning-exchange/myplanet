@@ -5,6 +5,7 @@ import android.content.Context
 import android.widget.LinearLayout
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -96,5 +97,30 @@ class EventsAdapterTest {
         holder.binding.root.performClick()
         assertEquals("New Title", clickedMeetup?.title)
         assertEquals("New Location", clickedMeetup?.meetupLocation)
+    }
+
+    @Test
+    @Config(qualifiers = "fr")
+    fun `recurring key is shown in the device language and older stored labels are left as stored`() {
+        val keyed = Meetup().apply { id = "1"; title = "Keyed"; recurring = "daily" }
+        val legacyEnglish = Meetup().apply { id = "2"; title = "Legacy"; recurring = "Daily" }
+        val legacyTranslated = Meetup().apply { id = "3"; title = "Translated"; recurring = "Quotidienne" }
+
+        var committed = false
+        adapter.submitList(listOf(keyed, legacyEnglish, legacyTranslated)) { committed = true }
+        while (!committed) {
+            ShadowLooper.idleMainLooper()
+        }
+
+        val parent = LinearLayout(context)
+        fun recurringText(position: Int): String {
+            val holder = adapter.onCreateViewHolder(parent, 0)
+            adapter.onBindViewHolder(holder, position)
+            return holder.binding.tvRecurring.text.toString()
+        }
+
+        assertTrue(recurringText(0).contains("Quotidien"))
+        assertTrue(recurringText(1).contains("Quotidien"))
+        assertTrue(recurringText(2).contains("Quotidienne"))
     }
 }

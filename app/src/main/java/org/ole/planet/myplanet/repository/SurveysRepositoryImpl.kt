@@ -465,6 +465,31 @@ class SurveysRepositoryImpl @Inject constructor(
         return examDao.getPendingAdoptedSurveys()
     }
 
+    override suspend fun markExamsUploaded(
+        results: List<UploadedItemResult>
+    ): List<UploadedItemResult> {
+        if (results.isEmpty()) return emptyList()
+        val existing = examDao.getByIds(results.map { it.localId }).associateBy { it.id }
+        val updated = ArrayList<StepExam>(results.size)
+        val failed = ArrayList<UploadedItemResult>(results.size)
+
+        results.forEach { result ->
+            val exam = existing[result.localId]
+            if (exam == null) {
+                failed += result
+            } else {
+                exam._rev = result.remoteRev
+                updated += exam
+            }
+        }
+
+        if (updated.isNotEmpty()) {
+            examDao.upsertAll(updated)
+        }
+
+        return failed
+    }
+
     override suspend fun fetchPublicSurvey(baseUrl: String, teamId: String, surveyId: String): JsonObject? {
         return withContext(dispatcherProvider.io) {
             fetchPublicSurveyFrom(baseUrl, teamId, surveyId)
