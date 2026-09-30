@@ -115,7 +115,7 @@ class EventsDetailFragment : BaseBindingFragment<FragmentEventsDetailBinding>(Fr
         dialogBinding.tvStartTime.text = editStartTime.ifEmpty { getString(R.string.click_here_to_pick_time) }
         dialogBinding.tvEndTime.text = editEndTime.ifEmpty { getString(R.string.click_here_to_pick_time) }
 
-        when (meetup.recurring) {
+        when (meetup.recurring?.lowercase(Locale.ROOT)) {
             "daily" -> dialogBinding.rgRecuring.check(R.id.rb_daily)
             "weekly" -> dialogBinding.rgRecuring.check(R.id.rb_weekly)
             else -> dialogBinding.rgRecuring.check(R.id.rb_none)

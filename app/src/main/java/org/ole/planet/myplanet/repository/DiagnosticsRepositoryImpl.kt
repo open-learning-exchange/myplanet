@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.UserEntity
@@ -70,8 +72,10 @@ class DiagnosticsRepositoryImpl @Inject constructor(
             )
             apkLogDao.insert(log)
             true
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "saveLogToRoom failed", e)
             false
         }
     }
@@ -89,9 +93,15 @@ class DiagnosticsRepositoryImpl @Inject constructor(
             }
             apkLogDao.insertAll(logsToInsert)
             true
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "saveLogsToRoom failed", e)
             false
         }
+    }
+
+    companion object {
+        private const val TAG = "DiagnosticsRepository"
     }
 }

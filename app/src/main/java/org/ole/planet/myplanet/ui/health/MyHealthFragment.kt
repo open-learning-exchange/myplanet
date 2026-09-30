@@ -35,7 +35,7 @@ import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.effectiveId
-import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
+import org.ole.planet.myplanet.ui.user.LearnerRegistrationActivity
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils
@@ -265,7 +265,7 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
 
         alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
         alertHealthListBinding?.btnAddMember?.setOnClickListener {
-            startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
+            startActivity(Intent(requireContext(), LearnerRegistrationActivity::class.java))
         }
 
         alertHealthListBinding?.let { binding ->
