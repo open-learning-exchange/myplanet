@@ -236,4 +236,25 @@ class SyncManagerTest {
 
         coVerify(exactly = 1) { resourcesRepository.removeDeletedResources(listOf("res_1", "res_2")) }
     }
+
+    @Test
+    fun `resourceTransactionSync keeps paging and skips cleanup when the resource count is unavailable`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+
+        val countWithoutTotal = Response.success(kotlinx.serialization.json.buildJsonObject {})
+        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } returns countWithoutTotal
+
+        val doc1 = kotlinx.serialization.json.buildJsonObject { put("_id", "res_1") }
+        val rowsArray = kotlinx.serialization.json.buildJsonArray {
+            add(kotlinx.serialization.json.buildJsonObject { put("doc", doc1) })
+        }
+        val batchResponse = Response.success(kotlinx.serialization.json.buildJsonObject { put("rows", rowsArray) })
+        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true") }) } returns batchResponse
+        coEvery { resourcesRepository.batchInsertResources(any()) } returns listOf("res_1")
+
+        syncManager.start(listener, "sync", listOf())
+
+        coVerify(exactly = 1) { resourcesRepository.batchInsertResources(any()) }
+        coVerify(exactly = 0) { resourcesRepository.removeDeletedResources(any()) }
+    }
 }

@@ -71,7 +71,6 @@ class ResourceActivityDaoTest {
 
     @Test
     fun getMostOpenedResource_breaksTieDeterministicallyByTitleAsc() = runBlocking {
-        // Both resA and resB opened 2 times. "Alpha Resource" comes before "Beta Resource" alphabetically.
         dao.insert(createActivity("john", "pdf", "resB", "Beta Resource"))
         dao.insert(createActivity("john", "pdf", "resB", "Beta Resource"))
         dao.insert(createActivity("john", "pdf", "resA", "Alpha Resource"))
@@ -94,5 +93,22 @@ class ResourceActivityDaoTest {
         assertNotNull(result)
         assertEquals("Valid Resource", result?.title)
         assertEquals(1, result?.openCount)
+    }
+
+    @Test
+    fun getMostOpenedResource_selectsMinTitleForRenamedResource() = runBlocking {
+        dao.insert(createActivity("john", "pdf", "resRenamed", "Mid Title"))
+        dao.insert(createActivity("john", "pdf", "resRenamed", "Alpha Title"))
+        dao.insert(createActivity("john", "pdf", "resRenamed", "Zeta Title"))
+
+        val result1 = dao.getMostOpenedResource("john", "pdf")
+        assertNotNull(result1)
+        assertEquals("Alpha Title", result1?.title)
+        assertEquals(3, result1?.openCount)
+
+        val result2 = dao.getMostOpenedResource("john", "pdf")
+        assertNotNull(result2)
+        assertEquals("Alpha Title", result2?.title)
+        assertEquals(3, result2?.openCount)
     }
 }
