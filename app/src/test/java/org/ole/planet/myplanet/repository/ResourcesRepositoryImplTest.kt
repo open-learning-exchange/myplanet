@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.ResourceTitleProjection
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -1429,6 +1430,39 @@ class ResourcesRepositoryImplTest {
         val regularFile = temporaryFolder.newFile("regular_file.txt")
         val result2 = repository.getOfflineResourceItems(regularFile.absolutePath, emptySet(), emptySet())
         assertTrue(result2.isEmpty())
+    }
+
+    @Test
+    fun `getOfflineResourceItems groups nested files under their top resource folder`() = runTest {
+        val oleDir = temporaryFolder.newFolder("ole_nested")
+        File(oleDir, "res1/index.html").apply { parentFile?.mkdirs(); writeBytes(ByteArray(10)) }
+        File(oleDir, "res1/sudoku/img/x.png").apply { parentFile?.mkdirs(); writeBytes(ByteArray(20)) }
+        File(oleDir, "stray.png").writeBytes(ByteArray(5))
+        coEvery { myLibraryDao.getResourceTitles() } returns listOf(ResourceTitleProjection("res1", "Sudoku"))
+
+        val result = repository.getOfflineResourceItems(oleDir.absolutePath, emptySet(), emptySet())
+
+        assertEquals(1, result.size)
+        assertEquals("res1", result[0].resourceId)
+        assertEquals("Sudoku", result[0].title)
+        assertEquals(2, result[0].filePaths.size)
+        assertEquals(30L, result[0].totalSizeBytes)
+    }
+
+    @Test
+    fun `deleteOfflineResources removes nested empty folders and marks the real resource not offline`() = runTest {
+        val oleDir = temporaryFolder.newFolder("ole_delete")
+        val html = File(oleDir, "res1/index.html").apply { parentFile?.mkdirs(); writeBytes(ByteArray(10)) }
+        val image = File(oleDir, "res1/sudoku/img/x.png").apply { parentFile?.mkdirs(); writeBytes(ByteArray(20)) }
+        coEvery { myLibraryDao.markAsNotOfflineByResourceIds(any()) } returns Unit
+
+        repository.deleteOfflineResources(
+            oleDir.absolutePath,
+            listOf(OfflineResourceItem("res1", "Sudoku", listOf(html.absolutePath, image.absolutePath), 30L))
+        )
+
+        assertFalse(File(oleDir, "res1").exists())
+        coVerify(exactly = 1) { myLibraryDao.markAsNotOfflineByResourceIds(listOf("res1")) }
     }
 
     @Test

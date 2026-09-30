@@ -8,9 +8,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyLibrary.Companion.listToString
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.RatingSummary
-import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.FileUtils.getFileExtension
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -29,8 +28,7 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
-    @Inject
-    lateinit var ratingsRepository: RatingsRepository
+    private val viewModel: ResourceDetailViewModel by viewModels()
     private var _binding: FragmentLibraryDetailBinding? = null
     private val binding get() = _binding!!
     private var libraryId: String? = null
@@ -57,7 +55,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             val id = libraryId ?: return@launch
             try {
-                val updated = resourcesRepository.setUserLibrary(id, true)
+                val updated = viewModel.setUserLibrary(id, true)
                 if (updated != null) {
                     val changed = library.userId?.size != updated.userId?.size
                     library = updated
@@ -86,14 +84,14 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
-            userModel = userRepository.getUserModel()
+            userModel = viewModel.getUserModel()
             val id = libraryId
             if (id.isNullOrBlank()) {
                 handleLibraryNotFound()
                 return@launch
             }
 
-            val fetchedLibrary = resourcesRepository.resolveLibraryItem(id)
+            val fetchedLibrary = viewModel.resolveLibraryItem(id)
 
             if (fetchedLibrary == null) {
                 handleLibraryNotFound()
@@ -239,7 +237,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                     return@launch
                 }
                 try {
-                    val updated = resourcesRepository.setUserLibrary(id, isAdd)
+                    val updated = viewModel.setUserLibrary(id, isAdd)
                     if (updated != null) {
                         library = updated
                         val formatRes = if (isAdd) R.string.format_added_to_mylibrary else R.string.format_removed_from_mylibrary
@@ -274,7 +272,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             if (!isAdded) return@launch
             val resourceId = library.resourceId ?: return@launch
             try {
-                val rating = ratingsRepository.getRatingSummary("resource", resourceId, userModel?.id)
+                val rating = viewModel.getRatingSummary("resource", resourceId, userModel?.id)
                 lastKnownRating = rating
                 setRatings(rating)
             } catch (e: CancellationException) {
