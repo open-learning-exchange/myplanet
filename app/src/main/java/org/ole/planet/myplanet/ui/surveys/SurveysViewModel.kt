@@ -76,6 +76,14 @@ class SurveysViewModel @Inject constructor(
     private val _userMessage = MutableStateFlow<String?>(null)
     val userMessage: StateFlow<String?> = _userMessage.asStateFlow()
 
+    fun onErrorMessageShown() {
+        _errorMessage.value = null
+    }
+
+    fun onUserMessageShown() {
+        _userMessage.value = null
+    }
+
     private val _users = MutableStateFlow<List<UserEntity>>(emptyList())
     val users: StateFlow<List<UserEntity>> = _users.asStateFlow()
 

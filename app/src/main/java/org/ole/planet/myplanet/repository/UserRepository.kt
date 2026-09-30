@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.DashboardProfile
-import org.ole.planet.myplanet.model.MemberInfo
+import org.ole.planet.myplanet.model.LearnerRegistrationInfo
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 
@@ -75,7 +75,7 @@ interface UserRepository : UserAchievementsRepository {
         update: ProfileFieldsUpdate
     )
 
-    suspend fun createMember(user: MemberInfo): Pair<Boolean, String>
+    suspend fun createMember(user: LearnerRegistrationInfo): Pair<Boolean, String>
 
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
 
