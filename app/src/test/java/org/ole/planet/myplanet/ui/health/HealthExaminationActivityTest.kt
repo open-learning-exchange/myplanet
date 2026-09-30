@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.health
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -60,5 +61,23 @@ class HealthExaminationActivityTest {
 
         assertFalse("Condition present in diagnosis_list should NOT be added to customDiag", customDiag.contains(inListCondition))
         assertTrue("Condition NOT present in diagnosis_list with value=true SHOULD be added to customDiag", customDiag.contains(notInListCondition))
+    }
+
+    @Test
+    fun seedSavedConditions_keepsTickedStandardConditionsAndLeavesCustomToTheChips() {
+        val activity = Robolectric.buildActivity(HealthExaminationActivity::class.java).create().get()
+        val standard = activity.resources.getStringArray(R.array.diagnosis_list)
+        val cls = HealthExaminationActivity::class.java
+        cls.getDeclaredField("conditionsMap").apply { isAccessible = true }
+            .set(activity, mapOf(standard[0] to true, standard[1] to false, "Custom Condition" to true))
+
+        cls.getDeclaredMethod("seedSavedConditions").apply { isAccessible = true }.invoke(activity)
+
+        @Suppress("UNCHECKED_CAST")
+        val mapConditions = cls.getDeclaredField("mapConditions").apply { isAccessible = true }
+            .get(activity) as Map<String?, Boolean>
+        assertEquals(true, mapConditions[standard[0]])
+        assertEquals(false, mapConditions[standard[1]])
+        assertFalse(mapConditions.containsKey("Custom Condition"))
     }
 }
