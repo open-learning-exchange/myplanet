@@ -71,7 +71,6 @@ class ResourceActivityDaoTest {
 
     @Test
     fun getMostOpenedResource_breaksTieDeterministicallyByTitleAsc() = runBlocking {
-        // Both resA and resB opened 2 times. "Alpha Resource" comes before "Beta Resource" alphabetically.
         dao.insert(createActivity("john", "pdf", "resB", "Beta Resource"))
         dao.insert(createActivity("john", "pdf", "resB", "Beta Resource"))
         dao.insert(createActivity("john", "pdf", "resA", "Alpha Resource"))
@@ -98,8 +97,6 @@ class ResourceActivityDaoTest {
 
     @Test
     fun getMostOpenedResource_selectsMinTitleForRenamedResource() = runBlocking {
-        // First inserted ("Mid Title"), MIN ("Alpha Title"), last inserted ("Zeta Title").
-        // Distinguishes MIN(title) from both first-inserted and last-inserted (newest) rows.
         dao.insert(createActivity("john", "pdf", "resRenamed", "Mid Title"))
         dao.insert(createActivity("john", "pdf", "resRenamed", "Alpha Title"))
         dao.insert(createActivity("john", "pdf", "resRenamed", "Zeta Title"))
