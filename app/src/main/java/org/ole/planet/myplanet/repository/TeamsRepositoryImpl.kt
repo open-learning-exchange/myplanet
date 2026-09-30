@@ -418,6 +418,22 @@ class TeamsRepositoryImpl @Inject constructor(
             .associateBy({ it._id }, { it.name ?: "Unknown Team" })
     }
 
+    override suspend fun getTaskById(taskId: String): TeamTask? {
+        return teamTaskDao.getById(taskId)
+    }
+
+    override suspend fun getTasksByIds(taskIds: List<String>): List<TeamTask> {
+        return teamTaskDao.getByIds(taskIds)
+    }
+
+    override suspend fun getTasksByTitles(titles: List<String>): List<TeamTask> {
+        return teamTaskDao.getByTitles(titles)
+    }
+
+    override suspend fun getTasksForUserBetween(userId: String, start: Long, end: Long): List<TeamTask> {
+        return teamTaskDao.getTasksForUserBetween(userId, start, end)
+    }
+
     override suspend fun getJoinRequestTeamId(requestId: String): String? {
         val request = teamDao.getById(requestId) ?: return null
         return if (request.docType == "request") request.teamId else null
