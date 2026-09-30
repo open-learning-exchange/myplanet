@@ -144,9 +144,7 @@ class DownloadService : Service() {
 
             if (nextUrl == null) {
                 Log.d(TAG, "processDownloadQueue: queue empty — completed=$sessionCompletedCount total=$sessionTotalCount")
-                if (sessionCompletedCount > 0) {
-                    showCompletionNotification(false)
-                }
+                completionHadErrors(sessionCompletedCount, sessionTotalCount)?.let { showCompletionNotification(it) }
                 persistProcessedUrls()
                 stopSelf()
                 return
@@ -648,6 +646,11 @@ class DownloadService : Service() {
             if (downloadQueue.isEmpty()) return null
             return downloadQueue.maxByOrNull { it.priority } ?: downloadQueue.first()
         }
+
+        /** Whether the session's summary should mention errors, or null when nothing was attempted. */
+        @VisibleForTesting
+        internal fun completionHadErrors(completed: Int, total: Int): Boolean? =
+            if (total > 0) completed < total else null
 
         @VisibleForTesting
         internal fun getNextUrl(

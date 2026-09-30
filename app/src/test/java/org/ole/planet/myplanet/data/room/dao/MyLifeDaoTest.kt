@@ -76,4 +76,38 @@ class MyLifeDaoTest {
         assertEquals("Item2", list[0].title)
         assertEquals("Item1", list[1].title)
     }
+
+    @Test
+    fun getByIds_emptyInput_returnsEmptyList() = runBlocking {
+        val result = myLifeDao.getByIds(emptyList())
+        assertEquals(0, result.size)
+    }
+
+    @Test
+    fun getByIds_belowChunkSize_returnsMatchingItems() = runBlocking {
+        val item1 = MyLife("img1", "user1", "Item1").apply { _id = "id1" }
+        val item2 = MyLife("img2", "user1", "Item2").apply { _id = "id2" }
+        myLifeDao.insertAll(listOf(item1, item2))
+
+        val result = myLifeDao.getByIds(listOf("id1", "id2"))
+        assertEquals(2, result.size)
+        assertEquals(setOf("id1", "id2"), result.map { it._id }.toSet())
+    }
+
+    @Test
+    fun getByIds_aboveChunkSize_returnsMatchingItems() = runBlocking {
+        val totalItems = 950
+        val items = (1..totalItems).map { i ->
+            MyLife("img$i", "user1", "Item$i").apply { _id = "id_$i" }
+        }
+        myLifeDao.insertAll(items)
+
+        val queryIds = (1..totalItems).map { "id_$it" }
+        val result = myLifeDao.getByIds(queryIds)
+
+        assertEquals(totalItems, result.size)
+        val returnedIds = result.map { it._id }
+        assertEquals(totalItems, returnedIds.distinct().size)
+        assertEquals(queryIds.toSet(), returnedIds.toSet())
+    }
 }

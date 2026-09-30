@@ -15,6 +15,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -114,10 +115,7 @@ class ChatRepositoryImplTest {
     @Test
     fun getLatestRev_findsHighestRevByNumericPrefix() = runTest {
         val id = "123"
-        val item1 = ChatHistory().apply { _rev = "1-abc" }
-        val item2 = ChatHistory().apply { _rev = "10-def" }
-        val item3 = ChatHistory().apply { _rev = "2-ghi" }
-        coEvery { chatDao.getByDocId(id) } returns listOf(item1, item2, item3)
+        coEvery { chatDao.getRevsByDocId(id) } returns listOf("1-abc", "10-def", "2-ghi")
 
         val result = chatRepository.getLatestRev(id)
 
@@ -263,5 +261,46 @@ class ChatRepositoryImplTest {
         assertTrue(result["news_2"]!!.isEmpty())
         assertTrue(result["news_3"]!!.isEmpty())
         assertTrue(result["news_4"]!!.isEmpty())
+    }
+
+    @Test
+    fun getLatestRev_spansDigitBoundary() = runTest {
+        val id = "digit_boundary_id"
+        coEvery { chatDao.getRevsByDocId(id) } returns listOf("9-abc", "10-def")
+
+        val result = chatRepository.getLatestRev(id)
+
+        assertEquals("10-def", result)
+    }
+
+    @Test
+    fun getLatestRev_handlesNullRevAmongValidRevs() = runTest {
+        val id = "null_rev_id"
+        coEvery { chatDao.getRevsByDocId(id) } returns listOf("1-abc", null, "2-def")
+
+        val result = chatRepository.getLatestRev(id)
+
+        assertEquals("2-def", result)
+    }
+
+    @Test
+    fun getLatestRev_handlesRevWithNoLeadingInteger() = runTest {
+        val id = "no_leading_int_id"
+        coEvery { chatDao.getRevsByDocId(id) } returns listOf("invalid_rev", "5-abc", "no-leading-int")
+
+        val result = chatRepository.getLatestRev(id)
+
+        assertEquals("5-abc", result)
+    }
+
+    @Test
+    fun getLatestRev_returnsNullWhenNoRowsExist() = runTest {
+        val id = "empty_id"
+        coEvery { chatDao.getRevsByDocId(id) } returns emptyList()
+
+        val result = chatRepository.getLatestRev(id)
+
+        assertNull(result)
+        coVerify(exactly = 0) { chatDao.getByDocId(any()) }
     }
 }
