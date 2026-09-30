@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.utils
 
 import android.app.Activity
-import android.app.Application
 import android.view.View
 import android.view.Window
 import androidx.core.view.ViewCompat
@@ -15,12 +14,7 @@ import io.mockk.verify
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
-@RunWith(RobolectricTestRunner::class)
-@Config(application = Application::class)
 class EdgeToEdgeUtilsTest {
 
     private lateinit var mockActivity: Activity
