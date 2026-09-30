@@ -193,6 +193,56 @@ class TeamsRepositoryImplTest {
     }
 
     @Test
+    fun `test getTaskById delegates to teamTaskDao`() = runTest(testDispatcher) {
+        val taskId = "task_1"
+        val mockTask = TeamTask().apply { id = taskId }
+        coEvery { teamTaskDao.getById(taskId) } returns mockTask
+
+        val result = teamsRepository.getTaskById(taskId)
+
+        assertEquals(mockTask, result)
+        coVerify(exactly = 1) { teamTaskDao.getById(taskId) }
+    }
+
+    @Test
+    fun `test getTasksByIds delegates to teamTaskDao`() = runTest(testDispatcher) {
+        val taskIds = listOf("task_1", "task_2")
+        val mockTasks = listOf(TeamTask().apply { id = "task_1" })
+        coEvery { teamTaskDao.getByIds(taskIds) } returns mockTasks
+
+        val result = teamsRepository.getTasksByIds(taskIds)
+
+        assertEquals(mockTasks, result)
+        coVerify(exactly = 1) { teamTaskDao.getByIds(taskIds) }
+    }
+
+    @Test
+    fun `test getTasksByTitles delegates to teamTaskDao`() = runTest(testDispatcher) {
+        val titles = listOf("Title 1", "Title 2")
+        val mockTasks = listOf(TeamTask().apply { title = "Title 1" })
+        coEvery { teamTaskDao.getByTitles(titles) } returns mockTasks
+
+        val result = teamsRepository.getTasksByTitles(titles)
+
+        assertEquals(mockTasks, result)
+        coVerify(exactly = 1) { teamTaskDao.getByTitles(titles) }
+    }
+
+    @Test
+    fun `test getTasksForUserBetween delegates to teamTaskDao`() = runTest(testDispatcher) {
+        val userId = "user_1"
+        val start = 100L
+        val end = 200L
+        val mockTasks = listOf(TeamTask().apply { assignee = userId })
+        coEvery { teamTaskDao.getTasksForUserBetween(userId, start, end) } returns mockTasks
+
+        val result = teamsRepository.getTasksForUserBetween(userId, start, end)
+
+        assertEquals(mockTasks, result)
+        coVerify(exactly = 1) { teamTaskDao.getTasksForUserBetween(userId, start, end) }
+    }
+
+    @Test
     fun `test getMyTeamDetailsFlow returns mapped flow of team details`() = runTest(testDispatcher) {
         // Arrange
         val userId = "user_id_1"

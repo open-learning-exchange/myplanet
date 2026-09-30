@@ -105,4 +105,74 @@ class RetryDaoTest {
         val expectedNextRetry = timestamp + 1_800_000L
         assertEquals(expectedNextRetry, result.nextRetryTime)
     }
+
+    @Test
+    fun getPending_ordersByNextRetryTimeAsc() = runBlocking {
+        val op1 = RetryOperation().apply {
+            id = "op_later"
+            status = RetryOperation.STATUS_PENDING
+            nextRetryTime = 2000L
+            maxAttempts = 5
+            attemptCount = 0
+        }
+        val op2 = RetryOperation().apply {
+            id = "op_earlier"
+            status = RetryOperation.STATUS_PENDING
+            nextRetryTime = 1000L
+            maxAttempts = 5
+            attemptCount = 0
+        }
+        val op3 = RetryOperation().apply {
+            id = "op_middle"
+            status = RetryOperation.STATUS_PENDING
+            nextRetryTime = 1500L
+            maxAttempts = 5
+            attemptCount = 0
+        }
+
+        retryDao.insert(op1)
+        retryDao.insert(op2)
+        retryDao.insert(op3)
+
+        val pending = retryDao.getPending(now = 3000L)
+        assertEquals(3, pending.size)
+        assertEquals("op_earlier", pending[0].id)
+        assertEquals("op_middle", pending[1].id)
+        assertEquals("op_later", pending[2].id)
+    }
+
+    @Test
+    fun getPending_ordersByIdAsc_whenNextRetryTimeIsEqual() = runBlocking {
+        val opC = RetryOperation().apply {
+            id = "opC"
+            status = RetryOperation.STATUS_PENDING
+            nextRetryTime = 1000L
+            maxAttempts = 5
+            attemptCount = 0
+        }
+        val opA = RetryOperation().apply {
+            id = "opA"
+            status = RetryOperation.STATUS_PENDING
+            nextRetryTime = 1000L
+            maxAttempts = 5
+            attemptCount = 0
+        }
+        val opB = RetryOperation().apply {
+            id = "opB"
+            status = RetryOperation.STATUS_PENDING
+            nextRetryTime = 1000L
+            maxAttempts = 5
+            attemptCount = 0
+        }
+
+        retryDao.insert(opC)
+        retryDao.insert(opA)
+        retryDao.insert(opB)
+
+        val pending = retryDao.getPending(now = 2000L)
+        assertEquals(3, pending.size)
+        assertEquals("opA", pending[0].id)
+        assertEquals("opB", pending[1].id)
+        assertEquals("opC", pending[2].id)
+    }
 }

@@ -53,15 +53,12 @@ class TeamChatBadgeIntegrationTest {
 
         val userRepository = dagger.Lazy { mockk<UserRepository>(relaxed = true) }
         val teamsRepository = dagger.Lazy { mockk<TeamsNotificationsRepository>(relaxed = true) }
-        val teamTaskDao = mockk<org.ole.planet.myplanet.data.room.dao.TeamTaskDao>(relaxed = true)
-        coEvery { teamTaskDao.getTasksForUserBetween(any(), any(), any()) } returns emptyList()
         notificationsRepository = NotificationsRepositoryImpl(
             userRepository,
             teamsRepository,
             TestTimeProvider(),
             teamNotificationDao,
             mockk(relaxed = true),
-            teamTaskDao,
             voicesRepository,
         )
     }
