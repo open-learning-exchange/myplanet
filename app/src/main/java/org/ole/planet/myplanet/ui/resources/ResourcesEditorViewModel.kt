@@ -13,7 +13,7 @@ import org.ole.planet.myplanet.repository.LocalResourceRequest
 import org.ole.planet.myplanet.repository.ResourcesRepository
 
 @HiltViewModel
-class AddLocalResourceViewModel @Inject constructor(
+class ResourcesEditorViewModel @Inject constructor(
     private val resourcesRepository: ResourcesRepository
 ) : ViewModel() {
 

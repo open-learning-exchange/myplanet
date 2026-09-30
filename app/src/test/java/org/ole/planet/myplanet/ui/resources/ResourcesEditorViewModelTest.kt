@@ -18,17 +18,17 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class AddLocalResourceViewModelTest {
+class ResourcesEditorViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
     private val resourcesRepository = mockk<ResourcesRepository>(relaxed = true)
-    private lateinit var viewModel: AddLocalResourceViewModel
+    private lateinit var viewModel: ResourcesEditorViewModel
 
     @Before
     fun setup() {
-        viewModel = AddLocalResourceViewModel(resourcesRepository)
+        viewModel = ResourcesEditorViewModel(resourcesRepository)
     }
 
     @Test

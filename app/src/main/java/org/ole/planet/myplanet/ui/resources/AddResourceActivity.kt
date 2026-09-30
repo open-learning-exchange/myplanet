@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.utils.setupHintSpinner
 class AddResourceActivity : AppCompatActivity() {
     @Inject
     lateinit var userSessionManager: UserSessionManager
-    private val viewModel: AddLocalResourceViewModel by viewModels()
+    private val viewModel: ResourcesEditorViewModel by viewModels()
     private lateinit var binding: ActivityAddResourceBinding
     var userModel: UserEntity? = null
     var subjects: MutableList<String>? = null
