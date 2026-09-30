@@ -17,8 +17,8 @@ import kotlinx.coroutines.SupervisorJob
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatSyncWriter
-import org.ole.planet.myplanet.repository.CommunitySyncWriter
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.EventsSyncWriter
 import org.ole.planet.myplanet.repository.FeedbackSyncWriter
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
@@ -90,7 +90,7 @@ object ServiceModule {
         ratingsRepository: RatingsRepository,
         submissionsRepository: SubmissionsRepository,
         coursesRepository: CoursesRepository,
-        communityRepository: CommunitySyncWriter,
+        eventsSyncWriter: EventsSyncWriter,
         healthRepository: HealthRepository,
         progressRepository: ProgressRepository,
         surveysRepository: SurveysRepository,
@@ -98,6 +98,6 @@ object ServiceModule {
         userSessionManager: UserSessionManager,
         syncTimeLogger: SyncTimeLogger
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, dispatcherProvider, userSessionManager, syncTimeLogger)
+        return TransactionSyncManager(apiInterface, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, eventsSyncWriter, healthRepository, progressRepository, surveysRepository, dispatcherProvider, userSessionManager, syncTimeLogger)
     }
 }

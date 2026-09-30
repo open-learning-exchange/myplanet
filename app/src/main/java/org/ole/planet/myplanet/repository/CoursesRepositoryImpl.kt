@@ -11,6 +11,7 @@ import java.util.Base64
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
@@ -550,8 +551,8 @@ class CoursesRepositoryImpl @Inject constructor(
         val step = courseStepDao.getById(stepId)
             ?: throw IllegalStateException("Step not found")
         val resources = myLibraryDao.getByStepId(stepId)
-        val stepExams = examDao.getByStepIdAndType(stepId, "courses").map { it }
-        val stepSurvey = examDao.getByStepIdAndType(stepId, "surveys").map { it }
+        val stepExams = examDao.getByStepIdAndType(stepId, "courses")
+        val stepSurvey = examDao.getByStepIdAndType(stepId, "surveys")
         val userHasCourse = isMyCourse(userId, step.courseId)
 
         val hasExam = if (stepExams.isNotEmpty()) {
@@ -880,6 +881,8 @@ class CoursesRepositoryImpl @Inject constructor(
                     val resourceId = library.resourceId ?: return@forEach
                     try {
                         resourcesRepository.reconcileHtmlResourceOffline(resourceId)
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Log.w("CoursesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
                     }
@@ -909,7 +912,7 @@ class CoursesRepositoryImpl @Inject constructor(
         val steps = if (courseKey.isBlank()) {
             emptyList()
         } else {
-            courseStepDao.getByCourseId(courseKey).map { it }
+            courseStepDao.getByCourseId(courseKey)
         }
         return course.apply { courseSteps = steps.toMutableList(); setNumberOfSteps(steps.size) }
     }

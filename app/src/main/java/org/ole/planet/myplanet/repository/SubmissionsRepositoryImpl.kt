@@ -289,7 +289,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         val examId = submission.parentId?.substringBefore('@')
         val exam = examId?.let { getExamById(it) }
 
-        val questions = examId?.let { questionDao.getByExamId(it).map { question -> question } } ?: emptyList()
+        val questions = examId?.let { questionDao.getByExamId(it) } ?: emptyList()
 
         val answersLookup = mutableMapOf<String, Answer>()
         submission.answers?.forEach { answer ->
@@ -732,6 +732,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             )
 
             val answersArray = GsonUtils.getJsonArray("answers", submission)
+            val examIdPart = parentId.split("@").firstOrNull() ?: parentId
             for (i in 0 until answersArray.size()) {
                 val answerJson = answersArray[i].asJsonObject
                 val valueElement = answerJson.get("value")
@@ -740,7 +741,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 } else {
                     null
                 }
-                val examIdPart = parentId.split("@").firstOrNull() ?: parentId
                 answers.add(
                     Answer(
                         id = "$id-$i",
@@ -786,7 +786,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     private suspend fun getPayloadData(submission: Submission, user: UserEntity?): PayloadData {
         val examId = submission.examIdFromParentId()
         val exam = examId?.let { examDao.getById(it) }
-        val questions = exam?.id?.let { questionDao.getByExamId(it).map { question -> question } } ?: emptyList()
+        val questions = exam?.id?.let { questionDao.getByExamId(it) } ?: emptyList()
         return PayloadData(user, exam, questions)
     }
 

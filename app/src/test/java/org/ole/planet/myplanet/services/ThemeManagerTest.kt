@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.services
 
+import android.app.Application
 import android.os.Looper
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
-import dagger.hilt.android.testing.HiltTestApplication
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -21,25 +21,19 @@ import org.ole.planet.myplanet.utils.ThemeMode
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
-import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 import org.robolectric.shadows.ShadowDialog
 
 @RunWith(RobolectricTestRunner::class)
-@Config(manifest = Config.NONE, application = HiltTestApplication::class)
+@Config(manifest = Config.NONE, application = Application::class)
 @LooperMode(LooperMode.Mode.PAUSED)
 class ThemeManagerTest {
-    private lateinit var activityController: ActivityController<AppCompatActivity>
-    private lateinit var activity: AppCompatActivity
     private lateinit var mockSpm: SharedPrefManager
     private lateinit var themeManager: ThemeManager
 
     @Before
     fun setUp() {
-        activityController = Robolectric.buildActivity(AppCompatActivity::class.java).setup()
-        activity = activityController.get()
-
         mockSpm = mockk(relaxed = true)
         mockkStatic(AppCompatDelegate::class)
 
@@ -48,7 +42,6 @@ class ThemeManagerTest {
 
     @After
     fun tearDown() {
-        activityController.pause().stop().destroy()
         unmockkAll()
     }
 
@@ -82,25 +75,31 @@ class ThemeManagerTest {
 
     @Test
     fun testShowThemeDialog() {
-        every { mockSpm.getRawString("theme_mode", ThemeMode.FOLLOW_SYSTEM) } returns ThemeMode.LIGHT
+        val controller = Robolectric.buildActivity(AppCompatActivity::class.java).setup()
+        try {
+            val activity = controller.get()
+            every { mockSpm.getRawString("theme_mode", ThemeMode.FOLLOW_SYSTEM) } returns ThemeMode.LIGHT
 
-        themeManager.showThemeDialog(activity)
+            themeManager.showThemeDialog(activity)
 
-        Shadows.shadowOf(Looper.getMainLooper()).idle()
+            Shadows.shadowOf(Looper.getMainLooper()).idle()
 
-        // Use ShadowDialog.getLatestDialog() as androidx.appcompat.app.AlertDialog
-        val dialog = ShadowDialog.getLatestDialog() as AlertDialog
-        assertNotNull(dialog)
-        assertTrue(dialog.isShowing)
+            // Use ShadowDialog.getLatestDialog() as androidx.appcompat.app.AlertDialog
+            val dialog = ShadowDialog.getLatestDialog() as AlertDialog
+            assertNotNull(dialog)
+            assertTrue(dialog.isShowing)
 
-        val listView = dialog.listView
-        assertNotNull(listView)
-        assertEquals(3, listView.count)
+            val listView = dialog.listView
+            assertNotNull(listView)
+            assertEquals(3, listView.count)
 
-        // Simulate clicking 'Dark' mode using explicitly position and ID without relying on null view layout
-        listView.performItemClick(null, 1, listView.getItemIdAtPosition(1))
+            // Simulate clicking 'Dark' mode using explicitly position and ID without relying on null view layout
+            listView.performItemClick(null, 1, listView.getItemIdAtPosition(1))
 
-        verify { mockSpm.setRawString("theme_mode", ThemeMode.DARK) }
-        verify { AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES) }
+            verify { mockSpm.setRawString("theme_mode", ThemeMode.DARK) }
+            verify { AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES) }
+        } finally {
+            controller.pause().stop().destroy()
+        }
     }
 }

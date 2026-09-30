@@ -397,10 +397,9 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun reconcileHtmlResourceOffline(resourceId: String) {
-        val library = myLibraryDao.getByResourceId(resourceId) ?: return
+    private suspend fun applyHtmlOffline(library: MyLibrary, resourceId: String): Boolean {
         if (library.isResourceOffline()) {
-            return
+            return false
         }
         val entryFile = library.openWhichFile?.takeIf { it.isNotBlank() } ?: "index.html"
         val directory = File(storagePathResolver.resolveOleDirectory(), resourceId)
@@ -408,15 +407,22 @@ class ResourcesRepositoryImpl @Inject constructor(
             FileUtils.resolveHtmlEntryFile(directory, entryFile)?.exists() == true
         }
         if (!entryExists) {
-            return
+            return false
         }
         library.resourceOffline = true
         library.downloadedRev = library._rev
         if (library.resourceLocalAddress.isNullOrBlank()) {
             library.resourceLocalAddress = entryFile
         }
-        myLibraryDao.upsert(library)
-        clearResourceListCache()
+        return true
+    }
+
+    override suspend fun reconcileHtmlResourceOffline(resourceId: String) {
+        val library = myLibraryDao.getByResourceId(resourceId) ?: return
+        if (applyHtmlOffline(library, resourceId)) {
+            myLibraryDao.upsert(library)
+            clearResourceListCache()
+        }
     }
 
     private suspend fun markResourceOfflineByResourceId(resourceId: String, relativePath: String) {
@@ -722,15 +728,34 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     // Detects HTML resources already present on disk from a prior install/sync that never got a resourceLocalAddress.
     private suspend fun reconcileHtmlLibraries(libraries: List<MyLibrary>) {
-        libraries.forEach { library ->
-            if (library.mediaType == "HTML" && library.resourceLocalAddress.isNullOrBlank()) {
-                val resourceId = library.resourceId ?: return@forEach
-                try {
-                    reconcileHtmlResourceOffline(resourceId)
-                } catch (e: Exception) {
-                    Log.w("ResourcesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
+        val qualifyingIds = libraries
+            .filter { it.mediaType == "HTML" && it.resourceLocalAddress.isNullOrBlank() }
+            .mapNotNull { it.resourceId }
+            .distinct()
+
+        if (qualifyingIds.isEmpty()) return
+
+        val rows = myLibraryDao.getByResourceIdsByRowid(qualifyingIds)
+        val firstRowByResourceId = rows
+            .filter { it.resourceId != null }
+            .groupBy { it.resourceId!! }
+            .mapValues { (_, list) -> list.first() }
+
+        val changed = mutableListOf<MyLibrary>()
+        qualifyingIds.forEach { resourceId ->
+            val library = firstRowByResourceId[resourceId] ?: return@forEach
+            try {
+                if (applyHtmlOffline(library, resourceId)) {
+                    changed.add(library)
                 }
+            } catch (e: Exception) {
+                Log.w("ResourcesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
             }
+        }
+
+        if (changed.isNotEmpty()) {
+            myLibraryDao.upsertAll(changed)
+            clearResourceListCache()
         }
     }
 

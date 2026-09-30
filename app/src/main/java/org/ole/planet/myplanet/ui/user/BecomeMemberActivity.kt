@@ -123,7 +123,6 @@ class BecomeMemberActivity : BaseActivity() {
                     startUpload("becomeMember", userName, securityCallback)
 
                     if (result.second == getString(R.string.not_connect_to_planet_created_user_offline)) {
-                        Utilities.toast(this@BecomeMemberActivity, result.second)
                         securityCallback.onChanged()
                     }
                     Utilities.toast(this@BecomeMemberActivity, result.second)

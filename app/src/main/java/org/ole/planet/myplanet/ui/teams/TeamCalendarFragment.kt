@@ -52,7 +52,6 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var end: Calendar
     private lateinit var clickedCalendar: Calendar
     private lateinit var calendarEventsMap: MutableMap<CalendarDay, Meetup>
-    private var meetupList: List<Meetup> = emptyList()
     private val eventDates: MutableList<Calendar> = mutableListOf()
     private var addMeetupDialog: AlertDialog? = null
     private var meetupDialog: AlertDialog? = null
@@ -77,7 +76,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         return try {
             val url = URL(toCheck)
             url.host.contains(".")
-        } catch (e: MalformedURLException) {
+        } catch (_: MalformedURLException) {
             false
         }
     }
@@ -147,7 +146,6 @@ class TeamCalendarFragment : BaseTeamFragment() {
         description: String,
         location: String
     ) {
-        val defaultPlaceholder = getString(R.string.click_here_to_pick_time)
         val startTimeText = "${addMeetupBinding.tvStartTime.text}"
         val endTimeText = "${addMeetupBinding.tvEndTime.text}"
         val recurringId = addMeetupBinding.rgRecuring.checkedRadioButtonId
@@ -159,8 +157,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
         val endMillis = end.timeInMillis
         val currentTeamId = teamId
 
-        val startTime = if (startTimeText == defaultPlaceholder) "" else startTimeText
-        val endTime = if (endTimeText == defaultPlaceholder) "" else endTimeText
+        val startTime = pickedTimeOrEmpty(startTimeText)
+        val endTime = pickedTimeOrEmpty(endTimeText)
 
         val params = MeetupCreationParams(
             title = title,
@@ -179,6 +177,11 @@ class TeamCalendarFragment : BaseTeamFragment() {
         addMeetupBinding.btnSave.isEnabled = false
         pendingSaveButton = addMeetupBinding.btnSave
         viewModel.createMeetup(params)
+    }
+
+    private fun pickedTimeOrEmpty(text: CharSequence?): String {
+        val value = text?.toString().orEmpty()
+        return if (value == getString(R.string.click_here_to_pick_time)) "" else value
     }
 
     private fun setDatePickerListener(view: TextView, date: Calendar?, endDate: Calendar?) {
@@ -324,9 +327,6 @@ class TeamCalendarFragment : BaseTeamFragment() {
             }
 
             val meetupId = meetup.id
-            if (meetupId == null) {
-                return@setOnClickListener
-            }
 
             dialogBinding.btnSave.isEnabled = false
             viewLifecycleOwner.lifecycleScope.launch {
@@ -336,8 +336,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
                     description = dialogBinding.etDescription.text.toString().trim(),
                     startDate = editStart.timeInMillis,
                     endDate = editEnd.timeInMillis,
-                    startTime = dialogBinding.tvStartTime.text.toString(),
-                    endTime = dialogBinding.tvEndTime.text.toString(),
+                    startTime = pickedTimeOrEmpty(dialogBinding.tvStartTime.text),
+                    endTime = pickedTimeOrEmpty(dialogBinding.tvEndTime.text),
                     meetupLocation = dialogBinding.etLocation.text.toString().trim(),
                     meetupLink = dialogBinding.etLink.text.toString().trim(),
                     recurring = recurring
