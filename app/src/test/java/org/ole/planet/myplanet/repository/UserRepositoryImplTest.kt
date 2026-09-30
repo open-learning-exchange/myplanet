@@ -35,7 +35,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.UserDao
-import org.ole.planet.myplanet.model.MemberInfo
+import org.ole.planet.myplanet.model.LearnerRegistrationInfo
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -437,7 +437,7 @@ class UserRepositoryImplTest {
         val jsonSlot = slot<JsonObject>()
         coEvery { spyRepository.becomeMember(capture(jsonSlot)) } returns Pair(true, "success")
 
-        val memberInfo = MemberInfo(
+        val memberInfo = LearnerRegistrationInfo(
             username = "testuser",
             password = "password123",
             rePassword = "password123",

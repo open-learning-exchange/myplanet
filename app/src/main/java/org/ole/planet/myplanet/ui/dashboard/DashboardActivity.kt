@@ -83,7 +83,7 @@ import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
-import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
+import org.ole.planet.myplanet.ui.user.LearnerRegistrationActivity
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
@@ -780,7 +780,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             logout.contentDescription = getString(R.string.menu_logout)
             becomeMember.setOnClickListener {
                 lifecycleScope.launch {
-                    val intent = Intent(this@DashboardActivity, BecomeMemberActivity::class.java)
+                    val intent = Intent(this@DashboardActivity, LearnerRegistrationActivity::class.java)
                     intent.putExtra("username", profileDbHandler.getUserModel()?.name)
                     intent.putExtra("guest", true)
                     setResult(RESULT_OK, intent)
