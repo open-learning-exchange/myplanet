@@ -30,7 +30,6 @@ import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DimenUtils.dpToPx
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.GsonUtils
-import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.getAge
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -124,15 +123,16 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             binding.etVision.setText(examination?.vision)
             binding.etHearing.setText(examination?.hearing)
             val encrypted = user?.let { examination?.getEncryptedDataAsJson(it) }
-            binding.etObservation.setText(getString(getString(R.string.note_), encrypted))
-            binding.etDiag.setText(getString(getString(R.string.diagnosis), encrypted))
-            binding.etTreatments.setText(getString(getString(R.string.treatments), encrypted))
-            binding.etMedications.setText(getString(getString(R.string.medications), encrypted))
-            binding.etImmunization.setText(getString(getString(R.string.immunizations), encrypted))
-            binding.etAllergies.setText(getString(getString(R.string.allergies), encrypted))
-            binding.etXray.setText(getString(getString(R.string.xrays), encrypted))
-            binding.etLabtest.setText(getString(getString(R.string.tests), encrypted))
-            binding.etReferrals.setText(getString(getString(R.string.referrals), encrypted))
+            val saved = encrypted?.let { runCatching { GsonUtils.gson.fromJson(it, Examination::class.java) }.getOrNull() }
+            binding.etObservation.setText(saved?.notes.orEmpty())
+            binding.etDiag.setText(saved?.diagnosis.orEmpty())
+            binding.etTreatments.setText(saved?.treatments.orEmpty())
+            binding.etMedications.setText(saved?.medications.orEmpty())
+            binding.etImmunization.setText(saved?.immunizations.orEmpty())
+            binding.etAllergies.setText(saved?.allergies.orEmpty())
+            binding.etXray.setText(saved?.xrays.orEmpty())
+            binding.etLabtest.setText(saved?.tests.orEmpty())
+            binding.etReferrals.setText(saved?.referrals.orEmpty())
         }
         showCheckbox(examination)
         showOtherDiagnosis()
