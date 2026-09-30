@@ -496,4 +496,77 @@ class CoursesRepositoryImplTest {
 
         io.mockk.unmockkStatic("androidx.room.RoomDatabaseKt")
     }
+
+    @Test(expected = kotlinx.coroutines.CancellationException::class)
+    fun `flushPendingCourseResources rethrows CancellationException and abandons loop`() = runTest {
+        val jsonArray = com.google.gson.JsonArray().apply {
+            add(com.google.gson.JsonObject().apply {
+                addProperty("_id", "res1")
+                addProperty("mediaType", "HTML")
+            })
+            add(com.google.gson.JsonObject().apply {
+                addProperty("_id", "res2")
+                addProperty("mediaType", "HTML")
+            })
+            add(com.google.gson.JsonObject().apply {
+                addProperty("_id", "res3")
+                addProperty("mediaType", "HTML")
+            })
+        }
+
+        val queueMethod = CoursesRepositoryImpl::class.java.getDeclaredMethod(
+            "queueCourseResources",
+            String::class.java,
+            String::class.java,
+            com.google.gson.JsonArray::class.java
+        )
+        queueMethod.isAccessible = true
+        queueMethod.invoke(repository, "courseId", "stepId", jsonArray)
+
+        coEvery { myLibraryDao.getByIds(any()) } returns emptyList()
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+        coEvery { resourcesRepository.reconcileHtmlResourceOffline("res1") } returns Unit
+        coEvery { resourcesRepository.reconcileHtmlResourceOffline("res2") } throws kotlinx.coroutines.CancellationException()
+
+        try {
+            repository.flushPendingCourseResources()
+        } finally {
+            coVerify(exactly = 1) { resourcesRepository.reconcileHtmlResourceOffline("res1") }
+            coVerify(exactly = 1) { resourcesRepository.reconcileHtmlResourceOffline("res2") }
+            coVerify(exactly = 0) { resourcesRepository.reconcileHtmlResourceOffline("res3") }
+        }
+    }
+
+    @Test
+    fun `flushPendingCourseResources catches ordinary exceptions and continues loop`() = runTest {
+        val jsonArray = com.google.gson.JsonArray().apply {
+            add(com.google.gson.JsonObject().apply {
+                addProperty("_id", "res1")
+                addProperty("mediaType", "HTML")
+            })
+            add(com.google.gson.JsonObject().apply {
+                addProperty("_id", "res2")
+                addProperty("mediaType", "HTML")
+            })
+        }
+
+        val queueMethod = CoursesRepositoryImpl::class.java.getDeclaredMethod(
+            "queueCourseResources",
+            String::class.java,
+            String::class.java,
+            com.google.gson.JsonArray::class.java
+        )
+        queueMethod.isAccessible = true
+        queueMethod.invoke(repository, "courseId", "stepId", jsonArray)
+
+        coEvery { myLibraryDao.getByIds(any()) } returns emptyList()
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+        coEvery { resourcesRepository.reconcileHtmlResourceOffline("res1") } throws RuntimeException("Ordinary failure")
+        coEvery { resourcesRepository.reconcileHtmlResourceOffline("res2") } returns Unit
+
+        repository.flushPendingCourseResources()
+
+        coVerify(exactly = 1) { resourcesRepository.reconcileHtmlResourceOffline("res1") }
+        coVerify(exactly = 1) { resourcesRepository.reconcileHtmlResourceOffline("res2") }
+    }
 }

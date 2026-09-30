@@ -11,6 +11,7 @@ import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkObject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
@@ -21,6 +22,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.NewsDao
@@ -317,5 +319,50 @@ class VoicesRepositoryImplTest {
 
         val expected = mapOf("team1" to 2L, "Team2" to 1L, "team3" to 0L)
         assertEquals(expected, counts)
+    }
+
+    @Test
+    fun `createTeamNews propagates CancellationException when newsDao upsert is cancelled`() = testScope.runTest {
+        val user = UserEntity()
+        coEvery { newsDao.upsert(any()) } throws CancellationException("Cancelled")
+
+        try {
+            repository.createTeamNews(hashMapOf("message" to "test"), user, null)
+            fail("Expected CancellationException")
+        } catch (e: CancellationException) {
+            assertEquals("Cancelled", e.message)
+        }
+    }
+
+    @Test
+    fun `createTeamNews returns false on ordinary exception`() = testScope.runTest {
+        val user = UserEntity()
+        coEvery { newsDao.upsert(any()) } throws RuntimeException("Database error")
+
+        val result = repository.createTeamNews(hashMapOf("message" to "test"), user, null)
+
+        assertEquals(false, result)
+    }
+
+    @Test
+    fun `shareNewsToCommunity propagates CancellationException when newsDao throws CancellationException`() = testScope.runTest {
+        coEvery { newsDao.getById("news123") } throws CancellationException("Cancelled")
+
+        try {
+            repository.shareNewsToCommunity("news123", "user1", "planet", "parent", "team")
+            fail("Expected CancellationException")
+        } catch (e: CancellationException) {
+            assertEquals("Cancelled", e.message)
+        }
+    }
+
+    @Test
+    fun `shareNewsToCommunity returns failure Result on ordinary exception`() = testScope.runTest {
+        coEvery { newsDao.getById("news123") } throws RuntimeException("Database error")
+
+        val result = repository.shareNewsToCommunity("news123", "user1", "planet", "parent", "team")
+
+        assertTrue(result.isFailure)
+        assertEquals("Database error", result.exceptionOrNull()?.message)
     }
 }

@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
@@ -60,6 +61,8 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     private var isExplicitSubmission = false
     private var examTakingTextWatcher: TextWatcher? = null
     private val answerCache = mutableMapOf<String, AnswerData>()
+    @Inject
+    lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject

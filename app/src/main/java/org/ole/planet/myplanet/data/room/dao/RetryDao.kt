@@ -24,7 +24,8 @@ interface RetryDao {
 
     @Query(
         "SELECT * FROM retry_operation WHERE status = 'pending' " +
-            "AND nextRetryTime <= :now AND attemptCount < maxAttempts"
+            "AND nextRetryTime <= :now AND attemptCount < maxAttempts " +
+            "ORDER BY nextRetryTime ASC, id ASC"
     )
     suspend fun getPending(now: Long): List<RetryOperation>
 

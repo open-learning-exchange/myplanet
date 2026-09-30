@@ -40,8 +40,8 @@ class CourseProgressDaoTest {
     private fun createProgress(
         id: String,
         courseId: String,
-        userId: String,
-        stepNum: Int,
+        userId: String?,
+        stepNum: Int = 1,
         passed: Boolean = true
     ): CourseProgress {
         return CourseProgress().apply {
@@ -101,5 +101,31 @@ class CourseProgressDaoTest {
         val results = courseProgressDao.getByCourseUsersAndSteps(requestedTuples)
 
         assertEquals(300, results.size)
+    }
+
+    @Test
+    fun getByUserAndCourseIds_handles1200CoursesWithNonNullUserId() = runBlocking {
+        val items = (1..1200).map { i ->
+            createProgress("id_$i", "course_$i", "user_1")
+        }
+        courseProgressDao.upsertAll(items)
+
+        val courseIds = (1..1200).map { "course_$it" }
+        val results = courseProgressDao.getByUserAndCourseIds("user_1", courseIds)
+
+        assertEquals(1200, results.size)
+    }
+
+    @Test
+    fun getByUserAndCourseIds_handles1200CoursesWithNullUserId() = runBlocking {
+        val items = (1..1200).map { i ->
+            createProgress("id_$i", "course_$i", null)
+        }
+        courseProgressDao.upsertAll(items)
+
+        val courseIds = (1..1200).map { "course_$it" }
+        val results = courseProgressDao.getByUserAndCourseIds(null, courseIds)
+
+        assertEquals(1200, results.size)
     }
 }
