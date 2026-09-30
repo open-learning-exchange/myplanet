@@ -127,6 +127,9 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
             view?.findViewById<TextView>(R.id.txtFullName)?.text =
                 getString(R.string.user_name, fullName, offlineLogins)
         }
+        collectWhenStarted(viewModel.uiState.map { it.surveyCount }.distinctUntilChanged()) { count ->
+            updateSurveyBadgeCount(count)
+        }
         collectWhenStarted(newsViewModel.privateImageUrls) { urls ->
             if (urls.isNotEmpty()) {
                 Utilities.toast(activity, getString(R.string.downloading_images_please_check_notification))
@@ -294,15 +297,28 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
             }
             return
         }
+        val surveyCount = viewModel.uiState.value.surveyCount
         for (items in visibleItems) {
             val dashboardItem = DashboardItem(items._id, items.title, items.imageId, ItemType.LIFE)
-            flexboxLayout.addView(getLayout(dashboardItem, 0), createChipLayoutParams())
+            flexboxLayout.addView(getLayout(dashboardItem, surveyCount), createChipLayoutParams())
         }
-        updateMyLifeSurveyCount()
     }
 
-    private fun updateMyLifeSurveyCount() {
-        // Update views with survey count if needed
+    private fun updateSurveyBadgeCount(count: Int) {
+        val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife) ?: return
+        val surveyTitle = getString(R.string.my_survey)
+        for (i in 0 until flexboxLayout.childCount) {
+            val child = flexboxLayout.getChildAt(i)
+            val tvName = child.findViewById<TextView>(R.id.tv_name)
+            if (tvName?.text == surveyTitle) {
+                val tvCount = child.findViewById<TextView>(R.id.tv_count)
+                if (tvCount != null) {
+                    tvCount.visibility = View.VISIBLE
+                    tvCount.text = count.toString()
+                }
+                break
+            }
+        }
     }
 
     private fun myLibraryItemClickAction(textView: TextView, items: MyLibrary?) {
