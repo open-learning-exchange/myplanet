@@ -73,6 +73,18 @@ class TeamResourcesAdapterTest {
         adapter.submitList(listOf(resource1, resource2))
         ShadowLooper.idleMainLooper()
 
+        val itemChanged = AtomicBoolean(false)
+        val observer = object : androidx.recyclerview.widget.RecyclerView.AdapterDataObserver() {
+            override fun onItemRangeChanged(positionStart: Int, itemCount: Int) {
+                itemChanged.set(true)
+            }
+
+            override fun onItemRangeChanged(positionStart: Int, itemCount: Int, payload: Any?) {
+                itemChanged.set(true)
+            }
+        }
+        adapter.registerAdapterDataObserver(observer)
+
         val removalCompleted = AtomicBoolean(false)
 
         adapter.removeResourceAt(0) {
@@ -144,6 +156,7 @@ class TeamResourcesAdapterTest {
 
         idleMainLooperUntil { commitCompleted.get() }
         assertTrue(commitCompleted.get())
+        assertTrue(itemChanged.get())
         assertEquals(
             "/storage/emulated/0/Android/data/org.ole.planet.myplanet/files/res_1.pdf",
             adapter.currentList[0].resourceLocalAddress

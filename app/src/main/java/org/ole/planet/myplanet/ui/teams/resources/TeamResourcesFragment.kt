@@ -172,6 +172,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
     }
 
     fun checkAndShowNoData() {
+        val binding = _binding ?: return
         if (::adapterLibrary.isInitialized) {
             showNoData(binding.tvNodata, adapterLibrary.itemCount, "teamResources")
         }
