@@ -11,7 +11,7 @@ import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
-class TeamPageResolutionTest {
+class TeamPageConfigTest {
 
     class TeamPageFragment : Fragment(), OnTeamPageListener {
         var addDocumentCalled = false
