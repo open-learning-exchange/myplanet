@@ -316,8 +316,15 @@ class ResourcesAdapter(
     }
 
     private suspend fun resourceFileLength(model: ResourceListModel): Long? {
-        val localPath = model.item.resourceLocalAddress?.takeIf { it.isNotBlank() } ?: return null
-        return ResourceCardHelper.cachedFileLength(File(localPath), dispatcherProvider, fileLengthCache)
+        val isOffline = model.item.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
+        if (!isOffline) return null
+
+        val address = model.library.resourceLocalAddress?.takeIf { it.isNotBlank() } ?: return null
+        val libraryId = model.library.id.takeIf { it.isNotBlank() } ?: return null
+        val dir = externalFilesDir ?: return null
+
+        val file = FileUtils.getLibraryFile(dir, libraryId, address)
+        return ResourceCardHelper.cachedFileLength(file, dispatcherProvider, fileLengthCache)
     }
 
     private fun bindSelectionAndDownload(checkbox: CheckBox, ivDownloaded: ImageView, model: ResourceListModel) {
