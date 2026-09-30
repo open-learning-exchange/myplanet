@@ -6,8 +6,7 @@ import org.ole.planet.myplanet.repository.UploadedItemResult
 /**
  * Database-agnostic upload configuration for models that have been migrated to Room.
  *
- * It mirrors [UploadConfig] but replaces the Realm-bound persistence hook: results are persisted
- * through [markUploaded] (a DAO-backed suspend lambda) instead of [UploadRepository.markUploaded].
+ * It mirrors [UploadConfig]: results are persisted through [markUploaded] (a DAO-backed suspend lambda).
  * Both configs implement [UploadPipelineConfig], so [UploadCoordinator] runs them through the same
  * batch/HTTP/retry pipeline.
  */

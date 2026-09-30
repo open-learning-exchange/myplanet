@@ -918,4 +918,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     override suspend fun getPendingSubmissionsForUpload(): List<Submission> {
         return hydrateSubmissions(submissionDao.getPendingSubmissions())
     }
+
+    override suspend fun markSubmissionsUploaded(results: List<UploadedItemResult>): List<UploadedItemResult> =
+        results.filter { submissionDao.markUploaded(it.localId, it.remoteId, it.remoteRev) == 0 }
 }

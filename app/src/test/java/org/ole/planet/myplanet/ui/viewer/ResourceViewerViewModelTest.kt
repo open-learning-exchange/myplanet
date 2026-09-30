@@ -7,6 +7,8 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -54,7 +56,8 @@ class ResourceViewerViewModelTest {
             configurationsRepository = configurationsRepository,
             userRepository = userRepository,
             sharedPrefManager = sharedPrefManager,
-            dispatcherProvider = TestDispatcherProvider(mainDispatcherRule.testDispatcher)
+            dispatcherProvider = TestDispatcherProvider(mainDispatcherRule.testDispatcher),
+            appScope = TestScope(mainDispatcherRule.testDispatcher)
         )
     }
 
@@ -216,5 +219,13 @@ class ResourceViewerViewModelTest {
         viewModel.setRatingPrompted(resourceId)
 
         coVerify(exactly = 1) { ratingsRepository.setRatingPrompted(userId, resourceId) }
+    }
+
+    @Test
+    fun saveTranslationAudioPath_updatesLibraryItemOnAppScope() = runTest {
+        viewModel.saveTranslationAudioPath("lib1", "/music/rec.aac")
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { resourcesRepository.updateLibraryItem("lib1", any()) }
     }
 }
