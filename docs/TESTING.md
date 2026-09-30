@@ -147,9 +147,8 @@ Pin only when the assertion depends on the level, and say why in a comment so th
 | 28 (`P`) | `utils/VersionUtilsTest.kt` (one method) | `VersionUtils` branches on `SDK_INT >= P` |
 | 32 | `ui/resources/ResourcesFilterFragmentTest.kt` | no reason stated |
 | 33 | `ui/chat/ChatAdapterTest.kt` | no reason stated |
-| 34 (`UPSIDE_DOWN_CAKE`) | `ui/life/LifeAdapterTest.kt`, `ui/sync/ServerAddressAdapterTest.kt`, `ui/voices/VoicesActionsTest.kt` | no reason stated in any of the three |
 
-The suite therefore needs sandboxes at 26, 27, 28, 32, 33, 34 and the default 36.
+The suite therefore needs sandboxes at 26, 27, 28, 32, 33 and the default 36.
 
 `DownloadServiceTest` shows the cheaper shape when one class covers several levels: run on the default SDK and drive the individual branches with `ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", …)`.
 
