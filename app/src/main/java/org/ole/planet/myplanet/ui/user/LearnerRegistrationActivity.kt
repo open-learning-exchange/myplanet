@@ -6,20 +6,19 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.widget.ArrayAdapter
+import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.callback.OnChangedListener
-import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
-import org.ole.planet.myplanet.model.MemberInfo
+import org.ole.planet.myplanet.databinding.ActivityLearnerRegistrationBinding
+import org.ole.planet.myplanet.model.LearnerRegistrationInfo
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.DialogUtils.CustomProgressDialog
@@ -28,7 +27,7 @@ import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
-class BecomeMemberActivity : BaseActivity() {
+class LearnerRegistrationActivity : BaseActivity() {
 
     @Inject
     override lateinit var sharedPrefManager: SharedPrefManager
@@ -36,10 +35,11 @@ class BecomeMemberActivity : BaseActivity() {
     @Inject
     override lateinit var dispatcherProvider: DispatcherProvider
 
-    private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
+    private val viewModel: LearnerRegistrationViewModel by viewModels()
+
+    private lateinit var binding: ActivityLearnerRegistrationBinding
     var dob: String = ""
     var guest: Boolean = false
-    private var usernameValidationJob: Job? = null
     private var usernameWatcher: TextWatcher? = null
     private var passwordWatcher: TextWatcher? = null
     private var rePasswordWatcher: TextWatcher? = null
@@ -47,8 +47,8 @@ class BecomeMemberActivity : BaseActivity() {
 
 
     private fun selectedGender(): String? = when {
-        activityBecomeMemberBinding.male.isChecked -> "male"
-        activityBecomeMemberBinding.female.isChecked -> "female"
+        binding.male.isChecked -> "male"
+        binding.female.isChecked -> "female"
         else -> null
     }
 
@@ -57,7 +57,7 @@ class BecomeMemberActivity : BaseActivity() {
         val dpd = DatePickerDialog(
             this, { _, i, i1, i2 ->
                 dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
-                activityBecomeMemberBinding.txtDob.text = dob
+                binding.txtDob.text = dob
             }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
         )
         dpd.setTitle(getString(R.string.select_date_of_birth))
@@ -65,36 +65,36 @@ class BecomeMemberActivity : BaseActivity() {
         dpd.show()
     }
 
-    private fun collectMemberInfo(): MemberInfo {
-        val info = MemberInfo(
-            activityBecomeMemberBinding.etUsername.text.toString(),
-            activityBecomeMemberBinding.etPassword.text.toString(),
-            activityBecomeMemberBinding.etRePassword.text.toString(),
-            activityBecomeMemberBinding.etFname.text.toString(),
-            activityBecomeMemberBinding.etLname.text.toString(),
-            activityBecomeMemberBinding.etMname.text.toString(),
-            activityBecomeMemberBinding.etEmail.text.toString(),
-            activityBecomeMemberBinding.spnLang.selectedItem.toString(),
-            activityBecomeMemberBinding.spnLevel.selectedItem.toString(),
-            activityBecomeMemberBinding.etPhone.text.toString(),
+    private fun collectRegistrationInfo(): LearnerRegistrationInfo {
+        val info = LearnerRegistrationInfo(
+            binding.etUsername.text.toString(),
+            binding.etPassword.text.toString(),
+            binding.etRePassword.text.toString(),
+            binding.etFname.text.toString(),
+            binding.etLname.text.toString(),
+            binding.etMname.text.toString(),
+            binding.etEmail.text.toString(),
+            binding.spnLang.selectedItem.toString(),
+            binding.spnLevel.selectedItem.toString(),
+            binding.etPhone.text.toString(),
             dob,
             selectedGender()
         )
         return info
     }
 
-    private fun validateMemberInfo(info: MemberInfo): Boolean {
+    private fun validateRegistrationInfo(info: LearnerRegistrationInfo): Boolean {
         return when {
             info.password.isEmpty() -> {
-                activityBecomeMemberBinding.etPassword.error = getString(R.string.please_enter_a_password)
+                binding.etPassword.error = getString(R.string.please_enter_a_password)
                 false
             }
             info.password != info.rePassword -> {
-                activityBecomeMemberBinding.etRePassword.error = getString(R.string.password_doesn_t_match)
+                binding.etRePassword.error = getString(R.string.password_doesn_t_match)
                 false
             }
             info.email.isNotEmpty() && !Utilities.isValidEmail(info.email) -> {
-                activityBecomeMemberBinding.etEmail.error = getString(R.string.invalid_email)
+                binding.etEmail.error = getString(R.string.invalid_email)
                 false
             }
             info.gender == null -> {
@@ -105,14 +105,14 @@ class BecomeMemberActivity : BaseActivity() {
         }
     }
 
-    private fun addMember(info: MemberInfo) {
+    private fun addMember(info: LearnerRegistrationInfo) {
         val customProgressDialog = CustomProgressDialog(this).apply {
             setText(getString(R.string.creating_member_account))
             show()
         }
 
         lifecycleScope.launch {
-            val result = userRepository.createMember(info)
+            val result = viewModel.createMember(info)
             withContext(dispatcherProvider.main) {
                 if (result.first) {
                     val userName = info.username
@@ -125,11 +125,11 @@ class BecomeMemberActivity : BaseActivity() {
                     if (result.second == getString(R.string.not_connect_to_planet_created_user_offline)) {
                         securityCallback.onChanged()
                     }
-                    Utilities.toast(this@BecomeMemberActivity, result.second)
+                    Utilities.toast(this@LearnerRegistrationActivity, result.second)
                 } else {
-                    Utilities.toast(this@BecomeMemberActivity, result.second)
+                    Utilities.toast(this@LearnerRegistrationActivity, result.second)
                     customProgressDialog.dismiss()
-                    activityBecomeMemberBinding.btnSubmit.isEnabled = true
+                    binding.btnSubmit.isEnabled = true
                 }
             }
         }
@@ -137,20 +137,20 @@ class BecomeMemberActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        activityBecomeMemberBinding = ActivityBecomeMemberBinding.inflate(layoutInflater)
-        setContentView(activityBecomeMemberBinding.root)
-        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, activityBecomeMemberBinding.root)
+        binding = ActivityLearnerRegistrationBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         val languages = resources.getStringArray(R.array.language)
         val lnAadapter = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, languages)
-        activityBecomeMemberBinding.spnLang.adapter = lnAadapter
-        activityBecomeMemberBinding.txtDob.setOnClickListener {
+        binding.spnLang.adapter = lnAadapter
+        binding.txtDob.setOnClickListener {
             showDatePickerDialog()
         }
         val levels = resources.getStringArray(R.array.level)
         val lvAdapter  = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, levels)
-        activityBecomeMemberBinding.spnLevel.adapter = lvAdapter
+        binding.spnLevel.adapter = lvAdapter
 
         var username = intent.getStringExtra("username") ?: ""
         guest = intent.getBooleanExtra("guest", false)
@@ -160,28 +160,47 @@ class BecomeMemberActivity : BaseActivity() {
 
         setupTextWatchers()
 
-        if (guest) {
-            activityBecomeMemberBinding.etUsername.setText(username)
-            activityBecomeMemberBinding.etUsername.isFocusable = false
+        lifecycleScope.launch {
+            viewModel.usernameChecks.collect { check ->
+                if (binding.etUsername.text.toString() != check.input) {
+                    return@collect
+                }
+
+                if (check.error != null) {
+                    binding.etUsername.error = check.error
+                } else {
+                    val lowercase = check.input.lowercase()
+                    if (check.input != lowercase) {
+                        binding.etUsername.setText(lowercase)
+                        binding.etUsername.setSelection(lowercase.length)
+                    }
+                    binding.etUsername.error = null
+                }
+            }
         }
 
-        activityBecomeMemberBinding.btnCancel.setOnClickListener {
+        if (guest) {
+            binding.etUsername.setText(username)
+            binding.etUsername.isFocusable = false
+        }
+
+        binding.btnCancel.setOnClickListener {
             finish()
         }
 
-        activityBecomeMemberBinding.btnSubmit.setOnClickListener {
-            activityBecomeMemberBinding.btnSubmit.isEnabled = false
-            val info = collectMemberInfo()
+        binding.btnSubmit.setOnClickListener {
+            binding.btnSubmit.isEnabled = false
+            val info = collectRegistrationInfo()
             lifecycleScope.launch {
-                val error = userRepository.validateUsername(info.username)
+                val error = viewModel.validateUsername(info.username)
                 withContext(dispatcherProvider.main) {
                     if (error != null) {
-                        activityBecomeMemberBinding.etUsername.error = error
-                        activityBecomeMemberBinding.btnSubmit.isEnabled = true
-                    } else if (validateMemberInfo(info)) {
+                        binding.etUsername.error = error
+                        binding.btnSubmit.isEnabled = true
+                    } else if (validateRegistrationInfo(info)) {
                         addMember(info)
                     } else {
-                        activityBecomeMemberBinding.btnSubmit.isEnabled = true
+                        binding.btnSubmit.isEnabled = true
                     }
                 }
             }
@@ -189,12 +208,10 @@ class BecomeMemberActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
-        usernameValidationJob?.cancel()
-        usernameValidationJob = null
-        activityBecomeMemberBinding.etUsername.removeTextChangedListener(usernameWatcher)
-        activityBecomeMemberBinding.etPassword.removeTextChangedListener(passwordWatcher)
-        activityBecomeMemberBinding.etRePassword.removeTextChangedListener(rePasswordWatcher)
-        activityBecomeMemberBinding.etEmail.removeTextChangedListener(emailWatcher)
+        binding.etUsername.removeTextChangedListener(usernameWatcher)
+        binding.etPassword.removeTextChangedListener(passwordWatcher)
+        binding.etRePassword.removeTextChangedListener(rePasswordWatcher)
+        binding.etEmail.removeTextChangedListener(emailWatcher)
         usernameWatcher = null
         passwordWatcher = null
         rePasswordWatcher = null
@@ -204,12 +221,12 @@ class BecomeMemberActivity : BaseActivity() {
 
     private fun autoLoginNewMember(username: String, password: String) {
         lifecycleScope.launch {
-            userRepository.cleanupDuplicateUsers()
+            viewModel.cleanupDuplicateUsers()
 
             sharedPrefManager.setNewLoginUsername(username)
             sharedPrefManager.setNewLoginPassword(password)
 
-            val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
+            val intent = Intent(this@LearnerRegistrationActivity, LoginActivity::class.java)
 
             if (guest) {
                 intent.putExtra("guest", guest)
@@ -230,33 +247,14 @@ class BecomeMemberActivity : BaseActivity() {
                 val input = s?.toString() ?: ""
 
                 if (input.isEmpty()) {
-                    activityBecomeMemberBinding.etUsername.error = null
+                    binding.etUsername.error = null
                     return
                 }
 
-                usernameValidationJob?.cancel()
-                usernameValidationJob = lifecycleScope.launch {
-                    delay(300)
-                    val error = userRepository.validateUsername(input)
-
-                    if (activityBecomeMemberBinding.etUsername.text.toString() != input) {
-                        return@launch
-                    }
-
-                    if (error != null) {
-                        activityBecomeMemberBinding.etUsername.error = error
-                    } else {
-                        val lowercase = input.lowercase()
-                        if (input != lowercase) {
-                            activityBecomeMemberBinding.etUsername.setText(lowercase)
-                            activityBecomeMemberBinding.etUsername.setSelection(lowercase.length)
-                        }
-                        activityBecomeMemberBinding.etUsername.error = null
-                    }
-                }
+                viewModel.onUsernameChanged(input)
             }
         }
-        activityBecomeMemberBinding.etUsername.addTextChangedListener(usernameWatcher)
+        binding.etUsername.addTextChangedListener(usernameWatcher)
 
         passwordWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
@@ -264,12 +262,12 @@ class BecomeMemberActivity : BaseActivity() {
 
             override fun afterTextChanged(s: Editable) {
                 if (s.toString().isEmpty()) {
-                    activityBecomeMemberBinding.etRePassword.setText("")
+                    binding.etRePassword.setText("")
                 }
                 validatePasswordMatch()
             }
         }
-        activityBecomeMemberBinding.etPassword.addTextChangedListener(passwordWatcher)
+        binding.etPassword.addTextChangedListener(passwordWatcher)
 
         rePasswordWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -279,7 +277,7 @@ class BecomeMemberActivity : BaseActivity() {
                 validatePasswordMatch()
             }
         }
-        activityBecomeMemberBinding.etRePassword.addTextChangedListener(rePasswordWatcher)
+        binding.etRePassword.addTextChangedListener(rePasswordWatcher)
 
         emailWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -288,22 +286,22 @@ class BecomeMemberActivity : BaseActivity() {
             override fun afterTextChanged(s: Editable?) {
                 val email = s?.toString() ?: ""
                 if (email.isNotEmpty() && !Utilities.isValidEmail(email)) {
-                    activityBecomeMemberBinding.etEmail.error = getString(R.string.email_invalid_format)
+                    binding.etEmail.error = getString(R.string.email_invalid_format)
                 } else {
-                    activityBecomeMemberBinding.etEmail.error = null
+                    binding.etEmail.error = null
                 }
             }
         }
-        activityBecomeMemberBinding.etEmail.addTextChangedListener(emailWatcher)
+        binding.etEmail.addTextChangedListener(emailWatcher)
     }
 
     private fun validatePasswordMatch() {
-        val password = activityBecomeMemberBinding.etPassword.text.toString()
-        val rePassword = activityBecomeMemberBinding.etRePassword.text.toString()
+        val password = binding.etPassword.text.toString()
+        val rePassword = binding.etRePassword.text.toString()
         if (rePassword.isNotEmpty() && password != rePassword) {
-            activityBecomeMemberBinding.etRePassword.error = getString(R.string.passwords_do_not_match)
+            binding.etRePassword.error = getString(R.string.passwords_do_not_match)
         } else {
-            activityBecomeMemberBinding.etRePassword.error = null
+            binding.etRePassword.error = null
         }
     }
 }

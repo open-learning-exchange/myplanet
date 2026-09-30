@@ -5,7 +5,9 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -263,5 +265,18 @@ class ResourcesViewModelTest {
             filename = null
         )
         return ResourceListModel(library, item, emptyList<TagItem>())
+    }
+
+    @Test
+    fun `notifyDownloadComplete delivers one event to a collector`() = runTest {
+        val events = mutableListOf<Unit>()
+        val job = launch { viewModel.downloadComplete.collect { events.add(it) } }
+        advanceUntilIdle()
+
+        viewModel.notifyDownloadComplete()
+        advanceUntilIdle()
+
+        assertEquals(1, events.size)
+        job.cancel()
     }
 }
