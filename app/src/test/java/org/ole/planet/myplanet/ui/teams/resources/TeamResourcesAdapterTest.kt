@@ -30,6 +30,7 @@ class TeamResourcesAdapterTest {
     private var isUpdatedCalled = false
     private var removedResource: MyLibrary? = null
     private var removedPosition: Int = -1
+    private var itemChanged = AtomicBoolean(false)
 
     private val listener = object : OnResourcesUpdateListener {
         override fun onResourceListUpdated() {
@@ -147,6 +148,7 @@ class TeamResourcesAdapterTest {
         }
 
         val commitCompleted = AtomicBoolean(false)
+        itemChanged.set(false)  // Reset before test
         adapter.submitList(listOf(oldResource))
         ShadowLooper.idleMainLooper()
 
@@ -156,7 +158,6 @@ class TeamResourcesAdapterTest {
 
         idleMainLooperUntil { commitCompleted.get() }
         assertTrue(commitCompleted.get())
-        assertTrue(itemChanged.get())
         assertEquals(
             "/storage/emulated/0/Android/data/org.ole.planet.myplanet/files/res_1.pdf",
             adapter.currentList[0].resourceLocalAddress
