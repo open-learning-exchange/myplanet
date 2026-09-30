@@ -37,7 +37,7 @@ import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.upload.AchievementUploader
-import org.ole.planet.myplanet.services.upload.NewsImageUploader
+import org.ole.planet.myplanet.services.upload.VoicesUploader
 import org.ole.planet.myplanet.services.upload.PhotoUploader
 import org.ole.planet.myplanet.services.upload.TeamsUploader
 import org.ole.planet.myplanet.services.upload.UploadConfigs
@@ -71,7 +71,7 @@ class UploadManagerTest {
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private lateinit var photoUploader: PhotoUploader
     private val achievementUploader: AchievementUploader = mockk(relaxed = true)
-    private val newsImageUploader: NewsImageUploader = mockk(relaxed = true)
+    private val voicesUploader: VoicesUploader = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
@@ -110,7 +110,7 @@ class UploadManagerTest {
                 testScope,
                 photoUploader,
                 achievementUploader,
-                newsImageUploader
+                voicesUploader
             )
         )
     }
@@ -314,14 +314,14 @@ class UploadManagerTest {
     }
 
     @Test
-    fun `uploadNews delegates to newsImageUploader and uploadNewsActivities`() = testScope.runTest {
-        coEvery { newsImageUploader.uploadNews() } returns Unit
+    fun `uploadNews delegates to voicesUploader and uploadNewsActivities`() = testScope.runTest {
+        coEvery { voicesUploader.uploadNews() } returns Unit
         coEvery { uploadCoordinator.uploadRoom<News>(any()) } returns UploadResult.Success(1, emptyList())
 
         uploadManager.uploadNews()
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { newsImageUploader.uploadNews() }
+        coVerify(exactly = 1) { voicesUploader.uploadNews() }
         coVerify(exactly = 1) { uploadCoordinator.uploadRoom(uploadConfigs.NewsActivities) }
     }
 

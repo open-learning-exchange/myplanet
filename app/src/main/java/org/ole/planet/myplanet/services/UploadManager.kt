@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.upload.AchievementUploader
-import org.ole.planet.myplanet.services.upload.NewsImageUploader
+import org.ole.planet.myplanet.services.upload.VoicesUploader
 import org.ole.planet.myplanet.services.upload.PhotoUploader
 import org.ole.planet.myplanet.services.upload.TeamsUploader
 import org.ole.planet.myplanet.services.upload.UploadConfigs
@@ -36,7 +36,7 @@ class UploadManager @Inject constructor(
     @ApplicationScope private val scope: CoroutineScope,
     private val photoUploader: PhotoUploader,
     private val achievementUploader: AchievementUploader,
-    private val newsImageUploader: NewsImageUploader
+    private val voicesUploader: VoicesUploader
 ) : FileUploader(uploadRepository, scope) {
     private suspend fun uploadNewsActivities() {
         uploadCoordinator.uploadRoom(uploadConfigs.NewsActivities)
@@ -224,7 +224,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadNews() {
-        newsImageUploader.uploadNews()
+        voicesUploader.uploadNews()
         uploadNewsActivities()
     }
 

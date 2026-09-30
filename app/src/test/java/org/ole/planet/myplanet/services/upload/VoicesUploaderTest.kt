@@ -35,7 +35,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class NewsImageUploaderTest {
+class VoicesUploaderTest {
 
     private val context: Context = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
@@ -47,7 +47,7 @@ class NewsImageUploaderTest {
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
 
-    private lateinit var newsImageUploader: NewsImageUploader
+    private lateinit var voicesUploader: VoicesUploader
 
     @Before
     fun setup() {
@@ -68,7 +68,7 @@ class NewsImageUploaderTest {
         every { UrlUtils.header } returns "mockHeader"
         every { UrlUtils.getUrl() } returns "http://mock.url"
 
-        newsImageUploader = NewsImageUploader(
+        voicesUploader = VoicesUploader(
             gson = gson,
             userRepository = userRepository,
             voicesRepository = voicesRepository,
@@ -127,7 +127,7 @@ class NewsImageUploaderTest {
         }
         coEvery { uploadRepository.postUploadArray("http://mock.url/news/_bulk_docs", any()) } returns Response.success(bulkResponse)
 
-        newsImageUploader.uploadNews()
+        voicesUploader.uploadNews()
         advanceUntilIdle()
 
         coVerify(exactly = 1) {

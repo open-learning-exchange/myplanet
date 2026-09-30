@@ -32,7 +32,7 @@ private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
     chunked(BATCH_SIZE).forEach(action)
 }
 
-class NewsImageUploader @Inject constructor(
+class VoicesUploader @Inject constructor(
     private val gson: Gson,
     private val userRepository: UserRepository,
     private val voicesRepository: VoicesRepository,
@@ -116,7 +116,7 @@ class NewsImageUploader @Inject constructor(
 
                         processedNews.add(Pair(news, imagesArray))
                     } catch (e: Exception) {
-                        Log.e(TAG, "Exception in NewsImageUploader processing images for news", e)
+                        Log.e(TAG, "Exception in VoicesUploader processing images for news", e)
                         val isCreate = TextUtils.isEmpty(news._id)
                         queueNewsRetry(news, news.newsJson, null, if (isCreate) "POST" else "PUT", e)
                     }
@@ -182,6 +182,6 @@ class NewsImageUploader @Inject constructor(
     }
 
     companion object {
-        private const val TAG = "NewsImageUploader"
+        private const val TAG = "VoicesUploader"
     }
 }
