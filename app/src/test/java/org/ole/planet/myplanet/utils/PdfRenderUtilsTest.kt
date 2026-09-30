@@ -5,7 +5,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.abs
 
-class PdfRenderSizeTest {
+class PdfRenderUtilsTest {
 
     @Test
     fun testA4AtTarget1080() {
