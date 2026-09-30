@@ -15,13 +15,11 @@ import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
-import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ExamTakingViewModelTest {
+class ExamViewModelTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
 
@@ -31,19 +29,13 @@ class ExamTakingViewModelTest {
     private val applicationScope = TestScope(testDispatcher)
 
     private lateinit var submissionsRepository: SubmissionsRepository
-    private lateinit var coursesRepository: CoursesRepository
-    private lateinit var surveysRepository: SurveysRepository
-    private lateinit var viewModel: ExamTakingViewModel
+    private lateinit var viewModel: ExamViewModel
 
     @Before
     fun setup() {
         submissionsRepository = mockk(relaxed = true)
-        coursesRepository = mockk(relaxed = true)
-        surveysRepository = mockk(relaxed = true)
-        viewModel = ExamTakingViewModel(
+        viewModel = ExamViewModel(
             submissionsRepository,
-            coursesRepository,
-            surveysRepository,
             applicationScope
         )
     }

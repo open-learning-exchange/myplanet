@@ -8,15 +8,11 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
-import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.repository.SurveysRepository
 
 @HiltViewModel
-class ExamTakingViewModel @Inject constructor(
+class ExamViewModel @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
-    private val coursesRepository: CoursesRepository,
-    private val surveysRepository: SurveysRepository,
     @ApplicationScope private val applicationScope: CoroutineScope
 ) : ViewModel() {
 

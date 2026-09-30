@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
-import org.ole.planet.myplanet.ui.exam.ExamTakingViewModel
+import org.ole.planet.myplanet.ui.exam.ExamViewModel
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.surveys.SurveyFragment
 import org.ole.planet.myplanet.utils.CameraUtils
@@ -40,7 +40,7 @@ import org.ole.planet.myplanet.utils.Utilities
 @AndroidEntryPoint
 abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var exam: StepExam? = null
-    private val viewModel: ExamTakingViewModel by viewModels()
+    private val viewModel: ExamViewModel by viewModels()
     var stepId: String? = null
     var id: String? = ""
     var type: String? = "exam"
