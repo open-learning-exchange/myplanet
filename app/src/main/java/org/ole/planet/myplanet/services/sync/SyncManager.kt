@@ -218,6 +218,8 @@ class SyncManager @Inject constructor(
             syncPerf { "FULL SYNC COMPLETED at ${timestampFormat.format(Instant.now())}" }
             syncPerf { "TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms)" }
             syncPerf { "═══════════════════════════════════════════════════════════════" }
+        } catch (e: CancellationException) {
+            throw e
         } catch (err: Exception) {
             val syncEndTime = SystemClock.elapsedRealtime()
             val totalSyncTime = syncEndTime - syncStartTime
@@ -404,6 +406,8 @@ class SyncManager @Inject constructor(
                             putInt("ResourceSyncPosition", skip)
                         }
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e("SyncManager", "Resource batch failed", e)
                     batchSizer.recordFailure()
@@ -427,6 +431,8 @@ class SyncManager @Inject constructor(
                 if (cleanupDuration > 100) {
                     syncTimeLogger.logDbOperation("delete_cleanup", "resources", cleanupDuration, newIds.size)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e("SyncManager", "Resource cleanup failed", e)
                 syncTimeLogger.logDetail("resource_sync", "Cleanup failed: ${e.message}")
@@ -438,6 +444,8 @@ class SyncManager @Inject constructor(
             val minutes = resourceSyncTime / 60000
             val seconds = (resourceSyncTime % 60000) / 1000
             syncPerf { "  ✓ Resources sync completed: ${minutes}m ${seconds}s - $processedItems items" }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("SyncManager", "Resource sync failed", e)
             syncTimeLogger.endProcess("resource_sync_main", processedItems)
@@ -510,6 +518,8 @@ class SyncManager @Inject constructor(
 
             val totalDuration = SystemClock.elapsedRealtime() - librarySyncStartTime
             syncPerf { "  ✓ Library sync completed: ${totalDuration}ms - $processedItems items from ${shelvesWithData.size} shelves" }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("SyncManager", "Library sync failed", e)
             syncTimeLogger.endProcess("library_sync_main", processedItems)
