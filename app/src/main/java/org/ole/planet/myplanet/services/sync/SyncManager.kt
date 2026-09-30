@@ -438,12 +438,10 @@ class SyncManager @Inject constructor(
     }
 
     private fun handleException(message: String?) {
-        if (listener != null) {
-            isSyncing.set(false)
-            MainApplication.syncFailedCount++
-            listener?.onSyncFailed(message)
-            _syncStatus.value = SyncStatus.Error(message ?: "Unknown error")
-        }
+        isSyncing.set(false)
+        MainApplication.syncFailedCount++
+        listener?.onSyncFailed(message)
+        _syncStatus.value = SyncStatus.Error(message ?: "Unknown error")
     }
 
     private suspend fun myLibraryTransactionSync() {
