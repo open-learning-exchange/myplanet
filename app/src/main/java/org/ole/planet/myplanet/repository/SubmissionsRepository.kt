@@ -67,6 +67,7 @@ interface SubmissionsRepository {
     suspend fun bulkInsertFromSync(jsonArray: JsonArray)
     suspend fun insertSubmission(submission: JsonObject)
     suspend fun getExamUploadPayload(submission: Submission, user: UserEntity?): JsonObject
+    suspend fun markSubmissionsUploaded(results: List<UploadedItemResult>): List<UploadedItemResult>
     suspend fun serializeSubmission(submission: Submission, source: String, parentCode: String, user: UserEntity?): JsonObject
     suspend fun generateSubmissionPdf(submissionId: String): File?
     suspend fun generateMultipleSubmissionsPdf(submissionIds: List<String>, examTitle: String): File?

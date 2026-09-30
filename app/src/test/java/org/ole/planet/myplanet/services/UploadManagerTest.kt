@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.services
 import android.content.Context
 import android.os.SystemClock
 import android.util.Log
-import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
@@ -30,6 +29,7 @@ import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.StepExam
@@ -39,9 +39,8 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.services.upload.AchievementUploader
+import org.ole.planet.myplanet.services.upload.VoicesUploader
 import org.ole.planet.myplanet.services.upload.PhotoUploader
 import org.ole.planet.myplanet.services.upload.TeamsUploader
 import org.ole.planet.myplanet.services.upload.UploadConfigs
@@ -49,7 +48,6 @@ import org.ole.planet.myplanet.services.upload.UploadCoordinator
 import org.ole.planet.myplanet.services.upload.UploadError
 import org.ole.planet.myplanet.services.upload.UploadResult
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
-import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -67,18 +65,16 @@ class UploadManagerTest {
     private val teamsUploader: TeamsUploader = mockk(relaxed = true)
     private val context: Context = mockk(relaxed = true)
     private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)
-    private val gson: Gson = mockk(relaxed = true)
     private val uploadCoordinator: UploadCoordinator = mockk(relaxed = true)
     private val uploadRepository: UploadRepository = mockk(relaxed = true)
-    private val retryQueue: RetryQueue = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
-    private val voicesRepository: VoicesRepository = mockk(relaxed = true)
     private val uploadConfigs: UploadConfigs = mockk(relaxed = true)
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private lateinit var photoUploader: PhotoUploader
     private val achievementUploader: AchievementUploader = mockk(relaxed = true)
+    private val voicesUploader: VoicesUploader = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
@@ -119,12 +115,9 @@ class UploadManagerTest {
 
         uploadManager = spyk(
             UploadManager(
-                gson,
                 uploadCoordinator,
                 uploadRepository,
-                retryQueue,
                 userRepository,
-                voicesRepository,
                 uploadConfigs,
                 resourcesRepository,
                 teamsUploader,
@@ -133,7 +126,7 @@ class UploadManagerTest {
                 testScope,
                 photoUploader,
                 achievementUploader,
-                TestTimeProvider()
+                voicesUploader
             )
         )
     }
@@ -336,62 +329,15 @@ class UploadManagerTest {
     }
 
     @Test
-    fun `uploadNews derives mimeType from filename and passes to header map`() = testScope.runTest {
-        io.mockk.mockkObject(org.ole.planet.myplanet.utils.FileUtils)
-        try {
-            every { org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl("http://example.com/test_image.png") } returns "test_image.png"
-            every { org.ole.planet.myplanet.utils.FileUtils.getMimeType("test_image.png") } returns "image/png"
+    fun `uploadNews delegates to voicesUploader and uploadNewsActivities`() = testScope.runTest {
+        coEvery { voicesUploader.uploadNews() } returns Unit
+        coEvery { uploadCoordinator.uploadRoom<News>(any()) } returns UploadResult.Success(1, emptyList())
 
-            val imgObj = JsonObject().apply {
-                addProperty("fileName", "test_image.png")
-                addProperty("imageUrl", "http://example.com/test_image.png")
-            }
-            val imgJsonString = imgObj.toString()
-            every { gson.fromJson(imgJsonString, JsonObject::class.java) } returns imgObj
+        uploadManager.uploadNews()
+        advanceUntilIdle()
 
-            val newsJson = JsonObject().apply {
-                addProperty("message", "Hello World")
-            }
-            val newsItem = org.ole.planet.myplanet.repository.NewsUploadData(
-                id = "news1",
-                _id = "news1_id",
-                message = "Hello World",
-                imageUrls = listOf(imgJsonString),
-                newsJson = newsJson
-            )
-
-            coEvery { voicesRepository.getNewsForUpload() } returns listOf(newsItem)
-            coEvery { userRepository.getUserModel() } returns null
-
-            val imageResponseJson = JsonObject().apply {
-                addProperty("id", "res123")
-                addProperty("rev", "rev123")
-            }
-            coEvery { uploadRepository.postUpload("http://mock.url/resources", any()) } returns retrofit2.Response.success(imageResponseJson)
-
-            coEvery { uploadRepository.uploadResource(any(), any(), any()) } returns retrofit2.Response.success(JsonObject())
-
-            val bulkResponse = com.google.gson.JsonArray().apply {
-                add(JsonObject().apply {
-                    addProperty("id", "news1_id")
-                    addProperty("rev", "rev2")
-                })
-            }
-            coEvery { uploadRepository.postUploadArray("http://mock.url/news/_bulk_docs", any()) } returns retrofit2.Response.success(bulkResponse)
-
-            uploadManager.uploadNews()
-            advanceUntilIdle()
-
-            coVerify(exactly = 1) {
-                uploadRepository.uploadResource(
-                    match { headers -> headers["Content-Type"] == "image/png" && headers["If-Match"] == "rev123" },
-                    "http://mock.url/resources/res123/test_image.png",
-                    any()
-                )
-            }
-        } finally {
-            io.mockk.unmockkObject(org.ole.planet.myplanet.utils.FileUtils)
-        }
+        coVerify(exactly = 1) { voicesUploader.uploadNews() }
+        coVerify(exactly = 1) { uploadCoordinator.uploadRoom(uploadConfigs.NewsActivities) }
     }
 
     @Test

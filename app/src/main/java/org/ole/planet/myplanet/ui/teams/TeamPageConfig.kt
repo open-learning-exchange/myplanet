@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.teams
 import androidx.annotation.StringRes
 import androidx.fragment.app.Fragment
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.ui.enterprises.EnterprisesFinancesFragment
 import org.ole.planet.myplanet.ui.enterprises.EnterprisesReportsFragment
 import org.ole.planet.myplanet.ui.surveys.SurveyFragment
@@ -12,6 +13,8 @@ import org.ole.planet.myplanet.ui.teams.members.RequestsFragment
 import org.ole.planet.myplanet.ui.teams.resources.TeamResourcesFragment
 import org.ole.planet.myplanet.ui.teams.tasks.TeamsTasksFragment
 import org.ole.planet.myplanet.ui.teams.voices.TeamsVoicesFragment
+
+const val FRAGMENT_TYPE_KEY = "fragmentType"
 
 sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
     abstract fun createFragment(): Fragment
@@ -75,4 +78,10 @@ sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
     object JoinRequestsPage : TeamPageConfig("JOIN_REQUESTS", R.string.join_requests) {
         override fun createFragment() = RequestsFragment()
     }
+}
+
+fun resolveTeamPageListener(fragments: List<Fragment>, targetPageId: String): OnTeamPageListener? {
+    return fragments.firstOrNull {
+        it is OnTeamPageListener && it.arguments?.getString(FRAGMENT_TYPE_KEY) == targetPageId
+    } as? OnTeamPageListener
 }
