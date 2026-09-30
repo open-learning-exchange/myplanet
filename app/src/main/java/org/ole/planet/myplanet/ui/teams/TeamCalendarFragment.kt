@@ -145,7 +145,6 @@ class TeamCalendarFragment : BaseTeamFragment() {
         description: String,
         location: String
     ) {
-        val defaultPlaceholder = getString(R.string.click_here_to_pick_time)
         val startTimeText = "${addMeetupBinding.tvStartTime.text}"
         val endTimeText = "${addMeetupBinding.tvEndTime.text}"
 
@@ -161,8 +160,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
         val endMillis = end.timeInMillis
         val currentTeamId = teamId
 
-        val startTime = if (startTimeText == defaultPlaceholder) "" else startTimeText
-        val endTime = if (endTimeText == defaultPlaceholder) "" else endTimeText
+        val startTime = pickedTimeOrEmpty(startTimeText)
+        val endTime = pickedTimeOrEmpty(endTimeText)
 
         val params = MeetupCreationParams(
             title = title,
@@ -181,6 +180,11 @@ class TeamCalendarFragment : BaseTeamFragment() {
         addMeetupBinding.btnSave.isEnabled = false
         pendingSaveButton = addMeetupBinding.btnSave
         viewModel.createMeetup(params)
+    }
+
+    private fun pickedTimeOrEmpty(text: CharSequence?): String {
+        val value = text?.toString().orEmpty()
+        return if (value == getString(R.string.click_here_to_pick_time)) "" else value
     }
 
     private fun setDatePickerListener(view: TextView, date: Calendar?, endDate: Calendar?) {
@@ -335,8 +339,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
                     description = dialogBinding.etDescription.text.toString().trim(),
                     startDate = editStart.timeInMillis,
                     endDate = editEnd.timeInMillis,
-                    startTime = dialogBinding.tvStartTime.text.toString(),
-                    endTime = dialogBinding.tvEndTime.text.toString(),
+                    startTime = pickedTimeOrEmpty(dialogBinding.tvStartTime.text),
+                    endTime = pickedTimeOrEmpty(dialogBinding.tvEndTime.text),
                     meetupLocation = dialogBinding.etLocation.text.toString().trim(),
                     meetupLink = dialogBinding.etLink.text.toString().trim(),
                     recurring = recurring

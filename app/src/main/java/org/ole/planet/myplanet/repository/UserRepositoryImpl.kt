@@ -34,7 +34,6 @@ import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.AchievementDao
-import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.UserDao
@@ -43,8 +42,8 @@ import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.DashboardProfile
+import org.ole.planet.myplanet.model.LearnerRegistrationInfo
 import org.ole.planet.myplanet.model.Meetup
-import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -78,8 +77,7 @@ class UserRepositoryImpl @Inject constructor(
     @ApplicationScope private val appScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
     private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>,
-    private val meetupDao: MeetupDao,
-    private val myLibraryDao: org.ole.planet.myplanet.data.room.dao.MyLibraryDao,
+    private val eventsRepositoryLazy: dagger.Lazy<EventsRepository>,
     private val offlineActivityDao: OfflineActivityDao,
     private val removedLogDao: RemovedLogDao,
     private val achievementDao: AchievementDao,
@@ -516,7 +514,7 @@ class UserRepositoryImpl @Inject constructor(
         return getUserProfile()?.userImage
     }
 
-    override suspend fun createMember(user: MemberInfo): Pair<Boolean, String> {
+    override suspend fun createMember(user: LearnerRegistrationInfo): Pair<Boolean, String> {
         val obj = JsonObject().apply {
             addProperty("name", user.username)
             addProperty("firstName", user.fName)
@@ -983,7 +981,7 @@ class UserRepositoryImpl @Inject constructor(
         }?.flatten()?.distinct()?.toTypedArray() ?: emptyArray()
 
         val resources = if (resourceIds.isNotEmpty()) {
-            myLibraryDao.getByIds(resourceIds.toList())
+            resourcesRepositoryLazy.get().getLibraryItemsByIds(resourceIds.toList())
         } else {
             emptyList()
         }
@@ -1249,7 +1247,7 @@ class UserRepositoryImpl @Inject constructor(
         val userMeetups = if (userId.isNullOrBlank()) {
             emptyList()
         } else {
-            meetupDao.getByUserId(userId)
+            eventsRepositoryLazy.get().getMeetupsForUser(userId)
         }
         val myMeetups = Meetup.getMyMeetUpIds(userMeetups)
         val removedResources = removedLogDao.getRemovedDocIds("resources", userId).filterNotNull()

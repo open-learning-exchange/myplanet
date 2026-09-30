@@ -121,7 +121,7 @@ class ResourcesRepositoryLibrarySyncTest {
         assertTrue(merged!!.containsAll(listOf("shelfUserA", "shelfUserB")))
         assertEquals(2, merged.size)
         // Still a single row for the resource.
-        assertEquals(1, myLibraryDao.getAll().size)
+        assertEquals(1, myLibraryDao.countByTitle("Algebra"))
     }
 
     @Test

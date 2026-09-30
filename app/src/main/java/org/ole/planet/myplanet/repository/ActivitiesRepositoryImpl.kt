@@ -23,7 +23,6 @@ import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.LoginActivityData
 import org.ole.planet.myplanet.model.MyPlanet
@@ -59,7 +58,6 @@ class ActivitiesRepositoryImpl @Inject constructor(
     private val offlineActivityDao: OfflineActivityDao,
     private val removedLogDao: RemovedLogDao,
     private val searchActivityDao: SearchActivityDao,
-    private val userDao: UserDao,
     private val deviceNameProvider: DeviceNameProvider
 ) : ActivitiesRepository {
     override suspend fun getOfflineVisitCount(userId: String): Int {
@@ -97,7 +95,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logCourseVisit(courseId: String, title: String, userId: String) {
-        val user = userDao.getByName(userId)
+        val user = userRepository.get().getUserByName(userId)
         val parentCode = user?.parentCode
         val createdOn = user?.planetCode
 
@@ -152,6 +150,27 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
     override suspend fun getLastVisit(userName: String): Long? {
         return offlineActivityDao.getLastVisit(userName)
+    }
+
+    override suspend fun getLastVisits(userNames: List<String>): Map<String, Long> {
+        if (userNames.isEmpty()) return emptyMap()
+        return offlineActivityDao.getLastVisits(userNames)
+            .mapNotNull { visit ->
+                val name = visit.userName ?: return@mapNotNull null
+                val time = visit.lastVisit ?: return@mapNotNull null
+                name to time
+            }
+            .toMap()
+    }
+
+    override suspend fun getOfflineVisitCounts(userIds: List<String>): Map<String, Int> {
+        if (userIds.isEmpty()) return emptyMap()
+        return offlineActivityDao.countByUserIdsAndType(userIds, UserSessionManager.KEY_LOGIN)
+            .mapNotNull { userCount ->
+                val userId = userCount.userId ?: return@mapNotNull null
+                userId to userCount.count
+            }
+            .toMap()
     }
 
     override suspend fun logResourceOpen(
