@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.RadioButton
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.viewModels
 import dagger.hilt.android.AndroidEntryPoint
@@ -91,18 +90,23 @@ class FeedbackFragment : BaseBindingDialogFragment<FragmentFeedbackBinding>(Frag
             binding.tlMessage.error = getString(R.string.please_enter_feedback)
             return
         }
-        val rbUrgent = requireView().findViewById<RadioButton>(binding.rgUrgent.checkedRadioButtonId)
-        val rbType = requireView().findViewById<RadioButton>(binding.rgType.checkedRadioButtonId)
-        if (rbUrgent == null) {
-            binding.tlUrgent.error = getString(R.string.feedback_priority_is_required)
-            return
+        val urgent = when (binding.rgUrgent.checkedRadioButtonId) {
+            R.id.urgent_yes -> "Yes"
+            R.id.urgent_no -> "No"
+            else -> {
+                binding.tlUrgent.error = getString(R.string.feedback_priority_is_required)
+                return
+            }
         }
-        if (rbType == null) {
-            binding.tlType.error = getString(R.string.feedback_type_is_required)
-            return
+        val type = when (binding.rgType.checkedRadioButtonId) {
+            R.id.type_question -> "Question"
+            R.id.type_bug -> "Bug"
+            R.id.type_suggestion -> "Suggestion"
+            else -> {
+                binding.tlType.error = getString(R.string.feedback_type_is_required)
+                return
+            }
         }
-        val urgent = rbUrgent.text.toString()
-        val type = rbType.text.toString()
         val item = arguments?.getString("item")
         val state = arguments?.getString("state")
         viewModel.submitFeedback(urgent, type, message, item, state)

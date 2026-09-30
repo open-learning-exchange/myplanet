@@ -15,6 +15,7 @@ import io.mockk.spyk
 import io.mockk.unmockkAll
 import java.io.File
 import java.nio.file.Files
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -145,6 +146,22 @@ class FreeSpaceWorkerTest {
         val result = worker.doWork()
 
         assertTrue(result is Result.Failure)
+    }
+
+    @Test
+    fun `doWork rethrows CancellationException when worker is cancelled`() = runTest(testDispatcher) {
+        addResource("res1", "book.pdf")
+        coEvery { resourcesRepository.markResourcesAsNotOffline(any()) } throws CancellationException("Worker cancelled")
+
+        var exceptionThrown = false
+        try {
+            worker.doWork()
+        } catch (e: CancellationException) {
+            exceptionThrown = true
+            assertEquals("Worker cancelled", e.message)
+        }
+
+        assertTrue(exceptionThrown)
     }
 
     @Test
