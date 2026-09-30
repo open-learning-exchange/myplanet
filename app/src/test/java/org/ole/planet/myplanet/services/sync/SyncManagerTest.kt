@@ -124,6 +124,17 @@ class SyncManagerTest {
     }
 
     @Test
+    fun `start without a listener publishes Error when authentication fails`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns false
+        val expectedMessage = context.getString(org.ole.planet.myplanet.R.string.invalid_configuration)
+
+        syncManager.start(null, "sync", listOf("exams"))
+
+        assertEquals(SyncManager.SyncStatus.Error(expectedMessage), syncManager.syncStatus.value)
+        assertEquals(false, syncManager.isMainSyncActive())
+    }
+
+    @Test
     fun `cancelBackgroundSync clears background sync and listener`() = runTest {
         // Suspend in authenticate so the background sync stays in-flight until we cancel it
         coEvery { transactionSyncManager.authenticate() } coAnswers { awaitCancellation() }
