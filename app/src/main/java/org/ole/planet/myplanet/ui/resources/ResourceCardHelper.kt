@@ -11,6 +11,7 @@ import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import java.io.File
+import android.util.Log
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -55,8 +56,8 @@ object ResourceCardHelper {
     fun showTypeIconOnly(context: Context, ivPreview: ImageView, ivTypeIcon: ImageView) {
         try {
             Glide.with(context).clear(ivPreview)
-        } catch (_: Exception) {
-        } catch (_: AssertionError) {
+        } catch (e: Exception) {
+            Log.e("ResourceCardHelper", "Error clearing Glide request", e)
         }
         ivPreview.setImageDrawable(null)
         ivPreview.visibility = View.GONE

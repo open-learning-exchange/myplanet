@@ -175,7 +175,11 @@ class TeamResourcesAdapter(
             areContentsTheSame = { oldItem, newItem ->
                 oldItem.title == newItem.title &&
                         oldItem.mediaType == newItem.mediaType &&
-                        oldItem.language == newItem.language
+                        oldItem.language == newItem.language &&
+                        oldItem.isResourceOffline() == newItem.isResourceOffline() &&
+                        oldItem.resourceLocalAddress == newItem.resourceLocalAddress &&
+                        oldItem.downloadedRev == newItem.downloadedRev &&
+                        oldItem._rev == newItem._rev
             }
         )
     }

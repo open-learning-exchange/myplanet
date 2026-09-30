@@ -886,7 +886,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                 OfflineResourceItem(
                     resourceId = resourceId,
                     title = title,
-                    filePaths = accumulator.filePaths.sorted(),
+                    filePaths = accumulator.filePaths,
                     totalSizeBytes = accumulator.totalSize
                 )
             }
