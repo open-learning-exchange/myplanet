@@ -277,6 +277,7 @@
     <string name="assign_task_to">المهمة المخصصة لـ</string>
     <string name="leader_selected">القائد المختار</string>
     <string name="remove">إزالة</string>
+    <string name="remove_item_format">إزالة %s</string>
     <string name="make_leader">جعله قائدًا</string>
     <string name="mission"><![CDATA[المهمة والخدمات]]></string>
     <string name="team">الفرق</string>

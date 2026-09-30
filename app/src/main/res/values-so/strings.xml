@@ -611,6 +611,7 @@
     <string name="file_already_exists">Faylku horey ayaa jira…</string>
     <string name="feature_not_available">Fayraska Ma heli karaan</string>
     <string name="sync">Dib u hagrees</string>
+    <string name="remove_item_format">Ka saar %s</string>
     <string name="session_expired">Ku dhacday wakhti la isla xiriiray.</string>
     <string name="downloading_started_please_check_notificati">Degsaday soo degista, fadlan check notifikishanka…</string>
     <string name="dictionary">Qaamuus</string>

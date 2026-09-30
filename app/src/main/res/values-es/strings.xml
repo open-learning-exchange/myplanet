@@ -276,6 +276,7 @@
     <string name="assign_task_to">Tarea asignada a</string>
     <string name="leader_selected">Líder seleccionado</string>
     <string name="remove">Eliminar</string>
+    <string name="remove_item_format">Eliminar %s</string>
     <string name="make_leader">Asignar como líder</string>
     <string name="mission"><![CDATA[Misión y Servicios]]></string>
     <string name="team">Equipos</string>

@@ -105,7 +105,48 @@ class TeamResourcesAdapterTest {
         )
         val viewHolder = TeamResourcesAdapter.ViewHolderTeamResources(binding)
 
+        val job = kotlinx.coroutines.Job()
+        viewHolder.setPreviewJob(job)
+        assertTrue(job.isActive)
+
         viewHolder.cancelPreviewJob()
+        assertTrue(job.isCancelled)
+
+        // Verifies subsequent calls handle already-cleared job gracefully
         viewHolder.cancelPreviewJob()
+        assertTrue(job.isCancelled)
+    }
+
+    @Test
+    fun testResourceLocalAddressChangeTriggersDiffUpdate() {
+        val oldResource = MyLibrary().apply {
+            id = "res_1"
+            title = "Resource 1"
+            mediaType = "Book"
+            language = "English"
+            resourceLocalAddress = null
+        }
+        val newResource = MyLibrary().apply {
+            id = "res_1"
+            title = "Resource 1"
+            mediaType = "Book"
+            language = "English"
+            resourceLocalAddress = "/storage/emulated/0/Android/data/org.ole.planet.myplanet/files/res_1.pdf"
+        }
+
+        val commitCompleted = AtomicBoolean(false)
+        adapter.submitList(listOf(oldResource))
+        ShadowLooper.idleMainLooper()
+
+        adapter.submitList(listOf(newResource)) {
+            commitCompleted.set(true)
+        }
+
+        idleMainLooperUntil { commitCompleted.get() }
+        assertTrue(commitCompleted.get())
+        assertEquals(
+            "/storage/emulated/0/Android/data/org.ole.planet.myplanet/files/res_1.pdf",
+            adapter.currentList[0].resourceLocalAddress
+        )
     }
 }

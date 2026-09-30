@@ -131,7 +131,7 @@ class TeamResourcesAdapter(
                 if (canRemoveResources) View.VISIBLE else View.GONE
 
             flRemoveContainer.contentDescription =
-                context.getString(R.string.remove) + " " + resource.title.orEmpty()
+                context.getString(R.string.remove_item_format, resource.title.orEmpty())
 
             flRemoveContainer.setOnClickListener {
                 val currentPosition = holder.bindingAdapterPosition
@@ -178,7 +178,8 @@ class TeamResourcesAdapter(
             areContentsTheSame = { oldItem, newItem ->
                 oldItem.title == newItem.title &&
                         oldItem.mediaType == newItem.mediaType &&
-                        oldItem.language == newItem.language
+                        oldItem.language == newItem.language &&
+                        oldItem.resourceLocalAddress == newItem.resourceLocalAddress
             }
         )
     }
