@@ -23,11 +23,6 @@ interface ResourceActivityDao {
     @Query("SELECT COUNT(*) FROM resource_activity WHERE user = :userName AND type = :type")
     suspend fun countByUserAndType(userName: String, type: String): Long
 
-    /**
-     * Retrieves the resource title and open count for the most frequently opened resource for a given user and type.
-     * Excludes rows with null or blank titles. If a resource has multiple titles across rows, MIN(title) is chosen
-     * deterministically. Ties in open count across different resources are deterministically broken using title ASC.
-     */
     @Query("SELECT MIN(title) AS title, COUNT(*) AS openCount FROM resource_activity WHERE user = :userName AND type = :type AND title IS NOT NULL AND TRIM(title) != '' GROUP BY resourceId ORDER BY openCount DESC, title ASC LIMIT 1")
     suspend fun getMostOpenedResource(userName: String, type: String): ResourceOpenCount?
 
