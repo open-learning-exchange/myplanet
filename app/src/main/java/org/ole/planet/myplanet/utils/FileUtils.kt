@@ -68,8 +68,6 @@ object FileUtils {
         return getResourceRelativePathFromSegments(parseUrlSegments(url))
     }
 
-    // Decode each segment once, but keep a segment whose "%" isn't a valid escape (e.g. "50% off.pdf")
-    // as-is: Uri.pathSegments would turn that "%" into a replacement character.
     private fun parseUrlSegments(url: String?): List<String>? {
         return try {
             url?.toUri()?.encodedPath
