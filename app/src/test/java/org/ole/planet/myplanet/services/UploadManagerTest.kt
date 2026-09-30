@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.SystemClock
 import android.util.Log
 import com.google.gson.JsonObject
+import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -17,7 +18,9 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.AfterClass
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -76,19 +79,32 @@ class UploadManagerTest {
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
 
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkStatic(Log::class)
+            mockkStatic(SystemClock::class)
+            mockkStatic(android.text.TextUtils::class)
+            io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
+            io.mockk.mockkObject(UrlUtils)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkAll()
+        }
+    }
+
     @Before
     fun setup() {
         org.ole.planet.myplanet.MainApplication.testContext = context
-        mockkStatic(Log::class)
-        mockkStatic(SystemClock::class)
-        mockkStatic(android.text.TextUtils::class)
         every { android.text.TextUtils.isEmpty(any()) } answers { firstArg<CharSequence?>().isNullOrEmpty() }
-        io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
         every { org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
         every { org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName() } returns "deviceName"
         every { org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(any()) } returns "customDeviceName"
         every { SystemClock.elapsedRealtime() } returns 0L
-        io.mockk.mockkObject(UrlUtils)
         every { UrlUtils.header } returns "mockHeader"
         every { UrlUtils.getUrl() } returns "http://mock.url"
         every { Log.d(any(), any()) } returns 0
@@ -118,8 +134,7 @@ class UploadManagerTest {
     @After
     fun tearDown() {
         org.ole.planet.myplanet.MainApplication.testContext = null
-        unmockkAll()
-        io.mockk.unmockkObject(UrlUtils)
+        clearAllMocks(answers = false, childMocks = false)
     }
 
     @Test

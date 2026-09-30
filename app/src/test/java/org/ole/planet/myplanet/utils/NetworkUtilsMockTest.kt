@@ -9,16 +9,19 @@ import android.net.NetworkCapabilities
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import dagger.hilt.android.EntryPointAccessors
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
@@ -31,6 +34,21 @@ class NetworkUtilsMockTest {
     private lateinit var mockBluetoothAdapter: BluetoothAdapter
     private lateinit var mockConnectivityManager: ConnectivityManager
 
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkObject(MainApplication.Companion)
+            mockkStatic(EntryPointAccessors::class)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkAll()
+        }
+    }
+
     @Before
     fun setUp() {
         mockContext = mockk(relaxed = true)
@@ -39,10 +57,8 @@ class NetworkUtilsMockTest {
         mockBluetoothAdapter = mockk(relaxed = true)
         mockConnectivityManager = mockk(relaxed = true)
 
-        mockkObject(MainApplication.Companion)
         every { MainApplication.context } returns mockContext
 
-        mockkStatic(EntryPointAccessors::class)
         val mockEntryPoint = mockk<CoreDependenciesEntryPoint>(relaxed = true)
         every { EntryPointAccessors.fromApplication(any(), CoreDependenciesEntryPoint::class.java) } returns mockEntryPoint
 
@@ -55,7 +71,7 @@ class NetworkUtilsMockTest {
 
     @After
     fun tearDown() {
-        unmockkAll()
+        clearAllMocks(answers = false, childMocks = false)
         NetworkUtils.resetForTesting()
     }
 

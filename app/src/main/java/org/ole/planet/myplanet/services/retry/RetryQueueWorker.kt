@@ -162,6 +162,8 @@ class RetryQueueWorker @AssistedInject constructor(
         } catch (_: TimeoutCancellationException) {
             Log.w(TAG, "Retry processing timed out, will continue next cycle")
             Result.success()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Error during retry processing", e)
             Result.retry()
