@@ -148,4 +148,47 @@ class NotificationDaoTest {
         assertEquals("rev", result?.rev)
         assertTrue(result?.needsSync ?: false)
     }
+
+    @Test
+    fun chunkedListOperations_handleMoreThan900Items() = runBlocking {
+        val notifications = (1..1200).map { i ->
+            createNotification("notif_$i", rev = "rev_$i", needsSync = true).apply {
+                isRead = false
+            }
+        }
+        notificationDao.upsertAll(notifications)
+
+        val ids = notifications.map { it.id }
+
+        // Test getByIds
+        val fetchedNotifications = notificationDao.getByIds(ids)
+        assertEquals(1200, fetchedNotifications.size)
+
+        // Test getIdsByIds
+        val fetchedIds = notificationDao.getIdsByIds(ids)
+        assertEquals(1200, fetchedIds.size)
+
+        // Test markAsRead(ids, date)
+        val markDate = java.util.Date()
+        val markResult = notificationDao.markAsRead(ids, markDate)
+        assertEquals(1200, markResult)
+
+        val updatedNotifications = notificationDao.getByIds(ids)
+        assertTrue(updatedNotifications.all { it.isRead })
+
+        // Test deleteByIds
+        val deleteResult = notificationDao.deleteByIds(ids)
+        assertEquals(1200, deleteResult)
+
+        val remainingNotifications = notificationDao.getByIds(ids)
+        assertTrue(remainingNotifications.isEmpty())
+    }
+
+    @Test
+    fun chunkedListOperations_handleEmptyInputs() = runBlocking {
+        assertTrue(notificationDao.getByIds(emptyList()).isEmpty())
+        assertTrue(notificationDao.getIdsByIds(emptyList()).isEmpty())
+        assertEquals(0, notificationDao.markAsRead(emptyList(), java.util.Date()))
+        assertEquals(0, notificationDao.deleteByIds(emptyList()))
+    }
 }

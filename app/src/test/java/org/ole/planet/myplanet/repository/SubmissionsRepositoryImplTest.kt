@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.TeamReference
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -1139,5 +1140,30 @@ class SubmissionsRepositoryImplTest {
         assertNotNull(results[1].membershipDoc)
         assertEquals("team123", results[1].membershipDoc?.teamId)
         assertNull(results[2].membershipDoc)
+    }
+
+    @Test
+    fun `markSubmissionsUploaded delegates submission updates to dao`() = runTest {
+        coEvery { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") } returns 1
+
+        val failed = repository.markSubmissionsUploaded(
+            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", com.google.gson.JsonObject()))
+        )
+
+        assertEquals(emptyList<UploadedItemResult>(), failed)
+        coVerify { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") }
+    }
+
+    @Test
+    fun `markSubmissionsUploaded returns failure if dao returns 0`() = runTest {
+        coEvery { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") } returns 0
+
+        val failed = repository.markSubmissionsUploaded(
+            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", com.google.gson.JsonObject()))
+        )
+
+        assertEquals(1, failed.size)
+        assertEquals("sub-1", failed.first().localId)
+        coVerify { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") }
     }
 }
