@@ -8,10 +8,13 @@ import javax.inject.Inject
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.MyLibrary
@@ -51,8 +54,8 @@ class ResourcesViewModel @Inject constructor(
     val isDateSortAscending: Boolean get() = isAscending
     val isTitleSortAscending: Boolean get() = isTitleAscending
 
-    private val _downloadComplete = MutableStateFlow(false)
-    val downloadComplete: StateFlow<Boolean> = _downloadComplete.asStateFlow()
+    private val _downloadComplete = Channel<Unit>(Channel.CONFLATED)
+    val downloadComplete: Flow<Unit> = _downloadComplete.receiveAsFlow()
 
     private val _openedResourceIds = MutableStateFlow<Set<String>>(emptySet())
     val openedResourceIds: StateFlow<Set<String>> = _openedResourceIds.asStateFlow()
@@ -61,8 +64,7 @@ class ResourcesViewModel @Inject constructor(
     private var currentObservedUserId: String? = null
 
     fun notifyDownloadComplete() {
-        _downloadComplete.value = true
-        _downloadComplete.value = false
+        _downloadComplete.trySend(Unit)
     }
 
     fun observeOpenedResourceIds(userId: String) {

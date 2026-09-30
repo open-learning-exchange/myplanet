@@ -4,8 +4,12 @@
 Usage: test_timing_summary.py <test-results-dir> [--shard N/M] [--warn-over SECONDS]
 
 Reads the JUnit XML that Gradle writes to app/build/test-results/<task>/ and
-prints a markdown report of the slowest test classes and individual tests, so
-CI shows where the test wall time actually goes.
+prints a markdown report of:
+  - The slowest test classes by total time (including test count and median test time)
+  - The slowest test classes by median test time (for classes with >=3 tests)
+  - The slowest individual tests (flagging likely warm-up tests exceeding 5x class median)
+
+CI shows where the test wall time actually goes and highlights Robolectric sandbox boot costs.
 
 --shard labels the report with which CI shard produced it, for the optional
 sharded run (-PtestShardTotal/-PtestShardIndex). --warn-over prints a loud
@@ -16,6 +20,7 @@ import argparse
 import glob
 import math
 import os
+import statistics
 import sys
 import xml.etree.ElementTree as ET
 
@@ -48,8 +53,7 @@ def main() -> int:
         print(f"No test result XML found in `{results_dir}`.")
         return 0
 
-    classes = []
-    cases = []
+    class_map = {}
     total = 0.0
 
     for path in files:
@@ -59,14 +63,47 @@ def main() -> int:
             print(f"Skipping unreadable result file `{path}`: {exc}", file=sys.stderr)
             continue
         elapsed = _parse_time(root.get("time"), path)
-        classes.append((elapsed, root.get("name") or "?"))
+        class_name = root.get("name") or "?"
         total += elapsed
+
+        if class_name not in class_map:
+            class_map[class_name] = {
+                "elapsed": 0.0,
+                "cases": []
+            }
+        class_map[class_name]["elapsed"] += elapsed
+
         for case in root.iter("testcase"):
             owner = (case.get("classname") or "?").rsplit(".", 1)[-1]
-            cases.append((_parse_time(case.get("time"), path), f"{owner}.{case.get('name') or '?'}"))
+            case_name = case.get("name") or "?"
+            case_elapsed = _parse_time(case.get("time"), path)
+            class_map[class_name]["cases"].append((case_elapsed, f"{owner}.{case_name}"))
 
-    classes.sort(reverse=True)
-    cases.sort(reverse=True)
+    classes = []
+    cases = []
+
+    for class_name, data in class_map.items():
+        class_elapsed = data["elapsed"]
+        class_cases = data["cases"]
+        test_times = [c[0] for c in class_cases]
+        test_count = len(test_times)
+        class_median = statistics.median(test_times) if test_times else 0.0
+
+        classes.append((class_elapsed, class_name, test_count, class_median))
+
+        for case_elapsed, case_display_name in class_cases:
+            is_warmup = "yes" if (test_count >= 3 and case_elapsed > 5 * class_median) else ""
+            cases.append((case_elapsed, case_display_name, is_warmup))
+
+    classes.sort(key=lambda x: (x[0], x[1]), reverse=True)
+    cases.sort(key=lambda x: (x[0], x[1]), reverse=True)
+
+    classes_by_median = [
+        (median_val, name, count, elapsed)
+        for elapsed, name, count, median_val in classes
+        if count >= 3
+    ]
+    classes_by_median.sort(key=lambda x: (x[0], x[3], x[1]), reverse=True)
 
     shard_suffix = f" (shard {args.shard})" if args.shard else ""
     print(f"## Unit test timing{shard_suffix}")
@@ -83,18 +120,25 @@ def main() -> int:
         print()
     print(f"### {TOP_N} slowest test classes")
     print()
-    print("| Class | Seconds | % of total |")
-    print("| --- | --- | --- |")
-    for elapsed, name in classes[:TOP_N]:
+    print("| Class | Seconds | % of total | Tests | Median s/test |")
+    print("| --- | --- | --- | --- | --- |")
+    for elapsed, name, count, median_val in classes[:TOP_N]:
         share = (elapsed / total * 100) if total else 0.0
-        print(f"| `{name}` | {elapsed:.1f} | {share:.1f}% |")
+        print(f"| `{name}` | {elapsed:.1f} | {share:.1f}% | {count} | {median_val:.2f} |")
+    print()
+    print(f"### {TOP_N} slowest classes per test (median, ≥3 tests)")
+    print()
+    print("| Class | Median s/test | Tests | Seconds |")
+    print("| --- | --- | --- | --- |")
+    for median_val, name, count, elapsed in classes_by_median[:TOP_N]:
+        print(f"| `{name}` | {median_val:.2f} | {count} | {elapsed:.1f} |")
     print()
     print(f"### {TOP_N} slowest individual tests")
     print()
-    print("| Test | Seconds |")
-    print("| --- | --- |")
-    for elapsed, name in cases[:TOP_N]:
-        print(f"| `{name}` | {elapsed:.1f} |")
+    print("| Test | Seconds | Likely warm-up |")
+    print("| --- | --- | --- |")
+    for elapsed, name, warmup in cases[:TOP_N]:
+        print(f"| `{name}` | {elapsed:.1f} | {warmup} |")
     return 0
 
 

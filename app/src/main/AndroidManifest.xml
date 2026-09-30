@@ -98,7 +98,7 @@
             android:exported="false"
             android:configChanges="screenSize|screenLayout|orientation|keyboardHidden|keyboard"/>
         <activity
-            android:name=".ui.user.BecomeMemberActivity"
+            android:name=".ui.user.LearnerRegistrationActivity"
             android:windowSoftInputMode="adjustResize|stateHidden"
             android:theme="@style/AppTheme" />
         <activity
