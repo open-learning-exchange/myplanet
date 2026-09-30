@@ -122,6 +122,23 @@ class FileUtilsTest {
     }
 
     @Test
+    fun getSDPathFromUrl_keepsPlusAndPercentInFileNames() {
+        FileUtils.warmUp(context)
+
+        val plus = FileUtils.getSDPathFromUrl(context, "http://example.com/resources/123/Grade 1+2.pdf")
+        assertTrue("plus=${plus.absolutePath}", plus.absolutePath.endsWith("ole/123/Grade 1+2.pdf"))
+
+        val percent = FileUtils.getSDPathFromUrl(context, "http://example.com/resources/123/50% off.pdf")
+        assertTrue("percent=${percent.absolutePath}", percent.absolutePath.endsWith("ole/123/50% off.pdf"))
+    }
+
+    @Test
+    fun getFileNameFromUrl_keepsPlusAndDecodesPercentEscapesOnce() {
+        assertEquals("Grade 1+2.pdf", FileUtils.getFileNameFromUrl("http://example.com/resources/1/Grade 1+2.pdf"))
+        assertEquals("a b.pdf", FileUtils.getFileNameFromUrl("http://example.com/resources/1/a%20b.pdf"))
+    }
+
+    @Test
     fun getSDPathFromUrl_preservesNestedAttachmentPath() {
         FileUtils.warmUp(context)
         val url = "http://example.com/resources/123/js/game_manager.js"

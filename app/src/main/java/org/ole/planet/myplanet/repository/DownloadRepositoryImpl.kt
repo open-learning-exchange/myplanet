@@ -56,6 +56,8 @@ class DownloadRepositoryImpl @Inject constructor(
                         val matchResult = URL_REGEX.find(responseString)
                         val extractedUrl = matchResult?.groupValues?.get(1)
                         diagnosticsRepository.saveLogToRoom("File Not Found", "$extractedUrl", "${timeProvider.now()}")
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         diagnosticsRepository.saveLogToRoom("File Not Found", url, "${timeProvider.now()}")
                     }

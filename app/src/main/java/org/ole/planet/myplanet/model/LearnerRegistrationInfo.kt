@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.model
 
-data class MemberInfo(
+data class LearnerRegistrationInfo(
     val username: String,
     var password: String,
     val rePassword: String,

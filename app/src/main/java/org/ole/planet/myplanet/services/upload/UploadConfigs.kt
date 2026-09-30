@@ -195,7 +195,8 @@ class UploadConfigs @Inject constructor(
             val questions = surveysRepository.getExamQuestions(exam.id ?: "")
             StepExam.serializeExam(exam, questions)
         },
-        idExtractor = { it.id }
+        idExtractor = { it.id },
+        markUploaded = { surveysRepository.markExamsUploaded(it) }
     )
 
     // Migrated to Room: uses the database-agnostic RoomUploadConfig path in UploadCoordinator.
@@ -252,7 +253,8 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it.id },
         dbIdExtractor = { it._id },
         filterGuests = true,
-        guestUserIdExtractor = { it.userId }
+        guestUserIdExtractor = { it.userId },
+        markUploaded = { submissionsRepository.markSubmissionsUploaded(it) }
     )
 
     val Submissions = UploadConfig(
@@ -265,9 +267,7 @@ class UploadConfigs @Inject constructor(
         },
         idExtractor = { it.id },
         dbIdExtractor = { it._id },
-        additionalUpdates = { submission, _ ->
-            submission.isUpdated = false
-        }
+        markUploaded = { submissionsRepository.markSubmissionsUploaded(it) }
     )
 
     // Migrated to Room: uses the database-agnostic RoomUploadConfig path in UploadCoordinator.
