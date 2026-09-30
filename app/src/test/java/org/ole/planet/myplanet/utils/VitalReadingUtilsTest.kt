@@ -1,10 +1,10 @@
-package org.ole.planet.myplanet.ui.health
+package org.ole.planet.myplanet.utils
 
 import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class HealthVitalsTest {
+class VitalReadingUtilsTest {
 
     @Test
     fun parseVitalReading_commaDecimalLocale_keepsDecimalVitals() {

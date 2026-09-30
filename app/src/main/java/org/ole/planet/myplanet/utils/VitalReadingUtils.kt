@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.health
+package org.ole.planet.myplanet.utils
 
 import kotlin.math.roundToInt
 
