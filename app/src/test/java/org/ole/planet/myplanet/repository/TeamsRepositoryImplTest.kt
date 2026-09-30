@@ -8,6 +8,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -786,5 +787,53 @@ class TeamsRepositoryImplTest {
 
         coVerify(exactly = 0) { teamDao.getByIds(any()) }
         coVerify(exactly = 0) { teamDao.getAll() }
+    }
+
+    @Test
+    fun `batchInsertMyTeams rethrows CancellationException and abandons loop`() = runTest(testDispatcher) {
+        val doc1 = com.google.gson.JsonObject().apply { addProperty("_id", "team1") }
+        val doc2 = com.google.gson.JsonObject().apply { addProperty("_id", "team2") }
+        val doc3 = com.google.gson.JsonObject().apply { addProperty("_id", "team3") }
+        val docs = listOf(doc1, doc2, doc3)
+
+        coEvery { teamDao.getByIds(any()) } returns emptyList()
+        coEvery { teamDao.getById(any()) } returns null
+
+        coEvery { teamDao.upsert(match { it._id == "team1" }) } returns Unit
+        coEvery { teamDao.upsert(match { it._id == "team2" }) } throws CancellationException("cancelled")
+        coEvery { teamDao.upsert(match { it._id == "team3" }) } returns Unit
+
+        try {
+            teamsRepository.batchInsertMyTeams(docs)
+            org.junit.Assert.fail("Expected CancellationException to be thrown")
+        } catch (_: CancellationException) {
+            // Expected exception propagated
+        }
+
+        coVerify(exactly = 1) { teamDao.upsert(match { it._id == "team1" }) }
+        coVerify(exactly = 1) { teamDao.upsert(match { it._id == "team2" }) }
+        coVerify(exactly = 0) { teamDao.upsert(match { it._id == "team3" }) }
+    }
+
+    @Test
+    fun `batchInsertMyTeams handles ordinary exception and continues loop returning processedCount`() = runTest(testDispatcher) {
+        val doc1 = com.google.gson.JsonObject().apply { addProperty("_id", "team1") }
+        val doc2 = com.google.gson.JsonObject().apply { addProperty("_id", "team2") }
+        val doc3 = com.google.gson.JsonObject().apply { addProperty("_id", "team3") }
+        val docs = listOf(doc1, doc2, doc3)
+
+        coEvery { teamDao.getByIds(any()) } returns emptyList()
+        coEvery { teamDao.getById(any()) } returns null
+
+        coEvery { teamDao.upsert(match { it._id == "team1" }) } returns Unit
+        coEvery { teamDao.upsert(match { it._id == "team2" }) } throws RuntimeException("ordinary error")
+        coEvery { teamDao.upsert(match { it._id == "team3" }) } returns Unit
+
+        val count = teamsRepository.batchInsertMyTeams(docs)
+
+        assertEquals(2, count)
+        coVerify(exactly = 1) { teamDao.upsert(match { it._id == "team1" }) }
+        coVerify(exactly = 1) { teamDao.upsert(match { it._id == "team2" }) }
+        coVerify(exactly = 1) { teamDao.upsert(match { it._id == "team3" }) }
     }
 }
