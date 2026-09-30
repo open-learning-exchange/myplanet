@@ -10,7 +10,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.RadioButton
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
@@ -148,9 +147,13 @@ class TeamCalendarFragment : BaseTeamFragment() {
     ) {
         val startTimeText = "${addMeetupBinding.tvStartTime.text}"
         val endTimeText = "${addMeetupBinding.tvEndTime.text}"
-        val recurringId = addMeetupBinding.rgRecuring.checkedRadioButtonId
-        val rb = addMeetupBinding.rgRecuring.findViewById<RadioButton>(recurringId)
-        val recurringText = rb?.text?.toString()
+
+        val recurringText = when (addMeetupBinding.rgRecuring.checkedRadioButtonId) {
+            R.id.rb_daily -> "daily"
+            R.id.rb_weekly -> "weekly"
+            R.id.rb_none -> "none"
+            else -> null
+        }
         val teamPlanetCode = team?.teamPlanetCode
         val userName = user?.name
         val startMillis = start.timeInMillis
@@ -287,7 +290,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         dialogBinding.tvStartTime.text = meetup.startTime?.ifEmpty { getString(R.string.click_here_to_pick_time) } ?: getString(R.string.click_here_to_pick_time)
         dialogBinding.tvEndTime.text = meetup.endTime?.ifEmpty { getString(R.string.click_here_to_pick_time) } ?: getString(R.string.click_here_to_pick_time)
 
-        when (meetup.recurring) {
+        when (meetup.recurring?.lowercase(Locale.ROOT)) {
             "daily" -> dialogBinding.rgRecuring.check(R.id.rb_daily)
             "weekly" -> dialogBinding.rgRecuring.check(R.id.rb_weekly)
             else -> dialogBinding.rgRecuring.check(R.id.rb_none)
