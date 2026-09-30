@@ -1,20 +1,16 @@
 package org.ole.planet.myplanet.utils
 
+import android.app.Application
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
-import dagger.hilt.android.testing.HiltAndroidRule
-import dagger.hilt.android.testing.HiltAndroidTest
-import dagger.hilt.android.testing.HiltTestApplication
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
@@ -23,19 +19,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 
-@HiltAndroidTest
 @RunWith(RobolectricTestRunner::class)
-@Config(application = HiltTestApplication::class)
+@Config(application = Application::class)
 @LooperMode(LooperMode.Mode.PAUSED)
 class IntentUtilsTest {
-
-    @get:Rule
-    val hiltRule = HiltAndroidRule(this)
-
-    @Before
-    fun init() {
-        hiltRule.inject()
-    }
 
     @Test
     fun `test openAudioFile`() {
