@@ -59,7 +59,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     @Inject
     lateinit var userRepository: UserRepository
 
-    private val viewModel: ProcessUserDataViewModel by viewModels()
+    private val viewModel: UserUploadViewModel by viewModels()
 
     val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
         DialogUtils.CustomProgressDialog(this)

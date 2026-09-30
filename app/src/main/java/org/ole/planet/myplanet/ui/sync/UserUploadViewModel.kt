@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
-class ProcessUserDataViewModel @Inject constructor(
+class UserUploadViewModel @Inject constructor(
     private val syncRepository: SyncRepository,
     private val userRepository: UserRepository
 ) : ViewModel() {

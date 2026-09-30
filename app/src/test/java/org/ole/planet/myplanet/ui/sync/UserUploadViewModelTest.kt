@@ -13,13 +13,13 @@ import org.ole.planet.myplanet.repository.SyncRepository
 import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.repository.UserRepository
 
-class ProcessUserDataViewModelTest {
+class UserUploadViewModelTest {
 
     private val syncRepository: SyncRepository = mockk()
     private val userRepository: UserRepository = mockk(relaxed = true)
 
-    private fun createViewModel(): ProcessUserDataViewModel {
-        return ProcessUserDataViewModel(syncRepository, userRepository)
+    private fun createViewModel(): UserUploadViewModel {
+        return UserUploadViewModel(syncRepository, userRepository)
     }
 
     @Test
