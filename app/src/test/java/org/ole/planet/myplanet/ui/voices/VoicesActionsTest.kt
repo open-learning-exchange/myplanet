@@ -127,6 +127,16 @@ class VoicesActionsTest {
     }
 
     @Test
+    fun `showMemberDetails passes the login name, not the display name, for the visit lookup`() = runTest {
+        val fragment = VoicesActions.showMemberDetails(fullyPopulatedUser())
+
+        // offline_activity.userName stores the login name, so the stats lookup keys on it.
+        assertEquals("john_doe", fragment?.arguments?.getString("member_login_name"))
+        // The display name stays separate -- feeding it to the lookup matches no rows.
+        assertEquals("John Doe", fragment?.arguments?.getString("username"))
+    }
+
+    @Test
     fun `showMemberDetails handles user with minimal fields`() = runTest {
         val user = UserEntity().apply {
             id = "user123"

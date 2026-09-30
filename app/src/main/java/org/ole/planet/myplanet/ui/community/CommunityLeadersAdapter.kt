@@ -53,6 +53,7 @@ internal class CommunityLeadersAdapter(
             val fragment = MembersDetailFragment.newInstance(
                 MemberDetailArgs(
                     id = leader.id,
+                    loginName = leader.name,
                     name = leader.name ?: "",
                     email = leader.email ?: "",
                     dob = leader.dob ?: "",

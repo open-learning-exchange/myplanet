@@ -8,6 +8,12 @@ import org.ole.planet.myplanet.model.UserEntity
  */
 data class MemberDetailArgs(
     val id: String?,
+    /**
+     * The CouchDB login name, e.g. "john_doe". This is the key `offline_activity.userName` is
+     * written with, so the visit-stats lookup needs it -- [username] is a display name and will
+     * not match any row.
+     */
+    val loginName: String?,
     val name: String,
     val email: String,
     val dob: String,
@@ -26,6 +32,7 @@ data class MemberDetailArgs(
             val fullName = "${user.firstName} ${user.lastName}"
             return MemberDetailArgs(
                 id = user.id,
+                loginName = user.name,
                 name = fullName.trim().ifBlank { user.name }.toString(),
                 email = user.email.toString(),
                 dob = user.dob.toString().substringBefore("T"),

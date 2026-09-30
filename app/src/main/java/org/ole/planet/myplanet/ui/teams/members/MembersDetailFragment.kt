@@ -24,6 +24,7 @@ class MembersDetailFragment : BaseBindingFragment<FragmentMemberDetailBinding>(F
             val username = args.getString("username")?.trim()
             val imageUrl = args.getString("profile_photo_url")
             val memberId = args.getString("member_id")
+            val loginName = args.getString("member_login_name")
 
             binding.tvProfileName.text = if (fullName.isNullOrEmpty()) username else fullName
             ImageUtils.loadProfileImage(
@@ -39,7 +40,7 @@ class MembersDetailFragment : BaseBindingFragment<FragmentMemberDetailBinding>(F
             setFieldOrHide(binding.tvProfilePhone, args.getString("profile_phone"))
             setFieldOrHide(binding.tvLevel, args.getString("user_level"))
 
-            viewModel.loadMemberVisitStats(memberId, username)
+            viewModel.loadMemberVisitStats(memberId, loginName)
 
             collectWhenStarted(viewModel.visitStats) { stats ->
                 setFieldOrHide(binding.tvNumberOfVisits, stats?.numberOfVisits)
@@ -75,6 +76,7 @@ class MembersDetailFragment : BaseBindingFragment<FragmentMemberDetailBinding>(F
         fun newInstance(args: MemberDetailArgs) = MembersDetailFragment().apply {
             arguments = Bundle().apply {
                 putString("member_id", args.id)
+                putString("member_login_name", args.loginName)
                 putString("member_name", args.name)
                 putString("profile_email", args.email)
                 putString("detail_dob", args.dob)
