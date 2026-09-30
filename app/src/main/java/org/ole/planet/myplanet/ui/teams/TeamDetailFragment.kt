@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.callback.OnChangedListener
-import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
@@ -184,12 +183,6 @@ class TeamDetailFragment : BaseTeamFragment() {
                             }
                         }
 
-                        val itemId = adapter?.getItemId(position) ?: position.toLong()
-                        val fragmentTag = "f$itemId"
-                        val fragment = childFragmentManager.findFragmentByTag(fragmentTag)
-                        if (fragment is OnTeamPageListener) {
-                            MainApplication.listener = fragment
-                        }
                     }
                 }
             )
@@ -256,23 +249,12 @@ class TeamDetailFragment : BaseTeamFragment() {
 
             viewLifecycleOwner.lifecycleScope.launch {
                 delay(delayMs)
-                val pageListener = childFragmentManager.fragments.firstOrNull {
-                    it is OnTeamPageListener && it.arguments?.getString("fragmentType") == targetPageId
-                } as? OnTeamPageListener
-                when {
-                    pageListener != null -> {
-                        if (isEnterprise) {
-                            pageListener.onAddDocument()
-                        } else {
-                            pageListener.onAddCourse()
-                        }
-                    }
-                    MainApplication.listener is OnTeamPageListener -> {
-                        if (isEnterprise) {
-                            MainApplication.listener?.onAddDocument()
-                        } else {
-                            MainApplication.listener?.onAddCourse()
-                        }
+                val pageListener = resolveTeamPageListener(childFragmentManager.fragments, targetPageId)
+                if (pageListener != null) {
+                    if (isEnterprise) {
+                        pageListener.onAddDocument()
+                    } else {
+                        pageListener.onAddCourse()
                     }
                 }
             }
