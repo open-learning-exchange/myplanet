@@ -63,6 +63,7 @@ class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(
         )
         binding.rvNotifications.adapter = adapter
         binding.rvNotifications.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvNotifications.setHasFixedSize(true)
 
         val options = resources.getStringArray(status_options)
         val optionsList: MutableList<String?> = ArrayList(listOf(*options))

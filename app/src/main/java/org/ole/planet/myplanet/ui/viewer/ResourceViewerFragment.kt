@@ -120,10 +120,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
             Utilities.toast(requireContext(), getString(R.string.recording_stopped))
             NotificationUtils.cancelAll(requireContext())
             if (::library.isInitialized) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    val id = library.id ?: return@launch
-                    viewModel.updateLibraryItemTranslationAudioPath(id, outputFile)
-                }
+                library.id?.let { viewModel.saveTranslationAudioPath(it, outputFile) }
             }
             binding.fabRecord.setImageResource(R.drawable.ic_mic)
         }
@@ -603,18 +600,29 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         if (!file.exists()) return
 
         val (text, truncated) = withContext(dispatcherProvider.io) {
-            val raw = file.readText()
-            if (raw.length > MAX_TEXT_VIEWER_CHARS) {
-                raw.substring(0, MAX_TEXT_VIEWER_CHARS) to true
-            } else {
-                raw to false
+            val buf = CharArray(MAX_TEXT_VIEWER_CHARS + 1)
+            var n = 0
+            file.bufferedReader().use { r ->
+                while (n < buf.size) {
+                    val read = r.read(buf, n, buf.size - n)
+                    if (read == -1) break
+                    n += read
+                }
             }
+            val isTruncated = n > MAX_TEXT_VIEWER_CHARS
+            val content = String(buf, 0, minOf(n, MAX_TEXT_VIEWER_CHARS))
+            content to isTruncated
         }
 
         if (!isAdded) return
 
         if (type == ResourceType.MARKDOWN) {
-            MarkdownUtils.setMarkdownText(textContent, text)
+            val ctx = textContent.context
+            val spanned = withContext(dispatcherProvider.default) {
+                MarkdownUtils.parseMarkdown(ctx, text)
+            }
+            if (!isAdded) return
+            MarkdownUtils.setParsedMarkdown(textContent, spanned)
         } else {
             textContent.text = text
         }
@@ -708,6 +716,9 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
     }
 
     override fun onDestroyView() {
+        if (::audioRecorder.isInitialized && audioRecorder.isRecording()) {
+            audioRecorder.stopRecording()
+        }
         saveCurrentPlaybackProgress()
         authSessionUpdater?.stop()
         exoPlayer?.release()
