@@ -118,4 +118,33 @@ class FeedbackAdapterTest {
         assertEquals("Formatted Date 2000", holder1.rowFeedbackBinding.tvOpenDate.text.toString())
         assertEquals("Formatted Date 2000", holder2.rowFeedbackBinding.tvOpenDate.text.toString())
     }
+
+    @Test
+    @Config(qualifiers = "fr")
+    fun `onBindViewHolder shows stored English keys in the device language and leaves other values as stored`() {
+        every { TimeUtils.getFormattedDate(3000L) } returns "Formatted Date 3000"
+        val keyed = Feedback().apply {
+            id = "f1"; title = "Keyed"; type = "Bug"; priority = "Yes"; status = "open"; openTime = 3000L
+        }
+        val legacy = Feedback().apply {
+            id = "f2"; title = "Legacy"; type = "Bogue"; priority = "Oui"; status = "open"; openTime = 3000L
+        }
+
+        var committed = false
+        adapter.submitList(listOf(keyed, legacy)) { committed = true }
+        while (!committed) {
+            ShadowLooper.idleMainLooper()
+        }
+
+        val parent = FrameLayout(context)
+        val keyedHolder = adapter.onCreateViewHolder(parent, 0)
+        adapter.onBindViewHolder(keyedHolder, 0)
+        val legacyHolder = adapter.onCreateViewHolder(parent, 0)
+        adapter.onBindViewHolder(legacyHolder, 1)
+
+        assertEquals("Bogue", keyedHolder.rowFeedbackBinding.tvType.text.toString())
+        assertEquals("Oui", keyedHolder.rowFeedbackBinding.tvPriority.text.toString())
+        assertEquals("Bogue", legacyHolder.rowFeedbackBinding.tvType.text.toString())
+        assertEquals("Oui", legacyHolder.rowFeedbackBinding.tvPriority.text.toString())
+    }
 }

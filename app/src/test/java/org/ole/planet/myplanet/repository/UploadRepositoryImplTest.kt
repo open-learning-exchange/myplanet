@@ -13,9 +13,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.data.room.dao.ExamDao
-import org.ole.planet.myplanet.data.room.dao.SubmissionDao
-import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
@@ -32,16 +29,12 @@ class UploadRepositoryImplTest {
     }
 
     private lateinit var apiInterface: ApiInterface
-    private lateinit var examDao: ExamDao
-    private lateinit var submissionDao: SubmissionDao
     private lateinit var repository: UploadRepositoryImpl
 
     @Before
     fun setUp() {
         apiInterface = mockk(relaxed = true)
-        examDao = mockk(relaxed = true)
-        submissionDao = mockk(relaxed = true)
-        repository = UploadRepositoryImpl(apiInterface, examDao, submissionDao, dispatcherProvider)
+        repository = UploadRepositoryImpl(apiInterface, dispatcherProvider)
 
         val spm = mockk<org.ole.planet.myplanet.services.SharedPrefManager>(relaxed = true)
         every { spm.getUrlUser() } returns "user"
@@ -54,66 +47,6 @@ class UploadRepositoryImplTest {
     @After
     fun tearDown() {
         io.mockk.unmockkAll()
-    }
-
-    @Test
-    fun `markUploaded delegates submission updates to dao`() = runTest {
-        coEvery { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") } returns 1
-
-        val failed = repository.markUploaded(
-            UploadUpdateContract(UploadUpdateType.Submissions),
-            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", com.google.gson.JsonObject()))
-        )
-
-        assertEquals(emptyList<UploadedItemResult>(), failed)
-        coVerify { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") }
-    }
-
-    @Test
-    fun `markUploaded with Submissions returns failure if dao returns 0`() = runTest {
-        coEvery { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") } returns 0
-
-        val failed = repository.markUploaded(
-            UploadUpdateContract(UploadUpdateType.Submissions),
-            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", com.google.gson.JsonObject()))
-        )
-
-        assertEquals(1, failed.size)
-        assertEquals("sub-1", failed.first().localId)
-        coVerify { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") }
-    }
-
-    @Test
-    fun `markUploaded with empty succeeded list returns empty list`() = runTest {
-        val failed = repository.markUploaded(
-            UploadUpdateContract(UploadUpdateType.Exams),
-            emptyList()
-        )
-
-        assertEquals(emptyList<UploadedItemResult>(), failed)
-        coVerify(exactly = 0) { examDao.getByIds(any()) }
-    }
-
-    @Test
-    fun `markUploaded updates exams and returns missing exams as failures`() = runTest {
-        val existingExam = StepExam(id = "exam-1")
-        coEvery { examDao.getByIds(listOf("exam-1", "exam-missing")) } returns listOf(existingExam)
-
-        val result1 = UploadedItemResult("exam-1", "remote-1", "rev-1", com.google.gson.JsonObject())
-        val result2 = UploadedItemResult("exam-missing", "remote-2", "rev-2", com.google.gson.JsonObject())
-
-        val failed = repository.markUploaded(
-            UploadUpdateContract(UploadUpdateType.Exams),
-            listOf(result1, result2)
-        )
-
-        // Only "exam-missing" should fail
-        assertEquals(1, failed.size)
-        assertEquals("exam-missing", failed.first().localId)
-
-        // examDao.upsertAll should be called with existingExam whose _rev has been updated to "rev-1"
-        assertEquals("rev-1", existingExam._rev)
-        coVerify { examDao.upsertAll(listOf(existingExam)) }
     }
 
     @Test
