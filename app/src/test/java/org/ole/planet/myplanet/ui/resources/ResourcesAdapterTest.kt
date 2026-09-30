@@ -138,4 +138,32 @@ class ResourcesAdapterTest {
         assertEquals(false, currentList[1].isOpened)
         assertEquals(true, currentList[1].isLocallyOffline)
     }
+
+    @Test
+    fun `meta line shows the size of a downloaded file stored under the library folder`() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<Context>()
+        context.setTheme(com.google.android.material.R.style.Theme_MaterialComponents)
+        val dir = org.ole.planet.myplanet.utils.FileUtils.getExternalFilesDir(context)!!
+        val file = org.ole.planet.myplanet.utils.FileUtils.getLibraryFile(dir, "lib1", "notes.txt")
+        file.parentFile?.mkdirs()
+        file.writeBytes(ByteArray(2048))
+
+        val item = ResourceItem(
+            id = "lib1", title = "Notes", description = "desc", createdDate = 0L, averageRating = "0",
+            timesRated = 0, resourceId = "res1", isOffline = true, _rev = "rev1", uploadDate = "date",
+            filename = "notes.txt"
+        )
+        val library = MyLibrary().apply { id = "lib1"; resourceLocalAddress = "notes.txt" }
+        adapter.setLibraryList(listOf(ResourceListModel(library, item, emptyList())))
+
+        val holder = adapter.onCreateViewHolder(android.widget.LinearLayout(context), adapter.getItemViewType(0)) as ResourcesAdapter.GridViewHolder
+        adapter.onBindViewHolder(holder, 0)
+        org.robolectric.shadows.ShadowLooper.idleMainLooper()
+
+        val expectedSize = org.ole.planet.myplanet.utils.FileUtils.formatSize(context, 2048)
+        org.junit.Assert.assertTrue(
+            "meta was: ${holder.binding.tvMeta.text}",
+            holder.binding.tvMeta.text.toString().contains(expectedSize)
+        )
+    }
 }

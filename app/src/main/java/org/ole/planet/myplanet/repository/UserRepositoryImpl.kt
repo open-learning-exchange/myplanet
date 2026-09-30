@@ -42,8 +42,8 @@ import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.DashboardProfile
+import org.ole.planet.myplanet.model.LearnerRegistrationInfo
 import org.ole.planet.myplanet.model.Meetup
-import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -514,7 +514,7 @@ class UserRepositoryImpl @Inject constructor(
         return getUserProfile()?.userImage
     }
 
-    override suspend fun createMember(user: MemberInfo): Pair<Boolean, String> {
+    override suspend fun createMember(user: LearnerRegistrationInfo): Pair<Boolean, String> {
         val obj = JsonObject().apply {
             addProperty("name", user.username)
             addProperty("firstName", user.fName)

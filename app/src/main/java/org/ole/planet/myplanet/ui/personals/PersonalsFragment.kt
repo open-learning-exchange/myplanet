@@ -33,6 +33,7 @@ class PersonalsFragment : BaseBindingFragment<FragmentMyPersonalsBinding>(Fragme
         val view = super.onCreateView(inflater, container, savedInstanceState)
         pg = DialogUtils.getCustomProgressDialog(requireContext())
         binding.rvMypersonal.layoutManager = LinearLayoutManager(activity)
+        binding.rvMypersonal.setHasFixedSize(true)
         binding.addMyPersonal.setOnClickListener {
             addResourceFragment = AddResourceFragment()
             val b = Bundle()

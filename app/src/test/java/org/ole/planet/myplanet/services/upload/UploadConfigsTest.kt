@@ -23,6 +23,8 @@ import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ApkLogUpload
 import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.repository.VoicesRepository
@@ -35,6 +37,8 @@ class UploadConfigsTest {
     private val voicesRepository: VoicesRepository = mockk(relaxed = true)
     private val diagnosticsRepository: DiagnosticsRepository = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+    private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)
+    private val surveysRepository: SurveysRepository = mockk(relaxed = true)
     private lateinit var uploadConfigs: UploadConfigs
 
     @Before
@@ -51,12 +55,12 @@ class UploadConfigsTest {
         uploadConfigs = UploadConfigs(
             context = mockk(relaxed = true),
             voicesRepository = voicesRepository,
-            submissionsRepository = mockk(relaxed = true),
+            submissionsRepository = submissionsRepository,
             activitiesRepository = activitiesRepository,
             teamsSyncRepository = mockk<Lazy<TeamsSyncRepository>>(relaxed = true),
             sharedPrefManager = sharedPrefManager,
             userRepository = mockk(relaxed = true),
-            surveysRepository = mockk(relaxed = true),
+            surveysRepository = surveysRepository,
             feedbackRepository = mockk(relaxed = true),
             ratingsRepository = mockk(relaxed = true),
             eventsRepository = mockk(relaxed = true),
@@ -292,6 +296,42 @@ class UploadConfigsTest {
 
         assertEquals(listOf(result2), failures)
         coVerify(exactly = 1) { diagnosticsRepository.markApkLogsUploaded(expectedUpdates) }
+    }
+
+    @Test
+    fun `AdoptedSurveys persistUploaded delegates to surveysRepository markExamsUploaded`() = runTest {
+        val results = listOf(UploadedItemResult("exam-1", "remote-1", "rev-1", mockk(relaxed = true)))
+        val expectedFailures = listOf(UploadedItemResult("exam-2", "remote-2", "rev-2", mockk(relaxed = true)))
+        coEvery { surveysRepository.markExamsUploaded(results) } returns expectedFailures
+
+        val failures = uploadConfigs.AdoptedSurveys.persistUploaded(mockk(relaxed = true), results)
+
+        assertEquals(expectedFailures, failures)
+        coVerify(exactly = 1) { surveysRepository.markExamsUploaded(results) }
+    }
+
+    @Test
+    fun `Submissions persistUploaded delegates to submissionsRepository markSubmissionsUploaded`() = runTest {
+        val results = listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", mockk(relaxed = true)))
+        val expectedFailures = listOf(UploadedItemResult("sub-2", "remote-2", "rev-2", mockk(relaxed = true)))
+        coEvery { submissionsRepository.markSubmissionsUploaded(results) } returns expectedFailures
+
+        val failures = uploadConfigs.Submissions.persistUploaded(mockk(relaxed = true), results)
+
+        assertEquals(expectedFailures, failures)
+        coVerify(exactly = 1) { submissionsRepository.markSubmissionsUploaded(results) }
+    }
+
+    @Test
+    fun `ExamResults persistUploaded delegates to submissionsRepository markSubmissionsUploaded`() = runTest {
+        val results = listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", mockk(relaxed = true)))
+        val expectedFailures = listOf(UploadedItemResult("sub-2", "remote-2", "rev-2", mockk(relaxed = true)))
+        coEvery { submissionsRepository.markSubmissionsUploaded(results) } returns expectedFailures
+
+        val failures = uploadConfigs.ExamResults.persistUploaded(mockk(relaxed = true), results)
+
+        assertEquals(expectedFailures, failures)
+        coVerify(exactly = 1) { submissionsRepository.markSubmissionsUploaded(results) }
     }
 
 }
