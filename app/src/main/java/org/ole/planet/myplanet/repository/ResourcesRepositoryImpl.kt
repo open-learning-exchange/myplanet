@@ -501,7 +501,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             }
             DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
             true
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }
@@ -821,7 +821,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             myLibraryDao.getPublic()
         }
 
-        val allResourceIds = allLibraryItems.mapNotNull { it.resourceId ?: it.id }
+        val allResourceIds = allLibraryItems.map { it.resourceId ?: it.id }
         val tagsMap = getResourceTagsBulk(allResourceIds)
 
         return allLibraryItems.map { library ->
@@ -897,7 +897,9 @@ class ResourcesRepositoryImpl @Inject constructor(
                 ext in extensions
             }
             if (matchesCategory) {
-                val resourceId = file.parentFile?.name ?: return@forEach
+                val relative = file.relativeTo(oleDir).invariantSeparatorsPath
+                if (!relative.contains('/')) return@forEach
+                val resourceId = relative.substringBefore('/')
                 val accumulator = grouped.getOrPut(resourceId) { ResourceAccumulator() }
                 accumulator.filePaths.add(file.absolutePath)
                 accumulator.totalSize += file.length()
@@ -915,9 +917,9 @@ class ResourcesRepositoryImpl @Inject constructor(
         val oleDir = File(oleDirPath)
         items.forEach { item ->
             item.filePaths.forEach { File(it).delete() }
-            val parentDir = oleDir.resolve(item.resourceId)
-            if (parentDir.exists() && parentDir.list().isNullOrEmpty()) {
-                parentDir.delete()
+            val resourceDir = oleDir.resolve(item.resourceId)
+            if (resourceDir.exists()) {
+                resourceDir.walkBottomUp().filter { it.isDirectory && it.list().isNullOrEmpty() }.forEach { it.delete() }
             }
         }
         val deletedIds = items.map { it.resourceId }.toSet()
@@ -948,30 +950,29 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override fun serializeForUpload(library: MyLibrary, user: UserEntity?): JsonObject {
-        val personal = library
         return JsonObject().apply {
-            addProperty("title", personal.title)
+            addProperty("title", library.title)
             addProperty("uploadDate", timeProvider.now())
-            addProperty("createdDate", personal.createdDate)
-            addProperty("filename", FileUtils.getFileNameFromUrl(personal.resourceLocalAddress))
-            addProperty("author", personal.author ?: "")
+            addProperty("createdDate", library.createdDate)
+            addProperty("filename", FileUtils.getFileNameFromUrl(library.resourceLocalAddress))
+            addProperty("author", library.author ?: "")
             addProperty("addedBy", user?.id)
-            addProperty("medium", personal.medium)
-            addProperty("description", personal.description)
-            addProperty("year", personal.year)
-            addProperty("language", personal.language)
-            addProperty("publisher", personal.publisher ?: "")
-            addProperty("linkToLicense", personal.linkToLicense ?: "")
-            add("subject", GsonUtils.getAsJsonArray(personal.subject))
-            add("level", GsonUtils.getAsJsonArray(personal.level))
-            addProperty("resourceType", personal.resourceType)
-            addProperty("openWith", personal.openWith)
-            addProperty("mediaType", personal.mediaType ?: "other")
-            add("resourceFor", GsonUtils.getAsJsonArray(personal.resourceFor))
-            addProperty("private", personal.isPrivate)
-            if (personal.isPrivate && personal.privateFor != null) {
+            addProperty("medium", library.medium)
+            addProperty("description", library.description)
+            addProperty("year", library.year)
+            addProperty("language", library.language)
+            addProperty("publisher", library.publisher ?: "")
+            addProperty("linkToLicense", library.linkToLicense ?: "")
+            add("subject", GsonUtils.getAsJsonArray(library.subject))
+            add("level", GsonUtils.getAsJsonArray(library.level))
+            addProperty("resourceType", library.resourceType)
+            addProperty("openWith", library.openWith)
+            addProperty("mediaType", library.mediaType ?: "other")
+            add("resourceFor", GsonUtils.getAsJsonArray(library.resourceFor))
+            addProperty("private", library.isPrivate)
+            if (library.isPrivate && library.privateFor != null) {
                 val privateForObj = JsonObject()
-                privateForObj.addProperty("teams", personal.privateFor)
+                privateForObj.addProperty("teams", library.privateFor)
                 add("privateFor", privateForObj)
             }
             addProperty("isDownloadable", true)
