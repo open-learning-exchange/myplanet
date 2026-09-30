@@ -1,13 +1,12 @@
-package org.ole.planet.myplanet.ui.surveys
+package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import javax.inject.Inject
 import org.ole.planet.myplanet.model.Submission
-import org.ole.planet.myplanet.repository.SurveysRepository
 
-class PublicSurveyPayloadBuilder @Inject constructor(
+class SurveysPublicMapper @Inject constructor(
     private val surveysRepository: SurveysRepository
 ) {
     suspend fun buildPublicAnswers(surveyId: String, submission: Submission): JsonArray {

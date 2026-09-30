@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.surveys
+package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonObject
 import io.mockk.coEvery
@@ -13,18 +13,17 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.Submission
-import org.ole.planet.myplanet.repository.SurveysRepository
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class PublicSurveyPayloadBuilderTest {
+class SurveysPublicMapperTest {
 
     private lateinit var surveysRepository: SurveysRepository
-    private lateinit var payloadBuilder: PublicSurveyPayloadBuilder
+    private lateinit var publicMapper: SurveysPublicMapper
 
     @Before
     fun setup() {
         surveysRepository = mockk()
-        payloadBuilder = PublicSurveyPayloadBuilder(surveysRepository)
+        publicMapper = SurveysPublicMapper(surveysRepository)
     }
 
     @Test
@@ -46,7 +45,7 @@ class PublicSurveyPayloadBuilderTest {
             answers = mutableListOf(answer)
         }
 
-        val result = payloadBuilder.buildPublicAnswers(surveyId, submission)
+        val result = publicMapper.buildPublicAnswers(surveyId, submission)
 
         assertEquals(1, result.size())
         assertTrue(result[0].isJsonArray)
@@ -74,7 +73,7 @@ class PublicSurveyPayloadBuilderTest {
             answers = mutableListOf(answer)
         }
 
-        val result = payloadBuilder.buildPublicAnswers(surveyId, submission)
+        val result = publicMapper.buildPublicAnswers(surveyId, submission)
 
         assertEquals(1, result.size())
         assertTrue(result[0].isJsonObject)
@@ -98,7 +97,7 @@ class PublicSurveyPayloadBuilderTest {
             answers = mutableListOf(answer)
         }
 
-        val result = payloadBuilder.buildPublicAnswers(surveyId, submission)
+        val result = publicMapper.buildPublicAnswers(surveyId, submission)
 
         assertEquals(1, result.size())
         assertTrue(result[0].isJsonPrimitive)
@@ -112,7 +111,7 @@ class PublicSurveyPayloadBuilderTest {
             addProperty("age", " 25 ")
         }
 
-        payloadBuilder.sanitizeRespondent(user)
+        publicMapper.sanitizeRespondent(user)
 
         assertTrue(user.has("age"))
         assertTrue(user.get("age").asJsonPrimitive.isNumber)
@@ -126,7 +125,7 @@ class PublicSurveyPayloadBuilderTest {
             addProperty("age", "twenty")
         }
 
-        payloadBuilder.sanitizeRespondent(user)
+        publicMapper.sanitizeRespondent(user)
 
         assertFalse(user.has("age"))
     }

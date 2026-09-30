@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.SurveysPublicMapper
 import org.ole.planet.myplanet.repository.SurveysRepository
 
 sealed interface PublicSurveyEvent {
@@ -26,7 +27,7 @@ sealed interface PublicSurveyEvent {
 class PublicSurveyViewModel @Inject constructor(
     private val surveysRepository: SurveysRepository,
     private val submissionsRepository: SubmissionsRepository,
-    private val payloadBuilder: PublicSurveyPayloadBuilder
+    private val publicMapper: SurveysPublicMapper
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
@@ -76,10 +77,10 @@ class PublicSurveyViewModel @Inject constructor(
                 _events.send(PublicSurveyEvent.NavigateOnward)
                 return@launch
             }
-            val answers = payloadBuilder.buildPublicAnswers(surveyId, submission)
+            val answers = publicMapper.buildPublicAnswers(surveyId, submission)
             val respondent = submission.user?.takeIf { it.isNotBlank() && it != "{}" }?.let {
                 try {
-                    JsonParser.parseString(it).asJsonObject.also(payloadBuilder::sanitizeRespondent)
+                    JsonParser.parseString(it).asJsonObject.also(publicMapper::sanitizeRespondent)
                 } catch (e: Exception) {
                     null
                 }

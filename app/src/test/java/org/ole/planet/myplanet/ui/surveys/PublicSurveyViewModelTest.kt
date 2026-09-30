@@ -20,6 +20,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.SurveysPublicMapper
 import org.ole.planet.myplanet.repository.SurveysRepository
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -27,7 +28,7 @@ class PublicSurveyViewModelTest {
 
     private lateinit var surveysRepository: SurveysRepository
     private lateinit var submissionsRepository: SubmissionsRepository
-    private lateinit var payloadBuilder: PublicSurveyPayloadBuilder
+    private lateinit var publicMapper: SurveysPublicMapper
     private lateinit var viewModel: PublicSurveyViewModel
     private val testDispatcher = StandardTestDispatcher()
 
@@ -36,12 +37,12 @@ class PublicSurveyViewModelTest {
         Dispatchers.setMain(testDispatcher)
         surveysRepository = mockk()
         submissionsRepository = mockk()
-        payloadBuilder = mockk()
+        publicMapper = mockk()
 
         viewModel = PublicSurveyViewModel(
             surveysRepository,
             submissionsRepository,
-            payloadBuilder
+            publicMapper
         )
     }
 
@@ -104,8 +105,8 @@ class PublicSurveyViewModelTest {
         }
         coEvery { submissionsRepository.getLatestSubmissionByParentId("survey123", "complete") } returns submission
         val mockAnswers = JsonArray()
-        coEvery { payloadBuilder.buildPublicAnswers("survey123", submission) } returns mockAnswers
-        coEvery { payloadBuilder.sanitizeRespondent(any()) } answers {
+        coEvery { publicMapper.buildPublicAnswers("survey123", submission) } returns mockAnswers
+        coEvery { publicMapper.sanitizeRespondent(any()) } answers {
             val user = firstArg<JsonObject>()
             if (user.has("age")) user.addProperty("age", 25)
         }
