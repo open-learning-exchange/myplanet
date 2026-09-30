@@ -69,6 +69,24 @@ class UserEntityEncodeImageTest {
     }
 
     @Test
+    fun testEncodeImageToBase64HttpsUrlReturnsNull() {
+        val url = "https://example.com/_users/123/img.jpg"
+        assertNull(realmUser.encodeImageToBase64(url))
+    }
+
+    @Test
+    fun testEncodeImageToBase64HttpUrlUpperCaseReturnsNull() {
+        val url = "HTTP://EXAMPLE.COM/IMAGE.JPG"
+        assertNull(realmUser.encodeImageToBase64(url))
+    }
+
+    @Test
+    fun testEncodeImageToBase64NonExistentFileReturnsNull() {
+        val nonExistentPath = "/path/to/non_existent_file.jpg"
+        assertNull(realmUser.encodeImageToBase64(nonExistentPath))
+    }
+
+    @Test
     fun testEncodeImageToBase64ContentUri() {
         val imagePath = "content://media/external/images/media/1"
         val mockUri = mockk<Uri>()

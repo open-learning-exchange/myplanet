@@ -1,10 +1,12 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
@@ -18,6 +20,10 @@ class EventsRepositoryImpl @Inject constructor(
     private val meetupDao: MeetupDao,
     private val gson: Gson
 ) : EventsRepository, EventsSyncWriter {
+
+    override suspend fun getMeetupsForUser(userId: String): List<Meetup> {
+        return meetupDao.getByUserId(userId)
+    }
 
     override suspend fun getMeetupsForTeam(teamId: String): List<Meetup> {
         return meetupDao.getByTeamId(teamId)
@@ -48,8 +54,10 @@ class EventsRepositoryImpl @Inject constructor(
             meetup.updated = true
             meetupDao.upsert(meetup)
             true
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "updateMeetup failed", e)
             false
         }
     }
@@ -94,27 +102,34 @@ class EventsRepositoryImpl @Inject constructor(
         return getMeetupById(meetupId)
     }
 
+    override suspend fun insertMeetupsFromSync(docs: List<JsonObject>) {
+        if (docs.isEmpty()) return
+        val ids = docs.map { GsonUtils.getString("_id", it) }
+        val existingByMeetupId = meetupDao.getByMeetupIds(ids).associateBy { it.meetupId }
+
+        val meetupsToInsert = docs.mapNotNull { meetupDoc ->
+            val id = GsonUtils.getString("_id", meetupDoc)
+            val existing = existingByMeetupId[id]
+            if (existing?.updated == true) {
+                null
+            } else {
+                Meetup.fromJson(meetupDoc, "", existing)
+            }
+        }
+        if (meetupsToInsert.isNotEmpty()) {
+            meetupDao.upsertAll(meetupsToInsert)
+        }
+    }
+
     override suspend fun batchInsertMeetups(documents: List<JsonObject>): Int {
         if (documents.isEmpty()) return 0
         return try {
-            val ids = documents.map { GsonUtils.getString("_id", it) }
-            val existingByMeetupId = meetupDao.getByMeetupIds(ids).associateBy { it.meetupId }
-
-            val meetupsToInsert = documents.mapNotNull { meetupDoc ->
-                val id = GsonUtils.getString("_id", meetupDoc)
-                val existing = existingByMeetupId[id]
-                if (existing?.updated == true) {
-                    null
-                } else {
-                    Meetup.fromJson(meetupDoc, "", existing)
-                }
-            }
-            if (meetupsToInsert.isNotEmpty()) {
-                meetupDao.upsertAll(meetupsToInsert)
-            }
+            insertMeetupsFromSync(documents)
             documents.size
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "batchInsertMeetups failed", e)
             0
         }
     }
@@ -148,8 +163,10 @@ class EventsRepositoryImpl @Inject constructor(
         return try {
             meetupDao.upsert(meetup)
             true
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "createMeetup failed", e)
             false
         }
     }
@@ -165,5 +182,9 @@ class EventsRepositoryImpl @Inject constructor(
         meetup.updated = false
         meetupDao.upsert(meetup)
         return true
+    }
+
+    companion object {
+        private const val TAG = "EventsRepository"
     }
 }
