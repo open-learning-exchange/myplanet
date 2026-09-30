@@ -88,8 +88,6 @@ object FileUtils {
         return if (idx != -1 && idx + 1 < segments.size) segments[idx + 1] else ""
     }
 
-    // Segments are already decoded by parseUrlSegments; decoding again turned "+" into a space
-    // and threw on a literal "%", so the saved file name stopped matching resourceLocalAddress.
     private fun getResourceRelativePathFromSegments(segments: List<String>?): String {
         if (segments == null) return ""
         val idx = segments.indexOf("resources")
@@ -102,11 +100,6 @@ object FileUtils {
 
     private fun getFileNameFromSegments(segments: List<String>?): String = segments?.lastOrNull().orEmpty()
 
-    /**
-     * Resolves an HTML resource's entry file (e.g. from `openWhichFile`, which may nest the
-     * entry point in a subfolder like `sudoku/index.html`) against its download directory,
-     * defaulting to `index.html` when unset and refusing to resolve outside [baseDirectory].
-     */
     fun resolveHtmlEntryFile(baseDirectory: File, relativePath: String?): File? {
         val candidate = relativePath?.takeIf { it.isNotBlank() } ?: "index.html"
         if (candidate.startsWith("/") || candidate.startsWith("\\") || candidate.contains("..")) {
@@ -278,9 +271,6 @@ object FileUtils {
     }
 
     val availableExternalMemorySize: Long
-        /**
-         * Find space left in the external memory.
-         */
         get() =// Not the best way to check, shows internal memory
             // when there is not external memory mounted
             if (externalMemoryAvailable()) {
@@ -293,12 +283,6 @@ object FileUtils {
                 0
             }
 
-    /**
-     * Coverts Bytes to KB/MB/GB and changes magnitude accordingly.
-     *
-     * @param size
-     * @return A string with size followed by an appropriate suffix
-     */
     fun formatSize(context: Context, size: Long): String {
         return Formatter.formatFileSize(context, size)
     }
