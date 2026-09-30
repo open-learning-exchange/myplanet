@@ -11,6 +11,7 @@ import java.util.Base64
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
@@ -880,6 +881,8 @@ class CoursesRepositoryImpl @Inject constructor(
                     val resourceId = library.resourceId ?: return@forEach
                     try {
                         resourcesRepository.reconcileHtmlResourceOffline(resourceId)
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Log.w("CoursesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
                     }

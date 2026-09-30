@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
 import android.text.TextUtils
+import android.util.Log
 import androidx.core.net.toUri
 import androidx.room.withTransaction
 import com.google.gson.Gson
@@ -20,6 +21,7 @@ import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
@@ -416,6 +418,22 @@ class TeamsRepositoryImpl @Inject constructor(
             .flatMap { chunk -> teamDao.getByIds(chunk) }
             .distinctBy { it._id }
             .associateBy({ it._id }, { it.name ?: "Unknown Team" })
+    }
+
+    override suspend fun getTaskById(taskId: String): TeamTask? {
+        return teamTaskDao.getById(taskId)
+    }
+
+    override suspend fun getTasksByIds(taskIds: List<String>): List<TeamTask> {
+        return teamTaskDao.getByIds(taskIds)
+    }
+
+    override suspend fun getTasksByTitles(titles: List<String>): List<TeamTask> {
+        return teamTaskDao.getByTitles(titles)
+    }
+
+    override suspend fun getTasksForUserBetween(userId: String, start: Long, end: Long): List<TeamTask> {
+        return teamTaskDao.getTasksForUserBetween(userId, start, end)
     }
 
     override suspend fun getJoinRequestTeamId(requestId: String): String? {
@@ -912,8 +930,10 @@ class TeamsRepositoryImpl @Inject constructor(
                 uploadManager.uploadTeams()
                 uploadManager.uploadTeamActivities()
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "uploadTeamActivities failed", e)
         }
     }
 
@@ -1197,12 +1217,16 @@ class TeamsRepositoryImpl @Inject constructor(
                 try {
                     insertMyTeam(doc, existingTeams)
                     processedCount++
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Failed to insert team document", e)
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "batchInsertMyTeams failed", e)
         }
         return processedCount
     }
@@ -1347,6 +1371,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "TeamsRepository"
         private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("MMMM dd, yyyy hh:mm a", Locale.getDefault()).withZone(ZoneId.systemDefault())
     }
 }
