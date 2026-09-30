@@ -34,8 +34,6 @@ import org.ole.planet.myplanet.base.BasePermissionActivity.Companion.hasInstallP
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.ui.resources.HtmlOpenOutcome
-import org.ole.planet.myplanet.ui.resources.ResourceOpenViewModel
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.UserSessionManager.Companion.KEY_RESOURCE_DOWNLOAD
@@ -57,7 +55,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
 
-    private val resourceOpenViewModel: ResourceOpenViewModel by viewModels()
+    private val resourcesAccessViewModel: ResourcesAccessViewModel by viewModels()
 
     private var timesRated: TextView? = null
     var rating: TextView? = null
@@ -153,7 +151,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
             val rb = this
             viewLifecycleOwner.lifecycleScope.launch {
-                if (!resourceOpenViewModel.isGuestUser()) {
+                if (!resourcesAccessViewModel.isGuestUser()) {
                     rb.setOnClickListener {
                         homeItemClickListener?.showRatingDialog(type, id, title, listener)
                     }
@@ -200,9 +198,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             if (indexExists) {
                 val resourceId = items.resourceId
                 if (resourceId != null) {
-                    resourceOpenViewModel.reconcileHtmlOffline(resourceId)
+                    resourcesAccessViewModel.reconcileHtmlOffline(resourceId)
                 }
-                resourceOpenViewModel.trackOpen(items)
+                resourcesAccessViewModel.trackOpen(items)
                 val intent = Intent(activity, WebViewActivity::class.java)
                 intent.putExtra("RESOURCE_ID", items.id)
                 intent.putExtra("LOCAL_ADDRESS", items.resourceLocalAddress)
@@ -212,7 +210,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 return@launch
             }
 
-            when (val outcome = resourceOpenViewModel.resolveHtmlDownloadUrls(items.resourceId)) {
+            when (val outcome = resourcesAccessViewModel.resolveHtmlDownloadUrls(items.resourceId)) {
                 is HtmlOpenOutcome.DownloadNeeded -> {
                     startDownloadWithAutoOpen(ArrayList(outcome.urls), items)
                 }
@@ -232,12 +230,12 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private fun openNonHtmlResource(items: MyLibrary) {
         viewLifecycleOwner.lifecycleScope.launch {
             val matchingItems = items.resourceLocalAddress?.let {
-                resourceOpenViewModel.findByLocalAddress(it)
+                resourcesAccessViewModel.findByLocalAddress(it)
             } ?: emptyList()
 
             val offlineItem = matchingItems.firstOrNull { it.isResourceOffline() }
             if (offlineItem != null) {
-                resourceOpenViewModel.trackOpen(offlineItem)
+                resourcesAccessViewModel.trackOpen(offlineItem)
                 ResourceOpener.openFileType(requireActivity(), offlineItem, "offline")
                 return@launch
             }
@@ -249,11 +247,11 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
             when {
                 items.isResourceOffline() -> {
-                    resourceOpenViewModel.trackOpen(items)
+                    resourcesAccessViewModel.trackOpen(items)
                     ResourceOpener.openFileType(requireActivity(), items, "offline")
                 }
                 isVideo || isAudio -> {
-                    resourceOpenViewModel.trackOpen(items)
+                    resourcesAccessViewModel.trackOpen(items)
                     ResourceOpener.openFileType(requireActivity(), items, "online")
                     val arrayList = arrayListOf(UrlUtils.getUrl(items))
                     DownloadUtils.openPriorityDownloadService(requireContext(), arrayList)

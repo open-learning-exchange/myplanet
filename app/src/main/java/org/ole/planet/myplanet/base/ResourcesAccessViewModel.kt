@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.resources
+package org.ole.planet.myplanet.base
 
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,7 +16,7 @@ sealed interface HtmlOpenOutcome {
 }
 
 @HiltViewModel
-class ResourceOpenViewModel @Inject constructor(
+class ResourcesAccessViewModel @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
     private val userRepository: UserRepository
 ) : ViewModel() {

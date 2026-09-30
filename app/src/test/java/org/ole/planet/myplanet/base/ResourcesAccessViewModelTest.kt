@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.resources
+package org.ole.planet.myplanet.base
 
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -21,18 +21,18 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ResourceOpenViewModelTest {
+class ResourcesAccessViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
-    private lateinit var viewModel: ResourceOpenViewModel
+    private lateinit var viewModel: ResourcesAccessViewModel
 
     @Before
     fun setUp() {
-        viewModel = ResourceOpenViewModel(
+        viewModel = ResourcesAccessViewModel(
             resourcesRepository = resourcesRepository,
             userRepository = userRepository
         )
