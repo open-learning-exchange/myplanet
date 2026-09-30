@@ -74,6 +74,9 @@ class SurveysAdapter(
                 if (exam.description?.isNotEmpty() == true) {
                     tvDescription.visibility = View.VISIBLE
                     tvDescription.text = exam.description
+                } else {
+                    tvDescription.visibility = View.GONE
+                    tvDescription.text = null
                 }
 
                 val bindingData = row.formState
