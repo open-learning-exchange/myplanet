@@ -35,7 +35,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.UserDao
-import org.ole.planet.myplanet.model.MemberInfo
+import org.ole.planet.myplanet.model.LearnerRegistrationInfo
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -60,6 +60,12 @@ class UserRepositoryImplTest {
     private lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var activitiesRepository: ActivitiesRepository
     private lateinit var activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>
+    private lateinit var resourcesRepository: ResourcesRepository
+    private lateinit var resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository>
+    private lateinit var coursesRepository: CoursesRepository
+    private lateinit var coursesRepositoryLazy: dagger.Lazy<CoursesRepository>
+    private lateinit var eventsRepository: EventsRepository
+    private lateinit var eventsRepositoryLazy: dagger.Lazy<EventsRepository>
     private lateinit var userDao: UserDao
     private lateinit var deviceNameProvider: DeviceNameProvider
 
@@ -92,6 +98,20 @@ class UserRepositoryImplTest {
         activitiesRepositoryLazy = mockk(relaxed = true)
         every { activitiesRepositoryLazy.get() } returns activitiesRepository
 
+        resourcesRepository = mockk(relaxed = true)
+        resourcesRepositoryLazy = mockk(relaxed = true)
+        every { resourcesRepositoryLazy.get() } returns resourcesRepository
+        coEvery { resourcesRepository.getMyLibIds(any()) } returns com.google.gson.JsonArray()
+
+        coursesRepository = mockk(relaxed = true)
+        coursesRepositoryLazy = mockk(relaxed = true)
+        every { coursesRepositoryLazy.get() } returns coursesRepository
+        coEvery { coursesRepository.getMyCourseIds(any()) } returns com.google.gson.JsonArray()
+
+        eventsRepository = mockk(relaxed = true)
+        eventsRepositoryLazy = mockk(relaxed = true)
+        every { eventsRepositoryLazy.get() } returns eventsRepository
+
         dispatcherProvider = mockk(relaxed = true)
         every { dispatcherProvider.io } returns testDispatcher
         every { dispatcherProvider.main } returns testDispatcher
@@ -105,16 +125,15 @@ class UserRepositoryImplTest {
             settings,
             sharedPrefManager,
             apiInterface,
-            mockk(relaxed = true),
-            mockk(relaxed = true),
+            resourcesRepositoryLazy,
+            coursesRepositoryLazy,
             uploadToShelfService,
             context,
             configurationsRepository,
             appScope,
             dispatcherProvider,
             activitiesRepositoryLazy,
-            mockk(relaxed = true),
-            mockk(relaxed = true),
+            eventsRepositoryLazy,
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
@@ -418,7 +437,7 @@ class UserRepositoryImplTest {
         val jsonSlot = slot<JsonObject>()
         coEvery { spyRepository.becomeMember(capture(jsonSlot)) } returns Pair(true, "success")
 
-        val memberInfo = MemberInfo(
+        val memberInfo = LearnerRegistrationInfo(
             username = "testuser",
             password = "password123",
             rePassword = "password123",
@@ -461,5 +480,42 @@ class UserRepositoryImplTest {
         assertEquals("OriginalFirst", slot.captured.firstName)
         assertEquals("OriginalLast", slot.captured.lastName)
         assertEquals(true, slot.captured.isUpdated)
+    }
+
+    @Test
+    fun `getAchievementData calls resourcesRepository getLibraryItemsByIds`() = runTest(testDispatcher) {
+        val achievement = org.ole.planet.myplanet.model.Achievement().apply {
+            _id = "user1@planet1"
+            achievements = listOf("{\"resources\":[{\"_id\":\"res1\"},{\"_id\":\"res2\"}]}")
+        }
+        val achievementDao = mockk<org.ole.planet.myplanet.data.room.dao.AchievementDao>(relaxed = true)
+        coEvery { achievementDao.getById("user1@planet1") } returns achievement
+
+        val repo = UserRepositoryImpl(
+            settings, sharedPrefManager, apiInterface, resourcesRepositoryLazy,
+            mockk(relaxed = true), uploadToShelfService, context, configurationsRepository,
+            appScope, dispatcherProvider, activitiesRepositoryLazy, eventsRepositoryLazy,
+            mockk(relaxed = true), mockk(relaxed = true), achievementDao, userDao,
+            mockk(relaxed = true), deviceNameProvider
+        )
+
+        repo.getAchievementData("user1", "planet1")
+
+        coVerify { resourcesRepository.getLibraryItemsByIds(listOf("res1", "res2")) }
+    }
+
+    @Test
+    fun `uploadShelfData calls eventsRepository getMeetupsForUser`() = runTest(testDispatcher) {
+        val user = UserEntity().apply {
+            id = "user1"
+            _id = "org.couchdb.user:user1"
+        }
+        val response = Response.success(buildJsonObject { put("_rev", "1-abc") })
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns response
+        coEvery { eventsRepository.getMeetupsForUser("user1") } returns emptyList()
+
+        repository.uploadShelfData(user)
+
+        coVerify { eventsRepository.getMeetupsForUser("user1") }
     }
 }
