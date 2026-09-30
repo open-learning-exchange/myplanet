@@ -11,8 +11,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7345
-        versionName = "0.73.45"
+        versionCode = 7398
+        versionName = "0.73.98"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
@@ -274,7 +274,6 @@ def robolectricSdkJars = [
     28: '9-robolectric-4913185-2-i7',
     32: '12.1-robolectric-8229987-i7',
     33: '13-robolectric-9030017-i7',
-    34: '14-robolectric-10818077-i7',
     36: '16-robolectric-13921718-i7',
 ]
 // One per level: nine versions of one module would collapse to the newest.

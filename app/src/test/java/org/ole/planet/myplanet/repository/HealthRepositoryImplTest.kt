@@ -10,6 +10,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkObject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -20,6 +21,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -291,6 +293,79 @@ class HealthRepositoryImplTest {
 
         assertEquals(1, result.size)
         assertEquals("rev1", result["exam1"])
+
+        unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        io.mockk.unmockkStatic(android.text.TextUtils::class)
+    }
+
+    @Test
+    fun `updateUserHealthProfile propagates CancellationException when saveUser is cancelled and skips dao upsert`() = testScope.runTest {
+        val user = UserEntity().apply {
+            id = "user1"
+            _id = "user1"
+            key = "key1"
+            iv = "iv1"
+        }
+        coEvery { userRepository.getUserById("user1") } returns user
+        coEvery { userRepository.saveUser(any()) } throws CancellationException("Save user cancelled")
+
+        try {
+            repository.updateUserHealthProfile("user1", emptyMap())
+            fail("Expected CancellationException")
+        } catch (e: CancellationException) {
+            assertEquals("Save user cancelled", e.message)
+        }
+
+        coVerify(exactly = 0) { healthExaminationDao.upsert(any()) }
+    }
+
+    @Test
+    fun `updateUserHealthProfile catches ordinary Exception during saveUser and proceeds to upsert`() = testScope.runTest {
+        val user = UserEntity().apply {
+            id = "user1"
+            _id = "user1"
+            key = "key1"
+            iv = "iv1"
+        }
+        coEvery { userRepository.getUserById("user1") } returns user
+        coEvery { userRepository.saveUser(any()) } returns Unit andThenThrows RuntimeException("Database error")
+
+        repository.updateUserHealthProfile("user1", emptyMap())
+
+        coVerify(exactly = 1) { healthExaminationDao.upsert(any()) }
+    }
+
+    @Test
+    fun `uploadHealthData propagates CancellationException when upload is cancelled`() = testScope.runTest {
+        mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        every { org.ole.planet.myplanet.utils.UrlUtils.header } returns "mock-header"
+        every { org.ole.planet.myplanet.utils.UrlUtils.getUrl() } returns "mock-url"
+
+        mockkStatic(android.text.TextUtils::class)
+        every { android.text.TextUtils.isEmpty(any()) } answers {
+            val str = firstArg<CharSequence?>()
+            str.isNullOrEmpty()
+        }
+
+        val myHealths = listOf(
+            HealthExamination().apply {
+                _id = "exam1"
+                userId = "user1"
+            },
+            HealthExamination().apply {
+                _id = "exam2"
+                userId = "user2"
+            }
+        )
+
+        coEvery { mockApiInterface.postDoc(any(), any(), any(), any()) } throws CancellationException("Upload cancelled")
+
+        try {
+            repository.uploadHealthData(myHealths)
+            fail("Expected CancellationException")
+        } catch (e: CancellationException) {
+            assertEquals("Upload cancelled", e.message)
+        }
 
         unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
         io.mockk.unmockkStatic(android.text.TextUtils::class)
