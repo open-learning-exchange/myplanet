@@ -172,11 +172,8 @@ class ResourcesAdapter(
             val current = currentMap[id]
             if (current == null || current.library.resourceLocalAddress != prev.library.resourceLocalAddress) {
                 htmlCoverCache.remove(id)
-                prev.item.resourceLocalAddress?.takeIf { it.isNotBlank() }?.let {
-                    fileLengthCache.remove(File(it).path)
-                }
                 val address = prev.library.resourceLocalAddress
-                if (dir != null && !address.isNullOrBlank() && !id.isNullOrBlank()) {
+                if (dir != null && !address.isNullOrBlank() && id.isNotBlank()) {
                     fileLengthCache.remove(FileUtils.getLibraryFile(dir, id, address).path)
                 }
             }

@@ -1,11 +1,13 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Calendar
 import java.util.HashMap
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
@@ -93,8 +95,10 @@ class VoicesRepositoryImpl @Inject constructor(
             val news = News.createNews(newsData, user, imageList)
             newsDao.upsert(news)
             true
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("VoicesRepository", "Failed to create team news", e)
             false
         }
     }
@@ -228,7 +232,10 @@ class VoicesRepositoryImpl @Inject constructor(
                 newsDao.upsert(news)
             }
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
+            Log.e("VoicesRepository", "Failed to share news to community", e)
             Result.failure(e)
         }
     }

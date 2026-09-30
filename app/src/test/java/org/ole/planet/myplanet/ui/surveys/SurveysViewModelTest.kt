@@ -426,4 +426,25 @@ class SurveysViewModelTest {
 
         coVerify(exactly = 1) { submissionsRepository.createBulkSurveySubmissions(any(), any()) }
     }
+
+    @Test
+    fun `adopted message clears once shown and a second adoption shows it again`() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
+        coEvery { userRepository.getUserModel() } returns mockk(relaxed = true)
+        coEvery { surveysRepository.adoptSurvey(any(), any(), any(), any()) } returns Unit
+        coEvery { surveysRepository.getIndividualSurveys() } returns emptyList()
+        coEvery { surveysRepository.getSurveyInfos(any(), any(), any(), any()) } returns emptyMap()
+        coEvery { surveysRepository.getSurveyFormState(any(), any()) } returns emptyMap()
+
+        viewModel.adoptSurvey("1")
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals("Survey adopted successfully", viewModel.userMessage.value)
+
+        viewModel.onUserMessageShown()
+        assertEquals(null, viewModel.userMessage.value)
+
+        viewModel.adoptSurvey("2")
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals("Survey adopted successfully", viewModel.userMessage.value)
+    }
 }

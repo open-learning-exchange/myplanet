@@ -441,4 +441,27 @@ class DownloadRepositoryImplTest {
         assertTrue(result is DownloadResult.Error)
         coVerify { diagnosticsRepository.saveLogToRoom("File Not Found", "http://example.com/extractedUrl", "123456789") }
     }
+
+    @Test(expected = kotlinx.coroutines.CancellationException::class)
+    fun `downloadFileResponse rethrows CancellationException from 404 saveLogToRoom`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns testDispatcher
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
+
+        val url = "http://example.com/file"
+        val authHeader = "auth"
+
+        val mockResponse = mockk<Response<okhttp3.ResponseBody>>()
+        every { mockResponse.isSuccessful } returns false
+        every { mockResponse.code() } returns 404
+        every { mockResponse.toString() } returns "Response{protocol=http/1.1, code=404, message=Not Found, url=http://example.com/extractedUrl}"
+
+        coEvery { mockApiInterface.downloadFile(authHeader, url) } returns mockResponse
+        coEvery { diagnosticsRepository.saveLogToRoom(any(), any(), any()) } throws kotlinx.coroutines.CancellationException("Cancelled during log write")
+
+        repository.downloadFileResponse(url, authHeader)
+    }
 }
