@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.resources
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagEntity
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LibraryType
 import org.ole.planet.myplanet.utils.LibraryTypeClassifier
 import org.ole.planet.myplanet.utils.MediumUtils
@@ -109,7 +108,7 @@ class ResourcesListFilter {
                 }
             } else {
                 val libCanonical = library.mediaType?.let { MediumUtils.getCanonicalMedium(it) }
-                libCanonical == canonicalSel
+                libCanonical?.equals(canonicalSel, ignoreCase = true) == true
             }
         }
     }

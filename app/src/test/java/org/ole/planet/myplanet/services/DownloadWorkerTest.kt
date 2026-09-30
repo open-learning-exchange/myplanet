@@ -7,12 +7,12 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.work.WorkerParameters
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.spyk
-import io.mockk.coVerify
 import io.mockk.unmockkAll
 import io.mockk.unmockkObject
 import io.mockk.verify
