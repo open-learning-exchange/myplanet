@@ -293,6 +293,7 @@ class SyncManager @Inject constructor(
 
             val newIds: MutableList<String> = ArrayList()
             var totalRows = 0
+            var countKnown = false
             var hadBatchFailure = false
 
             syncTimeLogger.startProcess("resource_get_total_count")
@@ -300,9 +301,14 @@ class SyncManager @Inject constructor(
             ApiClient.executeWithRetryAndWrap {
                 apiInterface.getJsonObject(header, "$url/resources/_all_docs?limit=0")
             }?.let { response ->
-                response.body()?.toGson()?.let { body ->
+                response.body()?.toGson()?.takeIf { it.has("total_rows") }?.let { body ->
                     totalRows = getInt("total_rows", body)
+                    countKnown = true
                 }
+            }
+            if (!countKnown) {
+                hadBatchFailure = true
+                syncTimeLogger.logDetail("resource_sync", "Resource count unavailable; paging until a short page and skipping delete-cleanup")
             }
             val countApiDuration = SystemClock.elapsedRealtime() - countApiStartTime
             syncTimeLogger.logApiCall("$url/resources/_all_docs?limit=0", countApiDuration, true, totalRows)
@@ -315,7 +321,7 @@ class SyncManager @Inject constructor(
             syncPerf { "    Resources: Found $totalRows documents to sync" }
             syncTimeLogger.logDetail("resource_sync", "Total resources: $totalRows, batch size: ${batchSizer.currentSize} (adaptive)")
 
-            while (skip < totalRows || (totalRows == 0 && skip == 0)) {
+            while (!countKnown || skip < totalRows) {
                 batchCount++
                 val batchSize = batchSizer.currentSize
                 val batchStartTime = SystemClock.elapsedRealtime()
@@ -334,6 +340,7 @@ class SyncManager @Inject constructor(
                         batchSizer.recordFailure()
                         hadBatchFailure = true
                         syncTimeLogger.logApiCall("$url/resources/_all_docs (batch $batchCount)", batchApiDuration, false, 0)
+                        if (!countKnown) break
                         skip += batchSize
                         continue
                     }
@@ -342,7 +349,7 @@ class SyncManager @Inject constructor(
                     val rows = getJsonArray("rows", response)
                     syncTimeLogger.logApiCall("$url/resources/_all_docs (batch $batchCount)", batchApiDuration, true, rows.size())
 
-                    if (rows.isEmpty()) {
+                    if (rows.isEmpty) {
                         break
                     }
 
@@ -379,6 +386,7 @@ class SyncManager @Inject constructor(
                     }
 
                     skip += rows.size()
+                    if (!countKnown && rows.size() < batchSize) break
                     val resourcesDone = skip.coerceAtMost(totalRows)
                     _syncStatus.value = SyncStatus.Syncing(
                         context.getString(R.string.sync_phase_resources), 2, 4,
@@ -401,6 +409,7 @@ class SyncManager @Inject constructor(
                     batchSizer.recordFailure()
                     hadBatchFailure = true
                     syncTimeLogger.logDetail("resource_sync", "Batch $batchCount failed: ${e.message}")
+                    if (!countKnown) break
                     skip += batchSize
                 }
             }
