@@ -8,6 +8,7 @@ import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
 import java.io.File
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -100,6 +101,13 @@ class DiagnosticsRepositoryImplTest {
         coVerify(exactly = 0) { apkLogDao.insert(any()) }
     }
 
+    @Test(expected = CancellationException::class)
+    fun `saveLogToRoom rethrows CancellationException`() = runTest {
+        coEvery { userRepository.getUserModel() } throws CancellationException("cancelled")
+
+        repository.saveLogToRoom("crash", "boom", "1700000000000")
+    }
+
     @Test
     fun `saveLogsToRoom returns true and inserts nothing for an empty list`() = runTest {
         val result = repository.saveLogsToRoom(emptyList())
@@ -181,6 +189,15 @@ class DiagnosticsRepositoryImplTest {
 
         assertFalse(result)
         coVerify(exactly = 0) { apkLogDao.insertAll(any()) }
+    }
+
+    @Test(expected = CancellationException::class)
+    fun `saveLogsToRoom rethrows CancellationException`() = runTest {
+        coEvery { userRepository.getUserModel() } throws CancellationException("cancelled")
+
+        repository.saveLogsToRoom(
+            listOf(CrashLogStore.PendingLog(File("/tmp/a.log"), "crash", "1700000000001", "err1"))
+        )
     }
 
     @Test
