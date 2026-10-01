@@ -35,6 +35,7 @@ import java.util.Date
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
@@ -634,7 +635,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
         prefData.setLoggedIn(true)
         openDashboard()
-        isNetworkConnectedFlow.onEach { isConnected ->
+        loginNetworkJob?.cancel()
+        loginNetworkJob = isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
                 val serverUrl = prefData.getServerUrl()
                 if (serverUrl.isNotEmpty()) {
@@ -805,6 +807,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     companion object {
         private const val TAG = "SyncActivity"
+        private var loginNetworkJob: Job? = null
         
         @VisibleForTesting
         internal fun reachabilityUrl(processedUrl: String?, isAlternativeUrl: Boolean): String =
