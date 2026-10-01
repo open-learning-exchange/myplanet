@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.surveys
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.gson.JsonParser
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
@@ -78,13 +77,7 @@ class PublicSurveyViewModel @Inject constructor(
                 return@launch
             }
             val answers = publicMapper.buildPublicAnswers(surveyId, submission)
-            val respondent = submission.user?.takeIf { it.isNotBlank() && it != "{}" }?.let {
-                try {
-                    JsonParser.parseString(it).asJsonObject.also(publicMapper::sanitizeRespondent)
-                } catch (e: Exception) {
-                    null
-                }
-            }
+            val respondent = publicMapper.parseRespondent(submission.user)
             val success = surveysRepository.submitPublicSurvey(baseUrl, teamId, surveyId, answers, respondent)
             _isLoading.value = false
             _events.send(PublicSurveyEvent.UploadFinished(success))
