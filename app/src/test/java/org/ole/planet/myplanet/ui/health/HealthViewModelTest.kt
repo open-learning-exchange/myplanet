@@ -281,9 +281,7 @@ class HealthViewModelTest {
         }
         coEvery { healthRepository.getPatientHealthRecords("1", any()) } returns record
 
-        backgroundScope.launch {
-            customViewModel.healthSyncUpdates.collect { customViewModel.refreshSelectedPatient() }
-        }
+        customViewModel.setSyncActive(true)
         testScheduler.runCurrent()
 
         customViewModel.selectPatient("1")
@@ -311,9 +309,7 @@ class HealthViewModelTest {
         }
         coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
 
-        backgroundScope.launch {
-            customViewModel.healthSyncUpdates.collect { customViewModel.refreshSelectedPatient() }
-        }
+        customViewModel.setSyncActive(true)
         testScheduler.runCurrent()
 
         customViewModel.selectPatient("1")
@@ -348,6 +344,31 @@ class HealthViewModelTest {
     }
 
     @Test
+    fun `after setSyncActive(true) then setSyncActive(false), a health event causes no re-query`() = runTest {
+        val realtimeSyncManager = RealtimeSyncManager()
+        val customViewModel = HealthViewModel(userRepository, healthRepository, realtimeSyncManager)
+        val user = UserEntity().apply { id = "1"; name = "Test Patient" }
+        val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
+
+        coEvery { healthRepository.getPatientById("1") } returns user
+        coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
+
+        customViewModel.setSyncActive(true)
+        testScheduler.runCurrent()
+
+        customViewModel.selectPatient("1")
+        advanceUntilIdle()
+
+        customViewModel.setSyncActive(false)
+        testScheduler.runCurrent()
+
+        realtimeSyncManager.notifyTableUpdated(TableDataUpdate("health", 1, 0, true))
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { healthRepository.getPatientById("1") }
+    }
+
+    @Test
     fun `sync flow ignores other tables and updates that do not require a refresh`() = runTest {
         val realtimeSyncManager = RealtimeSyncManager()
         val customViewModel = HealthViewModel(userRepository, healthRepository, realtimeSyncManager)
@@ -357,9 +378,7 @@ class HealthViewModelTest {
         coEvery { healthRepository.getPatientById("1") } returns user
         coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
 
-        backgroundScope.launch {
-            customViewModel.healthSyncUpdates.collect { customViewModel.refreshSelectedPatient() }
-        }
+        customViewModel.setSyncActive(true)
         testScheduler.runCurrent()
 
         customViewModel.selectPatient("1")
