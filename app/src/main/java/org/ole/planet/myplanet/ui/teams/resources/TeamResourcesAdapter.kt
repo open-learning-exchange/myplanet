@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.callback.OnResourcesUpdateListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.ui.resources.CoverBindParams
-import org.ole.planet.myplanet.ui.resources.ResourceCardHelper
+import org.ole.planet.myplanet.ui.resources.ResourcesCardBinder
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
@@ -63,7 +63,7 @@ class TeamResourcesAdapter(
     override fun onViewRecycled(holder: ViewHolderTeamResources) {
         super.onViewRecycled(holder)
         holder.cancelPreviewJob()
-        ResourceCardHelper.showTypeIconOnly(context, holder.binding.ivCoverPreview, holder.binding.ivTypeIcon)
+        ResourcesCardBinder.showTypeIconOnly(context, holder.binding.ivCoverPreview, holder.binding.ivTypeIcon)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeamResources {
@@ -82,7 +82,7 @@ class TeamResourcesAdapter(
         val type = LibraryTypeClassifier.classify(resource)
 
         holder.cancelPreviewJob()
-        ResourceCardHelper.showTypeIconOnly(
+        ResourcesCardBinder.showTypeIconOnly(
             context,
             holder.binding.ivCoverPreview,
             holder.binding.ivTypeIcon
@@ -90,14 +90,14 @@ class TeamResourcesAdapter(
 
         holder.binding.apply {
             tvTitle.text = resource.title
-            tvMeta.text = ResourceCardHelper.buildMetaLine(
+            tvMeta.text = ResourcesCardBinder.buildMetaLine(
                 context,
                 type,
                 resource.language
             )
 
-            ResourceCardHelper.setCoverColor(coverContainer, type)
-            ivTypeIcon.setImageResource(ResourceCardHelper.typeIconRes(type))
+            ResourcesCardBinder.setCoverColor(coverContainer, type)
+            ivTypeIcon.setImageResource(ResourcesCardBinder.typeIconRes(type))
 
             val libraryId = resource.id
                 .takeIf { it.isNotBlank() }
@@ -105,7 +105,7 @@ class TeamResourcesAdapter(
 
             holder.setPreviewJob(
                 adapterScope.launch {
-                    ResourceCardHelper.bindCover(
+                    ResourcesCardBinder.bindCover(
                         CoverBindParams(
                             context = context,
                             ivPreview = ivCoverPreview,

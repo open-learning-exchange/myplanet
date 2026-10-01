@@ -185,11 +185,11 @@ class ResourcesAdapter(
         when (holder) {
             is GridViewHolder -> {
                 holder.cancelPreviewJob()
-                ResourceCardHelper.showTypeIconOnly(context, holder.binding.ivCoverPreview, holder.binding.ivTypeIcon)
+                ResourcesCardBinder.showTypeIconOnly(context, holder.binding.ivCoverPreview, holder.binding.ivTypeIcon)
             }
             is ListViewHolder -> {
                 holder.cancelPreviewJob()
-                ResourceCardHelper.showTypeIconOnly(context, holder.binding.ivCoverPreview, holder.binding.ivTypeIcon)
+                ResourcesCardBinder.showTypeIconOnly(context, holder.binding.ivCoverPreview, holder.binding.ivTypeIcon)
             }
         }
     }
@@ -250,15 +250,15 @@ class ResourcesAdapter(
         val binding = holder.binding
         val type = LibraryTypeClassifier.classify(model.library)
         binding.title.text = model.item.title
-        binding.tvMeta.text = ResourceCardHelper.buildMetaLine(context, type, model.library.language, fileSize = null)
+        binding.tvMeta.text = ResourcesCardBinder.buildMetaLine(context, type, model.library.language, fileSize = null)
         bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, model)
         bindClicks(holder.itemView, binding.checkbox, model)
-        ResourceCardHelper.setCoverColor(binding.coverContainer, type)
-        binding.ivTypeIcon.setImageResource(ResourceCardHelper.typeIconRes(type))
-        ResourceCardHelper.showTypeIconOnly(context, binding.ivCoverPreview, binding.ivTypeIcon)
+        ResourcesCardBinder.setCoverColor(binding.coverContainer, type)
+        binding.ivTypeIcon.setImageResource(ResourcesCardBinder.typeIconRes(type))
+        ResourcesCardBinder.showTypeIconOnly(context, binding.ivCoverPreview, binding.ivTypeIcon)
         holder.setPreviewJob(adapterScope.launch {
             val isOffline = model.item.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
-            ResourceCardHelper.bindCover(
+            ResourcesCardBinder.bindCover(
                 CoverBindParams(
                     context = context,
                     ivPreview = binding.ivCoverPreview,
@@ -274,7 +274,7 @@ class ResourcesAdapter(
                 )
             )
             val fileSize = resourceFileLength(model)
-            binding.tvMeta.text = ResourceCardHelper.buildMetaLine(context, type, model.library.language, fileSize)
+            binding.tvMeta.text = ResourcesCardBinder.buildMetaLine(context, type, model.library.language, fileSize)
         })
     }
 
@@ -283,16 +283,16 @@ class ResourcesAdapter(
         val binding = holder.binding
         val type = LibraryTypeClassifier.classify(model.library)
         binding.title.text = model.item.title
-        binding.tvMeta.text = ResourceCardHelper.buildMetaLine(context, type, model.library.language, fileSize = null)
+        binding.tvMeta.text = ResourcesCardBinder.buildMetaLine(context, type, model.library.language, fileSize = null)
         bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, model)
         bindClicks(holder.itemView, binding.checkbox, model)
-        ResourceCardHelper.setCoverColor(binding.coverContainer, type)
-        binding.ivTypeIcon.setImageResource(ResourceCardHelper.typeIconRes(type))
-        ResourceCardHelper.showTypeIconOnly(context, binding.ivCoverPreview, binding.ivTypeIcon)
+        ResourcesCardBinder.setCoverColor(binding.coverContainer, type)
+        binding.ivTypeIcon.setImageResource(ResourcesCardBinder.typeIconRes(type))
+        ResourcesCardBinder.showTypeIconOnly(context, binding.ivCoverPreview, binding.ivTypeIcon)
 
         holder.setPreviewJob(adapterScope.launch {
             val isOffline = model.item.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
-            ResourceCardHelper.bindCover(
+            ResourcesCardBinder.bindCover(
                 CoverBindParams(
                     context = context,
                     ivPreview = binding.ivCoverPreview,
@@ -308,7 +308,7 @@ class ResourcesAdapter(
                 )
             )
             val fileSize = resourceFileLength(model)
-            binding.tvMeta.text = ResourceCardHelper.buildMetaLine(context, type, model.library.language, fileSize)
+            binding.tvMeta.text = ResourcesCardBinder.buildMetaLine(context, type, model.library.language, fileSize)
         })
     }
 
@@ -321,7 +321,7 @@ class ResourcesAdapter(
         val dir = externalFilesDir ?: return null
 
         val file = FileUtils.getLibraryFile(dir, libraryId, address)
-        return ResourceCardHelper.cachedFileLength(file, dispatcherProvider, fileLengthCache)
+        return ResourcesCardBinder.cachedFileLength(file, dispatcherProvider, fileLengthCache)
     }
 
     private fun bindSelectionAndDownload(checkbox: CheckBox, ivDownloaded: ImageView, model: ResourceListModel) {

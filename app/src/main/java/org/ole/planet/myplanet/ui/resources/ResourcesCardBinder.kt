@@ -33,7 +33,7 @@ data class CoverBindParams(
     val fileLengthCache: MutableMap<String, Long?>? = null
 )
 
-object ResourceCardHelper {
+object ResourcesCardBinder {
 
     @ColorRes
     fun typeColorRes(type: LibraryType): Int = when (type) {
