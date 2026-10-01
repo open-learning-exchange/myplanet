@@ -60,7 +60,6 @@ class ResourcesRepositoryLibrarySyncTest {
         myLibraryDao = db.myLibraryDao()
 
         repository = ResourcesRepositoryImpl(
-            RuntimeEnvironment.getApplication(),
             mockk<ActivitiesRepository>(relaxed = true),
             mockk<SharedPrefManager>(relaxed = true),
             mockk<TagsRepository>(relaxed = true),
@@ -77,7 +76,10 @@ class ResourcesRepositoryLibrarySyncTest {
             mockk<org.ole.planet.myplanet.utils.DeviceNameProvider>(relaxed = true),
             mockk<org.ole.planet.myplanet.utils.TimeProvider>(relaxed = true),
             mockk<kotlinx.coroutines.CoroutineScope>(relaxed = true),
-            mockk<org.ole.planet.myplanet.utils.StoragePathResolver>(relaxed = true)
+            mockk<org.ole.planet.myplanet.utils.StoragePathResolver>(relaxed = true),
+            org.ole.planet.myplanet.utils.AndroidAppStorage(RuntimeEnvironment.getApplication()),
+            mockk<org.ole.planet.myplanet.utils.DownloadLauncher>(relaxed = true),
+            mockk<org.ole.planet.myplanet.utils.StringProvider>(relaxed = true)
         )
     }
 

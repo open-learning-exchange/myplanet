@@ -46,12 +46,15 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.LibraryTitle
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.AppStorage
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.DownloadLauncher
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.StoragePathResolver
+import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
@@ -77,6 +80,9 @@ class ResourcesRepositoryImplTest {
     private val deviceNameProvider: DeviceNameProvider = mockk(relaxed = true)
     private val timeProvider: TimeProvider = mockk(relaxed = true)
     private val storagePathResolver: StoragePathResolver = mockk(relaxed = true)
+    private val appStorage: AppStorage = mockk(relaxed = true)
+    private val downloadLauncher: DownloadLauncher = mockk(relaxed = true)
+    private val stringProvider: StringProvider = mockk(relaxed = true)
     private val appScope = TestScope(testDispatcher)
 
     @get:Rule
@@ -98,7 +104,6 @@ class ResourcesRepositoryImplTest {
         NetworkUtils.resetForTesting()
 
         repository = ResourcesRepositoryImpl(
-            context,
             activitiesRepository,
             sharedPrefManager,
             tagsRepository,
@@ -115,7 +120,10 @@ class ResourcesRepositoryImplTest {
             deviceNameProvider,
             timeProvider,
             appScope,
-            storagePathResolver
+            storagePathResolver,
+            appStorage,
+            downloadLauncher,
+            stringProvider
         )
         every { dispatcherProvider.io } returns testDispatcher
     }
@@ -1030,13 +1038,12 @@ class ResourcesRepositoryImplTest {
         try {
             coEvery { configurationsRepository.checkServerAvailability() } returns true
             every { DownloadUtils.downloadAllFiles(any()) } returns arrayListOf("http://example.com/file1.pdf")
-            every { DownloadUtils.openDownloadService(context, arrayListOf("http://example.com/file1.pdf"), false) } returns Unit
 
             val library = MyLibrary().apply { _id = "lib1"; resourceId = "r1" }
             val result = repository.downloadFiles(listOf(library))
 
             assertEquals(1, result.size)
-            verify(exactly = 1) { DownloadUtils.openDownloadService(context, arrayListOf("http://example.com/file1.pdf"), false) }
+            verify(exactly = 1) { downloadLauncher.startDownloads(listOf("http://example.com/file1.pdf"), false) }
         } finally {
             unmockkObject(DownloadUtils)
         }
@@ -1080,7 +1087,7 @@ class ResourcesRepositoryImplTest {
 
         every { dispatcherProvider.io } returns testDispatcher
         mockkObject(FileUtils)
-        every { FileUtils.getExternalFilesDir(context) } returns externalFilesDir
+        every { appStorage.externalFilesDirPath() } returns externalFilesDir.path
         every { FileUtils.getLibraryFile(externalFilesDir, any(), "report.pdf") } answers {
             File(externalFilesDir, "ole/${secondArg<String>()}/report.pdf")
         }
@@ -1288,7 +1295,7 @@ class ResourcesRepositoryImplTest {
         coEvery { myLibraryDao.upsert(capture(savedSlot)) } returns Unit
 
         mockkObject(FileUtils)
-        every { FileUtils.getExternalFilesDir(context) } returns externalFilesDir
+        every { appStorage.externalFilesDirPath() } returns externalFilesDir.path
         every { FileUtils.getLibraryFile(externalFilesDir, any(), "report.pdf") } answers {
             File(externalFilesDir, "ole/${secondArg<String>()}/report.pdf")
         }
@@ -1336,17 +1343,10 @@ class ResourcesRepositoryImplTest {
             resourceRemoteAddress = "http://example.com/file3.pdf"
         }
 
-        mockkObject(DownloadUtils)
-        try {
-            every { DownloadUtils.openPriorityDownloadService(context, arrayListOf("http://example.com/file3.pdf")) } returns Unit
+        val result = repository.downloadResources(listOf(offlineResource, onlineResourceNoUrl, onlineResourceWithUrl))
 
-            val result = repository.downloadResources(listOf(offlineResource, onlineResourceNoUrl, onlineResourceWithUrl))
-
-            assertTrue(result)
-            verify(exactly = 1) { DownloadUtils.openPriorityDownloadService(context, arrayListOf("http://example.com/file3.pdf")) }
-        } finally {
-            unmockkObject(DownloadUtils)
-        }
+        assertTrue(result)
+        verify(exactly = 1) { downloadLauncher.startPriorityDownloads(listOf("http://example.com/file3.pdf")) }
     }
 
     @Test
@@ -1543,7 +1543,7 @@ class ResourcesRepositoryImplTest {
             ResourceTitleProjection("res2", "")
         )
         coEvery { myLibraryDao.getResourceTitlesByResourceIds(any()) } returns projections
-        every { context.getString(org.ole.planet.myplanet.R.string.storage_unknown_resource) } returns "Unknown Resource"
+        every { stringProvider.getString(org.ole.planet.myplanet.R.string.storage_unknown_resource) } returns "Unknown Resource"
 
         val knownExtensions = setOf("mp4", "pdf")
 

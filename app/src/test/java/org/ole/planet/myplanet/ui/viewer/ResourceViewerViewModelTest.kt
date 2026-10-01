@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import org.ole.planet.myplanet.utils.fakeSharedPrefManager
 import org.robolectric.RobolectricTestRunner
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -47,7 +48,7 @@ class ResourceViewerViewModelTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
-        sharedPrefManager = SharedPrefManager(context, mockk(relaxed = true))
+        sharedPrefManager = fakeSharedPrefManager()
         viewModel = ResourceViewerViewModel(
             context = context,
             resourcesRepository = resourcesRepository,

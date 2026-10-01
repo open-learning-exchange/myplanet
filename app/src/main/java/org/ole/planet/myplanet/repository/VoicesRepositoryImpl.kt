@@ -4,7 +4,6 @@ import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import java.util.Calendar
 import java.util.HashMap
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -18,6 +17,7 @@ import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.GsonUtils
@@ -224,7 +224,7 @@ class VoicesRepositoryImpl @Inject constructor(
                 val ob = JsonObject()
                 ob.addProperty("section", "community")
                 ob.addProperty("_id", communityId)
-                ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
+                ob.addProperty("sharedDate", DateTimeUtils.nowMillis())
                 array.add(ob)
 
                 news.sharedBy = userId

@@ -169,7 +169,7 @@ class NotificationDaoTest {
         assertEquals(1200, fetchedIds.size)
 
         // Test markAsRead(ids, date)
-        val markDate = java.util.Date()
+        val markDate = System.currentTimeMillis()
         val markResult = notificationDao.markAsRead(ids, markDate)
         assertEquals(1200, markResult)
 
@@ -188,7 +188,7 @@ class NotificationDaoTest {
     fun chunkedListOperations_handleEmptyInputs() = runBlocking {
         assertTrue(notificationDao.getByIds(emptyList()).isEmpty())
         assertTrue(notificationDao.getIdsByIds(emptyList()).isEmpty())
-        assertEquals(0, notificationDao.markAsRead(emptyList(), java.util.Date()))
+        assertEquals(0, notificationDao.markAsRead(emptyList(), System.currentTimeMillis()))
         assertEquals(0, notificationDao.deleteByIds(emptyList()))
     }
 }

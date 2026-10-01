@@ -1,11 +1,10 @@
 package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonObject
-import java.util.Calendar
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
-import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.toGson
 
 data class UserSurveyProfile(
@@ -31,13 +30,13 @@ data class UserSurveyProfile(
         if (phone.isNotEmpty()) put("phoneNumber", phone)
 
         if (dob.isNotEmpty()) {
-            val birthDateISO = TimeUtils.convertToISO8601(dob)
+            val birthDateISO = DateTimeUtils.convertToISO8601(dob)
             put("birthDate", birthDateISO)
         }
 
         if (yob.isNotEmpty()) {
             val yobInt = yob.toInt()
-            val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+            val currentYear = DateTimeUtils.currentYear()
             val calculatedAge = currentYear - yobInt
             put("age", calculatedAge.toString())
         }
@@ -50,14 +49,14 @@ data class UserSurveyProfile(
 
     fun toProfileFieldsUpdate(): ProfileFieldsUpdate {
         val birthDateCalculated = if (dob.isNotEmpty()) {
-            TimeUtils.convertToISO8601(dob)
+            DateTimeUtils.convertToISO8601(dob)
         } else {
             null
         }
 
         val ageCalculated = if (yob.isNotEmpty()) {
             val yobInt = yob.toInt()
-            val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+            val currentYear = DateTimeUtils.currentYear()
             (currentYear - yobInt).toString()
         } else {
             null

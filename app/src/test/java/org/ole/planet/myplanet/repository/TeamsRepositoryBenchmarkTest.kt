@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.mockk.coVerify
@@ -26,6 +25,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.AndroidDateFormatter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -35,7 +35,6 @@ class TeamsRepositoryBenchmarkTest {
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val uploadManager: UploadManager = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
-    private val preferences: SharedPreferences = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = mockk()
@@ -60,12 +59,10 @@ class TeamsRepositoryBenchmarkTest {
         every { dispatcherProvider.unconfined } returns testDispatcher
 
         teamsRepository = TeamsRepositoryImpl(
-            mockk(relaxed = true),
             activitiesRepository,
             userSessionManager,
             uploadManager,
             gson,
-            preferences,
             sharedPrefManager,
             serverUrlMapper,
             dispatcherProvider,
@@ -78,6 +75,10 @@ class TeamsRepositoryBenchmarkTest {
             courseDao,
             courseStepDao,
             appDatabase,
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            AndroidDateFormatter(),
         )
     }
 

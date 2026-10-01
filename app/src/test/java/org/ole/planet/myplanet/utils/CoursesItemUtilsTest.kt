@@ -61,7 +61,7 @@ class CoursesItemUtilsTest {
         val ivCover = ImageView(activity)
         val ivSubjectIcon = ImageView(activity)
 
-        every { MyCourse.getCoverImageFile(activity, "c1", "cover.jpg") } returns spyFile
+        every { MyCourse.getCoverImageFile(FileUtils.getOlePath(activity), "c1", "cover.jpg") } returns spyFile
 
         // First call at time 1000L -> checks existence on disk
         CoursesItemUtils.bindCover(

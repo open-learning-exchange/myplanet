@@ -1,16 +1,14 @@
 package org.ole.planet.myplanet.services.sync
 
-import android.content.SharedPreferences
 import android.net.Uri
-import io.mockk.Runs
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -18,7 +16,9 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.FakeKeyValueStore
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.fakeSharedPrefManager
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -79,131 +79,88 @@ class ServerUrlMapperTest {
         assertNull(mapping.alternativeUrl)
     }
 
-    @Test
-    fun testUpdateUrlPreferencesWithUserInfo() {
-        val editor = mockk<SharedPreferences.Editor>()
-        val settings = mockk<SharedPreferences>()
-
-        every { editor.putString(any(), any()) } returns editor
-        every { editor.putBoolean(any(), any()) } returns editor
-        every { editor.apply() } just Runs
-
+    private fun mockUri(userInfo: String? = null): Uri {
         val uri = mockk<Uri>()
-        every { uri.userInfo } returns "user:pass"
+        every { uri.userInfo } returns userInfo
         every { uri.scheme } returns "http"
         every { uri.host } returns "primary.com"
+        return uri
+    }
 
+    @Test
+    fun testUpdateUrlPreferencesWithUserInfo() {
+        val store = FakeKeyValueStore()
         val alternativeUrl = "http://user:pass@alternative.com:5984"
-
         val url = "http://primary.com"
 
-        serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, url, settings)
+        serverUrlMapper.updateUrlPreferences(fakeSharedPrefManager(store), mockUri("user:pass"), alternativeUrl, url)
 
-        verify { editor.putString("url_user", "user") }
-        verify { editor.putString("url_pwd", "pass") }
-        verify { editor.putString("url_Scheme", "http") }
-        verify { editor.putString("url_Host", "primary.com") }
-        verify { editor.putString("alternativeUrl", url) }
-        verify { editor.putString("processedAlternativeUrl", alternativeUrl) }
-        verify { editor.putBoolean("isAlternativeUrl", true) }
-        verify { editor.apply() }
+        assertEquals(1, store.editCount)
+        assertEquals(
+            mapOf<String, Any>(
+                "url_user" to "user",
+                "url_pwd" to "pass",
+                "url_Scheme" to "http",
+                "url_Host" to "primary.com",
+                "alternativeUrl" to url,
+                "processedAlternativeUrl" to alternativeUrl,
+                "isAlternativeUrl" to true
+            ),
+            store.values
+        )
     }
 
     @Test
     fun testUpdateUrlPreferencesExtractsCredentialsFromAlternativeUrlNotPrimary() {
-        val editor = mockk<SharedPreferences.Editor>()
-        val settings = mockk<SharedPreferences>()
-
-        every { editor.putString(any(), any()) } returns editor
-        every { editor.putBoolean(any(), any()) } returns editor
-        every { editor.apply() } just Runs
-
-        val uri = mockk<Uri>()
-        every { uri.userInfo } returns null
-        every { uri.scheme } returns "http"
-        every { uri.host } returns "primary.com"
-
+        val store = FakeKeyValueStore()
         val alternativeUrl = "http://clone_user:clone_pass@alternative.com:5984"
 
-        val url = "http://primary.com"
+        serverUrlMapper.updateUrlPreferences(fakeSharedPrefManager(store), mockUri(), alternativeUrl, "http://primary.com")
 
-        serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, url, settings)
-
-        verify { editor.putString("url_user", "clone_user") }
-        verify { editor.putString("url_pwd", "clone_pass") }
-        verify { editor.putString("url_Scheme", "http") }
-        verify { editor.putString("url_Host", "primary.com") }
-        verify { editor.putString("processedAlternativeUrl", alternativeUrl) }
-        verify { editor.apply() }
+        assertEquals("clone_user", store.values["url_user"])
+        assertEquals("clone_pass", store.values["url_pwd"])
+        assertEquals("http", store.values["url_Scheme"])
+        assertEquals("primary.com", store.values["url_Host"])
+        assertEquals(alternativeUrl, store.values["processedAlternativeUrl"])
     }
 
     @Test
     fun testUpdateUrlPreferencesWithoutUserInfo() {
-        val editor = mockk<SharedPreferences.Editor>()
-        val settings = mockk<SharedPreferences>()
-
-        every { editor.putString(any(), any()) } returns editor
-        every { editor.putBoolean(any(), any()) } returns editor
-        every { editor.apply() } just Runs
-        every { settings.getString("serverPin", "") } returns "1234"
-
-        val uri = mockk<Uri>()
-        every { uri.userInfo } returns null
-        every { uri.scheme } returns "http"
-        every { uri.host } returns "primary.com"
-
-        val alternativeUrl = "https://alternative.com"
-
+        val store = FakeKeyValueStore(mapOf("serverPin" to "1234"))
         val url = "http://primary.com"
 
-        serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, url, settings)
+        serverUrlMapper.updateUrlPreferences(fakeSharedPrefManager(store), mockUri(), "https://alternative.com", url)
 
-        verify { editor.putString("url_user", "satellite") }
-        verify { editor.putString("url_pwd", "1234") }
-        verify { editor.putString("url_Scheme", "http") }
-        verify { editor.putString("url_Host", "primary.com") }
-        verify { editor.putString("alternativeUrl", url) }
-        verify { editor.putString("processedAlternativeUrl", "https://satellite:1234@alternative.com:443") }
-        verify { editor.putBoolean("isAlternativeUrl", true) }
-        verify { editor.apply() }
+        assertEquals(
+            mapOf<String, Any>(
+                "serverPin" to "1234",
+                "url_user" to "satellite",
+                "url_pwd" to "1234",
+                "url_Scheme" to "http",
+                "url_Host" to "primary.com",
+                "alternativeUrl" to url,
+                "processedAlternativeUrl" to "https://satellite:1234@alternative.com:443",
+                "isAlternativeUrl" to true
+            ),
+            store.values
+        )
     }
 
     @Test
     fun testUpdateUrlPreferencesReusesParsedUserInfoWhenPasswordContainsAtSign() {
-        val editor = mockk<SharedPreferences.Editor>()
-        val settings = mockk<SharedPreferences>()
-
-        every { editor.putString(any(), any()) } returns editor
-        every { editor.putBoolean(any(), any()) } returns editor
-        every { editor.apply() } just Runs
-
-        val uri = mockk<Uri>()
-        every { uri.userInfo } returns null
-        every { uri.scheme } returns "http"
-        every { uri.host } returns "primary.com"
-
+        val store = FakeKeyValueStore()
         val alternativeUrl = "http://user:p@ss@alternative.com:5984"
 
-        val url = "http://primary.com"
+        serverUrlMapper.updateUrlPreferences(fakeSharedPrefManager(store), mockUri(), alternativeUrl, "http://primary.com")
 
-        serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, url, settings)
-
-        verify { editor.putString("url_user", "user") }
-        verify { editor.putString("url_pwd", "p@ss") }
-        verify { editor.putString("processedAlternativeUrl", alternativeUrl) }
-        verify { editor.apply() }
+        assertEquals("user", store.values["url_user"])
+        assertEquals("p@ss", store.values["url_pwd"])
+        assertEquals(alternativeUrl, store.values["processedAlternativeUrl"])
     }
 
     @Test
     fun testUpdateServerIfNecessaryWhenPrimaryIsDownAndAlternativeIsUp() = runTest {
-        val editor = mockk<SharedPreferences.Editor>()
-        val settings = mockk<SharedPreferences>()
-
-        every { settings.edit() } returns editor
-        every { editor.putString(any(), any()) } returns editor
-        every { editor.putBoolean(any(), any()) } returns editor
-        every { editor.apply() } just Runs
-        every { settings.getString("serverPin", "") } returns "1234"
+        val store = FakeKeyValueStore(mapOf("serverPin" to "1234"))
 
         val mapping = ServerUrlMapper.UrlMapping(
             primaryUrl = "http://primary.com",
@@ -211,20 +168,19 @@ class ServerUrlMapperTest {
             extractedBaseUrl = "http://primary.com"
         )
 
-
         val isServerReachable: suspend (String) -> Boolean = { url ->
             url == "https://alternative.com"
         }
 
-        serverUrlMapper.updateServerIfNecessary(mapping, settings, isServerReachable)
+        serverUrlMapper.updateServerIfNecessary(mapping, fakeSharedPrefManager(store), isServerReachable)
 
-        verify { settings.edit() }
-        verify { editor.putString("processedAlternativeUrl", "https://satellite:1234@alternative.com:443") }
+        assertEquals(1, store.editCount)
+        assertEquals("https://satellite:1234@alternative.com:443", store.values["processedAlternativeUrl"])
     }
 
     @Test
     fun testUpdateServerIfNecessaryWhenPrimaryIsUp() = runTest {
-        val settings = mockk<SharedPreferences>()
+        val store = FakeKeyValueStore()
 
         val mapping = ServerUrlMapper.UrlMapping(
             primaryUrl = "http://primary.com",
@@ -234,9 +190,10 @@ class ServerUrlMapperTest {
 
         val isServerReachable: suspend (String) -> Boolean = { true }
 
-        serverUrlMapper.updateServerIfNecessary(mapping, settings, isServerReachable)
+        serverUrlMapper.updateServerIfNecessary(mapping, fakeSharedPrefManager(store), isServerReachable)
 
-        verify(exactly = 0) { settings.edit() }
+        assertEquals(0, store.editCount)
+        assertFalse(store.contains("processedAlternativeUrl"))
     }
 
     @Test
@@ -254,15 +211,12 @@ class ServerUrlMapperTest {
         every { spm.getUrlUser() } returns "satellite"
         every { spm.getUrlPwd() } returns "1234"
 
-        val editor = mockk<SharedPreferences.Editor>(relaxed = true)
-        val settings = mockk<SharedPreferences>(relaxed = true)
-        every { settings.getString("serverPin", "") } returns "1234"
-
+        val settings = fakeSharedPrefManager(FakeKeyValueStore(mapOf("serverPin" to "1234")))
         val uri = mockk<Uri>(relaxed = true)
         every { uri.scheme } returns "http"
         every { uri.host } returns "primary.com"
 
-        serverUrlMapper.updateUrlPreferences(editor, uri, "https://alternative.com", "http://primary.com", settings)
+        serverUrlMapper.updateUrlPreferences(settings, uri, "https://alternative.com", "http://primary.com")
 
         val secondHeader = UrlUtils.header
         assertEquals("Basic " + android.util.Base64.encodeToString("satellite:1234".toByteArray(), android.util.Base64.NO_WRAP), secondHeader)

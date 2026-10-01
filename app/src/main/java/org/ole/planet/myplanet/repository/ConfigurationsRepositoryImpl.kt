@@ -1,12 +1,8 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import android.util.Log
-import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -33,12 +29,15 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.AppInfo
+import org.ole.planet.myplanet.utils.AppLocale
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.utils.NetworkStatus
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Sha256Utils
 import org.ole.planet.myplanet.utils.StoragePathResolver
+import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
@@ -46,7 +45,6 @@ import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
 class ConfigurationsRepositoryImpl @Inject constructor(
-    @param:ApplicationContext private val context: Context,
     private val apiInterface: ApiInterface,
     @param:ApplicationScope private val serviceScope: CoroutineScope,
     private val sharedPrefManager: SharedPrefManager,
@@ -55,7 +53,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider,
     private val storagePathResolver: StoragePathResolver,
-    @PlainGson private val gson: Gson
+    @PlainGson private val gson: Gson,
+    private val stringProvider: StringProvider,
+    private val appInfo: AppInfo,
+    private val appLocale: AppLocale,
+    private val networkStatus: NetworkStatus
 ) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
@@ -83,7 +85,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     else -> HealthCheckResult.Failed("Server error: ${response.code()}")
                 }
             } catch (t: Exception) {
-                Log.e(TAG, "Health access request failed", t)
+                AppLog.e(TAG, "Health access request failed", t)
                 val reason = when (t) {
                     is UnknownHostException -> "Server not reachable"
                     is SocketTimeoutException -> "Connection timeout"
@@ -94,7 +96,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 HealthCheckResult.Failed(reason)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Health access initialization failed", e)
+            AppLog.e(TAG, "Health access initialization failed", e)
             HealthCheckResult.InitFailed
         }
     }
@@ -102,20 +104,20 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     override fun checkVersion(callback: ConfigurationsRepository.CheckVersionCallback) {
         val baseUrl = UrlUtils.baseUrl(sharedPrefManager)
         if (baseUrl.isEmpty()) {
-            callback.onError(context.getString(R.string.server_url_not_configured), true)
+            callback.onError(stringProvider.getString(R.string.server_url_not_configured), true)
             return
         }
 
         serviceScope.launch(dispatcherProvider.io) {
             callback.onCheckingVersion()
 
-            val lastCheckTime = sharedPrefManager.rawPreferences.getLong("last_version_check_timestamp", 0)
+            val lastCheckTime = sharedPrefManager.getLastVersionCheckTimestamp()
             val currentTime = timeProvider.now()
             val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
 
             if (currentTime - lastCheckTime < twentyFourHoursInMillis) {
                 val cachedVersionDetail = sharedPrefManager.getVersionDetail()
-                val cachedApkVersion = sharedPrefManager.rawPreferences.getInt("cachedApkVersion", -1)
+                val cachedApkVersion = sharedPrefManager.getCachedApkVersion()
 
                 if (cachedVersionDetail != null && cachedApkVersion != -1) {
                     try {
@@ -123,7 +125,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         handleVersionEvaluation(cachedInfo, cachedApkVersion, callback)
                         return@launch
                     } catch (e: Exception) {
-                        Log.e(TAG, "Failed to parse cached version detail", e)
+                        AppLog.e(TAG, "Failed to parse cached version detail", e)
                     }
                 }
             }
@@ -131,41 +133,37 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             try {
                 val planetInfo = fetchVersionInfo(sharedPrefManager)
                 if (planetInfo == null) {
-                    callback.onError(context.getString(R.string.version_not_found), true)
+                    callback.onError(stringProvider.getString(R.string.version_not_found), true)
                     return@launch
                 }
 
-                sharedPrefManager.rawPreferences.edit {
-                    putLong("last_version_check_timestamp", timeProvider.now())
-                }
-                sharedPrefManager.setLastWifiId(NetworkUtils.getCurrentNetworkId(context))
+                sharedPrefManager.setLastVersionCheckTimestamp(timeProvider.now())
+                sharedPrefManager.setLastWifiId(networkStatus.currentWifiNetworkId())
                 sharedPrefManager.setVersionDetail(gson.toJson(planetInfo))
 
                 val rawApkVersion = fetchApkVersionString(sharedPrefManager)
                 val versionStr = gson.fromJson(rawApkVersion, String::class.java)
                 if (versionStr.isNullOrEmpty()) {
-                    callback.onError(context.getString(R.string.planet_is_up_to_date), false)
+                    callback.onError(stringProvider.getString(R.string.planet_is_up_to_date), false)
                     return@launch
                 }
 
                 val apkVersion = VersionUtils.parseApkVersionString(versionStr)
                     ?: run {
                         callback.onError(
-                            context.getString(R.string.new_apk_version_required_but_not_found_on_server),
+                            stringProvider.getString(R.string.new_apk_version_required_but_not_found_on_server),
                             false
                         )
                         return@launch
                     }
 
-                sharedPrefManager.rawPreferences.edit {
-                    putInt("cachedApkVersion", apkVersion)
-                }
+                sharedPrefManager.setCachedApkVersion(apkVersion)
 
                 handleVersionEvaluation(planetInfo, apkVersion, callback)
             } catch (e: Exception) {
-                Log.e(TAG, "Version check failed", e)
+                AppLog.e(TAG, "Version check failed", e)
                 withContext(dispatcherProvider.main) {
-                    callback.onError(context.getString(R.string.connection_failed), true)
+                    callback.onError(stringProvider.getString(R.string.connection_failed), true)
                 }
             }
         }
@@ -190,14 +188,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             if (!primaryReachable && alternativeReachable) {
                 mapping.alternativeUrl.let { alternativeUrl ->
                     val uri = updateUrl.toUri()
-                    val editor = sharedPrefManager.rawPreferences.edit()
-
                     serverUrlMapper.updateUrlPreferences(
-                        editor,
+                        sharedPrefManager,
                         uri,
                         alternativeUrl,
-                        mapping.primaryUrl,
-                        sharedPrefManager.rawPreferences
+                        mapping.primaryUrl
                     )
                 }
                 alternativeReachable
@@ -256,7 +251,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                             Sha256Utils().getCheckSumFromFile(f)
                         }
                         if (sha256 == null) {
-                            Log.w(TAG, "Could not compute checksum for $path")
+                            AppLog.w(TAG, "Could not compute checksum for $path")
                             return false
                         }
                         return checksum.contains(sha256)
@@ -265,7 +260,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
             false
         } catch (e: IOException) {
-            Log.e(TAG, "Checksum check failed", e)
+            AppLog.e(TAG, "Checksum check failed", e)
             false
         }
     }
@@ -285,7 +280,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     ?: allResults.firstOrNull()
                     ?: UrlCheckResult.Failure(url)
             } catch (e: Exception) {
-                Log.e(TAG, "Configuration URL check failed", e)
+                AppLog.e(TAG, "Configuration URL check failed", e)
                 UrlCheckResult.Failure(url)
             }
 
@@ -296,16 +291,16 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 }
                 is UrlCheckResult.Failure -> {
                     val errorMessage = when (NetworkUtils.extractProtocol(url)) {
-                        context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
-                        context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
-                        else -> context.getString(R.string.device_couldn_t_reach_local_server)
+                        stringProvider.getString(R.string.http_protocol) -> stringProvider.getString(R.string.device_couldn_t_reach_local_server)
+                        stringProvider.getString(R.string.https_protocol) -> stringProvider.getString(R.string.device_couldn_t_reach_nation_server)
+                        else -> stringProvider.getString(R.string.device_couldn_t_reach_local_server)
                     }
                     ConfigurationsRepository.ConfigurationResult.Failure(errorMessage, url)
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "getMinApk failed", e)
-            ConfigurationsRepository.ConfigurationResult.Failure(context.getString(R.string.device_couldn_t_reach_local_server), url)
+            AppLog.e(TAG, "getMinApk failed", e)
+            ConfigurationsRepository.ConfigurationResult.Failure(stringProvider.getString(R.string.device_couldn_t_reach_local_server), url)
         }
     }
 
@@ -320,7 +315,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             if (versionsResponse.isSuccessful) {
                 val jsonObject = versionsResponse.body()?.toGson()
                 val minApkVersion = jsonObject?.get("minapk")?.asString
-                val currentVersion = context.getString(R.string.app_version)
+                val currentVersion = stringProvider.getString(R.string.app_version)
 
                 if (minApkVersion != null && VersionUtils.isVersionAllowed(currentVersion, minApkVersion)) {
                     val couchdbURL = buildCouchdbUrl(currentUrl, pin)
@@ -332,10 +327,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
             UrlCheckResult.Failure(currentUrl)
         } catch (e: TimeoutCancellationException) {
-            Log.e(TAG, "Configuration URL check timed out", e)
+            AppLog.e(TAG, "Configuration URL check timed out", e)
             UrlCheckResult.Failure(currentUrl)
         } catch (e: Exception) {
-            Log.e(TAG, "Configuration URL check failed", e)
+            AppLog.e(TAG, "Configuration URL check failed", e)
             UrlCheckResult.Failure(currentUrl)
         }
     }
@@ -361,10 +356,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
             null
         } catch (e: TimeoutCancellationException) {
-            Log.e(TAG, "Fetch configuration timed out", e)
+            AppLog.e(TAG, "Fetch configuration timed out", e)
             null
         } catch (e: Exception) {
-            Log.e(TAG, "Fetch configuration failed", e)
+            AppLog.e(TAG, "Fetch configuration failed", e)
             null
         }
     }
@@ -377,7 +372,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             val preferredLang = doc.getAsJsonPrimitive("preferredLang").asString
             val languageCode = getLanguageCodeFromName(preferredLang)
             if (languageCode != null) {
-                LocaleUtils.setLocale(context, languageCode)
+                appLocale.setLanguage(languageCode)
                 sharedPrefManager.setPendingLanguageChange(languageCode)
             }
         }
@@ -385,12 +380,12 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         if (doc.has("models")) {
             val modelsMap = doc.getAsJsonObject("models").entrySet()
                 .associate { it.key to it.value.asString }
-            sharedPrefManager.rawPreferences.edit { putString("ai_models", gson.toJson(modelsMap)) }
+            sharedPrefManager.setAiModels(gson.toJson(modelsMap))
         }
 
         if (doc.has("planetType")) {
             val planetType = doc.getAsJsonPrimitive("planetType").asString
-            sharedPrefManager.rawPreferences.edit { putString("planetType", planetType) }
+            sharedPrefManager.setPlanetType(planetType)
         }
     }
 
@@ -433,7 +428,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             val url = try {
                 UrlUtils.getUrl() + "/_users/_find"
             } catch (e: Exception) {
-                Log.e(TAG, "Error constructing find admin URL", e)
+                AppLog.e(TAG, "Error constructing find admin URL", e)
                 return
             }
 
@@ -444,10 +439,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     sharedPrefManager.setCommunityLeaders("$responseBody")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Admin sync request failed", e)
+                AppLog.e(TAG, "Admin sync request failed", e)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error in syncCommunityLeaders", e)
+            AppLog.e(TAG, "Error in syncCommunityLeaders", e)
         }
     }
 
@@ -541,15 +536,15 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
 
     private fun handleVersionEvaluation(info: MyPlanet, apkVersion: Int, callback: ConfigurationsRepository.CheckVersionCallback) {
-        val currentVersion = VersionUtils.getVersionCode(context)
-        if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
+        val currentVersion = appInfo.versionCode()
+        if (sharedPrefManager.isBetaFeatureEnabled() && info.latestapkcode > currentVersion) {
             callback.onUpdateAvailable(info, false)
         } else if (apkVersion > currentVersion) {
             callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
         } else if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
             callback.onUpdateAvailable(info, true)
         } else {
-            callback.onError(context.getString(R.string.planet_is_up_to_date), false)
+            callback.onError(stringProvider.getString(R.string.planet_is_up_to_date), false)
         }
     }
 
@@ -557,7 +552,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         val serverUrl = sharedPrefManager.getServerUrl()
         val mapping = serverUrlMapper.processUrl(serverUrl)
         if (mapping.alternativeUrl != null) {
-            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager) { url ->
                 serverUrlMapper.isUrlDirectlyReachable(url)
             }
         }

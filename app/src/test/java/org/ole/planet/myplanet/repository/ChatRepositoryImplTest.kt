@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -44,7 +43,6 @@ class ChatRepositoryImplTest {
 
     @Before
     fun setup() {
-        every { sharedPrefManager.rawPreferences } returns mockk(relaxed = true)
         chatRepository = ChatRepositoryImpl(chatDao, chatApiService, serverUrlMapper, sharedPrefManager, dispatcherProvider, serverReachabilityProvider, Gson())
     }
 
@@ -58,9 +56,6 @@ class ChatRepositoryImplTest {
         val serverUrl = "http://example.com"
         val mockMapping = ServerUrlMapper.UrlMapping(primaryUrl = serverUrl)
         val mockResponse = mapOf("provider1" to true, "provider2" to false)
-        val mockPrefs = mockk<SharedPreferences>(relaxed = true)
-
-        every { sharedPrefManager.rawPreferences } returns mockPrefs
         every { serverUrlMapper.processUrl(serverUrl) } returns mockMapping
         coEvery { serverUrlMapper.updateServerIfNecessary(any(), any(), any()) } answers { }
         coEvery { chatApiService.fetchAiProviders() } returns mockResponse
@@ -70,7 +65,7 @@ class ChatRepositoryImplTest {
 
         assertEquals(mockResponse, result)
         verify(exactly = 1) { serverUrlMapper.processUrl(serverUrl) }
-        coVerify(exactly = 1) { serverUrlMapper.updateServerIfNecessary(mockMapping, mockPrefs, any()) }
+        coVerify(exactly = 1) { serverUrlMapper.updateServerIfNecessary(mockMapping, sharedPrefManager, any()) }
         coVerify(exactly = 1) { chatApiService.fetchAiProviders() }
     }
 

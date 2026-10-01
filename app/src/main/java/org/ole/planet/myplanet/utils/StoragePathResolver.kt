@@ -13,5 +13,5 @@ class StoragePathResolver @Inject constructor(
     fun resolveOleDirectory(): File = File(FileUtils.getOlePath(context))
 
     fun resolveTeamAttachment(teamId: String?, imageName: String?): File? =
-        MyTeam.getAttachmentFile(context, teamId, imageName)
+        MyTeam.getAttachmentFile(FileUtils.getOlePath(context), teamId, imageName)
 }

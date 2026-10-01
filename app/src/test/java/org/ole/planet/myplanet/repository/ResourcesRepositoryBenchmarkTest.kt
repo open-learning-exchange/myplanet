@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -20,7 +19,6 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 @OptIn(ExperimentalCoroutinesApi::class)
 class ResourcesRepositoryBenchmarkTest {
     private lateinit var resourcesRepository: ResourcesRepositoryImpl
-    private val context: Context = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val tagsRepository: TagsRepository = mockk(relaxed = true)
@@ -38,7 +36,6 @@ class ResourcesRepositoryBenchmarkTest {
     @Before
     fun setup() {
         resourcesRepository = ResourcesRepositoryImpl(
-            context,
             activitiesRepository,
             sharedPrefManager,
             tagsRepository,
@@ -52,6 +49,9 @@ class ResourcesRepositoryBenchmarkTest {
             userSessionManager,
             configurationsRepository,
             dispatcherProvider,
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),

@@ -1,31 +1,27 @@
 package org.ole.planet.myplanet.services
 
-import android.content.Context
-import android.util.Log
-import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkObject
-import io.mockk.mockkStatic
-import io.mockk.unmockkObject
-import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.utils.FakeCredentialStore
+import org.ole.planet.myplanet.utils.LogLevel
+import org.ole.planet.myplanet.utils.RecordingLogSink
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 
@@ -33,7 +29,7 @@ import org.ole.planet.myplanet.utils.TestTimeProvider
 class UserSessionManagerTest {
 
     private lateinit var userSessionManager: UserSessionManager
-    private val context: Context = mockk(relaxed = true)
+    private val credentialStore = FakeCredentialStore()
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
@@ -42,13 +38,13 @@ class UserSessionManagerTest {
     private val testScope = TestScope(testDispatcher)
     private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
+    @get:Rule
+    val logs = RecordingLogSink()
+
     @Before
     fun setup() {
-        mockkStatic(Log::class)
-        every { Log.e(any(), any(), any()) } returns 0
-
         userSessionManager = UserSessionManager(
-            context = context,
+            credentialStore = credentialStore,
             sharedPrefManager = sharedPrefManager,
             applicationScope = testScope,
             userRepository = userRepository,
@@ -58,16 +54,11 @@ class UserSessionManagerTest {
         )
     }
 
-    @After
-    fun tearDown() {
-        unmockkStatic(Log::class)
-    }
-
     @Test
     fun `constructs successfully with unstubbed SharedPrefManager mock`() {
         val unstubbedPrefManager: SharedPrefManager = mockk()
         UserSessionManager(
-            context = context,
+            credentialStore = credentialStore,
             sharedPrefManager = unstubbedPrefManager,
             applicationScope = testScope,
             userRepository = userRepository,
@@ -259,7 +250,7 @@ class UserSessionManagerTest {
         userSessionManager.logoutAsync()
         advanceUntilIdle()
 
-        verify { Log.e("UserSessionManager", "Error in logoutAsync", any()) }
+        assertTrue(logs.entries(LogLevel.ERROR, "UserSessionManager").any { it.message == "Error in logoutAsync" && it.throwable != null })
     }
 
     @Test
@@ -270,7 +261,7 @@ class UserSessionManagerTest {
         userSessionManager.setResourceOpenCount(mockLibrary)
         advanceUntilIdle()
 
-        verify { Log.e("UserSessionManager", "Error in setResourceOpenCount", any()) }
+        assertTrue(logs.entries(LogLevel.ERROR, "UserSessionManager").any { it.message == "Error in setResourceOpenCount" && it.throwable != null })
     }
 
     @Test
@@ -284,14 +275,11 @@ class UserSessionManagerTest {
         userSessionManager.setResourceOpenCount(mockLibrary)
         advanceUntilIdle()
 
-        verify { Log.e("UserSessionManager", "Error in setResourceOpenCount", any()) }
+        assertTrue(logs.entries(LogLevel.ERROR, "UserSessionManager").any { it.message == "Error in setResourceOpenCount" && it.throwable != null })
     }
 
     @Test
     fun `saveUserInfoPref saves credentials and updates user info via SharedPrefManager`() = testScope.runTest {
-        mockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
-        every { org.ole.planet.myplanet.utils.SecurePrefs.saveCredentials(any(), any(), any(), any()) } just Runs
-
         val user = UserEntity(
             id = "u123",
             name = "johndoe",
@@ -303,9 +291,8 @@ class UserSessionManagerTest {
 
         userSessionManager.saveUserInfoPref("secret", user)
 
-        coVerify {
-            org.ole.planet.myplanet.utils.SecurePrefs.saveCredentials(context, sharedPrefManager.rawPreferences, "johndoe", "secret")
-        }
+        assertEquals("johndoe", credentialStore.savedUserName)
+        assertEquals("secret", credentialStore.savedPassword)
         verify {
             sharedPrefManager.saveUserInfo(
                 userId = "u123",
@@ -317,7 +304,5 @@ class UserSessionManagerTest {
                 lastLogin = 0L
             )
         }
-
-        unmockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
     }
 }
