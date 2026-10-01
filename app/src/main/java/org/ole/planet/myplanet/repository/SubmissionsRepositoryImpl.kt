@@ -698,7 +698,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         upsertRoomSubmissionsFromSync(listOf(submission))
     }
 
-    private fun upsertRoomSubmissionsFromSync(documentList: List<JsonObject>) {
+    private suspend fun upsertRoomSubmissionsFromSync(documentList: List<JsonObject>) {
         val submissions = ArrayList<Submission>(documentList.size)
         val answers = ArrayList<Answer>()
 
@@ -769,8 +769,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
         if (submissions.isEmpty() && answers.isEmpty()) return
 
-        if (submissions.isNotEmpty()) submissionDao.upsertAllBlocking(submissions)
-        if (answers.isNotEmpty()) answerDao.upsertAllBlocking(answers)
+        if (submissions.isNotEmpty()) submissionDao.upsertAll(submissions)
+        if (answers.isNotEmpty()) answerDao.upsertAll(answers)
     }
 
     private fun normalizeSubmissionUserId(userId: String): String {

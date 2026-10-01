@@ -34,6 +34,5 @@ interface CourseDao {
     suspend fun filterByTitleNormal(query: RoomRawQuery): List<MyCourse>
 
     @Upsert suspend fun upsertAll(items: List<MyCourse>)
-    @Upsert fun upsertAllBlocking(items: List<MyCourse>)
     @Upsert suspend fun upsert(item: MyCourse)
 }

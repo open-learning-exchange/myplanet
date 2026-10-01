@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.utils
 
+import kotlin.concurrent.Volatile
+
 /** Priority of a line written through [AppLog], in the platform log's order. */
 enum class LogLevel { VERBOSE, DEBUG, INFO, WARN, ERROR }
 

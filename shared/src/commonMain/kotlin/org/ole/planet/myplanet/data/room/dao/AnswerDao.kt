@@ -30,5 +30,4 @@ interface AnswerDao {
     }
 
     @Upsert suspend fun upsertAll(items: List<Answer>)
-    @Upsert fun upsertAllBlocking(items: List<Answer>)
 }

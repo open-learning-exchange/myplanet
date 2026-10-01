@@ -18,5 +18,4 @@ interface QuestionDao {
     }
     @Query("SELECT COUNT(*) FROM exam_questions WHERE examId = :examId") suspend fun countByExamId(examId: String): Int
     @Upsert suspend fun upsertAll(items: List<ExamQuestion>)
-    @Upsert fun upsertAllBlocking(items: List<ExamQuestion>)
 }

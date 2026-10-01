@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlin.concurrent.Volatile
 import kotlin.time.Clock
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray

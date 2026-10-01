@@ -52,6 +52,5 @@ interface SubmissionDao {
     @Query("SELECT * FROM submissions WHERE type = 'exam' AND parentId IS NOT NULL AND userId IS NOT NULL AND (_id IS NULL OR _id = '')") suspend fun getPendingExamResults(): List<Submission>
     @Query("SELECT * FROM submissions WHERE status = 'complete' AND (isUpdated = 1 OR _id IS NULL OR _id = '')") suspend fun getPendingSubmissions(): List<Submission>
     @Upsert suspend fun upsertAll(items: List<Submission>)
-    @Upsert fun upsertAllBlocking(items: List<Submission>)
     @Query("UPDATE submissions SET _id = :remoteId, _rev = :remoteRev, isUpdated = 0 WHERE id = :localId") suspend fun markUploaded(localId: String, remoteId: String?, remoteRev: String?): Int
 }

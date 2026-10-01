@@ -395,7 +395,7 @@ class SubmissionsRepositoryImplTest {
 
         repository.bulkInsertFromSync(jsonArray)
 
-        verify { submissionDao.upsertAllBlocking(match { it.single().id == "test_id" }) }
+        coVerify { submissionDao.upsertAll(match { it.single().id == "test_id" }) }
     }
 
     @Test
@@ -419,8 +419,8 @@ class SubmissionsRepositoryImplTest {
         // UnsupportedOperationException and failed the entire submissions sync.
         repository.bulkInsertFromSync(jsonArray)
 
-        verify {
-            answerDao.upsertAllBlocking(
+        coVerify {
+            answerDao.upsertAll(
                 match { list -> list.single().value == "{\"text\":\"nested\"}" }
             )
         }
@@ -445,8 +445,8 @@ class SubmissionsRepositoryImplTest {
 
         repository.bulkInsertFromSync(jsonArray)
 
-        verify {
-            answerDao.upsertAllBlocking(
+        coVerify {
+            answerDao.upsertAll(
                 match { list ->
                     val answer = list.single()
                     answer.value == null && answer.valueChoices?.size == 2
@@ -459,7 +459,7 @@ class SubmissionsRepositoryImplTest {
     fun `insertSubmission skips if _attachments present`() = runTest {
         val submission = JsonObject().apply { addProperty("_attachments", "test") }
         repository.insertSubmission(submission)
-        verify(exactly = 0) { submissionDao.upsertAllBlocking(any()) }
+        coVerify(exactly = 0) { submissionDao.upsertAll(any()) }
     }
 
     @Test
@@ -471,7 +471,7 @@ class SubmissionsRepositoryImplTest {
 
         repository.insertSubmission(submission)
 
-        verify { submissionDao.upsertAllBlocking(match { it.single().id == "test_id" }) }
+        coVerify { submissionDao.upsertAll(match { it.single().id == "test_id" }) }
     }
 
     @Test
