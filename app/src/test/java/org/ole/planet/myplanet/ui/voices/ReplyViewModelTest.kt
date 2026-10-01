@@ -6,9 +6,9 @@ import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -81,15 +81,12 @@ class ReplyViewModelTest {
     fun `getNewsWithReplies propagates repository exception`() = runTest {
         coEvery { voicesRepository.getNewsWithReplies(any()) } throws RuntimeException("boom")
 
-        var thrownException: Exception? = null
-        try {
+        val result = runCatching {
             viewModel.getNewsWithReplies("p1")
-        } catch (e: Exception) {
-            thrownException = e
         }
 
-        assertNotNull(thrownException)
-        assertEquals("boom", thrownException?.message)
+        assertTrue(result.isFailure)
+        assertEquals("boom", result.exceptionOrNull()?.message)
     }
 
     @Test
