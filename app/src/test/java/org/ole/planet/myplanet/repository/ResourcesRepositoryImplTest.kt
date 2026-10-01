@@ -35,7 +35,6 @@ import org.junit.rules.TemporaryFolder
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
-import org.ole.planet.myplanet.repository.LibraryTitle
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.ResourceTitleProjection
@@ -44,6 +43,7 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.LibraryTitle
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DeviceNameProvider
