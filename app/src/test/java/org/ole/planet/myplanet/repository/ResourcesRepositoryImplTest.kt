@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.LibraryTitle
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DeviceNameProvider
@@ -319,15 +320,14 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
-    fun `getLibraryTitles returns list of LibraryTitleProjection`() = runTest {
+    fun `getLibraryTitles returns list of LibraryTitle`() = runTest {
         val mockProjection = LibraryTitleProjection("lib1", "Test Library")
         coEvery { myLibraryDao.getLibraryTitles() } returns listOf(mockProjection)
 
         val result = repository.getLibraryTitles()
 
         assertEquals(1, result.size)
-        assertEquals("lib1", result[0].id)
-        assertEquals("Test Library", result[0].title)
+        assertEquals(LibraryTitle("lib1", "Test Library"), result[0])
     }
 
     @Test
@@ -1438,7 +1438,7 @@ class ResourcesRepositoryImplTest {
         File(oleDir, "res1/index.html").apply { parentFile?.mkdirs(); writeBytes(ByteArray(10)) }
         File(oleDir, "res1/sudoku/img/x.png").apply { parentFile?.mkdirs(); writeBytes(ByteArray(20)) }
         File(oleDir, "stray.png").writeBytes(ByteArray(5))
-        coEvery { myLibraryDao.getResourceTitles() } returns listOf(ResourceTitleProjection("res1", "Sudoku"))
+        coEvery { myLibraryDao.getResourceTitlesByResourceIds(any()) } returns listOf(ResourceTitleProjection("res1", "Sudoku"))
 
         val result = repository.getOfflineResourceItems(oleDir.absolutePath, emptySet(), emptySet())
 
@@ -1542,7 +1542,7 @@ class ResourcesRepositoryImplTest {
             ResourceTitleProjection("res1", "Video Resource"),
             ResourceTitleProjection("res2", "")
         )
-        coEvery { myLibraryDao.getResourceTitles() } returns projections
+        coEvery { myLibraryDao.getResourceTitlesByResourceIds(any()) } returns projections
         every { context.getString(org.ole.planet.myplanet.R.string.storage_unknown_resource) } returns "Unknown Resource"
 
         val knownExtensions = setOf("mp4", "pdf")
@@ -1565,6 +1565,17 @@ class ResourcesRepositoryImplTest {
         assertEquals("Unknown Resource", res2Item.title)
         assertEquals(1L, res2Item.totalSizeBytes)
         assertEquals(listOf(file4.absolutePath), res2Item.filePaths)
+    }
+
+    @Test
+    fun `getOfflineResourceItems never calls getResourceTitlesByResourceIds when ole directory is empty or has no matching files`() = runTest {
+        val emptyOleDir = temporaryFolder.newFolder("empty_ole")
+        val knownExtensions = setOf("mp4", "pdf")
+
+        val items = repository.getOfflineResourceItems(emptyOleDir.absolutePath, setOf("mp4"), knownExtensions)
+
+        assertTrue(items.isEmpty())
+        coVerify(exactly = 0) { myLibraryDao.getResourceTitlesByResourceIds(any()) }
     }
 
     private fun localResourceRequest(resourceUrl: String?): LocalResourceRequest {

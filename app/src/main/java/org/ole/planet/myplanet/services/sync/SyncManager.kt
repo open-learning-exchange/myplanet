@@ -121,14 +121,18 @@ class SyncManager @Inject constructor(
 
     fun isMainSyncActive(): Boolean = isSyncing.get()
 
-    private fun destroy() {
+    private fun destroy(succeeded: Boolean) {
         cancelBackgroundSync()
         cancel(context, 111)
         isSyncing.set(false)
-        sharedPrefManager.setLastSync(Date().time)
-        listener?.onSyncComplete()
+        if (succeeded) {
+            sharedPrefManager.setLastSync(Date().time)
+            listener?.onSyncComplete()
+        }
         listener = null
-        _syncStatus.value = SyncStatus.Success("Sync completed")
+        if (succeeded) {
+            _syncStatus.value = SyncStatus.Success("Sync completed")
+        }
     }
 
     private fun authenticateAndSync() {
@@ -149,6 +153,7 @@ class SyncManager @Inject constructor(
         syncPerf { "═══════════════════════════════════════════════════════════════" }
         syncPerf { "FULL SYNC STARTED at ${timestampFormat.format(Instant.now())}" }
         syncPerf { "═══════════════════════════════════════════════════════════════" }
+        var succeeded = false
         try {
 
             initializeSync()
@@ -218,6 +223,9 @@ class SyncManager @Inject constructor(
             syncPerf { "FULL SYNC COMPLETED at ${timestampFormat.format(Instant.now())}" }
             syncPerf { "TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms)" }
             syncPerf { "═══════════════════════════════════════════════════════════════" }
+            succeeded = true
+        } catch (e: CancellationException) {
+            throw e
         } catch (err: Exception) {
             val syncEndTime = SystemClock.elapsedRealtime()
             val totalSyncTime = syncEndTime - syncStartTime
@@ -228,7 +236,7 @@ class SyncManager @Inject constructor(
             Log.e("SyncManager", "Full sync failed", err)
             handleException(err.message)
         } finally {
-            destroy()
+            destroy(succeeded)
         }
     }
 
@@ -293,6 +301,7 @@ class SyncManager @Inject constructor(
 
             val newIds: MutableList<String> = ArrayList()
             var totalRows = 0
+            var countKnown = false
             var hadBatchFailure = false
 
             syncTimeLogger.startProcess("resource_get_total_count")
@@ -300,9 +309,14 @@ class SyncManager @Inject constructor(
             ApiClient.executeWithRetryAndWrap {
                 apiInterface.getJsonObject(header, "$url/resources/_all_docs?limit=0")
             }?.let { response ->
-                response.body()?.toGson()?.let { body ->
+                response.body()?.toGson()?.takeIf { it.has("total_rows") }?.let { body ->
                     totalRows = getInt("total_rows", body)
+                    countKnown = true
                 }
+            }
+            if (!countKnown) {
+                hadBatchFailure = true
+                syncTimeLogger.logDetail("resource_sync", "Resource count unavailable; paging until a short page and skipping delete-cleanup")
             }
             val countApiDuration = SystemClock.elapsedRealtime() - countApiStartTime
             syncTimeLogger.logApiCall("$url/resources/_all_docs?limit=0", countApiDuration, true, totalRows)
@@ -315,7 +329,7 @@ class SyncManager @Inject constructor(
             syncPerf { "    Resources: Found $totalRows documents to sync" }
             syncTimeLogger.logDetail("resource_sync", "Total resources: $totalRows, batch size: ${batchSizer.currentSize} (adaptive)")
 
-            while (skip < totalRows || (totalRows == 0 && skip == 0)) {
+            while (!countKnown || skip < totalRows) {
                 batchCount++
                 val batchSize = batchSizer.currentSize
                 val batchStartTime = SystemClock.elapsedRealtime()
@@ -334,6 +348,7 @@ class SyncManager @Inject constructor(
                         batchSizer.recordFailure()
                         hadBatchFailure = true
                         syncTimeLogger.logApiCall("$url/resources/_all_docs (batch $batchCount)", batchApiDuration, false, 0)
+                        if (!countKnown) break
                         skip += batchSize
                         continue
                     }
@@ -342,7 +357,7 @@ class SyncManager @Inject constructor(
                     val rows = getJsonArray("rows", response)
                     syncTimeLogger.logApiCall("$url/resources/_all_docs (batch $batchCount)", batchApiDuration, true, rows.size())
 
-                    if (rows.isEmpty()) {
+                    if (rows.isEmpty) {
                         break
                     }
 
@@ -379,6 +394,7 @@ class SyncManager @Inject constructor(
                     }
 
                     skip += rows.size()
+                    if (!countKnown && rows.size() < batchSize) break
                     val resourcesDone = skip.coerceAtMost(totalRows)
                     _syncStatus.value = SyncStatus.Syncing(
                         context.getString(R.string.sync_phase_resources), 2, 4,
@@ -396,11 +412,14 @@ class SyncManager @Inject constructor(
                             putInt("ResourceSyncPosition", skip)
                         }
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e("SyncManager", "Resource batch failed", e)
                     batchSizer.recordFailure()
                     hadBatchFailure = true
                     syncTimeLogger.logDetail("resource_sync", "Batch $batchCount failed: ${e.message}")
+                    if (!countKnown) break
                     skip += batchSize
                 }
             }
@@ -418,6 +437,8 @@ class SyncManager @Inject constructor(
                 if (cleanupDuration > 100) {
                     syncTimeLogger.logDbOperation("delete_cleanup", "resources", cleanupDuration, newIds.size)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e("SyncManager", "Resource cleanup failed", e)
                 syncTimeLogger.logDetail("resource_sync", "Cleanup failed: ${e.message}")
@@ -429,6 +450,8 @@ class SyncManager @Inject constructor(
             val minutes = resourceSyncTime / 60000
             val seconds = (resourceSyncTime % 60000) / 1000
             syncPerf { "  ✓ Resources sync completed: ${minutes}m ${seconds}s - $processedItems items" }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("SyncManager", "Resource sync failed", e)
             syncTimeLogger.endProcess("resource_sync_main", processedItems)
@@ -438,12 +461,10 @@ class SyncManager @Inject constructor(
     }
 
     private fun handleException(message: String?) {
-        if (listener != null) {
-            isSyncing.set(false)
-            MainApplication.syncFailedCount++
-            listener?.onSyncFailed(message)
-            _syncStatus.value = SyncStatus.Error(message ?: "Unknown error")
-        }
+        isSyncing.set(false)
+        MainApplication.syncFailedCount++
+        listener?.onSyncFailed(message)
+        _syncStatus.value = SyncStatus.Error(message ?: "Unknown error")
     }
 
     private suspend fun myLibraryTransactionSync() {
@@ -503,6 +524,8 @@ class SyncManager @Inject constructor(
 
             val totalDuration = SystemClock.elapsedRealtime() - librarySyncStartTime
             syncPerf { "  ✓ Library sync completed: ${totalDuration}ms - $processedItems items from ${shelvesWithData.size} shelves" }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("SyncManager", "Library sync failed", e)
             syncTimeLogger.endProcess("library_sync_main", processedItems)

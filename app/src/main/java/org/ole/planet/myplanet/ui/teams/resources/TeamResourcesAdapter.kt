@@ -20,10 +20,10 @@ import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.ui.resources.CoverBindParams
 import org.ole.planet.myplanet.ui.resources.ResourcesCardBinder
+import org.ole.planet.myplanet.ui.resources.ResourcesMediaType
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.LibraryTypeClassifier
 
 class TeamResourcesAdapter(
     private val context: Context,
@@ -79,7 +79,7 @@ class TeamResourcesAdapter(
         if (adapterPosition == RecyclerView.NO_POSITION) return
 
         val resource = getItem(adapterPosition)
-        val type = LibraryTypeClassifier.classify(resource)
+        val type = ResourcesMediaType.classify(resource)
 
         holder.cancelPreviewJob()
         ResourcesCardBinder.showTypeIconOnly(
@@ -93,7 +93,8 @@ class TeamResourcesAdapter(
             tvMeta.text = ResourcesCardBinder.buildMetaLine(
                 context,
                 type,
-                resource.language
+                resource.language,
+                mediaType = resource.mediaType
             )
 
             ResourcesCardBinder.setCoverColor(coverContainer, type)

@@ -15,7 +15,6 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.LibraryType
 import org.ole.planet.myplanet.utils.PdfThumbnailLoader
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -36,30 +35,30 @@ data class CoverBindParams(
 object ResourcesCardBinder {
 
     @ColorRes
-    fun typeColorRes(type: LibraryType): Int = when (type) {
-        LibraryType.PDF -> R.color.type_pdf
-        LibraryType.VIDEO -> R.color.type_video
-        LibraryType.AUDIO -> R.color.type_audio
-        LibraryType.BOOK -> R.color.type_book
+    fun typeColorRes(type: ResourcesMediaType): Int = when (type) {
+        ResourcesMediaType.PDF -> R.color.type_pdf
+        ResourcesMediaType.VIDEO -> R.color.type_video
+        ResourcesMediaType.AUDIO -> R.color.type_audio
+        ResourcesMediaType.BOOK -> R.color.type_book
     }
 
     @DrawableRes
-    fun typeIconRes(type: LibraryType): Int = when (type) {
-        LibraryType.PDF -> R.drawable.ic_type_pdf
-        LibraryType.VIDEO -> R.drawable.ic_type_video
-        LibraryType.AUDIO -> R.drawable.ic_type_audio
-        LibraryType.BOOK -> R.drawable.ic_type_book
+    fun typeIconRes(type: ResourcesMediaType): Int = when (type) {
+        ResourcesMediaType.PDF -> R.drawable.ic_type_pdf
+        ResourcesMediaType.VIDEO -> R.drawable.ic_type_video
+        ResourcesMediaType.AUDIO -> R.drawable.ic_type_audio
+        ResourcesMediaType.BOOK -> R.drawable.ic_type_book
     }
 
     @StringRes
-    fun typeLabelRes(type: LibraryType): Int = when (type) {
-        LibraryType.PDF -> R.string.filter_pdfs
-        LibraryType.VIDEO -> R.string.filter_videos
-        LibraryType.AUDIO -> R.string.filter_audio
-        LibraryType.BOOK -> R.string.filter_books
+    fun typeLabelRes(type: ResourcesMediaType): Int = when (type) {
+        ResourcesMediaType.PDF -> R.string.filter_pdfs
+        ResourcesMediaType.VIDEO -> R.string.filter_videos
+        ResourcesMediaType.AUDIO -> R.string.filter_audio
+        ResourcesMediaType.BOOK -> R.string.filter_books
     }
 
-    fun setCoverColor(view: View, type: LibraryType) {
+    fun setCoverColor(view: View, type: ResourcesMediaType) {
         val background = view.background?.mutate()
         if (background is GradientDrawable) {
             background.setColor(ContextCompat.getColor(view.context, typeColorRes(type)))
@@ -164,12 +163,16 @@ object ResourcesCardBinder {
 
     fun buildMetaLine(
         context: Context,
-        type: LibraryType,
+        type: ResourcesMediaType,
         language: String?,
-        fileSize: Long? = null
+        fileSize: Long? = null,
+        mediaType: String? = null
     ): String {
         val parts = mutableListOf<String>()
-        parts.add(context.getString(typeLabelRes(type)))
+        val typeLabel = mediaType?.takeIf { it.isNotBlank() }
+            ?.let { ResourcesMediaType.displayName(context, it) }
+            ?: context.getString(typeLabelRes(type))
+        parts.add(typeLabel)
         if (fileSize != null) {
             parts.add(FileUtils.formatSize(context, fileSize))
         }

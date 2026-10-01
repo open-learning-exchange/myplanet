@@ -59,6 +59,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.util.regex.Pattern
 import javax.inject.Inject
+import kotlin.math.abs
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -118,7 +119,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
 
         override fun onRecordStopped(outputFile: String?) {
             Utilities.toast(requireContext(), getString(R.string.recording_stopped))
-            NotificationUtils.cancelAll(requireContext())
+            NotificationUtils.cancel(requireContext(), NotificationUtils.RECORDING_NOTIFICATION_ID)
             if (::library.isInitialized) {
                 library.id?.let { viewModel.saveTranslationAudioPath(it, outputFile) }
             }
@@ -197,7 +198,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         val currentPos = player.currentPosition
         val duration = player.duration
         val effectivePosition = ResourceViewerViewModel.calculateEffectivePlaybackPosition(currentPos, duration)
-        if (lastSavedPositionMs == -1L || Math.abs(effectivePosition - lastSavedPositionMs) >= 2000L || effectivePosition == 0L) {
+        if (lastSavedPositionMs == -1L || abs(effectivePosition - lastSavedPositionMs) >= 2000L || effectivePosition == 0L) {
             lastSavedPositionMs = effectivePosition
             viewModel.savePlaybackProgress(mediaKey, effectivePosition)
         }
@@ -229,7 +230,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
             .map { getString(R.string.playback_speed_format, it.toString()) }
             .toTypedArray()
         val currentSpeed = viewModel.getPlaybackSpeed()
-        var selectedIndex = speedValues.indexOfFirst { kotlin.math.abs(it - currentSpeed) < 0.05f }
+        var selectedIndex = speedValues.indexOfFirst { abs(it - currentSpeed) < 0.05f }
         if (selectedIndex == -1) selectedIndex = 1
 
         MaterialDialog.Builder(requireContext())
@@ -326,7 +327,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         val fileDataSource = FileDataSource()
         try {
             fileDataSource.open(dataSpec)
-        } catch (e: FileDataSource.FileDataSourceException) {
+        } catch (_: FileDataSource.FileDataSourceException) {
             navigateBackWithError(getString(R.string.video_playback_error))
             return
         }
@@ -676,7 +677,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
                 MotionEvent.ACTION_MOVE -> {
                     val deltaY = event.rawY - startY
                     val deltaX = event.rawX - startX
-                    if (!isDragging && deltaY > slopPx && deltaY > kotlin.math.abs(deltaX)) {
+                    if (!isDragging && deltaY > slopPx && deltaY > abs(deltaX)) {
                         isDragging = true
                     }
                     isDragging

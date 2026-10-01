@@ -27,7 +27,6 @@ import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.LibraryTypeClassifier
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.StableIdGenerator
 
@@ -248,9 +247,9 @@ class ResourcesAdapter(
     private fun bindGrid(holder: GridViewHolder, model: ResourceListModel) {
         holder.cancelPreviewJob()
         val binding = holder.binding
-        val type = LibraryTypeClassifier.classify(model.library)
+        val type = ResourcesMediaType.classify(model.library)
         binding.title.text = model.item.title
-        binding.tvMeta.text = ResourcesCardBinder.buildMetaLine(context, type, model.library.language, fileSize = null)
+        binding.tvMeta.text = ResourcesCardBinder.buildMetaLine(context, type, model.library.language, fileSize = null, mediaType = model.library.mediaType)
         bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, model)
         bindClicks(holder.itemView, binding.checkbox, model)
         ResourcesCardBinder.setCoverColor(binding.coverContainer, type)
@@ -274,16 +273,16 @@ class ResourcesAdapter(
                 )
             )
             val fileSize = resourceFileLength(model)
-            binding.tvMeta.text = ResourcesCardBinder.buildMetaLine(context, type, model.library.language, fileSize)
+            binding.tvMeta.text = ResourcesCardBinder.buildMetaLine(context, type, model.library.language, fileSize, mediaType = model.library.mediaType)
         })
     }
 
     private fun bindList(holder: ListViewHolder, model: ResourceListModel) {
         holder.cancelPreviewJob()
         val binding = holder.binding
-        val type = LibraryTypeClassifier.classify(model.library)
+        val type = ResourcesMediaType.classify(model.library)
         binding.title.text = model.item.title
-        binding.tvMeta.text = ResourcesCardBinder.buildMetaLine(context, type, model.library.language, fileSize = null)
+        binding.tvMeta.text = ResourcesCardBinder.buildMetaLine(context, type, model.library.language, fileSize = null, mediaType = model.library.mediaType)
         bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, model)
         bindClicks(holder.itemView, binding.checkbox, model)
         ResourcesCardBinder.setCoverColor(binding.coverContainer, type)
@@ -308,7 +307,7 @@ class ResourcesAdapter(
                 )
             )
             val fileSize = resourceFileLength(model)
-            binding.tvMeta.text = ResourcesCardBinder.buildMetaLine(context, type, model.library.language, fileSize)
+            binding.tvMeta.text = ResourcesCardBinder.buildMetaLine(context, type, model.library.language, fileSize, mediaType = model.library.mediaType)
         })
     }
 

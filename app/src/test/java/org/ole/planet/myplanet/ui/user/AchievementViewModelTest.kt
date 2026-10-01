@@ -19,11 +19,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.LibraryTitle
 import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -143,7 +143,7 @@ class AchievementViewModelTest {
 
     @Test
     fun `getLibraryTitles delegates to resourcesRepository`() = runTest(testDispatcher) {
-        val titles = listOf(LibraryTitleProjection("r1", "Lib 1"))
+        val titles = listOf(LibraryTitle("r1", "Lib 1"))
         coEvery { resourcesRepository.getLibraryTitles() } returns titles
 
         val result = viewModel.getLibraryTitles()

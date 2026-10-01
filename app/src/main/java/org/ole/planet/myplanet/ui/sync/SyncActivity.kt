@@ -23,6 +23,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.annotation.RequiresApi
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.lifecycle.lifecycleScope
@@ -34,6 +35,7 @@ import java.util.Date
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
@@ -323,16 +325,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     suspend fun isServerReachable(processedUrl: String?, type: String): Boolean {
         try {
-            val isAlternativeUrl = prefData.isAlternativeUrl()
-            val url = if (isAlternativeUrl) {
-                if (processedUrl?.contains("/db") == true) {
-                    processedUrl.replace("/db", "") + "/db/_all_dbs"
-                } else {
-                    "$processedUrl/db/_all_dbs"
-                }
-            } else {
-                "$processedUrl/_all_dbs"
-            }
+            val url = reachabilityUrl(processedUrl, prefData.isAlternativeUrl())
 
             val isAvailable = configurationsRepository.checkServerAvailability(url)
             if (isAvailable) {
@@ -642,7 +635,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
         prefData.setLoggedIn(true)
         openDashboard()
-        isNetworkConnectedFlow.onEach { isConnected ->
+        loginNetworkJob?.cancel()
+        loginNetworkJob = isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
                 val serverUrl = prefData.getServerUrl()
                 if (serverUrl.isNotEmpty()) {
@@ -699,6 +693,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             dialog.getActionButton(DialogAction.NEUTRAL).text = getString(R.string.show_more)
         }
     }
+
     fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
         runOnUiThread {
             dialog.dismiss()
@@ -809,8 +804,18 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     override fun onDestroy() {
         super.onDestroy()
     }
+
     companion object {
         private const val TAG = "SyncActivity"
+        private var loginNetworkJob: Job? = null
+        
+        @VisibleForTesting
+        internal fun reachabilityUrl(processedUrl: String?, isAlternativeUrl: Boolean): String =
+            if (isAlternativeUrl) {
+                UrlUtils.dbUrl(processedUrl.orEmpty()) + "/_all_dbs"
+            } else {
+                "$processedUrl/_all_dbs"
+            }
         private const val SYNC_STATUS_SAMPLE_MS = 150L
         private val secondsAgoRegex by lazy { Regex("^\\d{1,2} seconds ago$") }
         private val urlProtocolRegex by lazy { Regex("^https?://") }
