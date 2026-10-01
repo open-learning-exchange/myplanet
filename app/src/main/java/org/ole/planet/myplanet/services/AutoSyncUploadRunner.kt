@@ -1,13 +1,14 @@
 package org.ole.planet.myplanet.services
 
+import android.util.Log
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import kotlinx.coroutines.supervisorScope
-import java.util.concurrent.atomic.AtomicReference
 import org.ole.planet.myplanet.callback.OnSuccessListener
 
 class AutoSyncUploadRunner @Inject constructor(
@@ -19,6 +20,7 @@ class AutoSyncUploadRunner @Inject constructor(
             val firstError = AtomicReference<Throwable?>(null)
 
             fun recordFailure(e: Throwable) {
+                Log.e("AutoSyncUploadRunner", "error: ${e.message}", e)
                 firstError.compareAndSet(null, e)
             }
 
