@@ -661,7 +661,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 }
             } catch (e: Exception) {
                 if (!continueOnError) throw e
-                e.printStackTrace()
+                Log.w("CoursesRepository", "Failed to insert course from sync document", e)
             }
         }
 
