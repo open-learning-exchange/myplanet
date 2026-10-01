@@ -14,7 +14,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.putJsonArray
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.Rows
@@ -27,12 +29,10 @@ import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.GsonUtils.getJsonObject
-import org.ole.planet.myplanet.utils.GsonUtils.gson
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toKotlinx
 
 @Singleton
 class SyncRepositoryImpl @Inject constructor(
@@ -128,8 +128,7 @@ class SyncRepositoryImpl @Inject constructor(
                 val batch = validIds.subList(i, end)
                 i = end
 
-                val keysObject = JsonObject()
-                keysObject.add("keys", gson.toJsonTree(batch))
+                val keysBody = buildJsonObject { putJsonArray("keys") { batch.forEach { add(it) } } }
 
                 // API call
                 val apiStartTime = timeProvider.elapsedRealtime()
@@ -139,7 +138,7 @@ class SyncRepositoryImpl @Inject constructor(
                         UrlUtils.header,
                         "application/json",
                         "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true",
-                        keysObject.toKotlinx().jsonObject
+                        keysBody
                     )
                 }?.let {
                     response = it.body()?.toGson()
