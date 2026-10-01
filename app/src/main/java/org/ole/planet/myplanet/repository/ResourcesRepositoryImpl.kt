@@ -1,14 +1,10 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import android.util.Log
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.IOException
-import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -36,13 +32,17 @@ import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.AppLog
+import org.ole.planet.myplanet.utils.AppStorage
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.DownloadLauncher
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.StoragePathResolver
+import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -50,7 +50,6 @@ import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.distinctByContent
 
 class ResourcesRepositoryImpl @Inject constructor(
-    @param:ApplicationContext private val context: Context,
     private val activitiesRepository: ActivitiesRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val tagsRepository: TagsRepository,
@@ -67,7 +66,10 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val deviceNameProvider: DeviceNameProvider,
     private val timeProvider: TimeProvider,
     @param:ApplicationScope private val appScope: CoroutineScope,
-    private val storagePathResolver: StoragePathResolver
+    private val storagePathResolver: StoragePathResolver,
+    private val appStorage: AppStorage,
+    private val downloadLauncher: DownloadLauncher,
+    private val stringProvider: StringProvider
 ) : ResourcesRepository {
 
     // Shelf membership is stored as a JSON userId list; match a single entry with LIKE %"id"%.
@@ -258,7 +260,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             return Result.failure(Exception("Resource file not found"))
         }
 
-        val externalFilesDir = FileUtils.getExternalFilesDir(context)
+        val externalFilesDir = appStorage.externalFilesDirPath()?.let(::File)
             ?: return Result.failure(Exception("Storage unavailable"))
 
         val id = UUID.randomUUID().toString()
@@ -294,7 +296,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             this.subject = request.subjects?.toList() ?: emptyList()
             this.userId = emptyList()
             this.level = request.levels?.toList() ?: emptyList()
-            this.createdDate = Calendar.getInstance().timeInMillis
+            this.createdDate = timeProvider.now()
             this.resourceFor = request.resourceFor?.toList() ?: emptyList()
             this.resourceLocalAddress = filename
             this.resourceOffline = true
@@ -476,7 +478,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             SearchActivity(
                 id = UUID.randomUUID().toString(),
                 user = userName,
-                time = Calendar.getInstance().timeInMillis,
+                time = timeProvider.now(),
                 createdOn = planetCode,
                 parentCode = parentCode,
                 text = searchText,
@@ -498,7 +500,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             if (urls.isEmpty()) {
                 return false
             }
-            DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
+            downloadLauncher.startPriorityDownloads(urls)
             true
         } catch (_: Exception) {
             false
@@ -516,7 +518,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         appScope.launch {
             if (configurationsRepository.checkServerAvailability()) {
                 if (urls.isNotEmpty()) {
-                    DownloadUtils.openDownloadService(context, urls, false)
+                    downloadLauncher.startDownloads(urls, false)
                 }
             }
         }
@@ -617,7 +619,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val urls = withContext(dispatcherProvider.io) {
             resource.attachments?.mapNotNull { attachment ->
                 attachment.name?.let { name ->
-                    val baseDir = File(context.getExternalFilesDir(null), "ole/$resourceId")
+                    val baseDir = File(appStorage.externalFilesDirPath(), "ole/$resourceId")
                     val lastSlashIndex = name.lastIndexOf('/')
                     if (lastSlashIndex > 0) {
                         val dirPath = name.substring(0, lastSlashIndex)
@@ -655,7 +657,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                     MyLibrary.Companion.InsertParams(
                         doc = doc,
                         spm = sharedPrefManager,
-                        context = context,
+                        storage = appStorage,
                         userId = shelfId,
                         existing = existing
                     )
@@ -704,7 +706,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                     MyLibrary.Companion.InsertParams(
                         doc = doc,
                         spm = sharedPrefManager,
-                        context = context,
+                        storage = appStorage,
                         existing = existing
                     )
                 )
@@ -748,7 +750,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                     changed.add(library)
                 }
             } catch (e: Exception) {
-                Log.w("ResourcesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
+                AppLog.w("ResourcesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
             }
         }
 
@@ -910,7 +912,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
         return@withContext grouped.map { (resourceId, accumulator) ->
             accumulator.filePaths.sort()
-            val title = titleMap[resourceId]?.takeIf { it.isNotBlank() } ?: context.getString(R.string.storage_unknown_resource)
+            val title = titleMap[resourceId]?.takeIf { it.isNotBlank() } ?: stringProvider.getString(R.string.storage_unknown_resource)
             OfflineResourceItem(resourceId, title, accumulator.filePaths, accumulator.totalSize)
         }.sortedBy { it.title }
     }

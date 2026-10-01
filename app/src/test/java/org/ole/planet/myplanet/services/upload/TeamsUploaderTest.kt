@@ -14,6 +14,7 @@ import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
@@ -173,7 +174,7 @@ class TeamsUploaderTest {
         }
         coEvery { uploadRepository.postUploadArray(any(), any()) } returns NetworkResult.Success(bulkResponse)
 
-        mockkObject(MyTeam)
+        mockkStatic("org.ole.planet.myplanet.services.upload.TeamAttachmentFilesKt")
         val mockFile = mockk<File>()
         every { MyTeam.getAttachmentFile(context, "team1", "image.png") } returns mockFile
         every { mockFile.exists() } returns true
@@ -187,7 +188,7 @@ class TeamsUploaderTest {
         } catch (e: Exception) {
             caught = e
         } finally {
-            unmockkObject(MyTeam)
+            unmockkStatic("org.ole.planet.myplanet.services.upload.TeamAttachmentFilesKt")
         }
 
         assertTrue("Expected CancellationException, got $caught", caught is CancellationException || (caught != null && caught.cause is CancellationException))
@@ -206,7 +207,7 @@ class TeamsUploaderTest {
         }
         coEvery { uploadRepository.postUploadArray(any(), any()) } returns NetworkResult.Success(bulkResponse)
 
-        mockkObject(MyTeam)
+        mockkStatic("org.ole.planet.myplanet.services.upload.TeamAttachmentFilesKt")
         val mockFile = mockk<File>()
         every { MyTeam.getAttachmentFile(context, "team1", "image.png") } returns mockFile
         every { mockFile.exists() } returns true
@@ -219,6 +220,6 @@ class TeamsUploaderTest {
 
         coVerify(exactly = 1) { mockRepo.markTeamsUploaded(mapOf("team1" to "rev1")) }
 
-        unmockkObject(MyTeam)
+        unmockkStatic("org.ole.planet.myplanet.services.upload.TeamAttachmentFilesKt")
     }
 }

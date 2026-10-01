@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import android.content.SharedPreferences
 import android.os.Build
 import android.text.TextUtils
 import android.util.Log
@@ -10,14 +8,7 @@ import androidx.room.withTransaction
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import dagger.hilt.android.qualifiers.ApplicationContext
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Calendar
-import java.util.Date
 import java.util.LinkedHashSet
-import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -35,7 +26,6 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.MyLibrary
@@ -54,22 +44,24 @@ import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AndroidDecrypter
+import org.ole.planet.myplanet.utils.AppStorage
+import org.ole.planet.myplanet.utils.DateFormatter
+import org.ole.planet.myplanet.utils.DateTimeUtils
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.DownloadLauncher
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.GsonUtils
-import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 @Singleton
 class TeamsRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val activitiesRepository: ActivitiesRepository,
     private val userSessionManager: UserSessionManager,
     private val uploadManager: UploadManager,
     private val gson: Gson,
-    @param:AppPreferences private val preferences: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider,
@@ -82,6 +74,10 @@ class TeamsRepositoryImpl @Inject constructor(
     private val courseDao: CourseDao,
     private val courseStepDao: CourseStepDao,
     private val appDatabase: AppDatabase,
+    private val deviceNameProvider: DeviceNameProvider,
+    private val appStorage: AppStorage,
+    private val downloadLauncher: DownloadLauncher,
+    private val dateFormatter: DateFormatter,
 ) : TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<TeamTask>> {
         return teamTaskDao.getOpenTasksForUser(userId).flowOn(dispatcherProvider.default)
@@ -152,7 +148,7 @@ class TeamsRepositoryImpl @Inject constructor(
             val team = MyTeam().apply {
                 _id = teamId
                 status = "active"
-                createdDate = Date().time
+                createdDate = DateTimeUtils.nowMillis()
                 if (request.category == "enterprise") {
                     type = "enterprise"
                     services = request.services
@@ -534,7 +530,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
     private suspend fun attachTeamImage(teamId: String, imageName: String, imageData: ByteArray) {
         if (teamId.isBlank()) return
-        val destFile = MyTeam.getAttachmentFile(MainApplication.context, teamId, imageName) ?: return
+        val destFile = MyTeam.getAttachmentFile(appStorage.olePath(), teamId, imageName) ?: return
         withContext(dispatcherProvider.io) {
             destFile.parentFile?.mkdirs()
             destFile.writeBytes(imageData)
@@ -609,7 +605,7 @@ class TeamsRepositoryImpl @Inject constructor(
         val validIds = teamIds.filter { it.isNotBlank() }.distinct()
         if (validIds.isEmpty()) return emptyMap()
 
-        val cutoff = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -30) }.timeInMillis
+        val cutoff = DateTimeUtils.plusDays(DateTimeUtils.nowMillis(), -30)
         val recentLogs = teamLogDao.getRecentTeamVisits(cutoff, validIds)
 
         return recentLogs.mapNotNull { it.teamId }
@@ -633,7 +629,7 @@ class TeamsRepositoryImpl @Inject constructor(
         val request = MyTeam().apply {
             _id = AndroidDecrypter.generateIv()
             docType = "request"
-            createdDate = Date().time
+            createdDate = DateTimeUtils.nowMillis()
             this.teamType = teamType
             this.userId = userId
             this.teamId = teamId
@@ -827,7 +823,7 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun setTaskCompletion(taskId: String, completed: Boolean) {
         teamTaskDao.getById(taskId)?.let { task ->
             task.completed = completed
-            task.completedTime = if (completed) Date().time else 0
+            task.completedTime = if (completed) DateTimeUtils.nowMillis() else 0
             task.isUpdated = true
             teamTaskDao.upsert(task)
         }
@@ -849,7 +845,7 @@ class TeamsRepositoryImpl @Inject constructor(
             type = "teamVisit"
             this.teamType = teamType
             parentCode = userParentCode
-            time = Date().time
+            time = DateTimeUtils.nowMillis()
         }
         teamLogDao.insert(log)
     }
@@ -915,8 +911,7 @@ class TeamsRepositoryImpl @Inject constructor(
         if (!primaryAvailable && alternativeAvailable) {
             mapping.alternativeUrl.let { alternativeUrl ->
                 val uri = updateUrl.toUri()
-                val editor = preferences.edit()
-                serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, preferences)
+                serverUrlMapper.updateUrlPreferences(sharedPrefManager, uri, alternativeUrl, mapping.primaryUrl)
             }
         }
 
@@ -1051,7 +1046,7 @@ class TeamsRepositoryImpl @Inject constructor(
             val lastVisitTimestamp = stats?.latestVisit
             val lastLogoutTimestamp = lastVisits[member.name ?: ""]
             val profileLastVisit = if (lastLogoutTimestamp != null) {
-                DATE_TIME_FORMATTER.format(Instant.ofEpochMilli(lastLogoutTimestamp))
+                dateFormatter.formatMonthDayYearTime(lastLogoutTimestamp)
             } else {
                 "No logout record found"
             }
@@ -1178,8 +1173,8 @@ class TeamsRepositoryImpl @Inject constructor(
         ob.addProperty("time", log.time)
         ob.addProperty("teamId", log.teamId)
         ob.addDocumentOrigin()
-        ob.addProperty("deviceName", NetworkUtils.getDeviceName())
-        ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+        ob.addProperty("deviceName", deviceNameProvider.getDeviceName())
+        ob.addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
         if (!TextUtils.isEmpty(log._rev)) {
             ob.addProperty("_rev", log._rev)
             ob.addProperty("_id", log._id)
@@ -1195,7 +1190,7 @@ class TeamsRepositoryImpl @Inject constructor(
         for (link in links) {
             concatenatedLinks.add("$baseUrl/$link")
         }
-        DownloadUtils.openDownloadService(MainApplication.context, ArrayList(concatenatedLinks), true)
+        downloadLauncher.startDownloads(concatenatedLinks.toList(), true)
     }
 
     override suspend fun batchInsertMyTeams(documents: List<JsonObject>): Int {
@@ -1372,6 +1367,5 @@ class TeamsRepositoryImpl @Inject constructor(
 
     companion object {
         private const val TAG = "TeamsRepository"
-        private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("MMMM dd, yyyy hh:mm a", Locale.getDefault()).withZone(ZoneId.systemDefault())
     }
 }

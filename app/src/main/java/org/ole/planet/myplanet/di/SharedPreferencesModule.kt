@@ -13,7 +13,9 @@ import javax.inject.Singleton
 import kotlinx.serialization.json.Json
 import org.ole.planet.myplanet.repository.LifeCache
 import org.ole.planet.myplanet.services.DownloadService
+import org.ole.planet.myplanet.utils.AndroidKeyValueStore
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.KeyValueStore
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
@@ -26,6 +28,12 @@ annotation class DefaultPreferences
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class DownloadPreferences
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class SurveyReminderPreferences
+
+const val SURVEY_REMINDERS_PREFS_NAME = "survey_reminders"
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -54,10 +62,31 @@ object SharedPreferencesModule {
 
     @Provides
     @Singleton
+    @AppPreferences
+    fun provideAppKeyValueStore(@AppPreferences preferences: SharedPreferences): KeyValueStore {
+        return AndroidKeyValueStore(preferences)
+    }
+
+    @Provides
+    @Singleton
+    @DefaultPreferences
+    fun provideDefaultKeyValueStore(@DefaultPreferences preferences: SharedPreferences): KeyValueStore {
+        return AndroidKeyValueStore(preferences)
+    }
+
+    @Provides
+    @Singleton
+    @SurveyReminderPreferences
+    fun provideSurveyReminderKeyValueStore(@ApplicationContext context: Context): KeyValueStore {
+        return AndroidKeyValueStore(context.getSharedPreferences(SURVEY_REMINDERS_PREFS_NAME, Context.MODE_PRIVATE))
+    }
+
+    @Provides
+    @Singleton
     fun provideLifeCache(
-        @AppPreferences preferences: SharedPreferences,
+        @AppPreferences store: KeyValueStore,
         json: Json
     ): LifeCache {
-        return LifeCache(preferences, json)
+        return LifeCache(store, json)
     }
 }

@@ -217,7 +217,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         val v: View = dialogAddReportBinding.root
         selectedImageUri = null
         dialogImagePreview = dialogAddReportBinding.reportImagePreview
-        val existingImage = MyTeam.getAttachmentFile(requireContext(), currentReport._id, currentReport.imageName)
+        val existingImage = MyTeam.getAttachmentFile(FileUtils.getOlePath(requireContext()), currentReport._id, currentReport.imageName)
         if (existingImage != null && existingImage.exists()) {
             dialogAddReportBinding.reportImagePreview.visibility = View.VISIBLE
             Glide.with(this).load(existingImage).into(dialogAddReportBinding.reportImagePreview)

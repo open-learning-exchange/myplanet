@@ -63,10 +63,6 @@ object TimeUtils {
     private fun csvDateFormatter() =
         formatterFor("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)", ZoneId.systemDefault(), Locale.US)
 
-    private val iso8601Formatter by lazy {
-        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
-    }
-
     private fun formatInstant(instant: Instant, fallback: String, formatter: () -> DateTimeFormatter): String =
         try {
             formatter().format(instant)
@@ -173,18 +169,7 @@ object TimeUtils {
             null
         }
 
-    fun convertToISO8601(date: String): String {
-        return try {
-            val parts = date.split("-")
-            if (parts.size != 3) return date
-            val localDate = LocalDate.of(parts[0].toInt(), 1, 1)
-                .plusMonths(parts[1].toInt() - 1L)
-                .plusDays(parts[2].toInt() - 1L)
-            localDate.atStartOfDay().format(iso8601Formatter)
-        } catch (_: Exception) {
-            date
-        }
-    }
+    fun convertToISO8601(date: String): String = DateTimeUtils.convertToISO8601(date)
 
     fun formatDateToDDMMYYYY(dateString: String?): String {
         return try {

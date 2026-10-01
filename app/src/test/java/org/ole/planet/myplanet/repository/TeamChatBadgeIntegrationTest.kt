@@ -14,9 +14,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.model.News
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
+import org.ole.planet.myplanet.utils.fakeSharedPrefManager
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
@@ -38,8 +38,7 @@ class TeamChatBadgeIntegrationTest {
         teamNotificationDao = database.teamNotificationDao()
 
         val plainGson = Gson()
-        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        val sharedPrefManager = SharedPrefManager(context, Gson())
+        val sharedPrefManager = fakeSharedPrefManager()
         val testDispatcher = kotlinx.coroutines.test.UnconfinedTestDispatcher()
         voicesRepository = VoicesRepositoryImpl(
             TestDispatcherProvider(testDispatcher),

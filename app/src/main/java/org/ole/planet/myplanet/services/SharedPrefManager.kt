@@ -1,27 +1,24 @@
 package org.ole.planet.myplanet.services
 
-import android.content.Context
-import android.content.SharedPreferences
-import androidx.core.content.edit
-import androidx.preference.PreferenceManager
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.User
-import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.CredentialStore
+import org.ole.planet.myplanet.utils.KeyValueStore
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
 class SharedPrefManager @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:AppPreferences private val pref: KeyValueStore,
+    @param:DefaultPreferences private val defaultPref: KeyValueStore,
+    private val credentialStore: CredentialStore,
     private val gson: Gson
 ) {
-    private var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-
-    val rawPreferences: SharedPreferences get() = pref
 
     companion object {
         private val userListType = object : TypeToken<List<User>>() {}.type
@@ -68,6 +65,25 @@ class SharedPrefManager @Inject constructor(
         private const val CONCATENATED_LINKS = "concatenated_links"
         private const val LIBRARY_VIEW_MODE = "libraryViewMode"
         private const val COURSE_VIEW_MODE = "courseViewMode"
+        private const val FIRST_NAME = "firstName"
+        private const val LAST_NAME = "lastName"
+        private const val MIDDLE_NAME = "middleName"
+        private const val IS_USER_ADMIN = "isUserAdmin"
+        private const val LAST_LOGIN = "lastLogin"
+        private const val PASSWORD = "password"
+        private const val NEW_LOGIN_USERNAME = "new_login_username"
+        private const val NEW_LOGIN_PASSWORD = "new_login_password"
+        private const val AI_MODELS = "ai_models"
+        private const val PLANET_TYPE = "planetType"
+        private const val LAST_VERSION_CHECK_TIMESTAMP = "last_version_check_timestamp"
+        private const val CACHED_APK_VERSION = "cachedApkVersion"
+        private const val RESOURCE_LAST_SYNC_TIME = "ResourceLastSyncTime"
+        private const val RESOURCE_SYNC_POSITION = "ResourceSyncPosition"
+        private const val HEAVY_SYNC_SKIP_PREFIX = "heavy_sync_skip_"
+        private const val MEDIA_PROGRESS_PREFIX = "media_progress_"
+        private const val MEDIA_PLAYBACK_SPEED = "media_playback_speed"
+        private const val BETA_AUTO_DOWNLOAD = "beta_auto_download"
+        private const val BETA_FUNCTION = "beta_function"
     }
 
     private data class SavedUsersCache(val raw: String?, val parsed: List<User>)
@@ -144,26 +160,26 @@ class SharedPrefManager @Inject constructor(
     }
 
     fun getNewLoginUsername(): String? {
-        val encryptedUsername = pref.getString("new_login_username", null)
-        return if (encryptedUsername != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(context, encryptedUsername) else null
+        val encryptedUsername = pref.getString(NEW_LOGIN_USERNAME, null)
+        return if (encryptedUsername != null) credentialStore.decryptString(encryptedUsername) else null
     }
     fun setNewLoginUsername(username: String?) = pref.edit {
         if (username != null) {
-            putString("new_login_username", org.ole.planet.myplanet.utils.SecurePrefs.encryptString(context, username))
+            putString(NEW_LOGIN_USERNAME, credentialStore.encryptString(username))
         } else {
-            remove("new_login_username")
+            remove(NEW_LOGIN_USERNAME)
         }
     }
 
     fun getNewLoginPassword(): String? {
-        val encryptedPassword = pref.getString("new_login_password", null)
-        return if (encryptedPassword != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(context, encryptedPassword) else null
+        val encryptedPassword = pref.getString(NEW_LOGIN_PASSWORD, null)
+        return if (encryptedPassword != null) credentialStore.decryptString(encryptedPassword) else null
     }
     fun setNewLoginPassword(password: String?) = pref.edit {
         if (password != null) {
-            putString("new_login_password", org.ole.planet.myplanet.utils.SecurePrefs.encryptString(context, password))
+            putString(NEW_LOGIN_PASSWORD, credentialStore.encryptString(password))
         } else {
-            remove("new_login_password")
+            remove(NEW_LOGIN_PASSWORD)
         }
     }
 
@@ -264,6 +280,31 @@ class SharedPrefManager @Inject constructor(
         UrlUtils.invalidateCaches()
     }
 
+    /**
+     * Points the app at the clone server found for the configured one: the credentials, the
+     * primary server's scheme and host, and the alternative URLs, in one write. Unlike
+     * [saveAlternativeServerConfig] it leaves the server pin alone.
+     */
+    fun saveAlternativeUrlConfig(
+        urlUser: String,
+        urlPwd: String,
+        urlScheme: String?,
+        urlHost: String?,
+        alternativeUrl: String,
+        processedAlternativeUrl: String
+    ) {
+        pref.edit {
+            putString(URL_USER, urlUser)
+            putString(URL_PWD, urlPwd)
+            putString(URL_SCHEME, urlScheme)
+            putString(URL_HOST, urlHost)
+            putString(ALTERNATIVE_URL, alternativeUrl)
+            putString(PROCESSED_ALTERNATIVE_URL, processedAlternativeUrl)
+            putBoolean(IS_ALTERNATIVE_URL, true)
+        }
+        UrlUtils.invalidateCaches()
+    }
+
     fun saveUserInfo(
         userId: String,
         userName: String,
@@ -276,14 +317,14 @@ class SharedPrefManager @Inject constructor(
         pref.edit {
             putString(USER_ID, userId)
             putString(USER_NAME, userName)
-            remove("password")
-            putString("firstName", firstName)
-            putString("lastName", lastName)
-            putString("middleName", middleName)
+            remove(PASSWORD)
+            putString(FIRST_NAME, firstName)
+            putString(LAST_NAME, lastName)
+            putString(MIDDLE_NAME, middleName)
             if (isUserAdmin != null) {
-                putBoolean("isUserAdmin", isUserAdmin)
+                putBoolean(IS_USER_ADMIN, isUserAdmin)
             }
-            putLong("lastLogin", lastLogin)
+            putLong(LAST_LOGIN, lastLogin)
         }
     }
 
@@ -300,6 +341,7 @@ class SharedPrefManager @Inject constructor(
     fun setParentCode(code: String) = pref.edit { putString(PARENT_CODE, code) }
 
     fun getPlanetCode(): String = pref.getString(PLANET_CODE, "") ?: ""
+    fun setPlanetCode(code: String) = pref.edit { putString(PLANET_CODE, code) }
 
     fun getCustomDeviceName(): String = pref.getString(CUSTOM_DEVICE_NAME, "") ?: ""
     fun setCustomDeviceName(name: String) = pref.edit { putString(CUSTOM_DEVICE_NAME, name) }
@@ -345,15 +387,32 @@ class SharedPrefManager @Inject constructor(
 
     fun setNotificationShown(value: Boolean) = pref.edit { putBoolean(KEY_NOTIFICATION_SHOWN, value) }
 
-    fun getBetaAutoDownload(): Boolean {
-        val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        return defaultPreferences.getBoolean("beta_auto_download", false)
+    fun getBetaAutoDownload(): Boolean = defaultPref.getBoolean(BETA_AUTO_DOWNLOAD, false)
+
+    fun setBetaAutoDownload(enabled: Boolean) = defaultPref.edit { putBoolean(BETA_AUTO_DOWNLOAD, enabled) }
+
+    /** The settings screen's beta-features switch, the same flag `Constants.showBetaFeature` reads. */
+    fun isBetaFeatureEnabled(): Boolean = defaultPref.getBoolean(BETA_FUNCTION, false)
+
+    fun setAiModels(json: String) = pref.edit { putString(AI_MODELS, json) }
+
+    fun setPlanetType(planetType: String) = pref.edit { putString(PLANET_TYPE, planetType) }
+
+    fun getLastVersionCheckTimestamp(): Long = pref.getLong(LAST_VERSION_CHECK_TIMESTAMP, 0)
+    fun setLastVersionCheckTimestamp(time: Long) = pref.edit { putLong(LAST_VERSION_CHECK_TIMESTAMP, time) }
+
+    fun getCachedApkVersion(): Int = pref.getInt(CACHED_APK_VERSION, -1)
+    fun setCachedApkVersion(version: Int) = pref.edit { putInt(CACHED_APK_VERSION, version) }
+
+    fun setResourceSyncProgress(lastSyncTime: Long, position: Int) = pref.edit {
+        putLong(RESOURCE_LAST_SYNC_TIME, lastSyncTime)
+        putInt(RESOURCE_SYNC_POSITION, position)
     }
 
-    fun setBetaAutoDownload(enabled: Boolean) {
-        val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        defaultPreferences.edit { putBoolean("beta_auto_download", enabled) }
-    }
+    /** Documents of [table] a checkpointed heavy-table sync has already pulled; 0 when none is pending. */
+    fun getHeavySyncSkip(table: String): Int = pref.getInt("$HEAVY_SYNC_SKIP_PREFIX$table", 0)
+    fun setHeavySyncSkip(table: String, skip: Int) = pref.edit { putInt("$HEAVY_SYNC_SKIP_PREFIX$table", skip) }
+    fun clearHeavySyncSkip(table: String) = pref.edit { remove("$HEAVY_SYNC_SKIP_PREFIX$table") }
 
     fun getVersionDetail(): String? = pref.getString(VERSION_DETAIL, null)
     fun setVersionDetail(json: String) = pref.edit { putString(VERSION_DETAIL, json) }
@@ -372,17 +431,17 @@ class SharedPrefManager @Inject constructor(
     fun getRawLong(key: String, default: Long = 0L): Long = pref.getLong(key, default)
     fun setRawLong(key: String, value: Long) = pref.edit { putLong(key, value) }
 
-    fun getMediaPlaybackPosition(resourceKey: String): Long = pref.getLong("media_progress_$resourceKey", 0L)
+    fun getMediaPlaybackPosition(resourceKey: String): Long = pref.getLong("$MEDIA_PROGRESS_PREFIX$resourceKey", 0L)
     fun setMediaPlaybackPosition(resourceKey: String, positionMs: Long) {
         if (positionMs <= 0L) {
-            removeKey("media_progress_$resourceKey")
+            removeKey("$MEDIA_PROGRESS_PREFIX$resourceKey")
         } else {
-            pref.edit { putLong("media_progress_$resourceKey", positionMs) }
+            pref.edit { putLong("$MEDIA_PROGRESS_PREFIX$resourceKey", positionMs) }
         }
     }
 
-    fun getMediaPlaybackSpeed(): Float = pref.getFloat("media_playback_speed", 1.0f)
-    fun setMediaPlaybackSpeed(speed: Float) = pref.edit { putFloat("media_playback_speed", speed) }
+    fun getMediaPlaybackSpeed(): Float = pref.getFloat(MEDIA_PLAYBACK_SPEED, 1.0f)
+    fun setMediaPlaybackSpeed(speed: Float) = pref.edit { putFloat(MEDIA_PLAYBACK_SPEED, speed) }
 
     fun removeKey(key: String) = pref.edit { remove(key) }
     fun clearPreferences() {
@@ -395,8 +454,7 @@ class SharedPrefManager @Inject constructor(
             clear()
             tempStorage.forEach { (k, v) -> putBoolean(k, v) }
         }
-        val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-        defaultPreferences.edit { clear() }
+        defaultPref.edit { clear() }
         UrlUtils.invalidateCaches()
     }
 

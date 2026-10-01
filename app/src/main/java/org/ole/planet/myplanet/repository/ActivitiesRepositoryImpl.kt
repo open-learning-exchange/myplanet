@@ -1,10 +1,7 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import android.util.Log
 import com.google.gson.JsonObject
 import dagger.Lazy
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
@@ -34,6 +31,9 @@ import org.ole.planet.myplanet.model.UserChallengeActions
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.AppInfo
+import org.ole.planet.myplanet.utils.AppLog
+import org.ole.planet.myplanet.utils.AppUsageStats
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
@@ -46,7 +46,6 @@ import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
 class ActivitiesRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val dispatcherProvider: DispatcherProvider,
     private val userRepository: Lazy<UserRepository>,
     private val apiInterface: ApiInterface,
@@ -58,7 +57,9 @@ class ActivitiesRepositoryImpl @Inject constructor(
     private val offlineActivityDao: OfflineActivityDao,
     private val removedLogDao: RemovedLogDao,
     private val searchActivityDao: SearchActivityDao,
-    private val deviceNameProvider: DeviceNameProvider
+    private val deviceNameProvider: DeviceNameProvider,
+    private val appInfo: AppInfo,
+    private val appUsageStats: AppUsageStats
 ) : ActivitiesRepository {
     override suspend fun getOfflineVisitCount(userId: String): Int {
         return offlineActivityDao.countByUserIdAndType(userId, UserSessionManager.KEY_LOGIN)
@@ -367,7 +368,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
                             }
                             activityData.id to `object`
                         } catch (e: IOException) {
-                            Log.e("ActivitiesRepository", "Exception in UploadManager", e)
+                            AppLog.e("ActivitiesRepository", "Exception in UploadManager", e)
                             null
                         }
                     }
@@ -456,12 +457,12 @@ class ActivitiesRepositoryImpl @Inject constructor(
             UrlUtils.header,
             "application/json",
             "${UrlUtils.getUrl()}/myplanet_activities",
-            MyPlanet.getNormalMyPlanetActivities(context, sharedPrefManager, userModel).toKotlinx().jsonObject
+            MyPlanet.getNormalMyPlanetActivities(appInfo, deviceNameProvider, sharedPrefManager, userModel).toKotlinx().jsonObject
         )
 
         val response = apiInterface.getJsonObject(
             UrlUtils.header,
-            "${UrlUtils.getUrl()}/myplanet_activities/${org.ole.planet.myplanet.utils.VersionUtils.getAndroidId(context)}@${NetworkUtils.getUniqueIdentifier()}"
+            "${UrlUtils.getUrl()}/myplanet_activities/${appInfo.androidId()}@${NetworkUtils.getUniqueIdentifier()}"
         )
 
         var `object` = response.body()?.toGson()
@@ -469,13 +470,13 @@ class ActivitiesRepositoryImpl @Inject constructor(
         if (`object` != null) {
             val usages = `object`.getAsJsonArray("usages")
             val tabletUsages = withContext(dispatcherProvider.io) {
-                MyPlanet.getTabletUsages(context, sharedPrefManager)
+                MyPlanet.getTabletUsages(appInfo, deviceNameProvider, appUsageStats, sharedPrefManager)
             }
             usages.addAll(tabletUsages)
             `object`.add("usages", usages)
         } else {
             `object` = withContext(dispatcherProvider.io) {
-                MyPlanet.getMyPlanetActivities(context, sharedPrefManager, userModel)
+                MyPlanet.getMyPlanetActivities(appInfo, deviceNameProvider, appUsageStats, sharedPrefManager, userModel)
             }
         }
 

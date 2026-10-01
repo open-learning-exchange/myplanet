@@ -7,7 +7,6 @@ import androidx.room.Transaction
 import androidx.room.Upsert
 import androidx.sqlite.db.SimpleSQLiteQuery
 import androidx.sqlite.db.SupportSQLiteQuery
-import java.util.Date
 import org.ole.planet.myplanet.model.AppNotification
 
 @Dao
@@ -56,16 +55,16 @@ interface NotificationDao {
     suspend fun getUnreadIds(userId: String): List<String>
 
     @Query("UPDATE notifications SET isRead = 1, createdAt = :createdAt, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE id IN (:ids)")
-    suspend fun markAsReadInternal(ids: List<String>, createdAt: Date): Int
+    suspend fun markAsReadInternal(ids: List<String>, createdAt: Long): Int
 
     @Transaction
-    suspend fun markAsRead(ids: List<String>, createdAt: Date): Int {
+    suspend fun markAsRead(ids: List<String>, createdAt: Long): Int {
         if (ids.isEmpty()) return 0
         return ids.chunked(900).sumOf { chunk -> markAsReadInternal(chunk, createdAt) }
     }
 
     @Query("UPDATE notifications SET isRead = 1, createdAt = :createdAt, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE userId = :userId AND isRead = 0")
-    suspend fun markAllUnreadAsRead(userId: String, createdAt: Date): Int
+    suspend fun markAllUnreadAsRead(userId: String, createdAt: Long): Int
 
     @Query("SELECT * FROM notifications WHERE needsSync = 1 AND rev IS NOT NULL")
     suspend fun getPendingSyncNotifications(): List<AppNotification>

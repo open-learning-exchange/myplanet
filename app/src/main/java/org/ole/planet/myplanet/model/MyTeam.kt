@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.content.Context
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
@@ -12,7 +11,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
-import org.ole.planet.myplanet.utils.FileUtils.getOlePath
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
@@ -70,10 +68,11 @@ open class MyTeam(
             return attachments.keySet().firstOrNull()
         }
 
-        fun getAttachmentFile(context: Context, teamId: String?, imageName: String?): File? {
+        /** [olePath] is the `<external files>/ole/` directory, trailing slash included (see AppStorage.olePath). */
+        fun getAttachmentFile(olePath: String, teamId: String?, imageName: String?): File? {
             if (teamId.isNullOrBlank() || imageName.isNullOrBlank()) return null
             return File(
-                "${getOlePath(context)}team_attachments/$teamId/$imageName"
+                "${olePath}team_attachments/$teamId/$imageName"
             )
         }
 

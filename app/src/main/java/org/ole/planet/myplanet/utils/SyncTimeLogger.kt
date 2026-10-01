@@ -111,15 +111,11 @@ class SyncTimeLogger @Inject constructor(
 
             if (!primaryAvailable && alternativeUrl != null && serverReachabilityProvider.isServerReachable(alternativeUrl)) {
                 val uri = updateUrl.toUri()
-                val prefs = sharedPrefManager.rawPreferences
-                val editor = prefs.edit()
-
                 serverUrlMapper.updateUrlPreferences(
-                    editor,
+                    sharedPrefManager,
                     uri,
                     alternativeUrl,
-                    mapping.primaryUrl,
-                    prefs
+                    mapping.primaryUrl
                 )
             }
             try {

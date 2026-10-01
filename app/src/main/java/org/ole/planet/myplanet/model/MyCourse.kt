@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.content.Context
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Ignore
@@ -12,7 +11,6 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.utils.FileUtils.getOlePath
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
@@ -81,10 +79,11 @@ open class MyCourse(
     companion object {
         private val concatenatedLinks = HashSet<String>()
 
-        fun getCoverImageFile(context: Context, courseId: String?, fileName: String?): java.io.File? {
+        /** [olePath] is the `<external files>/ole/` directory, trailing slash included (see AppStorage.olePath). */
+        fun getCoverImageFile(olePath: String, courseId: String?, fileName: String?): java.io.File? {
             if (courseId.isNullOrBlank() || fileName.isNullOrBlank()) return null
             return java.io.File(
-                "${getOlePath(context)}course_attachments/$courseId/$fileName"
+                "${olePath}course_attachments/$courseId/$fileName"
             )
         }
 

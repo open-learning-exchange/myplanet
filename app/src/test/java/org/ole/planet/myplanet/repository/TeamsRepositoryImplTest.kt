@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.SharedPreferences
 import androidx.room.withTransaction
 import com.google.gson.Gson
 import io.mockk.coEvery
@@ -41,7 +40,11 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.AndroidDateFormatter
+import org.ole.planet.myplanet.utils.AppStorage
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.DownloadLauncher
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -52,7 +55,6 @@ class TeamsRepositoryImplTest {
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val uploadManager: UploadManager = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
-    private val preferences: SharedPreferences = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = mockk()
@@ -65,6 +67,9 @@ class TeamsRepositoryImplTest {
     private val courseStepDao: CourseStepDao = mockk(relaxed = true)
     private val appDatabase: AppDatabase = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
+    private val deviceNameProvider: DeviceNameProvider = mockk(relaxed = true)
+    private val appStorage: AppStorage = mockk(relaxed = true)
+    private val downloadLauncher: DownloadLauncher = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -84,12 +89,10 @@ class TeamsRepositoryImplTest {
         every { sharedPrefManager.getServerUrl() } returns "http://test.com"
 
         teamsRepository = TeamsRepositoryImpl(
-            mockk<android.content.Context>(relaxed = true),
             activitiesRepository,
             userSessionManager,
             uploadManager,
             gson,
-            preferences,
             sharedPrefManager,
             serverUrlMapper,
             dispatcherProvider,
@@ -102,6 +105,10 @@ class TeamsRepositoryImplTest {
             courseDao,
             courseStepDao,
             appDatabase,
+            deviceNameProvider,
+            appStorage,
+            downloadLauncher,
+            AndroidDateFormatter(),
         )
     }
 
@@ -327,8 +334,8 @@ class TeamsRepositoryImplTest {
 
         io.mockk.mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "test-android-id"
-        every { NetworkUtils.getDeviceName() } returns "test-device-name"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "test-custom-device-name"
+        every { deviceNameProvider.getDeviceName() } returns "test-device-name"
+        every { deviceNameProvider.getCustomDeviceName() } returns "test-custom-device-name"
 
         io.mockk.mockkStatic(android.text.TextUtils::class)
         every { android.text.TextUtils.isEmpty(any()) } answers {
@@ -376,8 +383,8 @@ class TeamsRepositoryImplTest {
 
         io.mockk.mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "test-android-id"
-        every { NetworkUtils.getDeviceName() } returns "test-device-name"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "test-custom-device-name"
+        every { deviceNameProvider.getDeviceName() } returns "test-device-name"
+        every { deviceNameProvider.getCustomDeviceName() } returns "test-custom-device-name"
 
         io.mockk.mockkStatic(android.text.TextUtils::class)
         every { android.text.TextUtils.isEmpty(any()) } answers {

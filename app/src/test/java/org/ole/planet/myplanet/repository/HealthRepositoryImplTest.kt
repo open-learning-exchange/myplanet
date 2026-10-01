@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.utils.AndroidDateFormatter
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
@@ -52,7 +53,8 @@ class HealthRepositoryImplTest {
             dispatcherProvider,
             healthExaminationDao,
             lazyUserRepository,
-            Gson()
+            Gson(),
+            AndroidDateFormatter()
         )
     }
 
