@@ -93,6 +93,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             health = state.health
             examination = state.examination
             conditionsMap = state.conditionsMap
+            seedSavedConditions()
 
             initExamination()
             validateFields()
@@ -188,6 +189,11 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             }
             binding.containerOtherDiagnosis.addView(chip)
         }
+    }
+    
+    private fun seedSavedConditions() {
+        val standardConditions = resources.getStringArray(R.array.diagnosis_list).toHashSet()
+        mapConditions?.putAll(conditionsMap.filterKeys { it in standardConditions })
     }
 
     private fun preloadCustomDiagnosis() {

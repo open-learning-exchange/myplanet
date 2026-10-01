@@ -40,6 +40,7 @@ data class NotificationConfig(
 object NotificationUtils {
     private const val TAG = "NotificationUtils"
     const val CHANNEL_GENERAL = "general_notifications"
+    const val RECORDING_NOTIFICATION_ID = 111
     const val CHANNEL_SURVEYS = "survey_notifications"
     const val CHANNEL_TASKS = "task_notifications"
     const val CHANNEL_SYSTEM = "system_notifications"
@@ -70,7 +71,7 @@ object NotificationUtils {
         setChannel(manager)
         val notification = a.setContentTitle(contentTitle).setContentText(contentText).setSmallIcon(smallIcon)
             .setProgress(0, 0, true).setAutoCancel(true).build()
-        manager.notify(111, notification)
+        manager.notify(RECORDING_NOTIFICATION_ID, notification)
     }
 
     fun cancel(context: Context, id: Int) {

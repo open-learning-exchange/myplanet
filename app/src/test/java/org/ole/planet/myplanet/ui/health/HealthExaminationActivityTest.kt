@@ -94,4 +94,22 @@ class HealthExaminationActivityTest {
         assertEquals("lab", text(R.id.et_labtest))
         assertEquals("r", text(R.id.et_referrals))
     }
+
+    @Test
+    fun seedSavedConditions_keepsTickedStandardConditionsAndLeavesCustomToTheChips() {
+        val activity = Robolectric.buildActivity(HealthExaminationActivity::class.java).create().get()
+        val standard = activity.resources.getStringArray(R.array.diagnosis_list)
+        val cls = HealthExaminationActivity::class.java
+        cls.getDeclaredField("conditionsMap").apply { isAccessible = true }
+            .set(activity, mapOf(standard[0] to true, standard[1] to false, "Custom Condition" to true))
+
+        cls.getDeclaredMethod("seedSavedConditions").apply { isAccessible = true }.invoke(activity)
+
+        @Suppress("UNCHECKED_CAST")
+        val mapConditions = cls.getDeclaredField("mapConditions").apply { isAccessible = true }
+            .get(activity) as Map<String?, Boolean>
+        assertEquals(true, mapConditions[standard[0]])
+        assertEquals(false, mapConditions[standard[1]])
+        assertFalse(mapConditions.containsKey("Custom Condition"))
+    }
 }
