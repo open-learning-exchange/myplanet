@@ -15,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ConcatAdapter
 import kotlinx.coroutines.launch
@@ -314,7 +315,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                     val appContext = requireContext().applicationContext
 
                     isSaving = true
-                    viewLifecycleOwner.lifecycleScope.launch {
+                    ProcessLifecycleOwner.get().lifecycleScope.launch {
                         try {
                             val (imageName, imageData) = readEnterpriseAttachment(appContext, imageUri, timeProvider, dispatcherProvider)
                             viewModel.createTransaction(

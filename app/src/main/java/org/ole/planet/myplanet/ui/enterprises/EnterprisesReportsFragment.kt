@@ -15,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
@@ -199,7 +200,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                 val imageUri = selectedImageUri
                 val appContext = requireContext().applicationContext
 
-                viewLifecycleOwner.lifecycleScope.launch {
+                ProcessLifecycleOwner.get().lifecycleScope.launch {
                     try {
                         val (imageName, imageData) = readEnterpriseAttachment(appContext, imageUri, timeProvider, dispatcherProvider)
                         viewModel.addReport(
@@ -300,7 +301,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                 val imageUri = selectedImageUri
                 val appContext = requireContext().applicationContext
 
-                viewLifecycleOwner.lifecycleScope.launch {
+                ProcessLifecycleOwner.get().lifecycleScope.launch {
                     try {
                         val (imageName, imageData) = readEnterpriseAttachment(appContext, imageUri, timeProvider, dispatcherProvider)
                         viewModel.updateReport(
