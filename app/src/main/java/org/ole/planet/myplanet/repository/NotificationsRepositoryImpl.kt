@@ -322,9 +322,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         if (userIds.isNotEmpty()) {
             val users = userRepository.get().getUsersByIds(userIds.toList())
             for (user in users) {
-                user.id?.let { id ->
-                    userMap[id] = user.name ?: "Unknown User"
-                }
+                userMap[user.id] = user.name ?: "Unknown User"
             }
         }
 
