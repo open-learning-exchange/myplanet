@@ -32,7 +32,6 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 class TeamsRepositoryBenchmarkTest {
     private lateinit var teamsRepository: TeamsRepositoryImpl
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
-    private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val uploadManager: UploadManager = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val preferences: SharedPreferences = mockk(relaxed = true)
@@ -61,7 +60,6 @@ class TeamsRepositoryBenchmarkTest {
 
         teamsRepository = TeamsRepositoryImpl(
             mockk(relaxed = true),
-            activitiesRepository,
             userSessionManager,
             uploadManager,
             gson,
