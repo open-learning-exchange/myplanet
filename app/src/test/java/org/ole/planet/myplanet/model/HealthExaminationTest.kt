@@ -43,6 +43,16 @@ class HealthExaminationTest {
     }
 
     @Test
+    fun formatConditions_mapsKeysThroughLabelFor() {
+        val conditions = """{ "Malaria": true, "Custom": true, "Asthma": false }"""
+
+        val result = HealthExamination.formatConditions(conditions) { if (it == "Malaria") "Paludisme" else it }
+            .split(", ").toSet()
+
+        assertEquals(setOf("Paludisme", "Custom"), result)
+    }
+
+    @Test
     fun formatConditions_onlyTrueFlagsAreJoined() {
         val conditions = """
             {
