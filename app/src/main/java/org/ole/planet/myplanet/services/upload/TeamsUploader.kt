@@ -10,6 +10,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.getAttachmentFile
 import org.ole.planet.myplanet.repository.TeamUploadData
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadRepository

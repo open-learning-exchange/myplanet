@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.repository
 
-import androidx.sqlite.db.SimpleSQLiteQuery
+import androidx.room.RoomRawQuery
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
@@ -105,7 +105,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val normalizedQuery = Utilities.normalizeText(query)
 
         val queryBuilder = StringBuilder("SELECT * FROM my_library WHERE isPrivate = 0")
-        val bindArgs = mutableListOf<Any>()
+        val bindArgs = mutableListOf<String>()
 
         if (userId != null) {
             if (isMyCourseLib) {
@@ -126,7 +126,11 @@ class ResourcesRepositoryImpl @Inject constructor(
             bindArgs.add("%${escapedToken}%")
         }
 
-        val matching = myLibraryDao.filterByTitleNormal(SimpleSQLiteQuery(queryBuilder.toString(), bindArgs.toTypedArray()))
+        val matching = myLibraryDao.filterByTitleNormal(
+            RoomRawQuery(queryBuilder.toString()) { stmt ->
+                bindArgs.forEachIndexed { i, arg -> stmt.bindText(i + 1, arg) }
+            }
+        )
 
         val containsQuery = mutableListOf<MyLibrary>()
         return buildList(matching.size) {

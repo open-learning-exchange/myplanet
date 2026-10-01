@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.util.Log
+import androidx.room.RoomRawQuery
 import com.google.gson.JsonParser
 import dagger.Lazy
 import io.mockk.coEvery
@@ -33,6 +34,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.data.room.boundArgs
 import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
@@ -396,7 +398,7 @@ class ResourcesRepositoryImplTest {
         val mathBook = MyLibrary().apply { title = "Math Book"; titleNormal = "math book" }
         val scienceBook = MyLibrary().apply { title = "Science Book"; titleNormal = "science book" }
 
-        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        val querySlot = slot<RoomRawQuery>()
         coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns listOf(mathBook)
 
         val result = repository.search("math", false, null)
@@ -407,16 +409,7 @@ class ResourcesRepositoryImplTest {
         val capturedQuery = querySlot.captured
         assertTrue(capturedQuery.sql.contains("titleNormal LIKE ? ESCAPE '\\'"))
 
-        val bindArgs = mutableMapOf<Int, Any?>()
-        capturedQuery.bindTo(object : androidx.sqlite.db.SupportSQLiteProgram {
-            override fun bindNull(index: Int) { bindArgs[index] = null }
-            override fun bindLong(index: Int, value: Long) { bindArgs[index] = value }
-            override fun bindDouble(index: Int, value: Double) { bindArgs[index] = value }
-            override fun bindString(index: Int, value: String) { bindArgs[index] = value }
-            override fun bindBlob(index: Int, value: ByteArray) { bindArgs[index] = value }
-            override fun clearBindings() {}
-            override fun close() {}
-        })
+        val bindArgs = capturedQuery.boundArgs()
 
         assertEquals("%math%", bindArgs[1])
     }
@@ -448,7 +441,7 @@ class ResourcesRepositoryImplTest {
         val containsLib = MyLibrary().apply { title = "Green Ápple"; titleNormal = "green apple" }
         val notMatchLib = MyLibrary().apply { title = "Banana"; titleNormal = "banana" }
 
-        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        val querySlot = slot<RoomRawQuery>()
         coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns listOf(startsWithLib, containsLib)
 
         val result = repository.search("Apple", false, null)
@@ -466,7 +459,7 @@ class ResourcesRepositoryImplTest {
         val matchLib = MyLibrary().apply { title = "The Apple Tree"; titleNormal = "the apple tree" }
         val notMatchLib = MyLibrary().apply { title = "The Orange Tree"; titleNormal = "the orange tree" }
 
-        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        val querySlot = slot<RoomRawQuery>()
         coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns listOf(matchLib)
 
         val result = repository.search("Ápple Tree", false, null)
@@ -480,21 +473,12 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `search properly escapes wildcards in query`() = runTest {
-        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        val querySlot = slot<RoomRawQuery>()
         coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns emptyList()
 
         repository.search("100% _real_ \\deal", false, null)
 
-        val bindArgs = mutableMapOf<Int, Any?>()
-        querySlot.captured.bindTo(object : androidx.sqlite.db.SupportSQLiteProgram {
-            override fun bindNull(index: Int) { bindArgs[index] = null }
-            override fun bindLong(index: Int, value: Long) { bindArgs[index] = value }
-            override fun bindDouble(index: Int, value: Double) { bindArgs[index] = value }
-            override fun bindString(index: Int, value: String) { bindArgs[index] = value }
-            override fun bindBlob(index: Int, value: ByteArray) { bindArgs[index] = value }
-            override fun clearBindings() {}
-            override fun close() {}
-        })
+        val bindArgs = querySlot.captured.boundArgs()
 
         assertEquals("%100\\%%", bindArgs[1])
         assertEquals("%\\_real\\_%", bindArgs[2])
@@ -508,7 +492,7 @@ class ResourcesRepositoryImplTest {
         val startsWith2 = MyLibrary().apply { id = "sw2"; title = "Math Geometry"; titleNormal = "math geometry" }
         val contains2 = MyLibrary().apply { id = "c2"; title = "Discrete Math"; titleNormal = "discrete math" }
 
-        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        val querySlot = slot<RoomRawQuery>()
         coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns listOf(startsWith1, contains1, startsWith2, contains2)
 
         val result = repository.search("Math", false, null)
@@ -521,7 +505,7 @@ class ResourcesRepositoryImplTest {
     fun `search with query containing percent and underscore escapes wildcards and prevents matching arbitrary characters`() = runTest {
         val exactMatch = MyLibrary().apply { id = "1"; title = "100%_pure"; titleNormal = "100%_pure" }
 
-        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        val querySlot = slot<RoomRawQuery>()
         coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns listOf(exactMatch)
 
         val result = repository.search("100%_pure", false, null)
@@ -529,16 +513,7 @@ class ResourcesRepositoryImplTest {
         assertEquals(1, result.size)
         assertEquals("100%_pure", result[0].title)
 
-        val bindArgs = mutableMapOf<Int, Any?>()
-        querySlot.captured.bindTo(object : androidx.sqlite.db.SupportSQLiteProgram {
-            override fun bindNull(index: Int) { bindArgs[index] = null }
-            override fun bindLong(index: Int, value: Long) { bindArgs[index] = value }
-            override fun bindDouble(index: Int, value: Double) { bindArgs[index] = value }
-            override fun bindString(index: Int, value: String) { bindArgs[index] = value }
-            override fun bindBlob(index: Int, value: ByteArray) { bindArgs[index] = value }
-            override fun clearBindings() {}
-            override fun close() {}
-        })
+        val bindArgs = querySlot.captured.boundArgs()
 
         assertEquals("%100\\%\\_pure%", bindArgs[1])
     }

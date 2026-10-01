@@ -3,10 +3,9 @@ package org.ole.planet.myplanet.data.room.dao
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.RawQuery
+import androidx.room.RoomRawQuery
 import androidx.room.Transaction
 import androidx.room.Upsert
-import androidx.sqlite.db.SimpleSQLiteQuery
-import androidx.sqlite.db.SupportSQLiteQuery
 import org.ole.planet.myplanet.model.AppNotification
 
 @Dao
@@ -70,7 +69,7 @@ interface NotificationDao {
     suspend fun getPendingSyncNotifications(): List<AppNotification>
 
     @RawQuery
-    suspend fun markSyncedNonNullRevsRaw(query: SupportSQLiteQuery): Int
+    suspend fun markSyncedNonNullRevsRaw(query: RoomRawQuery): Int
 
     @Query("UPDATE notifications SET needsSync = 0 WHERE id IN (:ids)")
     suspend fun markSyncedNullRevs(ids: List<String>): Int
@@ -98,18 +97,22 @@ interface NotificationDao {
         if (nonNullRevs.isNotEmpty()) {
             nonNullRevs.chunked(250).forEach { chunk ->
                 val whenClauses = StringBuilder()
-                val bindArgs = ArrayList<Any>(chunk.size * 3)
-                for ((id, rev) in chunk) {
+                repeat(chunk.size) {
                     whenClauses.append(" WHEN ? THEN ?")
-                    bindArgs.add(id)
-                    bindArgs.add(rev)
-                }
-                for ((id, _) in chunk) {
-                    bindArgs.add(id)
                 }
                 val inPlaceholders = chunk.joinToString(",") { "?" }
                 val sql = "UPDATE notifications SET needsSync = 0, rev = CASE id$whenClauses END WHERE id IN ($inPlaceholders)"
-                markSyncedNonNullRevsRaw(SimpleSQLiteQuery(sql, bindArgs.toTypedArray()))
+                val query = RoomRawQuery(sql) { stmt ->
+                    var index = 1
+                    for ((id, rev) in chunk) {
+                        stmt.bindText(index++, id)
+                        stmt.bindText(index++, rev)
+                    }
+                    for ((id, _) in chunk) {
+                        stmt.bindText(index++, id)
+                    }
+                }
+                markSyncedNonNullRevsRaw(query)
             }
         }
     }

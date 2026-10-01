@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.getAttachmentFile
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager

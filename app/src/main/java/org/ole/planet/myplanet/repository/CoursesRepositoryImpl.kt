@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import androidx.room.RoomRawQuery
 import androidx.room.withTransaction
-import androidx.sqlite.db.SimpleSQLiteQuery
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Base64
@@ -276,7 +276,7 @@ class CoursesRepositoryImpl @Inject constructor(
         val normalizedQuery = Utilities.normalizeText(query)
 
         val queryBuilder = StringBuilder("SELECT * FROM courses WHERE 1 = 1")
-        val bindArgs = mutableListOf<Any>()
+        val bindArgs = mutableListOf<String>()
         normalizedQueryParts.forEach { token ->
             val escapedToken = token
                 .replace("\\", "\\\\")
@@ -286,7 +286,11 @@ class CoursesRepositoryImpl @Inject constructor(
             bindArgs.add("%${escapedToken}%")
         }
 
-        val matching = courseDao.filterByTitleNormal(SimpleSQLiteQuery(queryBuilder.toString(), bindArgs.toTypedArray()))
+        val matching = courseDao.filterByTitleNormal(
+            RoomRawQuery(queryBuilder.toString()) { stmt ->
+                bindArgs.forEachIndexed { i, arg -> stmt.bindText(i + 1, arg) }
+            }
+        )
 
         val startsWithQuery = mutableListOf<MyCourse>()
         val containsQuery = mutableListOf<MyCourse>()

@@ -3,8 +3,8 @@ package org.ole.planet.myplanet.data.room.dao
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.RawQuery
+import androidx.room.RoomRawQuery
 import androidx.room.Upsert
-import androidx.sqlite.db.SupportSQLiteQuery
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.MyCourse
 
@@ -31,7 +31,7 @@ interface CourseDao {
     fun observeForUserPattern(userPattern: String): Flow<List<MyCourse>>
 
     @RawQuery
-    suspend fun filterByTitleNormal(query: SupportSQLiteQuery): List<MyCourse>
+    suspend fun filterByTitleNormal(query: RoomRawQuery): List<MyCourse>
 
     @Upsert suspend fun upsertAll(items: List<MyCourse>)
     @Upsert fun upsertAllBlocking(items: List<MyCourse>)

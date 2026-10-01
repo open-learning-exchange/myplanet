@@ -6,7 +6,6 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import java.io.File
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
@@ -66,14 +65,6 @@ open class MyTeam(
         fun getFirstAttachmentName(doc: JsonObject): String? {
             val attachments = doc.getAsJsonObject("_attachments") ?: return null
             return attachments.keySet().firstOrNull()
-        }
-
-        /** [olePath] is the `<external files>/ole/` directory, trailing slash included (see AppStorage.olePath). */
-        fun getAttachmentFile(olePath: String, teamId: String?, imageName: String?): File? {
-            if (teamId.isNullOrBlank() || imageName.isNullOrBlank()) return null
-            return File(
-                "${olePath}team_attachments/$teamId/$imageName"
-            )
         }
 
         fun populateTeamFields(doc: JsonObject, team: MyTeam, includeCourses: Boolean = false) {

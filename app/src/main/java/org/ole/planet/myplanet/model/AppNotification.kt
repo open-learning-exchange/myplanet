@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.model
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import java.util.Date
 import java.util.UUID
 
 @Entity(tableName = "notifications", indices = [Index("userId"), Index("type")])
@@ -13,7 +12,7 @@ class AppNotification {
     var userId: String = ""
     var message: String = ""
     var isRead: Boolean = false
-    var createdAt: Date = Date()
+    var createdAt: Long = System.currentTimeMillis()
     var type: String = ""
     var subType: String? = null
     var relatedId: String? = null

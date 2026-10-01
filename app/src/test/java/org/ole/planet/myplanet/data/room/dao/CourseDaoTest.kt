@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.data.room.dao
 
 import androidx.room.Room
-import androidx.sqlite.db.SimpleSQLiteQuery
+import androidx.room.RoomRawQuery
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.util.UUID
@@ -170,10 +170,12 @@ class CourseDaoTest {
 
         courseDao.upsertAll(listOf(basicMath, basicScience, mathOnly))
 
-        val query = SimpleSQLiteQuery(
-            "SELECT * FROM courses WHERE 1 = 1 AND courseTitleNormal LIKE ? ESCAPE '\\' AND courseTitleNormal LIKE ? ESCAPE '\\'",
-            arrayOf("%basic%", "%math%")
-        )
+        val query = RoomRawQuery(
+            "SELECT * FROM courses WHERE 1 = 1 AND courseTitleNormal LIKE ? ESCAPE '\\' AND courseTitleNormal LIKE ? ESCAPE '\\'"
+        ) { stmt ->
+            stmt.bindText(1, "%basic%")
+            stmt.bindText(2, "%math%")
+        }
         val result = courseDao.filterByTitleNormal(query)
 
         assertEquals(1, result.size)

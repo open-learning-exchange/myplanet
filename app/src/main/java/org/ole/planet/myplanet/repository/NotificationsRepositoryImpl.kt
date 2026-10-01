@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
-import java.util.Date
 import java.util.LinkedHashSet
 import java.util.UUID
 import javax.inject.Inject
@@ -100,7 +99,7 @@ class NotificationsRepositoryImpl @Inject constructor(
                 this.relatedId = relatedId
                 if (valueChanged) {
                     this.isRead = false
-                    this.createdAt = Date(timeProvider.now())
+                    this.createdAt = timeProvider.now()
                 }
             } ?: AppNotification().apply {
                 this.id = notificationId
@@ -108,7 +107,7 @@ class NotificationsRepositoryImpl @Inject constructor(
                 this.type = type
                 this.message = formattedMessage
                 this.relatedId = relatedId
-                this.createdAt = Date(timeProvider.now())
+                this.createdAt = timeProvider.now()
             }
             notificationDao.upsert(notification)
         } else {
@@ -144,7 +143,7 @@ class NotificationsRepositoryImpl @Inject constructor(
                 userId = it.userId,
                 message = it.message,
                 isRead = it.isRead,
-                createdAt = it.createdAt.time,
+                createdAt = it.createdAt,
                 type = it.type,
                 relatedId = it.relatedId,
                 title = it.title,
@@ -453,7 +452,7 @@ class NotificationsRepositoryImpl @Inject constructor(
             priority = doc.get("priority")?.asInt ?: 0
             rev = doc.get("_rev")?.asString
             isRead = doc.get("status")?.asString != "unread"
-            createdAt = doc.get("time")?.let { Date(it.asLong) } ?: Date(timeProvider.now())
+            createdAt = doc.get("time")?.asLong ?: timeProvider.now()
             isFromServer = true
         }
     }

@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.databinding.FragmentReportsBinding
 import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.getAttachmentFile
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils

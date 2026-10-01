@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.Transaction
+import org.ole.planet.myplanet.model.getAttachmentFile
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileExistenceCache
 import org.ole.planet.myplanet.utils.FileUtils

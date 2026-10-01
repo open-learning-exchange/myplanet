@@ -1,13 +1,10 @@
 package org.ole.planet.myplanet.model
 
-import androidx.core.net.toUri
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import java.io.File
-import java.io.InputStream
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -112,31 +109,6 @@ open class UserEntity(
                 })
             }
         }.toGson()
-    }
-
-    fun encodeImageToBase64(imagePath: String?): String? {
-        if (imagePath.isNullOrEmpty()) return null
-        if (imagePath.startsWith("http://", ignoreCase = true) || imagePath.startsWith("https://", ignoreCase = true)) {
-            return null
-        }
-        return try {
-            val inputStream: InputStream? = if (imagePath.startsWith("content://")) {
-                val uri = imagePath.toUri()
-                context.contentResolver.openInputStream(uri)
-            } else {
-                val file = File(imagePath)
-                if (!file.isFile) return null
-                file.inputStream()
-            }
-
-            inputStream?.use {
-                val bytes = it.readBytes()
-                java.util.Base64.getEncoder().encodeToString(bytes)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
     }
 
     private fun getRoles(): JsonArray = buildJsonArray {

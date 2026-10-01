@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.data.room
 
 import androidx.room.TypeConverter
-import java.util.Date
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -9,16 +8,6 @@ import org.ole.planet.myplanet.model.Attachment
 import org.ole.planet.myplanet.model.Conversation
 
 class Converters {
-    @TypeConverter
-    fun fromDate(value: Date?): Long? {
-        return value?.time
-    }
-
-    @TypeConverter
-    fun toDate(value: Long?): Date? {
-        return value?.let(::Date)
-    }
-
     @TypeConverter
     fun fromStringList(value: List<String>?): String? {
         return value?.let { json.encodeToString(it) }

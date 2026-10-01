@@ -28,6 +28,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.getAttachmentFile
 import org.ole.planet.myplanet.repository.TeamUploadData
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadRepository
@@ -174,7 +175,7 @@ class TeamsUploaderTest {
         }
         coEvery { uploadRepository.postUploadArray(any(), any()) } returns NetworkResult.Success(bulkResponse)
 
-        mockkStatic("org.ole.planet.myplanet.services.upload.TeamAttachmentFilesKt")
+        mockkStatic("org.ole.planet.myplanet.model.MyTeamFilesKt")
         val mockFile = mockk<File>()
         every { MyTeam.getAttachmentFile(context, "team1", "image.png") } returns mockFile
         every { mockFile.exists() } returns true
@@ -188,7 +189,7 @@ class TeamsUploaderTest {
         } catch (e: Exception) {
             caught = e
         } finally {
-            unmockkStatic("org.ole.planet.myplanet.services.upload.TeamAttachmentFilesKt")
+            unmockkStatic("org.ole.planet.myplanet.model.MyTeamFilesKt")
         }
 
         assertTrue("Expected CancellationException, got $caught", caught is CancellationException || (caught != null && caught.cause is CancellationException))
@@ -207,7 +208,7 @@ class TeamsUploaderTest {
         }
         coEvery { uploadRepository.postUploadArray(any(), any()) } returns NetworkResult.Success(bulkResponse)
 
-        mockkStatic("org.ole.planet.myplanet.services.upload.TeamAttachmentFilesKt")
+        mockkStatic("org.ole.planet.myplanet.model.MyTeamFilesKt")
         val mockFile = mockk<File>()
         every { MyTeam.getAttachmentFile(context, "team1", "image.png") } returns mockFile
         every { mockFile.exists() } returns true
@@ -220,6 +221,6 @@ class TeamsUploaderTest {
 
         coVerify(exactly = 1) { mockRepo.markTeamsUploaded(mapOf("team1" to "rev1")) }
 
-        unmockkStatic("org.ole.planet.myplanet.services.upload.TeamAttachmentFilesKt")
+        unmockkStatic("org.ole.planet.myplanet.model.MyTeamFilesKt")
     }
 }

@@ -11,6 +11,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
 import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.getAttachmentFile
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileExistenceCache
 import org.ole.planet.myplanet.utils.FileUtils

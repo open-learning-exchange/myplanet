@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.getAttachmentFile
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatSyncWriter
 import org.ole.planet.myplanet.repository.CoursesRepository
@@ -448,7 +449,7 @@ class TransactionSyncManager @Inject constructor(
                     addProperty("type", notification.type)
                     notification.link?.let { addProperty("link", it) }
                     addProperty("priority", notification.priority)
-                    addProperty("time", notification.createdAt.time)
+                    addProperty("time", notification.createdAt)
                 }
                 try {
                     val response = apiInterface.putDoc(
