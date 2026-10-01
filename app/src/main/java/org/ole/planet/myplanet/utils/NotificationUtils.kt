@@ -17,7 +17,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import dagger.hilt.android.EntryPointAccessors
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.di.NotificationEntryPoint
+import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.NotificationActionReceiver
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 
@@ -95,7 +95,7 @@ object NotificationUtils {
     fun getInstance(context: Context): NotificationManager {
         return EntryPointAccessors.fromApplication(
             context.applicationContext,
-            NotificationEntryPoint::class.java
+            CoreDependenciesEntryPoint::class.java
         ).notificationManager()
     }
 
