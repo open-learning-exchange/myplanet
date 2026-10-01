@@ -64,6 +64,38 @@ class HealthExaminationActivityTest {
     }
 
     @Test
+    fun initExamination_loadsSavedNotesIntoEveryField() {
+        val activity = Robolectric.buildActivity(HealthExaminationActivity::class.java).create().get()
+        val key = org.ole.planet.myplanet.utils.AndroidDecrypter.generateKey()
+        val iv = org.ole.planet.myplanet.utils.AndroidDecrypter.generateIv()
+        val user = org.ole.planet.myplanet.model.UserEntity(id = "u1").apply { this.key = key; this.iv = iv }
+        val sign = org.ole.planet.myplanet.model.Examination().apply {
+            notes = "n"; diagnosis = "d"; treatments = "t"; medications = "m"; immunizations = "i"
+            allergies = "a"; xrays = "x"; tests = "lab"; referrals = "r"
+        }
+        val exam = HealthExamination().apply {
+            data = org.ole.planet.myplanet.utils.AndroidDecrypter.encrypt(
+                org.ole.planet.myplanet.utils.GsonUtils.gson.toJson(sign), key, iv
+            )
+        }
+        activity.user = user
+        HealthExaminationActivity::class.java.getDeclaredField("examination").apply { isAccessible = true }.set(activity, exam)
+
+        HealthExaminationActivity::class.java.getDeclaredMethod("initExamination").apply { isAccessible = true }.invoke(activity)
+
+        fun text(id: Int) = activity.findViewById<android.widget.EditText>(id).text.toString()
+        assertEquals("n", text(R.id.et_observation))
+        assertEquals("d", text(R.id.et_diag))
+        assertEquals("t", text(R.id.et_treatments))
+        assertEquals("m", text(R.id.et_medications))
+        assertEquals("i", text(R.id.et_immunization))
+        assertEquals("a", text(R.id.et_allergies))
+        assertEquals("x", text(R.id.et_xray))
+        assertEquals("lab", text(R.id.et_labtest))
+        assertEquals("r", text(R.id.et_referrals))
+    }
+
+    @Test
     fun seedSavedConditions_keepsTickedStandardConditionsAndLeavesCustomToTheChips() {
         val activity = Robolectric.buildActivity(HealthExaminationActivity::class.java).create().get()
         val standard = activity.resources.getStringArray(R.array.diagnosis_list)
