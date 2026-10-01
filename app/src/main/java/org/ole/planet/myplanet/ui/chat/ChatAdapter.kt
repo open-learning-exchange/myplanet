@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.view.doOnLayout
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
@@ -76,10 +77,14 @@ class ChatAdapter(
                     var lastLineCount = -1
                     cancelAnimation = onAnimateTyping(response, { text ->
                         textAiMessageBinding.textGchatMessageOther.text = text
-                        val lines = textAiMessageBinding.textGchatMessageOther.lineCount
-                        if (lines != lastLineCount || text.length == response.length) {
-                            recyclerView.scrollToPosition(bindingAdapterPosition)
-                            lastLineCount = lines
+                        textAiMessageBinding.textGchatMessageOther.doOnLayout { view ->
+                            val lines = (view as android.widget.TextView).lineCount
+                            if (lines != lastLineCount || text.length == response.length) {
+                                if (bindingAdapterPosition != RecyclerView.NO_POSITION) {
+                                    recyclerView.scrollToPosition(bindingAdapterPosition)
+                                }
+                                lastLineCount = lines
+                            }
                         }
                     }, {
                         markAnimated()
