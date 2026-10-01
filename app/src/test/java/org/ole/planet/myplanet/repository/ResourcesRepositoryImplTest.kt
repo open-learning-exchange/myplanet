@@ -1438,7 +1438,7 @@ class ResourcesRepositoryImplTest {
         File(oleDir, "res1/index.html").apply { parentFile?.mkdirs(); writeBytes(ByteArray(10)) }
         File(oleDir, "res1/sudoku/img/x.png").apply { parentFile?.mkdirs(); writeBytes(ByteArray(20)) }
         File(oleDir, "stray.png").writeBytes(ByteArray(5))
-        coEvery { myLibraryDao.getResourceTitles() } returns listOf(ResourceTitleProjection("res1", "Sudoku"))
+        coEvery { myLibraryDao.getResourceTitlesByResourceIds(any()) } returns listOf(ResourceTitleProjection("res1", "Sudoku"))
 
         val result = repository.getOfflineResourceItems(oleDir.absolutePath, emptySet(), emptySet())
 
