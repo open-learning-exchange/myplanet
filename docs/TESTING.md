@@ -145,10 +145,9 @@ Pin only when the assertion depends on the level, and say why in a comment so th
 | 26 (`O`) | `utils/NotificationUtilsTest.kt`, `utils/VersionUtilsTest.kt` (one method), `repository/TeamsRepositoryBulkInsertTransactionTest.kt` | notification channels exist only from `O`; the repository test needs to sit below `S` so `processDescription` short-circuits instead of reaching for `MainApplication.context` |
 | 27 (`O_MR1`) | `utils/SecurePrefsTest.kt` | keystore-backed prefs path |
 | 28 (`P`) | `utils/VersionUtilsTest.kt` (one method) | `VersionUtils` branches on `SDK_INT >= P` |
-| 32 | `ui/resources/ResourcesFilterFragmentTest.kt` | no reason stated |
 | 33 | `ui/chat/ChatAdapterTest.kt` | no reason stated |
 
-The suite therefore needs sandboxes at 26, 27, 28, 32, 33 and the default 36.
+The suite therefore needs sandboxes at 26, 27, 28, 33 and the default 36.
 
 `DownloadServiceTest` shows the cheaper shape when one class covers several levels: run on the default SDK and drive the individual branches with `ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", …)`.
 
