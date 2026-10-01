@@ -611,6 +611,7 @@
     <string name="file_already_exists">फाइल पहिले नै अवस्थित छ…</string>
     <string name="feature_not_available">विशेषता उपलब्ध छैन</string>
     <string name="sync">सिंक</string>
+    <string name="remove_item_format">हटाउनुहोस् %s</string>
     <string name="session_expired">सत्र समाप्त भयो।</string>
     <string name="downloading_started_please_check_notificati">डाउनलोड सुरु भयो, कृपया सूचना जाँच गर्नुहोस्…</string>
     <string name="dictionary">शब्दकोश</string>
@@ -1000,7 +1001,6 @@
     <string name="no_teams">टोलीहरू उपलब्ध छैनन्</string>
     <string name="no_chats">अघिल्ला कुराकानीहरू छैनन्</string>
     <string name="no_feedback">कुनै प्रतिक्रिया उपलब्ध छैन</string>
-    <string name="medium_text_html">पाठ / HTML</string>
     <string name="medium_html">HTML</string>
     <string name="empty_text" />
     <string name="message_placeholder">%s</string>
