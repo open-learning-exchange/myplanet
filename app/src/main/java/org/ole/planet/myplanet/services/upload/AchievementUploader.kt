@@ -5,6 +5,7 @@ import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.repository.UploadRepository
@@ -38,6 +39,8 @@ class AchievementUploader @Inject constructor(
                             uploadCvAttachment(id, rev, resumeFileName)
                         }
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e(TAG, "Exception in AchievementUploader", e)
                 }
@@ -52,6 +55,8 @@ class AchievementUploader @Inject constructor(
             // CouchDB attachment key is always "resume.pdf"
             val url = "${UrlUtils.getUrl()}/achievements/$docId/resume.pdf"
             uploadRepository.uploadResource(FileUploader.getHeaderMap("application/pdf", rev), url, cvFile, "application/pdf")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to upload CV attachment", e)
         }

@@ -7,18 +7,23 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.work.WorkerParameters
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.spyk
-import io.mockk.coVerify
 import io.mockk.unmockkAll
 import io.mockk.unmockkObject
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -27,7 +32,6 @@ import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import okhttp3.ResponseBody.Companion.toResponseBody
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -209,5 +213,36 @@ class DownloadWorkerTest {
 
         unmockkObject(FileUtils)
         io.mockk.unmockkStatic(android.os.SystemClock::class)
+    }
+
+    @Test
+    fun `doWork rethrows CancellationException when cancelled during download`() = runTest(testDispatcher) {
+        val url1 = "http://example.com/file1.txt"
+        val url2 = "http://example.com/file2.txt"
+        val url3 = "http://example.com/file3.txt"
+        every { preferences.getStringSet(any(), any()) } returns setOf(url1, url2, url3)
+        every { workerParams.inputData.getString("urls_key") } returns "url_list_key"
+        every { workerParams.inputData.getBoolean("fromSync", false) } returns false
+
+        mockkObject(FileUtils)
+        every { FileUtils.checkFileExist(context, any()) } returns false
+
+        coEvery { downloadRepository.downloadFileResponse(url1, any()) } coAnswers {
+            awaitCancellation()
+        }
+
+        val job = launch {
+            worker.doWork()
+        }
+
+        testScheduler.advanceUntilIdle()
+        job.cancel()
+        testScheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { downloadRepository.downloadFileResponse(any(), any()) }
+        coVerify(exactly = 0) { downloadRepository.downloadFileResponse(url2, any()) }
+        coVerify(exactly = 0) { downloadRepository.downloadFileResponse(url3, any()) }
+
+        unmockkObject(FileUtils)
     }
 }

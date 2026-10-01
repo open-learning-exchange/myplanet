@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.repository
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.google.gson.Gson
-import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -53,15 +52,12 @@ class TeamChatBadgeIntegrationTest {
 
         val userRepository = dagger.Lazy { mockk<UserRepository>(relaxed = true) }
         val teamsRepository = dagger.Lazy { mockk<TeamsNotificationsRepository>(relaxed = true) }
-        val teamTaskDao = mockk<org.ole.planet.myplanet.data.room.dao.TeamTaskDao>(relaxed = true)
-        coEvery { teamTaskDao.getTasksForUserBetween(any(), any(), any()) } returns emptyList()
         notificationsRepository = NotificationsRepositoryImpl(
             userRepository,
             teamsRepository,
             TestTimeProvider(),
             teamNotificationDao,
             mockk(relaxed = true),
-            teamTaskDao,
             voicesRepository,
         )
     }

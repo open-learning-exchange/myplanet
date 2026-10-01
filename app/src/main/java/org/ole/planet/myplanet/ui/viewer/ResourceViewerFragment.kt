@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
+import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.media.AudioManager
 import android.os.Bundle
@@ -30,6 +31,7 @@ import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
+import androidx.core.view.doOnLayout
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -57,6 +59,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.util.regex.Pattern
 import javax.inject.Inject
+import kotlin.math.abs
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -74,6 +77,7 @@ import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.TTSManager
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.computePdfRenderSize
 
 @AndroidEntryPoint
 class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding>(FragmentResourceViewerBinding::inflate), AuthSessionUpdater.AuthCallback {
@@ -115,12 +119,9 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
 
         override fun onRecordStopped(outputFile: String?) {
             Utilities.toast(requireContext(), getString(R.string.recording_stopped))
-            NotificationUtils.cancelAll(requireContext())
+            NotificationUtils.cancel(requireContext(), NotificationUtils.RECORDING_NOTIFICATION_ID)
             if (::library.isInitialized) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    val id = library.id ?: return@launch
-                    viewModel.updateLibraryItemTranslationAudioPath(id, outputFile)
-                }
+                library.id?.let { viewModel.saveTranslationAudioPath(it, outputFile) }
             }
             binding.fabRecord.setImageResource(R.drawable.ic_mic)
         }
@@ -197,7 +198,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         val currentPos = player.currentPosition
         val duration = player.duration
         val effectivePosition = ResourceViewerViewModel.calculateEffectivePlaybackPosition(currentPos, duration)
-        if (lastSavedPositionMs == -1L || Math.abs(effectivePosition - lastSavedPositionMs) >= 2000L || effectivePosition == 0L) {
+        if (lastSavedPositionMs == -1L || abs(effectivePosition - lastSavedPositionMs) >= 2000L || effectivePosition == 0L) {
             lastSavedPositionMs = effectivePosition
             viewModel.savePlaybackProgress(mediaKey, effectivePosition)
         }
@@ -229,7 +230,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
             .map { getString(R.string.playback_speed_format, it.toString()) }
             .toTypedArray()
         val currentSpeed = viewModel.getPlaybackSpeed()
-        var selectedIndex = speedValues.indexOfFirst { kotlin.math.abs(it - currentSpeed) < 0.05f }
+        var selectedIndex = speedValues.indexOfFirst { abs(it - currentSpeed) < 0.05f }
         if (selectedIndex == -1) selectedIndex = 1
 
         MaterialDialog.Builder(requireContext())
@@ -326,7 +327,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         val fileDataSource = FileDataSource()
         try {
             fileDataSource.open(dataSpec)
-        } catch (e: FileDataSource.FileDataSourceException) {
+        } catch (_: FileDataSource.FileDataSourceException) {
             navigateBackWithError(getString(R.string.video_playback_error))
             return
         }
@@ -516,33 +517,38 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         val file = File(externalFilesDir, "ole/$filePath")
         if (!file.exists()) return
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val bitmap = withContext(dispatcherProvider.io) {
-                try {
-                    ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fileDescriptor ->
-                        PdfRenderer(fileDescriptor).use { pdfRenderer ->
-                            pdfRenderer.openPage(0).use { page ->
-                                val bmp = createBitmap(page.width, page.height)
-                                page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                                bmp
+        binding.root.doOnLayout { view ->
+            val targetW = view.width
+            viewLifecycleOwner.lifecycleScope.launch {
+                val bitmap = withContext(dispatcherProvider.io) {
+                    try {
+                        ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fileDescriptor ->
+                            PdfRenderer(fileDescriptor).use { pdfRenderer ->
+                                pdfRenderer.openPage(0).use { page ->
+                                    val (renderW, renderH) = computePdfRenderSize(page.width, page.height, targetW)
+                                    val bmp = createBitmap(renderW, renderH)
+                                    bmp.eraseColor(Color.WHITE)
+                                    page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                                    bmp
+                                }
                             }
                         }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to render PDF page", e)
+                        null
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to render PDF page", e)
-                    null
                 }
-            }
 
-            if (bitmap != null && isAdded) {
-                val pdfPlaceholder = binding.root.findViewById<TextView>(R.id.pdfPlaceholder)
-                pdfPlaceholder.visibility = View.GONE
-                val parent = pdfPlaceholder.parent as ViewGroup
-                val imageView = ImageView(requireContext())
-                imageView.setImageBitmap(bitmap)
-                imageView.scaleType = ImageView.ScaleType.FIT_CENTER
-                parent.addView(imageView, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0))
-                (imageView.layoutParams as LinearLayout.LayoutParams).weight = 1f
+                if (bitmap != null && isAdded) {
+                    val pdfPlaceholder = binding.root.findViewById<TextView>(R.id.pdfPlaceholder)
+                    pdfPlaceholder.visibility = View.GONE
+                    val parent = pdfPlaceholder.parent as ViewGroup
+                    val imageView = ImageView(requireContext())
+                    imageView.setImageBitmap(bitmap)
+                    imageView.scaleType = ImageView.ScaleType.FIT_CENTER
+                    parent.addView(imageView, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0))
+                    (imageView.layoutParams as LinearLayout.LayoutParams).weight = 1f
+                }
             }
         }
     }
@@ -671,7 +677,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
                 MotionEvent.ACTION_MOVE -> {
                     val deltaY = event.rawY - startY
                     val deltaX = event.rawX - startX
-                    if (!isDragging && deltaY > slopPx && deltaY > kotlin.math.abs(deltaX)) {
+                    if (!isDragging && deltaY > slopPx && deltaY > abs(deltaX)) {
                         isDragging = true
                     }
                     isDragging
@@ -711,6 +717,9 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
     }
 
     override fun onDestroyView() {
+        if (::audioRecorder.isInitialized && audioRecorder.isRecording()) {
+            audioRecorder.stopRecording()
+        }
         saveCurrentPlaybackProgress()
         authSessionUpdater?.stop()
         exoPlayer?.release()

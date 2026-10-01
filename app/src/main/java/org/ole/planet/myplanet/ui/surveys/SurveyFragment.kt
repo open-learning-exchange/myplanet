@@ -161,6 +161,7 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener 
         collectWhenStarted(viewModel.errorMessage) { message ->
             message?.let {
                 Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
+                viewModel.onErrorMessageShown()
             }
         }
         collectWhenStarted(viewModel.userMessage) { message ->
@@ -169,6 +170,7 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener 
                 if (it == "Survey adopted successfully") {
                      binding.rbTeamSurvey.isChecked = true
                 }
+                viewModel.onUserMessageShown()
             }
         }
     }

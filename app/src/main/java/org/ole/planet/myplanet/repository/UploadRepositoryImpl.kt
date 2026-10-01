@@ -12,9 +12,6 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.asRequestBody
 import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.data.room.dao.ExamDao
-import org.ole.planet.myplanet.data.room.dao.SubmissionDao
-import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.services.FileUploader
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -25,8 +22,6 @@ import retrofit2.Response
 @Singleton
 class UploadRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
-    private val examDao: ExamDao,
-    private val submissionDao: SubmissionDao,
     private val dispatcherProvider: DispatcherProvider,
 ) : UploadRepository {
 
@@ -49,18 +44,6 @@ class UploadRepositoryImpl @Inject constructor(
             throw e
         } catch (e: Exception) {
             NetworkResult.Exception(e)
-        }
-    }
-
-    override suspend fun markUploaded(
-        config: UploadUpdateContract,
-        succeeded: List<UploadedItemResult>
-    ): List<UploadedItemResult> {
-        return when (config.updateType) {
-            UploadUpdateType.Exams -> markExamsUploaded(succeeded)
-            UploadUpdateType.Submissions -> succeeded.filter { result ->
-                submissionDao.markUploaded(result.localId, result.remoteId, result.remoteRev) == 0
-            }
         }
     }
 
@@ -93,31 +76,6 @@ class UploadRepositoryImpl @Inject constructor(
 
     override suspend fun fetchExistingDoc(url: String): NetworkResult<JsonObject> {
         return apiCall({ it.toGson() }) { apiInterface.getJsonObject(UrlUtils.header, url) }
-    }
-
-    private suspend fun markExamsUploaded(
-        succeeded: List<UploadedItemResult>
-    ): List<UploadedItemResult> {
-        if (succeeded.isEmpty()) return emptyList()
-        val existing = examDao.getByIds(succeeded.map { it.localId }).associateBy { it.id }
-        val updated = ArrayList<StepExam>(succeeded.size)
-        val failed = ArrayList<UploadedItemResult>(succeeded.size)
-
-        succeeded.forEach { result ->
-            val exam = existing[result.localId]
-            if (exam == null) {
-                failed += result
-            } else {
-                exam._rev = result.remoteRev
-                updated += exam
-            }
-        }
-
-        if (updated.isNotEmpty()) {
-            examDao.upsertAll(updated)
-        }
-
-        return failed
     }
 
     override suspend fun uploadResource(

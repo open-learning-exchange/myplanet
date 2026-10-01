@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
@@ -26,6 +27,7 @@ import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -337,6 +339,33 @@ class SurveysRepositoryImplTest {
 
         // Only 2 surveys were requested
         assertEquals(2, result.size)
+    }
+
+    @Test
+    fun `markExamsUploaded with empty succeeded list returns empty list`() = runTest {
+        val failed = repository.markExamsUploaded(emptyList())
+
+        assertEquals(emptyList<UploadedItemResult>(), failed)
+        coVerify(exactly = 0) { examDao.getByIds(any()) }
+    }
+
+    @Test
+    fun `markExamsUploaded updates exams and returns missing exams as failures`() = runTest {
+        val existingExam = StepExam(id = "exam-1")
+        coEvery { examDao.getByIds(listOf("exam-1", "exam-missing")) } returns listOf(existingExam)
+
+        val result1 = UploadedItemResult("exam-1", "remote-1", "rev-1", com.google.gson.JsonObject())
+        val result2 = UploadedItemResult("exam-missing", "remote-2", "rev-2", com.google.gson.JsonObject())
+
+        val failed = repository.markExamsUploaded(listOf(result1, result2))
+
+        // Only "exam-missing" should fail
+        assertEquals(1, failed.size)
+        assertEquals("exam-missing", failed.first().localId)
+
+        // examDao.upsertAll should be called with existingExam whose _rev has been updated to "rev-1"
+        assertEquals("rev-1", existingExam._rev)
+        coVerify { examDao.upsertAll(listOf(existingExam)) }
     }
 
 }

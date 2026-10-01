@@ -98,7 +98,8 @@ class UploadCoordinatorTest {
             serializer = UploadSerializer.Simple { JsonObject() },
             idExtractor = { it.id },
             dbIdExtractor = { it._id },
-            batchSize = 10
+            batchSize = 10,
+            markUploaded = { emptyList() }
         )
 
         val result = uploadCoordinator.upload(config)
@@ -144,7 +145,8 @@ class UploadCoordinatorTest {
             fetchPendingItems = { listOf(item) },
             serializer = UploadSerializer.Simple { JsonObject() },
             idExtractor = { it.id },
-            dbIdExtractor = { it._id }
+            dbIdExtractor = { it._id },
+            markUploaded = { emptyList() }
         )
 
         val result = uploadCoordinator.upload(config)
@@ -178,7 +180,8 @@ class UploadCoordinatorTest {
             fetchPendingItems = { listOf(item) },
             serializer = UploadSerializer.Simple { JsonObject() },
             idExtractor = { it.id },
-            dbIdExtractor = { it._id }
+            dbIdExtractor = { it._id },
+            markUploaded = { emptyList() }
         )
 
         val result = uploadCoordinator.upload(config)
@@ -343,7 +346,8 @@ class UploadCoordinatorTest {
             endpoint = "test_endpoint",
             fetchPendingItems = { listOf(item) },
             serializer = UploadSerializer.Simple { JsonObject() },
-            idExtractor = { it.id }
+            idExtractor = { it.id },
+            markUploaded = { emptyList() }
         )
 
         val job = async {
@@ -374,7 +378,6 @@ class UploadCoordinatorTest {
 
         val items = listOf(sampleItem("local-1"), sampleItem("local-2"))
         coEvery { uploadRepository.postUpload(any(), any()) } returns successResponse("remote-1", "rev-1") andThen successResponse("remote-2", "rev-2")
-        coEvery { uploadRepository.markUploaded(any(), any()) } returns emptyList()
 
         val config = roomConfig(items)
         uploadCoordinator.uploadRoom(config)
@@ -396,7 +399,6 @@ class UploadCoordinatorTest {
 
         val items = listOf(sampleItem("local-1"), sampleItem("local-2"))
         coEvery { uploadRepository.postUpload(any(), any()) } returns errorResponse(404)
-        coEvery { uploadRepository.markUploaded(any(), any()) } returns emptyList()
 
         val config = roomConfig(items)
         uploadCoordinator.uploadRoom(config)
@@ -418,7 +420,6 @@ class UploadCoordinatorTest {
 
         val items = listOf(sampleItem("local-1"), sampleItem("local-2"))
         coEvery { uploadRepository.postUpload(any(), any()) } returns errorResponse(500)
-        coEvery { uploadRepository.markUploaded(any(), any()) } returns emptyList()
 
         val config = roomConfig(items)
         uploadCoordinator.uploadRoom(config)
@@ -512,7 +513,6 @@ class UploadCoordinatorTest {
 
         val items = listOf(Submission(id = "local-1"), Submission(id = "local-2"))
         coEvery { uploadRepository.postUpload(any(), any()) } returns errorResponse(404)
-        coEvery { uploadRepository.markUploaded(any(), any()) } returns emptyList()
 
         val config = submissionConfig(items)
         uploadCoordinator.upload(config)
@@ -534,7 +534,6 @@ class UploadCoordinatorTest {
 
         val items = listOf(Submission(id = "local-1"), Submission(id = "local-2"))
         coEvery { uploadRepository.postUpload(any(), any()) } returns errorResponse(500)
-        coEvery { uploadRepository.markUploaded(any(), any()) } returns emptyList()
 
         val config = submissionConfig(items)
         uploadCoordinator.upload(config)
@@ -583,7 +582,8 @@ class UploadCoordinatorTest {
         fetchPendingItems = { items },
         serializer = UploadSerializer.Simple { JsonObject().apply { addProperty("localId", it.id) } },
         idExtractor = { it.id },
-        dbIdExtractor = null
+        dbIdExtractor = null,
+        markUploaded = { emptyList() }
     )
 
     private data class TestRoomItem(val id: String, val dbId: String?)

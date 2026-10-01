@@ -9,6 +9,7 @@ import androidx.work.workDataOf
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.io.File
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -54,6 +55,8 @@ class FreeSpaceWorker @AssistedInject constructor(
             }
 
             Result.success(workDataOf("deletedFiles" to deletedFiles, "freedBytes" to freedBytes))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Error in FreeSpaceWorker", e)
             Result.failure()

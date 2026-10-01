@@ -6,6 +6,7 @@ import android.util.Log
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.model.MyTeam
@@ -114,6 +115,8 @@ class TeamsUploader @Inject constructor(
             } else {
                 rev
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to upload team image attachment", e)
             rev

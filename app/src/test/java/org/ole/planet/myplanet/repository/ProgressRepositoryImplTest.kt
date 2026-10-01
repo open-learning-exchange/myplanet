@@ -17,12 +17,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.CourseStepDao
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
-import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CourseProgress
 import org.ole.planet.myplanet.model.CourseStep
@@ -40,11 +38,10 @@ class ProgressRepositoryImplTest {
     private val dispatcherProvider: DispatcherProvider = org.ole.planet.myplanet.utils.TestDispatcherProvider(testDispatcher)
     private val testScope = TestScope(testDispatcher)
     private lateinit var mockCoursesRepository: CoursesRepository
+    private val mockSubmissionsRepository: SubmissionsRepository = mockk(relaxed = true)
     private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
     private val courseStepDao: CourseStepDao = mockk(relaxed = true)
     private val examDao: ExamDao = mockk(relaxed = true)
-    private val submissionDao: SubmissionDao = mockk(relaxed = true)
-    private val answerDao: AnswerDao = mockk(relaxed = true)
     private val questionDao: QuestionDao = mockk(relaxed = true)
 
     @Before
@@ -56,11 +53,10 @@ class ProgressRepositoryImplTest {
                 dispatcherProvider,
                 dagger.Lazy { mockCoursesRepository },
                 dagger.Lazy { mockk(relaxed = true) },
+                dagger.Lazy { mockSubmissionsRepository },
                 courseProgressDao,
                 courseStepDao,
                 examDao,
-                submissionDao,
-                answerDao,
                 questionDao
             ),
             recordPrivateCalls = true
@@ -74,7 +70,7 @@ class ProgressRepositoryImplTest {
 
     @Test
     fun fetchCourseData_executes_successfully() = runTest(testDispatcher) {
-        coEvery { submissionDao.getExamSubmissionsByUser("user123") } returns emptyList()
+        coEvery { mockSubmissionsRepository.getExamSubmissionsByUser("user123") } returns emptyList()
         val result = repository.fetchCourseData("user123")
         assertEquals(JsonArray(), result)
     }
@@ -100,9 +96,9 @@ class ProgressRepositoryImplTest {
         coEvery { courseProgressDao.getByUserAndCourseIds("user1", listOf("course1")) } returns listOf(
             CourseProgress().apply { stepNum = 1; courseId = "course1" }
         )
-        coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns submissions
+        coEvery { mockSubmissionsRepository.getExamSubmissionsByUser("user1") } returns submissions
         coEvery { examDao.getByCourseIds(listOf("course1")) } returns exams
-        coEvery { answerDao.getBySubmissionIds(listOf("sub1")) } returns answers
+        coEvery { mockSubmissionsRepository.getAnswersBySubmissionIds(listOf("sub1")) } returns answers
         coEvery { questionDao.getByIds(listOf("q1")) } returns listOf(question)
 
         val rows = repository.getCourseProgressRows("user1")
@@ -134,7 +130,7 @@ class ProgressRepositoryImplTest {
         coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
         coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
         coEvery { courseProgressDao.getByUserAndCourseIds("user1", any()) } returns emptyList()
-        coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns emptyList()
+        coEvery { mockSubmissionsRepository.getExamSubmissionsByUser("user1") } returns emptyList()
         coEvery { examDao.getByCourseIds(any()) } returns emptyList()
 
         val rows = repository.getCourseProgressRows("user1")
@@ -157,7 +153,7 @@ class ProgressRepositoryImplTest {
         coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
         coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
         coEvery { courseProgressDao.getByUserAndCourseIds("user1", any()) } returns emptyList()
-        coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns emptyList()
+        coEvery { mockSubmissionsRepository.getExamSubmissionsByUser("user1") } returns emptyList()
         coEvery { examDao.getByCourseIds(any()) } returns emptyList()
 
         val rows = repository.getCourseProgressRows("user1")
@@ -381,7 +377,7 @@ class ProgressRepositoryImplTest {
             courseId = "course1"
         })
 
-        coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns submissions.map { submission ->
+        coEvery { mockSubmissionsRepository.getExamSubmissionsByUser("user1") } returns submissions.map { submission ->
             Submission(id = submission.id ?: "submission", parentId = submission.parentId, userId = submission.userId, type = submission.type)
         }
 
@@ -389,7 +385,7 @@ class ProgressRepositoryImplTest {
             StepExam(id = exam.id ?: "exam", courseId = exam.courseId, stepId = exam.stepId, type = exam.type)
         }
 
-        coEvery { answerDao.getBySubmissionIds(listOf("sub1")) } returns answers.map { answer ->
+        coEvery { mockSubmissionsRepository.getAnswersBySubmissionIds(listOf("sub1")) } returns answers.map { answer ->
             org.ole.planet.myplanet.model.Answer(
                 id = answer.id ?: "answer",
                 questionId = answer.questionId,
@@ -503,11 +499,10 @@ class ProgressRepositoryImplTest {
             dispatcherProvider,
             dagger.Lazy { mockCoursesRepository },
             dagger.Lazy { activitiesRepo },
+            dagger.Lazy { mockSubmissionsRepository },
             courseProgressDao,
             courseStepDao,
             examDao,
-            submissionDao,
-            answerDao,
             questionDao
         )
 
@@ -803,8 +798,8 @@ class ProgressRepositoryImplTest {
         coEvery { courseProgressDao.getByUserAndCourseIds(any(), any()) } returns emptyList()
         coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
         coEvery { examDao.getByCourseIds(listOf("course1", "course10")) } returns exams
-        coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns submissions
-        coEvery { answerDao.getBySubmissionIds(any()) } returns answers
+        coEvery { mockSubmissionsRepository.getExamSubmissionsByUser("user1") } returns submissions
+        coEvery { mockSubmissionsRepository.getAnswersBySubmissionIds(any()) } returns answers
         coEvery { questionDao.getByIds(any()) } returns questions
 
         val data = repository.fetchCourseData("user1")
