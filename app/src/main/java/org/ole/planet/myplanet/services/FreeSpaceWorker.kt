@@ -45,7 +45,7 @@ class FreeSpaceWorker @AssistedInject constructor(
                         clearedResourceIds.add(child.name)
                     }
                     if (clearedResourceIds.size >= MARK_BATCH_SIZE) {
-                        resourcesRepository.markResourcesAsNotOffline(clearedResourceIds.toSet())
+                        resourcesRepository.markResourcesAsNotOffline(clearedResourceIds)
                         clearedResourceIds.clear()
                     }
                 }
