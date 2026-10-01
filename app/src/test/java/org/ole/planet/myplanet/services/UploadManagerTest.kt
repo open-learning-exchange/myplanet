@@ -23,6 +23,7 @@ import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
 import org.ole.planet.myplanet.callback.OnSuccessListener
+import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.CourseActivity
@@ -272,7 +273,7 @@ class UploadManagerTest {
         }
 
         coEvery { submissionsRepository.getUnuploadedPhotos() } returns mockPhotosList
-        coEvery { uploadRepository.postUpload(any(), mockSerialized) } returns retrofit2.Response.success(mockResponseObject)
+        coEvery { uploadRepository.postUpload(any(), mockSerialized) } returns NetworkResult.Success(mockResponseObject)
         coEvery { submissionsRepository.getPhotosByIds(arrayOf(photoId)) } returns emptyList()
 
         val listener: OnSuccessListener = mockk(relaxed = true)
@@ -305,7 +306,7 @@ class UploadManagerTest {
         }
 
         coEvery { submissionsRepository.getUnuploadedPhotos() } returns mockPhotosList
-        coEvery { uploadRepository.postUpload(any(), mockSerialized) } returns retrofit2.Response.success(mockResponseObject)
+        coEvery { uploadRepository.postUpload(any(), mockSerialized) } returns NetworkResult.Success(mockResponseObject)
         coEvery { submissionsRepository.getPhotosByIds(any()) } returns emptyList()
 
         val listener: OnSuccessListener = mockk(relaxed = true)
@@ -410,7 +411,7 @@ class UploadManagerTest {
         }
         coEvery { uploadCoordinator.uploadRoom<MyLibrary>(any()) } returns UploadResult.Success(1, listOf(uploadedItem))
         coEvery { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) } returns listOf(library)
-        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns retrofit2.Response.success(JsonObject())
+        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns NetworkResult.Success(JsonObject())
 
         uploadManager.uploadResource(null)
         advanceUntilIdle()

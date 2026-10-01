@@ -22,6 +22,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.repository.NewsUploadData
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -32,7 +33,6 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class VoicesUploaderTest {
@@ -116,8 +116,8 @@ class VoicesUploaderTest {
             addProperty("id", "res123")
             addProperty("rev", "rev123")
         }
-        coEvery { uploadRepository.postUpload("http://mock.url/resources", any()) } returns Response.success(imageResponseJson)
-        coEvery { uploadRepository.uploadResource(any(), any(), any()) } returns Response.success(JsonObject())
+        coEvery { uploadRepository.postUpload("http://mock.url/resources", any()) } returns NetworkResult.Success(imageResponseJson)
+        coEvery { uploadRepository.uploadResource(any(), any(), any(), any()) } returns NetworkResult.Success(JsonObject())
 
         val bulkResponse = JsonArray().apply {
             add(JsonObject().apply {
@@ -125,7 +125,7 @@ class VoicesUploaderTest {
                 addProperty("rev", "rev2")
             })
         }
-        coEvery { uploadRepository.postUploadArray("http://mock.url/news/_bulk_docs", any()) } returns Response.success(bulkResponse)
+        coEvery { uploadRepository.postUploadArray("http://mock.url/news/_bulk_docs", any()) } returns NetworkResult.Success(bulkResponse)
 
         voicesUploader.uploadNews()
         advanceUntilIdle()
@@ -134,7 +134,8 @@ class VoicesUploaderTest {
             uploadRepository.uploadResource(
                 match { headers -> headers["Content-Type"] == "image/png" && headers["If-Match"] == "rev123" },
                 "http://mock.url/resources/res123/test_image.png",
-                any()
+                any(),
+                "image/png"
             )
         }
     }

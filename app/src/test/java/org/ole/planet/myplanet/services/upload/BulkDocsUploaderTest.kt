@@ -10,14 +10,13 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.test.runTest
-import okhttp3.ResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.repository.UploadRepository
-import retrofit2.Response
 
 class BulkDocsUploaderTest {
 
@@ -49,7 +48,7 @@ class BulkDocsUploaderTest {
     fun `upload posts all serialized docs as one bulk request`() = runTest {
         val docA = JsonObject().apply { addProperty("id", "a") }
         val docB = JsonObject().apply { addProperty("id", "b") }
-        coEvery { uploadRepository.postUploadArray(url, any()) } returns Response.success(JsonArray())
+        coEvery { uploadRepository.postUploadArray(url, any()) } returns NetworkResult.Success(JsonArray())
 
         BulkDocsUploader.upload(uploadRepository, url, listOf("a" to docA, "b" to docB)) { _, _ -> }
 
@@ -66,7 +65,7 @@ class BulkDocsUploaderTest {
             add(JsonObject().apply { addProperty("id", "a"); addProperty("rev", "rev-a") })
             add(JsonObject().apply { addProperty("id", "b"); addProperty("error", "conflict") })
         }
-        coEvery { uploadRepository.postUploadArray(url, any()) } returns Response.success(bulkResponse)
+        coEvery { uploadRepository.postUploadArray(url, any()) } returns NetworkResult.Success(bulkResponse)
 
         val outcomes = mutableMapOf<String, BulkDocsUploader.Outcome>()
         BulkDocsUploader.upload(
@@ -78,14 +77,13 @@ class BulkDocsUploaderTest {
         assertEquals("rev-a", (outcomes["a"] as BulkDocsUploader.Outcome.Accepted).element.get("rev").asString)
 
         val rejected = outcomes["b"] as BulkDocsUploader.Outcome.Rejected
-        assertEquals(200, rejected.httpCode)
+        assertEquals(null, rejected.httpCode)
         assertEquals("conflict", rejected.element.get("error").asString)
     }
 
     @Test
     fun `upload reports RequestFailed for every item on a non-2xx response`() = runTest {
-        val errorBody = ResponseBody.create(null, "boom")
-        coEvery { uploadRepository.postUploadArray(url, any()) } returns Response.error(500, errorBody)
+        coEvery { uploadRepository.postUploadArray(url, any()) } returns NetworkResult.Error(500, null)
 
         val outcomes = mutableMapOf<String, BulkDocsUploader.Outcome>()
         BulkDocsUploader.upload(
@@ -103,7 +101,7 @@ class BulkDocsUploaderTest {
     @Test
     fun `upload reports RequestFailed with the exception when the request throws`() = runTest {
         val exception = java.io.IOException("network down")
-        coEvery { uploadRepository.postUploadArray(url, any()) } throws exception
+        coEvery { uploadRepository.postUploadArray(url, any()) } returns NetworkResult.Exception(exception)
 
         val outcomes = mutableMapOf<String, BulkDocsUploader.Outcome>()
         BulkDocsUploader.upload(
@@ -122,7 +120,7 @@ class BulkDocsUploaderTest {
         val bulkResponse = JsonArray().apply {
             add(JsonObject().apply { addProperty("id", "a"); addProperty("rev", "rev-a") })
         }
-        coEvery { uploadRepository.postUploadArray(url, any()) } returns Response.success(bulkResponse)
+        coEvery { uploadRepository.postUploadArray(url, any()) } returns NetworkResult.Success(bulkResponse)
 
         val outcomes = mutableMapOf<String, BulkDocsUploader.Outcome>()
         BulkDocsUploader.upload(
