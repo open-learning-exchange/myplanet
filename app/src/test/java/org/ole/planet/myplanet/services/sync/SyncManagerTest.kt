@@ -124,6 +124,18 @@ class SyncManagerTest {
     }
 
     @Test
+    fun `failed full sync is not reported as success and does not stamp last sync`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+        coEvery { transactionSyncManager.syncDb(any(), any()) } throws RuntimeException("disk full")
+
+        syncManager.start(listener, "sync", listOf())
+
+        verify { listener.onSyncFailed("disk full") }
+        assertEquals(SyncManager.SyncStatus.Error("disk full"), syncManager.syncStatus.value)
+        verify(exactly = 0) { sharedPrefManager.setLastSync(any()) }
+    }
+
+    @Test
     fun `start without a listener publishes Error when authentication fails`() = runTest {
         coEvery { transactionSyncManager.authenticate() } returns false
         val expectedMessage = context.getString(org.ole.planet.myplanet.R.string.invalid_configuration)
