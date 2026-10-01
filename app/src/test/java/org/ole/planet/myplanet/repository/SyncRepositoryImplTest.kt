@@ -6,6 +6,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
@@ -154,6 +155,37 @@ class SyncRepositoryImplTest {
         verify(exactly = 1) {
             userDataUploadScheduler.enqueueUserDataUpload("UploadUserData_Bulk", UserDataWorker.UPLOAD_TYPE_BULK)
         }
+    }
+
+    @Test
+    fun `processShelfParallel sends keys body built with kotlinx JsonObject`() = runTest {
+        val shelfId = "shelf123"
+        val shelfDoc = buildJsonObject {
+            put("_id", shelfId)
+            putJsonArray("resourceIds") {
+                add("a")
+                add("b")
+            }
+        }
+
+        coEvery {
+            apiInterface.getJsonObject(any(), any())
+        } returns Response.success(shelfDoc)
+
+        val slot = slot<KJsonObject>()
+        coEvery {
+            apiInterface.postDoc(any(), any(), any(), capture(slot))
+        } returns Response.success(buildJsonObject { putJsonArray("rows") {} })
+
+        syncRepository.processShelfParallel(shelfId)
+
+        val expected = buildJsonObject {
+            putJsonArray("keys") {
+                add("a")
+                add("b")
+            }
+        }
+        assertEquals(expected, slot.captured)
     }
 
     @Test
