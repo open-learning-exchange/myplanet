@@ -121,14 +121,18 @@ class SyncManager @Inject constructor(
 
     fun isMainSyncActive(): Boolean = isSyncing.get()
 
-    private fun destroy() {
+    private fun destroy(succeeded: Boolean) {
         cancelBackgroundSync()
         cancel(context, 111)
         isSyncing.set(false)
-        sharedPrefManager.setLastSync(Date().time)
-        listener?.onSyncComplete()
+        if (succeeded) {
+            sharedPrefManager.setLastSync(Date().time)
+            listener?.onSyncComplete()
+        }
         listener = null
-        _syncStatus.value = SyncStatus.Success("Sync completed")
+        if (succeeded) {
+            _syncStatus.value = SyncStatus.Success("Sync completed")
+        }
     }
 
     private fun authenticateAndSync() {
@@ -149,6 +153,7 @@ class SyncManager @Inject constructor(
         syncPerf { "═══════════════════════════════════════════════════════════════" }
         syncPerf { "FULL SYNC STARTED at ${timestampFormat.format(Instant.now())}" }
         syncPerf { "═══════════════════════════════════════════════════════════════" }
+        var succeeded = false
         try {
 
             initializeSync()
@@ -218,6 +223,7 @@ class SyncManager @Inject constructor(
             syncPerf { "FULL SYNC COMPLETED at ${timestampFormat.format(Instant.now())}" }
             syncPerf { "TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms)" }
             syncPerf { "═══════════════════════════════════════════════════════════════" }
+            succeeded = true
         } catch (e: CancellationException) {
             throw e
         } catch (err: Exception) {
@@ -230,7 +236,7 @@ class SyncManager @Inject constructor(
             Log.e("SyncManager", "Full sync failed", err)
             handleException(err.message)
         } finally {
-            destroy()
+            destroy(succeeded)
         }
     }
 
