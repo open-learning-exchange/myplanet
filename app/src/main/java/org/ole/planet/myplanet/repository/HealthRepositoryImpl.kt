@@ -18,10 +18,12 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.HealthExamination
-import org.ole.planet.myplanet.model.HealthExamination.Companion.serialize
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.fromJson
+import org.ole.planet.myplanet.model.getEncryptedDataAsJson
+import org.ole.planet.myplanet.model.serialize
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DateFormatter
 import org.ole.planet.myplanet.utils.DateTimeUtils
@@ -129,7 +131,7 @@ class HealthRepositoryImpl @Inject constructor(
                                 UrlUtils.header,
                                 "application/json",
                                 "${UrlUtils.getUrl()}/health",
-                                serialize(pojo).toKotlinx().jsonObject
+                                HealthExamination.serialize(pojo).toKotlinx().jsonObject
                             )
                             val resBody = res.body()?.toGson()
 

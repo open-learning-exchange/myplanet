@@ -40,6 +40,12 @@ import org.ole.planet.myplanet.model.LearnerRegistrationInfo
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.addImageUrl
+import org.ole.planet.myplanet.model.fromJson
+import org.ole.planet.myplanet.model.getMyMeetUpIds
+import org.ole.planet.myplanet.model.serialize
+import org.ole.planet.myplanet.model.setAchievements
+import org.ole.planet.myplanet.model.setReferences
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager

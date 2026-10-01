@@ -14,6 +14,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityFeedbackDetailBinding
 import org.ole.planet.myplanet.model.Feedback
+import org.ole.planet.myplanet.model.message
+import org.ole.planet.myplanet.model.messageList
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.LocaleUtils

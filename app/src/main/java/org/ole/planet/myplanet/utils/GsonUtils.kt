@@ -17,6 +17,7 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.longOrNull
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.parsedViewIn
 
 fun KJsonObject.toGson(): JsonObject = toGsonElement() as JsonObject
 

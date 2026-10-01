@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.MyLibraryInsertParams
 import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceItem
@@ -30,6 +31,8 @@ import org.ole.planet.myplanet.model.StorageCategoryType
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.getTagsArray
+import org.ole.planet.myplanet.model.insertMyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.AppLog
@@ -658,7 +661,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                 val resourceId = GsonUtils.getString("_id", doc)
                 val existing = existingItems[resourceId]
                 val library = MyLibrary.insertMyLibrary(
-                    MyLibrary.Companion.InsertParams(
+                    MyLibraryInsertParams(
                         doc = doc,
                         spm = sharedPrefManager,
                         storage = appStorage,
@@ -707,7 +710,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             try {
                 val existing = existingItems[_id]
                 val library = MyLibrary.insertMyLibrary(
-                    MyLibrary.Companion.InsertParams(
+                    MyLibraryInsertParams(
                         doc = doc,
                         spm = sharedPrefManager,
                         storage = appStorage,

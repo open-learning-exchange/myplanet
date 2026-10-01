@@ -14,6 +14,7 @@ import com.bumptech.glide.signature.ObjectKey
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.getCoverImageFile
 
 internal object CoursesItemUtils {
     private val coverExistenceCache = FileExistenceCache()

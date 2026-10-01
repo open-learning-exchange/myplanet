@@ -16,6 +16,12 @@ import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.calculateSortDate
+import org.ole.planet.myplanet.model.createNews
+import org.ole.planet.myplanet.model.imagesArray
+import org.ole.planet.myplanet.model.labelsArray
+import org.ole.planet.myplanet.model.parsedViewIn
+import org.ole.planet.myplanet.model.setLabels
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider

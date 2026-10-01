@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.model
 
 import androidx.room.Entity
+import kotlin.time.Clock
 
 @Entity(
     tableName = "rating_prompt_log",
@@ -10,5 +11,5 @@ data class RatingPromptLog(
     val userId: String,
     val item: String,
     val type: String = "resource",
-    val promptedAt: Long = System.currentTimeMillis()
+    val promptedAt: Long = Clock.System.now().toEpochMilliseconds()
 )

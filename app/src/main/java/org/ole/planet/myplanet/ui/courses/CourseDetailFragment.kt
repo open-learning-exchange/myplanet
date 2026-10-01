@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.StepItem
+import org.ole.planet.myplanet.model.getCoverImageFile
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.UrlUtils

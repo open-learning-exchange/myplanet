@@ -24,7 +24,8 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.model.MyCourse.Companion.saveConcatenatedLinksToPrefs
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SyncRepository
@@ -485,7 +486,7 @@ class SyncManager @Inject constructor(
 
             syncTimeLogger.endProcess("library_process_shelves", processedItems)
 
-            saveConcatenatedLinksToPrefs(sharedPrefManager)
+            MyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
             syncTimeLogger.endProcess("library_sync_main", processedItems)
 
             val totalDuration = timeProvider.elapsedRealtime() - librarySyncStartTime

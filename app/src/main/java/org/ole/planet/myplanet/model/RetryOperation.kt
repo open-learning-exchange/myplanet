@@ -3,7 +3,8 @@ package org.ole.planet.myplanet.model
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import java.util.UUID
+import kotlin.time.Clock
+import kotlin.uuid.Uuid
 
 /**
  * Room replacement for the former `RetryOperation` model. Persistence goes through
@@ -45,7 +46,7 @@ open class RetryOperation {
     fun recordFailedAttempt(
         errorMessage: String?,
         httpCode: Int?,
-        timestamp: Long = System.currentTimeMillis()
+        timestamp: Long = Clock.System.now().toEpochMilliseconds()
     ) {
         attemptCount += 1
         lastAttemptTime = timestamp
@@ -81,7 +82,7 @@ open class RetryOperation {
             userId: String?
         ): RetryOperation {
             return RetryOperation().apply {
-                id = UUID.randomUUID().toString()
+                id = Uuid.random().toString()
                 this.uploadType = uploadType
                 itemId = failure.itemId
                 serializedPayload = payload
@@ -90,8 +91,8 @@ open class RetryOperation {
                 this.dbId = dbId
                 status = STATUS_PENDING
                 attemptCount = 1
-                createdTime = System.currentTimeMillis()
-                lastAttemptTime = System.currentTimeMillis()
+                createdTime = Clock.System.now().toEpochMilliseconds()
+                lastAttemptTime = Clock.System.now().toEpochMilliseconds()
                 nextRetryTime = calculateNextRetryTime(1)
                 errorMessage = failure.message
                 httpCode = failure.httpCode
@@ -100,7 +101,7 @@ open class RetryOperation {
             }
         }
 
-        fun calculateNextRetryTime(attemptCount: Int, currentTime: Long = System.currentTimeMillis()): Long {
+        fun calculateNextRetryTime(attemptCount: Int, currentTime: Long = Clock.System.now().toEpochMilliseconds()): Long {
             val delay = minOf(BASE_DELAY_MS * (1L shl attemptCount), MAX_DELAY_MS)
             return currentTime + delay
         }

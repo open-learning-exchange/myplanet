@@ -3,16 +3,17 @@ package org.ole.planet.myplanet.model
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import java.util.UUID
+import kotlin.time.Clock
+import kotlin.uuid.Uuid
 
 @Entity(tableName = "notifications", indices = [Index("userId"), Index("type")])
 class AppNotification {
     @PrimaryKey
-    var id: String = UUID.randomUUID().toString()
+    var id: String = Uuid.random().toString()
     var userId: String = ""
     var message: String = ""
     var isRead: Boolean = false
-    var createdAt: Long = System.currentTimeMillis()
+    var createdAt: Long = Clock.System.now().toEpochMilliseconds()
     var type: String = ""
     var subType: String? = null
     var relatedId: String? = null

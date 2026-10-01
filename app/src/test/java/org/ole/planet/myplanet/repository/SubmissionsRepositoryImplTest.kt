@@ -9,6 +9,7 @@ import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkAll
@@ -43,6 +44,7 @@ import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.TeamReference
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.serialize
 import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.AndroidDateFormatter
@@ -663,6 +665,7 @@ class SubmissionsRepositoryImplTest {
         // Fresh user record from Room (attachment-free, current) must win over the persisted
         // blob, whose _attachments were stripped for storage safety.
         val freshUser = mockk<UserEntity>()
+        mockkStatic("org.ole.planet.myplanet.model.UserEntityJsonKt")
         every { freshUser.serialize() } returns JsonObject().apply { addProperty("_id", "fresh_user") }
 
         val submission = Submission().apply {

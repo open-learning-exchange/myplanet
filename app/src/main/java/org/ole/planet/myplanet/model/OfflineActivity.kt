@@ -3,8 +3,6 @@ package org.ole.planet.myplanet.model
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.google.gson.JsonObject
-import org.ole.planet.myplanet.utils.GsonUtils
 
 @Entity(
     tableName = "offline_activity",
@@ -26,10 +24,4 @@ open class OfflineActivity {
     var loginTime: Long? = null
     var logoutTime: Long? = null
     var androidId: String? = null
-    fun changeRev(r: JsonObject?) {
-        if (r != null) {
-            _rev = GsonUtils.getString("_rev", r)
-            _id = GsonUtils.getString("_id", r)
-        }
-    }
 }

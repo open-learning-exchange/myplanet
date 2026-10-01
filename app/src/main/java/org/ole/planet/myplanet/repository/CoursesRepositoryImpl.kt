@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.MyLibraryInsertParams
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.StepExam
@@ -37,6 +38,11 @@ import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TagEntity
+import org.ole.planet.myplanet.model.addConcatenatedLink
+import org.ole.planet.myplanet.model.getTagsArray
+import org.ole.planet.myplanet.model.insertMyLibrary
+import org.ole.planet.myplanet.model.saveConcatenatedLinksToPrefs
+import org.ole.planet.myplanet.model.setCourseIds
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.AppLog
@@ -862,7 +868,7 @@ class CoursesRepositoryImpl @Inject constructor(
             val resourceId = GsonUtils.getString("_id", pending.doc)
             val existing = existingMap[resourceId]
             MyLibrary.insertMyLibrary(
-                MyLibrary.Companion.InsertParams(
+                MyLibraryInsertParams(
                     doc = pending.doc,
                     spm = sharedPrefManager,
                     storage = appStorage,

@@ -2,8 +2,6 @@ package org.ole.planet.myplanet.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.google.gson.JsonArray
-import org.ole.planet.myplanet.utils.GsonUtils
 
 /**
  * Room replacement for the former `Certification` model. Read-only sync data (not
@@ -17,8 +15,4 @@ open class Certification {
     var _rev: String? = null
     var name: String? = null
     var courseIds: String? = null
-
-    fun setCourseIds(courseIds: JsonArray?) {
-        this.courseIds = GsonUtils.gson.toJson(courseIds)
-    }
 }

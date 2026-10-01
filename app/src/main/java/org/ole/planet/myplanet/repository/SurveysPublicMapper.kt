@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonPrimitive
 import javax.inject.Inject
 import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.model.valueChoicesArray
 
 class SurveysPublicMapper @Inject constructor(
     private val surveysRepository: SurveysRepository

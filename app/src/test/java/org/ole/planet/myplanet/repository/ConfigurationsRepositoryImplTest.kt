@@ -8,8 +8,10 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import java.io.File
 import java.io.IOException
@@ -39,6 +41,7 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.parseLeadersJson
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AppInfo
@@ -840,7 +843,7 @@ class ConfigurationsRepositoryImplTest {
         val expectedLeaders = listOf(UserEntity(id = "leader_1", name = "Alice"))
 
         every { sharedPrefManager.getCommunityLeaders() } returns leadersJson
-        mockkObject(UserEntity.Companion)
+        mockkStatic("org.ole.planet.myplanet.model.UserEntityJsonKt")
         every { UserEntity.parseLeadersJson(leadersJson) } returns expectedLeaders
 
         try {
@@ -850,7 +853,7 @@ class ConfigurationsRepositoryImplTest {
             verify { sharedPrefManager.getCommunityLeaders() }
             verify { UserEntity.parseLeadersJson(leadersJson) }
         } finally {
-            unmockkObject(UserEntity.Companion)
+            unmockkStatic("org.ole.planet.myplanet.model.UserEntityJsonKt")
         }
     }
 

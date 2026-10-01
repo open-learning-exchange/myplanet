@@ -23,8 +23,8 @@ import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEventsDetailBinding
 import org.ole.planet.myplanet.model.Meetup
-import org.ole.planet.myplanet.model.Meetup.Companion.getHashMap
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.getHashMap
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.showBetaFeature
 import org.ole.planet.myplanet.utils.TimeUtils
@@ -202,7 +202,7 @@ class EventsDetailFragment : BaseBindingFragment<FragmentEventsDetailBinding>(Fr
 
     private fun setUpData(meetup: Meetup) {
         binding.meetupTitle.text = meetup.title
-        val map: HashMap<String, String> = getHashMap(meetup)
+        val map: HashMap<String, String> = Meetup.getHashMap(meetup)
         val items = map.map { EventsDescriptionAdapter.DescriptionItem(it.key, it.value) }
         val eventsDescriptionAdapter = EventsDescriptionAdapter()
         listDesc?.layoutManager = LinearLayoutManager(requireContext())

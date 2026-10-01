@@ -5,9 +5,9 @@ import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.every
-import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.spyk
-import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import org.junit.After
 import org.junit.Before
@@ -17,6 +17,7 @@ import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.getCoverImageFile
 import org.robolectric.Robolectric
 
 @RunWith(AndroidJUnit4::class)
@@ -34,12 +35,12 @@ class CoursesItemUtilsTest {
         activity = Robolectric.buildActivity(AppCompatActivity::class.java).setup().get()
         activity.setTheme(com.google.android.material.R.style.Theme_MaterialComponents)
         CoursesItemUtils.timeProvider = testTimeProvider
-        mockkObject(MyCourse)
+        mockkStatic("org.ole.planet.myplanet.model.MyCourseFilesKt")
     }
 
     @After
     fun tearDown() {
-        unmockkObject(MyCourse)
+        unmockkStatic("org.ole.planet.myplanet.model.MyCourseFilesKt")
         CoursesItemUtils.resetForTesting()
     }
 

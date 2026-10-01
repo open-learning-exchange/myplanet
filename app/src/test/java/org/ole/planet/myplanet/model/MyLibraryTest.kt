@@ -63,7 +63,7 @@ class MyLibraryTest {
             )
         )
 
-        val params1 = MyLibrary.Companion.InsertParams(
+        val params1 = MyLibraryInsertParams(
             doc = doc,
             spm = mockSpm,
             storage = storage
@@ -74,7 +74,7 @@ class MyLibraryTest {
         assertEquals(2, result1?.attachments?.size)
         val initialAttachments = result1?.attachments?.toList()
 
-        val params2 = MyLibrary.Companion.InsertParams(
+        val params2 = MyLibraryInsertParams(
             doc = doc,
             spm = mockSpm,
             storage = storage,
@@ -96,7 +96,7 @@ class MyLibraryTest {
             )
         )
 
-        val params1 = MyLibrary.Companion.InsertParams(
+        val params1 = MyLibraryInsertParams(
             doc = initialDoc,
             spm = mockSpm,
             storage = storage
@@ -114,7 +114,7 @@ class MyLibraryTest {
             )
         )
 
-        val params2 = MyLibrary.Companion.InsertParams(
+        val params2 = MyLibraryInsertParams(
             doc = updatedDoc,
             spm = mockSpm,
             storage = storage,
@@ -136,7 +136,7 @@ class MyLibraryTest {
             )
         )
 
-        val params = MyLibrary.Companion.InsertParams(
+        val params = MyLibraryInsertParams(
             doc = doc,
             spm = mockSpm,
             storage = storage
@@ -150,7 +150,7 @@ class MyLibraryTest {
         // Change base URL in SPM
         every { mockSpm.getCouchdbUrl() } returns "http://newserver:5984"
 
-        val params2 = MyLibrary.Companion.InsertParams(
+        val params2 = MyLibraryInsertParams(
             doc = doc,
             spm = mockSpm,
             storage = storage,

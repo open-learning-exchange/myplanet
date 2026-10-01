@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamNotificationInfo
+import org.ole.planet.myplanet.model.getRoleAsString
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.ui.courses.CoursesFragment

@@ -21,6 +21,11 @@ import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.serialize
+import org.ole.planet.myplanet.model.serializeExam
+import org.ole.planet.myplanet.model.serializeFeedback
+import org.ole.planet.myplanet.model.serializeProgress
+import org.ole.planet.myplanet.model.serializeRating
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ApkLogUpload
 import org.ole.planet.myplanet.repository.DiagnosticsRepository
