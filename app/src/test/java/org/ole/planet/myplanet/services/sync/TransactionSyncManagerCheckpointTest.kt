@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services.sync
 
-import android.content.SharedPreferences
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.every
@@ -41,6 +40,8 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.AppStorage
+import org.ole.planet.myplanet.utils.CredentialStore
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TestTimeProvider
@@ -60,8 +61,6 @@ class TransactionSyncManagerCheckpointTest {
     private val apiInterface: ApiInterface = mockk()
     private val sharedPrefManager: SharedPrefManager = mockk()
     private val ratingsRepository: RatingsRepository = mockk()
-    private val prefs: SharedPreferences = mockk()
-    private val editor: SharedPreferences.Editor = mockk()
     private val putValues = mutableListOf<Int>()
 
     // Plain Dispatchers.Unconfined + runBlocking (no TestDispatcher/runTest): syncDb only needs
@@ -100,16 +99,14 @@ class TransactionSyncManagerCheckpointTest {
         every { dispatcherProvider.io } returns Dispatchers.Unconfined
         every { dispatcherProvider.main } returns Dispatchers.Unconfined
 
-        every { sharedPrefManager.rawPreferences } returns prefs
-        every { prefs.getInt(any(), any()) } returns 0
-        every { prefs.edit() } returns editor
-        every { editor.putInt(any(), capture(putValues)) } returns editor
-        every { editor.remove(any()) } returns editor
-        every { editor.apply() } returns Unit
+        every { sharedPrefManager.getHeavySyncSkip(any()) } returns 0
+        every { sharedPrefManager.setHeavySyncSkip(any(), capture(putValues)) } returns Unit
+        every { sharedPrefManager.clearHeavySyncSkip(any()) } returns Unit
 
         transactionSyncManager = TransactionSyncManager(
             apiInterface,
-            mockk(relaxed = true),
+            mockk<AppStorage>(relaxed = true),
+            mockk<CredentialStore>(relaxed = true),
             mockk<VoicesRepository>(relaxed = true),
             mockk<ChatSyncWriter>(relaxed = true),
             mockk<FeedbackSyncWriter>(relaxed = true),

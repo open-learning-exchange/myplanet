@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import android.content.SharedPreferences
 import android.util.Log
 import com.google.gson.JsonObject
 import dagger.Lazy
@@ -43,6 +41,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AppInfo
+import org.ole.planet.myplanet.utils.CredentialStore
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -54,11 +53,10 @@ import retrofit2.Response
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserRepositoryImplTest {
 
-    private lateinit var settings: SharedPreferences
     private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var apiInterface: ApiInterface
     private lateinit var uploadToShelfService: Lazy<UploadToShelfService>
-    private lateinit var context: Context
+    private lateinit var credentialStore: CredentialStore
     private lateinit var appInfo: AppInfo
     private lateinit var stringProvider: StringProvider
     private lateinit var configurationsRepository: ConfigurationsRepository
@@ -92,11 +90,10 @@ class UserRepositoryImplTest {
         every { Log.e(any(), any()) } returns 0
         every { Log.e(any(), any(), any()) } returns 0
 
-        settings = mockk(relaxed = true)
         sharedPrefManager = mockk(relaxed = true)
         apiInterface = mockk(relaxed = true)
         uploadToShelfService = mockk(relaxed = true)
-        context = mockk(relaxed = true)
+        credentialStore = mockk(relaxed = true)
         appInfo = mockk(relaxed = true)
         stringProvider = mockk(relaxed = true)
         configurationsRepository = mockk(relaxed = true)
@@ -130,13 +127,12 @@ class UserRepositoryImplTest {
         deviceNameProvider = mockk(relaxed = true)
 
         repository = UserRepositoryImpl(
-            settings,
             sharedPrefManager,
             apiInterface,
             resourcesRepositoryLazy,
             coursesRepositoryLazy,
             uploadToShelfService,
-            context,
+            credentialStore,
             configurationsRepository,
             appScope,
             dispatcherProvider,
@@ -499,11 +495,11 @@ class UserRepositoryImplTest {
         coEvery { achievementDao.getById("user1@planet1") } returns achievement
 
         val repo = UserRepositoryImpl(
-            settings, sharedPrefManager, apiInterface, resourcesRepositoryLazy,
-            mockk(relaxed = true), uploadToShelfService, context, configurationsRepository,
+            sharedPrefManager, apiInterface, resourcesRepositoryLazy,
+            mockk(relaxed = true), uploadToShelfService, credentialStore, configurationsRepository,
             appScope, dispatcherProvider, activitiesRepositoryLazy, eventsRepositoryLazy,
             mockk(relaxed = true), mockk(relaxed = true), achievementDao, userDao,
-            mockk(relaxed = true), deviceNameProvider
+            mockk(relaxed = true), deviceNameProvider, appInfo, stringProvider
         )
 
         repo.getAchievementData("user1", "planet1")
@@ -530,7 +526,7 @@ class UserRepositoryImplTest {
     fun `checkIfUserExists properly encodes password containing special characters`() = runTest(testDispatcher) {
         mockkObject(SecurePrefs)
         try {
-            every { SecurePrefs.getPassword(context, settings) } returns "p\$a@s\\s"
+            every { credentialStore.getPassword() } returns "p\$a@s\\s"
             every { UrlUtils.getUrl() } returns "http://admin:secret@localhost:5984"
 
             val urlSlot = slot<String>()
@@ -555,7 +551,7 @@ class UserRepositoryImplTest {
     fun `checkIfUserExists matches expected URL output for plain alphanumeric password`() = runTest(testDispatcher) {
         mockkObject(SecurePrefs)
         try {
-            every { SecurePrefs.getPassword(context, settings) } returns "plainpass123"
+            every { credentialStore.getPassword() } returns "plainpass123"
             every { UrlUtils.getUrl() } returns "http://admin:secret@localhost:5984"
 
             val urlSlot = slot<String>()

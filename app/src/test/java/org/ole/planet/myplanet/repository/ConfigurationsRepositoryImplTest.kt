@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import android.content.SharedPreferences
 import android.util.Log
 import com.google.gson.Gson
 import io.mockk.coEvery
@@ -64,9 +62,7 @@ class ConfigurationsRepositoryImplTest {
 
     private lateinit var repository: ConfigurationsRepositoryImpl
     private val testDispatcher = UnconfinedTestDispatcher()
-    private val context: Context = mockk()
     private val apiInterface: ApiInterface = mockk()
-    private val preferences: SharedPreferences = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val appDatabase: AppDatabase = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
@@ -102,7 +98,6 @@ class ConfigurationsRepositoryImplTest {
         every { Log.e(any<String>(), any<String>()) } returns 0
         every { Log.e(any<String>(), any<String>(), any<Throwable>()) } returns 0
         repository = ConfigurationsRepositoryImpl(
-            context,
             apiInterface,
             serviceScope,
             sharedPrefManager,
@@ -123,9 +118,6 @@ class ConfigurationsRepositoryImplTest {
     fun `checkHealth calls listener with success message when server is accessible`() = runTest(testDispatcher) {
         val healthUrl = "http://test.url/healthaccess?p=1234"
 
-        val rawPrefs: SharedPreferences = mockk()
-        every { sharedPrefManager.rawPreferences } returns rawPrefs
-        every { rawPrefs.getString(any(), any()) } returns "http://test.url"
         every { sharedPrefManager.getServerUrl() } returns "http://test.url"
         every { sharedPrefManager.isAlternativeUrl() } returns false
         every { sharedPrefManager.getCouchdbUrl() } returns "http://test.url"
@@ -148,9 +140,6 @@ class ConfigurationsRepositoryImplTest {
     fun `checkHealth logs tagged error and returns network message when the request throws`() = runTest(testDispatcher) {
         val healthUrl = "http://test.url/healthaccess?p=1234"
 
-        val rawPrefs: SharedPreferences = mockk()
-        every { sharedPrefManager.rawPreferences } returns rawPrefs
-        every { rawPrefs.getString(any(), any()) } returns "http://test.url"
         every { sharedPrefManager.getServerUrl() } returns "http://test.url"
         every { sharedPrefManager.isAlternativeUrl() } returns false
         every { sharedPrefManager.getCouchdbUrl() } returns "http://test.url"
@@ -181,9 +170,6 @@ class ConfigurationsRepositoryImplTest {
     fun `checkHealth returns Failed when server returns 503`() = runTest(testDispatcher) {
         val healthUrl = "http://test.url/healthaccess?p=1234"
 
-        val rawPrefs: SharedPreferences = mockk()
-        every { sharedPrefManager.rawPreferences } returns rawPrefs
-        every { rawPrefs.getString(any(), any()) } returns "http://test.url"
         every { sharedPrefManager.getServerUrl() } returns "http://test.url"
         every { sharedPrefManager.isAlternativeUrl() } returns false
         every { sharedPrefManager.getCouchdbUrl() } returns "http://test.url"
@@ -229,11 +215,8 @@ class ConfigurationsRepositoryImplTest {
         every { sharedPrefManager.isAlternativeUrl() } returns false
         every { sharedPrefManager.getCouchdbUrl() } returns "http://test.url"
 
-        val rawPrefs: SharedPreferences = mockk(relaxed = true)
-        every { sharedPrefManager.rawPreferences } returns rawPrefs
-
         // Return 0 for last check, and we will keep timeProvider.now() at 0
-        every { rawPrefs.getLong("last_version_check_timestamp", 0) } returns 0L
+        every { sharedPrefManager.getLastVersionCheckTimestamp() } returns 0L
 
         val myPlanet = MyPlanet().apply {
             planetVersion = "v1.0"
@@ -243,14 +226,13 @@ class ConfigurationsRepositoryImplTest {
         val planetJson = GsonUtils.gson.toJson(myPlanet)
 
         every { sharedPrefManager.getVersionDetail() } returns planetJson
-        every { rawPrefs.getInt("cachedApkVersion", -1) } returns 2
+        every { sharedPrefManager.getCachedApkVersion() } returns 2
 
         every { appInfo.versionCode() } returns 1
 
         every { stringProvider.getString(R.string.planet_is_up_to_date) } returns "Planet is up to date"
 
-        io.mockk.mockkObject(org.ole.planet.myplanet.utils.Constants)
-        every { org.ole.planet.myplanet.utils.Constants.showBetaFeature(any(), any()) } returns false
+        every { sharedPrefManager.isBetaFeatureEnabled() } returns false
 
         UrlUtils.init(sharedPrefManager)
 
@@ -264,7 +246,6 @@ class ConfigurationsRepositoryImplTest {
         verify { callback.onCheckingVersion() }
         verify(exactly = 1) { callback.onUpdateAvailable(any(), any()) }
 
-        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.Constants)
     }
 
     @Test
@@ -276,13 +257,9 @@ class ConfigurationsRepositoryImplTest {
         every { sharedPrefManager.getUrlPwd() } returns "pwd"
         every { sharedPrefManager.getUrlScheme() } returns "http"
         every { sharedPrefManager.getUrlHost() } returns "test.url"
-        every { sharedPrefManager.rawPreferences.getInt("url_port", 80) } returns 80
-
-        val rawPrefs: SharedPreferences = mockk(relaxed = true)
-        every { sharedPrefManager.rawPreferences } returns rawPrefs
 
         // Return a time older than 24 hours (24 * 60 * 60 * 1000 = 86400000)
-        every { rawPrefs.getLong("last_version_check_timestamp", 0) } returns -86400001L
+        every { sharedPrefManager.getLastVersionCheckTimestamp() } returns -86400001L
 
         val myPlanet = MyPlanet().apply {
             planetVersion = "v1.0"
@@ -300,8 +277,7 @@ class ConfigurationsRepositoryImplTest {
         every { stringProvider.getString(R.string.planet_is_up_to_date) } returns "Planet is up to date"
         every { appInfo.versionCode() } returns 1
 
-        io.mockk.mockkObject(org.ole.planet.myplanet.utils.Constants)
-        every { org.ole.planet.myplanet.utils.Constants.showBetaFeature(any(), any()) } returns false
+        every { sharedPrefManager.isBetaFeatureEnabled() } returns false
 
         io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
         every { networkStatus.currentWifiNetworkId() } returns 1
@@ -319,7 +295,6 @@ class ConfigurationsRepositoryImplTest {
         coVerify(exactly = 1) { apiInterface.getApkVersion(any()) }
         verify(exactly = 1) { callback.onUpdateAvailable(any(), any()) }
 
-        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.Constants)
         io.mockk.unmockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
     }
 
@@ -484,9 +459,7 @@ class ConfigurationsRepositoryImplTest {
         val successResponse = Response.success(200, successBody)
         coEvery { apiInterface.isPlanetAvailable("http://alt.url") } returns successResponse
 
-        val editor = mockk<SharedPreferences.Editor>(relaxed = true)
-        every { sharedPrefManager.rawPreferences.edit() } returns editor
-        every { serverUrlMapper.updateUrlPreferences(any(), any(), any(), any(), any()) } returns Unit
+        every { serverUrlMapper.updateUrlPreferences(any(), any(), any(), any()) } returns Unit
 
         io.mockk.mockkStatic(android.net.Uri::class)
         val mockUri = mockk<android.net.Uri>(relaxed = true)
@@ -496,7 +469,7 @@ class ConfigurationsRepositoryImplTest {
 
         assertTrue(result)
         verify { serverUrlMapper.processUrl(updateUrl) }
-        verify { serverUrlMapper.updateUrlPreferences(editor, any(), "http://alt.url", "http://primary.url", any()) }
+        verify { serverUrlMapper.updateUrlPreferences(sharedPrefManager, any(), "http://alt.url", "http://primary.url") }
         io.mockk.unmockkStatic(android.net.Uri::class)
     }
 

@@ -14,13 +14,12 @@ class UserRepositoryBulkInsertTest {
     fun `benchmark insertUsersFromSync`() = runTest {
         val userDao = mockk<UserDao>(relaxed = true)
         val userRepository = UserRepositoryImpl(
-            settings = mockk(relaxed = true),
             sharedPrefManager = mockk(relaxed = true),
             apiInterface = mockk(relaxed = true),
             resourcesRepositoryLazy = mockk(relaxed = true),
             coursesRepositoryLazy = mockk(relaxed = true),
             uploadToShelfService = mockk(relaxed = true),
-            context = mockk(relaxed = true),
+            credentialStore = mockk(relaxed = true),
             configurationsRepository = mockk(relaxed = true),
             appScope = mockk(relaxed = true),
             dispatcherProvider = mockk(relaxed = true),
@@ -62,13 +61,12 @@ class UserRepositoryBulkInsertTest {
     fun `insertUsersFromSync handles existing user and guest promotion correctly`() = runTest {
         val userDao = mockk<UserDao>(relaxed = true)
         val userRepository = UserRepositoryImpl(
-            settings = mockk(relaxed = true),
             sharedPrefManager = mockk(relaxed = true),
             apiInterface = mockk(relaxed = true),
             resourcesRepositoryLazy = mockk(relaxed = true),
             coursesRepositoryLazy = mockk(relaxed = true),
             uploadToShelfService = mockk(relaxed = true),
-            context = mockk(relaxed = true),
+            credentialStore = mockk(relaxed = true),
             configurationsRepository = mockk(relaxed = true),
             appScope = mockk(relaxed = true),
             dispatcherProvider = mockk(relaxed = true),
@@ -110,13 +108,12 @@ class UserRepositoryBulkInsertTest {
     fun `insertUsersFromSync deduplicates ids correctly`() = runTest {
         val userDao = mockk<UserDao>(relaxed = true)
         val userRepository = UserRepositoryImpl(
-            settings = mockk(relaxed = true),
             sharedPrefManager = mockk(relaxed = true),
             apiInterface = mockk(relaxed = true),
             resourcesRepositoryLazy = mockk(relaxed = true),
             coursesRepositoryLazy = mockk(relaxed = true),
             uploadToShelfService = mockk(relaxed = true),
-            context = mockk(relaxed = true),
+            credentialStore = mockk(relaxed = true),
             configurationsRepository = mockk(relaxed = true),
             appScope = mockk(relaxed = true),
             dispatcherProvider = mockk(relaxed = true),

@@ -1,14 +1,10 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Log
-import androidx.core.content.edit
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
 import java.net.URLEncoder
 import java.text.Normalizer
@@ -39,7 +35,6 @@ import org.ole.planet.myplanet.data.room.dao.AchievementDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.UserDao
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.AchievementData
@@ -53,12 +48,12 @@ import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.AppInfo
+import org.ole.planet.myplanet.utils.CredentialStore
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.RetryUtils
-import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -69,13 +64,12 @@ import org.ole.planet.myplanet.utils.toSyncDocuments
 
 @Singleton
 class UserRepositoryImpl @Inject constructor(
-    @param:AppPreferences private val settings: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
     private val apiInterface: ApiInterface,
     private val resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository>,
     private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>,
     private val uploadToShelfService: Lazy<UploadToShelfService>,
-    @param:ApplicationContext private val context: Context,
+    private val credentialStore: CredentialStore,
     private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val appScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
@@ -198,7 +192,7 @@ class UserRepositoryImpl @Inject constructor(
         return userDao.getPendingSyncUsers(limit)
     }
 
-    private fun applyJsonToUser(jsonDoc: JsonObject?, user: UserEntity, settings: SharedPreferences) {
+    private fun applyJsonToUser(jsonDoc: JsonObject?, user: UserEntity) {
         if (jsonDoc == null) return
 
         val planetCodes = GsonUtils.getString("planetCode", jsonDoc)
@@ -292,7 +286,7 @@ class UserRepositoryImpl @Inject constructor(
         }
 
         if (planetCodes.isNotEmpty()) {
-            settings.edit { putString("planetCode", planetCodes) }
+            sharedPrefManager.setPlanetCode(planetCodes)
         }
     }
 
@@ -328,7 +322,7 @@ class UserRepositoryImpl @Inject constructor(
                 }
                 ?: UserEntity().apply { this.id = id }
 
-            applyJsonToUser(jsonDoc, user, settings)
+            applyJsonToUser(jsonDoc, user)
             user
         } catch (err: Exception) {
             err.printStackTrace()
@@ -720,7 +714,7 @@ class UserRepositoryImpl @Inject constructor(
 
     private fun replacedUrl(model: UserEntity): String {
         val url = UrlUtils.getUrl()
-        val password = SecurePrefs.getPassword(context, settings) ?: ""
+        val password = credentialStore.getPassword() ?: ""
         val replacedUrl = url.replace(USERINFO_REGEX) { "${enc(model.name)}:${enc(password)}@" }
         val protocolIndex = url.indexOf("://")
         val protocol = url.substring(0, protocolIndex)
@@ -729,7 +723,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun checkAndUploadUser(model: UserEntity, password: String?, updateHealthFn: suspend (String, String) -> Unit) {
         try {
-            val pwd = password ?: SecurePrefs.getPassword(context, settings) ?: ""
+            val pwd = password ?: credentialStore.getPassword() ?: ""
             val header = UrlUtils.basicAuthHeader(model.name.toString(), pwd)
             val userExists = checkIfUserExists(header, model)
             if (!userExists) {
@@ -755,7 +749,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun processUserAfterCreation(model: UserEntity, obj: JsonObject, updateHealthFn: suspend (String, String) -> Unit) {
         try {
-            val password = model.password ?: SecurePrefs.getPassword(context, settings) ?: ""
+            val password = model.password ?: credentialStore.getPassword() ?: ""
             val header = UrlUtils.basicAuthHeader(model.name.toString(), password)
             val fetchDataResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")
 
@@ -1147,7 +1141,7 @@ class UserRepositoryImpl @Inject constructor(
                     }
                     ?: UserEntity().apply { this.id = id }
 
-                applyJsonToUser(jsonDoc, user, settings)
+                applyJsonToUser(jsonDoc, user)
                 val entity = user
 
                 usersToUpsert[entity.id] = entity

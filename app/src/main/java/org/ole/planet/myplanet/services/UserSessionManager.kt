@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.services
 
-import android.content.Context
 import android.util.Log
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -12,12 +10,12 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.utils.CredentialStore
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.TimeProvider
 
 class UserSessionManager @Inject constructor(
-    @ApplicationContext private val context: Context,
+    private val credentialStore: CredentialStore,
     private val sharedPrefManager: SharedPrefManager,
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val userRepository: UserRepository,
@@ -31,7 +29,7 @@ class UserSessionManager @Inject constructor(
 
     suspend fun saveUserInfoPref(password: String?, user: UserEntity?) {
         withContext(dispatcherProvider.io) {
-            SecurePrefs.saveCredentials(context, sharedPrefManager.rawPreferences, user?.name, password)
+            credentialStore.saveCredentials(user?.name, password)
         }
         sharedPrefManager.saveUserInfo(
             userId = user?.id ?: "",

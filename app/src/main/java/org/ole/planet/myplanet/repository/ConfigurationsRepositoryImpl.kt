@@ -1,12 +1,9 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
 import android.util.Log
-import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -35,7 +32,6 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AppInfo
 import org.ole.planet.myplanet.utils.AppLocale
-import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkStatus
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -49,7 +45,6 @@ import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
 class ConfigurationsRepositoryImpl @Inject constructor(
-    @param:ApplicationContext private val context: Context,
     private val apiInterface: ApiInterface,
     @param:ApplicationScope private val serviceScope: CoroutineScope,
     private val sharedPrefManager: SharedPrefManager,
@@ -116,13 +111,13 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         serviceScope.launch(dispatcherProvider.io) {
             callback.onCheckingVersion()
 
-            val lastCheckTime = sharedPrefManager.rawPreferences.getLong("last_version_check_timestamp", 0)
+            val lastCheckTime = sharedPrefManager.getLastVersionCheckTimestamp()
             val currentTime = timeProvider.now()
             val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
 
             if (currentTime - lastCheckTime < twentyFourHoursInMillis) {
                 val cachedVersionDetail = sharedPrefManager.getVersionDetail()
-                val cachedApkVersion = sharedPrefManager.rawPreferences.getInt("cachedApkVersion", -1)
+                val cachedApkVersion = sharedPrefManager.getCachedApkVersion()
 
                 if (cachedVersionDetail != null && cachedApkVersion != -1) {
                     try {
@@ -142,9 +137,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     return@launch
                 }
 
-                sharedPrefManager.rawPreferences.edit {
-                    putLong("last_version_check_timestamp", timeProvider.now())
-                }
+                sharedPrefManager.setLastVersionCheckTimestamp(timeProvider.now())
                 sharedPrefManager.setLastWifiId(networkStatus.currentWifiNetworkId())
                 sharedPrefManager.setVersionDetail(gson.toJson(planetInfo))
 
@@ -164,9 +157,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         return@launch
                     }
 
-                sharedPrefManager.rawPreferences.edit {
-                    putInt("cachedApkVersion", apkVersion)
-                }
+                sharedPrefManager.setCachedApkVersion(apkVersion)
 
                 handleVersionEvaluation(planetInfo, apkVersion, callback)
             } catch (e: Exception) {
@@ -197,14 +188,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             if (!primaryReachable && alternativeReachable) {
                 mapping.alternativeUrl.let { alternativeUrl ->
                     val uri = updateUrl.toUri()
-                    val editor = sharedPrefManager.rawPreferences.edit()
-
                     serverUrlMapper.updateUrlPreferences(
-                        editor,
+                        sharedPrefManager,
                         uri,
                         alternativeUrl,
-                        mapping.primaryUrl,
-                        sharedPrefManager.rawPreferences
+                        mapping.primaryUrl
                     )
                 }
                 alternativeReachable
@@ -392,12 +380,12 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         if (doc.has("models")) {
             val modelsMap = doc.getAsJsonObject("models").entrySet()
                 .associate { it.key to it.value.asString }
-            sharedPrefManager.rawPreferences.edit { putString("ai_models", gson.toJson(modelsMap)) }
+            sharedPrefManager.setAiModels(gson.toJson(modelsMap))
         }
 
         if (doc.has("planetType")) {
             val planetType = doc.getAsJsonPrimitive("planetType").asString
-            sharedPrefManager.rawPreferences.edit { putString("planetType", planetType) }
+            sharedPrefManager.setPlanetType(planetType)
         }
     }
 
@@ -549,7 +537,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
     private fun handleVersionEvaluation(info: MyPlanet, apkVersion: Int, callback: ConfigurationsRepository.CheckVersionCallback) {
         val currentVersion = appInfo.versionCode()
-        if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
+        if (sharedPrefManager.isBetaFeatureEnabled() && info.latestapkcode > currentVersion) {
             callback.onUpdateAvailable(info, false)
         } else if (apkVersion > currentVersion) {
             callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
@@ -564,7 +552,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         val serverUrl = sharedPrefManager.getServerUrl()
         val mapping = serverUrlMapper.processUrl(serverUrl)
         if (mapping.alternativeUrl != null) {
-            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager) { url ->
                 serverUrlMapper.isUrlDirectlyReachable(url)
             }
         }

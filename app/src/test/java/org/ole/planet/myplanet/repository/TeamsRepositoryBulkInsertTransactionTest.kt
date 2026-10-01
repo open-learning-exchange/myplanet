@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.app.Application
-import android.content.SharedPreferences
 import androidx.room.Room
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -79,7 +78,6 @@ class TeamsRepositoryBulkInsertTransactionTest {
             mockk<UserSessionManager>(relaxed = true),
             mockk<UploadManager>(relaxed = true),
             Gson(),
-            mockk<SharedPreferences>(relaxed = true),
             mockk<SharedPrefManager>(relaxed = true),
             mockk<ServerUrlMapper>(relaxed = true),
             mockk<DispatcherProvider>(relaxed = true),

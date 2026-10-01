@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services.sync
 
-import android.content.Context
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.every
@@ -35,6 +34,8 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.AppStorage
+import org.ole.planet.myplanet.utils.CredentialStore
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -45,7 +46,6 @@ class TransactionSyncManagerTest {
 
     private lateinit var transactionSyncManager: TransactionSyncManager
     private val apiInterface: ApiInterface = mockk()
-    private val context: Context = mockk()
     private val voicesRepository: VoicesRepository = mockk()
     private val chatRepository: ChatSyncWriter = mockk()
     private val feedbackRepository: FeedbackSyncWriter = mockk()
@@ -78,7 +78,8 @@ class TransactionSyncManagerTest {
 
         transactionSyncManager = TransactionSyncManager(
             apiInterface,
-            context,
+            mockk<AppStorage>(relaxed = true),
+            mockk<CredentialStore>(relaxed = true),
             voicesRepository,
             chatRepository,
             feedbackRepository,

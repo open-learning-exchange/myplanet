@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.SharedPreferences
 import androidx.room.withTransaction
 import com.google.gson.Gson
 import io.mockk.coEvery
@@ -55,7 +54,6 @@ class TeamsRepositoryImplTest {
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val uploadManager: UploadManager = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
-    private val preferences: SharedPreferences = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = mockk()
@@ -94,7 +92,6 @@ class TeamsRepositoryImplTest {
             userSessionManager,
             uploadManager,
             gson,
-            preferences,
             sharedPrefManager,
             serverUrlMapper,
             dispatcherProvider,

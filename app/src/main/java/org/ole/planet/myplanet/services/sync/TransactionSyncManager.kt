@@ -1,13 +1,10 @@
 package org.ole.planet.myplanet.services.sync
 
-import android.content.Context
-import android.content.SharedPreferences
 import android.net.Uri
 import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -46,13 +43,13 @@ import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.AppStorage
+import org.ole.planet.myplanet.utils.CredentialStore
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.GsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.GsonUtils.getJsonObject
 import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -63,7 +60,8 @@ import org.ole.planet.myplanet.utils.toKotlinx
 @Singleton
 class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
-    @param:ApplicationContext private val context: Context,
+    private val appStorage: AppStorage,
+    private val credentialStore: CredentialStore,
     private val voicesRepository: VoicesRepository,
     private val chatRepository: ChatSyncWriter,
     private val feedbackRepository: FeedbackSyncWriter,
@@ -136,17 +134,16 @@ class TransactionSyncManager @Inject constructor(
 
 
     suspend fun syncDashboardKeyId(role: String?) {
-        val settings = sharedPrefManager.rawPreferences
         if (role?.contains("health") == true) {
-            syncAllHealthData(settings)
+            syncAllHealthData()
         } else {
-            syncKeyIv(settings, userSessionManager)
+            syncKeyIv(userSessionManager)
         }
     }
 
-    private suspend fun syncAllHealthData(settings: SharedPreferences) {
-        val userName = SecurePrefs.getUserName(context, settings) ?: ""
-        val password = SecurePrefs.getPassword(context, settings) ?: ""
+    private suspend fun syncAllHealthData() {
+        val userName = credentialStore.getUserName() ?: ""
+        val password = credentialStore.getPassword() ?: ""
         val header = UrlUtils.basicAuthHeader(userName, password)
 
         withContext(dispatcherProvider.io) {
@@ -185,12 +182,9 @@ class TransactionSyncManager @Inject constructor(
         }
     }
 
-    private suspend fun syncKeyIv(
-        settings: SharedPreferences,
-        userSessionManager: UserSessionManager
-    ) {
-        val userName = SecurePrefs.getUserName(context, settings) ?: ""
-        val password = SecurePrefs.getPassword(context, settings) ?: ""
+    private suspend fun syncKeyIv(userSessionManager: UserSessionManager) {
+        val userName = credentialStore.getUserName() ?: ""
+        val password = credentialStore.getPassword() ?: ""
         val header = UrlUtils.basicAuthHeader(userName, password)
 
         withContext(dispatcherProvider.io) {
@@ -205,7 +199,6 @@ class TransactionSyncManager @Inject constructor(
 
     suspend fun syncDb(table: String, useCheckpoint: Boolean = false): Int = withContext(dispatcherProvider.io) {
         val syncStartTime = timeProvider.elapsedRealtime()
-        val checkpointKey = "heavy_sync_skip_$table"
         Log.d("SyncPerf", "  ▶ Starting $table sync")
         try {
             val pageSize = when (table) {
@@ -215,7 +208,7 @@ class TransactionSyncManager @Inject constructor(
                 else -> 1000
             }
             var skip = if (useCheckpoint) {
-                val saved = sharedPrefManager.rawPreferences.getInt(checkpointKey, 0)
+                val saved = sharedPrefManager.getHeavySyncSkip(table)
                 if (saved > 0) Log.d("SyncPerf", "  ↻ Resuming $table from skip=$saved")
                 saved
             } else 0
@@ -231,7 +224,7 @@ class TransactionSyncManager @Inject constructor(
                 currentCoroutineContext().ensureActive()
                 batchNumber++
                 if (useCheckpoint) {
-                    sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).apply()
+                    sharedPrefManager.setHeavySyncSkip(table, skip)
                 }
                 val batchStartTime = timeProvider.elapsedRealtime()
                 val batchApiStartTime = timeProvider.elapsedRealtime()
@@ -281,7 +274,7 @@ class TransactionSyncManager @Inject constructor(
                 // Persist progress immediately after a batch is committed so an interruption
                 // resumes past it rather than re-processing the just-inserted page.
                 if (useCheckpoint) {
-                    sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).apply()
+                    sharedPrefManager.setHeavySyncSkip(table, skip)
                 }
                 val batchDuration = timeProvider.elapsedRealtime() - batchStartTime
                 Log.d("SyncPerf", "    $table batch $batchNumber: ${arr.size()} docs in ${batchDuration}ms (total: $totalDocs)")
@@ -296,7 +289,7 @@ class TransactionSyncManager @Inject constructor(
                 }
             }
             if (useCheckpoint && syncCompletedFully) {
-                sharedPrefManager.rawPreferences.edit().remove(checkpointKey).apply()
+                sharedPrefManager.clearHeavySyncSkip(table)
             }
             val totalDuration = timeProvider.elapsedRealtime() - syncStartTime
             Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
@@ -349,7 +342,7 @@ class TransactionSyncManager @Inject constructor(
             val hasAttachment = jsonDoc.getAsJsonObject("_attachments")?.has("resume.pdf") == true
             if (resumeFileName.isNotEmpty() && hasAttachment) {
                 val destFile = File(
-                    FileUtils.getOlePath(context) + "cv/$resumeFileName"
+                    appStorage.olePath() + "cv/$resumeFileName"
                 )
                 if (!destFile.exists() && inProgress.add(resumeFileName)) {
                     launch { semaphore.withPermit { downloadCvAttachment(docId, destFile) } }
@@ -367,7 +360,7 @@ class TransactionSyncManager @Inject constructor(
             val attachmentName = MyTeam
                 .getFirstAttachmentName(jsonDoc) ?: continue
             val destFile = MyTeam
-                .getAttachmentFile(FileUtils.getOlePath(context), docId, attachmentName) ?: continue
+                .getAttachmentFile(appStorage.olePath(), docId, attachmentName) ?: continue
             if (!destFile.exists()) {
                 launch { semaphore.withPermit { downloadTeamAttachment(docId, attachmentName, destFile) } }
             }
@@ -384,7 +377,7 @@ class TransactionSyncManager @Inject constructor(
             val hasAttachment = jsonDoc.getAsJsonObject("_attachments")?.has(coverFileName) == true
             if (coverFileName.isNotEmpty() && hasAttachment) {
                 val destFile = MyCourse
-                    .getCoverImageFile(FileUtils.getOlePath(context), docId, coverFileName) ?: continue
+                    .getCoverImageFile(appStorage.olePath(), docId, coverFileName) ?: continue
                 if (!destFile.exists()) {
                     launch { semaphore.withPermit { downloadCourseCover(docId, coverFileName, destFile) } }
                 }

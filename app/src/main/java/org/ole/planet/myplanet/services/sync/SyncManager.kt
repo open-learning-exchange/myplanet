@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
 import android.util.Log
-import androidx.core.content.edit
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Instant
@@ -203,7 +202,7 @@ class SyncManager @Inject constructor(
             syncTimeLogger.endProcess("notification_reads_upload")
 
             syncTimeLogger.startProcess("on_synced")
-            activitiesRepository.recordSyncActivity(sharedPrefManager.rawPreferences.getString("userId", "") ?: "")
+            activitiesRepository.recordSyncActivity(sharedPrefManager.getUserId())
             syncTimeLogger.endProcess("on_synced")
 
             syncTimeLogger.stopLogging()
@@ -381,10 +380,7 @@ class SyncManager @Inject constructor(
                     if (batchCount % 10 == 0) {
                         syncPerf { "    Resources batch $batchCount: ${batchTime}ms - Progress: $skip/$totalRows (${(skip * 100 / totalRows.coerceAtLeast(1))}%)" }
                         syncTimeLogger.logDetail("resource_sync", "Batch $batchCount progress: $skip/$totalRows (${(skip * 100 / totalRows.coerceAtLeast(1))}%)")
-                        sharedPrefManager.rawPreferences.edit {
-                            putLong("ResourceLastSyncTime", timeProvider.now())
-                            putInt("ResourceSyncPosition", skip)
-                        }
+                        sharedPrefManager.setResourceSyncProgress(timeProvider.now(), skip)
                     }
                 } catch (e: CancellationException) {
                     throw e

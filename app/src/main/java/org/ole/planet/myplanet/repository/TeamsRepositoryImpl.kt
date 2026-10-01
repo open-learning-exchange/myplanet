@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.SharedPreferences
 import android.os.Build
 import android.text.TextUtils
 import android.util.Log
@@ -33,7 +32,6 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.MyLibrary
@@ -68,7 +66,6 @@ class TeamsRepositoryImpl @Inject constructor(
     private val userSessionManager: UserSessionManager,
     private val uploadManager: UploadManager,
     private val gson: Gson,
-    @param:AppPreferences private val preferences: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider,
@@ -917,8 +914,7 @@ class TeamsRepositoryImpl @Inject constructor(
         if (!primaryAvailable && alternativeAvailable) {
             mapping.alternativeUrl.let { alternativeUrl ->
                 val uri = updateUrl.toUri()
-                val editor = preferences.edit()
-                serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, preferences)
+                serverUrlMapper.updateUrlPreferences(sharedPrefManager, uri, alternativeUrl, mapping.primaryUrl)
             }
         }
 

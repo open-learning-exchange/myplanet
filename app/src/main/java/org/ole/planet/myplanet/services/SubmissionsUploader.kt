@@ -69,8 +69,7 @@ class SubmissionsUploader @Inject constructor(
                 if (!primaryAvailable) {
                     mapping.alternativeUrl?.let { alternativeUrl ->
                         val uri = updateUrl.toUri()
-                        val editor = sharedPrefManager.rawPreferences.edit()
-                        serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, sharedPrefManager.rawPreferences)
+                        serverUrlMapper.updateUrlPreferences(sharedPrefManager, uri, alternativeUrl, mapping.primaryUrl)
                     }
                 }
                 uploadSubmissionsWithTiming(syncStartTime)

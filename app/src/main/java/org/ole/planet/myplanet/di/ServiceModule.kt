@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.utils.AndroidAppInfo
 import org.ole.planet.myplanet.utils.AndroidAppLocale
 import org.ole.planet.myplanet.utils.AndroidAppStorage
 import org.ole.planet.myplanet.utils.AndroidAppUsageStats
+import org.ole.planet.myplanet.utils.AndroidCredentialStore
 import org.ole.planet.myplanet.utils.AndroidDownloadLauncher
 import org.ole.planet.myplanet.utils.AndroidNetworkStatus
 import org.ole.planet.myplanet.utils.AndroidStringProvider
@@ -46,6 +47,7 @@ import org.ole.planet.myplanet.utils.AppInfo
 import org.ole.planet.myplanet.utils.AppLocale
 import org.ole.planet.myplanet.utils.AppStorage
 import org.ole.planet.myplanet.utils.AppUsageStats
+import org.ole.planet.myplanet.utils.CredentialStore
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadLauncher
 import org.ole.planet.myplanet.utils.NetworkStatus
@@ -103,6 +105,10 @@ object ServiceModule {
 
     @Provides
     @Singleton
+    fun provideCredentialStore(impl: AndroidCredentialStore): CredentialStore = impl
+
+    @Provides
+    @Singleton
     fun provideUploadToShelfService(
         @ApplicationContext context: Context,
         @AppPreferences preferences: SharedPreferences,
@@ -119,7 +125,8 @@ object ServiceModule {
     @Singleton
     fun provideTransactionSyncManager(
         apiInterface: ApiInterface,
-        @ApplicationContext context: Context,
+        appStorage: AppStorage,
+        credentialStore: CredentialStore,
         voicesRepository: VoicesRepository,
         chatRepository: ChatSyncWriter,
         feedbackRepository: FeedbackSyncWriter,
@@ -142,6 +149,6 @@ object ServiceModule {
         userSessionManager: UserSessionManager,
         syncTimeLogger: SyncTimeLogger
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, eventsSyncWriter, healthRepository, progressRepository, surveysRepository, dispatcherProvider, timeProvider, userSessionManager, syncTimeLogger)
+        return TransactionSyncManager(apiInterface, appStorage, credentialStore, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, eventsSyncWriter, healthRepository, progressRepository, surveysRepository, dispatcherProvider, timeProvider, userSessionManager, syncTimeLogger)
     }
 }

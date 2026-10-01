@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services
 
-import android.content.SharedPreferences
 import dagger.hilt.android.testing.BindValue
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -69,16 +68,12 @@ class SubmissionsUploaderTest {
     @Inject
     lateinit var submissionsUploader: SubmissionsUploader
 
-    private val editor: SharedPreferences.Editor = mockk(relaxed = true)
-    private val rawPrefs: SharedPreferences = mockk(relaxed = true)
 
     @Before
     fun setUp() {
         hiltRule.inject()
 
         every { sharedPrefManager.getServerUrl() } returns "http://primary.com"
-        every { sharedPrefManager.rawPreferences } returns rawPrefs
-        every { rawPrefs.edit() } returns editor
 
         every { serverUrlMapper.processUrl("http://primary.com") } returns UrlMapping(
             primaryUrl = "http://primary.com",
@@ -102,7 +97,7 @@ class SubmissionsUploaderTest {
         coVerify { uploadManager.uploadAdoptedSurveys() }
         coVerify { uploadManager.uploadSubmissions(12345L) }
         verify(exactly = 0) {
-            serverUrlMapper.updateUrlPreferences(any(), any(), any(), any(), any())
+            serverUrlMapper.updateUrlPreferences(any(), any(), any(), any())
         }
     }
 
@@ -116,11 +111,10 @@ class SubmissionsUploaderTest {
 
         verify {
             serverUrlMapper.updateUrlPreferences(
-                editor,
+                sharedPrefManager,
                 any(),
                 "http://alt.com",
-                "http://primary.com",
-                rawPrefs
+                "http://primary.com"
             )
         }
         coVerify { uploadManager.uploadAdoptedSurveys() }
@@ -138,7 +132,7 @@ class SubmissionsUploaderTest {
         coVerify(exactly = 0) { uploadManager.uploadAdoptedSurveys() }
         coVerify(exactly = 0) { uploadManager.uploadSubmissions(any()) }
         verify(exactly = 0) {
-            serverUrlMapper.updateUrlPreferences(any(), any(), any(), any(), any())
+            serverUrlMapper.updateUrlPreferences(any(), any(), any(), any())
         }
     }
 }

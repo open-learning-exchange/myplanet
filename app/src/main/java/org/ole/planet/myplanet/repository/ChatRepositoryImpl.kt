@@ -114,7 +114,7 @@ class ChatRepositoryImpl @Inject constructor(
 
     override suspend fun fetchAiProviders(serverUrl: String): Map<String, Boolean>? {
         val mapping = serverUrlMapper.processUrl(serverUrl)
-        serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+        serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager) { url ->
             reachabilityCheck(url)
         }
         return chatApiService.fetchAiProviders()
