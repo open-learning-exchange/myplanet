@@ -10,10 +10,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class LeadersViewModel @Inject constructor(
-    private val configurationsRepository: ConfigurationsRepository
+    private val configurationsRepository: ConfigurationsRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _leaders = MutableStateFlow<List<UserEntity>?>(null)
@@ -24,7 +26,7 @@ class LeadersViewModel @Inject constructor(
     }
 
     private fun loadLeaders() {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.default) {
             _leaders.value = configurationsRepository.getCommunityLeaders()
         }
     }
