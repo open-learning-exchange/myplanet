@@ -157,6 +157,48 @@ class MyLibraryDaoTest {
     }
 
     @Test
+    fun getResourceTitlesByResourceIds_returnsTitlesOrderedByRowidAndHandlesMoreThan900Ids() = runBlocking {
+        val dup1 = MyLibrary().apply {
+            id = "pk1"
+            _id = "pk1"
+            resourceId = "shared_res"
+            title = "Old Title"
+        }
+        val dup2 = MyLibrary().apply {
+            id = "pk2"
+            _id = "pk2"
+            resourceId = "shared_res"
+            title = "New Title"
+        }
+
+        val items = (1..950).map { i ->
+            MyLibrary().apply {
+                id = "item_$i"
+                _id = "item_$i"
+                resourceId = "res_$i"
+                title = "Title $i"
+            }
+        }.toMutableList()
+
+        items.add(0, dup1)
+        items.add(dup2)
+
+        myLibraryDao.upsertAll(items)
+
+        val targetIds = (1..950).map { "res_$it" } + listOf("shared_res")
+        val results = myLibraryDao.getResourceTitlesByResourceIds(targetIds)
+
+        assertEquals(952, results.size)
+
+        val sharedResTitles = results.filter { it.resourceId == "shared_res" }.map { it.title }
+        assertEquals(listOf("Old Title", "New Title"), sharedResTitles)
+
+        val titleMap = results.associate { (it.resourceId ?: "") to (it.title ?: "") }
+        assertEquals("New Title", titleMap["shared_res"])
+        assertEquals("Title 950", titleMap["res_950"])
+    }
+
+    @Test
     fun deleteStalePublicNotIn_deletesOnlyStalePublicSyncedResources() = runBlocking {
         val items = mutableListOf<MyLibrary>()
 
@@ -264,5 +306,33 @@ class MyLibraryDaoTest {
         allItems.forEach { item ->
             assertEquals(false, item.resourceOffline)
         }
+    }
+
+    @Test
+    fun getByCourseIds_handlesLargeInputAndDeduplicates() = runBlocking {
+        val lib1 = MyLibrary().apply { id = "pk_0"; courseId = "course_0" }
+        val lib2 = MyLibrary().apply { id = "pk_1000"; courseId = "course_1000" }
+        myLibraryDao.upsertAll(listOf(lib1, lib2))
+
+        val queryIds = (0 until 1200).map { "course_$it" } + listOf("course_0", "course_1000")
+        val result = myLibraryDao.getByCourseIds(queryIds)
+
+        assertEquals(2, result.size)
+        assertTrue(result.any { it.courseId == "course_0" })
+        assertTrue(result.any { it.courseId == "course_1000" })
+    }
+
+    @Test
+    fun getOfflineResourcesForCourses_handlesLargeInputAndDeduplicates() = runBlocking {
+        val lib1 = MyLibrary().apply { id = "pk_0"; courseId = "course_0"; resourceOffline = false; resourceLocalAddress = "local/path_0" }
+        val lib2 = MyLibrary().apply { id = "pk_1000"; courseId = "course_1000"; resourceOffline = false; resourceLocalAddress = "local/path_1000" }
+        myLibraryDao.upsertAll(listOf(lib1, lib2))
+
+        val queryIds = (0 until 1200).map { "course_$it" } + listOf("course_0", "course_1000")
+        val result = myLibraryDao.getOfflineResourcesForCourses(queryIds)
+
+        assertEquals(2, result.size)
+        assertTrue(result.any { it.courseId == "course_0" })
+        assertTrue(result.any { it.courseId == "course_1000" })
     }
 }

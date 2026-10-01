@@ -65,7 +65,12 @@ interface MyLibraryDao {
         "SELECT * FROM my_library WHERE courseId IN (:courseIds) " +
             "AND resourceOffline = 0 AND resourceLocalAddress IS NOT NULL"
     )
-    suspend fun getOfflineResourcesForCourses(courseIds: List<String>): List<MyLibrary>
+    suspend fun getOfflineResourcesForCoursesInternal(courseIds: List<String>): List<MyLibrary>
+
+    suspend fun getOfflineResourcesForCourses(courseIds: List<String>): List<MyLibrary> {
+        if (courseIds.isEmpty()) return emptyList()
+        return courseIds.distinct().chunked(900).flatMap { getOfflineResourcesForCoursesInternal(it) }
+    }
 
     @Query(
         "SELECT * FROM my_library WHERE courseId = :courseId " +
@@ -190,6 +195,14 @@ interface MyLibraryDao {
 
     @Query("DELETE FROM my_library WHERE _rev IS NOT NULL AND _rev != '' AND isPrivate = 0")
     suspend fun deleteAllStalePublic()
+
+    @Query("SELECT resourceId, title FROM my_library WHERE resourceId IN (:resourceIds) ORDER BY rowid")
+    suspend fun getResourceTitlesByResourceIdsInternal(resourceIds: List<String>): List<ResourceTitleProjection>
+
+    suspend fun getResourceTitlesByResourceIds(resourceIds: List<String>): List<ResourceTitleProjection> {
+        if (resourceIds.isEmpty()) return emptyList()
+        return resourceIds.chunked(900).flatMap { getResourceTitlesByResourceIdsInternal(it) }
+    }
 }
 
 data class ResourceTitleProjection(
