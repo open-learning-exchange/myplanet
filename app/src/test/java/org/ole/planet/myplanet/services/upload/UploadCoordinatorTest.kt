@@ -19,19 +19,18 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UploadCoordinatorTest {
@@ -89,7 +88,7 @@ class UploadCoordinatorTest {
                 addProperty("id", "remote-$id")
                 addProperty("rev", "1-rev")
             }
-            Response.success(resp)
+            NetworkResult.Success(resp)
         }
 
         val config = UploadConfig(
@@ -131,14 +130,14 @@ class UploadCoordinatorTest {
 
         val item = Submission(id = "local-1", _id = "db-1")
 
-        val conflictResponse = Response.error<JsonObject>(409, "".toResponseBody(null))
+        val conflictResponse = NetworkResult.Error(409, null)
         coEvery { uploadRepository.putUpload(any(), any()) } returns conflictResponse
 
         val existingDoc = JsonObject().apply {
             addProperty("_id", "db-1")
             addProperty("_rev", "2-existing-rev")
         }
-        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/test_endpoint/db-1") } returns Response.success(existingDoc)
+        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/test_endpoint/db-1") } returns NetworkResult.Success(existingDoc)
 
         val config = UploadConfig(
             modelClass = Submission::class,
@@ -171,9 +170,9 @@ class UploadCoordinatorTest {
 
         val item = Submission(id = "local-1", _id = "db-1")
 
-        val conflictResponse = Response.error<JsonObject>(409, "".toResponseBody(null))
+        val conflictResponse = NetworkResult.Error(409, null)
         coEvery { uploadRepository.putUpload(any(), any()) } returns conflictResponse
-        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/test_endpoint/db-1") } throws IOException("Network down during 409 recovery")
+        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/test_endpoint/db-1") } returns NetworkResult.Exception(IOException("Network down during 409 recovery"))
 
         val config = UploadConfig(
             modelClass = Submission::class,
@@ -222,7 +221,7 @@ class UploadCoordinatorTest {
                 addProperty("id", "room-remote-$idx")
                 addProperty("rev", "1-room-rev")
             }
-            Response.success(resp)
+            NetworkResult.Success(resp)
         }
 
         val config = RoomUploadConfig(
@@ -265,14 +264,14 @@ class UploadCoordinatorTest {
 
         val item = TestRoomItem("room-local-1", null)
 
-        val conflictResponse = Response.error<JsonObject>(409, "".toResponseBody(null))
+        val conflictResponse = NetworkResult.Error(409, null)
         coEvery { uploadRepository.postUpload(any(), any()) } returns conflictResponse
 
         val existingDoc = JsonObject().apply {
             addProperty("_id", "room-remote-1")
             addProperty("_rev", "3-room-rev")
         }
-        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/test_room_endpoint/room-local-1") } returns Response.success(existingDoc)
+        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/test_room_endpoint/room-local-1") } returns NetworkResult.Success(existingDoc)
 
         val config = RoomUploadConfig(
             endpoint = "test_room_endpoint",
@@ -304,9 +303,9 @@ class UploadCoordinatorTest {
 
         val item = TestRoomItem("room-local-1", null)
 
-        val conflictResponse = Response.error<JsonObject>(409, "".toResponseBody(null))
+        val conflictResponse = NetworkResult.Error(409, null)
         coEvery { uploadRepository.postUpload(any(), any()) } returns conflictResponse
-        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/test_room_endpoint/room-local-1") } throws IOException("Network down during 409 recovery")
+        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/test_room_endpoint/room-local-1") } returns NetworkResult.Exception(IOException("Network down during 409 recovery"))
 
         val config = RoomUploadConfig(
             endpoint = "test_room_endpoint",
@@ -339,7 +338,7 @@ class UploadCoordinatorTest {
 
         coEvery { uploadRepository.postUpload(any(), any()) } coAnswers {
             delay(100)
-            Response.success(JsonObject())
+            NetworkResult.Success(JsonObject())
         }
 
         val config = UploadConfig(
@@ -558,14 +557,14 @@ class UploadCoordinatorTest {
     private fun sampleItem(localId: String): SampleItem =
         SampleItem(localId, JsonObject().apply { addProperty("localId", localId) })
 
-    private fun successResponse(id: String, rev: String): Response<JsonObject> =
-        Response.success(JsonObject().apply {
+    private fun successResponse(id: String, rev: String): NetworkResult<JsonObject> =
+        NetworkResult.Success(JsonObject().apply {
             addProperty("id", id)
             addProperty("rev", rev)
         })
 
-    private fun errorResponse(code: Int): Response<JsonObject> =
-        Response.error(code, "error".toResponseBody(null))
+    private fun errorResponse(code: Int): NetworkResult<JsonObject> =
+        NetworkResult.Error(code, null)
 
     private fun roomConfig(items: List<SampleItem>) = RoomUploadConfig<SampleItem>(
         endpoint = "samples",

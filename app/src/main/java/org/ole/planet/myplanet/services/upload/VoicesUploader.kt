@@ -8,9 +8,8 @@ import com.google.gson.JsonObject
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.asRequestBody
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.NewsUpdateData
 import org.ole.planet.myplanet.repository.NewsUploadData
@@ -80,10 +79,11 @@ class VoicesUploader @Inject constructor(
 
                             // Create image resource document
                             val imageDoc = createImage(user, imgObject)
-                            val imageResponse = uploadRepository.postUpload(
+                            val imageResult = uploadRepository.postUpload(
                                 "${UrlUtils.getUrl()}/resources",
                                 imageDoc
-                            ).body()
+                            )
+                            val imageResponse = (imageResult as? NetworkResult.Success)?.data
 
                             val resourceId = getString("id", imageResponse)
                             val resourceRev = getString("rev", imageResponse)
@@ -92,12 +92,12 @@ class VoicesUploader @Inject constructor(
                             val imageFile = File(getString("imageUrl", imgObject))
                             val fileName = FileUtils.getFileNameFromUrl(getString("imageUrl", imgObject))
                             val mimeType = FileUtils.getMimeType(fileName) ?: "application/octet-stream"
-                            val fileBody = imageFile.asRequestBody("application/octet-stream".toMediaTypeOrNull())
 
                             uploadRepository.uploadResource(
                                 FileUploader.getHeaderMap(mimeType, resourceRev),
                                 "${UrlUtils.getUrl()}/resources/$resourceId/$fileName",
-                                fileBody
+                                imageFile,
+                                mimeType
                             )
 
                             val resourceObject = JsonObject()

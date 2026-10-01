@@ -1,15 +1,15 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonObject
-import retrofit2.Response
+import org.ole.planet.myplanet.data.NetworkResult
 
 interface UploadRepository {
-    suspend fun postUpload(url: String, serializedData: JsonObject): Response<JsonObject>
-    suspend fun postUploadArray(url: String, serializedData: JsonObject): Response<com.google.gson.JsonArray>
-    suspend fun putUpload(url: String, serializedData: JsonObject): Response<JsonObject>
-    suspend fun fetchExistingDoc(url: String): Response<JsonObject>
-    suspend fun uploadAttachment(file: java.io.File, destinationFormat: String, id: String, rev: String, name: String): Response<JsonObject>
-    suspend fun uploadResource(headerMap: Map<String, String>, url: String, body: okhttp3.RequestBody): Response<JsonObject>
+    suspend fun postUpload(url: String, serializedData: JsonObject): NetworkResult<JsonObject>
+    suspend fun postUploadArray(url: String, serializedData: JsonObject): NetworkResult<com.google.gson.JsonArray>
+    suspend fun putUpload(url: String, serializedData: JsonObject): NetworkResult<JsonObject>
+    suspend fun fetchExistingDoc(url: String): NetworkResult<JsonObject>
+    suspend fun uploadAttachment(file: java.io.File, destinationFormat: String, id: String, rev: String, name: String): NetworkResult<JsonObject>
+    suspend fun uploadResource(headerMap: Map<String, String>, url: String, file: java.io.File, mimeType: String): NetworkResult<JsonObject>
 }
 
 data class UploadedItemResult(
