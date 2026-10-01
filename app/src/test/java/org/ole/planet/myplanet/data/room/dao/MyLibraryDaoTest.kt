@@ -6,7 +6,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -224,21 +226,21 @@ class MyLibraryDaoTest {
 
         myLibraryDao.deleteStalePublicNotIn(currentIds)
 
-        val remaining = myLibraryDao.getAll()
-        val remainingIds = remaining.map { it.id }.toSet()
+        val remainingPublic = myLibraryDao.getPublic()
+        val remainingPublicIds = remainingPublic.map { it.id }.toSet()
 
-        // Assert exactly 1503 items remain (1500 current + 1 private + 1 unsynced + 1 null resourceId)
-        assertEquals(1503, remaining.size)
+        // 1500 current + 1 unsynced + 1 null resourceId remain public; the 3 stale ones are gone
+        assertEquals(1502, remainingPublic.size)
 
         // Assert that stale public rows are deleted
-        org.junit.Assert.assertFalse(remainingIds.contains("stale_1"))
-        org.junit.Assert.assertFalse(remainingIds.contains("stale_2"))
-        org.junit.Assert.assertFalse(remainingIds.contains("stale_3"))
+        assertFalse(remainingPublicIds.contains("stale_1"))
+        assertFalse(remainingPublicIds.contains("stale_2"))
+        assertFalse(remainingPublicIds.contains("stale_3"))
 
         // Assert non-stale / non-candidate rows survive
-        org.junit.Assert.assertTrue(remainingIds.contains("private_1"))
-        org.junit.Assert.assertTrue(remainingIds.contains("unsynced_1"))
-        org.junit.Assert.assertTrue(remainingIds.contains("null_res_1"))
+        assertTrue(remainingPublicIds.contains("unsynced_1"))
+        assertTrue(remainingPublicIds.contains("null_res_1"))
+        assertNotNull(myLibraryDao.getById("private_1"))
     }
 
     @Test
@@ -257,7 +259,7 @@ class MyLibraryDaoTest {
         val idsToMark = items.map { it.resourceId!! }
         myLibraryDao.markAsNotOfflineByResourceIds(idsToMark)
 
-        val allItems = myLibraryDao.getAll()
+        val allItems = myLibraryDao.getPublic()
         assertEquals(count, allItems.size)
         allItems.forEach { item ->
             assertEquals(false, item.resourceOffline)
