@@ -5,11 +5,12 @@ Usage: test_timing_summary.py <test-results-dir> [--shard N/M] [--warn-over SECO
 
 Reads the JUnit XML that Gradle writes to app/build/test-results/<task>/ and
 prints a markdown report of:
-  - The slowest test classes by total time (including test count and median test time)
+  - The slowest test classes by total time (including test count, warm-up time, and median test time)
+  - The slowest test classes excluding first-test warm-up
   - The slowest test classes by median test time (for classes with >=3 tests)
   - The slowest individual tests (flagging likely warm-up tests exceeding 5x class median)
 
-CI shows where the test wall time actually goes and highlights Robolectric sandbox boot costs.
+CI shows where the test wall time actually goes and highlights first-test warm-up (Robolectric sandbox boot, MockK/agent instrumentation).
 
 --shard labels the report with which CI shard produced it, for the optional
 sharded run (-PtestShardTotal/-PtestShardIndex). --warn-over prints a loud
@@ -25,6 +26,9 @@ import sys
 import xml.etree.ElementTree as ET
 
 TOP_N = 15
+
+def _is_warmup(case_elapsed: float, test_count: int, class_median: float) -> bool:
+    return test_count >= 3 and case_elapsed > 5 * class_median
 
 def _parse_time(time_str: str | None, path: str) -> float:
     try:
@@ -88,27 +92,35 @@ def main() -> int:
         test_times = [c[0] for c in class_cases]
         test_count = len(test_times)
         class_median = statistics.median(test_times) if test_times else 0.0
+        warmup = sum(t for t in test_times if _is_warmup(t, test_count, class_median))
+        excl = max(0.0, class_elapsed - warmup)
 
-        classes.append((class_elapsed, class_name, test_count, class_median))
+        classes.append((class_elapsed, class_name, test_count, class_median, warmup, excl))
 
         for case_elapsed, case_display_name in class_cases:
-            is_warmup = "yes" if (test_count >= 3 and case_elapsed > 5 * class_median) else ""
+            is_warmup = "yes" if _is_warmup(case_elapsed, test_count, class_median) else ""
             cases.append((case_elapsed, case_display_name, is_warmup))
 
     classes.sort(key=lambda x: (x[0], x[1]), reverse=True)
     cases.sort(key=lambda x: (x[0], x[1]), reverse=True)
 
+    classes_by_excl = sorted(classes, key=lambda x: (x[5], x[1]), reverse=True)
+
     classes_by_median = [
         (median_val, name, count, elapsed)
-        for elapsed, name, count, median_val in classes
+        for elapsed, name, count, median_val, warmup, excl in classes
         if count >= 3
     ]
     classes_by_median.sort(key=lambda x: (x[0], x[3], x[1]), reverse=True)
+
+    warmup_total = sum(c[4] for c in classes) if total else 0.0
+    warmup_count = sum(1 for c in cases if c[2] == "yes") if total else 0
 
     shard_suffix = f" (shard {args.shard})" if args.shard else ""
     print(f"## Unit test timing{shard_suffix}")
     print()
     print(f"{len(cases)} tests in {len(classes)} classes, {total:.1f}s of test time summed across forks.")
+    print(f"{warmup_total:.1f}s of that is first-test warm-up ({warmup_count} tests flagged).")
     print()
     if args.warn_over is not None and total > args.warn_over:
         subject = f"shard {args.shard}" if args.shard else "the suite"
@@ -120,11 +132,18 @@ def main() -> int:
         print()
     print(f"### {TOP_N} slowest test classes")
     print()
-    print("| Class | Seconds | % of total | Tests | Median s/test |")
-    print("| --- | --- | --- | --- | --- |")
-    for elapsed, name, count, median_val in classes[:TOP_N]:
+    print("| Class | Seconds | Warm-up s | % of total | Tests | Median s/test |")
+    print("| --- | --- | --- | --- | --- | --- |")
+    for elapsed, name, count, median_val, warmup, excl in classes[:TOP_N]:
         share = (elapsed / total * 100) if total else 0.0
-        print(f"| `{name}` | {elapsed:.1f} | {share:.1f}% | {count} | {median_val:.2f} |")
+        print(f"| `{name}` | {elapsed:.1f} | {warmup:.1f} | {share:.1f}% | {count} | {median_val:.2f} |")
+    print()
+    print(f"### {TOP_N} slowest test classes excluding first-test warm-up")
+    print()
+    print("| Class | Seconds excl. warm-up | Warm-up s | Seconds | Tests |")
+    print("| --- | --- | --- | --- | --- |")
+    for elapsed, name, count, median_val, warmup, excl in classes_by_excl[:TOP_N]:
+        print(f"| `{name}` | {excl:.1f} | {warmup:.1f} | {elapsed:.1f} | {count} |")
     print()
     print(f"### {TOP_N} slowest classes per test (median, ≥3 tests)")
     print()
