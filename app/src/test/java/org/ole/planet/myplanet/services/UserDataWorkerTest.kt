@@ -10,6 +10,7 @@ import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -131,5 +132,26 @@ class UserDataWorkerTest {
             uploadManager.uploadSubmitPhotos(any())
             uploadManager.uploadActivities(any())
         }
+    }
+
+    @Test
+    fun `doWork for UPLOAD_TYPE_BULK rethrows CancellationException and stops subsequent uploads`() = runTest {
+        val inputData = Data.Builder()
+            .putString(UserDataWorker.KEY_UPLOAD_TYPE, UserDataWorker.UPLOAD_TYPE_BULK)
+            .build()
+        every { workerParams.inputData } returns inputData
+
+        coEvery { uploadManager.uploadAchievement() } throws CancellationException("Worker stopped")
+
+        try {
+            worker.doWork()
+            org.junit.Assert.fail("Expected CancellationException")
+        } catch (e: CancellationException) {
+            assertEquals("Worker stopped", e.message)
+        }
+
+        coVerify(exactly = 1) { uploadManager.uploadAchievement() }
+        coVerify(exactly = 0) { uploadManager.uploadNews() }
+        coVerify(exactly = 0) { uploadManager.uploadResourceActivities(any()) }
     }
 }

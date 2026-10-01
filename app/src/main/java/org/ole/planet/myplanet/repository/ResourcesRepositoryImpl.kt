@@ -880,8 +880,6 @@ class ResourcesRepositoryImpl @Inject constructor(
         val oleDir = File(oleDirPath)
         if (!oleDir.exists() || !oleDir.isDirectory) return@withContext emptyList()
 
-        val titleMap = getResourceTitlesMap()
-
         class ResourceAccumulator {
             val filePaths = mutableListOf<String>()
             var totalSize = 0L
@@ -904,6 +902,11 @@ class ResourcesRepositoryImpl @Inject constructor(
                 accumulator.totalSize += file.length()
             }
         }
+
+        if (grouped.isEmpty()) return@withContext emptyList()
+
+        val titleMap = myLibraryDao.getResourceTitlesByResourceIds(grouped.keys.toList())
+            .associate { (it.resourceId ?: "") to (it.title ?: "") }
 
         return@withContext grouped.map { (resourceId, accumulator) ->
             accumulator.filePaths.sort()
