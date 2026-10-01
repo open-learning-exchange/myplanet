@@ -918,4 +918,24 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     override suspend fun getPendingSubmissionsForUpload(): List<Submission> {
         return hydrateSubmissions(submissionDao.getPendingSubmissions())
     }
+
+    override suspend fun markSubmissionsUploaded(results: List<UploadedItemResult>): List<UploadedItemResult> =
+        results.filter { submissionDao.markUploaded(it.localId, it.remoteId, it.remoteRev) == 0 }
+
+    override suspend fun getExamSubmissionsByUser(userId: String?): List<Submission> {
+        return submissionDao.getExamSubmissionsByUser(userId)
+    }
+
+    override suspend fun getAnswersBySubmissionIds(ids: List<String>): List<Answer> {
+        return answerDao.getBySubmissionIds(ids)
+    }
+
+    override suspend fun getUnuploadedNonSurveySubmissionsByParentIds(parentIds: List<String>): List<Submission> {
+        return submissionDao.getUnuploadedNonSurveyByParentIds(parentIds)
+    }
+
+    override suspend fun deleteSubmissionsWithAnswers(ids: List<String>) {
+        answerDao.deleteBySubmissionIds(ids)
+        submissionDao.deleteByIds(ids)
+    }
 }

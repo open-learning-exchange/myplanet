@@ -6,6 +6,7 @@ import android.util.Log
 import com.google.gson.Gson
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -953,5 +954,17 @@ class ConfigurationsRepositoryImplTest {
         coVerify(exactly = 0) { apiInterface.postDoc(any(), any(), any(), any()) }
 
         unmockkObject(UrlUtils)
+    }
+
+    @Test
+    fun `clearLocalAppData calls clearAllTables and then clearPreferences`() = runTest(testDispatcher) {
+        every { sharedPrefManager.clearPreferences() } just runs
+
+        repository.clearLocalAppData()
+
+        coVerifyOrder {
+            appDatabase.clearAllTables()
+            sharedPrefManager.clearPreferences()
+        }
     }
 }

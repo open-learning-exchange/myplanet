@@ -8,6 +8,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestDispatcher
@@ -21,6 +22,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -308,6 +310,50 @@ class SyncRepositoryImplTest {
         val retrievedShelves = syncRepository.getCachedShelvesWithData()
 
         assertEquals(inputShelves, retrievedShelves)
+    }
+
+    @Test
+    fun `syncDashboardKeyId rethrows CancellationException instead of returning an error state`() = runTest {
+        coEvery {
+            transactionSyncManager.get().syncDashboardKeyId(any())
+        } throws CancellationException("Dashboard sync cancelled")
+
+        var rethrown = false
+        var state: SyncUiState? = null
+        try {
+            state = syncRepository.syncDashboardKeyId("learner")
+        } catch (_: CancellationException) {
+            rethrown = true
+        }
+
+        assertTrue("expected CancellationException to propagate, got state $state", rethrown)
+    }
+
+    @Test(expected = CancellationException::class)
+    fun `processShelfParallel rethrows CancellationException when shelf dispatch handler fails with CancellationException`() = runTest {
+        val shelfId = "shelf123"
+        val shelfDoc = buildJsonObject {
+            put("_id", shelfId)
+            putJsonArray("resourceIds") { add("res1") }
+        }
+
+        coEvery {
+            apiInterface.getJsonObject(any(), match { it.contains("/shelf/$shelfId") })
+        } returns Response.success(shelfDoc)
+
+        val doc1 = buildJsonObject { put("_id", "res1") }
+        val row1 = buildJsonObject { put("doc", doc1) }
+        val rows = buildJsonArray { add(row1) }
+        val body = buildJsonObject { put("rows", rows) }
+        coEvery {
+            apiInterface.postDoc(any(), any(), any(), any())
+        } returns Response.success(body)
+
+        coEvery {
+            resourcesRepository.batchInsertMyLibrary(shelfId, any())
+        } throws CancellationException("Shelf insertion cancelled")
+
+        syncRepository.processShelfParallel(shelfId)
     }
 
     @Test

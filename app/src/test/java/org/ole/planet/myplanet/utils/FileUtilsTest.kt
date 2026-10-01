@@ -15,7 +15,6 @@ import android.provider.OpenableColumns
 import android.webkit.MimeTypeMap
 import java.io.File
 import org.junit.After
-import org.robolectric.Shadows.shadowOf
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -25,6 +24,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowContentResolver
 import org.robolectric.shadows.ShadowEnvironment
@@ -119,6 +119,23 @@ class FileUtilsTest {
         assertEquals("document.pdf", FileUtils.getFileNameFromUrl("https://site.org/path/document.pdf?query=1"))
         assertEquals("", FileUtils.getFileNameFromUrl(null))
         assertEquals("file with spaces.txt", FileUtils.getFileNameFromUrl("http://example.com/file%20with%20spaces.txt"))
+    }
+
+    @Test
+    fun getSDPathFromUrl_keepsPlusAndPercentInFileNames() {
+        FileUtils.warmUp(context)
+
+        val plus = FileUtils.getSDPathFromUrl(context, "http://example.com/resources/123/Grade 1+2.pdf")
+        assertTrue("plus=${plus.absolutePath}", plus.absolutePath.endsWith("ole/123/Grade 1+2.pdf"))
+
+        val percent = FileUtils.getSDPathFromUrl(context, "http://example.com/resources/123/50% off.pdf")
+        assertTrue("percent=${percent.absolutePath}", percent.absolutePath.endsWith("ole/123/50% off.pdf"))
+    }
+
+    @Test
+    fun getFileNameFromUrl_keepsPlusAndDecodesPercentEscapesOnce() {
+        assertEquals("Grade 1+2.pdf", FileUtils.getFileNameFromUrl("http://example.com/resources/1/Grade 1+2.pdf"))
+        assertEquals("a b.pdf", FileUtils.getFileNameFromUrl("http://example.com/resources/1/a%20b.pdf"))
     }
 
     @Test

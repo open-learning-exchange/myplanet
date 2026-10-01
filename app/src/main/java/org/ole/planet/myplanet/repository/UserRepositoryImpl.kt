@@ -10,6 +10,7 @@ import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
+import java.net.URLEncoder
 import java.text.Normalizer
 import java.util.Calendar
 import java.util.Date
@@ -17,6 +18,7 @@ import java.util.UUID
 import java.util.regex.Pattern
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -42,8 +44,8 @@ import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.DashboardProfile
+import org.ole.planet.myplanet.model.LearnerRegistrationInfo
 import org.ole.planet.myplanet.model.Meetup
-import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -393,6 +395,8 @@ class UserRepositoryImpl @Inject constructor(
                 val rev = userDoc?.get("_rev")?.asString
                 updateSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -514,7 +518,7 @@ class UserRepositoryImpl @Inject constructor(
         return getUserProfile()?.userImage
     }
 
-    override suspend fun createMember(user: MemberInfo): Pair<Boolean, String> {
+    override suspend fun createMember(user: LearnerRegistrationInfo): Pair<Boolean, String> {
         val obj = JsonObject().apply {
             addProperty("name", user.username)
             addProperty("firstName", user.fName)
@@ -714,7 +718,7 @@ class UserRepositoryImpl @Inject constructor(
     private fun replacedUrl(model: UserEntity): String {
         val url = UrlUtils.getUrl()
         val password = SecurePrefs.getPassword(context, settings) ?: ""
-        val replacedUrl = url.replaceFirst("[^:]+:[^@]+@".toRegex(), "${model.name}:${password}@")
+        val replacedUrl = url.replace(USERINFO_REGEX) { "${enc(model.name)}:${enc(password)}@" }
         val protocolIndex = url.indexOf("://")
         val protocol = url.substring(0, protocolIndex)
         return "$protocol://$replacedUrl"
@@ -970,6 +974,8 @@ class UserRepositoryImpl @Inject constructor(
         private val SPECIAL_CHAR_PATTERN = Pattern.compile(
             ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
         )
+        private val USERINFO_REGEX = Regex("[^:]+:[^@]+@")
+        private fun enc(s: String?): String = URLEncoder.encode(s ?: "", "UTF-8").replace("+", "%20")
     }
 
     override suspend fun getAchievementData(userId: String, planetCode: String): AchievementData {

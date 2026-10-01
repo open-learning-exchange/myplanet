@@ -15,7 +15,6 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.chip.Chip
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
-import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -31,10 +30,10 @@ import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DimenUtils.dpToPx
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.GsonUtils
-import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.getAge
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.parseVitalReading
 
 @AndroidEntryPoint
 class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
@@ -94,6 +93,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             health = state.health
             examination = state.examination
             conditionsMap = state.conditionsMap
+            seedSavedConditions()
 
             initExamination()
             validateFields()
@@ -124,15 +124,16 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             binding.etVision.setText(examination?.vision)
             binding.etHearing.setText(examination?.hearing)
             val encrypted = user?.let { examination?.getEncryptedDataAsJson(it) }
-            binding.etObservation.setText(getString(getString(R.string.note_), encrypted))
-            binding.etDiag.setText(getString(getString(R.string.diagnosis), encrypted))
-            binding.etTreatments.setText(getString(getString(R.string.treatments), encrypted))
-            binding.etMedications.setText(getString(getString(R.string.medications), encrypted))
-            binding.etImmunization.setText(getString(getString(R.string.immunizations), encrypted))
-            binding.etAllergies.setText(getString(getString(R.string.allergies), encrypted))
-            binding.etXray.setText(getString(getString(R.string.xrays), encrypted))
-            binding.etLabtest.setText(getString(getString(R.string.tests), encrypted))
-            binding.etReferrals.setText(getString(getString(R.string.referrals), encrypted))
+            val saved = encrypted?.let { runCatching { GsonUtils.gson.fromJson(it, Examination::class.java) }.getOrNull() }
+            binding.etObservation.setText(saved?.notes.orEmpty())
+            binding.etDiag.setText(saved?.diagnosis.orEmpty())
+            binding.etTreatments.setText(saved?.treatments.orEmpty())
+            binding.etMedications.setText(saved?.medications.orEmpty())
+            binding.etImmunization.setText(saved?.immunizations.orEmpty())
+            binding.etAllergies.setText(saved?.allergies.orEmpty())
+            binding.etXray.setText(saved?.xrays.orEmpty())
+            binding.etLabtest.setText(saved?.tests.orEmpty())
+            binding.etReferrals.setText(saved?.referrals.orEmpty())
         }
         showCheckbox(examination)
         showOtherDiagnosis()
@@ -188,6 +189,11 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             }
             binding.containerOtherDiagnosis.addView(chip)
         }
+    }
+    
+    private fun seedSavedConditions() {
+        val standardConditions = resources.getStringArray(R.array.diagnosis_list).toHashSet()
+        mapConditions?.putAll(conditionsMap.filterKeys { it in standardConditions })
     }
 
     private fun preloadCustomDiagnosis() {
@@ -252,10 +258,10 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             sign.allergies = "${binding.etAllergies.text}".trim { it <= ' ' }
             sign.createdBy = currentUser?._id
             examination?.bp = "${binding.etBloodpressure.text}".trim { it <= ' ' }
-            examination?.setTemperature(getFloat("${binding.etTemperature.text}".trim { it <= ' ' }))
+            examination?.setTemperature(parseVitalReading("${binding.etTemperature.text}".trim { it <= ' ' }))
             examination?.pulse = getInt("${binding.etPulseRate.text}".trim { it <= ' ' })
-            examination?.setWeight(getFloat("${binding.etWeight.text}".trim { it <= ' ' }))
-            examination?.height = getFloat("${binding.etHeight.text}".trim { it <= ' ' })
+            examination?.setWeight(parseVitalReading("${binding.etWeight.text}".trim { it <= ' ' }))
+            examination?.height = parseVitalReading("${binding.etHeight.text}".trim { it <= ' ' })
             otherConditions
             examination?.conditions = GsonUtils.gson.toJson(mapConditions)
             examination?.hearing = "${binding.etHearing.text}".trim { it <= ' ' }
@@ -314,17 +320,17 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         get() {
             val scrollView = binding.rootScrollView
 
-            val isValidTemp = (getFloat("${binding.etTemperature.text}".trim { it <= ' ' }) in 30.0..40.0 ||
-                        getFloat("${binding.etTemperature.text}".trim { it <= ' ' }) == 0f) &&
+            val isValidTemp = (parseVitalReading("${binding.etTemperature.text}".trim { it <= ' ' }) in 30.0..40.0 ||
+                        parseVitalReading("${binding.etTemperature.text}".trim { it <= ' ' }) == 0f) &&
                     "${binding.etTemperature.text}".trim { it <= ' ' }.isNotEmpty()
             val isValidPulse = (getInt("${binding.etPulseRate.text}".trim { it <= ' ' }) in 40..120 ||
-                    getFloat("${binding.etPulseRate.text}".trim { it <= ' ' }) == 0f) &&
+                    parseVitalReading("${binding.etPulseRate.text}".trim { it <= ' ' }) == 0f) &&
                     "${binding.etPulseRate.text}".trim { it <= ' ' }.isNotEmpty()
-            val isValidHeight = (getFloat("${binding.etHeight.text}".trim { it <= ' ' }) in 1.0..250.0 ||
-                    getFloat("${binding.etHeight.text}".trim { it <= ' ' }) == 0f) &&
+            val isValidHeight = (parseVitalReading("${binding.etHeight.text}".trim { it <= ' ' }) in 1.0..250.0 ||
+                    parseVitalReading("${binding.etHeight.text}".trim { it <= ' ' }) == 0f) &&
                     "${binding.etHeight.text}".trim { it <= ' ' }.isNotEmpty()
-            val isValidWeight = (getFloat("${binding.etWeight.text}".trim { it <= ' ' }) in 1.0..150.0 ||
-                    getFloat("${binding.etWeight.text}".trim { it <= ' ' }) == 0f) &&
+            val isValidWeight = (parseVitalReading("${binding.etWeight.text}".trim { it <= ' ' }) in 1.0..150.0 ||
+                    parseVitalReading("${binding.etWeight.text}".trim { it <= ' ' }) == 0f) &&
                     "${binding.etWeight.text}".trim { it <= ' ' }.isNotEmpty()
             if (!isValidTemp) {
                 binding.etTemperature.error = getString(R.string.invalid_input_must_be_between_30_and_40)
@@ -355,11 +361,6 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         } catch (e: Exception) {
             0
         }
-    }
-
-    private fun getFloat(trim: String): Float {
-        val value = trim.replace(',', '.').toFloatOrNull()?.takeIf { it.isFinite() } ?: return 0f
-        return (value * 10).roundToInt() / 10f
     }
 
     private fun createPojo() {

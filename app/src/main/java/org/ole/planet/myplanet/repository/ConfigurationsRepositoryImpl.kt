@@ -562,4 +562,9 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    override suspend fun clearLocalAppData() {
+        clearAllData()
+        clearPreferences()
+    }
 }

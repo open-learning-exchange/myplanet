@@ -46,7 +46,7 @@ import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.sync.LoginSyncManager
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
-import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
+import org.ole.planet.myplanet.ui.user.LearnerRegistrationActivity
 import org.ole.planet.myplanet.ui.user.UsersAdapter
 import org.ole.planet.myplanet.utils.AuthUtils
 import org.ole.planet.myplanet.utils.Constants
@@ -238,8 +238,17 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     exitSnackbar?.dismiss()
                     finish()
                 } else {
-                    exitSnackbar = Snackbar.make(binding.root, getString(R.string.press_back_again_to_exit), 2000)
-                        .setAction(getString(R.string.exit)) { finish() }
+                    exitSnackbar = Snackbar.make(
+                        binding.root,
+                        getString(R.string.press_back_again_to_exit),
+                        2000
+                    ).setAction(getString(R.string.exit)) { finish() }
+                    
+                    val textView = exitSnackbar?.view?.findViewById<TextView>(
+                        com.google.android.material.R.id.snackbar_text
+                    )
+                    textView?.maxLines = 3
+                    
                     exitSnackbar?.show()
                 }
             }
@@ -673,7 +682,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
     private fun becomeAMember() {
         if (getUrl().isNotEmpty()) {
-            startActivity(Intent(this, BecomeMemberActivity::class.java))
+            startActivity(Intent(this, LearnerRegistrationActivity::class.java))
         } else {
             toast(this, getString(R.string.please_enter_server_url_first))
             settingDialog()

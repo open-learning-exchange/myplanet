@@ -5,6 +5,7 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -98,6 +99,8 @@ class SyncRepositoryImpl @Inject constructor(
 
                 processedItems = dataJobs.awaitAll().sum()
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("SyncRepositoryImpl", "Error in processShelfParallel", e)
         }
@@ -111,16 +114,7 @@ class SyncRepositoryImpl @Inject constructor(
 
         try {
             val array = getJsonArray(shelfData.key, shelfDoc)
-            if (array.isEmpty()) return 0
-
-            val validIds = mutableListOf<String>()
-            for (element in array) {
-                if (element !is JsonNull) {
-                    validIds.add(element.asString)
-                }
-            }
-
-            if (validIds.isEmpty()) return 0
+            val validIds = array.filterNot { it is JsonNull }.map { it.asString }
 
             val batchSizer = AdaptiveBatchProcessor(initialSize = 50)
             var i = 0
@@ -189,6 +183,8 @@ class SyncRepositoryImpl @Inject constructor(
                 }
             }
 
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("SyncRepositoryImpl", "Error in processShelfDataOptimizedSync", e)
             logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} failed: ${e.message}")
@@ -200,6 +196,8 @@ class SyncRepositoryImpl @Inject constructor(
         return try {
             transactionSyncManager.get().syncDashboardKeyId(role)
             SyncUiState.Success(null)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             SyncUiState.Error(e.message)
         }
