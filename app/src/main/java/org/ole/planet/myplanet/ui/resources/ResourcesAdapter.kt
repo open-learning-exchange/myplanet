@@ -31,8 +31,6 @@ import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.LibraryType
-import org.ole.planet.myplanet.utils.LibraryTypeClassifier
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.PdfThumbnailLoader
 import org.ole.planet.myplanet.utils.StableIdGenerator
@@ -105,25 +103,25 @@ class ResourcesAdapter(
             }
         )
 
-        private fun typeColorRes(type: LibraryType): Int = when (type) {
-            LibraryType.PDF -> R.color.type_pdf
-            LibraryType.VIDEO -> R.color.type_video
-            LibraryType.AUDIO -> R.color.type_audio
-            LibraryType.BOOK -> R.color.type_book
+        private fun typeColorRes(type: ResourcesMediaType): Int = when (type) {
+            ResourcesMediaType.PDF -> R.color.type_pdf
+            ResourcesMediaType.VIDEO -> R.color.type_video
+            ResourcesMediaType.AUDIO -> R.color.type_audio
+            ResourcesMediaType.BOOK -> R.color.type_book
         }
 
-        private fun typeIconRes(type: LibraryType): Int = when (type) {
-            LibraryType.PDF -> R.drawable.ic_type_pdf
-            LibraryType.VIDEO -> R.drawable.ic_type_video
-            LibraryType.AUDIO -> R.drawable.ic_type_audio
-            LibraryType.BOOK -> R.drawable.ic_type_book
+        private fun typeIconRes(type: ResourcesMediaType): Int = when (type) {
+            ResourcesMediaType.PDF -> R.drawable.ic_type_pdf
+            ResourcesMediaType.VIDEO -> R.drawable.ic_type_video
+            ResourcesMediaType.AUDIO -> R.drawable.ic_type_audio
+            ResourcesMediaType.BOOK -> R.drawable.ic_type_book
         }
 
-        private fun typeLabelRes(type: LibraryType): Int = when (type) {
-            LibraryType.PDF -> R.string.filter_pdfs
-            LibraryType.VIDEO -> R.string.filter_videos
-            LibraryType.AUDIO -> R.string.filter_audio
-            LibraryType.BOOK -> R.string.filter_books
+        private fun typeLabelRes(type: ResourcesMediaType): Int = when (type) {
+            ResourcesMediaType.PDF -> R.string.filter_pdfs
+            ResourcesMediaType.VIDEO -> R.string.filter_videos
+            ResourcesMediaType.AUDIO -> R.string.filter_audio
+            ResourcesMediaType.BOOK -> R.string.filter_books
         }
     }
 
@@ -269,7 +267,7 @@ class ResourcesAdapter(
 
     private fun bindGrid(holder: GridViewHolder, model: ResourceListModel) {
         val binding = holder.binding
-        val type = LibraryTypeClassifier.classify(model.library)
+        val type = ResourcesMediaType.classify(model.library)
         binding.title.text = model.item.title
         binding.tvMeta.text = buildMetaLine(model, type, fileSize = null)
         bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, model)
@@ -285,7 +283,7 @@ class ResourcesAdapter(
 
     private fun bindList(holder: ListViewHolder, model: ResourceListModel) {
         val binding = holder.binding
-        val type = LibraryTypeClassifier.classify(model.library)
+        val type = ResourcesMediaType.classify(model.library)
         binding.title.text = model.item.title
         binding.tvMeta.text = buildMetaLine(model, type, fileSize = null)
         bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, model)
@@ -299,7 +297,7 @@ class ResourcesAdapter(
         })
     }
 
-    private fun setCoverColor(view: View, type: LibraryType) {
+    private fun setCoverColor(view: View, type: ResourcesMediaType) {
         val background = view.background?.mutate()
         if (background is GradientDrawable) {
             background.setColor(ContextCompat.getColor(context, typeColorRes(type)))
@@ -418,9 +416,15 @@ class ResourcesAdapter(
         }
     }
 
-    private fun buildMetaLine(model: ResourceListModel, type: LibraryType, fileSize: Long?): String {
+    private fun buildMetaLine(model: ResourceListModel, type: ResourcesMediaType, fileSize: Long?): String {
         val parts = mutableListOf<String>()
-        parts.add(context.getString(typeLabelRes(type)))
+        val mediaType = model.library.mediaType?.takeIf { it.isNotBlank() }
+        val typeLabel = if (mediaType != null) {
+            ResourcesMediaType.displayName(context, mediaType)
+        } else {
+            context.getString(typeLabelRes(type))
+        }
+        parts.add(typeLabel)
         if (fileSize != null) {
             parts.add(FileUtils.formatSize(context, fileSize))
         }

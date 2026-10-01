@@ -160,7 +160,13 @@ object FileUtils {
     fun getIdFromUrl(url: String?): String = getIdFromSegments(parseUrlSegments(url))
 
     fun getFileExtension(address: String?): String {
-        return address?.substringAfterLast('/')?.substringAfterLast('.', "")?.lowercase() ?: ""
+        if (address.isNullOrBlank()) return ""
+        val cleanAddress = if (address.startsWith("http://", ignoreCase = true) || address.startsWith("https://", ignoreCase = true)) {
+            address.substringBefore('?').substringBefore('#')
+        } else {
+            address
+        }
+        return File(cleanAddress).extension.lowercase()
     }
 
     fun installApk(activity: Context, file: String?) {

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.resources
 
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.utils.ResourcesSearchUtils
@@ -69,11 +70,44 @@ class ResourcesListFilter {
 
     private fun matchesFacets(model: ResourceListModel, criteria: ResourcesFilterCriteria): Boolean {
         val library = model.library
-        val subject = criteria.subjects.isEmpty() || library.subject?.containsAll(criteria.subjects) == true
-        val level = criteria.levels.isEmpty() || library.level?.containsAll(criteria.levels) == true
-        val language = criteria.languages.isEmpty() || criteria.languages.contains(library.language)
-        val medium = criteria.mediums.isEmpty() || criteria.mediums.contains(library.mediaType)
+        val libSubjects = library.subject
+        val libLevels = library.level
+        val subject = criteria.subjects.isEmpty() || (libSubjects != null && criteria.subjects.all { critSub ->
+            libSubjects.any { libSub -> libSub.equals(critSub, ignoreCase = true) }
+        })
+        val level = criteria.levels.isEmpty() || (libLevels != null && criteria.levels.all { critLvl ->
+            libLevels.any { libLvl -> libLvl.equals(critLvl, ignoreCase = true) }
+        })
+        val language = criteria.languages.isEmpty() || criteria.languages.any { it.equals(library.language, ignoreCase = true) }
+        val medium = criteria.mediums.isEmpty() || matchesMedium(library, criteria.mediums)
         return subject && level && language && medium
+    }
+
+    private fun matchesMedium(library: MyLibrary, selectedMediums: Set<String>): Boolean {
+        val classifiedType = ResourcesMediaType.classify(library)
+        val isNonBook = ResourcesMediaType.isExplicitNonBook(library)
+
+        return selectedMediums.any { selected ->
+            val canonicalSel = ResourcesMediaType.canonicalMedium(selected)
+            val targetType = when (canonicalSel) {
+                "audio" -> ResourcesMediaType.AUDIO
+                "video" -> ResourcesMediaType.VIDEO
+                "pdf" -> ResourcesMediaType.PDF
+                "book" -> ResourcesMediaType.BOOK
+                else -> null
+            }
+
+            if (targetType != null) {
+                if (targetType == ResourcesMediaType.BOOK) {
+                    classifiedType == ResourcesMediaType.BOOK && !isNonBook
+                } else {
+                    classifiedType == targetType
+                }
+            } else {
+                val libCanonical = library.mediaType?.let { ResourcesMediaType.canonicalMedium(it) }
+                libCanonical?.equals(canonicalSel, ignoreCase = true) == true
+            }
+        }
     }
 
     private fun matchesDownloadFilter(model: ResourceListModel, downloadFilterIndex: Int, locallyOfflineIds: Set<String>): Boolean {
