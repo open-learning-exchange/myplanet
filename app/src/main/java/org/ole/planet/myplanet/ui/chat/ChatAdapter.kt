@@ -73,9 +73,14 @@ class ChatAdapter(
             if (responseSource == ChatMessage.RESPONSE_SOURCE_NETWORK) {
                 if (shouldAnimate) {
                     textAiMessageBinding.textGchatMessageOther.text = context.getString(R.string.empty_text)
+                    var lastLineCount = -1
                     cancelAnimation = onAnimateTyping(response, { text ->
                         textAiMessageBinding.textGchatMessageOther.text = text
-                        recyclerView.scrollToPosition(bindingAdapterPosition)
+                        val lines = textAiMessageBinding.textGchatMessageOther.lineCount
+                        if (lines != lastLineCount || text.length == response.length) {
+                            recyclerView.scrollToPosition(bindingAdapterPosition)
+                            lastLineCount = lines
+                        }
                     }, {
                         markAnimated()
                     })
