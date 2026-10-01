@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatMessage
@@ -34,7 +33,6 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.ChatSearch
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.RetryUtils
 
 data class ChatUiState(
@@ -57,12 +55,13 @@ class ChatViewModel @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository
 ) : ViewModel() {
     companion object {
-        const val PAGE_SIZE = 20
+        const val PAGE_SIZE = ChatConversationPager.PAGE_SIZE
     }
+    private val pager = ChatConversationPager(dispatcherProvider)
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    internal var allConversations: List<Conversation> = emptyList()
+    internal val allConversations: List<Conversation> get() = pager.allConversations
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    internal var loadedCount = 0
+    internal val loadedCount: Int get() = pager.loadedCount
     private var allChats: List<ChatHistory> = emptyList()
     private val _refreshChatSignal = MutableSharedFlow<Unit>(replay = 1)
     val refreshChatSignal: SharedFlow<Unit> = _refreshChatSignal.asSharedFlow()
@@ -194,53 +193,10 @@ class ChatViewModel @Inject constructor(
         }
         return ChatShareTargets(community, teams, enterprises)
     }
-    suspend fun parseAndBuildInitialPage(newsConversations: String?): List<ChatMessage> {
-        val parsedConversations = withContext(dispatcherProvider.io) {
-            if (newsConversations.isNullOrBlank()) return@withContext emptyList()
-            try {
-                GsonUtils.gson.fromJson(newsConversations, Array<Conversation>::class.java).toList()
-            } catch (e: Exception) {
-                emptyList()
-            }
-        }
-        allConversations = parsedConversations
-        loadedCount = minOf(PAGE_SIZE, parsedConversations.size)
-        return buildInitialPage()
-    }
-    fun processChatHistory(conversations: List<Conversation>): List<ChatMessage> {
-        allConversations = conversations
-        loadedCount = minOf(PAGE_SIZE, conversations.size)
-        return buildInitialPage()
-    }
-    private fun buildInitialPage(): List<ChatMessage> {
-        val total = allConversations.size
-        val startIndex = maxOf(0, total - loadedCount)
-        val messages = mutableListOf<ChatMessage>()
-        if (startIndex > 0) messages.add(ChatMessage("", ChatMessage.LOAD_MORE))
-        messages.addAll(buildMessagesSlice(startIndex, total))
-        return messages
-    }
-    private fun buildMessagesSlice(startIndex: Int, endIndex: Int): List<ChatMessage> {
-        val messages = mutableListOf<ChatMessage>()
-        for (i in startIndex until endIndex) {
-            val conv = allConversations[i]
-            conv.query?.let { messages.add(ChatMessage(it, ChatMessage.QUERY)) }
-            conv.response?.let { messages.add(ChatMessage(it, ChatMessage.RESPONSE, ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL)) }
-        }
-        return messages
-    }
-    fun loadMoreConversations(): Pair<List<ChatMessage>, Boolean> {
-        val total = allConversations.size
-        val prevStartIndex = maxOf(0, total - loadedCount)
-        loadedCount = minOf(loadedCount + PAGE_SIZE, total)
-        val newStartIndex = maxOf(0, total - loadedCount)
-        val newMessages = buildMessagesSlice(newStartIndex, prevStartIndex)
-        return Pair(newMessages, newStartIndex > 0)
-    }
-    fun clearPaginationState() {
-        allConversations = emptyList()
-        loadedCount = 0
-    }
+    suspend fun parseAndBuildInitialPage(newsConversations: String?): List<ChatMessage> = pager.parseAndBuildInitialPage(newsConversations)
+    fun processChatHistory(conversations: List<Conversation>): List<ChatMessage> = pager.processChatHistory(conversations)
+    fun loadMoreConversations(): Pair<List<ChatMessage>, Boolean> = pager.loadMoreConversations()
+    fun clearPaginationState() = pager.clearPaginationState()
     fun setSelectedChatHistory(conversations: List<Conversation>) {
         _selectedChatHistory.value = conversations
     }
