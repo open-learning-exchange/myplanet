@@ -367,7 +367,7 @@ class TransactionSyncManager @Inject constructor(
             val attachmentName = MyTeam
                 .getFirstAttachmentName(jsonDoc) ?: continue
             val destFile = MyTeam
-                .getAttachmentFile(context, docId, attachmentName) ?: continue
+                .getAttachmentFile(FileUtils.getOlePath(context), docId, attachmentName) ?: continue
             if (!destFile.exists()) {
                 launch { semaphore.withPermit { downloadTeamAttachment(docId, attachmentName, destFile) } }
             }
@@ -384,7 +384,7 @@ class TransactionSyncManager @Inject constructor(
             val hasAttachment = jsonDoc.getAsJsonObject("_attachments")?.has(coverFileName) == true
             if (coverFileName.isNotEmpty() && hasAttachment) {
                 val destFile = MyCourse
-                    .getCoverImageFile(context, docId, coverFileName) ?: continue
+                    .getCoverImageFile(FileUtils.getOlePath(context), docId, coverFileName) ?: continue
                 if (!destFile.exists()) {
                     launch { semaphore.withPermit { downloadCourseCover(docId, coverFileName, destFile) } }
                 }

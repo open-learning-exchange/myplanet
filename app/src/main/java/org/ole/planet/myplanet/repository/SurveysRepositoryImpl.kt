@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
@@ -53,6 +54,7 @@ class SurveysRepositoryImpl @Inject constructor(
     private val questionDao: QuestionDao,
     private val submissionDao: SubmissionDao,
     private val teamsRepository: dagger.Lazy<TeamsRepository>,
+    private val stringProvider: StringProvider,
 ) : SurveysRepository {
 
     private val reminderPrefs: SharedPreferences by lazy {
@@ -326,7 +328,7 @@ class SurveysRepositoryImpl @Inject constructor(
             val submissionCount = surveySubmissions.size
             surveyId to SurveyInfo(
                 surveyId = surveyId,
-                submissionCount = context.resources.getQuantityString(
+                submissionCount = stringProvider.getQuantityString(
                     R.plurals.survey_taken_count,
                     submissionCount,
                     submissionCount

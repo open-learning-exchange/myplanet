@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -41,6 +42,7 @@ import org.robolectric.annotation.Config
 class SurveysRepositoryImplTest {
     private lateinit var repository: SurveysRepositoryImpl
     private lateinit var context: Context
+    private lateinit var stringProvider: StringProvider
     private lateinit var userSessionManager: UserSessionManager
     private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var dispatcherProvider: DispatcherProvider
@@ -57,6 +59,7 @@ class SurveysRepositoryImplTest {
     @Before
     fun setup() {
         context = mockk(relaxed = true)
+        stringProvider = mockk(relaxed = true)
         userSessionManager = mockk(relaxed = true)
         sharedPrefManager = mockk(relaxed = true)
         dispatcherProvider = mockk(relaxed = true)
@@ -81,7 +84,8 @@ class SurveysRepositoryImplTest {
             examDao,
             questionDao,
             submissionDao,
-            { teamsRepository }
+            { teamsRepository },
+            stringProvider
         )
     }
 
@@ -322,7 +326,7 @@ class SurveysRepositoryImplTest {
 
         val userId = "user1"
         coEvery { submissionDao.getByUserIdWithoutTeam(userId) } returns submissions
-        every { context.resources.getQuantityString(any(), any(), any()) } returns "N taken"
+        every { stringProvider.getQuantityString(any(), any(), any()) } returns "N taken"
 
         val result = repository.getSurveyInfos(isTeam = false, teamId = null, userId = userId, surveys = surveys)
 

@@ -1,12 +1,10 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
 import android.util.Log
 import androidx.room.withTransaction
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Base64
 import java.util.Calendar
 import java.util.UUID
@@ -43,6 +41,7 @@ import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import org.ole.planet.myplanet.utils.AppStorage
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
@@ -52,7 +51,7 @@ import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class CoursesRepositoryImpl @Inject constructor(
-    @param:ApplicationContext private val context: Context,
+    private val appStorage: AppStorage,
     private val progressRepository: ProgressRepository,
     private val activitiesRepository: ActivitiesRepository,
     private val submissionsRepository: SubmissionsRepository,
@@ -862,7 +861,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 MyLibrary.Companion.InsertParams(
                     doc = pending.doc,
                     spm = sharedPrefManager,
-                    context = context,
+                    storage = appStorage,
                     courseId = pending.courseId,
                     stepId = pending.stepId,
                     existing = existing

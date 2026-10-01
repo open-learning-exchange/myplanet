@@ -31,7 +31,9 @@ class UserRepositoryBulkInsertTest {
             achievementDao = mockk(relaxed = true),
             userDao = userDao,
             realtimeSyncManager = mockk(relaxed = true),
-            deviceNameProvider = mockk(relaxed = true)
+            deviceNameProvider = mockk(relaxed = true),
+            appInfo = mockk(relaxed = true),
+            stringProvider = mockk(relaxed = true)
         )
         coEvery { userDao.getUsersByAnyIds(any()) } returns emptyList()
         coEvery { userDao.getGuestUsersByNames(any()) } returns emptyList()
@@ -77,7 +79,9 @@ class UserRepositoryBulkInsertTest {
             achievementDao = mockk(relaxed = true),
             userDao = userDao,
             realtimeSyncManager = mockk(relaxed = true),
-            deviceNameProvider = mockk(relaxed = true)
+            deviceNameProvider = mockk(relaxed = true),
+            appInfo = mockk(relaxed = true),
+            stringProvider = mockk(relaxed = true)
         )
 
         val existingGuest = org.ole.planet.myplanet.model.UserEntity().apply {
@@ -123,7 +127,9 @@ class UserRepositoryBulkInsertTest {
             achievementDao = mockk(relaxed = true),
             userDao = userDao,
             realtimeSyncManager = mockk(relaxed = true),
-            deviceNameProvider = mockk(relaxed = true)
+            deviceNameProvider = mockk(relaxed = true),
+            appInfo = mockk(relaxed = true),
+            stringProvider = mockk(relaxed = true)
         )
         coEvery { userDao.getUsersByAnyIds(any()) } returns emptyList()
         coEvery { userDao.getGuestUsersByNames(any()) } returns emptyList()

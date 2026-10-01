@@ -36,7 +36,7 @@ class ChatApiServiceTest {
     fun setUp() {
         apiInterface = mockk()
         // Inject a mockContext but don't hold it as a class field since it's never used by public methods
-        chatApiService = ChatApiService(apiInterface, mockk(), TestDispatcherProvider(UnconfinedTestDispatcher()))
+        chatApiService = ChatApiService(apiInterface, TestDispatcherProvider(UnconfinedTestDispatcher()))
 
         // Note: mockkObject(UrlUtils) makes UrlUtils a global singleton mock.
         // Parallel tests would be flaky due to this shared state.

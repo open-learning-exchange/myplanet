@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
 import android.text.TextUtils
@@ -10,7 +9,6 @@ import androidx.room.withTransaction
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -54,17 +52,18 @@ import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AndroidDecrypter
+import org.ole.planet.myplanet.utils.AppStorage
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.DownloadLauncher
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.GsonUtils
-import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 @Singleton
 class TeamsRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val activitiesRepository: ActivitiesRepository,
     private val userSessionManager: UserSessionManager,
     private val uploadManager: UploadManager,
@@ -82,6 +81,9 @@ class TeamsRepositoryImpl @Inject constructor(
     private val courseDao: CourseDao,
     private val courseStepDao: CourseStepDao,
     private val appDatabase: AppDatabase,
+    private val deviceNameProvider: DeviceNameProvider,
+    private val appStorage: AppStorage,
+    private val downloadLauncher: DownloadLauncher,
 ) : TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<TeamTask>> {
         return teamTaskDao.getOpenTasksForUser(userId).flowOn(dispatcherProvider.default)
@@ -534,7 +536,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
     private suspend fun attachTeamImage(teamId: String, imageName: String, imageData: ByteArray) {
         if (teamId.isBlank()) return
-        val destFile = MyTeam.getAttachmentFile(MainApplication.context, teamId, imageName) ?: return
+        val destFile = MyTeam.getAttachmentFile(appStorage.olePath(), teamId, imageName) ?: return
         withContext(dispatcherProvider.io) {
             destFile.parentFile?.mkdirs()
             destFile.writeBytes(imageData)
@@ -1178,8 +1180,8 @@ class TeamsRepositoryImpl @Inject constructor(
         ob.addProperty("time", log.time)
         ob.addProperty("teamId", log.teamId)
         ob.addDocumentOrigin()
-        ob.addProperty("deviceName", NetworkUtils.getDeviceName())
-        ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+        ob.addProperty("deviceName", deviceNameProvider.getDeviceName())
+        ob.addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
         if (!TextUtils.isEmpty(log._rev)) {
             ob.addProperty("_rev", log._rev)
             ob.addProperty("_id", log._id)
@@ -1195,7 +1197,7 @@ class TeamsRepositoryImpl @Inject constructor(
         for (link in links) {
             concatenatedLinks.add("$baseUrl/$link")
         }
-        DownloadUtils.openDownloadService(MainApplication.context, ArrayList(concatenatedLinks), true)
+        downloadLauncher.startDownloads(concatenatedLinks.toList(), true)
     }
 
     override suspend fun batchInsertMyTeams(documents: List<JsonObject>): Int {

@@ -42,12 +42,13 @@ import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
+import org.ole.planet.myplanet.utils.AppInfo
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.VersionUtils
 import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -58,6 +59,8 @@ class UserRepositoryImplTest {
     private lateinit var apiInterface: ApiInterface
     private lateinit var uploadToShelfService: Lazy<UploadToShelfService>
     private lateinit var context: Context
+    private lateinit var appInfo: AppInfo
+    private lateinit var stringProvider: StringProvider
     private lateinit var configurationsRepository: ConfigurationsRepository
     private lateinit var appScope: CoroutineScope
     private lateinit var dispatcherProvider: DispatcherProvider
@@ -94,6 +97,8 @@ class UserRepositoryImplTest {
         apiInterface = mockk(relaxed = true)
         uploadToShelfService = mockk(relaxed = true)
         context = mockk(relaxed = true)
+        appInfo = mockk(relaxed = true)
+        stringProvider = mockk(relaxed = true)
         configurationsRepository = mockk(relaxed = true)
         appScope = TestScope(testDispatcher)
 
@@ -142,7 +147,9 @@ class UserRepositoryImplTest {
             mockk(relaxed = true),
             userDao,
             mockk(relaxed = true),
-            deviceNameProvider
+            deviceNameProvider,
+            appInfo,
+            stringProvider
         )
     }
 
@@ -224,7 +231,7 @@ class UserRepositoryImplTest {
         val errorMessage = "User already exists"
 
         coEvery { configurationsRepository.checkServerAvailability() } returns true
-        every { context.getString(R.string.unable_to_create_user_user_already_exists) } returns errorMessage
+        every { stringProvider.getString(R.string.unable_to_create_user_user_already_exists) } returns errorMessage
 
         // Mock API response to simulate user already exists
         val existsResponseBody = buildJsonObject { put("_id", "some_id") }
@@ -247,7 +254,7 @@ class UserRepositoryImplTest {
         val id = "new_user_id"
 
         coEvery { configurationsRepository.checkServerAvailability() } returns true
-        every { context.getString(R.string.user_created_successfully) } returns successMessage
+        every { stringProvider.getString(R.string.user_created_successfully) } returns successMessage
 
         // 1. User doesn't exist check
         val notExistsResponseBody = KJsonObject(emptyMap())
@@ -431,9 +438,8 @@ class UserRepositoryImplTest {
     }
 
     @Test
-    fun `createMember carries deviceNameProvider device name and injected context android id`() = runTest(testDispatcher) {
-        mockkObject(VersionUtils)
-        every { VersionUtils.getAndroidId(any()) } returns "mock_android_id"
+    fun `createMember carries deviceNameProvider device name and appInfo android id`() = runTest(testDispatcher) {
+        every { appInfo.androidId() } returns "mock_android_id"
         every { deviceNameProvider.getCustomDeviceName() } returns "mock_device_name"
 
         val spyRepository = spyk(repository)
@@ -460,10 +466,8 @@ class UserRepositoryImplTest {
         val builtJson = jsonSlot.captured
         assertEquals("mock_android_id", builtJson.get("uniqueAndroidId").asString)
         assertEquals("mock_device_name", builtJson.get("customDeviceName").asString)
-        verify { VersionUtils.getAndroidId(context) }
+        verify { appInfo.androidId() }
         verify { deviceNameProvider.getCustomDeviceName() }
-
-        unmockkObject(VersionUtils)
     }
 
     @Test

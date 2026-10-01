@@ -35,9 +35,21 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
+import org.ole.planet.myplanet.utils.AndroidAppInfo
+import org.ole.planet.myplanet.utils.AndroidAppLocale
+import org.ole.planet.myplanet.utils.AndroidAppStorage
+import org.ole.planet.myplanet.utils.AndroidAppUsageStats
+import org.ole.planet.myplanet.utils.AndroidDownloadLauncher
 import org.ole.planet.myplanet.utils.AndroidNetworkStatus
+import org.ole.planet.myplanet.utils.AndroidStringProvider
+import org.ole.planet.myplanet.utils.AppInfo
+import org.ole.planet.myplanet.utils.AppLocale
+import org.ole.planet.myplanet.utils.AppStorage
+import org.ole.planet.myplanet.utils.AppUsageStats
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.DownloadLauncher
 import org.ole.planet.myplanet.utils.NetworkStatus
+import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TimeProvider
 
@@ -64,6 +76,30 @@ object ServiceModule {
     @Provides
     @Singleton
     fun provideNetworkStatus(impl: AndroidNetworkStatus): NetworkStatus = impl
+
+    @Provides
+    @Singleton
+    fun provideStringProvider(impl: AndroidStringProvider): StringProvider = impl
+
+    @Provides
+    @Singleton
+    fun provideAppInfo(impl: AndroidAppInfo): AppInfo = impl
+
+    @Provides
+    @Singleton
+    fun provideAppUsageStats(impl: AndroidAppUsageStats): AppUsageStats = impl
+
+    @Provides
+    @Singleton
+    fun provideAppStorage(impl: AndroidAppStorage): AppStorage = impl
+
+    @Provides
+    @Singleton
+    fun provideDownloadLauncher(impl: AndroidDownloadLauncher): DownloadLauncher = impl
+
+    @Provides
+    @Singleton
+    fun provideAppLocale(impl: AndroidAppLocale): AppLocale = impl
 
     @Provides
     @Singleton

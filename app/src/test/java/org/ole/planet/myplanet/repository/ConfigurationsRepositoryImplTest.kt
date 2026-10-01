@@ -46,10 +46,14 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.AppInfo
+import org.ole.planet.myplanet.utils.AppLocale
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.NetworkStatus
 import org.ole.planet.myplanet.utils.Sha256Utils
 import org.ole.planet.myplanet.utils.StoragePathResolver
+import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
@@ -67,6 +71,10 @@ class ConfigurationsRepositoryImplTest {
     private val appDatabase: AppDatabase = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
     private val storagePathResolver: StoragePathResolver = mockk(relaxed = true)
+    private val stringProvider: StringProvider = mockk()
+    private val appInfo: AppInfo = mockk()
+    private val appLocale: AppLocale = mockk(relaxed = true)
+    private val networkStatus: NetworkStatus = mockk()
     // Handed to the repository under test; cancelled in @After so nothing escapes the fork.
     private val serviceScope = CoroutineScope(SupervisorJob() + testDispatcher)
 
@@ -103,7 +111,11 @@ class ConfigurationsRepositoryImplTest {
             dispatcherProvider,
             TestTimeProvider(),
             storagePathResolver,
-            Gson()
+            Gson(),
+            stringProvider,
+            appInfo,
+            appLocale,
+            networkStatus
         )
     }
 
@@ -201,7 +213,7 @@ class ConfigurationsRepositoryImplTest {
     fun `checkVersion calls onError if baseUrl is empty`() = runTest(testDispatcher) {
         every { sharedPrefManager.isAlternativeUrl() } returns false
         every { sharedPrefManager.getCouchdbUrl() } returns ""
-        every { context.getString(R.string.server_url_not_configured) } returns "Server URL not configured"
+        every { stringProvider.getString(R.string.server_url_not_configured) } returns "Server URL not configured"
 
         UrlUtils.init(sharedPrefManager)
 
@@ -233,22 +245,9 @@ class ConfigurationsRepositoryImplTest {
         every { sharedPrefManager.getVersionDetail() } returns planetJson
         every { rawPrefs.getInt("cachedApkVersion", -1) } returns 2
 
-        every { context.packageName } returns "org.ole.planet.myplanet"
+        every { appInfo.versionCode() } returns 1
 
-        // Mock getVersionCode from context
-        val pm = mockk<android.content.pm.PackageManager>()
-        val packageInfo = android.content.pm.PackageInfo().apply {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                longVersionCode = 1L
-            } else {
-                @Suppress("DEPRECATION")
-                versionCode = 1
-            }
-        }
-        every { context.packageManager } returns pm
-        every { pm.getPackageInfo("org.ole.planet.myplanet", 0) } returns packageInfo
-
-        every { context.getString(R.string.planet_is_up_to_date) } returns "Planet is up to date"
+        every { stringProvider.getString(R.string.planet_is_up_to_date) } returns "Planet is up to date"
 
         io.mockk.mockkObject(org.ole.planet.myplanet.utils.Constants)
         every { org.ole.planet.myplanet.utils.Constants.showBetaFeature(any(), any()) } returns false
@@ -298,27 +297,14 @@ class ConfigurationsRepositoryImplTest {
         coEvery { apiInterface.checkVersion(any()) } returns responsePlanet
         coEvery { apiInterface.getApkVersion(any()) } returns responseApk
 
-        every { context.getString(R.string.planet_is_up_to_date) } returns "Planet is up to date"
-        every { context.packageName } returns "org.ole.planet.myplanet"
-
-        // Mock getVersionCode from context
-        val pm = mockk<android.content.pm.PackageManager>()
-        val packageInfo = android.content.pm.PackageInfo().apply {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                longVersionCode = 1L
-            } else {
-                @Suppress("DEPRECATION")
-                versionCode = 1
-            }
-        }
-        every { context.packageManager } returns pm
-        every { pm.getPackageInfo("org.ole.planet.myplanet", 0) } returns packageInfo
+        every { stringProvider.getString(R.string.planet_is_up_to_date) } returns "Planet is up to date"
+        every { appInfo.versionCode() } returns 1
 
         io.mockk.mockkObject(org.ole.planet.myplanet.utils.Constants)
         every { org.ole.planet.myplanet.utils.Constants.showBetaFeature(any(), any()) } returns false
 
         io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
-        every { org.ole.planet.myplanet.utils.NetworkUtils.getCurrentNetworkId(context) } returns 1
+        every { networkStatus.currentWifiNetworkId() } returns 1
 
         UrlUtils.init(sharedPrefManager)
 
@@ -656,7 +642,7 @@ class ConfigurationsRepositoryImplTest {
         val url = "http://test.url"
         val pin = "1234"
 
-        every { context.getString(R.string.app_version) } returns "1.0.0"
+        every { stringProvider.getString(R.string.app_version) } returns "1.0.0"
 
         val mapping = ServerUrlMapper.UrlMapping(url, null)
         every { serverUrlMapper.processUrl(url) } returns mapping
@@ -701,8 +687,8 @@ class ConfigurationsRepositoryImplTest {
 
         every { sharedPrefManager.setParentCode("parent_code") } returns Unit
 
-        every { context.getString(R.string.http_protocol) } returns "http"
-        every { context.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
+        every { stringProvider.getString(R.string.http_protocol) } returns "http"
+        every { stringProvider.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
 
         io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
         every { org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol(url) } returns "http"
@@ -731,7 +717,7 @@ class ConfigurationsRepositoryImplTest {
         val url = "http://test.url"
         val pin = "1234"
 
-        every { context.getString(R.string.app_version) } returns "1.0.0"
+        every { stringProvider.getString(R.string.app_version) } returns "1.0.0"
 
         val mapping = ServerUrlMapper.UrlMapping(url, null)
         every { serverUrlMapper.processUrl(url) } returns mapping
@@ -748,8 +734,8 @@ class ConfigurationsRepositoryImplTest {
         io.mockk.mockkObject(VersionUtils)
         every { VersionUtils.isVersionAllowed(any(), any()) } returns false
 
-        every { context.getString(R.string.http_protocol) } returns "http"
-        every { context.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
+        every { stringProvider.getString(R.string.http_protocol) } returns "http"
+        every { stringProvider.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
 
         io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
         every { org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol(url) } returns "http"
@@ -776,8 +762,8 @@ class ConfigurationsRepositoryImplTest {
         val versionsUrl = "$url/versions"
         coEvery { apiInterface.getConfiguration(versionsUrl) } returns Response.error(500, "".toResponseBody("text/plain".toMediaTypeOrNull()))
 
-        every { context.getString(R.string.http_protocol) } returns "http"
-        every { context.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
+        every { stringProvider.getString(R.string.http_protocol) } returns "http"
+        every { stringProvider.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
 
         io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
         every { org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol(url) } returns "http"

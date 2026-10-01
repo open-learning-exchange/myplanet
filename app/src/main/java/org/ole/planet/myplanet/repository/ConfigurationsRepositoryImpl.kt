@@ -33,12 +33,15 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.AppInfo
+import org.ole.planet.myplanet.utils.AppLocale
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.utils.NetworkStatus
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Sha256Utils
 import org.ole.planet.myplanet.utils.StoragePathResolver
+import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
@@ -55,7 +58,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider,
     private val storagePathResolver: StoragePathResolver,
-    @PlainGson private val gson: Gson
+    @PlainGson private val gson: Gson,
+    private val stringProvider: StringProvider,
+    private val appInfo: AppInfo,
+    private val appLocale: AppLocale,
+    private val networkStatus: NetworkStatus
 ) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
@@ -102,7 +109,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     override fun checkVersion(callback: ConfigurationsRepository.CheckVersionCallback) {
         val baseUrl = UrlUtils.baseUrl(sharedPrefManager)
         if (baseUrl.isEmpty()) {
-            callback.onError(context.getString(R.string.server_url_not_configured), true)
+            callback.onError(stringProvider.getString(R.string.server_url_not_configured), true)
             return
         }
 
@@ -131,27 +138,27 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             try {
                 val planetInfo = fetchVersionInfo(sharedPrefManager)
                 if (planetInfo == null) {
-                    callback.onError(context.getString(R.string.version_not_found), true)
+                    callback.onError(stringProvider.getString(R.string.version_not_found), true)
                     return@launch
                 }
 
                 sharedPrefManager.rawPreferences.edit {
                     putLong("last_version_check_timestamp", timeProvider.now())
                 }
-                sharedPrefManager.setLastWifiId(NetworkUtils.getCurrentNetworkId(context))
+                sharedPrefManager.setLastWifiId(networkStatus.currentWifiNetworkId())
                 sharedPrefManager.setVersionDetail(gson.toJson(planetInfo))
 
                 val rawApkVersion = fetchApkVersionString(sharedPrefManager)
                 val versionStr = gson.fromJson(rawApkVersion, String::class.java)
                 if (versionStr.isNullOrEmpty()) {
-                    callback.onError(context.getString(R.string.planet_is_up_to_date), false)
+                    callback.onError(stringProvider.getString(R.string.planet_is_up_to_date), false)
                     return@launch
                 }
 
                 val apkVersion = VersionUtils.parseApkVersionString(versionStr)
                     ?: run {
                         callback.onError(
-                            context.getString(R.string.new_apk_version_required_but_not_found_on_server),
+                            stringProvider.getString(R.string.new_apk_version_required_but_not_found_on_server),
                             false
                         )
                         return@launch
@@ -165,7 +172,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "Version check failed", e)
                 withContext(dispatcherProvider.main) {
-                    callback.onError(context.getString(R.string.connection_failed), true)
+                    callback.onError(stringProvider.getString(R.string.connection_failed), true)
                 }
             }
         }
@@ -296,16 +303,16 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 }
                 is UrlCheckResult.Failure -> {
                     val errorMessage = when (NetworkUtils.extractProtocol(url)) {
-                        context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
-                        context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
-                        else -> context.getString(R.string.device_couldn_t_reach_local_server)
+                        stringProvider.getString(R.string.http_protocol) -> stringProvider.getString(R.string.device_couldn_t_reach_local_server)
+                        stringProvider.getString(R.string.https_protocol) -> stringProvider.getString(R.string.device_couldn_t_reach_nation_server)
+                        else -> stringProvider.getString(R.string.device_couldn_t_reach_local_server)
                     }
                     ConfigurationsRepository.ConfigurationResult.Failure(errorMessage, url)
                 }
             }
         } catch (e: Exception) {
             Log.e(TAG, "getMinApk failed", e)
-            ConfigurationsRepository.ConfigurationResult.Failure(context.getString(R.string.device_couldn_t_reach_local_server), url)
+            ConfigurationsRepository.ConfigurationResult.Failure(stringProvider.getString(R.string.device_couldn_t_reach_local_server), url)
         }
     }
 
@@ -320,7 +327,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             if (versionsResponse.isSuccessful) {
                 val jsonObject = versionsResponse.body()?.toGson()
                 val minApkVersion = jsonObject?.get("minapk")?.asString
-                val currentVersion = context.getString(R.string.app_version)
+                val currentVersion = stringProvider.getString(R.string.app_version)
 
                 if (minApkVersion != null && VersionUtils.isVersionAllowed(currentVersion, minApkVersion)) {
                     val couchdbURL = buildCouchdbUrl(currentUrl, pin)
@@ -377,7 +384,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             val preferredLang = doc.getAsJsonPrimitive("preferredLang").asString
             val languageCode = getLanguageCodeFromName(preferredLang)
             if (languageCode != null) {
-                LocaleUtils.setLocale(context, languageCode)
+                appLocale.setLanguage(languageCode)
                 sharedPrefManager.setPendingLanguageChange(languageCode)
             }
         }
@@ -541,7 +548,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
 
     private fun handleVersionEvaluation(info: MyPlanet, apkVersion: Int, callback: ConfigurationsRepository.CheckVersionCallback) {
-        val currentVersion = VersionUtils.getVersionCode(context)
+        val currentVersion = appInfo.versionCode()
         if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
             callback.onUpdateAvailable(info, false)
         } else if (apkVersion > currentVersion) {
@@ -549,7 +556,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         } else if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
             callback.onUpdateAvailable(info, true)
         } else {
-            callback.onError(context.getString(R.string.planet_is_up_to_date), false)
+            callback.onError(stringProvider.getString(R.string.planet_is_up_to_date), false)
         }
     }
 

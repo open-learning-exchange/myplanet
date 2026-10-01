@@ -33,4 +33,6 @@ class AndroidNetworkStatus @Inject constructor(
             if (wifiInfo.supplicantState == SupplicantState.COMPLETED) wifiInfo.ssid else null
         }
     }
+
+    override fun currentWifiNetworkId(): Int = NetworkUtils.getCurrentNetworkId(context)
 }

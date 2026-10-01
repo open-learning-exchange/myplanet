@@ -60,7 +60,6 @@ class TeamsRepositoryBenchmarkTest {
         every { dispatcherProvider.unconfined } returns testDispatcher
 
         teamsRepository = TeamsRepositoryImpl(
-            mockk(relaxed = true),
             activitiesRepository,
             userSessionManager,
             uploadManager,
@@ -78,6 +77,9 @@ class TeamsRepositoryBenchmarkTest {
             courseDao,
             courseStepDao,
             appDatabase,
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
         )
     }
 

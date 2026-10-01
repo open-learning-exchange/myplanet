@@ -1,9 +1,7 @@
 package org.ole.planet.myplanet.data.api
 
-import android.content.Context
 import android.util.Log
 import com.google.gson.reflect.TypeToken
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.withContext
@@ -17,7 +15,6 @@ import retrofit2.Response
 @Singleton
 class ChatApiService @Inject constructor(
     private val apiInterface: ApiInterface,
-    @param:ApplicationContext private val context: Context,
     private val dispatcherProvider: DispatcherProvider
 ) {
     suspend fun fetchAiProviders(): Map<String, Boolean>? {

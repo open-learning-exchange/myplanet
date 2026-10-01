@@ -52,15 +52,16 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter
+import org.ole.planet.myplanet.utils.AppInfo
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.RetryUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
-import org.ole.planet.myplanet.utils.VersionUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
@@ -85,7 +86,9 @@ class UserRepositoryImpl @Inject constructor(
     private val achievementDao: AchievementDao,
     private val userDao: UserDao,
     private val realtimeSyncManager: RealtimeSyncManager,
-    private val deviceNameProvider: DeviceNameProvider
+    private val deviceNameProvider: DeviceNameProvider,
+    private val appInfo: AppInfo,
+    private val stringProvider: StringProvider
 ) : UserRepository, UserSyncRepository {
     override val achievementUpdates: Flow<Unit> = realtimeSyncManager.dataUpdateFlow
         .filter { it.table == "achievements" && it.shouldRefreshUI }
@@ -538,7 +541,7 @@ class UserRepositoryImpl @Inject constructor(
             addProperty("type", "user")
             addProperty("betaEnabled", false)
             addDocumentOrigin()
-            addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context))
+            addProperty("uniqueAndroidId", appInfo.androidId())
             addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
             val roles = JsonArray().apply { add("learner") }
             add("roles", roles)
@@ -561,7 +564,7 @@ class UserRepositoryImpl @Inject constructor(
                 }
 
                 if (existsResponse.isSuccessful && existsResponse.body()?.toGson()?.has("_id") == true) {
-                    Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
+                    Pair(false, stringProvider.getString(R.string.unable_to_create_user_user_already_exists))
                 } else {
                     val createResponse = withContext(dispatcherProvider.io) {
                         apiInterface.putDoc(null, "application/json", userUrl, obj.toKotlinx().jsonObject)
@@ -577,28 +580,28 @@ class UserRepositoryImpl @Inject constructor(
 
                         val result = saveUserToDb(id, obj)
                         if (result.isSuccess) {
-                            Pair(true, context.getString(R.string.user_created_successfully))
+                            Pair(true, stringProvider.getString(R.string.user_created_successfully))
                         } else {
-                            Pair(false, context.getString(R.string.unable_to_save_user_please_sync))
+                            Pair(false, stringProvider.getString(R.string.unable_to_save_user_please_sync))
                         }
                     } else {
-                        Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
+                        Pair(false, stringProvider.getString(R.string.unable_to_create_user_user_already_exists))
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
+                Pair(false, stringProvider.getString(R.string.unable_to_create_user_user_already_exists))
             }
         } else {
             val existingUser = getUserByName(userName)
             if (existingUser != null && existingUser._id?.startsWith("guest") != true) {
-                return Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
+                return Pair(false, stringProvider.getString(R.string.unable_to_create_user_user_already_exists))
             }
 
             val keyString = AndroidDecrypter.generateKey()
             val iv = AndroidDecrypter.generateIv()
             saveUser(obj, keyString, iv)
-            return Pair(true, context.getString(R.string.not_connect_to_planet_created_user_offline))
+            return Pair(true, stringProvider.getString(R.string.not_connect_to_planet_created_user_offline))
         }
     }
 
@@ -840,20 +843,20 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun validateUsername(username: String): String? {
         val firstChar = username.firstOrNull()
         when {
-            username.isEmpty() -> return context.getString(R.string.username_cannot_be_empty)
-            username.contains(" ") -> return context.getString(R.string.invalid_username)
+            username.isEmpty() -> return stringProvider.getString(R.string.username_cannot_be_empty)
+            username.contains(" ") -> return stringProvider.getString(R.string.invalid_username)
             firstChar != null && !firstChar.isDigit() && !firstChar.isLetter() ->
-                return context.getString(R.string.must_start_with_letter_or_number)
+                return stringProvider.getString(R.string.must_start_with_letter_or_number)
             username.any { it != '_' && it != '.' && it != '-' && !it.isDigit() && !it.isLetter() } ||
             SPECIAL_CHAR_PATTERN.matcher(username).matches() ||
             !Normalizer.normalize(username, Normalizer.Form.NFD).codePoints().allMatch { code ->
                 Character.isLetterOrDigit(code) || code == '.'.code || code == '-'.code || code == '_'.code
-            } -> return context.getString(R.string.only_letters_numbers_and_are_allowed)
+            } -> return stringProvider.getString(R.string.only_letters_numbers_and_are_allowed)
         }
 
         val isTaken = userDao.getByName(username)?.let { !it._id.orEmpty().startsWith("guest") } == true
 
-        return if (isTaken) context.getString(R.string.username_taken) else null
+        return if (isTaken) stringProvider.getString(R.string.username_taken) else null
     }
 
     override suspend fun cleanupDuplicateUsers() {
