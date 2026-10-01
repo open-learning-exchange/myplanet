@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.util.Log
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
@@ -13,6 +12,7 @@ import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.toGson
 
@@ -147,7 +147,7 @@ open class News {
                     }
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "community section check failed", e)
+                AppLog.w(TAG, "community section check failed", e)
             }
             return false
         }
@@ -164,7 +164,7 @@ open class News {
                 }
             }
         } catch (e: Exception) {
-            Log.w(TAG, "calculateSortDate failed", e)
+            AppLog.w(TAG, "calculateSortDate failed", e)
         }
         return time
     }
@@ -203,7 +203,7 @@ open class News {
             try {
                 news.updatedDate = map["updatedDate"]?.toLong() ?: 0
             } catch (e: Exception) {
-                Log.w(TAG, "updatedDate parse failed", e)
+                AppLog.w(TAG, "updatedDate parse failed", e)
             }
 
             news.userId = user?.id
@@ -238,14 +238,14 @@ open class News {
                                     news.conversations = GsonUtils.gson.toJson(conversationsList)
                                 }
                             } catch (e: JsonSyntaxException) {
-                                Log.w(TAG, "conversation parse failed", e)
+                                AppLog.w(TAG, "conversation parse failed", e)
                             }
                         }
                     }
                     news.newsCreatedDate = GsonUtils.getLong("createdDate", newsJson)
                     news.newsUpdatedDate = GsonUtils.getLong("updatedDate", newsJson)
                 } catch (e: JsonSyntaxException) {
-                    Log.w(TAG, "news json parse failed", e)
+                    AppLog.w(TAG, "news json parse failed", e)
                 }
             }
 

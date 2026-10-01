@@ -23,7 +23,9 @@ import kotlinx.serialization.json.add
 import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.MainApplication
@@ -37,7 +39,9 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.LogLevel
 import org.ole.planet.myplanet.utils.NetworkStatus
+import org.ole.planet.myplanet.utils.RecordingLogSink
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
@@ -71,6 +75,9 @@ class SyncManagerTest {
         every { currentWifiSsid() } returns null
     }
     private val userModel: UserEntity = mockk(relaxed = true)
+
+    @get:Rule
+    val logs = RecordingLogSink()
 
     @Before
     fun setup() {
@@ -206,28 +213,22 @@ class SyncManagerTest {
 
     @Test
     fun `syncPerf logging is evaluated when isVerbose returns true`() = runTest {
-        io.mockk.mockkStatic(android.util.Log::class)
         every { syncTimeLogger.isVerbose } returns true
-        every { android.util.Log.d(any(), any()) } returns 0
-
         coEvery { transactionSyncManager.authenticate() } returns true
 
         syncManager.start(listener, "sync", listOf())
 
-        verify { android.util.Log.d("SyncPerf", match { it.contains("FULL SYNC STARTED") }) }
+        assertTrue(logs.entries(LogLevel.DEBUG, "SyncPerf").any { it.message.contains("FULL SYNC STARTED") })
     }
 
     @Test
     fun `syncPerf logging is skipped when isVerbose returns false`() = runTest {
-        io.mockk.mockkStatic(android.util.Log::class)
         every { syncTimeLogger.isVerbose } returns false
-        every { android.util.Log.d(any(), any()) } returns 0
-
         coEvery { transactionSyncManager.authenticate() } returns true
 
         syncManager.start(listener, "sync", listOf())
 
-        verify(exactly = 0) { android.util.Log.d("SyncPerf", any()) }
+        assertTrue(logs.entries(LogLevel.DEBUG, "SyncPerf").isEmpty())
     }
 
     @Test

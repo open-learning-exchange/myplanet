@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services
 
-import android.util.Log
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -10,6 +9,7 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.CredentialStore
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -69,7 +69,7 @@ class UserSessionManager @Inject constructor(
                 val model = getUserModel()
                 activitiesRepository.logLogout(model?.name)
             } catch (e: Exception) {
-                Log.e(TAG, "Error in logoutAsync", e)
+                AppLog.e(TAG, "Error in logoutAsync", e)
             }
         }
     }
@@ -99,7 +99,7 @@ class UserSessionManager @Inject constructor(
                 )
 
             } catch (e: Exception) {
-                Log.e(TAG, "Error in setResourceOpenCount", e)
+                AppLog.e(TAG, "Error in setResourceOpenCount", e)
             }
         }
     }

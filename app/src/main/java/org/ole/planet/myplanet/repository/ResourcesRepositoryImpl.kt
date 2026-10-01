@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -33,6 +32,7 @@ import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.AppStorage
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -750,7 +750,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                     changed.add(library)
                 }
             } catch (e: Exception) {
-                Log.w("ResourcesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
+                AppLog.w("ResourcesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
             }
         }
 

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import com.google.gson.Gson
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -9,10 +8,8 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.unmockkObject
-import io.mockk.unmockkStatic
 import io.mockk.verify
 import java.io.File
 import java.io.IOException
@@ -48,7 +45,9 @@ import org.ole.planet.myplanet.utils.AppInfo
 import org.ole.planet.myplanet.utils.AppLocale
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.LogLevel
 import org.ole.planet.myplanet.utils.NetworkStatus
+import org.ole.planet.myplanet.utils.RecordingLogSink
 import org.ole.planet.myplanet.utils.Sha256Utils
 import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.StringProvider
@@ -85,18 +84,17 @@ class ConfigurationsRepositoryImplTest {
     @get:Rule
     val temporaryFolder = TemporaryFolder()
 
+    @get:Rule
+    val logs = RecordingLogSink()
+
     @After
     fun tearDown() {
-        unmockkStatic(Log::class)
         serviceScope.cancel()
     }
 
     @Before
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
-        mockkStatic(Log::class)
-        every { Log.e(any<String>(), any<String>()) } returns 0
-        every { Log.e(any<String>(), any<String>(), any<Throwable>()) } returns 0
         repository = ConfigurationsRepositoryImpl(
             apiInterface,
             serviceScope,
@@ -152,7 +150,7 @@ class ConfigurationsRepositoryImplTest {
         val result = repository.checkHealth()
 
         assertEquals(HealthCheckResult.Failed("Network connection error"), result)
-        verify { Log.e("ConfigurationsRepository", "Health access request failed", any<Throwable>()) }
+        assertTrue(logs.entries(LogLevel.ERROR, "ConfigurationsRepository").any { it.message == "Health access request failed" && it.throwable != null })
     }
 
     @Test
@@ -549,9 +547,6 @@ class ConfigurationsRepositoryImplTest {
         val response = Response.success(200, mockBody)
         coEvery { apiInterface.getChecksum(any()) } returns response
 
-        io.mockk.mockkStatic(android.util.Log::class)
-        every { android.util.Log.w(any(), any<String>()) } returns 0
-
         val mockFile = mockk<java.io.File>()
         every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
         every { mockFile.exists() } returns true
@@ -563,7 +558,6 @@ class ConfigurationsRepositoryImplTest {
 
         assertFalse(result)
 
-        io.mockk.unmockkStatic(android.util.Log::class)
         io.mockk.unmockkConstructor(Sha256Utils::class)
     }
 

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -32,6 +31,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AppInfo
 import org.ole.planet.myplanet.utils.AppLocale
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkStatus
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -85,7 +85,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     else -> HealthCheckResult.Failed("Server error: ${response.code()}")
                 }
             } catch (t: Exception) {
-                Log.e(TAG, "Health access request failed", t)
+                AppLog.e(TAG, "Health access request failed", t)
                 val reason = when (t) {
                     is UnknownHostException -> "Server not reachable"
                     is SocketTimeoutException -> "Connection timeout"
@@ -96,7 +96,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 HealthCheckResult.Failed(reason)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Health access initialization failed", e)
+            AppLog.e(TAG, "Health access initialization failed", e)
             HealthCheckResult.InitFailed
         }
     }
@@ -125,7 +125,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         handleVersionEvaluation(cachedInfo, cachedApkVersion, callback)
                         return@launch
                     } catch (e: Exception) {
-                        Log.e(TAG, "Failed to parse cached version detail", e)
+                        AppLog.e(TAG, "Failed to parse cached version detail", e)
                     }
                 }
             }
@@ -161,7 +161,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
                 handleVersionEvaluation(planetInfo, apkVersion, callback)
             } catch (e: Exception) {
-                Log.e(TAG, "Version check failed", e)
+                AppLog.e(TAG, "Version check failed", e)
                 withContext(dispatcherProvider.main) {
                     callback.onError(stringProvider.getString(R.string.connection_failed), true)
                 }
@@ -251,7 +251,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                             Sha256Utils().getCheckSumFromFile(f)
                         }
                         if (sha256 == null) {
-                            Log.w(TAG, "Could not compute checksum for $path")
+                            AppLog.w(TAG, "Could not compute checksum for $path")
                             return false
                         }
                         return checksum.contains(sha256)
@@ -260,7 +260,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
             false
         } catch (e: IOException) {
-            Log.e(TAG, "Checksum check failed", e)
+            AppLog.e(TAG, "Checksum check failed", e)
             false
         }
     }
@@ -280,7 +280,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     ?: allResults.firstOrNull()
                     ?: UrlCheckResult.Failure(url)
             } catch (e: Exception) {
-                Log.e(TAG, "Configuration URL check failed", e)
+                AppLog.e(TAG, "Configuration URL check failed", e)
                 UrlCheckResult.Failure(url)
             }
 
@@ -299,7 +299,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "getMinApk failed", e)
+            AppLog.e(TAG, "getMinApk failed", e)
             ConfigurationsRepository.ConfigurationResult.Failure(stringProvider.getString(R.string.device_couldn_t_reach_local_server), url)
         }
     }
@@ -327,10 +327,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
             UrlCheckResult.Failure(currentUrl)
         } catch (e: TimeoutCancellationException) {
-            Log.e(TAG, "Configuration URL check timed out", e)
+            AppLog.e(TAG, "Configuration URL check timed out", e)
             UrlCheckResult.Failure(currentUrl)
         } catch (e: Exception) {
-            Log.e(TAG, "Configuration URL check failed", e)
+            AppLog.e(TAG, "Configuration URL check failed", e)
             UrlCheckResult.Failure(currentUrl)
         }
     }
@@ -356,10 +356,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
             null
         } catch (e: TimeoutCancellationException) {
-            Log.e(TAG, "Fetch configuration timed out", e)
+            AppLog.e(TAG, "Fetch configuration timed out", e)
             null
         } catch (e: Exception) {
-            Log.e(TAG, "Fetch configuration failed", e)
+            AppLog.e(TAG, "Fetch configuration failed", e)
             null
         }
     }
@@ -428,7 +428,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             val url = try {
                 UrlUtils.getUrl() + "/_users/_find"
             } catch (e: Exception) {
-                Log.e(TAG, "Error constructing find admin URL", e)
+                AppLog.e(TAG, "Error constructing find admin URL", e)
                 return
             }
 
@@ -439,10 +439,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     sharedPrefManager.setCommunityLeaders("$responseBody")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Admin sync request failed", e)
+                AppLog.e(TAG, "Admin sync request failed", e)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error in syncCommunityLeaders", e)
+            AppLog.e(TAG, "Error in syncCommunityLeaders", e)
         }
     }
 

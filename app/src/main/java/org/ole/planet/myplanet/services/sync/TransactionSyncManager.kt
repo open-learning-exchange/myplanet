@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.services.sync
 
 import android.net.Uri
-import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
@@ -43,6 +42,7 @@ import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.AppStorage
 import org.ole.planet.myplanet.utils.CredentialStore
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -114,7 +114,7 @@ class TransactionSyncManager @Inject constructor(
             val insertStartTime = timeProvider.elapsedRealtime()
             coursesRepository.bulkInsertFromSync(arr)
             val insertDuration = timeProvider.elapsedRealtime() - insertStartTime
-            Log.d("SyncPerf", "    courses insertDuration: ${insertDuration}ms for ${arr.size()} items")
+            AppLog.d("SyncPerf", "    courses insertDuration: ${insertDuration}ms for ${arr.size()} items")
         },
         "exams" to { arr -> surveysRepository.bulkInsertExamsFromSync(arr) },
         "submissions" to { arr -> submissionsRepository.bulkInsertFromSync(arr) },
@@ -199,7 +199,7 @@ class TransactionSyncManager @Inject constructor(
 
     suspend fun syncDb(table: String, useCheckpoint: Boolean = false): Int = withContext(dispatcherProvider.io) {
         val syncStartTime = timeProvider.elapsedRealtime()
-        Log.d("SyncPerf", "  ▶ Starting $table sync")
+        AppLog.d("SyncPerf", "  ▶ Starting $table sync")
         try {
             val pageSize = when (table) {
                 "ratings" -> 20
@@ -209,7 +209,7 @@ class TransactionSyncManager @Inject constructor(
             }
             var skip = if (useCheckpoint) {
                 val saved = sharedPrefManager.getHeavySyncSkip(table)
-                if (saved > 0) Log.d("SyncPerf", "  ↻ Resuming $table from skip=$saved")
+                if (saved > 0) AppLog.d("SyncPerf", "  ↻ Resuming $table from skip=$saved")
                 saved
             } else 0
             var totalDocs = 0
@@ -236,7 +236,7 @@ class TransactionSyncManager @Inject constructor(
                 )
                 val batchApiDuration = timeProvider.elapsedRealtime() - batchApiStartTime
                 if (response.body() == null || !response.isSuccessful) {
-                    Log.d("SyncPerf", "  ✗ Failed $table batch $batchNumber: HTTP ${response.code()}")
+                    AppLog.d("SyncPerf", "  ✗ Failed $table batch $batchNumber: HTTP ${response.code()}")
                     break
                 }
                 val arr = getJsonArray("rows", response.body()?.toGson())
@@ -254,7 +254,7 @@ class TransactionSyncManager @Inject constructor(
                 if (handler != null) {
                     timedBatchInsert(table, arr.size()) { handler(arr) }
                 } else {
-                    Log.e("SyncPerf", "Unknown table: $table")
+                    AppLog.e("SyncPerf", "Unknown table: $table")
                 }
 
                 if (table == "achievements") {
@@ -277,7 +277,7 @@ class TransactionSyncManager @Inject constructor(
                     sharedPrefManager.setHeavySyncSkip(table, skip)
                 }
                 val batchDuration = timeProvider.elapsedRealtime() - batchStartTime
-                Log.d("SyncPerf", "    $table batch $batchNumber: ${arr.size()} docs in ${batchDuration}ms (total: $totalDocs)")
+                AppLog.d("SyncPerf", "    $table batch $batchNumber: ${arr.size()} docs in ${batchDuration}ms (total: $totalDocs)")
                 // Show progress for slow syncs
                 if (table in listOf("ratings", "submissions")) {
                     syncTimeLogger.logDetail(table, "Progress: $totalDocs documents synced so far...")
@@ -292,18 +292,18 @@ class TransactionSyncManager @Inject constructor(
                 sharedPrefManager.clearHeavySyncSkip(table)
             }
             val totalDuration = timeProvider.elapsedRealtime() - syncStartTime
-            Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
+            AppLog.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
             totalDocs
         } catch (e: CancellationException) {
             // Worker was stopped (network lost / process shutdown). Progress is checkpointed;
             // let cancellation propagate so WorkManager reschedules cleanly.
             val stopDuration = timeProvider.elapsedRealtime() - syncStartTime
-            Log.d("SyncPerf", "  ⏸ Interrupted $table sync after ${stopDuration}ms; will resume from checkpoint")
+            AppLog.d("SyncPerf", "  ⏸ Interrupted $table sync after ${stopDuration}ms; will resume from checkpoint")
             throw e
         } catch (e: Exception) {
             e.printStackTrace()
             val failDuration = timeProvider.elapsedRealtime() - syncStartTime
-            Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
+            AppLog.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
             0
         }
     }

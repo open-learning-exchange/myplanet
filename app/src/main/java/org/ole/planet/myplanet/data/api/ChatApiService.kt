@@ -1,12 +1,12 @@
 package org.ole.planet.myplanet.data.api
 
-import android.util.Log
 import com.google.gson.reflect.TypeToken
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.withContext
 import okhttp3.RequestBody
 import org.ole.planet.myplanet.model.ChatResponse
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -43,7 +43,7 @@ class ChatApiService @Inject constructor(
                 object : TypeToken<Map<String, Boolean>>() {}.type
             )
         } catch (e: Exception) {
-            Log.w("ChatApiService", "Failed to fetch AI providers from: ${UrlUtils.hostUrl}checkProviders/", e)
+            AppLog.w("ChatApiService", "Failed to fetch AI providers from: ${UrlUtils.hostUrl}checkProviders/", e)
             null
         }
     }

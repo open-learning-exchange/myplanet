@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.text.TextUtils
-import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
@@ -46,6 +45,7 @@ import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.AppInfo
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.CredentialStore
 import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.DeviceNameProvider
@@ -366,7 +366,7 @@ class UserRepositoryImpl @Inject constructor(
     ): UserEntity? {
         if (jsonDoc == null) return null
         val user = buildUserFromJson(jsonDoc) ?: run {
-            Log.e("UserRepositoryImpl", "Failed to save user: unable to build user model")
+            AppLog.e("UserRepositoryImpl", "Failed to save user: unable to build user model")
             return null
         }
         key?.let { user.key = it }

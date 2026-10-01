@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
-import android.util.Log
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.atomic.AtomicBoolean
@@ -32,6 +31,7 @@ import org.ole.planet.myplanet.repository.SyncRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils.getInt
@@ -66,7 +66,7 @@ class SyncManager @Inject constructor(
 ) {
     private inline fun syncPerf(message: () -> String) {
         if (syncTimeLogger.isVerbose) {
-            Log.d(TAG, message())
+            AppLog.d(TAG, message())
         }
     }
 
@@ -223,7 +223,7 @@ class SyncManager @Inject constructor(
             syncPerf { "SYNC FAILED after ${totalSyncTime}ms" }
             syncPerf { "Error: ${err.message}" }
             syncPerf { "═══════════════════════════════════════════════════════════════" }
-            Log.e("SyncManager", "Full sync failed", err)
+            AppLog.e("SyncManager", "Full sync failed", err)
             handleException(err.message)
         } finally {
             destroy(succeeded)
@@ -246,7 +246,7 @@ class SyncManager @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.e("SyncManager", "Failed to push shelf data before sync", e)
+            AppLog.e("SyncManager", "Failed to push shelf data before sync", e)
         }
     }
 
@@ -381,7 +381,7 @@ class SyncManager @Inject constructor(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    Log.e("SyncManager", "Resource batch failed", e)
+                    AppLog.e("SyncManager", "Resource batch failed", e)
                     batchSizer.recordFailure()
                     hadBatchFailure = true
                     syncTimeLogger.logDetail("resource_sync", "Batch $batchCount failed: ${e.message}")
@@ -406,7 +406,7 @@ class SyncManager @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.e("SyncManager", "Resource cleanup failed", e)
+                AppLog.e("SyncManager", "Resource cleanup failed", e)
                 syncTimeLogger.logDetail("resource_sync", "Cleanup failed: ${e.message}")
             }
             syncTimeLogger.endProcess("resource_sync_main", processedItems)
@@ -419,7 +419,7 @@ class SyncManager @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.e("SyncManager", "Resource sync failed", e)
+            AppLog.e("SyncManager", "Resource sync failed", e)
             syncTimeLogger.endProcess("resource_sync_main", processedItems)
             val resourceSyncEndTime = timeProvider.elapsedRealtime()
             syncPerf { "  ✗ Resources sync failed after ${resourceSyncEndTime - resourceSyncStartTime}ms: ${e.message}" }
@@ -493,7 +493,7 @@ class SyncManager @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.e("SyncManager", "Library sync failed", e)
+            AppLog.e("SyncManager", "Library sync failed", e)
             syncTimeLogger.endProcess("library_sync_main", processedItems)
             val failDuration = timeProvider.elapsedRealtime() - librarySyncStartTime
             syncPerf { "  ✗ Library sync failed after ${failDuration}ms: ${e.message}" }

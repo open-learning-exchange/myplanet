@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import com.google.gson.JsonObject
 import dagger.Lazy
 import io.mockk.Runs
@@ -10,11 +9,9 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkObject
-import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -86,10 +83,6 @@ class UserRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "mock_unique_id"
 
-        mockkStatic(Log::class)
-        every { Log.e(any(), any()) } returns 0
-        every { Log.e(any(), any(), any()) } returns 0
-
         sharedPrefManager = mockk(relaxed = true)
         apiInterface = mockk(relaxed = true)
         uploadToShelfService = mockk(relaxed = true)
@@ -153,7 +146,6 @@ class UserRepositoryImplTest {
     fun tearDown() {
         unmockkObject(UrlUtils)
         unmockkObject(NetworkUtils)
-        unmockkStatic(Log::class)
     }
 
     @Test

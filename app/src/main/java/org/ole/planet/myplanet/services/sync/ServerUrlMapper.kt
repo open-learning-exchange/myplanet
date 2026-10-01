@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.services.sync
 
 import android.net.Uri
-import android.util.Log
 import androidx.core.net.toUri
 import java.net.HttpURLConnection
 import java.net.URL
@@ -10,6 +9,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
@@ -42,7 +42,7 @@ class ServerUrlMapper @Inject constructor(
             val isDefaultPort = (scheme == "http" && port == 80) || (scheme == "https" && port == 443)
             if (port != -1 && !isDefaultPort) "$scheme://$host:$port" else "$scheme://$host"
         } catch (e: Exception) {
-            Log.w(TAG, "Could not extract base url", e)
+            AppLog.w(TAG, "Could not extract base url", e)
             null
         }
     }

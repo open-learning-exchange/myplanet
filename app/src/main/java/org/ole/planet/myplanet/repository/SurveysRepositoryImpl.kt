@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.UUID
@@ -30,6 +29,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.DateFormatter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
@@ -516,7 +516,7 @@ class SurveysRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.w(TAG, "fetchPublicSurveyFrom failed", e)
+            AppLog.w(TAG, "fetchPublicSurveyFrom failed", e)
             null
         }
     }
@@ -532,7 +532,7 @@ class SurveysRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.w(TAG, "submitPublicSurveyTo failed", e)
+            AppLog.w(TAG, "submitPublicSurveyTo failed", e)
             false
         }
     }

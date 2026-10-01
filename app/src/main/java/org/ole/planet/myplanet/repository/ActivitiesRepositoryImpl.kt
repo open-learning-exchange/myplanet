@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import com.google.gson.JsonObject
 import dagger.Lazy
 import java.io.IOException
@@ -33,6 +32,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.AppInfo
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.AppUsageStats
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -368,7 +368,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
                             }
                             activityData.id to `object`
                         } catch (e: IOException) {
-                            Log.e("ActivitiesRepository", "Exception in UploadManager", e)
+                            AppLog.e("ActivitiesRepository", "Exception in UploadManager", e)
                             null
                         }
                     }
