@@ -14,6 +14,7 @@ import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.io.File
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import okio.Buffer
@@ -66,6 +67,8 @@ class DownloadWorker @AssistedInject constructor(
             urls.forEachIndexed { index, url ->
                 val success = try {
                     downloadFile(url, authHeader, index, urls.size)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to download ${getFileNameFromUrl(url)}", e)
                     false
@@ -75,11 +78,15 @@ class DownloadWorker @AssistedInject constructor(
 
                 try {
                     showProgressNotification(completedCount - 1, urls.size, context.getString(R.string.downloaded_files, "$completedCount", "${urls.size}"), 100)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to update progress notification for ${getFileNameFromUrl(url)}", e)
                 }
                 try {
                     sendDownloadUpdate(url, success, completedCount >= urls.size, fromSync)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to send download update for ${getFileNameFromUrl(url)}", e)
                 }
@@ -87,6 +94,8 @@ class DownloadWorker @AssistedInject constructor(
 
             showCompletionNotification(completedCount, urls.size, results.any { !it })
             Result.success()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Download worker failed", e)
             Result.failure()
@@ -97,6 +106,8 @@ class DownloadWorker @AssistedInject constructor(
         if (FileUtils.checkFileExist(context, url)) {
             try {
                 resourcesRepository.markResourceOfflineByUrl(url)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to mark existing resource offline: ${UrlUtils.redactForLog(url)}", e)
             }
@@ -114,6 +125,8 @@ class DownloadWorker @AssistedInject constructor(
                     false
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to download file: ${UrlUtils.redactForLog(url)}", e)
             false
@@ -150,6 +163,8 @@ class DownloadWorker @AssistedInject constructor(
         }
         try {
             resourcesRepository.markResourceOfflineByUrl(url)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to mark downloaded resource offline: ${UrlUtils.redactForLog(url)}", e)
         }

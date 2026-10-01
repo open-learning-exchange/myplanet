@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.health
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -60,5 +61,55 @@ class HealthExaminationActivityTest {
 
         assertFalse("Condition present in diagnosis_list should NOT be added to customDiag", customDiag.contains(inListCondition))
         assertTrue("Condition NOT present in diagnosis_list with value=true SHOULD be added to customDiag", customDiag.contains(notInListCondition))
+    }
+
+    @Test
+    fun initExamination_loadsSavedNotesIntoEveryField() {
+        val activity = Robolectric.buildActivity(HealthExaminationActivity::class.java).create().get()
+        val key = org.ole.planet.myplanet.utils.AndroidDecrypter.generateKey()
+        val iv = org.ole.planet.myplanet.utils.AndroidDecrypter.generateIv()
+        val user = org.ole.planet.myplanet.model.UserEntity(id = "u1").apply { this.key = key; this.iv = iv }
+        val sign = org.ole.planet.myplanet.model.Examination().apply {
+            notes = "n"; diagnosis = "d"; treatments = "t"; medications = "m"; immunizations = "i"
+            allergies = "a"; xrays = "x"; tests = "lab"; referrals = "r"
+        }
+        val exam = HealthExamination().apply {
+            data = org.ole.planet.myplanet.utils.AndroidDecrypter.encrypt(
+                org.ole.planet.myplanet.utils.GsonUtils.gson.toJson(sign), key, iv
+            )
+        }
+        activity.user = user
+        HealthExaminationActivity::class.java.getDeclaredField("examination").apply { isAccessible = true }.set(activity, exam)
+
+        HealthExaminationActivity::class.java.getDeclaredMethod("initExamination").apply { isAccessible = true }.invoke(activity)
+
+        fun text(id: Int) = activity.findViewById<android.widget.EditText>(id).text.toString()
+        assertEquals("n", text(R.id.et_observation))
+        assertEquals("d", text(R.id.et_diag))
+        assertEquals("t", text(R.id.et_treatments))
+        assertEquals("m", text(R.id.et_medications))
+        assertEquals("i", text(R.id.et_immunization))
+        assertEquals("a", text(R.id.et_allergies))
+        assertEquals("x", text(R.id.et_xray))
+        assertEquals("lab", text(R.id.et_labtest))
+        assertEquals("r", text(R.id.et_referrals))
+    }
+
+    @Test
+    fun seedSavedConditions_keepsTickedStandardConditionsAndLeavesCustomToTheChips() {
+        val activity = Robolectric.buildActivity(HealthExaminationActivity::class.java).create().get()
+        val standard = activity.resources.getStringArray(R.array.diagnosis_list)
+        val cls = HealthExaminationActivity::class.java
+        cls.getDeclaredField("conditionsMap").apply { isAccessible = true }
+            .set(activity, mapOf(standard[0] to true, standard[1] to false, "Custom Condition" to true))
+
+        cls.getDeclaredMethod("seedSavedConditions").apply { isAccessible = true }.invoke(activity)
+
+        @Suppress("UNCHECKED_CAST")
+        val mapConditions = cls.getDeclaredField("mapConditions").apply { isAccessible = true }
+            .get(activity) as Map<String?, Boolean>
+        assertEquals(true, mapConditions[standard[0]])
+        assertEquals(false, mapConditions[standard[1]])
+        assertFalse(mapConditions.containsKey("Custom Condition"))
     }
 }
