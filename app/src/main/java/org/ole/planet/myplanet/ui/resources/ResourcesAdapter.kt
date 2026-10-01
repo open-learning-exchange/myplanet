@@ -198,11 +198,8 @@ class ResourcesAdapter(
             val current = currentMap[id]
             if (current == null || current.library.resourceLocalAddress != prev.library.resourceLocalAddress) {
                 htmlCoverCache.remove(id)
-                prev.item.resourceLocalAddress?.takeIf { it.isNotBlank() }?.let {
-                    fileLengthCache.remove(File(it).path)
-                }
                 val address = prev.library.resourceLocalAddress
-                if (dir != null && !address.isNullOrBlank() && !id.isNullOrBlank()) {
+                if (dir != null && !address.isNullOrBlank() && id.isNotBlank()) {
                     fileLengthCache.remove(FileUtils.getLibraryFile(dir, id, address).path)
                 }
             }
@@ -317,7 +314,7 @@ class ResourcesAdapter(
         val address = model.library.resourceLocalAddress
         val libraryId = model.library.id
         val dir = externalFilesDir
-        if (!isOffline || address.isNullOrBlank() || libraryId.isNullOrBlank() || dir == null) {
+        if (!isOffline || address.isNullOrBlank() || libraryId.isBlank() || dir == null) {
             showTypeIconOnly(ivPreview, ivTypeIcon)
             return
         }
@@ -436,8 +433,12 @@ class ResourcesAdapter(
     }
 
     private suspend fun resourceFileLength(model: ResourceListModel): Long? {
-        val localPath = model.item.resourceLocalAddress?.takeIf { it.isNotBlank() } ?: return null
-        return cachedFileLength(File(localPath))
+        val isOffline = model.item.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
+        val address = model.library.resourceLocalAddress?.takeIf { it.isNotBlank() } ?: return null
+        val libraryId = model.library.id.takeIf { it.isNotBlank() } ?: return null
+        val dir = externalFilesDir ?: return null
+        if (!isOffline) return null
+        return cachedFileLength(FileUtils.getLibraryFile(dir, libraryId, address))
     }
 
     private suspend fun cachedFileLength(file: File): Long? {

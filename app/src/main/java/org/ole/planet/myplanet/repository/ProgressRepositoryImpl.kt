@@ -7,12 +7,10 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.CourseStepDao
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
-import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.CourseProgress
 import org.ole.planet.myplanet.model.CourseProgressState
@@ -26,11 +24,10 @@ class ProgressRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>,
     private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>,
+    private val submissionsRepositoryLazy: dagger.Lazy<SubmissionsRepository>,
     private val courseProgressDao: CourseProgressDao,
     private val courseStepDao: CourseStepDao,
     private val examDao: ExamDao,
-    private val submissionDao: SubmissionDao,
-    private val answerDao: AnswerDao,
     private val questionDao: QuestionDao
 ) : ProgressRepository {
     override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): Map<String, CourseProgressState> = withContext(dispatcherProvider.default) {
@@ -69,7 +66,7 @@ class ProgressRepositoryImpl @Inject constructor(
         }
         val examsByCourseId = allExams.groupBy { it.courseId }
         val courseIdsSet = courseIds.toHashSet()
-        val submissionsByCourseId = submissionDao.getExamSubmissionsByUser(userId)
+        val submissionsByCourseId = submissionsRepositoryLazy.get().getExamSubmissionsByUser(userId)
             .groupBy { submission ->
                 val parentId = submission.parentId
                 if (parentId != null) {
@@ -183,7 +180,7 @@ class ProgressRepositoryImpl @Inject constructor(
         }
 
         val submissionIds = submissions.mapNotNull { it.id }
-        val allAnswers = if (submissionIds.isEmpty()) emptyList() else answerDao.getBySubmissionIds(submissionIds)
+        val allAnswers = if (submissionIds.isEmpty()) emptyList() else submissionsRepositoryLazy.get().getAnswersBySubmissionIds(submissionIds)
 
         val questionIds = allAnswers.mapNotNull { it.questionId }.distinct()
         val allQuestions = if (questionIds.isEmpty()) emptyList() else questionDao.getByIds(questionIds)

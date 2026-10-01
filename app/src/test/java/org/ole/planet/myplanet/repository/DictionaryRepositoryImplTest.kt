@@ -60,6 +60,15 @@ class DictionaryRepositoryImplTest {
         coVerify(exactly = 0) { dictionaryDao.insertAll(any()) }
     }
 
+    @Test(expected = kotlinx.coroutines.CancellationException::class)
+    fun `insertDictionaryData propagates CancellationException`() = runTest(testDispatcher) {
+        every { dictionaryFileReader.exists() } returns true
+        coEvery { dictionaryDao.count() } returns 0L
+        every { dictionaryFileReader.readText() } throws kotlinx.coroutines.CancellationException("Cancelled")
+
+        dictionaryRepository.insertDictionaryData()
+    }
+
     @Test
     fun `insertDictionaryData returns Failed if json parsing fails`() = runTest(testDispatcher) {
         every { dictionaryFileReader.exists() } returns true

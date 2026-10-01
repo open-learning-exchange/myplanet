@@ -20,7 +20,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.CourseDao
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
@@ -30,7 +29,6 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
@@ -53,8 +51,6 @@ class CoursesRepositoryImplTest {
     private val courseStepDao: CourseStepDao = mockk(relaxed = true)
     private val examDao: ExamDao = mockk(relaxed = true)
     private val questionDao: QuestionDao = mockk(relaxed = true)
-    private val submissionDao: SubmissionDao = mockk(relaxed = true)
-    private val answerDao: AnswerDao = mockk(relaxed = true)
     private val tagDao: TagDao = mockk(relaxed = true)
     private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
     private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
@@ -85,8 +81,6 @@ class CoursesRepositoryImplTest {
             courseStepDao,
             examDao,
             questionDao,
-            submissionDao,
-            answerDao,
             searchActivityDao,
             courseProgressDao,
             removedLogDao,
@@ -458,6 +452,29 @@ class CoursesRepositoryImplTest {
     }
 
     @Test
+    fun `deleteCoursesProgress with 1000 submissions calls deleteSubmissionsWithAnswers twice`() = runTest {
+        io.mockk.mockkStatic("androidx.room.RoomDatabaseKt")
+        val transactionBlock = io.mockk.slot<suspend () -> Any?>()
+        coEvery { appDatabase.withTransaction(capture(transactionBlock)) } coAnswers {
+            transactionBlock.captured.invoke()
+        }
+
+        val courseIds = listOf("course1")
+        coEvery { examDao.getByCourseIds(listOf("course1")) } returns listOf(org.ole.planet.myplanet.model.StepExam().apply { id = "exam1" })
+
+        val thousandSubmissions = (1..1000).map { org.ole.planet.myplanet.model.Submission().apply { id = "sub_$it" } }
+        coEvery { submissionsRepository.getUnuploadedNonSurveySubmissionsByParentIds(listOf("exam1")) } returns thousandSubmissions
+
+        repository.deleteCoursesProgress(courseIds)
+
+        coVerify(exactly = 2) { submissionsRepository.deleteSubmissionsWithAnswers(any()) }
+        coVerify(exactly = 1) { submissionsRepository.deleteSubmissionsWithAnswers(match { it.size == 900 }) }
+        coVerify(exactly = 1) { submissionsRepository.deleteSubmissionsWithAnswers(match { it.size == 100 }) }
+
+        io.mockk.unmockkStatic("androidx.room.RoomDatabaseKt")
+    }
+
+    @Test
     fun `bulkInsertFromSync derives correct stepId matching expected base64 encoding`() = runTest {
         io.mockk.mockkStatic("androidx.room.RoomDatabaseKt")
         val transactionBlock = io.mockk.slot<suspend () -> Any?>()
@@ -495,5 +512,78 @@ class CoursesRepositoryImplTest {
         assertEquals(expectedStepId, capturedSteps.captured.first().id)
 
         io.mockk.unmockkStatic("androidx.room.RoomDatabaseKt")
+    }
+
+    @Test(expected = kotlinx.coroutines.CancellationException::class)
+    fun `flushPendingCourseResources rethrows CancellationException and abandons loop`() = runTest {
+        val jsonArray = com.google.gson.JsonArray().apply {
+            add(com.google.gson.JsonObject().apply {
+                addProperty("_id", "res1")
+                addProperty("mediaType", "HTML")
+            })
+            add(com.google.gson.JsonObject().apply {
+                addProperty("_id", "res2")
+                addProperty("mediaType", "HTML")
+            })
+            add(com.google.gson.JsonObject().apply {
+                addProperty("_id", "res3")
+                addProperty("mediaType", "HTML")
+            })
+        }
+
+        val queueMethod = CoursesRepositoryImpl::class.java.getDeclaredMethod(
+            "queueCourseResources",
+            String::class.java,
+            String::class.java,
+            com.google.gson.JsonArray::class.java
+        )
+        queueMethod.isAccessible = true
+        queueMethod.invoke(repository, "courseId", "stepId", jsonArray)
+
+        coEvery { myLibraryDao.getByIds(any()) } returns emptyList()
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+        coEvery { resourcesRepository.reconcileHtmlResourceOffline("res1") } returns Unit
+        coEvery { resourcesRepository.reconcileHtmlResourceOffline("res2") } throws kotlinx.coroutines.CancellationException()
+
+        try {
+            repository.flushPendingCourseResources()
+        } finally {
+            coVerify(exactly = 1) { resourcesRepository.reconcileHtmlResourceOffline("res1") }
+            coVerify(exactly = 1) { resourcesRepository.reconcileHtmlResourceOffline("res2") }
+            coVerify(exactly = 0) { resourcesRepository.reconcileHtmlResourceOffline("res3") }
+        }
+    }
+
+    @Test
+    fun `flushPendingCourseResources catches ordinary exceptions and continues loop`() = runTest {
+        val jsonArray = com.google.gson.JsonArray().apply {
+            add(com.google.gson.JsonObject().apply {
+                addProperty("_id", "res1")
+                addProperty("mediaType", "HTML")
+            })
+            add(com.google.gson.JsonObject().apply {
+                addProperty("_id", "res2")
+                addProperty("mediaType", "HTML")
+            })
+        }
+
+        val queueMethod = CoursesRepositoryImpl::class.java.getDeclaredMethod(
+            "queueCourseResources",
+            String::class.java,
+            String::class.java,
+            com.google.gson.JsonArray::class.java
+        )
+        queueMethod.isAccessible = true
+        queueMethod.invoke(repository, "courseId", "stepId", jsonArray)
+
+        coEvery { myLibraryDao.getByIds(any()) } returns emptyList()
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+        coEvery { resourcesRepository.reconcileHtmlResourceOffline("res1") } throws RuntimeException("Ordinary failure")
+        coEvery { resourcesRepository.reconcileHtmlResourceOffline("res2") } returns Unit
+
+        repository.flushPendingCourseResources()
+
+        coVerify(exactly = 1) { resourcesRepository.reconcileHtmlResourceOffline("res1") }
+        coVerify(exactly = 1) { resourcesRepository.reconcileHtmlResourceOffline("res2") }
     }
 }

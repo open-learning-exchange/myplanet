@@ -18,6 +18,7 @@ import io.mockk.spyk
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -30,12 +31,13 @@ import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.UserDao
-import org.ole.planet.myplanet.model.MemberInfo
+import org.ole.planet.myplanet.model.LearnerRegistrationInfo
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -43,6 +45,7 @@ import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 import retrofit2.Response
@@ -60,6 +63,12 @@ class UserRepositoryImplTest {
     private lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var activitiesRepository: ActivitiesRepository
     private lateinit var activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>
+    private lateinit var resourcesRepository: ResourcesRepository
+    private lateinit var resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository>
+    private lateinit var coursesRepository: CoursesRepository
+    private lateinit var coursesRepositoryLazy: dagger.Lazy<CoursesRepository>
+    private lateinit var eventsRepository: EventsRepository
+    private lateinit var eventsRepositoryLazy: dagger.Lazy<EventsRepository>
     private lateinit var userDao: UserDao
     private lateinit var deviceNameProvider: DeviceNameProvider
 
@@ -92,6 +101,20 @@ class UserRepositoryImplTest {
         activitiesRepositoryLazy = mockk(relaxed = true)
         every { activitiesRepositoryLazy.get() } returns activitiesRepository
 
+        resourcesRepository = mockk(relaxed = true)
+        resourcesRepositoryLazy = mockk(relaxed = true)
+        every { resourcesRepositoryLazy.get() } returns resourcesRepository
+        coEvery { resourcesRepository.getMyLibIds(any()) } returns com.google.gson.JsonArray()
+
+        coursesRepository = mockk(relaxed = true)
+        coursesRepositoryLazy = mockk(relaxed = true)
+        every { coursesRepositoryLazy.get() } returns coursesRepository
+        coEvery { coursesRepository.getMyCourseIds(any()) } returns com.google.gson.JsonArray()
+
+        eventsRepository = mockk(relaxed = true)
+        eventsRepositoryLazy = mockk(relaxed = true)
+        every { eventsRepositoryLazy.get() } returns eventsRepository
+
         dispatcherProvider = mockk(relaxed = true)
         every { dispatcherProvider.io } returns testDispatcher
         every { dispatcherProvider.main } returns testDispatcher
@@ -105,16 +128,15 @@ class UserRepositoryImplTest {
             settings,
             sharedPrefManager,
             apiInterface,
-            mockk(relaxed = true),
-            mockk(relaxed = true),
+            resourcesRepositoryLazy,
+            coursesRepositoryLazy,
             uploadToShelfService,
             context,
             configurationsRepository,
             appScope,
             dispatcherProvider,
             activitiesRepositoryLazy,
-            mockk(relaxed = true),
-            mockk(relaxed = true),
+            eventsRepositoryLazy,
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
@@ -418,7 +440,7 @@ class UserRepositoryImplTest {
         val jsonSlot = slot<JsonObject>()
         coEvery { spyRepository.becomeMember(capture(jsonSlot)) } returns Pair(true, "success")
 
-        val memberInfo = MemberInfo(
+        val memberInfo = LearnerRegistrationInfo(
             username = "testuser",
             password = "password123",
             rePassword = "password123",
@@ -461,5 +483,100 @@ class UserRepositoryImplTest {
         assertEquals("OriginalFirst", slot.captured.firstName)
         assertEquals("OriginalLast", slot.captured.lastName)
         assertEquals(true, slot.captured.isUpdated)
+    }
+
+    @Test
+    fun `getAchievementData calls resourcesRepository getLibraryItemsByIds`() = runTest(testDispatcher) {
+        val achievement = org.ole.planet.myplanet.model.Achievement().apply {
+            _id = "user1@planet1"
+            achievements = listOf("{\"resources\":[{\"_id\":\"res1\"},{\"_id\":\"res2\"}]}")
+        }
+        val achievementDao = mockk<org.ole.planet.myplanet.data.room.dao.AchievementDao>(relaxed = true)
+        coEvery { achievementDao.getById("user1@planet1") } returns achievement
+
+        val repo = UserRepositoryImpl(
+            settings, sharedPrefManager, apiInterface, resourcesRepositoryLazy,
+            mockk(relaxed = true), uploadToShelfService, context, configurationsRepository,
+            appScope, dispatcherProvider, activitiesRepositoryLazy, eventsRepositoryLazy,
+            mockk(relaxed = true), mockk(relaxed = true), achievementDao, userDao,
+            mockk(relaxed = true), deviceNameProvider
+        )
+
+        repo.getAchievementData("user1", "planet1")
+
+        coVerify { resourcesRepository.getLibraryItemsByIds(listOf("res1", "res2")) }
+    }
+
+    @Test
+    fun `uploadShelfData calls eventsRepository getMeetupsForUser`() = runTest(testDispatcher) {
+        val user = UserEntity().apply {
+            id = "user1"
+            _id = "org.couchdb.user:user1"
+        }
+        val response = Response.success(buildJsonObject { put("_rev", "1-abc") })
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns response
+        coEvery { eventsRepository.getMeetupsForUser("user1") } returns emptyList()
+
+        repository.uploadShelfData(user)
+
+        coVerify { eventsRepository.getMeetupsForUser("user1") }
+    }
+
+    @Test
+    fun `checkIfUserExists properly encodes password containing special characters`() = runTest(testDispatcher) {
+        mockkObject(SecurePrefs)
+        try {
+            every { SecurePrefs.getPassword(context, settings) } returns "p\$a@s\\s"
+            every { UrlUtils.getUrl() } returns "http://admin:secret@localhost:5984"
+
+            val urlSlot = slot<String>()
+            coEvery { apiInterface.getJsonObject(any(), capture(urlSlot)) } returns Response.success(buildJsonObject { put("ok", true) })
+
+            val user = UserEntity().apply { name = "john" }
+            repository.checkIfUserExists("Basic auth", user)
+
+            assertTrue("URL missing %24", urlSlot.captured.contains("%24"))
+            assertTrue("URL missing %40", urlSlot.captured.contains("%40"))
+            assertTrue("URL missing %5C", urlSlot.captured.contains("%5C"))
+
+            val hostAfterAt = urlSlot.captured.substringAfterLast("@")
+            val expectedHostPath = "localhost:5984/_users/org.couchdb.user:john"
+            assertTrue("Host after last @ mismatch", hostAfterAt == expectedHostPath)
+        } finally {
+            unmockkObject(SecurePrefs)
+        }
+    }
+
+    @Test
+    fun `checkIfUserExists matches expected URL output for plain alphanumeric password`() = runTest(testDispatcher) {
+        mockkObject(SecurePrefs)
+        try {
+            every { SecurePrefs.getPassword(context, settings) } returns "plainpass123"
+            every { UrlUtils.getUrl() } returns "http://admin:secret@localhost:5984"
+
+            val urlSlot = slot<String>()
+            coEvery { apiInterface.getJsonObject(any(), capture(urlSlot)) } returns Response.success(buildJsonObject { put("ok", true) })
+
+            val user = UserEntity().apply { name = "john" }
+            repository.checkIfUserExists("Basic auth", user)
+
+            val expectedUrl = "http://john:plainpass123@localhost:5984/_users/org.couchdb.user:john"
+            val matches = urlSlot.captured == expectedUrl
+            assertTrue("URL mismatch for plain password", matches)
+        } finally {
+            unmockkObject(SecurePrefs)
+        }
+    }
+
+    @Test
+    fun `fetchUserSecurityData rethrows CancellationException`() = runTest(testDispatcher) {
+        coEvery { apiInterface.getJsonObject(any(), any()) } throws CancellationException("Cancelled")
+
+        try {
+            repository.fetchUserSecurityData("john")
+            org.junit.Assert.fail("Expected CancellationException")
+        } catch (e: CancellationException) {
+            assertEquals("Cancelled", e.message)
+        }
     }
 }
