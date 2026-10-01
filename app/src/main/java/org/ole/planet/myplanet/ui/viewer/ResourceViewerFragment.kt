@@ -566,8 +566,13 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
             } else if (pdfTextJob?.isActive == true) {
                 return@setOnClickListener
             } else {
+                if (pdfText == null) {
+                    Utilities.toast(requireContext(), getString(R.string.pdf_extracting_text))
+                }
                 pdfTextJob = viewLifecycleOwner.lifecycleScope.launch {
-                    ttsManager.speak(loadPdfText())
+                    val text = loadPdfText()
+                    if (!viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return@launch
+                    ttsManager.speak(text)
                 }
             }
         }
@@ -713,6 +718,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         if (activity?.isInPictureInPictureMode != true) {
             exoPlayer?.pause()
         }
+        pdfTextJob?.cancel()
         ttsManager.stop()
     }
 
