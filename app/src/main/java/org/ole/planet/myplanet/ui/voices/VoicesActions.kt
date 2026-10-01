@@ -21,8 +21,8 @@ import org.ole.planet.myplanet.databinding.AlertInputBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.VoicesEditActions
-import org.ole.planet.myplanet.ui.teams.members.MemberDetailArgs
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
+import org.ole.planet.myplanet.ui.teams.members.MembersDetailInfo
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -207,7 +207,7 @@ object VoicesActions {
         userModel: UserEntity?
     ): MembersDetailFragment? {
         if (userModel == null) return null
-        return MembersDetailFragment.newInstance(MemberDetailArgs.fromUser(userModel))
+        return MembersDetailFragment.newInstance(MembersDetailInfo.fromUser(userModel))
     }
 
 }

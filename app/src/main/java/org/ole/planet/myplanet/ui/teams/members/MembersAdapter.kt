@@ -129,7 +129,7 @@ class MembersAdapter(
 
         holder.itemView.setOnClickListener {
             val activity = it.context as AppCompatActivity
-            val fragment = MembersDetailFragment.newInstance(MemberDetailArgs.fromUser(member))
+            val fragment = MembersDetailFragment.newInstance(MembersDetailInfo.fromUser(member))
             FragmentNavigator.replaceFragment(
                 activity.supportFragmentManager,
                 R.id.fragment_container,

@@ -73,7 +73,7 @@ class MembersDetailFragment : BaseBindingFragment<FragmentMemberDetailBinding>(F
     }
 
     companion object {
-        fun newInstance(args: MemberDetailArgs) = MembersDetailFragment().apply {
+        fun newInstance(args: MembersDetailInfo) = MembersDetailFragment().apply {
             arguments = Bundle().apply {
                 putString("member_id", args.id)
                 putString("member_login_name", args.loginName)
