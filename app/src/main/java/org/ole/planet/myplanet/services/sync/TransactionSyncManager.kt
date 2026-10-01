@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.services.sync
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
-import android.os.SystemClock
 import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -57,6 +56,7 @@ import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
@@ -82,6 +82,7 @@ class TransactionSyncManager @Inject constructor(
     private val progressRepository: ProgressRepository,
     private val surveysRepository: SurveysRepository,
     private val dispatcherProvider: DispatcherProvider,
+    private val timeProvider: TimeProvider,
     private val userSessionManager: UserSessionManager,
     private val syncTimeLogger: SyncTimeLogger
 ) {
@@ -112,9 +113,9 @@ class TransactionSyncManager @Inject constructor(
         "achievements" to { arr -> userSyncRepository.bulkInsertAchievementsFromSync(arr) },
         "health" to { arr -> healthRepository.bulkInsertFromSync(arr) },
         "courses" to { arr ->
-            val insertStartTime = SystemClock.elapsedRealtime()
+            val insertStartTime = timeProvider.elapsedRealtime()
             coursesRepository.bulkInsertFromSync(arr)
-            val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
+            val insertDuration = timeProvider.elapsedRealtime() - insertStartTime
             Log.d("SyncPerf", "    courses insertDuration: ${insertDuration}ms for ${arr.size()} items")
         },
         "exams" to { arr -> surveysRepository.bulkInsertExamsFromSync(arr) },
@@ -203,7 +204,7 @@ class TransactionSyncManager @Inject constructor(
     }
 
     suspend fun syncDb(table: String, useCheckpoint: Boolean = false): Int = withContext(dispatcherProvider.io) {
-        val syncStartTime = SystemClock.elapsedRealtime()
+        val syncStartTime = timeProvider.elapsedRealtime()
         val checkpointKey = "heavy_sync_skip_$table"
         Log.d("SyncPerf", "  ▶ Starting $table sync")
         try {
@@ -232,15 +233,15 @@ class TransactionSyncManager @Inject constructor(
                 if (useCheckpoint) {
                     sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).apply()
                 }
-                val batchStartTime = SystemClock.elapsedRealtime()
-                val batchApiStartTime = SystemClock.elapsedRealtime()
+                val batchStartTime = timeProvider.elapsedRealtime()
+                val batchApiStartTime = timeProvider.elapsedRealtime()
                 val response = apiInterface.postDoc(
                     authHeader,
                     "application/json",
                     "$url/$table/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",
                     JsonObject().toKotlinx().jsonObject // Empty body for GET-style query
                 )
-                val batchApiDuration = SystemClock.elapsedRealtime() - batchApiStartTime
+                val batchApiDuration = timeProvider.elapsedRealtime() - batchApiStartTime
                 if (response.body() == null || !response.isSuccessful) {
                     Log.d("SyncPerf", "  ✗ Failed $table batch $batchNumber: HTTP ${response.code()}")
                     break
@@ -282,7 +283,7 @@ class TransactionSyncManager @Inject constructor(
                 if (useCheckpoint) {
                     sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).apply()
                 }
-                val batchDuration = SystemClock.elapsedRealtime() - batchStartTime
+                val batchDuration = timeProvider.elapsedRealtime() - batchStartTime
                 Log.d("SyncPerf", "    $table batch $batchNumber: ${arr.size()} docs in ${batchDuration}ms (total: $totalDocs)")
                 // Show progress for slow syncs
                 if (table in listOf("ratings", "submissions")) {
@@ -297,27 +298,27 @@ class TransactionSyncManager @Inject constructor(
             if (useCheckpoint && syncCompletedFully) {
                 sharedPrefManager.rawPreferences.edit().remove(checkpointKey).apply()
             }
-            val totalDuration = SystemClock.elapsedRealtime() - syncStartTime
+            val totalDuration = timeProvider.elapsedRealtime() - syncStartTime
             Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
             totalDocs
         } catch (e: CancellationException) {
             // Worker was stopped (network lost / process shutdown). Progress is checkpointed;
             // let cancellation propagate so WorkManager reschedules cleanly.
-            val stopDuration = SystemClock.elapsedRealtime() - syncStartTime
+            val stopDuration = timeProvider.elapsedRealtime() - syncStartTime
             Log.d("SyncPerf", "  ⏸ Interrupted $table sync after ${stopDuration}ms; will resume from checkpoint")
             throw e
         } catch (e: Exception) {
             e.printStackTrace()
-            val failDuration = SystemClock.elapsedRealtime() - syncStartTime
+            val failDuration = timeProvider.elapsedRealtime() - syncStartTime
             Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
             0
         }
     }
 
     private suspend fun timedBatchInsert(table: String, batchSize: Int, insert: suspend () -> Unit) {
-        val insertStartTime = SystemClock.elapsedRealtime()
+        val insertStartTime = timeProvider.elapsedRealtime()
         dbWriteMutex.withLock { insert() }
-        val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
+        val insertDuration = timeProvider.elapsedRealtime() - insertStartTime
         syncTimeLogger.logDbOperation(
             "insert_batch",
             table,

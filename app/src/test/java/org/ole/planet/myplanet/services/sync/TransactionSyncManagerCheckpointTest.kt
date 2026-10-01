@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.SyncTimeLogger
+import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.robolectric.RobolectricTestRunner
 import retrofit2.Response
@@ -50,7 +51,7 @@ import retrofit2.Response
 /**
  * Covers the checkpoint/cancellation behaviour added to [TransactionSyncManager.syncDb] for
  * background heavy-table sync (see the resume/interrupt handling in `HeavyTableSyncWorker`).
- * Robolectric supplies working `android.util.Log`/`SystemClock` shadows that syncDb relies on.
+ * Robolectric supplies the working `android.util.Log` shadow that syncDb relies on.
  */
 @RunWith(RobolectricTestRunner::class)
 class TransactionSyncManagerCheckpointTest {
@@ -127,6 +128,7 @@ class TransactionSyncManagerCheckpointTest {
             mockk<ProgressRepository>(relaxed = true),
             mockk<SurveysRepository>(relaxed = true),
             dispatcherProvider,
+            TestTimeProvider(),
             mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true),
             mockSyncTimeLogger
         )

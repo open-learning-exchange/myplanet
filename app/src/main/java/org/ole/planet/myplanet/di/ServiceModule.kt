@@ -35,8 +35,11 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
+import org.ole.planet.myplanet.utils.AndroidNetworkStatus
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NetworkStatus
 import org.ole.planet.myplanet.utils.SyncTimeLogger
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
@@ -57,6 +60,10 @@ object ServiceModule {
         }
         return CoroutineScope(SupervisorJob() + dispatcherProvider.io + logFailure)
     }
+
+    @Provides
+    @Singleton
+    fun provideNetworkStatus(impl: AndroidNetworkStatus): NetworkStatus = impl
 
     @Provides
     @Singleton
@@ -95,9 +102,10 @@ object ServiceModule {
         progressRepository: ProgressRepository,
         surveysRepository: SurveysRepository,
         dispatcherProvider: DispatcherProvider,
+        timeProvider: TimeProvider,
         userSessionManager: UserSessionManager,
         syncTimeLogger: SyncTimeLogger
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, eventsSyncWriter, healthRepository, progressRepository, surveysRepository, dispatcherProvider, userSessionManager, syncTimeLogger)
+        return TransactionSyncManager(apiInterface, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, eventsSyncWriter, healthRepository, progressRepository, surveysRepository, dispatcherProvider, timeProvider, userSessionManager, syncTimeLogger)
     }
 }

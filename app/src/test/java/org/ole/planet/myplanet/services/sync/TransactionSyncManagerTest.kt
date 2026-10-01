@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
@@ -96,6 +97,7 @@ class TransactionSyncManagerTest {
             progressRepository,
             surveysRepository,
             dispatcherProvider,
+            TestTimeProvider(),
             userSessionManager,
             mockk(relaxed = true)
         )

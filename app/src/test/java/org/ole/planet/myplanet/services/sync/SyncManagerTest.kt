@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NetworkStatus
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
@@ -66,6 +67,9 @@ class SyncManagerTest {
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val syncRepository: SyncRepository = mockk(relaxed = true)
     private val syncTimeLogger: SyncTimeLogger = mockk(relaxed = true)
+    private val networkStatus: NetworkStatus = mockk {
+        every { currentWifiSsid() } returns null
+    }
     private val userModel: UserEntity = mockk(relaxed = true)
 
     @Before
@@ -91,6 +95,7 @@ class SyncManagerTest {
             activitiesRepository = activitiesRepository,
             dispatcherProvider = dispatcherProvider,
             timeProvider = TestTimeProvider(),
+            networkStatus = networkStatus,
             userSyncRepository = userSyncRepository,
             userRepository = userRepository,
             syncRepository = syncRepository,
@@ -144,6 +149,25 @@ class SyncManagerTest {
 
         assertEquals(SyncManager.SyncStatus.Error(expectedMessage), syncManager.syncStatus.value)
         assertEquals(false, syncManager.isMainSyncActive())
+    }
+
+    @Test
+    fun `full sync stores the current wifi ssid`() = runTest {
+        every { networkStatus.currentWifiSsid() } returns "\"school-wifi\""
+        coEvery { transactionSyncManager.authenticate() } returns true
+
+        syncManager.start(listener, "sync", listOf())
+
+        verify { sharedPrefManager.setLastWifiSsid("\"school-wifi\"") }
+    }
+
+    @Test
+    fun `full sync leaves the last wifi ssid alone when not on wifi`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+
+        syncManager.start(listener, "sync", listOf())
+
+        verify(exactly = 0) { sharedPrefManager.setLastWifiSsid(any()) }
     }
 
     @Test

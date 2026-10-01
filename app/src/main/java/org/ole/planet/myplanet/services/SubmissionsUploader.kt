@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services
 
-import android.os.SystemClock
 import android.util.Log
 import androidx.core.net.toUri
 import javax.inject.Inject
@@ -10,6 +9,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.ServerReachabilityProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @Singleton
 class SubmissionsUploader @Inject constructor(
@@ -17,7 +17,8 @@ class SubmissionsUploader @Inject constructor(
     private val sharedPrefManager: SharedPrefManager,
     private val serverUrlMapper: ServerUrlMapper,
     private val submissionUploadExecutor: SubmissionUploadExecutor,
-    private val serverReachabilityProvider: ServerReachabilityProvider
+    private val serverReachabilityProvider: ServerReachabilityProvider,
+    private val timeProvider: TimeProvider
 ) {
     fun checkAvailableServer(syncStartTime: Long) {
         Log.d("SubmissionsUploader", "checkAvailableServer started, syncStartTime: $syncStartTime")
@@ -28,7 +29,7 @@ class SubmissionsUploader @Inject constructor(
         submissionUploadExecutor.execute {
             Log.d("SubmissionsUploader", "ApplicationScope coroutine started, will not be cancelled by fragment lifecycle")
             Log.d("SubmissionsUploader", "Starting server reachability checks (15s timeout each)")
-            val checkStartTime = SystemClock.elapsedRealtime()
+            val checkStartTime = timeProvider.elapsedRealtime()
 
             val primaryCheck = async {
                 try {
@@ -60,7 +61,7 @@ class SubmissionsUploader @Inject constructor(
 
             val primaryAvailable = primaryCheck.await()
             val alternativeAvailable = alternativeCheck.await()
-            val checkDuration = SystemClock.elapsedRealtime() - checkStartTime
+            val checkDuration = timeProvider.elapsedRealtime() - checkStartTime
             Log.d("SubmissionsUploader", "Server checks completed in ${checkDuration}ms. Primary: $primaryAvailable, Alternative: $alternativeAvailable")
 
             if (primaryAvailable || alternativeAvailable) {
@@ -74,7 +75,7 @@ class SubmissionsUploader @Inject constructor(
                 }
                 uploadSubmissionsWithTiming(syncStartTime)
             } else {
-                Log.w("SubmissionsUploader", "No server reachable, upload skipped. Total time since button click: ${SystemClock.elapsedRealtime() - syncStartTime}ms")
+                Log.w("SubmissionsUploader", "No server reachable, upload skipped. Total time since button click: ${timeProvider.elapsedRealtime() - syncStartTime}ms")
             }
         }
     }
