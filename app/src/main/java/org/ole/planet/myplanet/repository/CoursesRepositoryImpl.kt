@@ -6,7 +6,6 @@ import androidx.sqlite.db.SimpleSQLiteQuery
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Base64
-import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -42,6 +41,7 @@ import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.AppStorage
+import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
@@ -346,7 +346,7 @@ class CoursesRepositoryImpl @Inject constructor(
             SearchActivity(
                 id = UUID.randomUUID().toString(),
                 user = userName,
-                time = Calendar.getInstance().timeInMillis,
+                time = DateTimeUtils.nowMillis(),
                 createdOn = planetCode,
                 parentCode = parentCode,
                 text = searchText,

@@ -375,14 +375,14 @@ class NotificationsRepositoryImplTest {
     fun `markNotificationsAsRead marks existing notifications as read using timeProvider now`() = runTest {
         val ids = setOf("id1", "id2", "id3")
         coEvery { notificationDao.getIdsByIds(any()) } returns listOf("id1", "id2")
-        val dateSlot = slot<java.util.Date>()
+        val dateSlot = slot<Long>()
         coEvery { notificationDao.markAsRead(any<List<String>>(), capture(dateSlot)) } returns 2
 
         val result = repository.markNotificationsAsRead(ids)
 
         assertEquals(setOf("id1", "id2"), result)
         coVerify { notificationDao.getIdsByIds(ids.toList()) }
-        assertEquals(TestTimeProvider().now(), dateSlot.captured.time)
+        assertEquals(TestTimeProvider().now(), dateSlot.captured)
     }
 
     @Test

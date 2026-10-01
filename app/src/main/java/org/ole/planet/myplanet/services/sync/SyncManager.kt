@@ -4,10 +4,6 @@ import android.content.Context
 import android.util.Log
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
@@ -36,6 +32,7 @@ import org.ole.planet.myplanet.repository.SyncRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils.getInt
 import org.ole.planet.myplanet.utils.GsonUtils.getJsonArray
@@ -77,7 +74,6 @@ class SyncManager @Inject constructor(
         private const val TAG = "SyncPerf"
     }
 
-    private val timestampFormat = DateTimeFormatter.ofPattern("HH:mm:ss.SSS").withZone(ZoneId.systemDefault())
     private val isSyncing = AtomicBoolean(false)
     private var listener: OnSyncListener? = null
     private var backgroundSync: Job? = null
@@ -120,7 +116,7 @@ class SyncManager @Inject constructor(
         cancel(context, 111)
         isSyncing.set(false)
         if (succeeded) {
-            sharedPrefManager.setLastSync(Date().time)
+            sharedPrefManager.setLastSync(timeProvider.now())
             listener?.onSyncComplete()
         }
         listener = null
@@ -145,7 +141,7 @@ class SyncManager @Inject constructor(
 
         syncTimeLogger.startLogging()
         syncPerf { "═══════════════════════════════════════════════════════════════" }
-        syncPerf { "FULL SYNC STARTED at ${timestampFormat.format(Instant.now())}" }
+        syncPerf { "FULL SYNC STARTED at ${DateTimeUtils.formatTimeOfDay(timeProvider.now())}" }
         syncPerf { "═══════════════════════════════════════════════════════════════" }
         var succeeded = false
         try {
@@ -214,7 +210,7 @@ class SyncManager @Inject constructor(
             val minutes = totalSyncTime / 60000
             val seconds = (totalSyncTime % 60000) / 1000
             syncPerf { "═══════════════════════════════════════════════════════════════" }
-            syncPerf { "FULL SYNC COMPLETED at ${timestampFormat.format(Instant.now())}" }
+            syncPerf { "FULL SYNC COMPLETED at ${DateTimeUtils.formatTimeOfDay(timeProvider.now())}" }
             syncPerf { "TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms)" }
             syncPerf { "═══════════════════════════════════════════════════════════════" }
             succeeded = true

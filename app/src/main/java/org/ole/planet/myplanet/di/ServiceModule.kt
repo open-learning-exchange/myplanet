@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.utils.AndroidAppLocale
 import org.ole.planet.myplanet.utils.AndroidAppStorage
 import org.ole.planet.myplanet.utils.AndroidAppUsageStats
 import org.ole.planet.myplanet.utils.AndroidCredentialStore
+import org.ole.planet.myplanet.utils.AndroidDateFormatter
 import org.ole.planet.myplanet.utils.AndroidDownloadLauncher
 import org.ole.planet.myplanet.utils.AndroidNetworkStatus
 import org.ole.planet.myplanet.utils.AndroidStringProvider
@@ -48,6 +49,7 @@ import org.ole.planet.myplanet.utils.AppLocale
 import org.ole.planet.myplanet.utils.AppStorage
 import org.ole.planet.myplanet.utils.AppUsageStats
 import org.ole.planet.myplanet.utils.CredentialStore
+import org.ole.planet.myplanet.utils.DateFormatter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadLauncher
 import org.ole.planet.myplanet.utils.NetworkStatus
@@ -106,6 +108,10 @@ object ServiceModule {
     @Provides
     @Singleton
     fun provideCredentialStore(impl: AndroidCredentialStore): CredentialStore = impl
+
+    @Provides
+    @Singleton
+    fun provideDateFormatter(impl: AndroidDateFormatter): DateFormatter = impl
 
     @Provides
     @Singleton

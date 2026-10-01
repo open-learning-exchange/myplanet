@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.model.EnterpriseReportCsvProjection
 import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.utils.AndroidDateFormatter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
@@ -36,7 +37,7 @@ class EnterprisesRepositoryImplTest {
     private val dispatcherProvider: DispatcherProvider = TestDispatcherProvider(UnconfinedTestDispatcher())
 
     private val repository = EnterprisesRepositoryImpl(
-        storagePathResolver, teamDao, timeProvider, dispatcherProvider
+        storagePathResolver, teamDao, timeProvider, dispatcherProvider, AndroidDateFormatter()
     )
 
     @Test

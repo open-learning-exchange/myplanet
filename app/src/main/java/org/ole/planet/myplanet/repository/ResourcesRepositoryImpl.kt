@@ -6,7 +6,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
 import java.io.IOException
-import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -297,7 +296,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             this.subject = request.subjects?.toList() ?: emptyList()
             this.userId = emptyList()
             this.level = request.levels?.toList() ?: emptyList()
-            this.createdDate = Calendar.getInstance().timeInMillis
+            this.createdDate = timeProvider.now()
             this.resourceFor = request.resourceFor?.toList() ?: emptyList()
             this.resourceLocalAddress = filename
             this.resourceOffline = true
@@ -479,7 +478,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             SearchActivity(
                 id = UUID.randomUUID().toString(),
                 user = userName,
-                time = Calendar.getInstance().timeInMillis,
+                time = timeProvider.now(),
                 createdOn = planetCode,
                 parentCode = parentCode,
                 text = searchText,

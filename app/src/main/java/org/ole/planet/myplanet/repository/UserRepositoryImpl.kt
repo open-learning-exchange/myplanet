@@ -8,8 +8,6 @@ import dagger.Lazy
 import java.io.IOException
 import java.net.URLEncoder
 import java.text.Normalizer
-import java.util.Calendar
-import java.util.Date
 import java.util.UUID
 import java.util.regex.Pattern
 import javax.inject.Inject
@@ -49,6 +47,7 @@ import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.AppInfo
 import org.ole.planet.myplanet.utils.CredentialStore
+import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
@@ -523,7 +522,7 @@ class UserRepositoryImpl @Inject constructor(
             addProperty("middleName", user.mName)
             addProperty("password", user.password)
             addProperty("isUserAdmin", false)
-            addProperty("joinDate", Calendar.getInstance().timeInMillis)
+            addProperty("joinDate", DateTimeUtils.nowMillis())
             addProperty("email", user.email)
             addProperty("planetCode", sharedPrefManager.getPlanetCode())
             addProperty("parentCode", sharedPrefManager.getParentCode())
@@ -679,7 +678,7 @@ class UserRepositoryImpl @Inject constructor(
 
         ob.addProperty("key", keyString)
         ob.addProperty("iv", iv)
-        ob.addProperty("createdOn", Date().time)
+        ob.addProperty("createdOn", DateTimeUtils.nowMillis())
 
         val maxAttempts = 3
         val retryDelayMs = 2000L

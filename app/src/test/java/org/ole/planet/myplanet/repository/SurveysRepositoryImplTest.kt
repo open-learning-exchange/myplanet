@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.AndroidDateFormatter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FakeKeyValueStore
 import org.ole.planet.myplanet.utils.StringProvider
@@ -74,7 +75,8 @@ class SurveysRepositoryImplTest {
             submissionDao,
             { teamsRepository },
             stringProvider,
-            reminderStore
+            reminderStore,
+            AndroidDateFormatter()
         )
     }
 

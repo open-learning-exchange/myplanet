@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.AndroidDateFormatter
 import org.ole.planet.myplanet.utils.AppStorage
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -107,6 +108,7 @@ class TeamsRepositoryImplTest {
             deviceNameProvider,
             appStorage,
             downloadLauncher,
+            AndroidDateFormatter(),
         )
     }
 

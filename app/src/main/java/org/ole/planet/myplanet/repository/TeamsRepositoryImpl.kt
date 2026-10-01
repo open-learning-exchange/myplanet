@@ -8,13 +8,7 @@ import androidx.room.withTransaction
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Calendar
-import java.util.Date
 import java.util.LinkedHashSet
-import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -51,6 +45,8 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.AppStorage
+import org.ole.planet.myplanet.utils.DateFormatter
+import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadLauncher
@@ -81,6 +77,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val deviceNameProvider: DeviceNameProvider,
     private val appStorage: AppStorage,
     private val downloadLauncher: DownloadLauncher,
+    private val dateFormatter: DateFormatter,
 ) : TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<TeamTask>> {
         return teamTaskDao.getOpenTasksForUser(userId).flowOn(dispatcherProvider.default)
@@ -151,7 +148,7 @@ class TeamsRepositoryImpl @Inject constructor(
             val team = MyTeam().apply {
                 _id = teamId
                 status = "active"
-                createdDate = Date().time
+                createdDate = DateTimeUtils.nowMillis()
                 if (request.category == "enterprise") {
                     type = "enterprise"
                     services = request.services
@@ -608,7 +605,7 @@ class TeamsRepositoryImpl @Inject constructor(
         val validIds = teamIds.filter { it.isNotBlank() }.distinct()
         if (validIds.isEmpty()) return emptyMap()
 
-        val cutoff = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -30) }.timeInMillis
+        val cutoff = DateTimeUtils.plusDays(DateTimeUtils.nowMillis(), -30)
         val recentLogs = teamLogDao.getRecentTeamVisits(cutoff, validIds)
 
         return recentLogs.mapNotNull { it.teamId }
@@ -632,7 +629,7 @@ class TeamsRepositoryImpl @Inject constructor(
         val request = MyTeam().apply {
             _id = AndroidDecrypter.generateIv()
             docType = "request"
-            createdDate = Date().time
+            createdDate = DateTimeUtils.nowMillis()
             this.teamType = teamType
             this.userId = userId
             this.teamId = teamId
@@ -826,7 +823,7 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun setTaskCompletion(taskId: String, completed: Boolean) {
         teamTaskDao.getById(taskId)?.let { task ->
             task.completed = completed
-            task.completedTime = if (completed) Date().time else 0
+            task.completedTime = if (completed) DateTimeUtils.nowMillis() else 0
             task.isUpdated = true
             teamTaskDao.upsert(task)
         }
@@ -848,7 +845,7 @@ class TeamsRepositoryImpl @Inject constructor(
             type = "teamVisit"
             this.teamType = teamType
             parentCode = userParentCode
-            time = Date().time
+            time = DateTimeUtils.nowMillis()
         }
         teamLogDao.insert(log)
     }
@@ -1049,7 +1046,7 @@ class TeamsRepositoryImpl @Inject constructor(
             val lastVisitTimestamp = stats?.latestVisit
             val lastLogoutTimestamp = lastVisits[member.name ?: ""]
             val profileLastVisit = if (lastLogoutTimestamp != null) {
-                DATE_TIME_FORMATTER.format(Instant.ofEpochMilli(lastLogoutTimestamp))
+                dateFormatter.formatMonthDayYearTime(lastLogoutTimestamp)
             } else {
                 "No logout record found"
             }
@@ -1370,6 +1367,5 @@ class TeamsRepositoryImpl @Inject constructor(
 
     companion object {
         private const val TAG = "TeamsRepository"
-        private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("MMMM dd, yyyy hh:mm a", Locale.getDefault()).withZone(ZoneId.systemDefault())
     }
 }

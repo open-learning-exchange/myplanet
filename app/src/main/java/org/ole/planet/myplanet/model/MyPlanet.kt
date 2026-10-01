@@ -3,8 +3,6 @@ package org.ole.planet.myplanet.model
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.Serializable
-import java.util.Calendar
-import java.util.Date
 import kotlinx.serialization.Serializable as KSerializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -12,6 +10,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.AppInfo
 import org.ole.planet.myplanet.utils.AppUsageStat
 import org.ole.planet.myplanet.utils.AppUsageStats
+import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -38,7 +37,7 @@ class MyPlanet : Serializable {
             usageStats: AppUsageStats,
             spm: SharedPrefManager,
             model: UserEntity,
-            now: Long = System.currentTimeMillis()
+            now: Long = DateTimeUtils.nowMillis()
         ): JsonObject {
             val planet = GsonUtils.gson.fromJson(spm.getVersionDetail() ?: "", MyPlanet::class.java)
             val usages = getTabletUsages(appInfo, deviceNameProvider, usageStats, spm, now)
@@ -70,7 +69,7 @@ class MyPlanet : Serializable {
                 put("uniqueAndroidId", appInfo.androidId())
                 put("customDeviceName", deviceNameProvider.getCustomDeviceName())
                 put("deviceName", deviceNameProvider.getDeviceName())
-                put("time", Date().time)
+                put("time", DateTimeUtils.nowMillis())
                 put("type", "sync")
             }.toGson()
             postJSON.addDocumentOrigin()
@@ -82,12 +81,10 @@ class MyPlanet : Serializable {
             deviceNameProvider: DeviceNameProvider,
             usageStats: AppUsageStats,
             spm: SharedPrefManager,
-            now: Long = System.currentTimeMillis()
+            now: Long = DateTimeUtils.nowMillis()
         ): JsonArray {
-            val cal = Calendar.getInstance()
-            cal.timeInMillis = spm.getLastUsageUploaded()
             val arr = JsonArray()
-            val queryUsageStats = usageStats.queryDailyUsage(cal.timeInMillis, now)
+            val queryUsageStats = usageStats.queryDailyUsage(spm.getLastUsageUploaded(), now)
             if (queryUsageStats != null) {
                 val packageName = appInfo.packageName
                 val customDeviceName = deviceNameProvider.getCustomDeviceName()

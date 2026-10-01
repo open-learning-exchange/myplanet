@@ -30,13 +30,12 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.DateFormatter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.KeyValueStore
 import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.TimeProvider
-import org.ole.planet.myplanet.utils.TimeUtils.formatDate
-import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
@@ -53,6 +52,7 @@ class SurveysRepositoryImpl @Inject constructor(
     private val teamsRepository: dagger.Lazy<TeamsRepository>,
     private val stringProvider: StringProvider,
     @param:SurveyReminderPreferences private val reminderPrefs: KeyValueStore,
+    private val dateFormatter: DateFormatter,
 ) : SurveysRepository {
 
     companion object {
@@ -328,9 +328,9 @@ class SurveysRepositoryImpl @Inject constructor(
                 ),
                 lastSubmissionDate = surveySubmissions.maxByOrNull { it.startTime }
                     ?.startTime
-                    ?.let { getFormattedDateWithTime(it) }
+                    ?.let { dateFormatter.formatDateWithTime(it) }
                     .orEmpty(),
-                creationDate = formatDate(survey.createdDate, "MMM dd, yyyy")
+                creationDate = dateFormatter.format(survey.createdDate, "MMM dd, yyyy")
             )
         }.toMap()
     }
