@@ -27,9 +27,7 @@ interface RetryRepository {
     suspend fun markFailed(operationId: String, errorMessage: String?, httpCode: Int?)
     suspend fun executeOperation(operation: RetryOperation): RetryOperationResult
     suspend fun getPending(): List<RetryOperation>
-    suspend fun getPendingCount(): Long
     suspend fun cleanup()
-    suspend fun deletePendingAndAbandonedOperations()
     suspend fun recoverStuckOperations()
     fun isCurrentlyProcessing(): Boolean
     fun tryStartProcessing(): Boolean
