@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.MediumUtils
 
 @HiltViewModel
 class ResourcesViewModel @Inject constructor(
@@ -127,7 +126,7 @@ class ResourcesViewModel @Inject constructor(
     private fun addMediumFacetValue(facets: MutableMap<String, String>, raw: String?) {
         val value = raw?.trim() ?: return
         if (value.isEmpty()) return
-        val canonical = MediumUtils.getCanonicalMedium(value)
+        val canonical = ResourcesMediaType.canonicalMedium(value)
         facets.putIfAbsent(canonical.lowercase(Locale.ROOT), canonical)
     }
 

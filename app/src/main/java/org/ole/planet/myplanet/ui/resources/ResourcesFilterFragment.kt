@@ -23,7 +23,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseBindingBottomSheetFragment
 import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryFilterBinding
-import org.ole.planet.myplanet.utils.MediumUtils
 
 class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFilterBinding>(FragmentLibraryFilterBinding::inflate), AdapterView.OnItemClickListener {
     var languages: Set<String>? = null
@@ -228,6 +227,6 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
     }
 
     fun getMediumDisplayName(medium: String): String {
-        return MediumUtils.getMediumDisplayName(requireContext(), medium)
+        return ResourcesMediaType.displayName(requireContext(), medium)
     }
 }

@@ -3,9 +3,6 @@ package org.ole.planet.myplanet.ui.resources
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagEntity
-import org.ole.planet.myplanet.utils.LibraryType
-import org.ole.planet.myplanet.utils.LibraryTypeClassifier
-import org.ole.planet.myplanet.utils.MediumUtils
 import org.ole.planet.myplanet.utils.ResourcesSearchUtils
 
 data class ResourcesFilterCriteria(
@@ -87,27 +84,27 @@ class ResourcesListFilter {
     }
 
     private fun matchesMedium(library: MyLibrary, selectedMediums: Set<String>): Boolean {
-        val classifiedType = LibraryTypeClassifier.classify(library)
-        val isNonBook = LibraryTypeClassifier.isExplicitNonBook(library)
+        val classifiedType = ResourcesMediaType.classify(library)
+        val isNonBook = ResourcesMediaType.isExplicitNonBook(library)
 
         return selectedMediums.any { selected ->
-            val canonicalSel = MediumUtils.getCanonicalMedium(selected)
+            val canonicalSel = ResourcesMediaType.canonicalMedium(selected)
             val targetType = when (canonicalSel) {
-                "audio" -> LibraryType.AUDIO
-                "video" -> LibraryType.VIDEO
-                "pdf" -> LibraryType.PDF
-                "book" -> LibraryType.BOOK
+                "audio" -> ResourcesMediaType.AUDIO
+                "video" -> ResourcesMediaType.VIDEO
+                "pdf" -> ResourcesMediaType.PDF
+                "book" -> ResourcesMediaType.BOOK
                 else -> null
             }
 
             if (targetType != null) {
-                if (targetType == LibraryType.BOOK) {
-                    classifiedType == LibraryType.BOOK && !isNonBook
+                if (targetType == ResourcesMediaType.BOOK) {
+                    classifiedType == ResourcesMediaType.BOOK && !isNonBook
                 } else {
                     classifiedType == targetType
                 }
             } else {
-                val libCanonical = library.mediaType?.let { MediumUtils.getCanonicalMedium(it) }
+                val libCanonical = library.mediaType?.let { ResourcesMediaType.canonicalMedium(it) }
                 libCanonical?.equals(canonicalSel, ignoreCase = true) == true
             }
         }
