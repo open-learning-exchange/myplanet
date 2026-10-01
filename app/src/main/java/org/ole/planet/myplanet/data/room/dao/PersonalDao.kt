@@ -23,9 +23,6 @@ interface PersonalDao {
     @Query("SELECT * FROM my_personal WHERE userId = :userId ORDER BY date DESC, title COLLATE NOCASE ASC")
     fun getByUserIdFlow(userId: String): Flow<List<Personal>>
 
-    @Query("SELECT * FROM my_personal WHERE userId = :userId AND isUploaded = 0")
-    suspend fun getPendingUploads(userId: String): List<Personal>
-
     @Query("SELECT * FROM my_personal WHERE _id = :id LIMIT 1")
     suspend fun findByDocId(id: String): Personal?
 
