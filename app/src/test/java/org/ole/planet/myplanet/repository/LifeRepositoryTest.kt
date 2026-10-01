@@ -13,7 +13,6 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.model.MyLife
-import org.ole.planet.myplanet.services.SharedPrefManager
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LifeRepositoryTest {

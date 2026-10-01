@@ -1,9 +1,9 @@
 package org.ole.planet.myplanet.utils
 
+import kotlin.math.abs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlin.math.abs
 
 class PdfRenderUtilsTest {
 
