@@ -177,6 +177,8 @@ class TransactionSyncManager @Inject constructor(
                     }
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -465,6 +467,8 @@ class TransactionSyncManager @Inject constructor(
                         val newRev = JsonUtils.getString("rev", response.body()).takeIf { it.isNotEmpty() }
                         Pair(notification.id, newRev)
                     } else null
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     e.printStackTrace()
                     null

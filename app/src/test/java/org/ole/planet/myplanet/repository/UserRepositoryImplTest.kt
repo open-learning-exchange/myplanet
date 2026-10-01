@@ -18,6 +18,7 @@ import io.mockk.spyk
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -564,6 +565,18 @@ class UserRepositoryImplTest {
             assertTrue("URL mismatch for plain password", matches)
         } finally {
             unmockkObject(SecurePrefs)
+        }
+    }
+
+    @Test
+    fun `fetchUserSecurityData rethrows CancellationException`() = runTest(testDispatcher) {
+        coEvery { apiInterface.getJsonObject(any(), any()) } throws CancellationException("Cancelled")
+
+        try {
+            repository.fetchUserSecurityData("john")
+            org.junit.Assert.fail("Expected CancellationException")
+        } catch (e: CancellationException) {
+            assertEquals("Cancelled", e.message)
         }
     }
 }
