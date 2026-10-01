@@ -17,7 +17,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import dagger.hilt.android.EntryPointAccessors
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
+import org.ole.planet.myplanet.di.NotificationEntryPoint
 import org.ole.planet.myplanet.services.NotificationActionReceiver
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 
@@ -92,19 +92,11 @@ object NotificationUtils {
         }
     }
 
-    @Volatile
-    private var notificationManagerInstance: NotificationManager? = null
-
     fun getInstance(context: Context): NotificationManager {
-        return notificationManagerInstance ?: synchronized(this) {
-            notificationManagerInstance ?: run {
-                val appCtx = context.applicationContext
-                val entryPoint = EntryPointAccessors.fromApplication(appCtx, CoreDependenciesEntryPoint::class.java)
-                NotificationManager(appCtx, entryPoint.timeProvider()).also {
-                    notificationManagerInstance = it
-                }
-            }
-        }
+        return EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            NotificationEntryPoint::class.java
+        ).notificationManager()
     }
 
     fun createSurveyNotification(surveyId: String, surveyTitle: String): NotificationConfig {
