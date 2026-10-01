@@ -12,11 +12,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.LibraryTitle
 import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -84,7 +84,7 @@ class AchievementViewModel @Inject constructor(
         userRepository.updateProfileFields(_user.value?.id, request.profileFields)
     }
 
-    suspend fun getLibraryTitles(): List<LibraryTitleProjection> {
+    suspend fun getLibraryTitles(): List<LibraryTitle> {
         return resourcesRepository.getLibraryTitles()
     }
 
