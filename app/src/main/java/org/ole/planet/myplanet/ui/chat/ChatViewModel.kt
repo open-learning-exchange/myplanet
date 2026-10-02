@@ -79,6 +79,9 @@ class ChatViewModel @Inject constructor(
     }
     private var loadDataJob: kotlinx.coroutines.Job? = null
     private var searchJob: kotlinx.coroutines.Job? = null
+    private var lastQuery = ""
+    private var lastFullSearch = false
+    private var lastQuestion = false
     sealed class ShareChatResult {
         object AlreadyShared : ShareChatResult()
         data class Shared(val news: News, val chatId: String) : ShareChatResult()
@@ -142,27 +145,34 @@ class ChatViewModel @Inject constructor(
             }
             result?.let { data ->
                 _screenData.value = data
-                _filteredChats.value = allChats
+                applySearch()
             }
         }
     }
     fun searchChats(query: String, isFullSearch: Boolean, isQuestion: Boolean) {
-        if (query.isBlank()) {
+        lastQuery = query
+        lastFullSearch = isFullSearch
+        lastQuestion = isQuestion
+        applySearch()
+    }
+
+    private fun applySearch() {
+        searchJob?.cancel()
+        if (lastQuery.isBlank()) {
             _filteredChats.value = allChats
             return
         }
-        searchJob?.cancel()
+        val query = lastQuery
+        val mode = if (!lastFullSearch) {
+            ChatSearchMode.TITLE
+        } else if (lastQuestion) {
+            ChatSearchMode.QUESTION
+        } else {
+            ChatSearchMode.RESPONSE
+        }
         searchJob = viewModelScope.launch {
-            val mode = if (!isFullSearch) {
-                ChatSearchMode.TITLE
-            } else if (isQuestion) {
-                ChatSearchMode.QUESTION
-            } else {
-                ChatSearchMode.RESPONSE
-            }
             val index = searchIndex ?: ChatSearch.Index(allChats).also { searchIndex = it }
-            val results = ChatSearch.search(query, mode, index, dispatcherProvider.default)
-            _filteredChats.value = results
+            _filteredChats.value = ChatSearch.search(query, mode, index, dispatcherProvider.default)
         }
     }
     private suspend fun loadCurrentUser(userId: String?): UserEntity? {
