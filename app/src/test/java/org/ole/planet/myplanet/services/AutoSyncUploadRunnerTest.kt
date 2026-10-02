@@ -112,7 +112,8 @@ class AutoSyncUploadRunnerTest {
 
         runner.runAll(listener)
 
-        assertTrue("Expected max active count <= 3 but was ${maxActiveCount.get()}", maxActiveCount.get() <= 3)
+        val limit = AutoSyncUploadRunner.MAX_CONCURRENT_GROUPS
+        assertTrue("Expected max active count <= $limit but was ${maxActiveCount.get()}", maxActiveCount.get() <= limit)
         assertTrue("Expected max active count > 1 to prove concurrency but was ${maxActiveCount.get()}", maxActiveCount.get() > 1)
     }
 

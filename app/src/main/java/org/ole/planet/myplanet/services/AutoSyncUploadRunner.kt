@@ -16,7 +16,7 @@ class AutoSyncUploadRunner @Inject constructor(
 ) {
     suspend fun runAll(listener: OnSuccessListener): Throwable? {
         return supervisorScope {
-            val semaphore = Semaphore(3)
+            val semaphore = Semaphore(MAX_CONCURRENT_GROUPS)
             val firstError = AtomicReference<Throwable?>(null)
 
             fun recordFailure(e: Throwable) {
@@ -113,5 +113,12 @@ class AutoSyncUploadRunner @Inject constructor(
 
             firstError.get()
         }
+    }
+
+    companion object {
+        // Each group can fan out to UploadCoordinator, PhotoUploader or
+        // ActivitiesRepositoryImpl.uploadActivities, each capped at 6 requests,
+        // so 2 groups keep the worst case at ~12 concurrent POSTs to the server.
+        const val MAX_CONCURRENT_GROUPS = 2
     }
 }
