@@ -113,6 +113,7 @@ class AutoSyncUploadRunnerTest {
         runner.runAll(listener)
 
         assertTrue("Expected max active count <= 3 but was ${maxActiveCount.get()}", maxActiveCount.get() <= 3)
+        assertTrue("Expected max active count > 1 to prove concurrency but was ${maxActiveCount.get()}", maxActiveCount.get() > 1)
     }
 
     @Test
