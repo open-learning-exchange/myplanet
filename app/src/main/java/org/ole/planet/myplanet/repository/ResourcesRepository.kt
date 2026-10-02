@@ -64,7 +64,7 @@ data class LocalResourceRequest(
     val teamId: String?
 )
 
-interface ResourcesRepository {
+interface ResourcesRepository : ResourcesSyncRepository {
     suspend fun getLibraryTitles(): List<LibraryTitle>
     suspend fun getLibraryItemById(id: String): MyLibrary?
     suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<MyLibrary>
@@ -115,13 +115,10 @@ interface ResourcesRepository {
     suspend fun addAllResourcesToUserLibrary(resources: List<MyLibrary>, userId: String): Result<Unit>
     suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>>
     suspend fun getDownloadSuggestionList(userId: String? = null): List<MyLibrary>
-    suspend fun removeDeletedResources(currentIds: List<String?>)
     suspend fun getMyLibIds(userId: String): JsonArray
     suspend fun removeResourceFromShelf(resourceId: String, userId: String)
     suspend fun removeResourcesFromShelf(resourceIds: List<String>, userId: String): Result<Unit>
     suspend fun getHtmlResourceDownloadUrls(resourceId: String): ResourceUrlsResponse
-    suspend fun batchInsertResources(documents: List<JsonObject>): List<String>
-    suspend fun batchInsertMyLibrary(shelfId: String?, documents: List<JsonObject>): Int
     suspend fun getResourceListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>
     fun getCachedResourceListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>?
     suspend fun getLibraryItemsByResourceIds(ids: Collection<String>): List<MyLibrary>
