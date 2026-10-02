@@ -672,6 +672,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         this.mediums = mediums
         this.levels = levels
 
+        if (view == null) return lastFilteredCount
         setupDownloadFilterChips()
         updateFilterBadge()
 
@@ -862,7 +863,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private fun setupDownloadFilterChips() {
-        val chipRow = binding.chipFilterRow ?: return
+        if (_binding == null) return
+        val chipRow = binding.chipFilterRow
         chipRow.removeAllViews()
 
         val context = context ?: return
@@ -889,16 +891,21 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun renderActiveFacetChips(chipRow: LinearLayout, chipContext: ContextThemeWrapper) {
         val facetFilters = listOf(
-            Triple(subjects, "Subject") { item: String -> subjects.remove(item) },
-            Triple(languages, "Language") { item: String -> languages.remove(item) },
-            Triple(mediums, "Medium") { item: String -> mediums.remove(item) },
-            Triple(levels, "Level") { item: String -> levels.remove(item) }
+            Pair(subjects) { item: String -> subjects.remove(item) },
+            Pair(languages) { item: String -> languages.remove(item) },
+            Pair(mediums) { item: String -> mediums.remove(item) },
+            Pair(levels) { item: String -> levels.remove(item) }
         )
 
-        for ((set, category, removeAction) in facetFilters) {
+        for ((set, removeAction) in facetFilters) {
             for (item in set) {
+                val displayText = if (set === mediums) {
+                ResourcesFilterFragment.getMediumDisplayName(requireContext(), item)
+                } else {
+                    item
+                }
                 val chip = Chip(chipContext).apply {
-                    text = "$item"
+                    text = displayText
                     isCloseIconVisible = true
                     setOnCloseIconClickListener {
                         removeAction(item)
