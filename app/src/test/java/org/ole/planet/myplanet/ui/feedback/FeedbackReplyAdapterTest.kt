@@ -143,7 +143,7 @@ class FeedbackReplyAdapterTest {
     }
 
     @Test
-    fun `reply with non numeric date throws NumberFormatException on bind`() {
+    fun `non numeric date string currently throws NumberFormatException on raw toLong`() {
         val reply = FeedbackReply("Hello", "User1", "abc")
         submitListAndIdle(listOf(reply))
 
