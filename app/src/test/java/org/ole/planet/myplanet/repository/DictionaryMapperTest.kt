@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import java.util.UUID
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonArray
@@ -112,5 +113,73 @@ class DictionaryMapperTest {
         assertEquals("", entity.word)
         assertEquals("", entity.synonym)
         assertEquals("x", entity.antonym)
+    }
+
+    @Test
+    fun `mapping the same array twice yields identical id lists`() {
+        val jsonString = """
+            [
+                {"word": "apple", "meaning": "fruit"},
+                {"word": "banana", "meaning": "fruit"}
+            ]
+        """.trimIndent()
+
+        val jsonArray1 = Json.parseToJsonElement(jsonString).jsonArray
+        val jsonArray2 = Json.parseToJsonElement(jsonString).jsonArray
+
+        val entities1 = DictionaryMapper.mapJsonArrayToEntities(jsonArray1)
+        val entities2 = DictionaryMapper.mapJsonArrayToEntities(jsonArray2)
+
+        val ids1 = entities1.map { it.id }
+        val ids2 = entities2.map { it.id }
+
+        assertEquals(ids1, ids2)
+    }
+
+    @Test
+    fun `two byte-identical elements get different ids, and size is 2`() {
+        val jsonString = """
+            [
+                {"word": "a"},
+                {"word": "a"}
+            ]
+        """.trimIndent()
+
+        val jsonArray = Json.parseToJsonElement(jsonString).jsonArray
+        val entities = DictionaryMapper.mapJsonArrayToEntities(jsonArray)
+
+        assertEquals(2, entities.size)
+        assertNotEquals(entities[0].id, entities[1].id)
+    }
+
+    @Test
+    fun `same word with a different meaning gives different ids`() {
+        val jsonString = """
+            [
+                {"word": "bank", "meaning": "financial institution"},
+                {"word": "bank", "meaning": "river side"}
+            ]
+        """.trimIndent()
+
+        val jsonArray = Json.parseToJsonElement(jsonString).jsonArray
+        val entities = DictionaryMapper.mapJsonArrayToEntities(jsonArray)
+
+        assertEquals(2, entities.size)
+        assertNotEquals(entities[0].id, entities[1].id)
+    }
+
+    @Test
+    fun `ids are valid UUID strings`() {
+        val jsonString = """
+            [
+                {"word": "test"}
+            ]
+        """.trimIndent()
+
+        val jsonArray = Json.parseToJsonElement(jsonString).jsonArray
+        val entities = DictionaryMapper.mapJsonArrayToEntities(jsonArray)
+
+        assertEquals(1, entities.size)
+        UUID.fromString(entities[0].id)
     }
 }
