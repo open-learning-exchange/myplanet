@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
+import kotlin.time.Duration.Companion.milliseconds
 
 @AndroidEntryPoint
 class ChatHistoryFragment : BaseBindingFragment<FragmentChatHistoryBinding>(FragmentChatHistoryBinding::inflate) {
@@ -86,7 +87,7 @@ class ChatHistoryFragment : BaseBindingFragment<FragmentChatHistoryBinding>(Frag
 
         binding.searchBar.textChanges()
             .drop(1)
-            .debounce(300)
+            .debounce(300.milliseconds)
             .distinctUntilChanged()
             .onEach { text -> sharedViewModel.searchChats(text?.toString() ?: "", isFullSearch, isQuestion) }
             .launchIn(viewLifecycleOwner.lifecycleScope)
@@ -131,6 +132,11 @@ class ChatHistoryFragment : BaseBindingFragment<FragmentChatHistoryBinding>(Frag
                 sharedViewModel.searchChats(binding.searchBar.text.toString(), isFullSearch, isQuestion)
             }
         }
+    }
+
+    override fun onViewStateRestored(savedInstanceState: Bundle?) {
+        super.onViewStateRestored(savedInstanceState)
+        sharedViewModel.searchChats(binding.searchBar.text.toString(), isFullSearch, isQuestion)
     }
 
     fun refreshChatHistory() {
