@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -74,6 +75,7 @@ class DiagnosticsRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            Log.w(TAG, "saveLogToRoom failed", e)
             false
         }
     }
@@ -94,7 +96,12 @@ class DiagnosticsRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            Log.w(TAG, "saveLogsToRoom failed", e)
             false
         }
+    }
+
+    companion object {
+        private const val TAG = "DiagnosticsRepository"
     }
 }
