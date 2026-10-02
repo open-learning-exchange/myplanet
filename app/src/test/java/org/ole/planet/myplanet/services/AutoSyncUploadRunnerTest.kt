@@ -47,9 +47,12 @@ class AutoSyncUploadRunnerTest {
     }
 
     @Test
-    fun `within group B, calls execute in sequence`() = runTest {
+    fun `within group B, resources upload before teams and calls execute in sequence`() = runTest {
         runner.runAll(listener)
         coVerifyOrder {
+            uploadManager.uploadResourceActivities("")
+            uploadManager.uploadRating()
+            uploadManager.uploadResource(listener)
             uploadManager.uploadUserActivities(listener)
             uploadManager.uploadTeams()
             uploadManager.uploadTeamTask()
@@ -58,13 +61,21 @@ class AutoSyncUploadRunnerTest {
     }
 
     @Test
-    fun `within group C, calls execute in sequence`() = runTest {
-        runner.runAll(listener)
-        coVerifyOrder {
-            uploadManager.uploadResourceActivities("")
-            uploadManager.uploadRating()
-            uploadManager.uploadResource(listener)
+    fun `team links created by uploadResource are visible to uploadTeams`() = runTest {
+        val resourceDone = CompletableDeferred<Unit>()
+        var resourceFinishedBeforeTeams = false
+        coEvery { uploadManager.uploadResource(listener) } coAnswers {
+            delay(100)
+            resourceDone.complete(Unit)
+            Unit
         }
+        coEvery { uploadManager.uploadTeams() } coAnswers {
+            resourceFinishedBeforeTeams = resourceDone.isCompleted
+        }
+
+        runner.runAll(listener)
+
+        assertTrue(resourceFinishedBeforeTeams)
     }
 
     @Test
@@ -126,6 +137,9 @@ class AutoSyncUploadRunnerTest {
 
         assertEquals(expectedException, result)
 
+        coVerify { uploadManager.uploadResourceActivities("") }
+        coVerify { uploadManager.uploadRating() }
+        coVerify { uploadManager.uploadResource(listener) }
         coVerify { uploadManager.uploadUserActivities(listener) }
         coVerify { uploadManager.uploadTeams() }
         coVerify(exactly = 0) { uploadManager.uploadTeamTask() }
@@ -134,10 +148,6 @@ class AutoSyncUploadRunnerTest {
         coVerify { uploadManager.uploadExamResult(listener) }
         coVerify { uploadManager.uploadAdoptedSurveys() }
         coVerify { uploadManager.uploadSubmissions() }
-
-        coVerify { uploadManager.uploadResourceActivities("") }
-        coVerify { uploadManager.uploadRating() }
-        coVerify { uploadManager.uploadResource(listener) }
 
         coVerify { uploadManager.uploadCrashLog() }
         coVerify { uploadManager.uploadNews() }
@@ -160,6 +170,32 @@ class AutoSyncUploadRunnerTest {
     @Test
     fun `uploadActivities null is called exactly once after all others`() = runTest {
         runner.runAll(listener)
+        coVerify(exactly = 1) { uploadManager.uploadActivities(null) }
+    }
+
+    @Test
+    fun `uploadActivities null waits while a group is still blocked`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        coEvery { uploadManager.uploadNews() } coAnswers { gate.await() }
+
+        val job = launch { runner.runAll(listener) }
+        testScheduler.advanceUntilIdle()
+
+        coVerify(exactly = 0) { uploadManager.uploadActivities(null) }
+
+        gate.complete(Unit)
+        job.join()
+
+        coVerify(exactly = 1) { uploadManager.uploadActivities(null) }
+    }
+
+    @Test
+    fun `uploadActivities null runs exactly once after a group fails`() = runTest {
+        coEvery { uploadManager.uploadSubmissions() } throws RuntimeException("boom")
+
+        val result = runner.runAll(listener)
+
+        assertTrue(result is RuntimeException)
         coVerify(exactly = 1) { uploadManager.uploadActivities(null) }
     }
 }

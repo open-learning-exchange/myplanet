@@ -44,20 +44,17 @@ class AutoSyncUploadRunner @Inject constructor(
                 }
             }
 
+            // Resources go before teams: markResourceUploaded creates team links for
+            // private resources, and uploadTeams must see them in the same sync.
             val groupB = async {
-                runGroup {
-                    uploadManager.uploadUserActivities(listener)
-                    uploadManager.uploadTeams()
-                    uploadManager.uploadTeamTask()
-                    uploadManager.uploadMeetups()
-                }
-            }
-
-            val groupC = async {
                 runGroup {
                     uploadManager.uploadResourceActivities("")
                     uploadManager.uploadRating()
                     uploadManager.uploadResource(listener)
+                    uploadManager.uploadUserActivities(listener)
+                    uploadManager.uploadTeams()
+                    uploadManager.uploadTeamTask()
+                    uploadManager.uploadMeetups()
                 }
             }
 
@@ -100,7 +97,6 @@ class AutoSyncUploadRunner @Inject constructor(
             listOf(
                 groupA,
                 groupB,
-                groupC,
                 feedback,
                 achievement,
                 courseActivities,
