@@ -116,7 +116,6 @@ class AutoSyncWorker @AssistedInject constructor(
                     if (failure == null) {
                         sharedPrefManager.setLastSync(timeProvider.now())
                     } else {
-                        Log.e("AutoSyncWorker", "error: ${failure.message}", failure)
                         withContext(dispatcherProvider.main) {
                             onSyncFailed(failure.message)
                         }
