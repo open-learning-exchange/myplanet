@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -20,6 +21,10 @@ class RetryRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     private val timeProvider: TimeProvider
 ) : RetryRepository {
+
+    companion object {
+        private const val TAG = "RetryRepository"
+    }
 
     private val isProcessing = AtomicBoolean(false)
     private val mutex = Mutex()
@@ -118,9 +123,11 @@ class RetryRepositoryImpl @Inject constructor(
             throw e
         } catch (e: IOException) {
             markFailed(operation.id, e.message, null)
+            Log.w(TAG, "Network error during retry for ${operation.id}", e)
             RetryOperationResult.RetryableFailure(e.message, null)
         } catch (e: Exception) {
             markFailed(operation.id, e.message, null)
+            Log.e(TAG, "Unexpected error during retry for ${operation.id}", e)
             RetryOperationResult.RetryableFailure(e.message, null)
         }
     }

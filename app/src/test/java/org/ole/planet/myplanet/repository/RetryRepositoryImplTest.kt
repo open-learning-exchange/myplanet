@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
 import com.google.gson.JsonObject
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
@@ -7,6 +8,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.unmockkAll
 import java.io.IOException
@@ -47,6 +49,9 @@ class RetryRepositoryImplTest {
     @Before
     fun setUp() {
         MockKAnnotations.init(this, relaxed = true)
+        mockkStatic(Log::class)
+        every { Log.w(any<String>(), any<String>(), any<Throwable>()) } returns 0
+        every { Log.e(any<String>(), any<String>(), any<Throwable>()) } returns 0
 
         retryDao = mockk(relaxed = true)
         apiInterface = mockk(relaxed = true)
