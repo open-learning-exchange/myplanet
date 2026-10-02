@@ -32,7 +32,7 @@ class FeedbackDetailActivityTest {
     }
 
     @Test
-    fun `rvFeedbackReply sets adapter in setUpReplies during onCreate and retains adapter instance`() {
+    fun `rvFeedbackReply sets adapter in setUpReplies during onCreate and retains adapter instance across updates`() {
         val intent = Intent(ApplicationProvider.getApplicationContext(), FeedbackDetailActivity::class.java).apply {
             putExtra("id", "feedback_123")
         }
@@ -42,8 +42,15 @@ class FeedbackDetailActivityTest {
 
         val recyclerView = activity.findViewById<RecyclerView>(R.id.rv_feedback_reply)
         val initialAdapter = recyclerView.adapter
-
         assertNotNull(initialAdapter)
+
+        val field = FeedbackDetailActivity::class.java.getDeclaredField("viewModel\$delegate")
+        field.isAccessible = true
+        val viewModel = (field.get(activity) as Lazy<*>).value as FeedbackDetailViewModel
+
+        viewModel.loadFeedback("feedback_123")
+        ShadowLooper.idleMainLooper()
+
         assertSame(initialAdapter, recyclerView.adapter)
 
         controller.destroy()
