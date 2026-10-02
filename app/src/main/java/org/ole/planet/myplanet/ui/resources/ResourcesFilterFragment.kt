@@ -122,6 +122,7 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
             setAdapter(binding.listLang, languages, selectedLang)
             setAdapter(binding.listMedium, mediums, selectedMeds, ::getMediumDisplayName)
             setAdapter(binding.listSub, subjects, selectedSubs)
+            updateHeaderLabels()
             updateResultCount()
         }
     }
@@ -164,6 +165,7 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
                 R.id.list_level -> addToList(s, selectedLvls)
                 R.id.list_medium -> addToList(s, selectedMeds)
             }
+            updateHeaderLabels()
             val count = filterListener?.filter(selectedSubs, selectedLang, selectedMeds, selectedLvls) ?: 0
             showResultCount(count)
         }
@@ -224,6 +226,18 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
     private fun rotateDrawable(textView: TextView, rotation: Float) {
         val drawableRes = if (rotation == 180f) R.drawable.outline_keyboard_arrow_up_24 else R.drawable.down_arrow
         textView.setCompoundDrawablesWithIntrinsicBounds(0, 0, drawableRes, 0)
+    }
+
+    private fun updateHeaderLabels() {
+        if (_binding == null) return
+        binding.subjectsLayout.text = getHeaderText(getString(R.string.subjects), selectedSubs.size)
+        binding.languagesLayout.text = getHeaderText(getString(R.string.languages), selectedLang.size)
+        binding.mediumsLayout.text = getHeaderText(getString(R.string.mediums), selectedMeds.size)
+        binding.levelsLayout.text = getHeaderText(getString(R.string.levels), selectedLvls.size)
+    }
+
+    private fun getHeaderText(baseTitle: String, count: Int): String {
+        return if (count > 0) "$baseTitle ($count)" else baseTitle
     }
 
     fun getMediumDisplayName(medium: String): String {
