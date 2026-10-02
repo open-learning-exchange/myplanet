@@ -874,7 +874,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
         return@withContext grouped.map { (resourceId, accumulator) ->
             val title = titleMap[resourceId]?.takeIf { it.isNotBlank() } ?: context.getString(R.string.storage_unknown_resource)
-            OfflineResourceItem(resourceId, title, accumulator.filePaths, accumulator.totalSize)
+            OfflineResourceItem(resourceId, title, accumulator.filePaths.sorted(), accumulator.totalSize)
         }.sortedBy { it.title }
     }
 
