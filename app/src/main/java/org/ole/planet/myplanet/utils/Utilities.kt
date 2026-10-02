@@ -57,15 +57,9 @@ object Utilities {
         }
     }
 
-    fun checkNA(s: String?): String = TextNormalizeUtils.checkNA(s)
-
     fun getUserName(settings: SharedPreferences): String {
         return settings.getString("name", "") ?: ""
     }
-
-    fun toHex(arg: String?): String = TextNormalizeUtils.toHex(arg)
-
-    fun normalizeText(str: String): String = TextNormalizeUtils.normalizeText(str)
 
     fun getMimeType(url: String?): String? {
         val extension = FileUtils.getFileExtension(url)

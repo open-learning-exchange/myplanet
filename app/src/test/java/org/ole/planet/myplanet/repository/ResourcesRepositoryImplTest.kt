@@ -53,7 +53,7 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TimeProvider
-import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.TextNormalizeUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -122,12 +122,12 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun testNormalizeText() {
-        assertEquals("hello world", Utilities.normalizeText("HELLO World"))
-        assertEquals("cafe", Utilities.normalizeText("Café"))
-        assertEquals("nino", Utilities.normalizeText("Niño"))
-        assertEquals("a e i o u", Utilities.normalizeText("á é í ó ú"))
-        assertEquals("c", Utilities.normalizeText("ç"))
-        assertEquals("aeiou", Utilities.normalizeText("äëïöü"))
+        assertEquals("hello world", TextNormalizeUtils.normalizeText("HELLO World"))
+        assertEquals("cafe", TextNormalizeUtils.normalizeText("Café"))
+        assertEquals("nino", TextNormalizeUtils.normalizeText("Niño"))
+        assertEquals("a e i o u", TextNormalizeUtils.normalizeText("á é í ó ú"))
+        assertEquals("c", TextNormalizeUtils.normalizeText("ç"))
+        assertEquals("aeiou", TextNormalizeUtils.normalizeText("äëïöü"))
     }
 
     @Test

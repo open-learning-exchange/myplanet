@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.TextNormalizeUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CoursesRepositoryImplTest {
@@ -101,12 +101,12 @@ class CoursesRepositoryImplTest {
 
     @Test
     fun testNormalizeText() {
-        assertEquals("hello world", Utilities.normalizeText("HELLO World"))
-        assertEquals("cafe", Utilities.normalizeText("Café"))
-        assertEquals("nino", Utilities.normalizeText("Niño"))
-        assertEquals("a e i o u", Utilities.normalizeText("á é í ó ú"))
-        assertEquals("c", Utilities.normalizeText("ç"))
-        assertEquals("aeiou", Utilities.normalizeText("äëïöü"))
+        assertEquals("hello world", TextNormalizeUtils.normalizeText("HELLO World"))
+        assertEquals("cafe", TextNormalizeUtils.normalizeText("Café"))
+        assertEquals("nino", TextNormalizeUtils.normalizeText("Niño"))
+        assertEquals("a e i o u", TextNormalizeUtils.normalizeText("á é í ó ú"))
+        assertEquals("c", TextNormalizeUtils.normalizeText("ç"))
+        assertEquals("aeiou", TextNormalizeUtils.normalizeText("äëïöü"))
     }
 
     @Test

@@ -56,7 +56,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.TextNormalizeUtils
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
@@ -158,7 +158,7 @@ class TransactionSyncManager @Inject constructor(
 
     private suspend fun syncHealthData(userModel: UserEntity, header: String) {
         val table =
-            "userdb-${userModel.planetCode?.let { Utilities.toHex(it) }}-${userModel.name?.let { Utilities.toHex(it) }}"
+            "userdb-${userModel.planetCode?.let { TextNormalizeUtils.toHex(it) }}-${userModel.name?.let { TextNormalizeUtils.toHex(it) }}"
         try {
             val response =
                 apiInterface.getDocuments(header, "${UrlUtils.getUrl()}/$table/_all_docs")
