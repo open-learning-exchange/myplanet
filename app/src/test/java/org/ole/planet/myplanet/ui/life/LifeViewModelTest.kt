@@ -4,6 +4,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -18,7 +19,6 @@ import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LifeViewModelTest {
@@ -27,7 +27,6 @@ class LifeViewModelTest {
     private lateinit var userRepository: UserRepository
     private lateinit var viewModel: LifeViewModel
     private val testDispatcher = StandardTestDispatcher()
-    private val testDispatcherProvider = TestDispatcherProvider(testDispatcher)
     private val labelResolver: (Int) -> String = { "mock_string_$it" }
 
     @Before
@@ -38,8 +37,7 @@ class LifeViewModelTest {
 
         viewModel = LifeViewModel(
             lifeRepository,
-            userRepository,
-            testDispatcherProvider
+            userRepository
         )
     }
 
@@ -104,6 +102,20 @@ class LifeViewModelTest {
 
         assertEquals(list, viewModel.myLifeList.value)
         coVerify(exactly = 1) { lifeRepository.updateMyLifeListOrder(list, "user_123") }
+    }
+
+    @Test
+    fun `updateMyLifeListOrder publishes the list before the repository call completes`() = runTest {
+        val deferred = CompletableDeferred<Unit>()
+        coEvery { lifeRepository.updateMyLifeListOrder(any(), any()) } coAnswers { deferred.await() }
+
+        val list = listOf(MyLife("img1", "user_123", "Item 1"))
+        viewModel.updateMyLifeListOrder(list)
+
+        assertEquals(list, viewModel.myLifeList.value)
+
+        deferred.complete(Unit)
+        testDispatcher.scheduler.advanceUntilIdle()
     }
 
     @Test
