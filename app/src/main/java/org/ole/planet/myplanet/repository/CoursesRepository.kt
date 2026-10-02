@@ -15,7 +15,7 @@ interface CoursesRepository {
     suspend fun getAllCourses(): List<MyCourse>
     fun getMyCourses(userId: String?, courses: List<MyCourse>): List<MyCourse>
     suspend fun getMyCourses(userId: String): List<MyCourse>
-    suspend fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>>
+    fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>>
     suspend fun getCourseById(courseId: String): MyCourse?
     fun getCourseByCourseIdFlow(courseId: String): Flow<MyCourse?>
     fun getCourseDetailModel(courseId: String): Flow<CourseDetailModel?>

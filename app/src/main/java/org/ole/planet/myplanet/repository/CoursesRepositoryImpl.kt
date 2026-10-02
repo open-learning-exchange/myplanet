@@ -114,7 +114,7 @@ class CoursesRepositoryImpl @Inject constructor(
         return mapCourses(courseDao.getForUserPattern(userIdPattern(userId)))
     }
 
-    override suspend fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>> {
+    override fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>> {
         return courseDao.observeForUserPattern(userIdPattern(userId)).map { courses ->
             mapCourses(courses)
         }.distinctUntilChanged { old, new ->
