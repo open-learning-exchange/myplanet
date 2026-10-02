@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.repository.VoicesEditActions
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
@@ -59,7 +59,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
-    lateinit var voicesRepository: VoicesRepository
+    lateinit var voicesEditActions: VoicesEditActions
 
     private lateinit var imageList: MutableList<String>
     private var llImage: ViewGroup? = null
@@ -144,7 +144,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     },
                     onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(lifecycleScope, dispatcherProvider),
                     labelManager = labelManager,
-                    voicesEditActions = voicesRepository,
+                    voicesEditActions = voicesEditActions,
                     leadersList = voicesViewModel.getCommunityLeaders(),
                     setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
                 )
