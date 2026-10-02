@@ -55,6 +55,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
     private var activeDialog: AlertDialog? = null
     private var selectedImageUri: Uri? = null
     private var dialogImagePreview: ImageView? = null
+    private var isReportSaving = false
     private val fromCommunity: Boolean
         get() = arguments?.getBoolean("fromCommunity", false) == true
 
@@ -136,11 +137,13 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                     }
                     activeDialog?.dismiss()
                     activeDialog = null
+                    isReportSaving = false
                 }
                 is ReportEvent.ReportArchived -> {
                     // archived successfully
                 }
                 is ReportEvent.Error -> {
+                    isReportSaving = false
                     Snackbar.make(view, event.message, Snackbar.LENGTH_LONG).show()
                 }
             }
@@ -179,11 +182,10 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
 
         setupDatePickers(dialogAddReportBinding, calendar, true)
 
-        var isSaving = false
         submit?.setOnClickListener {
-            if (isSaving) return@setOnClickListener
+            if (isReportSaving) return@setOnClickListener
             if (isValidReportForm(dialogAddReportBinding)) {
-                isSaving = true
+                isReportSaving = true
                 val description = dialogAddReportBinding.summary.text.toString()
                 val beginningBalance = dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: 0
                 val sales = dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: 0
@@ -196,21 +198,30 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                 val teamType = team?.teamType
                 val teamPlanetCode = team?.teamPlanetCode
                 val imageUri = selectedImageUri
+                val appContext = requireContext().applicationContext
 
-                viewModel.addReport(
-                    description = description,
-                    beginningBalance = beginningBalance,
-                    sales = sales,
-                    otherIncome = otherIncome,
-                    wages = wages,
-                    otherExpenses = otherExpenses,
-                    startDate = startDate,
-                    endDate = endDate,
-                    teamId = capturedTeamId,
-                    teamType = teamType,
-                    teamPlanetCode = teamPlanetCode,
-                    imageUri = imageUri
-                )
+                viewLifecycleOwner.lifecycleScope.launch {
+                    try {
+                        val (imageName, imageData) = readEnterpriseAttachment(appContext, imageUri, timeProvider, dispatcherProvider)
+                        viewModel.addReport(
+                            description = description,
+                            beginningBalance = beginningBalance,
+                            sales = sales,
+                            otherIncome = otherIncome,
+                            wages = wages,
+                            otherExpenses = otherExpenses,
+                            startDate = startDate,
+                            endDate = endDate,
+                            teamId = capturedTeamId,
+                            teamType = teamType,
+                            teamPlanetCode = teamPlanetCode,
+                            imageName = imageName,
+                            imageData = imageData
+                        )
+                    } finally {
+                        isReportSaving = false
+                    }
+                }
             }
         }
 
@@ -220,6 +231,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
             activeDialog = null
             dialogImagePreview = null
             selectedImageUri = null
+            isReportSaving = false
         }
     }
 
@@ -264,9 +276,8 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
 
         setupDatePickers(dialogAddReportBinding, calendar, false)
 
-        var isSaving = false
         submit?.setOnClickListener {
-            if (isSaving) return@setOnClickListener
+            if (isReportSaving) return@setOnClickListener
             if (isValidReportForm(dialogAddReportBinding)) {
                 val reportId = currentReport._id
                 if (reportId.isBlank()) {
@@ -278,7 +289,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                     return@setOnClickListener
                 }
 
-                isSaving = true
+                isReportSaving = true
                 val description = dialogAddReportBinding.summary.text.toString()
                 val beginningBalance = dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: currentReport.beginningBalance
                 val sales = dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: currentReport.sales
@@ -288,19 +299,28 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                 val startDate = startTimeStamp?.toLongOrNull() ?: currentReport.startDate
                 val endDate = endTimeStamp?.toLongOrNull() ?: currentReport.endDate
                 val imageUri = selectedImageUri
+                val appContext = requireContext().applicationContext
 
-                viewModel.updateReport(
-                    reportId = reportId,
-                    description = description,
-                    beginningBalance = beginningBalance,
-                    sales = sales,
-                    otherIncome = otherIncome,
-                    wages = wages,
-                    otherExpenses = otherExpenses,
-                    startDate = startDate,
-                    endDate = endDate,
-                    imageUri = imageUri
-                )
+                viewLifecycleOwner.lifecycleScope.launch {
+                    try {
+                        val (imageName, imageData) = readEnterpriseAttachment(appContext, imageUri, timeProvider, dispatcherProvider)
+                        viewModel.updateReport(
+                            reportId = reportId,
+                            description = description,
+                            beginningBalance = beginningBalance,
+                            sales = sales,
+                            otherIncome = otherIncome,
+                            wages = wages,
+                            otherExpenses = otherExpenses,
+                            startDate = startDate,
+                            endDate = endDate,
+                            imageName = imageName,
+                            imageData = imageData
+                        )
+                    } finally {
+                        isReportSaving = false
+                    }
+                }
             }
         }
 

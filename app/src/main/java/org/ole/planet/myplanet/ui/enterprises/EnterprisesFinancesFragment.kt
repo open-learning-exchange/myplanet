@@ -15,7 +15,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ConcatAdapter
+import kotlinx.coroutines.launch
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.SimpleItemAnimator
@@ -283,8 +285,10 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     }
 
     private fun addTransaction() {
+        var isSaving = false
         AlertDialog.Builder(requireActivity()).setView(setUpAlertUi()).setTitle(R.string.add_transaction)
             .setPositiveButton("Submit") { _: DialogInterface?, _: Int ->
+                if (isSaving) return@setPositiveButton
                 val type = if (addTransactionBinding.spnType.selectedItemPosition == 1) "Debit" else "Credit"
                 val note = "${addTransactionBinding.tlNote.editText?.text}".trim { it <= ' ' }
                 val amount = "${addTransactionBinding.tlAmount.editText?.text}".trim { it <= ' ' }
@@ -306,17 +310,27 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                     val parentCode = user?.parentCode
                     val planetCode = user?.planetCode
                     val imageUri = selectedImageUri
+                    val appContext = requireContext().applicationContext
 
-                    viewModel.createTransaction(
-                        teamId = capturedTeamId,
-                        type = type,
-                        note = note,
-                        amount = amountValue,
-                        date = dateInMillis,
-                        parentCode = parentCode,
-                        planetCode = planetCode,
-                        imageUri = imageUri,
-                    )
+                    isSaving = true
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        try {
+                            val (imageName, imageData) = readEnterpriseAttachment(appContext, imageUri, timeProvider, dispatcherProvider)
+                            viewModel.createTransaction(
+                                teamId = capturedTeamId,
+                                type = type,
+                                note = note,
+                                amount = amountValue,
+                                date = dateInMillis,
+                                parentCode = parentCode,
+                                planetCode = planetCode,
+                                imageName = imageName,
+                                imageData = imageData,
+                            )
+                        } finally {
+                            isSaving = false
+                        }
+                    }
                 }
             }.setNegativeButton("Cancel", null).show()
     }

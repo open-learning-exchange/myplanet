@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.ui.enterprises
 
-import android.content.Context
-import androidx.test.core.app.ApplicationProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -9,7 +7,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -17,24 +14,16 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
-import org.ole.planet.myplanet.utils.TestDispatcherProvider
-import org.ole.planet.myplanet.utils.TimeProvider
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@RunWith(RobolectricTestRunner::class)
-@Config(manifest = Config.NONE)
 class EnterprisesFinancesViewModelTest {
 
     private lateinit var teamsRepository: TeamsRepository
     private lateinit var viewModel: EnterprisesFinancesViewModel
     private val testDispatcher = StandardTestDispatcher()
-    private val testScope = TestScope(testDispatcher)
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(testDispatcher)
@@ -42,16 +31,7 @@ class EnterprisesFinancesViewModelTest {
     @Before
     fun setup() {
         teamsRepository = mockk()
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val timeProvider = mockk<TimeProvider>()
-        val dispatcherProvider = TestDispatcherProvider(testDispatcher)
-        viewModel = EnterprisesFinancesViewModel(
-            teamsRepository = teamsRepository,
-            appScope = testScope,
-            context = context,
-            timeProvider = timeProvider,
-            dispatcherProvider = dispatcherProvider
-        )
+        viewModel = EnterprisesFinancesViewModel(teamsRepository)
     }
 
     @Test

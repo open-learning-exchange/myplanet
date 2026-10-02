@@ -1,13 +1,9 @@
 package org.ole.planet.myplanet.ui.enterprises
 
-import android.content.Context
-import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,11 +16,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.repository.TeamsFinancesRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.TimeProvider
 
 data class FinanceSummaryUiState(
     val debit: Int = 0,
@@ -56,11 +49,7 @@ data class FinanceSummaryUiState(
 
 @HiltViewModel
 class EnterprisesFinancesViewModel @Inject constructor(
-    private val teamsRepository: TeamsFinancesRepository,
-    @ApplicationScope private val appScope: CoroutineScope,
-    @ApplicationContext private val context: Context,
-    private val timeProvider: TimeProvider,
-    private val dispatcherProvider: DispatcherProvider
+    private val teamsRepository: TeamsFinancesRepository
 ) : ViewModel() {
 
     private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
@@ -119,16 +108,10 @@ class EnterprisesFinancesViewModel @Inject constructor(
         date: Long,
         parentCode: String?,
         planetCode: String?,
-        imageUri: Uri? = null,
-        imageName: String? = null,
-        imageData: ByteArray? = null
+        imageName: String?,
+        imageData: ByteArray?
     ) {
-        appScope.launch {
-            val (resolvedName, resolvedData) = if (imageUri != null) {
-                readEnterpriseAttachment(context, imageUri, timeProvider, dispatcherProvider)
-            } else {
-                imageName to imageData
-            }
+        viewModelScope.launch {
             val result = teamsRepository.createTransaction(
                 teamId = teamId,
                 type = type,
@@ -137,8 +120,8 @@ class EnterprisesFinancesViewModel @Inject constructor(
                 date = date,
                 parentCode = parentCode,
                 planetCode = planetCode,
-                imageName = resolvedName,
-                imageData = resolvedData
+                imageName = imageName,
+                imageData = imageData
             )
             _transactionCreated.emit(result)
         }
