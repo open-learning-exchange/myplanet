@@ -60,9 +60,8 @@ class HealthExaminationViewModel @Inject constructor(
                 currentUser = userRepository.getUserModel()
 
                 if (userId != null) {
-                    val (u, p) = healthRepository.getHealthEntry(userId)
-                    user = u
-                    pojo = p
+                    user = userRepository.getUserById(userId)
+                    pojo = healthRepository.getByIdOrUserId(userId)
 
                     val updatedUser = userRepository.ensureUserSecurityKeys(userId)
                     if (updatedUser != null) {
