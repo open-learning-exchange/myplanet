@@ -210,7 +210,7 @@ class ChatViewModel @Inject constructor(
             if (newsConversations.isNullOrBlank()) return@withContext emptyList()
             try {
                 GsonUtils.gson.fromJson(newsConversations, Array<Conversation>::class.java).toList()
-            } catch (_: Exception) {
+            } catch (e: Exception) {
                 emptyList()
             }
         }
