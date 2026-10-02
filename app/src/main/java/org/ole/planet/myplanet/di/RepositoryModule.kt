@@ -221,8 +221,7 @@ abstract class RepositoryModule {
     abstract fun bindUserSyncRepository(impl: UserRepositoryImpl): UserSyncRepository
 
     @Binds
-    @Singleton
-    abstract fun bindVoicesEditActions(impl: VoicesRepositoryImpl): VoicesEditActions
+    abstract fun bindVoicesEditActions(repository: VoicesRepository): VoicesEditActions
 
     @Binds
     @Singleton
