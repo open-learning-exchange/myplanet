@@ -198,30 +198,21 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                 val teamType = team?.teamType
                 val teamPlanetCode = team?.teamPlanetCode
                 val imageUri = selectedImageUri
-                val appContext = requireContext().applicationContext
 
-                viewLifecycleOwner.lifecycleScope.launch {
-                    try {
-                        val (imageName, imageData) = readEnterpriseAttachment(appContext, imageUri, timeProvider, dispatcherProvider)
-                        viewModel.addReport(
-                            description = description,
-                            beginningBalance = beginningBalance,
-                            sales = sales,
-                            otherIncome = otherIncome,
-                            wages = wages,
-                            otherExpenses = otherExpenses,
-                            startDate = startDate,
-                            endDate = endDate,
-                            teamId = capturedTeamId,
-                            teamType = teamType,
-                            teamPlanetCode = teamPlanetCode,
-                            imageName = imageName,
-                            imageData = imageData
-                        )
-                    } finally {
-                        isReportSaving = false
-                    }
-                }
+                viewModel.addReport(
+                    description = description,
+                    beginningBalance = beginningBalance,
+                    sales = sales,
+                    otherIncome = otherIncome,
+                    wages = wages,
+                    otherExpenses = otherExpenses,
+                    startDate = startDate,
+                    endDate = endDate,
+                    teamId = capturedTeamId,
+                    teamType = teamType,
+                    teamPlanetCode = teamPlanetCode,
+                    imageUri = imageUri
+                )
             }
         }
 
@@ -299,28 +290,19 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                 val startDate = startTimeStamp?.toLongOrNull() ?: currentReport.startDate
                 val endDate = endTimeStamp?.toLongOrNull() ?: currentReport.endDate
                 val imageUri = selectedImageUri
-                val appContext = requireContext().applicationContext
 
-                viewLifecycleOwner.lifecycleScope.launch {
-                    try {
-                        val (imageName, imageData) = readEnterpriseAttachment(appContext, imageUri, timeProvider, dispatcherProvider)
-                        viewModel.updateReport(
-                            reportId = reportId,
-                            description = description,
-                            beginningBalance = beginningBalance,
-                            sales = sales,
-                            otherIncome = otherIncome,
-                            wages = wages,
-                            otherExpenses = otherExpenses,
-                            startDate = startDate,
-                            endDate = endDate,
-                            imageName = imageName,
-                            imageData = imageData
-                        )
-                    } finally {
-                        isReportSaving = false
-                    }
-                }
+                viewModel.updateReport(
+                    reportId = reportId,
+                    description = description,
+                    beginningBalance = beginningBalance,
+                    sales = sales,
+                    otherIncome = otherIncome,
+                    wages = wages,
+                    otherExpenses = otherExpenses,
+                    startDate = startDate,
+                    endDate = endDate,
+                    imageUri = imageUri
+                )
             }
         }
 
