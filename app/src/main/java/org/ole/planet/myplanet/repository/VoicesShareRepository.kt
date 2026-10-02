@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import java.util.HashMap
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 
