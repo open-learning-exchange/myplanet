@@ -15,7 +15,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
@@ -36,7 +35,6 @@ import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
@@ -198,30 +196,21 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                 val teamType = team?.teamType
                 val teamPlanetCode = team?.teamPlanetCode
                 val imageUri = selectedImageUri
-                val appContext = requireContext().applicationContext
 
-                ProcessLifecycleOwner.get().lifecycleScope.launch {
-                    try {
-                        val (imageName, imageData) = readEnterpriseAttachment(appContext, imageUri, timeProvider, dispatcherProvider)
-                        viewModel.addReport(
-                            description = description,
-                            beginningBalance = beginningBalance,
-                            sales = sales,
-                            otherIncome = otherIncome,
-                            wages = wages,
-                            otherExpenses = otherExpenses,
-                            startDate = startDate,
-                            endDate = endDate,
-                            teamId = capturedTeamId,
-                            teamType = teamType,
-                            teamPlanetCode = teamPlanetCode,
-                            imageName = imageName,
-                            imageData = imageData
-                        )
-                    } finally {
-                        isSaving = false
-                    }
-                }
+                viewModel.addReport(
+                    description = description,
+                    beginningBalance = beginningBalance,
+                    sales = sales,
+                    otherIncome = otherIncome,
+                    wages = wages,
+                    otherExpenses = otherExpenses,
+                    startDate = startDate,
+                    endDate = endDate,
+                    teamId = capturedTeamId,
+                    teamType = teamType,
+                    teamPlanetCode = teamPlanetCode,
+                    imageUri = imageUri
+                )
             }
         }
 
@@ -299,28 +288,19 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                 val startDate = startTimeStamp?.toLongOrNull() ?: currentReport.startDate
                 val endDate = endTimeStamp?.toLongOrNull() ?: currentReport.endDate
                 val imageUri = selectedImageUri
-                val appContext = requireContext().applicationContext
 
-                ProcessLifecycleOwner.get().lifecycleScope.launch {
-                    try {
-                        val (imageName, imageData) = readEnterpriseAttachment(appContext, imageUri, timeProvider, dispatcherProvider)
-                        viewModel.updateReport(
-                            reportId = reportId,
-                            description = description,
-                            beginningBalance = beginningBalance,
-                            sales = sales,
-                            otherIncome = otherIncome,
-                            wages = wages,
-                            otherExpenses = otherExpenses,
-                            startDate = startDate,
-                            endDate = endDate,
-                            imageName = imageName,
-                            imageData = imageData
-                        )
-                    } finally {
-                        isSaving = false
-                    }
-                }
+                viewModel.updateReport(
+                    reportId = reportId,
+                    description = description,
+                    beginningBalance = beginningBalance,
+                    sales = sales,
+                    otherIncome = otherIncome,
+                    wages = wages,
+                    otherExpenses = otherExpenses,
+                    startDate = startDate,
+                    endDate = endDate,
+                    imageUri = imageUri
+                )
             }
         }
 

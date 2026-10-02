@@ -1,18 +1,31 @@
 package org.ole.planet.myplanet.ui.enterprises
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.repository.EnterprisesRepository
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import org.ole.planet.myplanet.utils.TimeProvider
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(manifest = Config.NONE)
 class EnterprisesViewModelTest {
 
     private lateinit var enterprisesRepository: EnterprisesRepository
@@ -39,7 +52,17 @@ class EnterprisesViewModelTest {
     @Before
     fun setUp() {
         enterprisesRepository = mockk(relaxed = true)
-        viewModel = EnterprisesViewModel(enterprisesRepository)
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val timeProvider = mockk<TimeProvider>()
+        val testDispatcher = StandardTestDispatcher()
+        val dispatcherProvider = TestDispatcherProvider(testDispatcher)
+        viewModel = EnterprisesViewModel(
+            enterprisesRepository = enterprisesRepository,
+            appScope = TestScope(testDispatcher),
+            context = context,
+            timeProvider = timeProvider,
+            dispatcherProvider = dispatcherProvider
+        )
     }
 
     @Test
