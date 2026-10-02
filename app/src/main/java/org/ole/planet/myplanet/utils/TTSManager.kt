@@ -84,6 +84,7 @@ class TTSManager @Inject constructor(
 
     companion object {
         private const val UTTERANCE_ID = "tts_utterance"
+        private const val MARKDOWN_CHARS = "`#*_[]>|-+."
 
         private val CODE_BLOCK_REGEX = Regex("```[\\s\\S]*?```")
         private val INLINE_CODE_REGEX = Regex("`[^`]*`")
@@ -97,6 +98,7 @@ class TTSManager @Inject constructor(
         private val TABLE_PIPE_REGEX = Regex("\\|")
 
         fun stripMarkdown(text: String): String {
+            if (text.none { it in MARKDOWN_CHARS || it.isDigit() }) return text.trim()
             return text
                 .replace(CODE_BLOCK_REGEX, "")
                 .replace(INLINE_CODE_REGEX, "")
