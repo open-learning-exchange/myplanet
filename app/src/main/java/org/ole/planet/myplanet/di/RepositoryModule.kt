@@ -68,6 +68,7 @@ import org.ole.planet.myplanet.repository.UserAchievementsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.repository.UserSyncRepository
+import org.ole.planet.myplanet.repository.VoicesEditActions
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.VoicesRepositoryImpl
 
@@ -218,6 +219,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindUserSyncRepository(impl: UserRepositoryImpl): UserSyncRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindVoicesEditActions(impl: VoicesRepositoryImpl): VoicesEditActions
 
     @Binds
     @Singleton
