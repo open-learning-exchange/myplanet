@@ -1,0 +1,103 @@
+package org.ole.planet.myplanet.ui.life
+
+import android.app.Application
+import android.content.Context
+import android.widget.LinearLayout
+import androidx.test.core.app.ApplicationProvider
+import io.mockk.mockk
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnStartDragListener
+import org.ole.planet.myplanet.model.MyLife
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
+
+@RunWith(RobolectricTestRunner::class)
+@Config(application = Application::class)
+class LifeAdapterDrawableTest {
+
+    private lateinit var adapter: LifeAdapter
+    private lateinit var context: Context
+
+    @Before
+    fun setUp() {
+        context = ApplicationProvider.getApplicationContext()
+        context.setTheme(com.google.android.material.R.style.Theme_MaterialComponents)
+        adapter = LifeAdapter(
+            context = context,
+            mDragStartListener = mockk<OnStartDragListener>(),
+            visibilityCallback = { _, _ -> },
+            reorderCallback = { },
+        )
+    }
+
+    @Test
+    fun `onBindViewHolder maps known default drawables directly to R drawable resources`() {
+        val expectedMappings = mapOf(
+            "ic_myhealth" to R.drawable.ic_myhealth,
+            "my_achievement" to R.drawable.my_achievement,
+            "ic_submissions" to R.drawable.ic_submissions,
+            "ic_my_survey" to R.drawable.ic_my_survey,
+            "ic_references" to R.drawable.ic_references,
+            "ic_calendar" to R.drawable.ic_calendar,
+            "ic_mypersonals" to R.drawable.ic_mypersonals
+        )
+
+        val items = expectedMappings.keys.mapIndexed { index, imgId ->
+            MyLife(imgId, "user1", "Title $index")
+        }
+        adapter.submitList(items)
+
+        val parent = LinearLayout(context)
+        expectedMappings.entries.forEachIndexed { index, (imgId, expectedResId) ->
+            val holder = adapter.onCreateViewHolder(parent, 0) as LifeAdapter.LifeViewHolder
+            adapter.onBindViewHolder(holder, index)
+
+            val drawable = holder.binding.itemImageView.drawable
+            val resId = drawable?.let { shadowOf(it).createdFromResId } ?: 0
+            assertEquals(
+                "Expected $imgId to resolve to resource ID $expectedResId",
+                expectedResId,
+                resId
+            )
+        }
+    }
+
+    @Test
+    fun `onBindViewHolder resolves fallback drawable outside known map via getIdentifier`() {
+        val item = MyLife("ic_visibility", "user1", "Visibility")
+        adapter.submitList(listOf(item))
+
+        val parent = LinearLayout(context)
+        val holder = adapter.onCreateViewHolder(parent, 0) as LifeAdapter.LifeViewHolder
+        adapter.onBindViewHolder(holder, 0)
+
+        val drawable = holder.binding.itemImageView.drawable
+        val resId = drawable?.let { shadowOf(it).createdFromResId } ?: 0
+        assertEquals(R.drawable.ic_visibility, resId)
+    }
+
+    @Test
+    fun `onBindViewHolder sets resource 0 for unknown image name and clears icon when holder is rebound`() {
+        val item1 = MyLife("ic_calendar", "user1", "Calendar")
+        val item2 = MyLife("no_such_icon", "user1", "Unknown")
+        adapter.submitList(listOf(item1, item2))
+
+        val parent = LinearLayout(context)
+        val holder = adapter.onCreateViewHolder(parent, 0) as LifeAdapter.LifeViewHolder
+
+        // Bind first item (ic_calendar)
+        adapter.onBindViewHolder(holder, 0)
+        val drawable1 = holder.binding.itemImageView.drawable
+        assertEquals(R.drawable.ic_calendar, drawable1?.let { shadowOf(it).createdFromResId })
+
+        // Rebind same holder with second item (no_such_icon)
+        adapter.onBindViewHolder(holder, 1)
+        assertNull(holder.binding.itemImageView.drawable)
+    }
+}
