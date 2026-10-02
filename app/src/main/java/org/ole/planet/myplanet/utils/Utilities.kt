@@ -11,13 +11,9 @@ import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
-import java.math.BigInteger
-import java.text.Normalizer
-import java.util.Locale
 
 object Utilities {
     private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
-    private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
 
     fun isValidEmail(target: CharSequence): Boolean {
         return target.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(target).matches()
@@ -65,25 +61,8 @@ object Utilities {
         }
     }
 
-    fun checkNA(s: String?): String {
-        return if (s.isNullOrEmpty()) "N/A" else s
-    }
-
     fun getUserName(settings: SharedPreferences): String {
         return settings.getString("name", "") ?: ""
-    }
-
-    fun toHex(arg: String?): String {
-        return arg?.toByteArray()?.let { BigInteger(1, it).toString(16) } ?: ""
-    }
-
-    fun normalizeText(str: String): String {
-        val lower = str.lowercase(Locale.getDefault())
-        if (lower.all { it < '\u0080' }) {
-            return lower
-        }
-        return Normalizer.normalize(lower, Normalizer.Form.NFD)
-            .replace(DIACRITICS_REGEX, "")
     }
 
     fun getMimeType(url: String?): String? {

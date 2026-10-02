@@ -48,7 +48,7 @@ import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.TextNormalizeUtils
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class CoursesRepositoryImpl @Inject constructor(
@@ -273,8 +273,8 @@ class CoursesRepositoryImpl @Inject constructor(
         }
 
         val queryParts = query.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
-        val normalizedQuery = Utilities.normalizeText(query)
+        val normalizedQueryParts = queryParts.map { TextNormalizeUtils.normalizeText(it) }
+        val normalizedQuery = TextNormalizeUtils.normalizeText(query)
 
         val queryBuilder = StringBuilder("SELECT * FROM courses WHERE 1 = 1")
         val bindArgs = mutableListOf<Any>()
@@ -726,7 +726,7 @@ class CoursesRepositoryImpl @Inject constructor(
             courseRev = GsonUtils.getString("_rev", doc),
             courseId = courseId,
             courseTitle = title,
-            courseTitleNormal = Utilities.normalizeText(title),
+            courseTitleNormal = TextNormalizeUtils.normalizeText(title),
             description = description,
             userId = mergeUserIds(existingCourse?.userId, shelfId),
             languageOfInstruction = GsonUtils.getString("languageOfInstruction", doc),
