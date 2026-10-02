@@ -50,7 +50,8 @@ class LifeAdapter(
         if (holder is LifeViewHolder) {
             holder.title.text = myLife.title
             myLife.imageId?.let { imgId ->
-                val resId = drawableCache.getOrPut(imgId) {
+                // Keep drawableCache and getIdentifier fallback for names outside the seven known defaults (legacy or unknown rows)
+                val resId = knownDrawables[imgId] ?: drawableCache.getOrPut(imgId) {
                     context.resources.getIdentifier(imgId, "drawable", context.packageName)
                 }
                 holder.imageView.setImageResource(resId)
@@ -161,6 +162,15 @@ class LifeAdapter(
     }
 
     companion object {
+        private val knownDrawables = mapOf(
+            "ic_myhealth" to R.drawable.ic_myhealth,
+            "my_achievement" to R.drawable.my_achievement,
+            "ic_submissions" to R.drawable.ic_submissions,
+            "ic_my_survey" to R.drawable.ic_my_survey,
+            "ic_references" to R.drawable.ic_references,
+            "ic_calendar" to R.drawable.ic_calendar,
+            "ic_mypersonals" to R.drawable.ic_mypersonals
+        )
         private val DIFF_CALLBACK = DiffUtils.itemCallback<MyLife>(
             areItemsTheSame = { oldItem, newItem ->
                 if (!oldItem._id.isNullOrBlank() && !newItem._id.isNullOrBlank()) {
