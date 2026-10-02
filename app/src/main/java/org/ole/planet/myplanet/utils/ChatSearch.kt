@@ -39,14 +39,14 @@ object ChatSearch {
         val precomputedChats = chats.map { chat ->
             val normalized = chat.conversations?.map { convo ->
                 val text = if (isQuestion) convo.query else convo.response
-                text?.let { Utilities.normalizeText(it) }
+                text?.let { TextNormalizeUtils.normalizeText(it) }
             } ?: emptyList()
             ConvoChat(chat, normalized)
         }
 
         var conversation: String?
-        val normalizedQueryParts = s.split(" ").filterNot { it.isEmpty() }.map { Utilities.normalizeText(it) }
-        val normalizedQuery = Utilities.normalizeText(s)
+        val normalizedQueryParts = s.split(" ").filterNot { it.isEmpty() }.map { TextNormalizeUtils.normalizeText(it) }
+        val normalizedQuery = TextNormalizeUtils.normalizeText(s)
         val inTitleStartQuery = mutableListOf<ChatHistory>()
         val inTitleContainsQuery = mutableListOf<ChatHistory>()
         val startsWithQuery = mutableListOf<ChatHistory>()
@@ -77,16 +77,16 @@ object ChatSearch {
         val precomputedChats = chats.map { chat ->
             val conversations = chat.conversations
             val title = if (conversations != null && conversations.isNotEmpty()) {
-                conversations[0].query?.let { Utilities.normalizeText(it) }
+                conversations[0].query?.let { TextNormalizeUtils.normalizeText(it) }
             } else {
-                chat.title?.let { Utilities.normalizeText(it) }
+                chat.title?.let { TextNormalizeUtils.normalizeText(it) }
             }
             TitleChat(chat, title)
         }
 
         var title: String?
-        val normalizedQueryParts = s.split(" ").filterNot { it.isEmpty() }.map { Utilities.normalizeText(it) }
-        val normalizedQuery = Utilities.normalizeText(s)
+        val normalizedQueryParts = s.split(" ").filterNot { it.isEmpty() }.map { TextNormalizeUtils.normalizeText(it) }
+        val normalizedQuery = TextNormalizeUtils.normalizeText(s)
         val startsWithQuery = mutableListOf<ChatHistory>()
         val containsQuery = mutableListOf<ChatHistory>()
 

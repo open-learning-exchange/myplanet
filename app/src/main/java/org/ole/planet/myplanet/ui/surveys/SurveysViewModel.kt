@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.TextNormalizeUtils
 
 @HiltViewModel
 class SurveysViewModel @Inject constructor(
@@ -211,14 +211,14 @@ class SurveysViewModel @Inject constructor(
     private fun filter(s: String, list: List<StepExam>): List<StepExam> {
         val normalizedQueryParts = s.splitToSequence(" ")
             .filterNot { it.isEmpty() }
-            .map { Utilities.normalizeText(it) }
+            .map { TextNormalizeUtils.normalizeText(it) }
             .toList()
-        val normalizedQuery = Utilities.normalizeText(s)
+        val normalizedQuery = TextNormalizeUtils.normalizeText(s)
         val startsWithQuery = mutableListOf<StepExam>()
         val containsQuery = mutableListOf<StepExam>()
 
         for (item in list) {
-            val title = item.name?.let { Utilities.normalizeText(it) } ?: continue
+            val title = item.name?.let { TextNormalizeUtils.normalizeText(it) } ?: continue
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                 startsWithQuery.add(item)
             } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
