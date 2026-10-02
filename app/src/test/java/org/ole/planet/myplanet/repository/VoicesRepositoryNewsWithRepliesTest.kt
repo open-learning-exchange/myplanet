@@ -4,11 +4,12 @@ import android.app.Application
 import androidx.room.Room
 import com.google.gson.Gson
 import io.mockk.mockk
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.room.AppDatabase
@@ -16,7 +17,8 @@ import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.MainDispatcherRule
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
@@ -28,6 +30,9 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
 class VoicesRepositoryNewsWithRepliesTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var db: AppDatabase
     private lateinit var newsDao: NewsDao
@@ -49,7 +54,7 @@ class VoicesRepositoryNewsWithRepliesTest {
         newsDao = db.newsDao()
 
         repository = VoicesRepositoryImpl(
-            mockk<DispatcherProvider>(relaxed = true),
+            TestDispatcherProvider(mainDispatcherRule.testDispatcher),
             Gson(),
             Gson(),
             mockk<SharedPrefManager>(relaxed = true),
@@ -64,7 +69,7 @@ class VoicesRepositoryNewsWithRepliesTest {
     }
 
     @Test
-    fun `getNewsWithReplies returns parent and only its replies newest first`() = runBlocking {
+    fun `getNewsWithReplies returns parent and only its replies newest first`() = runTest {
         newsDao.upsertAll(
             listOf(
                 news("p1", time = 0L),
@@ -82,7 +87,7 @@ class VoicesRepositoryNewsWithRepliesTest {
     }
 
     @Test
-    fun `getNewsWithReplies returns null parent and no replies when news is missing`() = runBlocking {
+    fun `getNewsWithReplies returns null parent and no replies when news is missing`() = runTest {
         newsDao.upsertAll(listOf(news("p1"), news("r1", replyTo = "p1", time = 1L)))
 
         val (parent, replies) = repository.getNewsWithReplies("missing")
