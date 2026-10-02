@@ -53,7 +53,8 @@ class HealthExaminationViewModelTest {
         val mockHealth = mockk<MyHealth>()
         val mockExamination = mockk<HealthExamination>()
 
-        coEvery { healthRepository.getHealthEntry("user_id") } returns Pair(mockUser, mockPojo)
+        coEvery { userRepository.getUserById("user_id") } returns mockUser
+        coEvery { healthRepository.getByIdOrUserId("user_id") } returns mockPojo
         coEvery { userRepository.ensureUserSecurityKeys("user_id") } returns mockUser
         coEvery { healthRepository.getDecryptedHealth(mockPojo, mockUser) } returns mockHealth
         coEvery { healthRepository.getExaminationById("exam_id") } returns mockExamination
@@ -85,7 +86,8 @@ class HealthExaminationViewModelTest {
         val mockPojo = mockk<HealthExamination>()
         val mockHealth = mockk<MyHealth>()
 
-        coEvery { healthRepository.getHealthEntry("user_id") } returns Pair(mockUser, mockPojo)
+        coEvery { userRepository.getUserById("user_id") } returns mockUser
+        coEvery { healthRepository.getByIdOrUserId("user_id") } returns mockPojo
         coEvery { userRepository.ensureUserSecurityKeys("user_id") } returns mockUser
         coEvery { healthRepository.getDecryptedHealth(mockPojo, mockUser) } returns null
         coEvery { healthRepository.initHealth() } returns mockHealth
@@ -185,7 +187,8 @@ class HealthExaminationViewModelTest {
         val mockPojo = mockk<HealthExamination>()
         val mockHealth = mockk<MyHealth>()
 
-        coEvery { healthRepository.getHealthEntry("patient_id") } returns Pair(patientUser, mockPojo)
+        coEvery { userRepository.getUserById("patient_id") } returns patientUser
+        coEvery { healthRepository.getByIdOrUserId("patient_id") } returns mockPojo
         coEvery { userRepository.ensureUserSecurityKeys("patient_id") } returns patientUser
         coEvery { userRepository.getUserModel() } returns examinerUser
         coEvery { healthRepository.getDecryptedHealth(mockPojo, patientUser) } returns mockHealth
@@ -206,5 +209,24 @@ class HealthExaminationViewModelTest {
         assertEquals(examinerUser, finalState.currentUser)
 
         job.cancel()
+    }
+
+    @Test
+    fun loadData_callsGetByIdOrUserIdOnce_andNeverCallsGetExaminationByIdForUser() = runTest {
+        val mockUser = mockk<UserEntity>()
+        val mockPojo = mockk<HealthExamination>()
+        val mockHealth = mockk<MyHealth>()
+
+        coEvery { userRepository.getUserById("patient_id") } returns mockUser
+        coEvery { healthRepository.getByIdOrUserId("patient_id") } returns mockPojo
+        coEvery { userRepository.ensureUserSecurityKeys("patient_id") } returns mockUser
+        coEvery { healthRepository.getDecryptedHealth(mockPojo, mockUser) } returns mockHealth
+        coEvery { healthRepository.getExaminationConditions(null) } returns emptyMap()
+
+        viewModel.loadData("patient_id", null)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { healthRepository.getByIdOrUserId("patient_id") }
+        coVerify(exactly = 0) { healthRepository.getExaminationById("patient_id") }
     }
 }
