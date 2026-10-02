@@ -9,18 +9,35 @@ import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
 
 object DictionaryMapper {
     fun mapJsonArrayToEntities(json: JsonArray): List<DictionaryEntity> {
+        val occurrences = mutableMapOf<String, Int>()
         return json.map { js ->
             val doc = js.jsonObject
+            val code = doc.str("code")
+            val language = doc.str("language")
+            val advanceCode = doc.str("advance_code")
+            val word = doc.str("word")
+            val meaning = doc.str("meaning")
+            val definition = doc.str("definition")
+            val synonym = doc.str("synonym")
+            val antonym = doc.str("antonoym")
+
+            val key = listOf(code, language, advanceCode, word, meaning, definition, synonym, antonym)
+                .joinToString("\u0000")
+            val n = occurrences.getOrDefault(key, 0)
+            occurrences[key] = n + 1
+
+            val id = UUID.nameUUIDFromBytes("$key#$n".toByteArray(Charsets.UTF_8)).toString()
+
             DictionaryEntity(
-                id = UUID.randomUUID().toString(),
-                code = doc.str("code"),
-                language = doc.str("language"),
-                advanceCode = doc.str("advance_code"),
-                word = doc.str("word"),
-                meaning = doc.str("meaning"),
-                definition = doc.str("definition"),
-                synonym = doc.str("synonym"),
-                antonym = doc.str("antonoym")
+                id = id,
+                code = code,
+                language = language,
+                advanceCode = advanceCode,
+                word = word,
+                meaning = meaning,
+                definition = definition,
+                synonym = synonym,
+                antonym = antonym
             )
         }
     }
