@@ -77,7 +77,7 @@ class NotificationsRepositoryImplTest {
 
         repository.insert(jsonObject)
 
-        coVerify(exactly = 0) { notificationDao.upsert(any()) }
+        coVerify(exactly = 0) { notificationDao.upsertPreservingPendingRead(any()) }
     }
 
     @Test
@@ -93,9 +93,8 @@ class NotificationsRepositoryImplTest {
             addProperty("status", "read")
             addProperty("time", 123456789L)
         }
-        coEvery { notificationDao.getById("testId") } returns null
         val upsertSlot = slot<AppNotification>()
-        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+        coEvery { notificationDao.upsertPreservingPendingRead(capture(upsertSlot)) } returns Unit
 
         repository.insert(jsonObject)
 
@@ -113,7 +112,6 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `insert updates existing notification`() = runTest {
-        val existing = AppNotification().apply { id = "testId" }
         val jsonObject = JsonObject().apply {
             addProperty("_id", "testId")
             addProperty("user", "updatedUser")
@@ -122,9 +120,8 @@ class NotificationsRepositoryImplTest {
             addProperty("status", "unread")
             addProperty("time", 987654321L)
         }
-        coEvery { notificationDao.getById("testId") } returns existing
         val upsertSlot = slot<AppNotification>()
-        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+        coEvery { notificationDao.upsertPreservingPendingRead(capture(upsertSlot)) } returns Unit
 
         repository.insert(jsonObject)
 
@@ -138,23 +135,19 @@ class NotificationsRepositoryImplTest {
     }
 
     @Test
-    fun `insert preserves read status if needsSync is true`() = runTest {
-        val existing = AppNotification().apply {
-            id = "testId"
-            isRead = true
-            needsSync = true
-        }
+    fun `insert delegates to upsertPreservingPendingRead`() = runTest {
         val jsonObject = JsonObject().apply {
             addProperty("_id", "testId")
             addProperty("status", "unread")
         }
-        coEvery { notificationDao.getById("testId") } returns existing
         val upsertSlot = slot<AppNotification>()
-        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+        coEvery { notificationDao.upsertPreservingPendingRead(capture(upsertSlot)) } returns Unit
 
         repository.insert(jsonObject)
 
-        assertTrue(upsertSlot.captured.isRead)
+        assertEquals("testId", upsertSlot.captured.id)
+        assertFalse(upsertSlot.captured.isRead)
+        coVerify { notificationDao.upsertPreservingPendingRead(any()) }
     }
 
     @Test
@@ -168,9 +161,8 @@ class NotificationsRepositoryImplTest {
             add("linkParams", JsonObject().apply { addProperty("activeTab", "applicantTab") })
             addProperty("status", "unread")
         }
-        coEvery { notificationDao.getById("notifId1") } returns null
         val upsertSlot = slot<AppNotification>()
-        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+        coEvery { notificationDao.upsertPreservingPendingRead(capture(upsertSlot)) } returns Unit
 
         repository.insert(jsonObject)
 
@@ -191,9 +183,8 @@ class NotificationsRepositoryImplTest {
             addProperty("item", "team456")
             addProperty("status", "unread")
         }
-        coEvery { notificationDao.getById("notifId2") } returns null
         val upsertSlot = slot<AppNotification>()
-        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+        coEvery { notificationDao.upsertPreservingPendingRead(capture(upsertSlot)) } returns Unit
 
         repository.insert(jsonObject)
 
@@ -213,9 +204,8 @@ class NotificationsRepositoryImplTest {
             addProperty("replyTo", "news789")
             addProperty("status", "unread")
         }
-        coEvery { notificationDao.getById("notifId3") } returns null
         val upsertSlot = slot<AppNotification>()
-        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+        coEvery { notificationDao.upsertPreservingPendingRead(capture(upsertSlot)) } returns Unit
 
         repository.insert(jsonObject)
 
@@ -234,9 +224,8 @@ class NotificationsRepositoryImplTest {
             addProperty("link", "/teams/view/team321")
             addProperty("status", "unread")
         }
-        coEvery { notificationDao.getById("notifId4") } returns null
         val upsertSlot = slot<AppNotification>()
-        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+        coEvery { notificationDao.upsertPreservingPendingRead(capture(upsertSlot)) } returns Unit
 
         repository.insert(jsonObject)
 
@@ -255,9 +244,8 @@ class NotificationsRepositoryImplTest {
             addProperty("link", "/resources")
             addProperty("status", "unread")
         }
-        coEvery { notificationDao.getById("notifId5") } returns null
         val upsertSlot = slot<AppNotification>()
-        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
+        coEvery { notificationDao.upsertPreservingPendingRead(capture(upsertSlot)) } returns Unit
 
         repository.insert(jsonObject)
 
@@ -367,21 +355,19 @@ class NotificationsRepositoryImplTest {
         val result = repository.markNotificationsAsRead(emptySet())
 
         assertTrue(result.isEmpty())
-        coVerify(exactly = 0) { notificationDao.getIdsByIds(any()) }
-        coVerify(exactly = 0) { notificationDao.markAsRead(any<List<String>>(), any()) }
+        coVerify(exactly = 0) { notificationDao.markExistingAsRead(any(), any()) }
     }
 
     @Test
     fun `markNotificationsAsRead marks existing notifications as read using timeProvider now`() = runTest {
         val ids = setOf("id1", "id2", "id3")
-        coEvery { notificationDao.getIdsByIds(any()) } returns listOf("id1", "id2")
         val dateSlot = slot<java.util.Date>()
-        coEvery { notificationDao.markAsRead(any<List<String>>(), capture(dateSlot)) } returns 2
+        coEvery { notificationDao.markExistingAsRead(eq(ids.toList()), capture(dateSlot)) } returns listOf("id1", "id2")
 
         val result = repository.markNotificationsAsRead(ids)
 
         assertEquals(setOf("id1", "id2"), result)
-        coVerify { notificationDao.getIdsByIds(ids.toList()) }
+        coVerify { notificationDao.markExistingAsRead(ids.toList(), any()) }
         assertEquals(TestTimeProvider().now(), dateSlot.captured.time)
     }
 
@@ -390,20 +376,19 @@ class NotificationsRepositoryImplTest {
         val result = repository.markAllUnreadAsRead(null)
 
         assertTrue(result.isEmpty())
-        coVerify(exactly = 0) { notificationDao.getUnreadIds(any()) }
-        coVerify(exactly = 0) { notificationDao.markAllUnreadAsRead(any(), any()) }
+        coVerify(exactly = 0) { notificationDao.markAllUnreadAsReadReturningIds(any(), any()) }
     }
 
     @Test
     fun `markAllUnreadAsRead fetches unread ids and updates all unread`() = runTest {
-        coEvery { notificationDao.getUnreadIds("user1") } returns listOf("id1", "id2")
-        coEvery { notificationDao.markAllUnreadAsRead("user1", any()) } returns 2
+        val dateSlot = slot<java.util.Date>()
+        coEvery { notificationDao.markAllUnreadAsReadReturningIds(eq("user1"), capture(dateSlot)) } returns listOf("id1", "id2")
 
         val result = repository.markAllUnreadAsRead("user1")
 
         assertEquals(setOf("id1", "id2"), result)
-        coVerify { notificationDao.getUnreadIds("user1") }
-        coVerify { notificationDao.markAllUnreadAsRead("user1", any()) }
+        coVerify { notificationDao.markAllUnreadAsReadReturningIds("user1", any()) }
+        assertEquals(TestTimeProvider().now(), dateSlot.captured.time)
     }
 
     @Test
@@ -411,21 +396,18 @@ class NotificationsRepositoryImplTest {
         val result = repository.deleteNotifications(emptySet())
 
         assertTrue(result.isEmpty())
-        coVerify(exactly = 0) { notificationDao.getIdsByIds(any()) }
-        coVerify(exactly = 0) { notificationDao.deleteByIds(any()) }
+        coVerify(exactly = 0) { notificationDao.deleteExisting(any()) }
     }
 
     @Test
     fun `deleteNotifications deletes existing notifications and returns deleted ids`() = runTest {
         val ids = setOf("id1", "id2", "id3")
-        coEvery { notificationDao.getIdsByIds(any()) } returns listOf("id1", "id2")
-        coEvery { notificationDao.deleteByIds(any()) } returns 2
+        coEvery { notificationDao.deleteExisting(ids.toList()) } returns listOf("id1", "id2")
 
         val result = repository.deleteNotifications(ids)
 
         assertEquals(setOf("id1", "id2"), result)
-        coVerify { notificationDao.getIdsByIds(ids.toList()) }
-        coVerify { notificationDao.deleteByIds(listOf("id1", "id2")) }
+        coVerify { notificationDao.deleteExisting(ids.toList()) }
     }
 
     @Test
@@ -456,15 +438,8 @@ class NotificationsRepositoryImplTest {
         jsonArray.add(doc2)
         jsonArray.add(doc3)
 
-        val existingNotification = AppNotification().apply {
-            id = "testId2"
-            needsSync = true
-            isRead = true
-        }
-        coEvery { notificationDao.getByIds(any()) } returns listOf(existingNotification)
-
         val upsertSlot = slot<List<AppNotification>>()
-        coEvery { notificationDao.upsertAll(capture(upsertSlot)) } returns Unit
+        coEvery { notificationDao.upsertAllPreservingPendingRead(capture(upsertSlot)) } returns Unit
 
         repository.bulkInsertFromSync(jsonArray)
 
@@ -474,28 +449,23 @@ class NotificationsRepositoryImplTest {
         val first = saved.find { it.id == "testId1" }!!
         assertEquals("user1", first.userId)
         assertEquals("msg1", first.message)
-        assertFalse(first.needsSync)
-        assertTrue(first.isRead) // parsed from missing 'status' which doesn't equal 'unread'
 
         val second = saved.find { it.id == "testId2" }!!
         assertEquals("user3", second.userId)
         assertEquals("msg3", second.message)
-        assertTrue(second.needsSync)
-        assertTrue(second.isRead)
     }
 
     @Test
-    fun `bulkInsertFromSync with empty array does nothing`() = runTest {
+    fun `bulkInsertFromSync with empty array calls upsertAllPreservingPendingRead with empty list`() = runTest {
         val jsonArray = JsonArray()
 
         val upsertSlot = slot<List<AppNotification>>()
-        coEvery { notificationDao.upsertAll(capture(upsertSlot)) } returns Unit
+        coEvery { notificationDao.upsertAllPreservingPendingRead(capture(upsertSlot)) } returns Unit
 
         repository.bulkInsertFromSync(jsonArray)
 
         val saved = upsertSlot.captured
         assertTrue(saved.isEmpty())
-        coVerify(exactly = 0) { notificationDao.getByIds(any()) }
     }
 
     @Test
