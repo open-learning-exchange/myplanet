@@ -146,21 +146,6 @@ open class MyTeam(
             }
         }
 
-        fun populateReportFields(doc: JsonObject, team: MyTeam) {
-            val kDoc = doc.toKotlinx().jsonObject
-            team.description = JsonUtils.getString("description", kDoc)
-            team.beginningBalance = JsonUtils.getInt("beginningBalance", kDoc)
-            team.sales = JsonUtils.getInt("sales", kDoc)
-            team.otherIncome = JsonUtils.getInt("otherIncome", kDoc)
-            team.wages = JsonUtils.getInt("wages", kDoc)
-            team.otherExpenses = JsonUtils.getInt("otherExpenses", kDoc)
-            team.startDate = JsonUtils.getLong("startDate", kDoc)
-            team.endDate = JsonUtils.getLong("endDate", kDoc)
-            team.updatedDate = JsonUtils.getLong("updatedDate", kDoc)
-            team.updated = JsonUtils.getBoolean("updated", kDoc)
-            getFirstAttachmentName(doc)?.let { team.imageName = it }
-        }
-
         fun serialize(team: MyTeam): JsonObject {
             if (team.isDeletePending) {
                 return buildJsonObject {
