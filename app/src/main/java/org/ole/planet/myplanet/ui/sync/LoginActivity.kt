@@ -455,7 +455,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             if (!lastSelection.isNullOrEmpty()) {
                 for (i in teams.indices) {
                     val team = teams[i]
-                    if (team._id != null && team._id == lastSelection) {
+                    if (team._id == lastSelection) {
                         val lastSelectedPosition = i + 1
                         binding.team.setSelection(lastSelectedPosition)
                         break
