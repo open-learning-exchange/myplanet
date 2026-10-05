@@ -60,15 +60,12 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private var timesRated: TextView? = null
     var rating: TextView? = null
     private var ratingBar: AppCompatRatingBar? = null
-    private val installUnknownSourcesRequestCode = 112
-    private var hasInstallPermissionValue = false
     private var currentLibrary: MyLibrary? = null
     private var installApkLauncher: ActivityResultLauncher<Intent>? = null
     private var pendingAutoOpenLibrary: MyLibrary? = null
     private var shouldAutoOpenAfterDownload = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        hasInstallPermissionValue = hasInstallPermission(requireContext())
         if (!BuildConfig.LITE) {
             installApkLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                 if (result.resultCode == Activity.RESULT_OK) {
