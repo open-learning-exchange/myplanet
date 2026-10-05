@@ -163,6 +163,129 @@ class EnterprisesRepositoryImplTest {
     }
 
     @Test
+    fun `updateReport calls updateReportFields with payload values and timeProvider now and never getById or upsert`() = runTest {
+        every { timeProvider.now() } returns 99999L
+        coEvery {
+            teamDao.updateReportFields(
+                id = any(),
+                description = any(),
+                beginningBalance = any(),
+                sales = any(),
+                otherIncome = any(),
+                wages = any(),
+                otherExpenses = any(),
+                startDate = any(),
+                endDate = any(),
+                updatedDate = any()
+            )
+        } returns 1
+
+        val payload = FinanceReportParams(
+            description = "updated description",
+            beginningBalance = 10,
+            sales = 20,
+            otherIncome = 30,
+            wages = 40,
+            otherExpenses = 50,
+            startDate = 100L,
+            endDate = 200L,
+            teamId = "team1",
+            teamType = "enterprise",
+            teamPlanetCode = "planet1",
+            imageName = null,
+            imageData = null
+        )
+
+        repository.updateReport("r1", payload)
+
+        coVerify(exactly = 1) {
+            teamDao.updateReportFields(
+                id = "r1",
+                description = "updated description",
+                beginningBalance = 10,
+                sales = 20,
+                otherIncome = 30,
+                wages = 40,
+                otherExpenses = 50,
+                startDate = 100L,
+                endDate = 200L,
+                updatedDate = 99999L
+            )
+        }
+        coVerify(exactly = 0) { teamDao.getById(any()) }
+        coVerify(exactly = 0) { teamDao.upsert(any()) }
+    }
+
+    @Test
+    fun `updateReport with blank reportId calls nothing`() = runTest {
+        val payload = FinanceReportParams(
+            description = "desc",
+            beginningBalance = 0,
+            sales = 0,
+            otherIncome = 0,
+            wages = 0,
+            otherExpenses = 0,
+            startDate = 0L,
+            endDate = 0L,
+            teamId = "team1",
+            teamType = "enterprise",
+            teamPlanetCode = "planet1",
+            imageName = "image.png",
+            imageData = byteArrayOf(1, 2, 3)
+        )
+
+        repository.updateReport("", payload)
+        repository.updateReport("   ", payload)
+
+        coVerify(exactly = 0) {
+            teamDao.updateReportFields(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+            )
+        }
+        coVerify(exactly = 0) { teamDao.getById(any()) }
+        coVerify(exactly = 0) { teamDao.upsert(any()) }
+        coVerify(exactly = 0) { teamDao.setImageNameById(any(), any()) }
+    }
+
+    @Test
+    fun `updateReport attaches image when updateReportFields returns 0 and image data is present`() = runTest {
+        val tempDir = Files.createTempDirectory("enterprises_test_update").toFile()
+        val destFile = File(tempDir, "team_attachments/r1/photo.png")
+        every { storagePathResolver.resolveTeamAttachment("r1", "photo.png") } returns destFile
+        every { timeProvider.now() } returns 88888L
+
+        coEvery {
+            teamDao.updateReportFields(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+            )
+        } returns 0
+
+        val imageBytes = byteArrayOf(5, 6, 7)
+        val payload = FinanceReportParams(
+            description = "desc",
+            beginningBalance = 0,
+            sales = 0,
+            otherIncome = 0,
+            wages = 0,
+            otherExpenses = 0,
+            startDate = 0L,
+            endDate = 0L,
+            teamId = "team1",
+            teamType = "enterprise",
+            teamPlanetCode = "planet1",
+            imageName = "photo.png",
+            imageData = imageBytes
+        )
+
+        repository.updateReport("r1", payload)
+
+        assertTrue("attachment file should be written", destFile.exists())
+        assertArrayEquals(imageBytes, destFile.readBytes())
+
+        coVerify(exactly = 1) { teamDao.setImageNameById("r1", "photo.png") }
+    }
+
+    @Test
     fun `addReport short-circuits image attachment update when resolveTeamAttachment returns null`() = runTest {
         every { storagePathResolver.resolveTeamAttachment(any(), any()) } returns null
         every { timeProvider.now() } returns 12345L
