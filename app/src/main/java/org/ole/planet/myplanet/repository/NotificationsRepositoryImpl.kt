@@ -95,6 +95,7 @@ class NotificationsRepositoryImpl @Inject constructor(
             val valueChanged = previousValue != value
 
             val formattedMessage = formatMessage(value)
+            if (existingNotification != null && existingNotification.message == formattedMessage && existingNotification.relatedId == relatedId) return
 
             val notification = existingNotification?.apply {
                 message = formattedMessage

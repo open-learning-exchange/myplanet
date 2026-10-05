@@ -892,7 +892,7 @@ class NotificationsRepositoryImplTest {
     }
 
     @Test
-    fun `updateResourceNotification when count unchanged keeps it read`() = runTest {
+    fun `updateResourceNotification when count unchanged skips the write`() = runTest {
         val initialDate = java.util.Date(1000000L)
         val existing = AppNotification().apply {
             id = "user1:resource:count"
@@ -904,15 +904,13 @@ class NotificationsRepositoryImplTest {
             createdAt = initialDate
         }
         coEvery { notificationDao.getById("user1:resource:count") } returns existing
-        val upsertSlot = slot<AppNotification>()
-        coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
 
         repository.updateResourceNotification("user1", 5)
 
-        val saved = upsertSlot.captured
-        assertTrue(saved.isRead)
-        assertEquals(initialDate, saved.createdAt)
-        assertEquals("5", saved.message)
+        coVerify(exactly = 0) { notificationDao.upsert(any()) }
+        coVerify(exactly = 0) { notificationDao.deleteById(any()) }
+        assertTrue(existing.isRead)
+        assertEquals(initialDate, existing.createdAt)
     }
 
     @Test
@@ -980,13 +978,34 @@ class NotificationsRepositoryImplTest {
     }
 
     @Test
-    fun `updateStorageNotification when percent unchanged keeps it read`() = runTest {
+    fun `updateStorageNotification when percent unchanged skips the write`() = runTest {
         val initialDate = java.util.Date(1000000L)
         val existing = AppNotification().apply {
             id = "user1:storage"
             userId = "user1"
             type = "storage"
             message = "8%"
+            relatedId = "storage"
+            isRead = true
+            createdAt = initialDate
+        }
+        coEvery { notificationDao.getById("user1:storage") } returns existing
+
+        repository.updateStorageNotification("user1", 8)
+
+        coVerify(exactly = 0) { notificationDao.upsert(any()) }
+        assertTrue(existing.isRead)
+        assertEquals(initialDate, existing.createdAt)
+    }
+
+    @Test
+    fun `updateStorageNotification legacy message without percent updates message and preserves state`() = runTest {
+        val initialDate = java.util.Date(1000000L)
+        val existing = AppNotification().apply {
+            id = "user1:storage"
+            userId = "user1"
+            type = "storage"
+            message = "8"
             relatedId = "storage"
             isRead = true
             createdAt = initialDate
