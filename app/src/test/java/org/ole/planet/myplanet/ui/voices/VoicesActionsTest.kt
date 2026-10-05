@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.mockk
 import java.util.Locale
 import java.util.TimeZone
@@ -16,11 +15,8 @@ import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.MemberVisitStats
 import org.ole.planet.myplanet.repository.VoicesEditActions
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -87,76 +83,61 @@ class VoicesActionsTest {
         assertEquals(false, launched) // positive button not clicked yet
     }
 
+    private fun fullyPopulatedUser() = UserEntity().apply {
+        id = "user123"
+        name = "john_doe"
+        firstName = "John"
+        lastName = "Doe"
+        email = "john@example.com"
+        dob = "2000-01-01T00:00:00"
+        language = "en"
+        phoneNumber = "1234567890"
+        level = "Level 1"
+        userImage = "image_url"
+    }
+
     @Test
     fun `showMemberDetails returns null for null user`() = runTest {
-        val activitiesRepository: ActivitiesRepository = mockk()
-        val result = VoicesActions.showMemberDetails(null, activitiesRepository)
+        val result = VoicesActions.showMemberDetails(null)
         assertEquals(null, result)
     }
 
     @Test
-    fun `showMemberDetails calls getMemberVisitStats once and constructs fragment`() = runTest {
-        val activitiesRepository: ActivitiesRepository = mockk()
-        val user = UserEntity().apply {
-            id = "user123"
-            name = "john_doe"
-            firstName = "John"
-            lastName = "Doe"
-            email = "john@example.com"
-            dob = "2000-01-01T00:00:00"
-            language = "en"
-            phoneNumber = "1234567890"
-            level = "Level 1"
-            userImage = "image_url"
-        }
+    fun `showMemberDetails constructs fragment for user`() = runTest {
+        val user = fullyPopulatedUser()
 
-        coEvery { activitiesRepository.getMemberVisitStats("user123", "john_doe") } returns MemberVisitStats(
-            offlineVisitCount = 4,
-            lastVisit = null
-        )
-
-        val fragment = VoicesActions.showMemberDetails(user, activitiesRepository)
+        val fragment = VoicesActions.showMemberDetails(user)
 
         assertNotNull(fragment)
-        assertEquals("4", fragment?.arguments?.getString("number_of_visits"))
-        assertEquals("No logout record found", fragment?.arguments?.getString("last_login"))
-
-        coVerify(exactly = 1) { activitiesRepository.getMemberVisitStats("user123", "john_doe") }
-        coVerify(exactly = 0) { activitiesRepository.getOfflineVisitCount(any()) }
-        coVerify(exactly = 0) { activitiesRepository.getLastVisit(any()) }
+        assertEquals("user123", fragment?.arguments?.getString("member_id"))
+        assertEquals("John Doe", fragment?.arguments?.getString("member_name"))
+        assertEquals("john@example.com", fragment?.arguments?.getString("profile_email"))
     }
 
     @Test
-    fun `showMemberDetails formats lastVisit in default zone and locale`() = runTest {
-        val activitiesRepository: ActivitiesRepository = mockk()
-        val user = UserEntity().apply {
-            id = "user123"
-            name = "john_doe"
-            firstName = "John"
-            lastName = "Doe"
-            email = "john@example.com"
-            dob = "2000-01-01T00:00:00"
-            language = "en"
-            phoneNumber = "1234567890"
-            level = "Level 1"
-            userImage = "image_url"
-        }
+    fun `showMemberDetails sets user details in fragment arguments`() = runTest {
+        val user = fullyPopulatedUser()
 
-        // 1700000000000 L -> Nov 14, 2023 10:13 PM UTC
-        coEvery { activitiesRepository.getMemberVisitStats("user123", "john_doe") } returns MemberVisitStats(
-            offlineVisitCount = 2,
-            lastVisit = 1700000000000L
-        )
-
-        val fragment = VoicesActions.showMemberDetails(user, activitiesRepository)
+        val fragment = VoicesActions.showMemberDetails(user)
 
         assertNotNull(fragment)
-        assertEquals("November 14, 2023 10:13 PM", fragment?.arguments?.getString("last_login"))
+        assertEquals("2000-01-01", fragment?.arguments?.getString("detail_dob"))
+        assertEquals("en", fragment?.arguments?.getString("detail_language"))
+        assertEquals("1234567890", fragment?.arguments?.getString("profile_phone"))
     }
 
     @Test
-    fun `showMemberDetails falls back when lastVisit is null`() = runTest {
-        val activitiesRepository: ActivitiesRepository = mockk()
+    fun `showMemberDetails passes the login name, not the display name, for the visit lookup`() = runTest {
+        val fragment = VoicesActions.showMemberDetails(fullyPopulatedUser())
+
+        // offline_activity.userName stores the login name, so the stats lookup keys on it.
+        assertEquals("john_doe", fragment?.arguments?.getString("member_login_name"))
+        // The display name stays separate -- feeding it to the lookup matches no rows.
+        assertEquals("John Doe", fragment?.arguments?.getString("username"))
+    }
+
+    @Test
+    fun `showMemberDetails handles user with minimal fields`() = runTest {
         val user = UserEntity().apply {
             id = "user123"
             name = "john_doe"
@@ -164,14 +145,9 @@ class VoicesActionsTest {
             lastName = "Doe"
         }
 
-        coEvery { activitiesRepository.getMemberVisitStats("user123", "john_doe") } returns MemberVisitStats(
-            offlineVisitCount = 0,
-            lastVisit = null
-        )
-
-        val fragment = VoicesActions.showMemberDetails(user, activitiesRepository)
+        val fragment = VoicesActions.showMemberDetails(user)
 
         assertNotNull(fragment)
-        assertEquals("No logout record found", fragment?.arguments?.getString("last_login"))
+        assertEquals("user123", fragment?.arguments?.getString("member_id"))
     }
 }

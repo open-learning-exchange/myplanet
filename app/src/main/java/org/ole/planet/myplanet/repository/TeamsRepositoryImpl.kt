@@ -11,13 +11,9 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Date
 import java.util.LinkedHashSet
-import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -65,7 +61,6 @@ import org.ole.planet.myplanet.utils.toSyncDocuments
 @Singleton
 class TeamsRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val activitiesRepository: ActivitiesRepository,
     private val userSessionManager: UserSessionManager,
     private val uploadManager: UploadManager,
     private val gson: Gson,
@@ -1040,28 +1035,12 @@ class TeamsRepositoryImpl @Inject constructor(
             stats.latestVisit = stats.latestVisit?.let { maxOf(it, logTime) } ?: logTime
         }
 
-        val memberNames = orderedMembers.map { it.name ?: "" }.distinct()
-        val memberIds = orderedMembers.map { it.id }.distinct()
-        val lastVisits = activitiesRepository.getLastVisits(memberNames)
-        val counts = activitiesRepository.getOfflineVisitCounts(memberIds)
-
         return orderedMembers.map { member ->
             val stats = visitStatsMap[member.name]
-            val visitCount = stats?.count ?: 0L
-            val lastVisitTimestamp = stats?.latestVisit
-            val lastLogoutTimestamp = lastVisits[member.name ?: ""]
-            val profileLastVisit = if (lastLogoutTimestamp != null) {
-                DATE_TIME_FORMATTER.format(Instant.ofEpochMilli(lastLogoutTimestamp))
-            } else {
-                "No logout record found"
-            }
-            val offlineVisits = "${counts[member.id] ?: 0}"
             JoinedMemberData(
                 user = member,
-                visitCount = visitCount,
-                lastVisitDate = lastVisitTimestamp,
-                offlineVisits = offlineVisits,
-                profileLastVisit = profileLastVisit,
+                visitCount = stats?.count ?: 0L,
+                lastVisitDate = stats?.latestVisit,
                 isLeader = member.id in leaderIds
             )
         }
@@ -1372,6 +1351,5 @@ class TeamsRepositoryImpl @Inject constructor(
 
     companion object {
         private const val TAG = "TeamsRepository"
-        private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("MMMM dd, yyyy hh:mm a", Locale.getDefault()).withZone(ZoneId.systemDefault())
     }
 }
