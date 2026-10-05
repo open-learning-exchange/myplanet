@@ -188,9 +188,9 @@ class RequestsViewModelTest {
         val user2 = UserEntity().apply { id = "user2" }
         val user3 = UserEntity().apply { id = "user3" }
 
-        val member1 = JoinedMemberData(currentUser, 0L, null, "", "", isLeader = true)
-        val member2 = JoinedMemberData(user2, 0L, null, "", "", isLeader = false)
-        val member3 = JoinedMemberData(user3, 0L, null, "", "", isLeader = false)
+        val member1 = JoinedMemberData(currentUser, 0L, null, isLeader = true)
+        val member2 = JoinedMemberData(user2, 0L, null, isLeader = false)
+        val member3 = JoinedMemberData(user3, 0L, null, isLeader = false)
         val membersLeader = listOf(member1, member2, member3)
 
         coEvery { userRepository.getUserModel() } returns currentUser
@@ -204,7 +204,7 @@ class RequestsViewModelTest {
         assertEquals(currentUserId, stateLeader.currentUserId)
         assertTrue(stateLeader.isLeader)
 
-        val member1NotLeader = JoinedMemberData(currentUser, 0L, null, "", "", isLeader = false)
+        val member1NotLeader = JoinedMemberData(currentUser, 0L, null, isLeader = false)
         val membersNotLeader = listOf(member1NotLeader, member2, member3)
 
         coEvery { teamsRepository.getJoinedMembersWithVisitInfo(teamId) } returns membersNotLeader
