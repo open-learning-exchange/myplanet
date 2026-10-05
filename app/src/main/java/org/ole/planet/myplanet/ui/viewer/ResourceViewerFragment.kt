@@ -60,6 +60,7 @@ import java.io.File
 import java.util.regex.Pattern
 import javax.inject.Inject
 import kotlin.math.abs
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -101,7 +102,8 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
     private var noisyReceiverRegistered = false
     private lateinit var audioRecorder: AudioRecorder
     private lateinit var library: MyLibrary
-    private var pdfText: String = ""
+    private var pdfText: String? = null
+    private var pdfTextJob: Job? = null
     private var externalFilesDir: File? = null
     private val viewModel: ResourceViewerViewModel by viewModels()
     @Inject lateinit var dispatcherProvider: DispatcherProvider
@@ -463,19 +465,6 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
             playerView.player = player
             player.setPlaybackSpeed(viewModel.getPlaybackSpeed())
             player.setMediaItem(MediaItem.fromUri(fullPath))
-            player.addListener(object : Player.Listener {
-                override fun onIsPlayingChanged(isPlaying: Boolean) {
-                    if (!isPlaying && player.playbackState != Player.STATE_BUFFERING) {
-                        saveCurrentPlaybackProgress()
-                    }
-                }
-                override fun onPlaybackStateChanged(playbackState: Int) {
-                    if (playbackState == Player.STATE_ENDED) {
-                        lastSavedPositionMs = 0L
-                        viewModel.savePlaybackProgress(getMediaKey(), 0L)
-                    }
-                }
-            })
             player.prepare()
             val savedProgress = viewModel.getPlaybackProgress(getMediaKey())
             if (savedProgress > 0L) {
@@ -509,7 +498,6 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         isResourceFinished = true
 
         renderPdf()
-        extractPdfText()
         setupPdfFabActions()
     }
 
@@ -553,12 +541,16 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         }
     }
 
-    private fun extractPdfText() {
+    private suspend fun loadPdfText(): String {
+        pdfText?.let { return it }
         val file = File(externalFilesDir, "ole/$filePath")
-        if (!file.exists()) return
-        viewLifecycleOwner.lifecycleScope.launch {
-            pdfText = viewModel.extractPdfText(file)
+        if (!file.exists()) {
+            pdfText = ""
+            return ""
         }
+        val extracted = viewModel.extractPdfText(file)
+        pdfText = extracted
+        return extracted
     }
 
     private fun setupPdfFabActions() {
@@ -569,7 +561,20 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
             }
         }
         binding.fabReadAloud.setOnClickListener {
-            if (ttsManager.isSpeaking) ttsManager.stop() else ttsManager.speak(pdfText)
+            if (ttsManager.isSpeaking) {
+                ttsManager.stop()
+            } else if (pdfTextJob?.isActive == true) {
+                return@setOnClickListener
+            } else {
+                if (pdfText == null) {
+                    Utilities.toast(requireContext(), getString(R.string.pdf_extracting_text))
+                }
+                pdfTextJob = viewLifecycleOwner.lifecycleScope.launch {
+                    val text = loadPdfText()
+                    if (!viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return@launch
+                    ttsManager.speak(text)
+                }
+            }
         }
     }
 
@@ -713,6 +718,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         if (activity?.isInPictureInPictureMode != true) {
             exoPlayer?.pause()
         }
+        pdfTextJob?.cancel()
         ttsManager.stop()
     }
 
