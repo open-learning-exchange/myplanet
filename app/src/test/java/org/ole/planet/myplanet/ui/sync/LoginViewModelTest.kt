@@ -187,4 +187,30 @@ class LoginViewModelTest {
         assertTrue(result)
         coVerify(exactly = 1) { communityRepository.syncCommunityDocs() }
     }
+
+    @Test
+    fun `syncCommunityDocs does not call repository again after a successful sync`() = runTest {
+        coEvery { communityRepository.syncCommunityDocs() } returns true
+
+        val viewModel = createViewModel()
+        val result1 = viewModel.syncCommunityDocs()
+        val result2 = viewModel.syncCommunityDocs()
+
+        assertTrue(result1)
+        assertTrue(result2)
+        coVerify(exactly = 1) { communityRepository.syncCommunityDocs() }
+    }
+
+    @Test
+    fun `syncCommunityDocs retries after a failed sync`() = runTest {
+        coEvery { communityRepository.syncCommunityDocs() } returnsMany listOf(false, true)
+
+        val viewModel = createViewModel()
+        val result1 = viewModel.syncCommunityDocs()
+        val result2 = viewModel.syncCommunityDocs()
+
+        org.junit.Assert.assertFalse(result1)
+        assertTrue(result2)
+        coVerify(exactly = 2) { communityRepository.syncCommunityDocs() }
+    }
 }

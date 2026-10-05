@@ -1023,10 +1023,11 @@
     <string name="user_name">%1$s (%2$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
-    <string name="member_description">%1$s (%2$d visitas)</string>
+    <string name="member_description">%1$s (%2$d visitas al equipo)</string>
     <string name="dark_mode">Modo oscuro</string>
     <string name="last_visit">Última visita: %1$s</string>
     <string name="no_visit">sin visita</string>
+    <string name="no_logout_record_found">No se encontró registro de cierre de sesión</string>
     <string name="dark_mode_off">Desactivado</string>
     <string name="dark_mode_on">Activado</string>
     <string name="dark_mode_follow_system">Seguir el sistema</string>
@@ -1322,7 +1323,7 @@
     <string name="download_pdf">Descargar PDF</string>
     <string name="label_answer">Respuesta:</string>
     <string name="label_link">Enlace: </string>
-    <string name="number_of_visits">Número de visitas</string>
+    <string name="number_of_visits">Visitas totales</string>
     <string name="label_name_with_colon">Nombre:</string>
     <string name="label_relationship">Relación:</string>
     <string name="label_phone_no">Teléfono:</string>
