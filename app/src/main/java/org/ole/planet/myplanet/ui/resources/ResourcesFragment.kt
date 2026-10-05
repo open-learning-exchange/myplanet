@@ -674,7 +674,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         setupDownloadFilterChips()
         updateFilterBadge()
 
-        if (view == null) return lastFilteredCount
         searchJob?.cancel()
         return applyFiltersAndUpdateUI()
     }
@@ -898,7 +897,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         for ((set, removeAction) in facetFilters) {
             for (item in set) {
                 val displayText = if (set === mediums) {
-                ResourcesFilterFragment.getMediumDisplayName(requireContext(), item)
+                    ResourcesMediaType.displayName(requireContext(), item)
                 } else {
                     item
                 }
@@ -924,12 +923,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             val tagIndex = chip.tag as? Int ?: continue
             val isSelected = tagIndex == selected
             chip.setBackgroundResource(if (isSelected) R.drawable.bg_chip_selected else R.drawable.bg_chip_unselected)
-            chip.setTextColor(
-                ContextCompat.getColor(
-                    requireContext(),
-                    if (isSelected) R.color.chip_selected_text else R.color.daynight_textColor
-                )
-            )
+            chip.setTextColor(ContextCompat.getColor(requireContext(),
+                if (isSelected) R.color.chip_selected_text else R.color.daynight_textColor))
         }
     }
 
