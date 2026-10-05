@@ -1,11 +1,11 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -43,7 +43,9 @@ import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.TeamReference
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 @ExperimentalCoroutinesApi
@@ -51,9 +53,9 @@ class SubmissionsRepositoryImplTest {
 
     private lateinit var teamsRepositoryProvider: Provider<TeamsRepository>
     private lateinit var surveysRepositoryProvider: Provider<SurveysRepository>
-    private lateinit var context: Context
     private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var exporter: SubmissionsRepositoryExporter
+    private lateinit var deviceNameProvider: DeviceNameProvider
 
     private val submitPhotosDao: SubmitPhotosDao = mockk(relaxed = true)
     private val submissionDao: SubmissionDao = mockk(relaxed = true)
@@ -69,14 +71,13 @@ class SubmissionsRepositoryImplTest {
         teamsRepositoryProvider = mockk(relaxed = true)
         every { teamsRepositoryProvider.get() } returns teamsRepo
         surveysRepositoryProvider = mockk(relaxed = true)
-        context = mockk(relaxed = true)
         sharedPrefManager = mockk(relaxed = true)
         exporter = mockk(relaxed = true)
+        deviceNameProvider = mockk(relaxed = true)
 
         repository = spyk(SubmissionsRepositoryImpl(
             teamsRepositoryProvider,
             userRepository,
-            context,
             sharedPrefManager,
             exporter,
             submitPhotosDao,
@@ -84,7 +85,8 @@ class SubmissionsRepositoryImplTest {
             answerDao,
             examDao,
             questionDao,
-            Gson()
+            Gson(),
+            deviceNameProvider
         ), recordPrivateCalls = true)
     }
 
@@ -535,7 +537,7 @@ class SubmissionsRepositoryImplTest {
         val request = CreateExamSubmissionRequest("user", "dob", "gender", exam, "survey", null)
         val existingSubmission = Submission().apply { id = "existing_id" }
 
-        coEvery { submissionDao.getByParentUserAndStatus("parentId", "user", "pending") } returns listOf(existingSubmission)
+        coEvery { submissionDao.getPendingByUserAndParent("parentId", "user") } returns existingSubmission
 
         val result = repository.startExamSession("exam_id", "parentId", "user", request, recreate = false)
 
@@ -551,7 +553,7 @@ class SubmissionsRepositoryImplTest {
         }
         val request = CreateExamSubmissionRequest("user", "dob", "gender", exam, "survey", null)
 
-        coEvery { submissionDao.getByParentUserAndStatus("parentId", "user", "pending") } returns emptyList()
+        coEvery { submissionDao.getPendingByUserAndParent("parentId", "user") } returns null
         coEvery { answerDao.deleteBySubmissionIds(any()) } returns 1
 
         val result = repository.startExamSession("exam_id", "parentId", "user", request, recreate = false)
@@ -618,11 +620,43 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `serializeSubmission carries DeviceNameProvider device name`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { deviceNameProvider.getCustomDeviceName() } returns "Test Custom Device Name"
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
+        }
+
+        val result = repository.serializeSubmission(submission, "planet", "parent", null)
+
+        assertEquals("Test Custom Device Name", result.get("customDeviceName").asString)
+    }
+
+    @Test
+    fun `getExamUploadPayload carries DeviceNameProvider device name`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { deviceNameProvider.getCustomDeviceName() } returns "Test Custom Device Name"
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "exam"
+        }
+
+        val result = repository.getExamUploadPayload(submission, null)
+
+        assertEquals("Test Custom Device Name", result.get("customDeviceName").asString)
+    }
+
+    @Test
     fun `serializeSubmission uploads fresh user data instead of the stored blob`() = runTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
 
         // Fresh user record from Room (attachment-free, current) must win over the persisted
         // blob, whose _attachments were stripped for storage safety.
@@ -644,7 +678,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
 
         val submission = Submission().apply {
             id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
@@ -661,7 +695,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
         coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns null
 
         val persistedSubmissions = slot<List<Submission>>()
@@ -700,7 +734,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
         coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns null
 
         val submission = Submission().apply {
@@ -721,7 +755,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
         coEvery { teamsRepositoryProvider.get().getTeamById("team1") } throws IllegalStateException("lookup failed")
 
         val submission = Submission().apply {
@@ -742,7 +776,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
 
         coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns MyTeam().apply {
             _id = "team1"
@@ -768,7 +802,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
 
         val submission = Submission().apply {
             id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
@@ -793,7 +827,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
 
         val submission = Submission().apply {
             id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
@@ -809,7 +843,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
         coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns null
 
         val submission = Submission().apply {
@@ -830,7 +864,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
         coEvery { teamsRepositoryProvider.get().getTeamById("team1") } throws IllegalStateException("lookup failed")
 
         val submission = Submission().apply {
@@ -851,7 +885,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
 
         coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns MyTeam().apply {
             _id = "team1"
@@ -877,7 +911,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
 
         val submission = Submission().apply {
             id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "exam"
@@ -1093,6 +1127,53 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `getExamSubmissionsByUser delegates to submissionDao`() = runTest {
+        val expected = listOf(Submission(id = "sub1"))
+        coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns expected
+
+        val result = repository.getExamSubmissionsByUser("user1")
+
+        assertEquals(expected, result)
+        coVerify(exactly = 1) { submissionDao.getExamSubmissionsByUser("user1") }
+    }
+
+    @Test
+    fun `getAnswersBySubmissionIds delegates to answerDao`() = runTest {
+        val expected = listOf(Answer(id = "ans1"))
+        coEvery { answerDao.getBySubmissionIds(listOf("sub1")) } returns expected
+
+        val result = repository.getAnswersBySubmissionIds(listOf("sub1"))
+
+        assertEquals(expected, result)
+        coVerify(exactly = 1) { answerDao.getBySubmissionIds(listOf("sub1")) }
+    }
+
+    @Test
+    fun `getUnuploadedNonSurveySubmissionsByParentIds delegates to submissionDao`() = runTest {
+        val expected = listOf(Submission(id = "sub1"))
+        coEvery { submissionDao.getUnuploadedNonSurveyByParentIds(listOf("p1")) } returns expected
+
+        val result = repository.getUnuploadedNonSurveySubmissionsByParentIds(listOf("p1"))
+
+        assertEquals(expected, result)
+        coVerify(exactly = 1) { submissionDao.getUnuploadedNonSurveyByParentIds(listOf("p1")) }
+    }
+
+    @Test
+    fun `deleteSubmissionsWithAnswers calls answerDao then submissionDao in order`() = runTest {
+        val ids = listOf("sub1", "sub2")
+        coEvery { answerDao.deleteBySubmissionIds(ids) } returns 2
+        coEvery { submissionDao.deleteByIds(ids) } returns 2
+
+        repository.deleteSubmissionsWithAnswers(ids)
+
+        coVerifyOrder {
+            answerDao.deleteBySubmissionIds(ids)
+            submissionDao.deleteByIds(ids)
+        }
+    }
+
+    @Test
     fun `getPendingExamResults preserves the DAO order and sets membershipDoc from teamId`() = runTest {
         val s1 = Submission().apply { id = "s1" }
         val s2 = Submission().apply { id = "s2"; teamId = "team123" }
@@ -1107,5 +1188,30 @@ class SubmissionsRepositoryImplTest {
         assertNotNull(results[1].membershipDoc)
         assertEquals("team123", results[1].membershipDoc?.teamId)
         assertNull(results[2].membershipDoc)
+    }
+
+    @Test
+    fun `markSubmissionsUploaded delegates submission updates to dao`() = runTest {
+        coEvery { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") } returns 1
+
+        val failed = repository.markSubmissionsUploaded(
+            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", com.google.gson.JsonObject()))
+        )
+
+        assertEquals(emptyList<UploadedItemResult>(), failed)
+        coVerify { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") }
+    }
+
+    @Test
+    fun `markSubmissionsUploaded returns failure if dao returns 0`() = runTest {
+        coEvery { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") } returns 0
+
+        val failed = repository.markSubmissionsUploaded(
+            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", com.google.gson.JsonObject()))
+        )
+
+        assertEquals(1, failed.size)
+        assertEquals("sub-1", failed.first().localId)
+        coVerify { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") }
     }
 }

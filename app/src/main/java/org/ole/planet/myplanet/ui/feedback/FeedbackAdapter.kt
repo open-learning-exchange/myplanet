@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.feedback
 
+import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.view.LayoutInflater
@@ -8,6 +9,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFeedbackBinding
 import org.ole.planet.myplanet.model.Feedback
@@ -31,6 +33,7 @@ class FeedbackAdapter :
         )
     ) {
 
+    private val dateCache = HashMap<Long, String>()
     private var primaryColorStateList: ColorStateList? = null
     private var greyColorStateList: ColorStateList? = null
     private var statusText: String? = null
@@ -55,13 +58,15 @@ class FeedbackAdapter :
         val binding = holder.rowFeedbackBinding
         val context = binding.root.context
 
+        val type = localizedLabel(context, feedback.type)
+        val priority = localizedLabel(context, feedback.priority)
         binding.tvTitle.text = feedback.title
-        binding.tvType.text = feedback.type
-        binding.tvPriority.text = feedback.priority
+        binding.tvType.text = type
+        binding.tvPriority.text = priority
         binding.tvStatus.text = feedback.status
-        val formattedDate = getFormattedDate(feedback.openTime)
-        val contentDescription = "${feedback.title}, ${feedback.type}, " +
-                "${statusText}: ${feedback.status}, ${priorityText}: ${feedback.priority}, " +
+        val formattedDate = dateCache.getOrPut(feedback.openTime) { getFormattedDate(feedback.openTime) }
+        val contentDescription = "${feedback.title}, ${type}, " +
+                "${statusText}: ${feedback.status}, ${priorityText}: ${priority}, " +
                 "${openDateText}: ${formattedDate}"
         binding.feedbackCardView.contentDescription = contentDescription
 
@@ -74,6 +79,21 @@ class FeedbackAdapter :
             if ("open".equals(feedback.status, ignoreCase = true)) primaryColorStateList else greyColorStateList
         )
         binding.tvOpenDate.text = formattedDate
+    }
+
+    private fun localizedLabel(context: Context, value: String?): String? {
+        val resId = LABELS[value?.lowercase(Locale.ROOT)] ?: return value
+        return context.getString(resId)
+    }
+
+    companion object {
+        private val LABELS = mapOf(
+            "yes" to R.string.yes,
+            "no" to R.string.no,
+            "question" to R.string.question,
+            "bug" to R.string.bug,
+            "suggestion" to R.string.suggestion,
+        )
     }
 
     inner class FeedbackViewHolder(val rowFeedbackBinding: RowFeedbackBinding) :

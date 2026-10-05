@@ -4,6 +4,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -59,6 +60,34 @@ class CalendarViewModelTest {
 
         assertEquals(meetups, viewModel.meetups.value)
         assertEquals(mapOf("team1" to "Team One", "team2" to "Team Two"), viewModel.teamNames.value)
+    }
+
+    @Test
+    fun `deduplicates team emissions when team ids and names are unchanged`() = runTest {
+        val userId = "user1"
+        coEvery { userRepository.getUserModel() } returns UserEntity().apply { id = userId }
+        val teams1 = listOf(
+            MyTeam(_id = "team1", name = "Team One"),
+            MyTeam(_id = "team2", name = "Team Two")
+        )
+        val teams2 = listOf(
+            MyTeam(_id = "team1", name = "Team One"),
+            MyTeam(_id = "team2", name = "Team Two")
+        )
+        coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flow {
+            emit(teams1)
+            emit(teams2)
+        }
+        val meetups = listOf(
+            Meetup().apply { id = "m1"; teamId = "team1" }
+        )
+        coEvery { eventsRepository.getMeetupsForTeams(listOf("team1", "team2")) } returns meetups
+
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        assertEquals(meetups, viewModel.meetups.value)
+        coVerify(exactly = 1) { eventsRepository.getMeetupsForTeams(listOf("team1", "team2")) }
     }
 
     @Test

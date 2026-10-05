@@ -12,20 +12,16 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
-import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityResourceViewerBinding
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 
 @AndroidEntryPoint
 class ResourceViewerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityResourceViewerBinding
-    @Inject
-    lateinit var userRepository: UserRepository
     private val viewModel: ResourceViewerViewModel by viewModels()
     private val exitCoordinator by lazy {
-        ResourcesExitCoordinator(this, userRepository, viewModel)
+        ResourcesExitCoordinator(this, viewModel)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

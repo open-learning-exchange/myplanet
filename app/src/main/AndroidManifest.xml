@@ -35,7 +35,6 @@
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.REQUEST_WRITE_PERMISSION" />
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
@@ -99,7 +98,7 @@
             android:exported="false"
             android:configChanges="screenSize|screenLayout|orientation|keyboardHidden|keyboard"/>
         <activity
-            android:name=".ui.user.BecomeMemberActivity"
+            android:name=".ui.user.LearnerRegistrationActivity"
             android:windowSoftInputMode="adjustResize|stateHidden"
             android:theme="@style/AppTheme" />
         <activity

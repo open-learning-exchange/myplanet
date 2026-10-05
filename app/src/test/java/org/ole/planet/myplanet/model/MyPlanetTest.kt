@@ -169,4 +169,25 @@ class MyPlanetTest {
         assertEquals("planet123", json.get("createdOn").asString)
         assertEquals(0, json.getAsJsonArray("usages").size())
     }
+
+    @Test
+    fun `getNormalMyPlanetActivities builds a sync-type payload with device metadata`() {
+        val userModel = UserEntity().apply {
+            parentCode = "parent123"
+            planetCode = "planet123"
+        }
+        every { sharedPrefManager.getLastSync() } returns 123456789L
+        every { sharedPrefManager.getVersionDetail() } returns null
+
+        val json = MyPlanet.getNormalMyPlanetActivities(context, sharedPrefManager, userModel)
+
+        assertEquals("sync", json.get("type").asString)
+        assertEquals(123456789L, json.get("last_synced").asLong)
+        assertEquals("parent123", json.get("parentCode").asString)
+        assertEquals("planet123", json.get("createdOn").asString)
+        assertEquals("mock_custom_device", json.get("customDeviceName").asString)
+        assertEquals("mock_device", json.get("deviceName").asString)
+        assertEquals("mock_android_id", json.get("uniqueAndroidId").asString)
+        assertEquals(false, json.has("planetVersion"))
+    }
 }

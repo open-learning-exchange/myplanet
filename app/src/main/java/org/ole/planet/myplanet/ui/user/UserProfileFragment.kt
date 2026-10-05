@@ -149,8 +149,9 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
             viewModel.offlineVisits,
             viewModel.maxOpenedResource,
             viewModel.lastVisit,
-            viewModel.numberOfResourceOpen
-        ) { _, _, _, _ -> Unit }
+            viewModel.numberOfResourceOpen,
+            viewModel.connectedCommunityCode
+        ) { _, _, _, _, _ -> Unit }
 
         collectWhenStarted(combinedFlow) {
             if (isAdded) {
@@ -210,7 +211,7 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
         binding.txtSecondary.text = getString(
             R.string.profile_secondary_line,
             Utilities.checkNA(model?.email),
-            Utilities.checkNA(model?.planetCode)
+            Utilities.checkNA(communityCode())
         )
 
         binding.rowEmail.tvValue.text = Utilities.checkNA(model?.email)
@@ -462,9 +463,13 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
         binding.guestPill.visibility = if (isGuest) View.VISIBLE else View.GONE
     }
 
+    private fun communityCode(): String? {
+        return model?.planetCode?.takeIf { it.isNotBlank() } ?: viewModel.connectedCommunityCode.value
+    }
+
     private fun createStatsMap(): LinkedHashMap<String, String?> {
         return linkedMapOf(
-            getString(R.string.community_name) to Utilities.checkNA(model?.planetCode),
+            getString(R.string.community_name) to Utilities.checkNA(communityCode()),
             getString(R.string.last_login) to viewModel.lastVisit.value?.let { TimeUtils.getRelativeTime(it, timeProvider) },
             getString(R.string.total_visits_overall) to viewModel.offlineVisits.value.toString(),
             getString(R.string.most_opened_resource) to Utilities.checkNA(viewModel.maxOpenedResource.value),

@@ -37,16 +37,32 @@ interface NotificationDao {
     suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean): List<AppNotification>
 
     @Query("SELECT * FROM notifications WHERE id IN (:ids)")
-    suspend fun getByIds(ids: List<String>): List<AppNotification>
+    suspend fun getByIdsInternal(ids: List<String>): List<AppNotification>
+
+    suspend fun getByIds(ids: List<String>): List<AppNotification> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.chunked(900).flatMap { chunk -> getByIdsInternal(chunk) }
+    }
 
     @Query("SELECT id FROM notifications WHERE id IN (:ids)")
-    suspend fun getIdsByIds(ids: List<String>): List<String>
+    suspend fun getIdsByIdsInternal(ids: List<String>): List<String>
+
+    suspend fun getIdsByIds(ids: List<String>): List<String> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.chunked(900).flatMap { chunk -> getIdsByIdsInternal(chunk) }
+    }
 
     @Query("SELECT id FROM notifications WHERE userId = :userId AND isRead = 0")
     suspend fun getUnreadIds(userId: String): List<String>
 
     @Query("UPDATE notifications SET isRead = 1, createdAt = :createdAt, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE id IN (:ids)")
-    suspend fun markAsRead(ids: List<String>, createdAt: Date): Int
+    suspend fun markAsReadInternal(ids: List<String>, createdAt: Date): Int
+
+    @Transaction
+    suspend fun markAsRead(ids: List<String>, createdAt: Date): Int {
+        if (ids.isEmpty()) return 0
+        return ids.chunked(900).sumOf { chunk -> markAsReadInternal(chunk, createdAt) }
+    }
 
     @Query("UPDATE notifications SET isRead = 1, createdAt = :createdAt, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE userId = :userId AND isRead = 0")
     suspend fun markAllUnreadAsRead(userId: String, createdAt: Date): Int
@@ -100,5 +116,57 @@ interface NotificationDao {
     }
 
     @Query("DELETE FROM notifications WHERE id IN (:ids)")
-    suspend fun deleteByIds(ids: List<String>): Int
+    suspend fun deleteByIdsInternal(ids: List<String>): Int
+
+    @Transaction
+    suspend fun deleteByIds(ids: List<String>): Int {
+        if (ids.isEmpty()) return 0
+        return ids.chunked(900).sumOf { chunk -> deleteByIdsInternal(chunk) }
+    }
+
+    @Transaction
+    suspend fun upsertAllPreservingPendingRead(items: List<AppNotification>) {
+        if (items.isEmpty()) return
+        val existing = getByIds(items.map { it.id }).associateBy { it.id }
+        for (item in items) {
+            val existingItem = existing[item.id]
+            if (existingItem?.needsSync == true) {
+                item.needsSync = true
+                item.isRead = existingItem.isRead
+            }
+        }
+        upsertAll(items)
+    }
+
+    @Transaction
+    suspend fun upsertPreservingPendingRead(item: AppNotification) {
+        upsertAllPreservingPendingRead(listOf(item))
+    }
+
+    @Transaction
+    suspend fun markExistingAsRead(ids: List<String>, createdAt: Date): List<String> {
+        val found = getIdsByIds(ids)
+        if (found.isNotEmpty()) {
+            markAsRead(found, createdAt)
+        }
+        return found
+    }
+
+    @Transaction
+    suspend fun markAllUnreadAsReadReturningIds(userId: String, createdAt: Date): List<String> {
+        val unreadIds = getUnreadIds(userId)
+        if (unreadIds.isNotEmpty()) {
+            markAllUnreadAsRead(userId, createdAt)
+        }
+        return unreadIds
+    }
+
+    @Transaction
+    suspend fun deleteExisting(ids: List<String>): List<String> {
+        val found = getIdsByIds(ids)
+        if (found.isNotEmpty()) {
+            deleteByIds(found)
+        }
+        return found
+    }
 }

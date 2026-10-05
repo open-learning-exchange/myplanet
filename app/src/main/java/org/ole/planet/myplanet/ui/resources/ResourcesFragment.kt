@@ -245,10 +245,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             refreshResourcesData()
         }
 
-        collectWhenStarted(viewModel.downloadComplete) { completed ->
-            if (completed) {
-                refreshResourcesData()
-            }
+        collectWhenStarted(viewModel.downloadComplete) {
+            refreshResourcesData()
         }
         collectWhenStarted(viewModel.resourcesState) { list ->
             allResourceModels = list

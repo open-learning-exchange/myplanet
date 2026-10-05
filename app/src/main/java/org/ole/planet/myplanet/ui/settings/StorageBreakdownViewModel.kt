@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 
@@ -26,6 +27,7 @@ data class StorageBreakdownUiState(
 @HiltViewModel
 open class StorageBreakdownViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val resourcesRepository: ResourcesRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
@@ -35,8 +37,6 @@ open class StorageBreakdownViewModel @Inject constructor(
         val sizeBytes: Long = 0,
         val fileCount: Int = 0
     )
-
-    internal data class ScanResult(val totalBytes: Long, val sizes: LongArray, val counts: IntArray)
 
     internal val categories: List<CategoryData> = StorageCategories.all.map {
         CategoryData(it.nameRes, it.extensions)
@@ -59,7 +59,7 @@ open class StorageBreakdownViewModel @Inject constructor(
 
         viewModelScope.launch(dispatcherProvider.io) {
             val availableSpaceText = FileUtils.availableOverTotalMemoryFormattedString(context)
-            val result = scanStorage(context)
+            val result = resourcesRepository.getStorageBreakdown(File(FileUtils.getOlePath(context)))
 
             val scannedCategories = categories.mapIndexed { index, category ->
                 category.copy(
@@ -77,28 +77,5 @@ open class StorageBreakdownViewModel @Inject constructor(
                 )
             }
         }
-    }
-
-    private fun scanStorage(context: Context): ScanResult {
-        return scanStorage(File(FileUtils.getOlePath(context)))
-    }
-
-    internal open fun scanStorage(oleDir: File): ScanResult {
-        val sizes = LongArray(categories.size)
-        val counts = IntArray(categories.size)
-
-        if (!oleDir.exists() || !oleDir.isDirectory) return ScanResult(0L, sizes, counts)
-
-        var total = 0L
-
-        oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
-            val ext = file.extension
-            val index = if (ext.isEmpty()) StorageCategories.OTHER_INDEX else StorageCategories.indexOf(ext)
-            val size = file.length()
-            total += size
-            sizes[index] += size
-            counts[index]++
-        }
-        return ScanResult(total, sizes, counts)
     }
 }

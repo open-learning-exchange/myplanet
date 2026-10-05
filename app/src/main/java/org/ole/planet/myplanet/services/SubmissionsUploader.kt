@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.core.net.toUri
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -83,9 +84,14 @@ class SubmissionsUploader @Inject constructor(
             Log.d("SubmissionsUploader", "About to call uploadSubmissions with syncStartTime: $syncStartTime")
             uploadManager.uploadAdoptedSurveys()
             uploadManager.uploadSubmissions(syncStartTime)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            Log.e("SubmissionsUploader", "Error during upload", e)
-            e.printStackTrace()
+            Log.e(TAG, "uploadSubmissionsWithTiming failed", e)
         }
+    }
+
+    companion object {
+        private const val TAG = "SubmissionsUploader"
     }
 }

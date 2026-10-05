@@ -70,6 +70,104 @@ class SharedPrefManagerTest {
     }
 
     @Test
+    fun testGetSavedUsersSuccessiveCallsCacheHit() {
+        val spyGson = io.mockk.spyk(NetworkModule.provideGson())
+        val manager = SharedPrefManager(mockContext, spyGson)
+        val users = listOf(User(name = "User 1"))
+        val json = spyGson.toJson(users)
+        every { mockSharedPreferences.getString("savedUsers", null) } returns json
+
+        val res1 = manager.getSavedUsers()
+        val res2 = manager.getSavedUsers()
+
+        assertEquals(res1, res2)
+        assertEquals("User 1", res1[0].name)
+        verify(exactly = 1) { spyGson.fromJson<List<User>>(json, any<java.lang.reflect.Type>()) }
+    }
+
+    @Test
+    fun testGetSavedUsersRawComparisonOutOfStringWrite() {
+        val manager = SharedPrefManager(mockContext, NetworkModule.provideGson())
+        val initialUsers = listOf(User(name = "User 1"))
+        val initialJson = NetworkModule.provideGson().toJson(initialUsers)
+        every { mockSharedPreferences.getString("savedUsers", null) } returns initialJson
+
+        val res1 = manager.getSavedUsers()
+        assertEquals("User 1", res1[0].name)
+
+        val updatedUsers = listOf(User(name = "User 2"))
+        val updatedJson = NetworkModule.provideGson().toJson(updatedUsers)
+        every { mockSharedPreferences.getString("savedUsers", null) } returns updatedJson
+
+        val res2 = manager.getSavedUsers()
+        assertEquals("User 2", res2[0].name)
+    }
+
+    @Test
+    fun testSetSavedUsersFollowedByGetSavedUsersNoReparse() {
+        val spyGson = io.mockk.spyk(NetworkModule.provideGson())
+        val manager = SharedPrefManager(mockContext, spyGson)
+        val users = listOf(User(name = "User 1"))
+        val json = NetworkModule.provideGson().toJson(users)
+
+        every { mockSharedPreferences.getString("savedUsers", null) } returns json
+
+        manager.setSavedUsers(users)
+
+        val retrieved = manager.getSavedUsers()
+        assertEquals(1, retrieved.size)
+        assertEquals("User 1", retrieved[0].name)
+        verify(exactly = 0) { spyGson.fromJson<List<User>>(any<String>(), any<java.lang.reflect.Type>()) }
+    }
+
+    @Test
+    @Suppress("UNCHECKED_CAST")
+    fun testGetSavedUsersReturnsDefensiveCopyOfList() {
+        val json = NetworkModule.provideGson().toJson(listOf(User(name = "User 1")))
+        every { mockSharedPreferences.getString("savedUsers", null) } returns json
+
+        val mutable = sharedPrefManager.getSavedUsers() as MutableList<User>
+        mutable.clear()
+
+        val retrieved = sharedPrefManager.getSavedUsers()
+        assertEquals(1, retrieved.size)
+        assertEquals("User 1", retrieved[0].name)
+    }
+
+    @Test
+    fun testGetSavedUsersReturnsDefensiveCopyOfElements() {
+        val json = NetworkModule.provideGson().toJson(listOf(User(name = "User 1")))
+        every { mockSharedPreferences.getString("savedUsers", null) } returns json
+
+        sharedPrefManager.getSavedUsers()[0].name = "mutated"
+
+        assertEquals("User 1", sharedPrefManager.getSavedUsers()[0].name)
+    }
+
+    @Test
+    fun testSetSavedUsersDoesNotCacheCallerElements() {
+        val user = User(name = "User 1")
+        val users = mutableListOf(user)
+        val json = NetworkModule.provideGson().toJson(users)
+        every { mockSharedPreferences.getString("savedUsers", null) } returns json
+
+        sharedPrefManager.setSavedUsers(users)
+        user.name = "mutated"
+        users.clear()
+
+        val retrieved = sharedPrefManager.getSavedUsers()
+        assertEquals(1, retrieved.size)
+        assertEquals("User 1", retrieved[0].name)
+    }
+
+    @Test
+    fun testGetSavedUsersAbsentReturnsEmptyList() {
+        every { mockSharedPreferences.getString("savedUsers", null) } returns null
+        val result = sharedPrefManager.getSavedUsers()
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
     fun testGetSavedUsersMalformedJson() {
         every { mockSharedPreferences.getString("savedUsers", null) } returns "invalid json {"
         try {

@@ -38,15 +38,16 @@ import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getString
-import org.ole.planet.myplanet.utils.JsonUtils.getStringAsJsonArray
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils.getString
+import org.ole.planet.myplanet.utils.GsonUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utils.KeyboardUtils.hideSoftKeyboard
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.Utilities
@@ -60,6 +61,8 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     private var isExplicitSubmission = false
     private var examTakingTextWatcher: TextWatcher? = null
     private val answerCache = mutableMapOf<String, AnswerData>()
+    @Inject
+    lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
@@ -542,7 +545,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
 
         if (question?.hasOtherOption == true) {
-            val otherChoice = JsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
+            val otherChoice = GsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
 
             addCompoundButton(otherChoice, false, oldAnswer)
         }
@@ -562,7 +565,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
         if (question?.hasOtherOption == true) {
             if (!choices.isEmpty() && choices[0].isJsonObject) {
-                val otherChoice = JsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
+                val otherChoice = GsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
 
                 addCompoundButton(otherChoice, isRadio, oldAnswer)
             } else {
@@ -779,7 +782,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                     val choices = answer.valueChoices
                     if (!choices.isNullOrEmpty()) {
                         try {
-                            val choiceJson = JsonUtils.gson.fromJson(choices[0], JsonObject::class.java)
+                            val choiceJson = GsonUtils.gson.fromJson(choices[0], JsonObject::class.java)
                             val choiceId = getString("id", choiceJson)
                             if (choiceId == "other") {
                                 answerData.singleAnswer = "other"
@@ -795,7 +798,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 "selectMultiple" -> {
                     answer.valueChoices?.forEach { choiceStr ->
                         try {
-                            val choiceJson = JsonUtils.gson.fromJson(choiceStr, JsonObject::class.java)
+                            val choiceJson = GsonUtils.gson.fromJson(choiceStr, JsonObject::class.java)
                             val choiceId = getString("id", choiceJson)
                             val choiceText = getString("text", choiceJson)
                             if (choiceId == "other") {

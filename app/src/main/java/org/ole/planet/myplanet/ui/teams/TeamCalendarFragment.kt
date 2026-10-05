@@ -10,7 +10,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.RadioButton
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
@@ -52,11 +51,11 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var end: Calendar
     private lateinit var clickedCalendar: Calendar
     private lateinit var calendarEventsMap: MutableMap<CalendarDay, Meetup>
-    private var meetupList: List<Meetup> = emptyList()
     private val eventDates: MutableList<Calendar> = mutableListOf()
     private var addMeetupDialog: AlertDialog? = null
     private var meetupDialog: AlertDialog? = null
     private var meetupAdapter: EventsAdapter? = null
+    private var pendingSaveButton: Button? = null
     private val viewModel: TeamCalendarViewModel by viewModels()
     private var cachedCardHeight: Int? = null
     private var lastWidthPixels: Int? = null
@@ -76,7 +75,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         return try {
             val url = URL(toCheck)
             url.host.contains(".")
-        } catch (e: MalformedURLException) {
+        } catch (_: MalformedURLException) {
             false
         }
     }
@@ -114,6 +113,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         }
 
         addMeetupDialog?.setOnDismissListener {
+            pendingSaveButton = null
             if (selectedDates.contains(clickedCalendar)) {
                 selectedDates.remove(clickedCalendar)
             }
@@ -145,20 +145,23 @@ class TeamCalendarFragment : BaseTeamFragment() {
         description: String,
         location: String
     ) {
-        val defaultPlaceholder = getString(R.string.click_here_to_pick_time)
         val startTimeText = "${addMeetupBinding.tvStartTime.text}"
         val endTimeText = "${addMeetupBinding.tvEndTime.text}"
-        val recurringId = addMeetupBinding.rgRecuring.checkedRadioButtonId
-        val rb = addMeetupBinding.rgRecuring.findViewById<RadioButton>(recurringId)
-        val recurringText = rb?.text?.toString()
+
+        val recurringText = when (addMeetupBinding.rgRecuring.checkedRadioButtonId) {
+            R.id.rb_daily -> "daily"
+            R.id.rb_weekly -> "weekly"
+            R.id.rb_none -> "none"
+            else -> null
+        }
         val teamPlanetCode = team?.teamPlanetCode
         val userName = user?.name
         val startMillis = start.timeInMillis
         val endMillis = end.timeInMillis
         val currentTeamId = teamId
 
-        val startTime = if (startTimeText == defaultPlaceholder) "" else startTimeText
-        val endTime = if (endTimeText == defaultPlaceholder) "" else endTimeText
+        val startTime = pickedTimeOrEmpty(startTimeText)
+        val endTime = pickedTimeOrEmpty(endTimeText)
 
         val params = MeetupCreationParams(
             title = title,
@@ -174,7 +177,14 @@ class TeamCalendarFragment : BaseTeamFragment() {
             endMillis = endMillis,
             teamId = currentTeamId
         )
+        addMeetupBinding.btnSave.isEnabled = false
+        pendingSaveButton = addMeetupBinding.btnSave
         viewModel.createMeetup(params)
+    }
+
+    private fun pickedTimeOrEmpty(text: CharSequence?): String {
+        val value = text?.toString().orEmpty()
+        return if (value == getString(R.string.click_here_to_pick_time)) "" else value
     }
 
     private fun setDatePickerListener(view: TextView, date: Calendar?, endDate: Calendar?) {
@@ -245,6 +255,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
             }
         }
         collectWhenStarted(viewModel.createMeetupResult) { success ->
+            pendingSaveButton?.isEnabled = true
+            pendingSaveButton = null
             if (success) {
                 Utilities.toast(activity, getString(R.string.meetup_added))
                 addMeetupDialog?.dismiss()
@@ -278,7 +290,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         dialogBinding.tvStartTime.text = meetup.startTime?.ifEmpty { getString(R.string.click_here_to_pick_time) } ?: getString(R.string.click_here_to_pick_time)
         dialogBinding.tvEndTime.text = meetup.endTime?.ifEmpty { getString(R.string.click_here_to_pick_time) } ?: getString(R.string.click_here_to_pick_time)
 
-        when (meetup.recurring) {
+        when (meetup.recurring?.lowercase(Locale.ROOT)) {
             "daily" -> dialogBinding.rgRecuring.check(R.id.rb_daily)
             "weekly" -> dialogBinding.rgRecuring.check(R.id.rb_weekly)
             else -> dialogBinding.rgRecuring.check(R.id.rb_none)
@@ -317,15 +329,18 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 else -> "none"
             }
 
+            val meetupId = meetup.id
+
+            dialogBinding.btnSave.isEnabled = false
             viewLifecycleOwner.lifecycleScope.launch {
                 val success = viewModel.updateMeetup(
-                    meetupId = meetup.id ?: return@launch,
+                    meetupId = meetupId,
                     title = newTitle,
                     description = dialogBinding.etDescription.text.toString().trim(),
                     startDate = editStart.timeInMillis,
                     endDate = editEnd.timeInMillis,
-                    startTime = dialogBinding.tvStartTime.text.toString(),
-                    endTime = dialogBinding.tvEndTime.text.toString(),
+                    startTime = pickedTimeOrEmpty(dialogBinding.tvStartTime.text),
+                    endTime = pickedTimeOrEmpty(dialogBinding.tvEndTime.text),
                     meetupLocation = dialogBinding.etLocation.text.toString().trim(),
                     meetupLink = dialogBinding.etLink.text.toString().trim(),
                     recurring = recurring
@@ -336,6 +351,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
                     meetupDialog?.dismiss()
                     viewModel.fetchMeetups(teamId)
                 } else {
+                    dialogBinding.btnSave.isEnabled = true
                     Utilities.toast(activity, getString(R.string.meetup_not_updated))
                 }
             }

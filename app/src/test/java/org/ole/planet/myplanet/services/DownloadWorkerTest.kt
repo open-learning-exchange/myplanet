@@ -7,6 +7,7 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.work.WorkerParameters
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -15,9 +16,14 @@ import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.unmockkObject
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -83,6 +89,7 @@ class DownloadWorkerTest {
 
         mockkObject(DownloadUtils)
         every { DownloadUtils.createChannels(any()) } returns Unit
+        every { DownloadUtils.canStartForegroundService(any()) } returns true
         every { DownloadUtils.buildProgressNotification(any(), any(), any(), any(), any(), any()) } returns mockk<Notification>(relaxed = true)
         every { DownloadUtils.buildCompletionNotification(any(), any(), any(), any(), any()) } returns mockk<Notification>(relaxed = true)
 
@@ -140,6 +147,101 @@ class DownloadWorkerTest {
         val result = worker.doWork()
 
         assertTrue(result is androidx.work.ListenableWorker.Result.Success)
+
+        unmockkObject(FileUtils)
+    }
+
+    @Test
+    fun `showProgressNotification reuses foreground promotion and calls canStartForegroundService only once across multiple ticks`() = runTest(testDispatcher) {
+        val url = "http://example.com/resources/123/file.txt"
+        every { preferences.getStringSet(any(), any()) } returns setOf(url)
+        every { workerParams.inputData.getString("urls_key") } returns "url_list_key"
+        every { workerParams.inputData.getBoolean("fromSync", false) } returns false
+
+        every { DownloadUtils.canStartForegroundService(any()) } returns true
+
+        mockkObject(FileUtils)
+        every { FileUtils.checkFileExist(context, url) } returns false
+        val tempFile = java.io.File.createTempFile("test_download", ".tmp")
+        tempFile.deleteOnExit()
+        every { FileUtils.getSDPathFromUrl(context, url) } returns tempFile
+
+        mockkStatic(android.os.SystemClock::class)
+        every { android.os.SystemClock.elapsedRealtime() } returnsMany listOf(1000L, 1600L, 2200L, 2800L, 3400L)
+
+        val bodyData = ByteArray(8192 * 3)
+        val responseBody = bodyData.toResponseBody(null)
+        coEvery { downloadRepository.downloadFileResponse(any(), any()) } returns DownloadResult.Success(responseBody, 200)
+
+        val result = worker.doWork()
+
+        assertTrue(result is androidx.work.ListenableWorker.Result.Success)
+        verify(exactly = 1) { DownloadUtils.canStartForegroundService(context) }
+        coVerify(atLeast = 3) { worker.setForeground(any()) }
+
+        unmockkObject(FileUtils)
+        io.mockk.unmockkStatic(android.os.SystemClock::class)
+    }
+
+    @Test
+    fun `showProgressNotification retries canStartForegroundService on subsequent tick when setForeground fails`() = runTest(testDispatcher) {
+        val url = "http://example.com/resources/123/file.txt"
+        every { preferences.getStringSet(any(), any()) } returns setOf(url)
+        every { workerParams.inputData.getString("urls_key") } returns "url_list_key"
+        every { workerParams.inputData.getBoolean("fromSync", false) } returns false
+
+        every { DownloadUtils.canStartForegroundService(any()) } returns true
+        coEvery { worker.setForeground(any()) } throws RuntimeException("Foreground promotion failed")
+
+        mockkObject(FileUtils)
+        every { FileUtils.checkFileExist(context, url) } returns false
+        val tempFile = java.io.File.createTempFile("test_download_fail", ".tmp")
+        tempFile.deleteOnExit()
+        every { FileUtils.getSDPathFromUrl(context, url) } returns tempFile
+
+        mockkStatic(android.os.SystemClock::class)
+        every { android.os.SystemClock.elapsedRealtime() } returnsMany listOf(1000L, 1600L, 2200L, 2800L)
+
+        val bodyData = ByteArray(8192 * 3)
+        val responseBody = bodyData.toResponseBody(null)
+        coEvery { downloadRepository.downloadFileResponse(any(), any()) } returns DownloadResult.Success(responseBody, 200)
+
+        val result = worker.doWork()
+
+        assertTrue(result is androidx.work.ListenableWorker.Result.Success)
+        verify(atLeast = 2) { DownloadUtils.canStartForegroundService(context) }
+
+        unmockkObject(FileUtils)
+        io.mockk.unmockkStatic(android.os.SystemClock::class)
+    }
+
+    @Test
+    fun `doWork rethrows CancellationException when cancelled during download`() = runTest(testDispatcher) {
+        val url1 = "http://example.com/file1.txt"
+        val url2 = "http://example.com/file2.txt"
+        val url3 = "http://example.com/file3.txt"
+        every { preferences.getStringSet(any(), any()) } returns setOf(url1, url2, url3)
+        every { workerParams.inputData.getString("urls_key") } returns "url_list_key"
+        every { workerParams.inputData.getBoolean("fromSync", false) } returns false
+
+        mockkObject(FileUtils)
+        every { FileUtils.checkFileExist(context, any()) } returns false
+
+        coEvery { downloadRepository.downloadFileResponse(url1, any()) } coAnswers {
+            awaitCancellation()
+        }
+
+        val job = launch {
+            worker.doWork()
+        }
+
+        testScheduler.advanceUntilIdle()
+        job.cancel()
+        testScheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { downloadRepository.downloadFileResponse(any(), any()) }
+        coVerify(exactly = 0) { downloadRepository.downloadFileResponse(url2, any()) }
+        coVerify(exactly = 0) { downloadRepository.downloadFileResponse(url3, any()) }
 
         unmockkObject(FileUtils)
     }

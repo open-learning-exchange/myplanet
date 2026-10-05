@@ -8,6 +8,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -48,7 +49,6 @@ class TeamsRepositoryImplTest {
 
     private lateinit var teamsRepository: TeamsRepositoryImpl
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
-    private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val uploadManager: UploadManager = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val preferences: SharedPreferences = mockk(relaxed = true)
@@ -84,7 +84,6 @@ class TeamsRepositoryImplTest {
 
         teamsRepository = TeamsRepositoryImpl(
             mockk<android.content.Context>(relaxed = true),
-            activitiesRepository,
             userSessionManager,
             uploadManager,
             gson,
@@ -189,6 +188,56 @@ class TeamsRepositoryImplTest {
 
         val resultList = resultFlow.first()
         assertEquals(mockTasks, resultList)
+    }
+
+    @Test
+    fun `test getTaskById delegates to teamTaskDao`() = runTest(testDispatcher) {
+        val taskId = "task_1"
+        val mockTask = TeamTask().apply { id = taskId }
+        coEvery { teamTaskDao.getById(taskId) } returns mockTask
+
+        val result = teamsRepository.getTaskById(taskId)
+
+        assertEquals(mockTask, result)
+        coVerify(exactly = 1) { teamTaskDao.getById(taskId) }
+    }
+
+    @Test
+    fun `test getTasksByIds delegates to teamTaskDao`() = runTest(testDispatcher) {
+        val taskIds = listOf("task_1", "task_2")
+        val mockTasks = listOf(TeamTask().apply { id = "task_1" })
+        coEvery { teamTaskDao.getByIds(taskIds) } returns mockTasks
+
+        val result = teamsRepository.getTasksByIds(taskIds)
+
+        assertEquals(mockTasks, result)
+        coVerify(exactly = 1) { teamTaskDao.getByIds(taskIds) }
+    }
+
+    @Test
+    fun `test getTasksByTitles delegates to teamTaskDao`() = runTest(testDispatcher) {
+        val titles = listOf("Title 1", "Title 2")
+        val mockTasks = listOf(TeamTask().apply { title = "Title 1" })
+        coEvery { teamTaskDao.getByTitles(titles) } returns mockTasks
+
+        val result = teamsRepository.getTasksByTitles(titles)
+
+        assertEquals(mockTasks, result)
+        coVerify(exactly = 1) { teamTaskDao.getByTitles(titles) }
+    }
+
+    @Test
+    fun `test getTasksForUserBetween delegates to teamTaskDao`() = runTest(testDispatcher) {
+        val userId = "user_1"
+        val start = 100L
+        val end = 200L
+        val mockTasks = listOf(TeamTask().apply { assignee = userId })
+        coEvery { teamTaskDao.getTasksForUserBetween(userId, start, end) } returns mockTasks
+
+        val result = teamsRepository.getTasksForUserBetween(userId, start, end)
+
+        assertEquals(mockTasks, result)
+        coVerify(exactly = 1) { teamTaskDao.getTasksForUserBetween(userId, start, end) }
     }
 
     @Test
@@ -623,9 +672,6 @@ class TeamsRepositoryImplTest {
         val logNullTime = TeamLog().apply { user = "Bob"; time = null }
 
         coEvery { teamLogDao.getTeamVisitsForUsers(teamId, listOf("Alice", "Bob", "Charlie")) } returns listOf(log1, log2, log3, logNullTime)
-        coEvery { activitiesRepository.getLastVisit("Alice") } returns 5000L
-        coEvery { activitiesRepository.getLastVisit("Bob") } returns null
-        coEvery { activitiesRepository.getLastVisit("Charlie") } returns null
 
         val result = teamsRepository.getJoinedMembersWithVisitInfo(teamId)
 
@@ -729,5 +775,53 @@ class TeamsRepositoryImplTest {
 
         coVerify(exactly = 0) { teamDao.getByIds(any()) }
         coVerify(exactly = 0) { teamDao.getAll() }
+    }
+
+    @Test
+    fun `batchInsertMyTeams rethrows CancellationException and abandons loop`() = runTest(testDispatcher) {
+        val doc1 = com.google.gson.JsonObject().apply { addProperty("_id", "team1") }
+        val doc2 = com.google.gson.JsonObject().apply { addProperty("_id", "team2") }
+        val doc3 = com.google.gson.JsonObject().apply { addProperty("_id", "team3") }
+        val docs = listOf(doc1, doc2, doc3)
+
+        coEvery { teamDao.getByIds(any()) } returns emptyList()
+        coEvery { teamDao.getById(any()) } returns null
+
+        coEvery { teamDao.upsert(match { it._id == "team1" }) } returns Unit
+        coEvery { teamDao.upsert(match { it._id == "team2" }) } throws CancellationException("cancelled")
+        coEvery { teamDao.upsert(match { it._id == "team3" }) } returns Unit
+
+        try {
+            teamsRepository.batchInsertMyTeams(docs)
+            org.junit.Assert.fail("Expected CancellationException to be thrown")
+        } catch (_: CancellationException) {
+            // Expected exception propagated
+        }
+
+        coVerify(exactly = 1) { teamDao.upsert(match { it._id == "team1" }) }
+        coVerify(exactly = 1) { teamDao.upsert(match { it._id == "team2" }) }
+        coVerify(exactly = 0) { teamDao.upsert(match { it._id == "team3" }) }
+    }
+
+    @Test
+    fun `batchInsertMyTeams handles ordinary exception and continues loop returning processedCount`() = runTest(testDispatcher) {
+        val doc1 = com.google.gson.JsonObject().apply { addProperty("_id", "team1") }
+        val doc2 = com.google.gson.JsonObject().apply { addProperty("_id", "team2") }
+        val doc3 = com.google.gson.JsonObject().apply { addProperty("_id", "team3") }
+        val docs = listOf(doc1, doc2, doc3)
+
+        coEvery { teamDao.getByIds(any()) } returns emptyList()
+        coEvery { teamDao.getById(any()) } returns null
+
+        coEvery { teamDao.upsert(match { it._id == "team1" }) } returns Unit
+        coEvery { teamDao.upsert(match { it._id == "team2" }) } throws RuntimeException("ordinary error")
+        coEvery { teamDao.upsert(match { it._id == "team3" }) } returns Unit
+
+        val count = teamsRepository.batchInsertMyTeams(docs)
+
+        assertEquals(2, count)
+        coVerify(exactly = 1) { teamDao.upsert(match { it._id == "team1" }) }
+        coVerify(exactly = 1) { teamDao.upsert(match { it._id == "team2" }) }
+        coVerify(exactly = 1) { teamDao.upsert(match { it._id == "team3" }) }
     }
 }

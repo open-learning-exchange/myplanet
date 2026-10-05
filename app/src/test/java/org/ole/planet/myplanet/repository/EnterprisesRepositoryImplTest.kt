@@ -18,6 +18,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.EnterpriseReportCsvProjection
+import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -41,7 +42,7 @@ class EnterprisesRepositoryImplTest {
     @Test
     fun `getReportsFlow delegates to observeNonArchivedReportsByTeamId`() = runTest {
         val teamId = "team123"
-        val expectedReports = listOf(
+        val rawReports = listOf(
             MyTeam().apply {
                 _id = "report1"
                 createdDate = 2000L
@@ -51,8 +52,12 @@ class EnterprisesRepositoryImplTest {
                 createdDate = 1000L
             }
         )
+        val expectedReports = listOf(
+            FinanceReport(_id="report1", _rev=null, status=null, description=null, beginningBalance=0, sales=0, otherIncome=0, wages=0, otherExpenses=0, startDate=0L, endDate=0L, createdDate=2000L, updatedDate=0L, updated=false, imageName=null),
+            FinanceReport(_id="report2", _rev=null, status=null, description=null, beginningBalance=0, sales=0, otherIncome=0, wages=0, otherExpenses=0, startDate=0L, endDate=0L, createdDate=1000L, updatedDate=0L, updated=false, imageName=null)
+        )
 
-        every { teamDao.observeNonArchivedReportsByTeamId(teamId) } returns flowOf(expectedReports)
+        every { teamDao.observeNonArchivedReportsByTeamId(teamId) } returns flowOf(rawReports)
 
         val result = repository.getReportsFlow(teamId).first()
 
@@ -114,8 +119,6 @@ class EnterprisesRepositoryImplTest {
         val destFile = File(tempDir, "team_attachments/report-1/logo.png")
         every { storagePathResolver.resolveTeamAttachment(any(), "logo.png") } returns destFile
         every { timeProvider.now() } returns 12345L
-        val existingReport = MyTeam().apply { _id = "report-1" }
-        coEvery { teamDao.getById(any()) } returns existingReport
 
         val imageBytes = byteArrayOf(1, 2, 3, 4)
         val report = FinanceReportParams(
@@ -139,7 +142,147 @@ class EnterprisesRepositoryImplTest {
         assertTrue("attachment file should have been written", destFile.exists())
         assertArrayEquals(imageBytes, destFile.readBytes())
 
-        coVerify { teamDao.upsert(match { it.imageName == "logo.png" && it.updated }) }
+        coVerify { teamDao.setImageNameById(any(), "logo.png") }
+    }
+
+    @Test
+    fun `archiveReport calls archiveById and never upsert`() = runTest {
+        repository.archiveReport("r1")
+
+        coVerify(exactly = 1) { teamDao.archiveById("r1") }
+        coVerify(exactly = 0) { teamDao.upsert(any()) }
+    }
+
+    @Test
+    fun `blank reportId in archiveReport calls neither archiveById nor setImageNameById`() = runTest {
+        repository.archiveReport("")
+        repository.archiveReport("   ")
+
+        coVerify(exactly = 0) { teamDao.archiveById(any()) }
+        coVerify(exactly = 0) { teamDao.setImageNameById(any(), any()) }
+    }
+
+    @Test
+    fun `updateReport calls updateReportFields with payload values and timeProvider now and never getById or upsert`() = runTest {
+        every { timeProvider.now() } returns 99999L
+        coEvery {
+            teamDao.updateReportFields(
+                id = any(),
+                description = any(),
+                beginningBalance = any(),
+                sales = any(),
+                otherIncome = any(),
+                wages = any(),
+                otherExpenses = any(),
+                startDate = any(),
+                endDate = any(),
+                updatedDate = any()
+            )
+        } returns 1
+
+        val payload = FinanceReportParams(
+            description = "updated description",
+            beginningBalance = 10,
+            sales = 20,
+            otherIncome = 30,
+            wages = 40,
+            otherExpenses = 50,
+            startDate = 100L,
+            endDate = 200L,
+            teamId = "team1",
+            teamType = "enterprise",
+            teamPlanetCode = "planet1",
+            imageName = null,
+            imageData = null
+        )
+
+        repository.updateReport("r1", payload)
+
+        coVerify(exactly = 1) {
+            teamDao.updateReportFields(
+                id = "r1",
+                description = "updated description",
+                beginningBalance = 10,
+                sales = 20,
+                otherIncome = 30,
+                wages = 40,
+                otherExpenses = 50,
+                startDate = 100L,
+                endDate = 200L,
+                updatedDate = 99999L
+            )
+        }
+        coVerify(exactly = 0) { teamDao.getById(any()) }
+        coVerify(exactly = 0) { teamDao.upsert(any()) }
+    }
+
+    @Test
+    fun `updateReport with blank reportId calls nothing`() = runTest {
+        val payload = FinanceReportParams(
+            description = "desc",
+            beginningBalance = 0,
+            sales = 0,
+            otherIncome = 0,
+            wages = 0,
+            otherExpenses = 0,
+            startDate = 0L,
+            endDate = 0L,
+            teamId = "team1",
+            teamType = "enterprise",
+            teamPlanetCode = "planet1",
+            imageName = "image.png",
+            imageData = byteArrayOf(1, 2, 3)
+        )
+
+        repository.updateReport("", payload)
+        repository.updateReport("   ", payload)
+
+        coVerify(exactly = 0) {
+            teamDao.updateReportFields(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+            )
+        }
+        coVerify(exactly = 0) { teamDao.getById(any()) }
+        coVerify(exactly = 0) { teamDao.upsert(any()) }
+        coVerify(exactly = 0) { teamDao.setImageNameById(any(), any()) }
+    }
+
+    @Test
+    fun `updateReport attaches image when updateReportFields returns 0 and image data is present`() = runTest {
+        val tempDir = Files.createTempDirectory("enterprises_test_update").toFile()
+        val destFile = File(tempDir, "team_attachments/r1/photo.png")
+        every { storagePathResolver.resolveTeamAttachment("r1", "photo.png") } returns destFile
+        every { timeProvider.now() } returns 88888L
+
+        coEvery {
+            teamDao.updateReportFields(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+            )
+        } returns 0
+
+        val imageBytes = byteArrayOf(5, 6, 7)
+        val payload = FinanceReportParams(
+            description = "desc",
+            beginningBalance = 0,
+            sales = 0,
+            otherIncome = 0,
+            wages = 0,
+            otherExpenses = 0,
+            startDate = 0L,
+            endDate = 0L,
+            teamId = "team1",
+            teamType = "enterprise",
+            teamPlanetCode = "planet1",
+            imageName = "photo.png",
+            imageData = imageBytes
+        )
+
+        repository.updateReport("r1", payload)
+
+        assertTrue("attachment file should be written", destFile.exists())
+        assertArrayEquals(imageBytes, destFile.readBytes())
+
+        coVerify(exactly = 1) { teamDao.setImageNameById("r1", "photo.png") }
     }
 
     @Test
@@ -176,7 +319,7 @@ class EnterprisesRepositoryImplTest {
         every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(r1), listOf(r2))
 
-        val emissions = mutableListOf<List<MyTeam>>()
+        val emissions = mutableListOf<List<FinanceReport>>()
         repository.getReportsFlow("team1").collect { emissions.add(it) }
 
         assertEquals(1, emissions.size)
@@ -189,7 +332,7 @@ class EnterprisesRepositoryImplTest {
         every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(before), listOf(after))
 
-        val emissions = mutableListOf<List<MyTeam>>()
+        val emissions = mutableListOf<List<FinanceReport>>()
         repository.getReportsFlow("team1").collect { emissions.add(it) }
 
         assertEquals(2, emissions.size)
@@ -204,7 +347,7 @@ class EnterprisesRepositoryImplTest {
         every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(before), listOf(after))
 
-        val emissions = mutableListOf<List<MyTeam>>()
+        val emissions = mutableListOf<List<FinanceReport>>()
         repository.getReportsFlow("team1").collect { emissions.add(it) }
 
         assertEquals(2, emissions.size)
@@ -219,7 +362,7 @@ class EnterprisesRepositoryImplTest {
         every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(r1), listOf(r1, r2))
 
-        val emissions = mutableListOf<List<MyTeam>>()
+        val emissions = mutableListOf<List<FinanceReport>>()
         repository.getReportsFlow("team1").collect { emissions.add(it) }
 
         assertEquals(2, emissions.size)
@@ -234,11 +377,26 @@ class EnterprisesRepositoryImplTest {
         every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
             flowOf(listOf(r2, r1))
 
-        val emissions = mutableListOf<List<MyTeam>>()
+        val emissions = mutableListOf<List<FinanceReport>>()
         repository.getReportsFlow("team1").collect { emissions.add(it) }
 
         assertEquals(1, emissions.size)
         assertEquals(listOf("r2", "r1"), emissions[0].map { it._id })
+    }
+
+    @Test
+    fun `getReportsFlow emits when createdDate changes`() = runTest {
+        val before = report("r1", "rev1", createdDate = 100L)
+        val after = report("r1", "rev1", createdDate = 200L)
+        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
+            flowOf(listOf(before), listOf(after))
+
+        val emissions = mutableListOf<List<FinanceReport>>()
+        repository.getReportsFlow("team1").collect { emissions.add(it) }
+
+        assertEquals(2, emissions.size)
+        assertEquals(100L, emissions[0][0].createdDate)
+        assertEquals(200L, emissions[1][0].createdDate)
     }
 
     private fun report(

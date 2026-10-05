@@ -7,9 +7,7 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
-import android.view.ContextThemeWrapper
 import android.view.KeyEvent
-import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
@@ -22,7 +20,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.afollestad.materialdialogs.MaterialDialog
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.ArrayList
@@ -36,7 +33,6 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnUserProfileClickListener
 import org.ole.planet.myplanet.databinding.ActivityLoginBinding
-import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.User
@@ -46,7 +42,7 @@ import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.sync.LoginSyncManager
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
-import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
+import org.ole.planet.myplanet.ui.user.LearnerRegistrationActivity
 import org.ole.planet.myplanet.ui.user.UsersAdapter
 import org.ole.planet.myplanet.utils.AuthUtils
 import org.ole.planet.myplanet.utils.Constants
@@ -180,7 +176,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         if (versionInfo != null) {
             onUpdateAvailable(versionInfo, intent.getBooleanExtra("cancelable", false))
         } else {
-            configurationsRepository.checkVersion(this, prefData)
+            configurationsRepository.checkVersion(this)
         }
         forceSyncTrigger()
     }
@@ -238,8 +234,17 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     exitSnackbar?.dismiss()
                     finish()
                 } else {
-                    exitSnackbar = Snackbar.make(binding.root, getString(R.string.press_back_again_to_exit), 2000)
-                        .setAction(getString(R.string.exit)) { finish() }
+                    exitSnackbar = Snackbar.make(
+                        binding.root,
+                        getString(R.string.press_back_again_to_exit),
+                        2000
+                    ).setAction(getString(R.string.exit)) { finish() }
+                    
+                    val textView = exitSnackbar?.view?.findViewById<TextView>(
+                        com.google.android.material.R.id.snackbar_text
+                    )
+                    textView?.maxLines = 3
+                    
                     exitSnackbar?.show()
                 }
             }
@@ -275,7 +280,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     customProgressDialog.setText(getString(R.string.please_wait))
                     customProgressDialog.show()
                     lifecycleScope.launch {
-                        val user = userRepository.getUserByName(username)
+                        val user = loginViewModel.getUserByName(username)
                         if (user == null || !user.isArchived) {
                             submitForm(username, password)
                         } else {
@@ -318,7 +323,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         binding.btnGuestLogin.setOnClickListener {
             if (getUrl() != "/db") {
                 binding.inputName.setText(R.string.empty_text)
-                showGuestLoginDialog(userRepository)
+                showGuestLoginDialog(loginViewModel)
             } else {
                 toast(this, getString(R.string.please_enter_server_url_first))
                 settingDialog()
@@ -343,11 +348,6 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 }
                 syncIconDrawable.start()
 
-                val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
-                val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
-                val builder = MaterialDialog.Builder(contextWrapper).customView(dialogServerUrlBinding.root, true)
-                val dialog = builder.build()
-                currentDialog = dialog
                 checkMinApk(url, serverPin, "LoginActivity")
             } else {
                 toast(this, getString(R.string.please_enter_server_url_first))
@@ -370,9 +370,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         setUpLanguageButton()
         if (NetworkUtils.isNetworkConnected) {
             lifecycleScope.launch {
-                withContext(dispatcherProvider.io) {
-                    communityRepository.syncCommunityDocs()
-                }
+                loginViewModel.syncCommunityDocs()
             }
         }
         val usernameFlow = binding.inputName.textChanges()
@@ -457,7 +455,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             if (!lastSelection.isNullOrEmpty()) {
                 for (i in teams.indices) {
                     val team = teams[i]
-                    if (team._id != null && team._id == lastSelection) {
+                    if (team._id == lastSelection) {
                         val lastSelectedPosition = i + 1
                         binding.team.setSelection(lastSelectedPosition)
                         break
@@ -586,7 +584,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         } else {
             if (user.source == "guest"){
                 lifecycleScope.launch {
-                    val model = userRepository.createGuestUser(user.name ?: "")
+                    val model = loginViewModel.createGuestUser(user.name ?: "")
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                     } else {
@@ -628,7 +626,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             positiveButton.setOnClickListener {
                 positiveButton.isEnabled = false
                 lifecycleScope.launch {
-                    val model = userRepository.createGuestUser(username)
+                    val model = loginViewModel.createGuestUser(username)
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                         positiveButton.isEnabled = true
@@ -675,7 +673,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
     private fun becomeAMember() {
         if (getUrl().isNotEmpty()) {
-            startActivity(Intent(this, BecomeMemberActivity::class.java))
+            startActivity(Intent(this, LearnerRegistrationActivity::class.java))
         } else {
             toast(this, getString(R.string.please_enter_server_url_first))
             settingDialog()

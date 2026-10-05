@@ -4,16 +4,18 @@ import com.google.gson.JsonObject
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.room.dao.TeamDao
+import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
-import org.ole.planet.myplanet.utils.distinctByContent
 
 class EnterprisesRepositoryImpl @Inject constructor(
     private val storagePathResolver: StoragePathResolver,
@@ -52,25 +54,18 @@ class EnterprisesRepositoryImpl @Inject constructor(
 
     override suspend fun updateReport(reportId: String, payload: FinanceReportParams) {
         if (reportId.isBlank()) return
-        val doc = JsonObject().apply {
-            addProperty("description", payload.description)
-            addProperty("beginningBalance", payload.beginningBalance)
-            addProperty("sales", payload.sales)
-            addProperty("otherIncome", payload.otherIncome)
-            addProperty("wages", payload.wages)
-            addProperty("otherExpenses", payload.otherExpenses)
-            addProperty("startDate", payload.startDate)
-            addProperty("endDate", payload.endDate)
-            addProperty("updatedDate", timeProvider.now())
-            addProperty("updated", true)
-        }
-        updateTeamEntityById(reportId) { report ->
-            MyTeam.populateReportFields(doc, report)
-            report.updated = true
-            if (report.updatedDate == 0L) {
-                report.updatedDate = timeProvider.now()
-            }
-        }
+        teamDao.updateReportFields(
+            id = reportId,
+            description = payload.description,
+            beginningBalance = payload.beginningBalance,
+            sales = payload.sales,
+            otherIncome = payload.otherIncome,
+            wages = payload.wages,
+            otherExpenses = payload.otherExpenses,
+            startDate = payload.startDate,
+            endDate = payload.endDate,
+            updatedDate = timeProvider.now()
+        )
         if (payload.imageName != null && payload.imageData != null) {
             attachTeamImage(reportId, payload.imageName, payload.imageData)
         }
@@ -78,23 +73,13 @@ class EnterprisesRepositoryImpl @Inject constructor(
 
     override suspend fun archiveReport(reportId: String) {
         if (reportId.isBlank()) return
-        updateTeamEntityById(reportId) { report ->
-            report.status = "archived"
-            report.updated = true
-        }
+        teamDao.archiveById(reportId)
     }
 
-    override fun getReportsFlow(teamId: String): Flow<List<MyTeam>> {
+    override fun getReportsFlow(teamId: String): Flow<List<FinanceReport>> {
         return teamDao.observeNonArchivedReportsByTeamId(teamId)
-            .distinctByContent { old, new ->
-                old._id == new._id && old._rev == new._rev && old.status == new.status &&
-                    old.description == new.description && old.beginningBalance == new.beginningBalance &&
-                    old.sales == new.sales && old.otherIncome == new.otherIncome &&
-                    old.wages == new.wages && old.otherExpenses == new.otherExpenses &&
-                    old.startDate == new.startDate && old.endDate == new.endDate &&
-                    old.updatedDate == new.updatedDate && old.updated == new.updated &&
-                    old.imageName == new.imageName
-            }
+            .map { list -> list.map { it.toFinanceReport() } }
+            .distinctUntilChanged()
             .flowOn(dispatcherProvider.default)
     }
 
@@ -131,17 +116,27 @@ class EnterprisesRepositoryImpl @Inject constructor(
             destFile.parentFile?.mkdirs()
             destFile.writeBytes(imageData)
         }
-        updateTeamEntityById(teamId) { team ->
-            team.imageName = imageName
-            team.updated = true
-        }
+        teamDao.setImageNameById(teamId, imageName)
     }
 
-    private suspend fun updateTeamEntityById(id: String, updater: (MyTeam) -> Unit): Boolean {
-        val entity = teamDao.getById(id) ?: return false
-        val model = entity
-        updater(model)
-        teamDao.upsert(model)
-        return true
-    }
+}
+
+private fun MyTeam.toFinanceReport(): FinanceReport {
+    return FinanceReport(
+        _id = _id,
+        _rev = _rev,
+        status = status,
+        description = description,
+        beginningBalance = beginningBalance,
+        sales = sales,
+        otherIncome = otherIncome,
+        wages = wages,
+        otherExpenses = otherExpenses,
+        startDate = startDate,
+        endDate = endDate,
+        createdDate = createdDate,
+        updatedDate = updatedDate,
+        updated = updated,
+        imageName = imageName,
+    )
 }

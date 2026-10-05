@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -20,7 +21,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.gson.JsonObject
 import java.io.File
-import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -28,20 +28,17 @@ import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.ImageThumbBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.ReplyActivity
 import org.ole.planet.myplanet.ui.voices.VoicesActions
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 
 abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickListener {
     lateinit var imageList: MutableList<String>
 
-    @Inject
-    lateinit var activitiesRepository: ActivitiesRepository
     protected var llImage: ViewGroup? = null
     protected var adapterNews: VoicesAdapter? = null
     lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
@@ -101,7 +98,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         if (!isAdded) return
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val fragment = VoicesActions.showMemberDetails(userModel, activitiesRepository) ?: return@launch
+            val fragment = VoicesActions.showMemberDetails(userModel) ?: return@launch
             if (!isAdded) return@launch
             FragmentNavigator.replaceFragment(
                 requireActivity().supportFragmentManager,
@@ -153,7 +150,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         val `object` = JsonObject()
         `object`.addProperty("imageUrl", path)
         `object`.addProperty("fileName", getFileNameFromUrl(path))
-        imageList.add(JsonUtils.gson.toJson(`object`))
+        imageList.add(GsonUtils.gson.toJson(`object`))
 
         try {
             llImage?.visibility = View.VISIBLE
@@ -164,18 +161,22 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
             llImage?.addView(imageBinding.root)
             if (resultCode == 102) adapterNews?.setImageList(imageList)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "processImageUri failed", e)
         }
     }
 
     private fun isImageAlreadyAdded(path: String): Boolean {
         return imageList.any { imageJson ->
             try {
-                val imgObject = JsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
-                JsonUtils.getString("imageUrl", imgObject) == path
+                val imgObject = GsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
+                GsonUtils.getString("imageUrl", imgObject) == path
             } catch (e: Exception) {
                 false
             }
         }
+    }
+
+    companion object {
+        private const val TAG = "BaseVoicesFragment"
     }
 }

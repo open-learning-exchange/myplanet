@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -126,8 +128,10 @@ class BellDashboardFragment : BaseDashboardFragment() {
         try {
             val reachable = isServerReachable(mapping)
             setNetworkIndicatorColor(if (reachable) R.color.green else R.color.md_yellow_600)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "handleConnectingState failed", e)
             setNetworkIndicatorColor(R.color.md_yellow_600)
         }
     }
@@ -441,6 +445,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     companion object {
+        private const val TAG = "BellDashboardFragment"
         private const val LAST_SYNC_STATUS_REFRESH_INTERVAL_MS = 60_000L
     }
 }

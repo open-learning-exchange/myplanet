@@ -1,10 +1,9 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.StoragePathResolver
 
 interface DictionaryFileReader {
     fun exists(): Boolean
@@ -12,15 +11,17 @@ interface DictionaryFileReader {
 }
 
 class DictionaryFileReaderImpl @Inject constructor(
-    @ApplicationContext private val context: Context
+    private val storagePathResolver: StoragePathResolver
 ) : DictionaryFileReader {
 
     override fun exists(): Boolean {
-        return FileUtils.checkFileExist(context, Constants.DICTIONARY_URL)
+        val file = storagePathResolver.resolveFileFromUrl(Constants.DICTIONARY_URL)
+        return file.exists() && file.length() > 0
     }
 
     override fun readText(): String? {
-        val path = FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL)
-        return FileUtils.getStringFromFile(path)
+        val file = storagePathResolver.resolveFileFromUrl(Constants.DICTIONARY_URL)
+        if (!file.exists()) return null
+        return FileUtils.getStringFromFile(file)
     }
 }

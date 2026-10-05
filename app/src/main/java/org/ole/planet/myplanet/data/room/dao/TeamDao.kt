@@ -22,11 +22,13 @@ interface TeamDao {
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND docType = 'membership' AND isLeader = 0 AND (status IS NULL OR status != 'archived') AND (:excludeUserId IS NULL OR userId != :excludeUserId)") suspend fun getEligibleNextLeaderCandidates(teamId: String, excludeUserId: String?): List<MyTeam>
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND docType = :docType") fun observeByTeamIdAndDocType(teamId: String, docType: String): Flow<List<MyTeam>>
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND docType = 'report' AND IFNULL(status, '') != 'archived' ORDER BY createdDate DESC") fun observeNonArchivedReportsByTeamId(teamId: String): Flow<List<MyTeam>>
-    @Query("SELECT * FROM teams WHERE teamId = :teamId AND docType = 'report' AND IFNULL(status, '') != 'archived' ORDER BY createdDate DESC") suspend fun getNonArchivedReportsByTeamId(teamId: String): List<MyTeam>
     @Query("SELECT startDate, endDate, createdDate, updatedDate, beginningBalance, sales, otherIncome, wages, otherExpenses FROM teams WHERE teamId = :teamId AND docType = 'report' AND IFNULL(status, '') != 'archived' ORDER BY createdDate DESC") suspend fun getNonArchivedReportCsvProjectionsByTeamId(teamId: String): List<EnterpriseReportCsvProjection>
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType LIMIT 1") suspend fun getByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): MyTeam?
     @Query("SELECT COUNT(*) FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType") suspend fun countByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): Int
     @Query("SELECT COUNT(DISTINCT userId) FROM teams WHERE teamId = :teamId AND docType = :docType AND isDeletePending = 0 AND userId IS NOT NULL AND EXISTS (SELECT 1 FROM users u WHERE u.id = teams.userId OR u._id = teams.userId)") suspend fun countByTeamIdAndDocType(teamId: String, docType: String): Int
+    @Query("UPDATE teams SET description = :description, beginningBalance = :beginningBalance, sales = :sales, otherIncome = :otherIncome, wages = :wages, otherExpenses = :otherExpenses, startDate = :startDate, endDate = :endDate, updatedDate = :updatedDate, isUpdated = 1 WHERE _id = :id") suspend fun updateReportFields(id: String, description: String, beginningBalance: Int, sales: Int, otherIncome: Int, wages: Int, otherExpenses: Int, startDate: Long, endDate: Long, updatedDate: Long): Int
+    @Query("UPDATE teams SET status = 'archived', isUpdated = 1 WHERE _id = :id") suspend fun archiveById(id: String): Int
+    @Query("UPDATE teams SET imageName = :imageName, isUpdated = 1 WHERE _id = :id") suspend fun setImageNameById(id: String, imageName: String): Int
     @Query("DELETE FROM teams WHERE _id = :id") suspend fun deleteById(id: String): Int
     @Query("DELETE FROM teams WHERE _id IN (:ids)") suspend fun deleteByIds(ids: List<String>): Int
     @Query("DELETE FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType") suspend fun deleteByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): Int
@@ -43,7 +45,12 @@ interface TeamDao {
     suspend fun getRootTeamsByType(type: String): List<MyTeam>
 
     @Query("SELECT * FROM teams WHERE (teamId IS NULL OR TRIM(teamId) = '') AND IFNULL(status, '') != 'archived' AND type = :type AND _id IN (:teamIds)")
-    suspend fun getRootTeamsByTypeAndIds(type: String, teamIds: Set<String>): List<MyTeam>
+    suspend fun getRootTeamsByTypeAndIdsInternal(type: String, teamIds: List<String>): List<MyTeam>
+
+    suspend fun getRootTeamsByTypeAndIds(type: String, teamIds: Set<String>): List<MyTeam> {
+        if (teamIds.isEmpty()) return emptyList()
+        return teamIds.toList().distinct().chunked(900).flatMap { getRootTeamsByTypeAndIdsInternal(type, it) }
+    }
 
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND resourceId = :resourceId AND docType = 'resourceLink' LIMIT 1")
     suspend fun getResourceLink(teamId: String, resourceId: String): MyTeam?

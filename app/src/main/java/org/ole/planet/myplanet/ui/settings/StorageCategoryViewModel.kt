@@ -20,9 +20,9 @@ data class StorageCategoryUiState(
     val items: List<OfflineResourceItem> = emptyList(),
     val isLoading: Boolean = false,
     val isDeleting: Boolean = false,
-    val isEmpty: Boolean = false
+    val isEmpty: Boolean = false,
+    val checkedCount: Int = 0
 ) {
-    val checkedCount: Int get() = items.count { it.isChecked }
     val allChecked: Boolean get() = checkedCount == items.size && items.isNotEmpty()
 }
 
@@ -46,11 +46,13 @@ class StorageCategoryViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true, isEmpty = false) }
         viewModelScope.launch(dispatcherProvider.io) {
             val loaded = resourcesRepository.getOfflineResourceItems(olePath, extensions, allKnownExtensions)
+            val checkedCount = loaded.count { it.isChecked }
             _uiState.update {
                 it.copy(
                     items = loaded,
                     isLoading = false,
-                    isEmpty = loaded.isEmpty()
+                    isEmpty = loaded.isEmpty(),
+                    checkedCount = checkedCount
                 )
             }
         }
@@ -58,18 +60,22 @@ class StorageCategoryViewModel @Inject constructor(
 
     fun toggleItemChecked(resourceId: String) {
         _uiState.update { state ->
-            val updatedItems = state.items.map {
-                if (it.resourceId == resourceId) it.copy(isChecked = !it.isChecked) else it
+            var checkedCount = 0
+            val updatedItems = state.items.map { item ->
+                val updated = if (item.resourceId == resourceId) item.copy(isChecked = !item.isChecked) else item
+                if (updated.isChecked) checkedCount++
+                updated
             }
-            state.copy(items = updatedItems)
+            state.copy(items = updatedItems, checkedCount = checkedCount)
         }
     }
 
     fun toggleAllChecked() {
         _uiState.update { state ->
-            val allChecked = state.items.all { it.isChecked }
-            val updatedItems = state.items.map { it.copy(isChecked = !allChecked) }
-            state.copy(items = updatedItems)
+            val targetChecked = !state.allChecked
+            val updatedItems = state.items.map { it.copy(isChecked = targetChecked) }
+            val checkedCount = if (targetChecked) updatedItems.size else 0
+            state.copy(items = updatedItems, checkedCount = checkedCount)
         }
     }
 

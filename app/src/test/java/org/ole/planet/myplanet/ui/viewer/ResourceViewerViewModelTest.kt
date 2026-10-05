@@ -7,6 +7,8 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -16,10 +18,12 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
@@ -37,6 +41,7 @@ class ResourceViewerViewModelTest {
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
     private val ratingsRepository: RatingsRepository = mockk(relaxed = true)
     private val configurationsRepository: ConfigurationsRepository = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk(relaxed = true)
     private lateinit var viewModel: ResourceViewerViewModel
 
     @Before
@@ -49,8 +54,10 @@ class ResourceViewerViewModelTest {
             authSessionUpdaterFactory = mockk(relaxed = true),
             ratingsRepository = ratingsRepository,
             configurationsRepository = configurationsRepository,
+            userRepository = userRepository,
             sharedPrefManager = sharedPrefManager,
-            dispatcherProvider = TestDispatcherProvider(mainDispatcherRule.testDispatcher)
+            dispatcherProvider = TestDispatcherProvider(mainDispatcherRule.testDispatcher),
+            appScope = TestScope(mainDispatcherRule.testDispatcher)
         )
     }
 
@@ -116,6 +123,7 @@ class ResourceViewerViewModelTest {
         val userId = "123"
         val resourceId = "resourceId123"
 
+        coEvery { userRepository.getUserModel() } returns UserEntity().apply { id = userId }
         coEvery { ratingsRepository.isRatingPrompted(userId, resourceId) } returns false
         coEvery { ratingsRepository.getRatingSummary("resource", resourceId, userId) } returns
             RatingSummary(
@@ -125,7 +133,7 @@ class ResourceViewerViewModelTest {
                 totalRatings = 0
             )
 
-        val result = viewModel.shouldShowResourceRatingDialog(userId, resourceId)
+        val result = viewModel.shouldShowResourceRatingDialog(resourceId)
 
         assertFalse(result)
     }
@@ -135,6 +143,7 @@ class ResourceViewerViewModelTest {
         val userId = "123"
         val resourceId = "resourceId123"
 
+        coEvery { userRepository.getUserModel() } returns UserEntity().apply { id = userId }
         coEvery { ratingsRepository.isRatingPrompted(userId, resourceId) } returns false
         coEvery { ratingsRepository.getRatingSummary("resource", resourceId, userId) } returns
             RatingSummary(
@@ -144,7 +153,7 @@ class ResourceViewerViewModelTest {
                 totalRatings = 0
             )
 
-        val result = viewModel.shouldShowResourceRatingDialog(userId, resourceId)
+        val result = viewModel.shouldShowResourceRatingDialog(resourceId)
 
         assertTrue(result)
     }
@@ -154,11 +163,69 @@ class ResourceViewerViewModelTest {
         val userId = "123"
         val resourceId = "resourceId123"
 
+        coEvery { userRepository.getUserModel() } returns UserEntity().apply { id = userId }
         coEvery { ratingsRepository.isRatingPrompted(userId, resourceId) } returns true
 
-        val result = viewModel.shouldShowResourceRatingDialog(userId, resourceId)
+        val result = viewModel.shouldShowResourceRatingDialog(resourceId)
 
         assertFalse(result)
         coVerify(exactly = 0) { ratingsRepository.getRatingSummary(any(), any(), any()) }
+    }
+
+    @Test
+    fun `showRatingDialog returns false when user model is null`() = runTest {
+        val resourceId = "resourceId123"
+
+        coEvery { userRepository.getUserModel() } returns null
+
+        val result = viewModel.shouldShowResourceRatingDialog(resourceId)
+
+        assertFalse(result)
+        coVerify(exactly = 0) { ratingsRepository.isRatingPrompted(any(), any()) }
+        coVerify(exactly = 0) { ratingsRepository.getRatingSummary(any(), any(), any()) }
+    }
+
+    @Test
+    fun `showRatingDialog returns false when user id is blank`() = runTest {
+        val resourceId = "resourceId123"
+
+        coEvery { userRepository.getUserModel() } returns UserEntity().apply { id = "  " }
+
+        val result = viewModel.shouldShowResourceRatingDialog(resourceId)
+
+        assertFalse(result)
+        coVerify(exactly = 0) { ratingsRepository.isRatingPrompted(any(), any()) }
+        coVerify(exactly = 0) { ratingsRepository.getRatingSummary(any(), any(), any()) }
+    }
+
+    @Test
+    fun `setRatingPrompted does nothing when user model is null`() = runTest {
+        val resourceId = "resourceId123"
+
+        coEvery { userRepository.getUserModel() } returns null
+
+        viewModel.setRatingPrompted(resourceId)
+
+        coVerify(exactly = 0) { ratingsRepository.setRatingPrompted(any(), any()) }
+    }
+
+    @Test
+    fun `setRatingPrompted calls repository when valid user present`() = runTest {
+        val userId = "123"
+        val resourceId = "resourceId123"
+
+        coEvery { userRepository.getUserModel() } returns UserEntity().apply { id = userId }
+
+        viewModel.setRatingPrompted(resourceId)
+
+        coVerify(exactly = 1) { ratingsRepository.setRatingPrompted(userId, resourceId) }
+    }
+
+    @Test
+    fun saveTranslationAudioPath_updatesLibraryItemOnAppScope() = runTest {
+        viewModel.saveTranslationAudioPath("lib1", "/music/rec.aac")
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { resourcesRepository.updateLibraryItem("lib1", any()) }
     }
 }

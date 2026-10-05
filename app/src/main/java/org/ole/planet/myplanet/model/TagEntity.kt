@@ -4,6 +4,9 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import org.ole.planet.myplanet.utils.toGson
 
 /**
  * Room replacement for the former `TagEntity` model. Synced (read-only from the server).
@@ -57,12 +60,10 @@ open class TagEntity {
     }
 
     companion object {
-        fun getTagsArray(list: List<TagEntity>): JsonArray {
-            val array = JsonArray()
+        fun getTagsArray(list: List<TagEntity>): JsonArray = buildJsonArray {
             for (t in list) {
-                array.add(t._id)
+                add(t._id)
             }
-            return array
-        }
+        }.toGson()
     }
 }

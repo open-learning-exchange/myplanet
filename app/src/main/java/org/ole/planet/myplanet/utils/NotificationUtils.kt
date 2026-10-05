@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -37,7 +38,9 @@ data class NotificationConfig(
 )
 
 object NotificationUtils {
+    private const val TAG = "NotificationUtils"
     const val CHANNEL_GENERAL = "general_notifications"
+    const val RECORDING_NOTIFICATION_ID = 111
     const val CHANNEL_SURVEYS = "survey_notifications"
     const val CHANNEL_TASKS = "task_notifications"
     const val CHANNEL_SYSTEM = "system_notifications"
@@ -68,7 +71,7 @@ object NotificationUtils {
         setChannel(manager)
         val notification = a.setContentTitle(contentTitle).setContentText(contentText).setSmallIcon(smallIcon)
             .setProgress(0, 0, true).setAutoCancel(true).build()
-        manager.notify(111, notification)
+        manager.notify(RECORDING_NOTIFICATION_ID, notification)
     }
 
     fun cancel(context: Context, id: Int) {
@@ -89,19 +92,11 @@ object NotificationUtils {
         }
     }
 
-    @Volatile
-    private var notificationManagerInstance: NotificationManager? = null
-
     fun getInstance(context: Context): NotificationManager {
-        return notificationManagerInstance ?: synchronized(this) {
-            notificationManagerInstance ?: run {
-                val appCtx = context.applicationContext
-                val entryPoint = EntryPointAccessors.fromApplication(appCtx, CoreDependenciesEntryPoint::class.java)
-                NotificationManager(appCtx, entryPoint.timeProvider()).also {
-                    notificationManagerInstance = it
-                }
-            }
-        }
+        return EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            CoreDependenciesEntryPoint::class.java
+        ).notificationManager()
     }
 
     fun createSurveyNotification(surveyId: String, surveyTitle: String): NotificationConfig {
@@ -248,7 +243,7 @@ object NotificationUtils {
             val daysUntilDeadline = timeDiff / (1000 * 60 * 60 * 24)
             daysUntilDeadline <= 2
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "isTaskUrgent deadline parse failed", e)
             false
         }
     }
@@ -325,7 +320,7 @@ object NotificationUtils {
                 markNotificationAsShown(config.id)
                 true
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "showNotification failed", e)
                 false
             }
         }

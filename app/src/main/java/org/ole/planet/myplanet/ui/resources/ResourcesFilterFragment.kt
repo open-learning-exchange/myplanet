@@ -19,7 +19,6 @@ import androidx.core.view.isGone
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import java.util.Locale
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseBindingBottomSheetFragment
@@ -154,7 +153,7 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
             }
         }
         for (i in arr.indices) {
-                listView.setItemChecked(i, set.contains(arr[i]))
+            listView.setItemChecked(i, set.contains(arr[i]))
         }
     }
 

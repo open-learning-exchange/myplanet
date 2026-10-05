@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
+import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.media.AudioManager
 import android.os.Bundle
@@ -30,6 +31,7 @@ import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
+import androidx.core.view.doOnLayout
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -57,6 +59,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.util.regex.Pattern
 import javax.inject.Inject
+import kotlin.math.abs
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -74,6 +78,7 @@ import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.TTSManager
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.computePdfRenderSize
 
 @AndroidEntryPoint
 class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding>(FragmentResourceViewerBinding::inflate), AuthSessionUpdater.AuthCallback {
@@ -97,7 +102,8 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
     private var noisyReceiverRegistered = false
     private lateinit var audioRecorder: AudioRecorder
     private lateinit var library: MyLibrary
-    private var pdfText: String = ""
+    private var pdfText: String? = null
+    private var pdfTextJob: Job? = null
     private var externalFilesDir: File? = null
     private val viewModel: ResourceViewerViewModel by viewModels()
     @Inject lateinit var dispatcherProvider: DispatcherProvider
@@ -115,18 +121,17 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
 
         override fun onRecordStopped(outputFile: String?) {
             Utilities.toast(requireContext(), getString(R.string.recording_stopped))
-            NotificationUtils.cancelAll(requireContext())
+            NotificationUtils.cancel(requireContext(), NotificationUtils.RECORDING_NOTIFICATION_ID)
             if (::library.isInitialized) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    val id = library.id ?: return@launch
-                    viewModel.updateLibraryItemTranslationAudioPath(id, outputFile)
-                }
+                library.id?.let { viewModel.saveTranslationAudioPath(it, outputFile) }
             }
             binding.fabRecord.setImageResource(R.drawable.ic_mic)
         }
 
         override fun onError(error: String?) {
             Utilities.toast(requireContext(), "Recording error: ${error.orEmpty()}")
+            NotificationUtils.cancel(requireContext(), NotificationUtils.RECORDING_NOTIFICATION_ID)
+            binding.fabRecord.setImageResource(R.drawable.ic_mic)
         }
     }
 
@@ -197,7 +202,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         val currentPos = player.currentPosition
         val duration = player.duration
         val effectivePosition = ResourceViewerViewModel.calculateEffectivePlaybackPosition(currentPos, duration)
-        if (lastSavedPositionMs == -1L || Math.abs(effectivePosition - lastSavedPositionMs) >= 2000L || effectivePosition == 0L) {
+        if (lastSavedPositionMs == -1L || abs(effectivePosition - lastSavedPositionMs) >= 2000L || effectivePosition == 0L) {
             lastSavedPositionMs = effectivePosition
             viewModel.savePlaybackProgress(mediaKey, effectivePosition)
         }
@@ -229,7 +234,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
             .map { getString(R.string.playback_speed_format, it.toString()) }
             .toTypedArray()
         val currentSpeed = viewModel.getPlaybackSpeed()
-        var selectedIndex = speedValues.indexOfFirst { kotlin.math.abs(it - currentSpeed) < 0.05f }
+        var selectedIndex = speedValues.indexOfFirst { abs(it - currentSpeed) < 0.05f }
         if (selectedIndex == -1) selectedIndex = 1
 
         MaterialDialog.Builder(requireContext())
@@ -326,7 +331,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         val fileDataSource = FileDataSource()
         try {
             fileDataSource.open(dataSpec)
-        } catch (e: FileDataSource.FileDataSourceException) {
+        } catch (_: FileDataSource.FileDataSourceException) {
             navigateBackWithError(getString(R.string.video_playback_error))
             return
         }
@@ -462,19 +467,6 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
             playerView.player = player
             player.setPlaybackSpeed(viewModel.getPlaybackSpeed())
             player.setMediaItem(MediaItem.fromUri(fullPath))
-            player.addListener(object : Player.Listener {
-                override fun onIsPlayingChanged(isPlaying: Boolean) {
-                    if (!isPlaying && player.playbackState != Player.STATE_BUFFERING) {
-                        saveCurrentPlaybackProgress()
-                    }
-                }
-                override fun onPlaybackStateChanged(playbackState: Int) {
-                    if (playbackState == Player.STATE_ENDED) {
-                        lastSavedPositionMs = 0L
-                        viewModel.savePlaybackProgress(getMediaKey(), 0L)
-                    }
-                }
-            })
             player.prepare()
             val savedProgress = viewModel.getPlaybackProgress(getMediaKey())
             if (savedProgress > 0L) {
@@ -508,7 +500,6 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         isResourceFinished = true
 
         renderPdf()
-        extractPdfText()
         setupPdfFabActions()
     }
 
@@ -516,43 +507,52 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         val file = File(externalFilesDir, "ole/$filePath")
         if (!file.exists()) return
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val bitmap = withContext(dispatcherProvider.io) {
-                try {
-                    ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fileDescriptor ->
-                        PdfRenderer(fileDescriptor).use { pdfRenderer ->
-                            pdfRenderer.openPage(0).use { page ->
-                                val bmp = createBitmap(page.width, page.height)
-                                page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                                bmp
+        binding.root.doOnLayout { view ->
+            val targetW = view.width
+            viewLifecycleOwner.lifecycleScope.launch {
+                val bitmap = withContext(dispatcherProvider.io) {
+                    try {
+                        ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fileDescriptor ->
+                            PdfRenderer(fileDescriptor).use { pdfRenderer ->
+                                pdfRenderer.openPage(0).use { page ->
+                                    val (renderW, renderH) = computePdfRenderSize(page.width, page.height, targetW)
+                                    val bmp = createBitmap(renderW, renderH)
+                                    bmp.eraseColor(Color.WHITE)
+                                    page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                                    bmp
+                                }
                             }
                         }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to render PDF page", e)
+                        null
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to render PDF page", e)
-                    null
                 }
-            }
 
-            if (bitmap != null && isAdded) {
-                val pdfPlaceholder = binding.root.findViewById<TextView>(R.id.pdfPlaceholder)
-                pdfPlaceholder.visibility = View.GONE
-                val parent = pdfPlaceholder.parent as ViewGroup
-                val imageView = ImageView(requireContext())
-                imageView.setImageBitmap(bitmap)
-                imageView.scaleType = ImageView.ScaleType.FIT_CENTER
-                parent.addView(imageView, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0))
-                (imageView.layoutParams as LinearLayout.LayoutParams).weight = 1f
+                if (bitmap != null && isAdded) {
+                    val pdfPlaceholder = binding.root.findViewById<TextView>(R.id.pdfPlaceholder)
+                    pdfPlaceholder.visibility = View.GONE
+                    val parent = pdfPlaceholder.parent as ViewGroup
+                    val imageView = ImageView(requireContext())
+                    imageView.setImageBitmap(bitmap)
+                    imageView.scaleType = ImageView.ScaleType.FIT_CENTER
+                    parent.addView(imageView, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0))
+                    (imageView.layoutParams as LinearLayout.LayoutParams).weight = 1f
+                }
             }
         }
     }
 
-    private fun extractPdfText() {
+    private suspend fun loadPdfText(): String {
+        pdfText?.let { return it }
         val file = File(externalFilesDir, "ole/$filePath")
-        if (!file.exists()) return
-        viewLifecycleOwner.lifecycleScope.launch {
-            pdfText = viewModel.extractPdfText(file)
+        if (!file.exists()) {
+            pdfText = ""
+            return ""
         }
+        val extracted = viewModel.extractPdfText(file)
+        pdfText = extracted
+        return extracted
     }
 
     private fun setupPdfFabActions() {
@@ -563,7 +563,20 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
             }
         }
         binding.fabReadAloud.setOnClickListener {
-            if (ttsManager.isSpeaking) ttsManager.stop() else ttsManager.speak(pdfText)
+            if (ttsManager.isSpeaking) {
+                ttsManager.stop()
+            } else if (pdfTextJob?.isActive == true) {
+                return@setOnClickListener
+            } else {
+                if (pdfText == null) {
+                    Utilities.toast(requireContext(), getString(R.string.pdf_extracting_text))
+                }
+                pdfTextJob = viewLifecycleOwner.lifecycleScope.launch {
+                    val text = loadPdfText()
+                    if (!viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return@launch
+                    ttsManager.speak(text)
+                }
+            }
         }
     }
 
@@ -595,18 +608,29 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         if (!file.exists()) return
 
         val (text, truncated) = withContext(dispatcherProvider.io) {
-            val raw = file.readText()
-            if (raw.length > MAX_TEXT_VIEWER_CHARS) {
-                raw.substring(0, MAX_TEXT_VIEWER_CHARS) to true
-            } else {
-                raw to false
+            val buf = CharArray(MAX_TEXT_VIEWER_CHARS + 1)
+            var n = 0
+            file.bufferedReader().use { r ->
+                while (n < buf.size) {
+                    val read = r.read(buf, n, buf.size - n)
+                    if (read == -1) break
+                    n += read
+                }
             }
+            val isTruncated = n > MAX_TEXT_VIEWER_CHARS
+            val content = String(buf, 0, minOf(n, MAX_TEXT_VIEWER_CHARS))
+            content to isTruncated
         }
 
         if (!isAdded) return
 
         if (type == ResourceType.MARKDOWN) {
-            MarkdownUtils.setMarkdownText(textContent, text)
+            val ctx = textContent.context
+            val spanned = withContext(dispatcherProvider.default) {
+                MarkdownUtils.parseMarkdown(ctx, text)
+            }
+            if (!isAdded) return
+            MarkdownUtils.setParsedMarkdown(textContent, spanned)
         } else {
             textContent.text = text
         }
@@ -660,7 +684,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
                 MotionEvent.ACTION_MOVE -> {
                     val deltaY = event.rawY - startY
                     val deltaX = event.rawX - startX
-                    if (!isDragging && deltaY > slopPx && deltaY > kotlin.math.abs(deltaX)) {
+                    if (!isDragging && deltaY > slopPx && deltaY > abs(deltaX)) {
                         isDragging = true
                     }
                     isDragging
@@ -696,10 +720,14 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         if (activity?.isInPictureInPictureMode != true) {
             exoPlayer?.pause()
         }
+        pdfTextJob?.cancel()
         ttsManager.stop()
     }
 
     override fun onDestroyView() {
+        if (::audioRecorder.isInitialized && audioRecorder.isRecording()) {
+            audioRecorder.stopRecording()
+        }
         saveCurrentPlaybackProgress()
         authSessionUpdater?.stop()
         exoPlayer?.release()

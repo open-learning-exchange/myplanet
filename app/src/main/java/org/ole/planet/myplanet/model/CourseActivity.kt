@@ -4,8 +4,11 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toGson
 
 @Entity(
     tableName = "course_activity",
@@ -28,16 +31,17 @@ open class CourseActivity {
 
     companion object {
         fun serialize(courseActivity: CourseActivity): JsonObject {
-            val ob = JsonObject()
-            ob.addProperty("user", courseActivity.user)
-            ob.addProperty("courseId", courseActivity.courseId)
-            ob.addProperty("type", courseActivity.type)
-            ob.addProperty("title", courseActivity.title)
-            ob.addProperty("time", courseActivity.time)
-            ob.addProperty("createdOn", courseActivity.createdOn)
-            ob.addProperty("parentCode", courseActivity.parentCode)
+            val ob = buildJsonObject {
+                put("user", courseActivity.user)
+                put("courseId", courseActivity.courseId)
+                put("type", courseActivity.type)
+                put("title", courseActivity.title)
+                put("time", courseActivity.time)
+                put("createdOn", courseActivity.createdOn)
+                put("parentCode", courseActivity.parentCode)
+                put("deviceName", NetworkUtils.getDeviceName())
+            }.toGson()
             ob.addDocumentOrigin()
-            ob.addProperty("deviceName", NetworkUtils.getDeviceName())
             return ob
         }
     }

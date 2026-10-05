@@ -15,6 +15,7 @@ import io.mockk.spyk
 import io.mockk.unmockkAll
 import java.io.File
 import java.nio.file.Files
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -80,6 +81,13 @@ class FreeSpaceWorkerTest {
         return File(dir, fileName).apply { writeText(content) }
     }
 
+   private fun emptyDirectoryByteSize(): Long {
+        val probe = File(oleDir, "probe-${System.nanoTime()}").apply { mkdirs() }
+        val size = probe.length()
+        probe.delete()
+        return size
+    }
+
     @Test
     fun `doWork deletes resource files then clears only their offline flags`() = runTest(testDispatcher) {
         val book = addResource("res1", "book.pdf")
@@ -141,6 +149,22 @@ class FreeSpaceWorkerTest {
     }
 
     @Test
+    fun `doWork rethrows CancellationException when worker is cancelled`() = runTest(testDispatcher) {
+        addResource("res1", "book.pdf")
+        coEvery { resourcesRepository.markResourcesAsNotOffline(any()) } throws CancellationException("Worker cancelled")
+
+        var exceptionThrown = false
+        try {
+            worker.doWork()
+        } catch (e: CancellationException) {
+            exceptionThrown = true
+            assertEquals("Worker cancelled", e.message)
+        }
+
+        assertTrue(exceptionThrown)
+    }
+
+    @Test
     fun `doWork removes nested directory structure and accurately tracks deleted files and freed bytes`() = runTest(testDispatcher) {
         val resDir = File(oleDir, "res1").apply { mkdirs() }
         val file1 = File(resDir, "file1.txt").apply { writeText("hello") }
@@ -148,7 +172,7 @@ class FreeSpaceWorkerTest {
         val file2 = File(subDir, "file2.txt").apply { writeText("world") }
         val file3 = File(resDir, "file3.txt").apply { writeText("foo") }
 
-        val expectedFreedBytes = file1.length() + file2.length() + file3.length() + subDir.length() + resDir.length()
+        val expectedFreedBytes = file1.length() + file2.length() + file3.length() + emptyDirectoryByteSize() * 2
 
         val result = worker.doWork()
         advanceUntilIdle()
@@ -172,7 +196,7 @@ class FreeSpaceWorkerTest {
         val file1 = File(resDir, "file1.txt").apply { writeText("hello") }
         val file2 = File(resDir, "file2.txt").apply { writeText("disappearing") }
 
-        val expectedFreedBytes = file1.length() + resDir.length()
+        val expectedFreedBytes = file1.length() + emptyDirectoryByteSize()
         file2.delete() // File disappears before walk processes it
 
         val result = worker.doWork()

@@ -145,13 +145,10 @@ Pin only when the assertion depends on the level, and say why in a comment so th
 | 26 (`O`) | `utils/NotificationUtilsTest.kt`, `utils/VersionUtilsTest.kt` (one method), `repository/TeamsRepositoryBulkInsertTransactionTest.kt` | notification channels exist only from `O`; the repository test needs to sit below `S` so `processDescription` short-circuits instead of reaching for `MainApplication.context` |
 | 27 (`O_MR1`) | `utils/SecurePrefsTest.kt` | keystore-backed prefs path |
 | 28 (`P`) | `utils/VersionUtilsTest.kt` (one method) | `VersionUtils` branches on `SDK_INT >= P` |
-| 32 | `data/room/dao/CourseDaoTest.kt`, `data/room/dao/ExamDaoTest.kt`, `ui/resources/ResourcesAdapterTest.kt`, `ui/resources/ResourcesFilterFragmentTest.kt`, `ui/enterprises/EnterprisesReportsFragmentTest.kt` | no reason stated in any of the five |
-| 33 | `ui/chat/ChatAdapterTest.kt` | no reason stated |
-| 34 (`UPSIDE_DOWN_CAKE`) | `services/DownloadServiceTest.kt`, `services/DownloadServiceOnDownloadCompleteTest.kt`, `services/DownloadServiceResumeTest.kt`, `ui/life/LifeAdapterTest.kt`, `ui/sync/ServerAddressAdapterTest.kt`, `ui/voices/VoicesActionsTest.kt` | the three `DownloadService` classes assert the API-gated foreground-service/worker branches; the three UI ones state no reason |
 
-The suite therefore needs sandboxes at 26, 27, 28, 32, 33, 34 and the default 36. Two things follow from that table: `robolectricSdkJars` in `app/build.gradle` still stages 30 and 31, which nothing pins any more, and the nine pins marked "no reason stated" are the ones to try deleting first — each is a sandbox per fork bought for an unrecorded reason.
+The suite therefore needs sandboxes at 26, 27, 28 and the default 36.
 
-`DownloadServiceTest` shows the cheaper shape when one class covers several levels: pin the class once (34) and drive the individual branches with `ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", …)`, which costs one sandbox instead of three.
+`DownloadServiceTest` shows the cheaper shape when one class covers several levels: run on the default SDK and drive the individual branches with `ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", …)`.
 
 ### ViewModels
 
@@ -380,7 +377,7 @@ Real `strings.xml` resources are used in assertions (`context.getString(R.string
 
 ### Plain Utility Functions
 
-If the utility is pure Kotlin with no Android dependency, a plain JUnit test with no `@RunWith` annotation is enough (`utils/TimeUtilsTest.kt`, `utils/JsonUtilsTest.kt`). If it touches `Context`, `SharedPreferences`, or other framework classes, add `@RunWith(RobolectricTestRunner::class)` and get the context from `ApplicationProvider` (`utils/ConstantsTest.kt`). Leave the SDK level alone — see [Robolectric SDK levels](#robolectric-sdk-levels) below.
+If the utility is pure Kotlin with no Android dependency, a plain JUnit test with no `@RunWith` annotation is enough (`utils/TimeUtilsTest.kt`, `utils/GsonUtilsTest.kt`). If it touches `Context`, `SharedPreferences`, or other framework classes, add `@RunWith(RobolectricTestRunner::class)` and get the context from `ApplicationProvider` (`utils/ConstantsTest.kt`). Leave the SDK level alone — see [Robolectric SDK levels](#robolectric-sdk-levels) below.
 
 ### DI Modules and the API/auth layer
 
@@ -454,7 +451,7 @@ The workflow also fails the job if a jar turns up in Robolectric's own runtime c
 | `CoroutineWorker` / WorkManager scheduling | `services/retry/RetryQueueWorkerTest.kt` | `mockkStatic(WorkManager::class)`, mock `Log.*` |
 | `RecyclerView`/`ListAdapter` | `ui/events/EventsAdapterTest.kt` | `RobolectricTestRunner` + MockK (avoid the Mockito legacy files) |
 | Abstract base class | `base/BaseRecyclerFragmentTest.kt` | Minimal private test subclass implementing only the abstract members |
-| Pure Kotlin utility | `utils/TimeUtilsTest.kt`, `utils/JsonUtilsTest.kt` | Plain JUnit, no `@RunWith` |
+| Pure Kotlin utility | `utils/TimeUtilsTest.kt`, `utils/GsonUtilsTest.kt` | Plain JUnit, no `@RunWith` |
 | Utility touching `Context`/`SharedPreferences` | `utils/ConstantsTest.kt` | `RobolectricTestRunner` + `ApplicationProvider.getApplicationContext()` |
 | Sync managers | `services/sync/SyncManagerTest.kt`, `services/sync/LoginSyncManagerTest.kt` | MockK + `TestDispatcherProvider` |
 

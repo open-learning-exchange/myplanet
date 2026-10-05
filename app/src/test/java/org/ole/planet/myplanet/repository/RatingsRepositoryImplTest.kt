@@ -47,15 +47,14 @@ class RatingsRepositoryImplTest {
     }
 
     @Test
-    fun `getRatingsById returns specific aggregated rating summary`() = runTest {
+    fun `getRatingSummary returns specific aggregated rating summary`() = runTest {
         val rating = Rating().apply { id = "rating1"; type = "course"; item = "course1"; rate = 5; userId = "user1"; comment = "Great" }
         coEvery { ratingDao.getAggregate("course", "course1") } returns RatingAggregate(1, 5.0)
         coEvery { ratingDao.findByTypeUserItem("course", "user1", "course1") } returns rating
 
-        val result = repository.getRatingsById("course", "course1", "user1")
+        val result = repository.getRatingSummary("course", "course1", "user1")
 
-        assertNotNull(result)
-        assertEquals(5, result!!.userRating)
+        assertEquals(5, result.userRating)
         assertEquals(1, result.totalRatings)
         assertEquals(5.0f, result.averageRating)
         assertEquals("Great", result.existingRating?.comment)

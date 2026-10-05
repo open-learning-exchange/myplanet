@@ -117,7 +117,8 @@ class CoursesAdapter(
     }
 
     fun removeCourses(courseIds: List<String>, onComplete: (() -> Unit)? = null) {
-        val updated = currentList.filter { it.courseId !in courseIds }
+        val idsSet = courseIds.toSet()
+        val updated = currentList.filter { it.courseId !in idsSet }
         submitList(updated) {
             onComplete?.invoke()
         }

@@ -4,22 +4,20 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
 import android.text.TextUtils
+import android.util.Log
 import androidx.core.net.toUri
 import androidx.room.withTransaction
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Date
 import java.util.LinkedHashSet
-import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
@@ -54,7 +52,7 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
@@ -63,7 +61,6 @@ import org.ole.planet.myplanet.utils.toSyncDocuments
 @Singleton
 class TeamsRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val activitiesRepository: ActivitiesRepository,
     private val userSessionManager: UserSessionManager,
     private val uploadManager: UploadManager,
     private val gson: Gson,
@@ -416,6 +413,22 @@ class TeamsRepositoryImpl @Inject constructor(
             .flatMap { chunk -> teamDao.getByIds(chunk) }
             .distinctBy { it._id }
             .associateBy({ it._id }, { it.name ?: "Unknown Team" })
+    }
+
+    override suspend fun getTaskById(taskId: String): TeamTask? {
+        return teamTaskDao.getById(taskId)
+    }
+
+    override suspend fun getTasksByIds(taskIds: List<String>): List<TeamTask> {
+        return teamTaskDao.getByIds(taskIds)
+    }
+
+    override suspend fun getTasksByTitles(titles: List<String>): List<TeamTask> {
+        return teamTaskDao.getByTitles(titles)
+    }
+
+    override suspend fun getTasksForUserBetween(userId: String, start: Long, end: Long): List<TeamTask> {
+        return teamTaskDao.getTasksForUserBetween(userId, start, end)
     }
 
     override suspend fun getJoinRequestTeamId(requestId: String): String? {
@@ -912,8 +925,10 @@ class TeamsRepositoryImpl @Inject constructor(
                 uploadManager.uploadTeams()
                 uploadManager.uploadTeamActivities()
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "uploadTeamActivities failed", e)
         }
     }
 
@@ -1022,21 +1037,10 @@ class TeamsRepositoryImpl @Inject constructor(
 
         return orderedMembers.map { member ->
             val stats = visitStatsMap[member.name]
-            val visitCount = stats?.count ?: 0L
-            val lastVisitTimestamp = stats?.latestVisit
-            val lastLogoutTimestamp = activitiesRepository.getLastVisit(member.name ?: "")
-            val profileLastVisit = if (lastLogoutTimestamp != null) {
-                DATE_TIME_FORMATTER.format(Instant.ofEpochMilli(lastLogoutTimestamp))
-            } else {
-                "No logout record found"
-            }
-            val offlineVisits = "${member.id.let { activitiesRepository.getOfflineVisitCount(it) }}"
             JoinedMemberData(
                 user = member,
-                visitCount = visitCount,
-                lastVisitDate = lastVisitTimestamp,
-                offlineVisits = offlineVisits,
-                profileLastVisit = profileLastVisit,
+                visitCount = stats?.count ?: 0L,
+                lastVisitDate = stats?.latestVisit,
                 isLeader = member.id in leaderIds
             )
         }
@@ -1128,18 +1132,18 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     private fun teamLogFromJson(json: JsonObject): TeamLog {
-        val remoteId = JsonUtils.getString("_id", json)
+        val remoteId = GsonUtils.getString("_id", json)
         return TeamLog().apply {
             id = remoteId
-            _rev = JsonUtils.getString("_rev", json)
+            _rev = GsonUtils.getString("_rev", json)
             _id = remoteId
-            type = JsonUtils.getString("type", json)
-            user = JsonUtils.getString("user", json)
-            createdOn = JsonUtils.getString("createdOn", json)
-            parentCode = JsonUtils.getString("parentCode", json)
-            time = JsonUtils.getLong("time", json)
-            teamId = JsonUtils.getString("teamId", json)
-            teamType = JsonUtils.getString("teamType", json)
+            type = GsonUtils.getString("type", json)
+            user = GsonUtils.getString("user", json)
+            createdOn = GsonUtils.getString("createdOn", json)
+            parentCode = GsonUtils.getString("parentCode", json)
+            time = GsonUtils.getLong("time", json)
+            teamId = GsonUtils.getString("teamId", json)
+            teamType = GsonUtils.getString("teamType", json)
         }
     }
 
@@ -1177,11 +1181,11 @@ class TeamsRepositoryImpl @Inject constructor(
         var processedCount = 0
         try {
             val validDocuments = documents.filter { doc ->
-                val id = JsonUtils.getString("_id", doc)
+                val id = GsonUtils.getString("_id", doc)
                 id.isNotEmpty() && !id.startsWith("_design")
             }
             if (validDocuments.isEmpty()) return 0
-            val ids = validDocuments.map { JsonUtils.getString("_id", it) }
+            val ids = validDocuments.map { GsonUtils.getString("_id", it) }
             val existingTeams = ids.chunked(500)
                 .flatMap { chunk -> teamDao.getByIds(chunk) }
                 .distinctBy { it._id }
@@ -1192,12 +1196,16 @@ class TeamsRepositoryImpl @Inject constructor(
                 try {
                     insertMyTeam(doc, existingTeams)
                     processedCount++
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Failed to insert team document", e)
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "batchInsertMyTeams failed", e)
         }
         return processedCount
     }
@@ -1207,15 +1215,15 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     private suspend fun insertMyTeam(doc: JsonObject, existingTeams: MutableMap<String, MyTeam>?) {
-        val status = JsonUtils.getString("status", doc)
+        val status = GsonUtils.getString("status", doc)
         if (status == "archived") return
 
-        val teamId = JsonUtils.getString("_id", doc)
+        val teamId = GsonUtils.getString("_id", doc)
         if (teamId.isBlank()) return
 
-        val docType = JsonUtils.getString("docType", doc)
-        val userId = JsonUtils.getString("userId", doc)
-        val teamIdField = JsonUtils.getString("teamId", doc)
+        val docType = GsonUtils.getString("docType", doc)
+        val userId = GsonUtils.getString("userId", doc)
+        val teamIdField = GsonUtils.getString("teamId", doc)
 
         if (docType == "membership" && userId.isNotBlank() && teamIdField.isNotBlank()) {
             teamDao.deleteByTeamIdUserIdAndDocType(teamIdField, userId, "request")
@@ -1342,6 +1350,6 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     companion object {
-        private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("MMMM dd, yyyy hh:mm a", Locale.getDefault()).withZone(ZoneId.systemDefault())
+        private const val TAG = "TeamsRepository"
     }
 }

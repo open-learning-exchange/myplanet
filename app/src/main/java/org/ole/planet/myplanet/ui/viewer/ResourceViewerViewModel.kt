@@ -10,12 +10,16 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
@@ -28,11 +32,15 @@ class ResourceViewerViewModel @Inject constructor(
     private val authSessionUpdaterFactory: AuthSessionUpdater.Factory,
     private val ratingsRepository: RatingsRepository,
     private val configurationsRepository: ConfigurationsRepository,
+    private val userRepository: UserRepository,
     private val sharedPrefManager: SharedPrefManager,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    @ApplicationScope private val appScope: CoroutineScope
 ) : ViewModel() {
 
-    suspend fun shouldShowResourceRatingDialog(userId: String, resourceId: String): Boolean {
+    suspend fun shouldShowResourceRatingDialog(resourceId: String): Boolean {
+        val userId = userRepository.getUserModel()?.id?.takeIf { it.isNotBlank() } ?: return false
+
         if (isRatingPrompted(userId, resourceId)) {
             return false
         }
@@ -53,7 +61,8 @@ class ResourceViewerViewModel @Inject constructor(
         return ratingsRepository.isRatingPrompted(userId, resourceId)
     }
 
-    suspend fun setRatingPrompted(userId: String, resourceId: String) {
+    suspend fun setRatingPrompted(resourceId: String) {
+        val userId = userRepository.getUserModel()?.id?.takeIf { it.isNotBlank() } ?: return
         ratingsRepository.setRatingPrompted(userId, resourceId)
     }
 
@@ -102,6 +111,10 @@ class ResourceViewerViewModel @Inject constructor(
 
     suspend fun updateLibraryItemTranslationAudioPath(id: String, outputFile: String?) {
         resourcesRepository.updateLibraryItem(id) { it.translationAudioPath = outputFile }
+    }
+    
+    fun saveTranslationAudioPath(id: String, outputFile: String?) {
+        appScope.launch { updateLibraryItemTranslationAudioPath(id, outputFile) }
     }
 
     suspend fun getExternalFilesDir(): File? = withContext(dispatcherProvider.io) {

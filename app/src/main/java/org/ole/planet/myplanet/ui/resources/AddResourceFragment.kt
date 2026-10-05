@@ -39,7 +39,6 @@ import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.databinding.AlertSoundRecorderBinding
 import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
 import org.ole.planet.myplanet.services.AudioRecorder
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -61,8 +60,6 @@ class AddResourceFragment : BaseBindingBottomSheetFragment<FragmentAddResourceBi
     private lateinit var requestCameraForVideoLauncher: ActivityResultLauncher<String>
     private var type: Int = 0
     private var teamId: String? = null
-    @Inject
-    lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
 
@@ -182,6 +179,7 @@ class AddResourceFragment : BaseBindingBottomSheetFragment<FragmentAddResourceBi
 
             override fun onError(error: String?) {
                 Utilities.toast(activity, error)
+                floatingActionButton?.setImageResource(R.drawable.ic_mic)
             }
         })
     }
@@ -261,7 +259,7 @@ class AddResourceFragment : BaseBindingBottomSheetFragment<FragmentAddResourceBi
                 ?: startActivity(intent)
         } else {
             viewLifecycleOwner.lifecycleScope.launch {
-                val userModel = userSessionManager.getUserModel() ?: return@launch
+                val userModel = viewModel.currentUser() ?: return@launch
                 showAlert(
                     requireContext(),
                     path,

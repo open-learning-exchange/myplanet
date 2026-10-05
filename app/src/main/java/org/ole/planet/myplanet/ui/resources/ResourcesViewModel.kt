@@ -8,10 +8,13 @@ import javax.inject.Inject
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.MyLibrary
@@ -51,8 +54,8 @@ class ResourcesViewModel @Inject constructor(
     val isDateSortAscending: Boolean get() = isAscending
     val isTitleSortAscending: Boolean get() = isTitleAscending
 
-    private val _downloadComplete = MutableStateFlow(false)
-    val downloadComplete: StateFlow<Boolean> = _downloadComplete.asStateFlow()
+    private val _downloadComplete = Channel<Unit>(Channel.CONFLATED)
+    val downloadComplete: Flow<Unit> = _downloadComplete.receiveAsFlow()
 
     private val _openedResourceIds = MutableStateFlow<Set<String>>(emptySet())
     val openedResourceIds: StateFlow<Set<String>> = _openedResourceIds.asStateFlow()
@@ -61,8 +64,7 @@ class ResourcesViewModel @Inject constructor(
     private var currentObservedUserId: String? = null
 
     fun notifyDownloadComplete() {
-        _downloadComplete.value = true
-        _downloadComplete.value = false
+        _downloadComplete.trySend(Unit)
     }
 
     fun observeOpenedResourceIds(userId: String) {
@@ -117,26 +119,40 @@ class ResourcesViewModel @Inject constructor(
         resourcesRepository.removeResourcesFromShelf(resourceIds, userId)
     }
 
-    suspend fun getFilterFacets(libraries: List<MyLibrary>): Map<String, Set<String>> = withContext(dispatcherProvider.default) {
-        val languages = mutableSetOf<String>()
-        val subjects = mutableSetOf<String>()
-        val mediums = mutableSetOf<String>()
-        val levels = mutableSetOf<String>()
-
-        libraries.forEach { library ->
-            library.language?.takeIf { it.isNotBlank() }?.let { languages.add(it) }
-            library.subject?.let { subjects.addAll(it) }
-            library.mediaType?.takeIf { it.isNotBlank() }?.let { mediums.add(it) }
-            library.level?.let { levels.addAll(it) }
-        }
-
-        mapOf(
-            "languages" to languages,
-            "subjects" to subjects,
-            "mediums" to mediums,
-            "levels" to levels
-        )
+    private fun addFacetValue(facets: MutableMap<String, String>, raw: String?) {
+        val value = raw?.trim() ?: return
+        if (value.isEmpty()) return
+        facets.putIfAbsent(value.lowercase(Locale.ROOT), value)
     }
+
+    private fun addMediumFacetValue(facets: MutableMap<String, String>, raw: String?) {
+        val value = raw?.trim() ?: return
+        if (value.isEmpty()) return
+        val canonical = ResourcesMediaType.canonicalMedium(value)
+        facets.putIfAbsent(canonical.lowercase(Locale.ROOT), canonical)
+    }
+
+    suspend fun getFilterFacets(libraries: List<MyLibrary>): Map<String, Set<String>> =
+        withContext(dispatcherProvider.default) {
+            val languages = linkedMapOf<String, String>()
+            val subjects = linkedMapOf<String, String>()
+            val mediums = linkedMapOf<String, String>()
+            val levels = linkedMapOf<String, String>()
+
+            libraries.forEach { library ->
+                library.language?.let { addFacetValue(languages, it) }
+                library.subject?.forEach { addFacetValue(subjects, it) }
+                library.mediaType?.let { addMediumFacetValue(mediums, it) }
+                library.level?.forEach { addFacetValue(levels, it) }
+            }
+
+            mapOf(
+                "languages" to languages.values.toSet(),
+                "subjects" to subjects.values.toSet(),
+                "mediums" to mediums.values.toSet(),
+                "levels" to levels.values.toSet()
+            )
+        }
 
     private val listFilter = ResourcesListFilter()
 

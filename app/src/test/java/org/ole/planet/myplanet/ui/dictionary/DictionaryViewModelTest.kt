@@ -124,6 +124,27 @@ class DictionaryViewModelTest {
     }
 
     @Test
+    fun `searchWord trims surrounding whitespace before lookup`() = runTest(testDispatcher) {
+        val entry = DictionaryWord(word = "apple", definition = "fruit", synonym = "", antonym = "")
+        coEvery { dictionaryRepository.findByWord("apple") } returns entry
+
+        viewModel.searchWord("  apple ")
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { dictionaryRepository.findByWord("apple") }
+        assertTrue(viewModel.searchState.value is DictionarySearchState.Found)
+    }
+
+    @Test
+    fun `searchWord ignores blank input`() = runTest(testDispatcher) {
+        viewModel.searchWord("   ")
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { dictionaryRepository.findByWord(any()) }
+        assertTrue(viewModel.searchState.value is DictionarySearchState.Idle)
+    }
+
+    @Test
     fun `initial state is Idle`() {
         assertTrue(viewModel.loadState.value is DictionaryLoadState.Idle)
         assertTrue(viewModel.searchState.value is DictionarySearchState.Idle)

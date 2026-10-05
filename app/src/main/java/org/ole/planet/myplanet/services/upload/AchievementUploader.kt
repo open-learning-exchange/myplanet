@@ -5,11 +5,12 @@ import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.asRequestBody
 import org.ole.planet.myplanet.repository.UploadRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserAchievementsRepository
 import org.ole.planet.myplanet.services.FileUploader
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
@@ -17,13 +18,13 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 class AchievementUploader @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val userRepository: UserRepository,
+    private val userAchievementsRepository: UserAchievementsRepository,
     private val uploadRepository: UploadRepository,
     private val dispatcherProvider: DispatcherProvider
 ) {
 
     suspend fun uploadAchievement() {
-        val list = userRepository.getAchievementsForUpload()
+        val list = userAchievementsRepository.getAchievementsForUpload()
         if (list.isEmpty()) return
         withContext(dispatcherProvider.io) {
             list.forEach { achievement ->
@@ -33,12 +34,14 @@ class AchievementUploader @Inject constructor(
                     val response = uploadRepository.putUpload(url, achievement)
                     if (response.isSuccessful) {
                         val rev = response.body()?.get("rev")?.asString
-                        userRepository.markAchievementUploaded(id, rev)
+                        userAchievementsRepository.markAchievementUploaded(id, rev)
                         val resumeFileName = achievement.get("resumeFileName")?.asString ?: ""
                         if (resumeFileName.isNotEmpty() && !rev.isNullOrEmpty()) {
                             uploadCvAttachment(id, rev, resumeFileName)
                         }
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e(TAG, "Exception in AchievementUploader", e)
                 }
@@ -54,6 +57,8 @@ class AchievementUploader @Inject constructor(
             // CouchDB attachment key is always "resume.pdf"
             val url = "${UrlUtils.getUrl()}/achievements/$docId/resume.pdf"
             uploadRepository.uploadResource(FileUploader.getHeaderMap("application/pdf", rev), url, body)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to upload CV attachment", e)
         }

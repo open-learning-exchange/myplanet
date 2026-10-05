@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services
 
-import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.util.Log
@@ -29,7 +28,6 @@ import org.ole.planet.myplanet.utils.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 @HiltWorker
 class AutoSyncWorker @AssistedInject constructor(
@@ -59,14 +57,9 @@ class AutoSyncWorker @AssistedInject constructor(
             if (!serverReachable) {
                 return@coroutineScope Result.success()
             }
-            if (isAppInForeground(context)) {
-                withContext(dispatcherProvider.main) {
-                    Utilities.toast(context, "Syncing started...")
-                }
-            }
             suspendCancellableCoroutine { continuation ->
                 syncContinuation = continuation
-                configurationsRepository.checkVersion(this@AutoSyncWorker, sharedPrefManager)
+                configurationsRepository.checkVersion(this@AutoSyncWorker)
             }
         }
         return@coroutineScope Result.success()
@@ -90,7 +83,7 @@ class AutoSyncWorker @AssistedInject constructor(
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
         workerScope.launch(dispatcherProvider.main) {
-            startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null, workerScope, configurationsRepository)
+            startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null, workerScope, configurationsRepository::checkCheckSum)
         }
         syncContinuation?.takeIf { it.isActive }?.resume(Unit)
         syncContinuation = null
@@ -154,14 +147,5 @@ class AutoSyncWorker @AssistedInject constructor(
 
     override fun onSuccess(success: String?) {
         sharedPrefManager.setLastUsageUploaded(timeProvider.now())
-    }
-
-    private fun isAppInForeground(context: Context): Boolean {
-        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        val runningProcesses = activityManager.runningAppProcesses ?: return false
-        return runningProcesses.any {
-            it.processName == context.packageName &&
-                it.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-        }
     }
 }

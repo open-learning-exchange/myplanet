@@ -5,7 +5,9 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -218,10 +220,21 @@ class ResourcesViewModelTest {
 
         assertEquals(setOf("English", "Spanish"), facets["languages"])
         assertEquals(setOf("Math", "Science", "History"), facets["subjects"])
-        assertEquals(setOf("PDF", "Video"), facets["mediums"])
+        assertEquals(setOf("pdf", "video"), facets["mediums"])
         assertEquals(setOf("Primary", "Secondary"), facets["levels"])
     }
 
+
+    @Test
+    fun `getFilterFacets canonicalizes medium values into single canonical entries`() = runTest {
+        val lib1 = MyLibrary().apply { mediaType = "video" }
+        val lib2 = MyLibrary().apply { mediaType = "video/mp4" }
+        val lib3 = MyLibrary().apply { mediaType = "mp4" }
+
+        val facets = viewModel.getFilterFacets(listOf(lib1, lib2, lib3))
+
+        assertEquals(setOf("video"), facets["mediums"])
+    }
     @Test
     fun `filterIfChanged memoizes the criteria in the view model until resetFilter`() = runTest {
         val models = listOf(createResourceModel("a", 1), createResourceModel("b", 2))
@@ -263,5 +276,18 @@ class ResourcesViewModelTest {
             filename = null
         )
         return ResourceListModel(library, item, emptyList<TagItem>())
+    }
+
+    @Test
+    fun `notifyDownloadComplete delivers one event to a collector`() = runTest {
+        val events = mutableListOf<Unit>()
+        val job = launch { viewModel.downloadComplete.collect { events.add(it) } }
+        advanceUntilIdle()
+
+        viewModel.notifyDownloadComplete()
+        advanceUntilIdle()
+
+        assertEquals(1, events.size)
+        job.cancel()
     }
 }

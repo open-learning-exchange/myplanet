@@ -4,9 +4,7 @@ import android.content.Context
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.Button
 import android.widget.EditText
-import android.widget.Spinner
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -56,7 +54,7 @@ class CourseFilterControllerTest {
     }
 
     @Test
-    fun testClearButtonResetsAllFiltersAndHidesFilterCard() = runTest {
+    fun testClearAllResetsAllFilters() = runTest {
         var scrolledToTop = false
         val controller = CourseFilterController(
             rootView = rootView,
@@ -65,28 +63,23 @@ class CourseFilterControllerTest {
         )
         controller.setup()
 
-        val cardFilter = rootView.findViewById<View>(R.id.card_filter)
-        val btnClear = rootView.findViewById<Button>(R.id.btn_clear_tags)
         val etSearch = rootView.findViewById<EditText>(R.id.et_search)
-        val spnGrade = rootView.findViewById<Spinner>(R.id.spn_grade)
-        val spnSubject = rootView.findViewById<Spinner>(R.id.spn_subject)
 
-        cardFilter.visibility = View.VISIBLE
         etSearch.setText("Algebra")
-        spnGrade.setSelection(1)
-        spnSubject.setSelection(1)
+        controller.setGradeSubject("Grade 1", "Math")
         controller.setProgressFilter("Completed")
         controller.addTag(TagEntity().apply { name = "Math" })
 
         assertTrue(controller.filterApplied())
         assertEquals("Completed", controller.currentState().progressFilter)
+        assertEquals("Grade 1", controller.currentGrade())
+        assertEquals("Math", controller.currentSubject())
 
-        btnClear.performClick()
+        controller.clearAll()
 
-        assertEquals(View.GONE, cardFilter.visibility)
         assertEquals("", etSearch.text.toString())
-        assertEquals(0, spnGrade.selectedItemPosition)
-        assertEquals(0, spnSubject.selectedItemPosition)
+        assertEquals("", controller.currentGrade())
+        assertEquals("", controller.currentSubject())
         assertEquals("", controller.currentState().progressFilter)
         assertEquals("", controller.filterState.value.progressFilter)
         assertTrue(controller.searchTags.isEmpty())

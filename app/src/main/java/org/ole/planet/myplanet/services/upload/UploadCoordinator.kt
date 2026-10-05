@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
@@ -84,6 +84,8 @@ class UploadCoordinator @Inject constructor(
                 allSucceeded.isEmpty() -> UploadResult.Failure(allFailed)
                 else -> UploadResult.PartialSuccess(allSucceeded, allFailed)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Critical error during upload", e)
             UploadResult.Failure(
@@ -107,6 +109,8 @@ class UploadCoordinator @Inject constructor(
                     is UploadSerializer.Simple -> serializer.serialize(item)
                     is UploadSerializer.Async -> serializer.serialize(item)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Serialization failed for item", e)
                 return@mapNotNull null

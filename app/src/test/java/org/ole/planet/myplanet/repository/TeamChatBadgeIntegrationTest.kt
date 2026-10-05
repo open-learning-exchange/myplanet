@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.repository
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.google.gson.Gson
-import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -53,15 +52,12 @@ class TeamChatBadgeIntegrationTest {
 
         val userRepository = dagger.Lazy { mockk<UserRepository>(relaxed = true) }
         val teamsRepository = dagger.Lazy { mockk<TeamsNotificationsRepository>(relaxed = true) }
-        val teamTaskDao = mockk<org.ole.planet.myplanet.data.room.dao.TeamTaskDao>(relaxed = true)
-        coEvery { teamTaskDao.getTasksForUserBetween(any(), any(), any()) } returns emptyList()
         notificationsRepository = NotificationsRepositoryImpl(
             userRepository,
             teamsRepository,
             TestTimeProvider(),
             teamNotificationDao,
             mockk(relaxed = true),
-            teamTaskDao,
             voicesRepository,
         )
     }
@@ -103,7 +99,7 @@ class TeamChatBadgeIntegrationTest {
         assertFalse(before[teamId]?.hasChat == true)
 
         // Opening the feed writes the watermark = number of top-level posts shown (1).
-        notificationsRepository.updateTeamNotification(teamId, voicesRepository.getFilteredNews(teamId))
+        notificationsRepository.updateTeamNotification(teamId, voicesRepository.getFilteredNews(teamId).size)
 
         // No new posts since → chatCount equals the watermark → badge cleared.
         val after = notificationsRepository.getTeamNotifications(listOf(teamId), "user1")
@@ -116,7 +112,7 @@ class TeamChatBadgeIntegrationTest {
 
         val first = topLevel(viewableBy = "teams", viewableId = teamId)
         newsDao.upsertAll(listOf(first))
-        notificationsRepository.updateTeamNotification(teamId, voicesRepository.getFilteredNews(teamId))
+        notificationsRepository.updateTeamNotification(teamId, voicesRepository.getFilteredNews(teamId).size)
 
         assertFalse(notificationsRepository.getTeamNotifications(listOf(teamId), "user1")[teamId]?.hasChat == true)
 
@@ -131,7 +127,7 @@ class TeamChatBadgeIntegrationTest {
         val teamId = "teamC"
         val root = topLevel(viewIn = "[{\"_id\":\"$teamId\",\"section\":\"teams\"}]")
         newsDao.upsertAll(listOf(root))
-        notificationsRepository.updateTeamNotification(teamId, voicesRepository.getFilteredNews(teamId))
+        notificationsRepository.updateTeamNotification(teamId, voicesRepository.getFilteredNews(teamId).size)
 
         newsDao.upsertAll(listOf(replyTo(root, viewIn = "[{\"_id\":\"$teamId\",\"section\":\"teams\"}]")))
         val result = notificationsRepository.getTeamNotifications(listOf(teamId), "user1")

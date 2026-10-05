@@ -33,6 +33,7 @@ class PersonalsFragment : BaseBindingFragment<FragmentMyPersonalsBinding>(Fragme
         val view = super.onCreateView(inflater, container, savedInstanceState)
         pg = DialogUtils.getCustomProgressDialog(requireContext())
         binding.rvMypersonal.layoutManager = LinearLayoutManager(activity)
+        binding.rvMypersonal.setHasFixedSize(true)
         binding.addMyPersonal.setOnClickListener {
             addResourceFragment = AddResourceFragment()
             val b = Bundle()
@@ -115,13 +116,10 @@ class PersonalsFragment : BaseBindingFragment<FragmentMyPersonalsBinding>(Fragme
                     Utilities.toast(requireContext(), getString(R.string.please_enter_title))
                     return@setPositiveButton
                 }
-                val id = personal.id ?: personal._id
-                if (id != null) {
-                    viewModel.updatePersonalResource(
-                        id,
-                        PersonalUpdate(title = title, description = desc)
-                    )
-                }
+                viewModel.updatePersonalResource(
+                    personal.id,
+                    PersonalUpdate(title = title, description = desc)
+                )
             }
             .setNegativeButton(R.string.cancel, null)
             .show()
@@ -132,10 +130,7 @@ class PersonalsFragment : BaseBindingFragment<FragmentMyPersonalsBinding>(Fragme
             message = getString(R.string.delete_record),
             positiveText = getString(R.string.ok),
             onPositive = {
-                val id = personal.id ?: personal._id
-                if (id != null) {
-                    viewModel.deletePersonalResource(id)
-                }
+                viewModel.deletePersonalResource(personal.id)
             },
             negativeText = getString(R.string.cancel)
         )

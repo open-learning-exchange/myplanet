@@ -17,12 +17,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.CourseStepDao
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
-import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CourseProgress
 import org.ole.planet.myplanet.model.CourseStep
@@ -40,11 +38,10 @@ class ProgressRepositoryImplTest {
     private val dispatcherProvider: DispatcherProvider = org.ole.planet.myplanet.utils.TestDispatcherProvider(testDispatcher)
     private val testScope = TestScope(testDispatcher)
     private lateinit var mockCoursesRepository: CoursesRepository
+    private val mockSubmissionsRepository: SubmissionsRepository = mockk(relaxed = true)
     private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
     private val courseStepDao: CourseStepDao = mockk(relaxed = true)
     private val examDao: ExamDao = mockk(relaxed = true)
-    private val submissionDao: SubmissionDao = mockk(relaxed = true)
-    private val answerDao: AnswerDao = mockk(relaxed = true)
     private val questionDao: QuestionDao = mockk(relaxed = true)
 
     @Before
@@ -56,11 +53,10 @@ class ProgressRepositoryImplTest {
                 dispatcherProvider,
                 dagger.Lazy { mockCoursesRepository },
                 dagger.Lazy { mockk(relaxed = true) },
+                dagger.Lazy { mockSubmissionsRepository },
                 courseProgressDao,
                 courseStepDao,
                 examDao,
-                submissionDao,
-                answerDao,
                 questionDao
             ),
             recordPrivateCalls = true
@@ -74,9 +70,191 @@ class ProgressRepositoryImplTest {
 
     @Test
     fun fetchCourseData_executes_successfully() = runTest(testDispatcher) {
-        coEvery { submissionDao.getExamSubmissionsByUser("user123") } returns emptyList()
+        coEvery { mockSubmissionsRepository.getExamSubmissionsByUser("user123") } returns emptyList()
         val result = repository.fetchCourseData("user123")
         assertEquals(JsonArray(), result)
+    }
+
+    @Test
+    fun testGetCourseProgressRows_wellFormedDocument() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = "course1"
+                courseTitle = "Test Course 1"
+            }
+        )
+        val steps = listOf(CourseStep().apply { courseId = "course1" })
+        myCourses[0].courseSteps = steps.toMutableList()
+
+        val exams = listOf(StepExam().apply { id = "exam1"; courseId = "course1" })
+        val submissions = listOf(Submission().apply { id = "sub1"; userId = "user1"; parentId = "course1"; type = "exam" })
+        val answers = listOf(Answer().apply { submissionId = "sub1"; questionId = "q1"; mistakes = 3 })
+        val question = ExamQuestion().apply { id = "q1"; examId = "exam1" }
+
+        coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
+        coEvery { courseStepDao.getByCourseIds(listOf("course1")) } returns steps
+        coEvery { courseProgressDao.getByUserAndCourseIds("user1", listOf("course1")) } returns listOf(
+            CourseProgress().apply { stepNum = 1; courseId = "course1" }
+        )
+        coEvery { mockSubmissionsRepository.getExamSubmissionsByUser("user1") } returns submissions
+        coEvery { examDao.getByCourseIds(listOf("course1")) } returns exams
+        coEvery { mockSubmissionsRepository.getAnswersBySubmissionIds(listOf("sub1")) } returns answers
+        coEvery { questionDao.getByIds(listOf("q1")) } returns listOf(question)
+
+        val rows = repository.getCourseProgressRows("user1")
+        advanceUntilIdle()
+
+        assertEquals(1, rows.size)
+        val row = rows[0]
+        assertEquals("course1", row.courseId)
+        assertEquals("Test Course 1", row.courseName)
+        assertEquals(1, row.progressCurrent)
+        assertEquals(1, row.progressMax)
+        assertEquals(3, row.mistakes)
+        assertEquals(mapOf("0" to 3), row.stepMistake)
+    }
+
+    @Test
+    fun testGetCourseProgressRows_missingCourseId_skipped() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = null
+                courseTitle = "Course without ID"
+            },
+            MyCourse().apply {
+                courseId = "course2"
+                courseTitle = "Valid Course"
+            }
+        )
+
+        coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
+        coEvery { courseProgressDao.getByUserAndCourseIds("user1", any()) } returns emptyList()
+        coEvery { mockSubmissionsRepository.getExamSubmissionsByUser("user1") } returns emptyList()
+        coEvery { examDao.getByCourseIds(any()) } returns emptyList()
+
+        val rows = repository.getCourseProgressRows("user1")
+        advanceUntilIdle()
+
+        assertEquals(1, rows.size)
+        assertEquals("course2", rows[0].courseId)
+        assertEquals("Valid Course", rows[0].courseName)
+    }
+
+    @Test
+    fun testGetCourseProgressRows_noStepMistake_yieldsNull() = testScope.runTest {
+        val myCourses = listOf(
+            MyCourse().apply {
+                courseId = "course1"
+                courseTitle = "Course No Submissions"
+            }
+        )
+
+        coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
+        coEvery { courseProgressDao.getByUserAndCourseIds("user1", any()) } returns emptyList()
+        coEvery { mockSubmissionsRepository.getExamSubmissionsByUser("user1") } returns emptyList()
+        coEvery { examDao.getByCourseIds(any()) } returns emptyList()
+
+        val rows = repository.getCourseProgressRows("user1")
+        advanceUntilIdle()
+
+        assertEquals(1, rows.size)
+        assertEquals("course1", rows[0].courseId)
+        assertEquals("Course No Submissions", rows[0].courseName)
+        assertNull(rows[0].stepMistake)
+        assertNull(rows[0].mistakes)
+    }
+
+    @Test
+    fun testGetCourseProgressRows_malformedJsonPayloads() = testScope.runTest {
+        val jsonArray = JsonArray().apply {
+            // Element 0: Non-object primitive (should be skipped)
+            add("plain string element")
+
+            // Element 1: JsonNull element (should be skipped)
+            add(com.google.gson.JsonNull.INSTANCE)
+
+            // Element 2: Object missing courseId (should be skipped)
+            add(JsonObject().apply {
+                addProperty("courseName", "No ID")
+            })
+
+            // Element 3: Object with JsonNull courseId (should be skipped)
+            add(JsonObject().apply {
+                add("courseId", com.google.gson.JsonNull.INSTANCE)
+                addProperty("courseName", "Null ID")
+            })
+
+            // Element 4: Object missing courseName (should be skipped)
+            add(JsonObject().apply {
+                addProperty("courseId", "c_no_name")
+            })
+
+            // Element 5: Object with JsonNull progress and stepMistake
+            add(JsonObject().apply {
+                addProperty("courseId", "c1")
+                addProperty("courseName", "Course 1")
+                add("progress", com.google.gson.JsonNull.INSTANCE)
+                add("stepMistake", com.google.gson.JsonNull.INSTANCE)
+                add("mistakes", com.google.gson.JsonNull.INSTANCE)
+            })
+
+            // Element 6: Object with malformed progress type (not JsonObject)
+            add(JsonObject().apply {
+                addProperty("courseId", "c2")
+                addProperty("courseName", "Course 2")
+                addProperty("progress", "not an object")
+                add("stepMistake", JsonObject().apply {
+                    addProperty("step1", 2)
+                })
+            })
+
+            // Element 7: Valid object
+            add(JsonObject().apply {
+                addProperty("courseId", "c3")
+                addProperty("courseName", "Course 3")
+                add("progress", JsonObject().apply {
+                    addProperty("current", 2)
+                    addProperty("max", 5)
+                })
+                addProperty("mistakes", 1)
+                add("stepMistake", JsonObject().apply {
+                    addProperty("step1", 1)
+                })
+            })
+        }
+
+        coEvery { repository.fetchCourseData("user1") } returns jsonArray
+
+        val rows = repository.getCourseProgressRows("user1")
+        advanceUntilIdle()
+
+        // Elements 0, 1, 2, 3, 4 skipped -> 3 valid rows (Elements 5, 6, 7)
+        assertEquals(3, rows.size)
+
+        // Element 5: null progress, null mistakes, null stepMistake
+        assertEquals("c1", rows[0].courseId)
+        assertEquals("Course 1", rows[0].courseName)
+        assertNull(rows[0].progressCurrent)
+        assertNull(rows[0].progressMax)
+        assertNull(rows[0].mistakes)
+        assertNull(rows[0].stepMistake)
+
+        // Element 6: non-object progress -> progressCurrent & progressMax are null
+        assertEquals("c2", rows[1].courseId)
+        assertEquals("Course 2", rows[1].courseName)
+        assertNull(rows[1].progressCurrent)
+        assertNull(rows[1].progressMax)
+        assertEquals(mapOf("step1" to 2), rows[1].stepMistake)
+
+        // Element 7: fully valid
+        assertEquals("c3", rows[2].courseId)
+        assertEquals("Course 3", rows[2].courseName)
+        assertEquals(2, rows[2].progressCurrent)
+        assertEquals(5, rows[2].progressMax)
+        assertEquals(1, rows[2].mistakes)
+        assertEquals(mapOf("step1" to 1), rows[2].stepMistake)
     }
 
     @Test
@@ -199,7 +377,7 @@ class ProgressRepositoryImplTest {
             courseId = "course1"
         })
 
-        coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns submissions.map { submission ->
+        coEvery { mockSubmissionsRepository.getExamSubmissionsByUser("user1") } returns submissions.map { submission ->
             Submission(id = submission.id ?: "submission", parentId = submission.parentId, userId = submission.userId, type = submission.type)
         }
 
@@ -207,7 +385,7 @@ class ProgressRepositoryImplTest {
             StepExam(id = exam.id ?: "exam", courseId = exam.courseId, stepId = exam.stepId, type = exam.type)
         }
 
-        coEvery { answerDao.getBySubmissionIds(listOf("sub1")) } returns answers.map { answer ->
+        coEvery { mockSubmissionsRepository.getAnswersBySubmissionIds(listOf("sub1")) } returns answers.map { answer ->
             org.ole.planet.myplanet.model.Answer(
                 id = answer.id ?: "answer",
                 questionId = answer.questionId,
@@ -321,11 +499,10 @@ class ProgressRepositoryImplTest {
             dispatcherProvider,
             dagger.Lazy { mockCoursesRepository },
             dagger.Lazy { activitiesRepo },
+            dagger.Lazy { mockSubmissionsRepository },
             courseProgressDao,
             courseStepDao,
             examDao,
-            submissionDao,
-            answerDao,
             questionDao
         )
 
@@ -621,8 +798,8 @@ class ProgressRepositoryImplTest {
         coEvery { courseProgressDao.getByUserAndCourseIds(any(), any()) } returns emptyList()
         coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
         coEvery { examDao.getByCourseIds(listOf("course1", "course10")) } returns exams
-        coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns submissions
-        coEvery { answerDao.getBySubmissionIds(any()) } returns answers
+        coEvery { mockSubmissionsRepository.getExamSubmissionsByUser("user1") } returns submissions
+        coEvery { mockSubmissionsRepository.getAnswersBySubmissionIds(any()) } returns answers
         coEvery { questionDao.getByIds(any()) } returns questions
 
         val data = repository.fetchCourseData("user1")

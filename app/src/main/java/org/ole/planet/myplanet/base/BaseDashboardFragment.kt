@@ -40,7 +40,7 @@ import org.ole.planet.myplanet.ui.life.LifeFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
-import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
+import org.ole.planet.myplanet.ui.user.LearnerRegistrationActivity
 import org.ole.planet.myplanet.ui.user.UserProfileFragment
 import org.ole.planet.myplanet.ui.voices.NewsViewModel
 import org.ole.planet.myplanet.utils.DialogUtils
@@ -73,6 +73,22 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     fun onLoaded(v: View) {
         val llPrompt = v.findViewById<LinearLayout>(R.id.ll_prompt)
         val icClose = v.findViewById<ImageView>(R.id.ic_close)
+
+        icClose.setOnClickListener {
+            llPrompt.visibility = View.GONE
+        }
+
+        childFragmentManager.setFragmentResultListener(
+            UserInformationFragment.PROFILE_UPDATE_REQUEST_KEY, viewLifecycleOwner
+        ) { _, _ ->
+            refreshProfilePrompt(v)
+        }
+
+        refreshProfilePrompt(v)
+    }
+
+    private fun refreshProfilePrompt(v: View) {
+        val llPrompt = v.findViewById<LinearLayout>(R.id.ll_prompt)
         val imageView = v.findViewById<ImageView>(R.id.imageView)
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -88,9 +104,6 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
                     }
                 }
             } else {
-                llPrompt.visibility = View.GONE
-            }
-            icClose.setOnClickListener {
                 llPrompt.visibility = View.GONE
             }
             ImageUtils.loadProfileImage(model?.userImage, imageView, 200)
@@ -356,7 +369,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         alertHealthListBinding.list.visibility = View.GONE
 
         alertHealthListBinding.btnAddMember.setOnClickListener {
-            startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
+            startActivity(Intent(requireContext(), LearnerRegistrationActivity::class.java))
         }
 
         val dialog = AlertDialog.Builder(requireActivity())
