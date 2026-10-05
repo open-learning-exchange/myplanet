@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
 import javax.inject.Inject
 import org.ole.planet.myplanet.model.Submission
@@ -23,6 +24,16 @@ class SurveysPublicMapper @Inject constructor(
             }
         }
         return payload
+    }
+
+    fun parseRespondent(userJson: String?): JsonObject? {
+        return userJson?.takeIf { it.isNotBlank() && it != "{}" }?.let {
+            try {
+                JsonParser.parseString(it).asJsonObject.also(::sanitizeRespondent)
+            } catch (e: Exception) {
+                null
+            }
+        }
     }
 
     fun sanitizeRespondent(user: JsonObject) {
