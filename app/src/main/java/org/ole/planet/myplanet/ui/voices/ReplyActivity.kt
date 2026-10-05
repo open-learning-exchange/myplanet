@@ -29,7 +29,6 @@ import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -54,9 +53,6 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     
     @Inject
     lateinit var userSessionManager: UserSessionManager
-
-    @Inject
-    lateinit var activitiesRepository: ActivitiesRepository
 
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
@@ -192,7 +188,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     override fun onMemberSelected(userModel: UserEntity?) {
         lifecycleScope.launch {
-            val fragment = VoicesActions.showMemberDetails(userModel, activitiesRepository) ?: return@launch
+            val fragment = VoicesActions.showMemberDetails(userModel) ?: return@launch
             FragmentNavigator.replaceFragment(
                 supportFragmentManager,
                 R.id.fragment_container,
