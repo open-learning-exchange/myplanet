@@ -1,0 +1,166 @@
+package org.ole.planet.myplanet.ui.teams.resources
+
+import android.app.Application
+import android.content.Context
+import android.widget.FrameLayout
+import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.ole.planet.myplanet.callback.OnResourcesUpdateListener
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLooper
+import java.util.concurrent.atomic.AtomicBoolean
+
+@OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [36], application = Application::class)
+class TeamResourcesAdapterTest {
+
+    private lateinit var context: Context
+    private val testDispatcher = UnconfinedTestDispatcher()
+    private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
+    private var isUpdatedCalled = false
+    private var removedResource: MyLibrary? = null
+    private var removedPosition: Int = -1
+    private var itemChanged = AtomicBoolean(false)
+
+    private val listener = object : OnResourcesUpdateListener {
+        override fun onResourceListUpdated() {
+            isUpdatedCalled = true
+        }
+
+        override fun onResourceUpdateFailed(messageResId: Int) {}
+    }
+
+    private lateinit var adapter: TeamResourcesAdapter
+
+    @Before
+    fun setUp() {
+        context = ApplicationProvider.getApplicationContext()
+        isUpdatedCalled = false
+        removedResource = null
+        removedPosition = -1
+
+        adapter = TeamResourcesAdapter(
+            context = context,
+            canRemoveResources = true,
+            updateListener = listener,
+            dispatcherProvider = dispatcherProvider,
+            onRemoveResource = { resource, position ->
+                removedResource = resource
+                removedPosition = position
+            }
+        )
+    }
+
+    @Test
+    fun testRemoveResourceAt() {
+        val resource1 = MyLibrary().apply {
+            id = "res_1"
+            title = "Resource 1"
+        }
+        val resource2 = MyLibrary().apply {
+            id = "res_2"
+            title = "Resource 2"
+        }
+        adapter.submitList(listOf(resource1, resource2))
+        ShadowLooper.idleMainLooper()
+
+        val itemChanged = AtomicBoolean(false)
+        val observer = object : androidx.recyclerview.widget.RecyclerView.AdapterDataObserver() {
+            override fun onItemRangeChanged(positionStart: Int, itemCount: Int) {
+                itemChanged.set(true)
+            }
+
+            override fun onItemRangeChanged(positionStart: Int, itemCount: Int, payload: Any?) {
+                itemChanged.set(true)
+            }
+        }
+        adapter.registerAdapterDataObserver(observer)
+
+        val removalCompleted = AtomicBoolean(false)
+
+        adapter.removeResourceAt(0) {
+            removalCompleted.set(true)
+        }
+
+        // AsyncListDiffer diffs non-empty lists on a background executor and posts the
+        // commit to the main looper, so a single idle can run before the result arrives.
+        idleMainLooperUntil { removalCompleted.get() }
+        assertTrue(removalCompleted.get())
+        assertEquals(1, adapter.currentList.size)
+        assertEquals("res_2", adapter.currentList[0].id)
+        assertTrue(isUpdatedCalled)
+    }
+
+    private fun idleMainLooperUntil(timeoutMs: Long = 5_000, condition: () -> Boolean) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (!condition() && System.currentTimeMillis() < deadline) {
+            ShadowLooper.idleMainLooper()
+            Thread.sleep(10)
+        }
+    }
+
+    @Test
+    fun testViewHolderJobCancellation() {
+        val binding = org.ole.planet.myplanet.databinding.RowTeamResourceBinding.inflate(
+            android.view.LayoutInflater.from(context),
+            FrameLayout(context),
+            false
+        )
+        val viewHolder = TeamResourcesAdapter.ViewHolderTeamResources(binding)
+
+        val job = kotlinx.coroutines.Job()
+        viewHolder.setPreviewJob(job)
+        assertTrue(job.isActive)
+
+        viewHolder.cancelPreviewJob()
+        assertTrue(job.isCancelled)
+
+        // Verifies subsequent calls handle already-cleared job gracefully
+        viewHolder.cancelPreviewJob()
+        assertTrue(job.isCancelled)
+    }
+
+    @Test
+    fun testResourceLocalAddressChangeTriggersDiffUpdate() {
+        val oldResource = MyLibrary().apply {
+            id = "res_1"
+            title = "Resource 1"
+            mediaType = "Book"
+            language = "English"
+            resourceLocalAddress = null
+        }
+        val newResource = MyLibrary().apply {
+            id = "res_1"
+            title = "Resource 1"
+            mediaType = "Book"
+            language = "English"
+            resourceLocalAddress = "/storage/emulated/0/Android/data/org.ole.planet.myplanet/files/res_1.pdf"
+        }
+
+        val commitCompleted = AtomicBoolean(false)
+        itemChanged.set(false)  // Reset before test
+        adapter.submitList(listOf(oldResource))
+        ShadowLooper.idleMainLooper()
+
+        adapter.submitList(listOf(newResource)) {
+            commitCompleted.set(true)
+        }
+
+        idleMainLooperUntil { commitCompleted.get() }
+        assertTrue(commitCompleted.get())
+        assertEquals(
+            "/storage/emulated/0/Android/data/org.ole.planet.myplanet/files/res_1.pdf",
+            adapter.currentList[0].resourceLocalAddress
+        )
+    }
+}
