@@ -18,7 +18,6 @@ import androidx.core.view.isGone
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import java.util.Locale
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseBindingBottomSheetFragment
@@ -152,7 +151,7 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
             }
         }
         for (i in arr.indices) {
-                listView.setItemChecked(i, set.contains(arr[i]))
+            listView.setItemChecked(i, set.contains(arr[i]))
         }
     }
 
@@ -228,15 +227,6 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
     }
 
     fun getMediumDisplayName(medium: String): String {
-        return when (medium.lowercase(Locale.getDefault())) {
-            "pdf" -> getString(R.string.filter_pdfs)
-            "video" -> getString(R.string.filter_videos)
-            "audio" -> getString(R.string.filter_audio)
-            "image" -> getString(R.string.storage_images)
-            "text/html" -> getString(R.string.medium_text_html)
-            "html" -> getString(R.string.medium_html)
-            "other" -> getString(R.string.other)
-            else -> medium
-        }
+        return ResourcesMediaType.displayName(requireContext(), medium)
     }
 }
