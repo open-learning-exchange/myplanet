@@ -57,11 +57,7 @@ object Utilities {
         val visualContext = getActivityFromContext(context)
 
         if (visualContext != null && !visualContext.isFinishing && !visualContext.isDestroyed) {
-            try {
-                Toast.makeText(visualContext, message, duration).show()
-            } catch (e: IllegalAccessException) {
-                e.printStackTrace()
-            }
+            Toast.makeText(visualContext, message, duration).show()
         }
     }
 
