@@ -15,7 +15,9 @@ import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.RatingSummary
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.utils.MarkdownUtils
 
 sealed interface CourseDetailUiState {
@@ -35,8 +37,8 @@ sealed interface CourseDetailUiState {
 @HiltViewModel
 class CourseDetailViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val courseDetailProvider: CourseDetailProvider,
-    private val ratingSummaryProvider: RatingSummaryProvider
+    private val coursesRepository: CoursesRepository,
+    private val ratingsRepository: RatingsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<CourseDetailUiState>(CourseDetailUiState.Loading)
@@ -52,7 +54,7 @@ class CourseDetailViewModel @Inject constructor(
         loadJob = viewModelScope.launch {
             _uiState.value = CourseDetailUiState.Loading
 
-            courseDetailProvider(courseId)
+            coursesRepository.getCourseDetailModel(courseId)
                 .catch { e ->
                     _uiState.value = CourseDetailUiState.Error(e.message ?: "An error occurred")
                 }
@@ -101,7 +103,7 @@ class CourseDetailViewModel @Inject constructor(
                     val user = currentState.user
                     val userId = user?.id?.takeIf { it.isNotBlank() } ?: user?._id
                     if (userId != null) {
-                        val summary = ratingSummaryProvider(courseId, userId)
+                        val summary = ratingsRepository.getRatingSummary("course", courseId, userId)
                         _uiState.value = currentState.copy(
                             ratingSummary = summary
                         )
