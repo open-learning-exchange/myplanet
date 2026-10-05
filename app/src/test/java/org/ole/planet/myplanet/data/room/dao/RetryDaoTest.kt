@@ -7,6 +7,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -174,5 +175,63 @@ class RetryDaoTest {
         assertEquals("opA", pending[0].id)
         assertEquals("opB", pending[1].id)
         assertEquals("opC", pending[2].id)
+    }
+
+    @Test
+    fun findExistingId_returnsId_whenMatchingPendingOrInProgressRowExists() = runBlocking {
+        val opPending = RetryOperation().apply {
+            id = "op_pending"
+            itemId = "item1"
+            uploadType = "type1"
+            status = RetryOperation.STATUS_PENDING
+        }
+        val opInProgress = RetryOperation().apply {
+            id = "op_in_progress"
+            itemId = "item2"
+            uploadType = "type1"
+            status = RetryOperation.STATUS_IN_PROGRESS
+        }
+        retryDao.insert(opPending)
+        retryDao.insert(opInProgress)
+
+        val foundPendingId = retryDao.findExistingId("item1", "type1")
+        val foundInProgressId = retryDao.findExistingId("item2", "type1")
+
+        assertEquals("op_pending", foundPendingId)
+        assertEquals("op_in_progress", foundInProgressId)
+    }
+
+    @Test
+    fun findExistingId_returnsNull_whenMatchingRowIsCompletedOrAbandoned() = runBlocking {
+        val opCompleted = RetryOperation().apply {
+            id = "op_completed"
+            itemId = "item1"
+            uploadType = "type1"
+            status = RetryOperation.STATUS_COMPLETED
+        }
+        val opAbandoned = RetryOperation().apply {
+            id = "op_abandoned"
+            itemId = "item2"
+            uploadType = "type1"
+            status = RetryOperation.STATUS_ABANDONED
+        }
+        retryDao.insert(opCompleted)
+        retryDao.insert(opAbandoned)
+
+        assertNull(retryDao.findExistingId("item1", "type1"))
+        assertNull(retryDao.findExistingId("item2", "type1"))
+    }
+
+    @Test
+    fun findExistingId_returnsNull_whenUploadTypeDoesNotMatch() = runBlocking {
+        val op = RetryOperation().apply {
+            id = "op1"
+            itemId = "item1"
+            uploadType = "type1"
+            status = RetryOperation.STATUS_PENDING
+        }
+        retryDao.insert(op)
+
+        assertNull(retryDao.findExistingId("item1", "differentType"))
     }
 }
