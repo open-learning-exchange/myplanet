@@ -15,6 +15,7 @@ import android.widget.ArrayAdapter
 import android.widget.CheckedTextView
 import android.widget.ListView
 import android.widget.TextView
+import java.util.Locale
 import androidx.core.view.isGone
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetBehavior
