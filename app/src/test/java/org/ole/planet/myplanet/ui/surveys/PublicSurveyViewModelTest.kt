@@ -4,6 +4,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -106,10 +107,7 @@ class PublicSurveyViewModelTest {
         coEvery { submissionsRepository.getLatestSubmissionByParentId("survey123", "complete") } returns submission
         val mockAnswers = JsonArray()
         coEvery { publicMapper.buildPublicAnswers("survey123", submission) } returns mockAnswers
-        coEvery { publicMapper.sanitizeRespondent(any()) } answers {
-            val user = firstArg<JsonObject>()
-            if (user.has("age")) user.addProperty("age", 25)
-        }
+        every { publicMapper.parseRespondent(submission.user) } returns JsonObject().apply { addProperty("name", "John"); addProperty("age", 25) }
         coEvery { surveysRepository.submitPublicSurvey("url", "team1", "survey123", mockAnswers, any()) } returns true
 
         val uploadEventDeferred = async { viewModel.events.first() }

@@ -113,14 +113,19 @@ abstract class BasePermissionActivity : AppCompatActivity() {
         }
     }
 
+    private var declaredPermissions: Set<String>? = null
+
     private fun isPermissionDeclaredInManifest(permission: String): Boolean {
-        return try {
-            val packageInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS)
-            packageInfo.requestedPermissions?.contains(permission) == true
-        } catch (e: Exception) {
-            Log.e("BasePermissionActivity", "Error checking if permission is declared in manifest", e)
-            false
+        if (declaredPermissions == null) {
+            try {
+                val packageInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS)
+                declaredPermissions = packageInfo.requestedPermissions?.toHashSet() ?: emptySet()
+            } catch (e: Exception) {
+                Log.e("BasePermissionActivity", "Error checking if permission is declared in manifest", e)
+                return false
+            }
         }
+        return declaredPermissions?.contains(permission) == true
     }
 
     fun requestMediaPermissions() {
