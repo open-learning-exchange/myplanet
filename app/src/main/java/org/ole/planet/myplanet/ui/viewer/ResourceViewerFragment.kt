@@ -130,6 +130,8 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
 
         override fun onError(error: String?) {
             Utilities.toast(requireContext(), "Recording error: ${error.orEmpty()}")
+            NotificationUtils.cancel(requireContext(), NotificationUtils.RECORDING_NOTIFICATION_ID)
+            binding.fabRecord.setImageResource(R.drawable.ic_mic)
         }
     }
 
