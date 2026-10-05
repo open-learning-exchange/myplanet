@@ -1405,4 +1405,5 @@
 
     <string name="playback_speed">प्लेब्याक गति</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="filter_header_with_count">%1$s (%2$d)</string>
 </resources>

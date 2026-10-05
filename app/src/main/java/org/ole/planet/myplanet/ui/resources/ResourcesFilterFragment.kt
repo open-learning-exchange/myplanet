@@ -121,7 +121,7 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
             selectedLang = selectedFilter?.get("languages")?.toMutableSet() ?: selectedLang
             setAdapter(binding.listLevel, levels, selectedLvls)
             setAdapter(binding.listLang, languages, selectedLang)
-            setAdapter(binding.listMedium, mediums, selectedMeds) { getMediumDisplayName(requireContext(), it) }
+            setAdapter(binding.listMedium, mediums, selectedMeds) { ResourcesMediaType.displayName(requireContext(), it) }
             setAdapter(binding.listSub, subjects, selectedSubs)
             updateHeaderLabels()
             updateResultCount()
@@ -241,22 +241,4 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
         return if (count > 0) getString(R.string.filter_header_with_count, baseTitle, count) else baseTitle
     }
 
-    fun getMediumDisplayName(medium: String): String {
-        return Companion.getMediumDisplayName(requireContext(), medium)
-    }
-
-    companion object {
-        fun getMediumDisplayName(context: Context, medium: String): String {
-            return when (medium.lowercase(Locale.getDefault())) {
-                "pdf" -> context.getString(R.string.filter_pdfs)
-                "video" -> context.getString(R.string.filter_videos)
-                "audio" -> context.getString(R.string.filter_audio)
-                "image" -> context.getString(R.string.storage_images)
-                "text/html" -> context.getString(R.string.medium_text_html)
-                "html" -> context.getString(R.string.medium_html)
-                "other" -> context.getString(R.string.other)
-                else -> medium
-            }
-        }
-    }
 }

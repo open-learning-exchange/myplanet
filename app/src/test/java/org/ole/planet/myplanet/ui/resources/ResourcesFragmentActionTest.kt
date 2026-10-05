@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.resources
 
 import android.view.View
+import android.widget.LinearLayout
+import com.google.android.material.chip.Chip
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
@@ -133,5 +135,27 @@ class ResourcesFragmentActionTest {
 
         assertTrue(fragment.searchTags.isEmpty())
         assertEquals(View.GONE, badge.visibility)
+    }
+
+    @Test
+    fun testActiveFacetChips_renderingAndRemoval() {
+        val fragment = launchFragment()
+        fragment.filter(
+            subjects = mutableSetOf("Math"),
+            languages = mutableSetOf("English"),
+            mediums = mutableSetOf("pdf"),
+            levels = mutableSetOf("Primary")
+        )
+
+        val chipRow = fragment.requireView().findViewById<LinearLayout>(R.id.chip_filter_row)
+        val chips = (0 until chipRow.childCount).mapNotNull { chipRow.getChildAt(it) as? Chip }
+        assertEquals(4, chips.size)
+
+        val mathChip = chips.first { it.text == "Math" }
+        mathChip.performCloseIconClick()
+
+        assertTrue(!fragment.subjects.contains("Math"))
+        val updatedChips = (0 until chipRow.childCount).mapNotNull { chipRow.getChildAt(it) as? Chip }
+        assertEquals(3, updatedChips.size)
     }
 }

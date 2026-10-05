@@ -493,7 +493,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private fun updateFilterBadge() {
         if (_binding == null) return
         val count = searchTags.size + subjects.size + languages.size + mediums.size + levels.size +
-                (if (selectedDownloadFilterIndex != 0) 1 else 0)
+            (if (selectedDownloadFilterIndex != 0) 1 else 0)
         if (count > 0) {
             filterBadge.text = count.toString()
             filterBadge.visibility = View.VISIBLE
@@ -659,12 +659,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
-    override fun filter(
-        subjects: MutableSet<String>,
-        languages: MutableSet<String>,
-        mediums: MutableSet<String>,
-        levels: MutableSet<String>
-    ): Int {
+    override fun filter(subjects: MutableSet<String>, languages: MutableSet<String>, mediums: MutableSet<String>, levels: MutableSet<String>): Int {
         this.subjects = subjects
         this.languages = languages
         this.mediums = mediums
@@ -674,7 +669,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         setupDownloadFilterChips()
         updateFilterBadge()
 
-        if (view == null) return lastFilteredCount
         searchJob?.cancel()
         return applyFiltersAndUpdateUI()
     }
@@ -898,7 +892,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         for ((set, removeAction) in facetFilters) {
             for (item in set) {
                 val displayText = if (set === mediums) {
-                ResourcesFilterFragment.getMediumDisplayName(requireContext(), item)
+                    ResourcesMediaType.displayName(requireContext(), item)
                 } else {
                     item
                 }
@@ -924,12 +918,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             val tagIndex = chip.tag as? Int ?: continue
             val isSelected = tagIndex == selected
             chip.setBackgroundResource(if (isSelected) R.drawable.bg_chip_selected else R.drawable.bg_chip_unselected)
-            chip.setTextColor(
-                ContextCompat.getColor(
-                    requireContext(),
-                    if (isSelected) R.color.chip_selected_text else R.color.daynight_textColor
-                )
-            )
+            chip.setTextColor(ContextCompat.getColor(requireContext(),
+                if (isSelected) R.color.chip_selected_text else R.color.daynight_textColor))
         }
     }
 

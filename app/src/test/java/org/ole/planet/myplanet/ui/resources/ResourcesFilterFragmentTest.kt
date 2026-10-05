@@ -39,11 +39,11 @@ class ResourcesFilterFragmentTest {
         val activity = Robolectric.buildActivity(AppCompatActivity::class.java).setup().get()
         activity.setTheme(com.google.android.material.R.style.Theme_MaterialComponents)
 
-        assertEquals("PDFs", ResourcesFilterFragment.getMediumDisplayName(activity, "pdf"))
-        assertEquals("Videos", ResourcesFilterFragment.getMediumDisplayName(activity, "video"))
-        assertEquals("Audio", ResourcesFilterFragment.getMediumDisplayName(activity, "audio"))
-        assertEquals("Images", ResourcesFilterFragment.getMediumDisplayName(activity, "image"))
-        assertEquals("CustomMedium", ResourcesFilterFragment.getMediumDisplayName(activity, "CustomMedium"))
+        assertEquals("PDFs", ResourcesMediaType.displayName(activity, "pdf"))
+        assertEquals("Videos", ResourcesMediaType.displayName(activity, "video"))
+        assertEquals("Audio", ResourcesMediaType.displayName(activity, "audio"))
+        assertEquals("Images", ResourcesMediaType.displayName(activity, "image"))
+        assertEquals("CustomMedium", ResourcesMediaType.displayName(activity, "CustomMedium"))
     }
 
     @Test
