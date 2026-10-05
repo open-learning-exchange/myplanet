@@ -19,8 +19,11 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.currentTime
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -181,5 +184,30 @@ class NotificationActionReceiverTest {
 
         verify { android.util.Log.e("NotificationActionReceiver", "broadcast work failed", any()) }
         verify { pendingResult.finish() }
+    }
+
+    @Test
+    fun `test markNotificationAsRead dispatches system broadcast immediately without virtual time delay`() = testScope.runTest {
+        val notificationId = "id"
+
+        receiver.markNotificationAsRead(mockContext, notificationId)
+        runCurrent()
+
+        verify {
+            mockContext.sendBroadcast(match {
+                it.action == "org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM" &&
+                        it.getStringExtra("notification_id") == notificationId
+            })
+        }
+        assertEquals(0L, currentTime)
+    }
+
+    @Test
+    fun `test markNotificationAsRead with null notificationId does not send broadcast`() = testScope.runTest {
+        receiver.markNotificationAsRead(mockContext, null)
+        runCurrent()
+
+        verify(exactly = 0) { mockContext.sendBroadcast(any()) }
+        assertEquals(0L, currentTime)
     }
 }

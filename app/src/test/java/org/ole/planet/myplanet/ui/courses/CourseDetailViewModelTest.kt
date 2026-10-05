@@ -48,8 +48,6 @@ class CourseDetailViewModelTest {
     private val context: Context = mockk(relaxed = true)
 
     private lateinit var viewModel: CourseDetailViewModel
-    private lateinit var courseDetailProvider: CourseDetailProvider
-    private lateinit var ratingSummaryProvider: RatingSummaryProvider
 
     private val courseId = "course_1"
 
@@ -57,16 +55,10 @@ class CourseDetailViewModelTest {
     fun setUp() {
         every { context.getExternalFilesDir(null) } returns null
 
-        courseDetailProvider = CourseDetailProvider(coursesRepository)
-
-        ratingSummaryProvider = RatingSummaryProvider(
-            ratingsRepository
-        )
-
         viewModel = CourseDetailViewModel(
             context,
-            courseDetailProvider,
-            ratingSummaryProvider
+            coursesRepository,
+            ratingsRepository
         )
     }
 
