@@ -95,6 +95,7 @@ class NotificationsRepositoryImpl @Inject constructor(
             val valueChanged = previousValue != value
 
             val formattedMessage = formatMessage(value)
+            if (existingNotification != null && existingNotification.message == formattedMessage && existingNotification.relatedId == relatedId) return
 
             val notification = existingNotification?.apply {
                 message = formattedMessage
@@ -119,19 +120,12 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun markNotificationsAsRead(notificationIds: Set<String>): Set<String> {
         if (notificationIds.isEmpty()) return emptySet()
-
-        val existingIds = notificationDao.getIdsByIds(notificationIds.toList())
-        if (existingIds.isEmpty()) return emptySet()
-        notificationDao.markAsRead(existingIds, Date(timeProvider.now()))
-        return existingIds.toSet()
+        return notificationDao.markExistingAsRead(notificationIds.toList(), Date(timeProvider.now())).toSet()
     }
 
     override suspend fun markAllUnreadAsRead(userId: String?): Set<String> {
         val actualUserId = userId ?: return emptySet()
-        val unreadIds = notificationDao.getUnreadIds(actualUserId).toSet()
-        if (unreadIds.isEmpty()) return emptySet()
-        notificationDao.markAllUnreadAsRead(actualUserId, Date(timeProvider.now()))
-        return unreadIds
+        return notificationDao.markAllUnreadAsReadReturningIds(actualUserId, Date(timeProvider.now())).toSet()
     }
 
     suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean = false): List<NotificationPayload> {
@@ -481,38 +475,17 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun insert(doc: JsonObject) {
         val parsed = parseNotification(doc) ?: return
-        val existing = notificationDao.getById(parsed.id)
-        if (existing?.needsSync == true) {
-            parsed.needsSync = true
-            parsed.isRead = existing.isRead
-        }
-        notificationDao.upsert(parsed)
+        notificationDao.upsertPreservingPendingRead(parsed)
     }
 
     override suspend fun deleteNotifications(ids: Set<String>): Set<String> {
         if (ids.isEmpty()) return emptySet()
-        val deletedIds = notificationDao.getIdsByIds(ids.toList())
-        if (deletedIds.isNotEmpty()) {
-            notificationDao.deleteByIds(deletedIds)
-        }
-        return deletedIds.toSet()
+        return notificationDao.deleteExisting(ids.toList()).toSet()
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
         val documentList = jsonArray.toSyncDocuments().map { it.second }
         val parsedList = documentList.mapNotNull { parseNotification(it) }
-        val existingNotifications = if (parsedList.isNotEmpty()) {
-            notificationDao.getByIds(parsedList.map { it.id }).associateBy { it.id }
-        } else {
-            emptyMap()
-        }
-        parsedList.forEach { parsed ->
-            val existing = existingNotifications[parsed.id]
-            if (existing?.needsSync == true) {
-                parsed.needsSync = true
-                parsed.isRead = existing.isRead
-            }
-        }
-        notificationDao.upsertAll(parsedList)
+        notificationDao.upsertAllPreservingPendingRead(parsedList)
     }
 }
