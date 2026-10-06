@@ -1,0 +1,15 @@
+{
+  "planetVersion": "0.20.1 <beta>",
+  "last_synced": 9007199254740993,
+  "parentCode": "parent<1>",
+  "createdOn": "planet&1",
+  "version": 7064,
+  "versionName": "0.70.64",
+  "uniqueAndroidId": "golden-android-id",
+  "customDeviceName": "golden <custom> & 'device'",
+  "deviceName": "golden-device",
+  "time": 0,
+  "type": "sync",
+  "androidId": "golden-android-id",
+  "app": "myplanet"
+}

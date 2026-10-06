@@ -1,0 +1,28 @@
+[
+  {
+    "lastTimeUsed": 4000,
+    "firstTimeUsed": 3000,
+    "totalForegroundTime": 1000,
+    "totalUsed": 2000,
+    "version": 7064,
+    "versionName": "0.70.64",
+    "customDeviceName": "golden <custom> & 'device'",
+    "deviceName": "golden-device",
+    "time": 5000,
+    "androidId": "golden-android-id",
+    "app": "myplanet"
+  },
+  {
+    "lastTimeUsed": 0,
+    "firstTimeUsed": 0,
+    "totalForegroundTime": 0,
+    "totalUsed": 1,
+    "version": 7064,
+    "versionName": "0.70.64",
+    "customDeviceName": "golden <custom> & 'device'",
+    "deviceName": "golden-device",
+    "time": 5000,
+    "androidId": "golden-android-id",
+    "app": "myplanet"
+  }
+]
