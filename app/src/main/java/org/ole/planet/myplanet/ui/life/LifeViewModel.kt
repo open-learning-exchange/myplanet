@@ -4,9 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.MyLife
@@ -24,6 +26,8 @@ class LifeViewModel @Inject constructor(
     private val _myLifeList = MutableStateFlow<List<MyLife>>(emptyList())
     val myLifeList: StateFlow<List<MyLife>> = _myLifeList.asStateFlow()
 
+    private var loadJob: Job? = null
+
     private suspend fun resolveUserId(): String? {
         val raw = userRepository.getCurrentUserId().orEmpty()
             .ifEmpty { userRepository.getUserModel()?.id.orEmpty() }
@@ -31,21 +35,29 @@ class LifeViewModel @Inject constructor(
     }
 
     fun loadMyLifeList(resolveLabel: (Int) -> String) {
-        viewModelScope.launch {
-            val list = withContext(dispatcherProvider.io) {
-                val userId = resolveUserId()
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            val userId = withContext(dispatcherProvider.io) {
+                resolveUserId()
+            }
+            val initialList = withContext(dispatcherProvider.io) {
                 lifeRepository.getMyLifeByUserId(userId, LifeItemDefaults.forUser(userId, resolveLabel))
             }
-            _myLifeList.value = list
+            _myLifeList.value = initialList
+
+            lifeRepository.observeMyLifeByUserId(userId)
+                .distinctUntilChanged()
+                .collect { list ->
+                    _myLifeList.value = list
+                }
         }
     }
 
     fun updateVisibility(isVisible: Boolean, id: String) {
         viewModelScope.launch {
-            val updatedList = withContext(dispatcherProvider.io) {
+            withContext(dispatcherProvider.io) {
                 lifeRepository.updateVisibility(isVisible, id, resolveUserId())
             }
-            _myLifeList.value = updatedList
         }
     }
 
