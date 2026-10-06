@@ -361,14 +361,14 @@ class NotificationsRepositoryImplTest {
     @Test
     fun `markNotificationsAsRead marks existing notifications as read using timeProvider now`() = runTest {
         val ids = setOf("id1", "id2", "id3")
-        val dateSlot = slot<java.util.Date>()
+        val dateSlot = slot<Long>()
         coEvery { notificationDao.markExistingAsRead(eq(ids.toList()), capture(dateSlot)) } returns listOf("id1", "id2")
 
         val result = repository.markNotificationsAsRead(ids)
 
         assertEquals(setOf("id1", "id2"), result)
         coVerify { notificationDao.markExistingAsRead(ids.toList(), any()) }
-        assertEquals(TestTimeProvider().now(), dateSlot.captured.time)
+        assertEquals(TestTimeProvider().now(), dateSlot.captured)
     }
 
     @Test
@@ -381,14 +381,14 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `markAllUnreadAsRead fetches unread ids and updates all unread`() = runTest {
-        val dateSlot = slot<java.util.Date>()
+        val dateSlot = slot<Long>()
         coEvery { notificationDao.markAllUnreadAsReadReturningIds(eq("user1"), capture(dateSlot)) } returns listOf("id1", "id2")
 
         val result = repository.markAllUnreadAsRead("user1")
 
         assertEquals(setOf("id1", "id2"), result)
         coVerify { notificationDao.markAllUnreadAsReadReturningIds("user1", any()) }
-        assertEquals(TestTimeProvider().now(), dateSlot.captured.time)
+        assertEquals(TestTimeProvider().now(), dateSlot.captured)
     }
 
     @Test

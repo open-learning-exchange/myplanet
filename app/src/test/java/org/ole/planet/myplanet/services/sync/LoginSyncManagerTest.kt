@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
 import android.util.Base64
-import android.util.Log
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -54,10 +53,6 @@ class LoginSyncManagerTest {
 
     @Before
     fun setup() {
-        mockkStatic(Log::class)
-        every { Log.e(any(), any()) } returns 0
-        every { Log.e(any(), any(), any()) } returns 0
-
         mockkStatic(Base64::class)
         every { Base64.encodeToString(any(), any()) } answers {
             JavaBase64.getEncoder().encodeToString(firstArg<ByteArray>())

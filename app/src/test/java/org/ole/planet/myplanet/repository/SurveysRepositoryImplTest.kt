@@ -1,14 +1,11 @@
 package org.ole.planet.myplanet.repository
 
 import android.app.Application
-import android.content.Context
-import android.content.SharedPreferences
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
-import io.mockk.verify
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,7 +27,10 @@ import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.AndroidDateFormatter
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.FakeKeyValueStore
+import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -40,12 +40,11 @@ import org.robolectric.annotation.Config
 @Config(application = Application::class)
 class SurveysRepositoryImplTest {
     private lateinit var repository: SurveysRepositoryImpl
-    private lateinit var context: Context
+    private lateinit var stringProvider: StringProvider
     private lateinit var userSessionManager: UserSessionManager
     private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var dispatcherProvider: DispatcherProvider
-    private lateinit var sharedPreferences: SharedPreferences
-    private lateinit var sharedPreferencesEditor: SharedPreferences.Editor
+    private lateinit var reminderStore: FakeKeyValueStore
     private val timeProvider = TestTimeProvider(currentTime = 1_700_000_000_000L)
     private val apiInterface: org.ole.planet.myplanet.data.api.ApiInterface = mockk(relaxed = true)
     private val serverUrlMapper: org.ole.planet.myplanet.services.sync.ServerUrlMapper = mockk(relaxed = true)
@@ -56,22 +55,15 @@ class SurveysRepositoryImplTest {
 
     @Before
     fun setup() {
-        context = mockk(relaxed = true)
+        stringProvider = mockk(relaxed = true)
         userSessionManager = mockk(relaxed = true)
         sharedPrefManager = mockk(relaxed = true)
         dispatcherProvider = mockk(relaxed = true)
         every { dispatcherProvider.io } returns Dispatchers.Unconfined
 
-        sharedPreferences = mockk(relaxed = true)
-        sharedPreferencesEditor = mockk(relaxed = true)
-        every { context.getSharedPreferences("survey_reminders", Context.MODE_PRIVATE) } returns sharedPreferences
-        every { sharedPreferences.edit() } returns sharedPreferencesEditor
-        every { sharedPreferencesEditor.putLong(any(), any()) } returns sharedPreferencesEditor
-        every { sharedPreferencesEditor.putString(any(), any()) } returns sharedPreferencesEditor
-        every { sharedPreferencesEditor.remove(any()) } returns sharedPreferencesEditor
+        reminderStore = FakeKeyValueStore()
 
         repository = SurveysRepositoryImpl(
-            context,
             apiInterface,
             serverUrlMapper,
             userSessionManager,
@@ -81,7 +73,10 @@ class SurveysRepositoryImplTest {
             examDao,
             questionDao,
             submissionDao,
-            { teamsRepository }
+            { teamsRepository },
+            stringProvider,
+            reminderStore,
+            AndroidDateFormatter()
         )
     }
 
@@ -226,26 +221,23 @@ class SurveysRepositoryImplTest {
 
     @Test
     fun `getLastSurveyDialogShown returns stored value`() = runTest {
-        every { sharedPreferences.getLong("last_survey_dialog_shown", 0L) } returns 12345L
+        reminderStore.values["last_survey_dialog_shown"] = 12345L
 
         val result = repository.getLastSurveyDialogShown()
 
         assertEquals(12345L, result)
-        verify { sharedPreferences.getLong("last_survey_dialog_shown", 0L) }
     }
 
     @Test
     fun `setLastSurveyDialogShown stores value`() = runTest {
         repository.setLastSurveyDialogShown(12345L)
 
-        verify { sharedPreferences.edit() }
-        verify { sharedPreferencesEditor.putLong("last_survey_dialog_shown", 12345L) }
-        verify { sharedPreferencesEditor.apply() }
+        assertEquals(12345L, reminderStore.values["last_survey_dialog_shown"])
     }
 
     @Test
     fun `isReminderScheduled returns true if scheduled`() = runTest {
-        every { sharedPreferences.contains("reminder_time_survey1") } returns true
+        reminderStore.values["reminder_time_survey1"] = 1L
 
         val result = repository.isReminderScheduled("survey1")
 
@@ -254,7 +246,6 @@ class SurveysRepositoryImplTest {
 
     @Test
     fun `isReminderScheduled returns false if not scheduled`() = runTest {
-        every { sharedPreferences.contains("reminder_time_survey1") } returns false
 
         val result = repository.isReminderScheduled("survey1")
 
@@ -265,10 +256,9 @@ class SurveysRepositoryImplTest {
     fun `scheduleSurveyReminder writes to SharedPreferences`() = runTest {
         repository.scheduleSurveyReminder("survey1", TimeUnit.DAYS, 1)
 
-        verify { sharedPreferences.edit() }
-        verify { sharedPreferencesEditor.putLong(eq("reminder_time_survey1"), any()) }
-        verify { sharedPreferencesEditor.putString("reminder_surveys_survey1", "survey1") }
-        verify { sharedPreferencesEditor.apply() }
+        assertEquals(1, reminderStore.editCount)
+        assertEquals(timeProvider.now() + TimeUnit.DAYS.toMillis(1), reminderStore.values["reminder_time_survey1"])
+        assertEquals("survey1", reminderStore.values["reminder_surveys_survey1"])
     }
 
 
@@ -278,23 +268,23 @@ class SurveysRepositoryImplTest {
     fun `dueRemindersFlow emits due surveys and removes them from preferences`() = runTest {
         // The test setup uses TestTimeProvider with currentTime = 1_700_000_000_000L
         val currentTime = 1_700_000_000_000L
-        val allPrefs = mapOf<String, Any>(
-            "reminder_time_survey1" to currentTime - 100_000L, // Due
-            "reminder_time_survey2" to currentTime + 100_000L  // Not due
+        reminderStore.values.putAll(
+            mapOf(
+                "reminder_time_survey1" to currentTime - 100_000L, // Due
+                "reminder_surveys_survey1" to "survey1",
+                "reminder_time_survey2" to currentTime + 100_000L, // Not due
+                "reminder_surveys_survey2" to "survey2"
+            )
         )
-        every { sharedPreferences.all } returns allPrefs
-        every { sharedPreferences.getLong("reminder_time_survey1", 0) } returns currentTime - 100_000L
-        every { sharedPreferences.getLong("reminder_time_survey2", 0) } returns currentTime + 100_000L
 
         val result = repository.dueRemindersFlow().first()
 
         assertEquals(listOf("survey1"), result)
 
-        verify { sharedPreferencesEditor.remove("reminder_time_survey1") }
-        verify { sharedPreferencesEditor.remove("reminder_surveys_survey1") }
-
-        verify(exactly = 0) { sharedPreferencesEditor.remove("reminder_time_survey2") }
-        verify(exactly = 0) { sharedPreferencesEditor.remove("reminder_surveys_survey2") }
+        assertFalse(reminderStore.contains("reminder_time_survey1"))
+        assertFalse(reminderStore.contains("reminder_surveys_survey1"))
+        assertTrue(reminderStore.contains("reminder_time_survey2"))
+        assertTrue(reminderStore.contains("reminder_surveys_survey2"))
     }
 
     @Test
@@ -322,7 +312,7 @@ class SurveysRepositoryImplTest {
 
         val userId = "user1"
         coEvery { submissionDao.getByUserIdWithoutTeam(userId) } returns submissions
-        every { context.resources.getQuantityString(any(), any(), any()) } returns "N taken"
+        every { stringProvider.getQuantityString(any(), any(), any()) } returns "N taken"
 
         val result = repository.getSurveyInfos(isTeam = false, teamId = null, userId = userId, surveys = surveys)
 

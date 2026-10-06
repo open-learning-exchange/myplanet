@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileExistenceCache
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ImageViewerUtils
 import org.ole.planet.myplanet.utils.SystemTimeProvider
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -108,7 +109,7 @@ class EnterprisesReportsAdapter(
     }
 
     private fun bindReportImage(binding: ReportListItemBinding, report: FinanceReport) {
-        val imageFile = MyTeam.getAttachmentFile(context, report._id, report.imageName)
+        val imageFile = MyTeam.getAttachmentFile(FileUtils.getOlePath(context), report._id, report.imageName)
         val exists = attachmentPresenceCache.exists(imageFile, timeProvider.now())
 
         if (imageFile != null && exists) {

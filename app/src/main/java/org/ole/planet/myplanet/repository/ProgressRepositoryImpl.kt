@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
-import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.withContext
@@ -17,6 +16,7 @@ import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.CoursesProgressRow
 import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
 
@@ -252,7 +252,7 @@ class ProgressRepositoryImpl @Inject constructor(
         stepNum: Int,
         passed: Boolean?
     ) {
-        val now = Date().time
+        val now = DateTimeUtils.nowMillis()
         val courseProgress = courseProgressDao.findByCourseUserAndStep(courseId, userId, stepNum)
             ?: CourseProgress().apply {
                 id = UUID.randomUUID().toString()

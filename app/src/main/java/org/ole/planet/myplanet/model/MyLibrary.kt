@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.content.Context
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
@@ -18,7 +17,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.AppStorage
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.toGson
@@ -161,7 +160,7 @@ open class MyLibrary {
         data class InsertParams(
             val doc: JsonObject,
             val spm: SharedPrefManager,
-            val context: Context,
+            val storage: AppStorage,
             val userId: String? = "",
             val stepId: String? = "",
             val courseId: String? = "",
@@ -237,7 +236,7 @@ open class MyLibrary {
                         if (key.indexOf("/") < 0) {
                             resourceRemoteAddress = "$couchdbUrl/resources/$resourceId/$key"
                             resourceLocalAddress = key
-                            resourceOffline = FileUtils.checkFileExist(params.context, resourceRemoteAddress)
+                            resourceOffline = params.storage.hasDownloadedFile(resourceRemoteAddress)
                             if (resourceOffline) {
                                 downloadedRev = JsonUtils.getString("_rev", kDoc)
                             }

@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
-import android.util.Log
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.net.ConnectException
@@ -20,6 +19,7 @@ import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.androidDecrypter
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.toGson
@@ -47,7 +47,7 @@ class LoginSyncManager @Inject constructor(
             val authHeader = try {
                 UrlUtils.basicAuthHeader(userName, password)
             } catch (e: Exception) {
-                Log.e("LoginSyncManager", "Authentication encoding failed", e)
+                AppLog.e("LoginSyncManager", "Authentication encoding failed", e)
                 listener.onSyncFailed("Authentication encoding failed.")
                 return
             }
@@ -55,7 +55,7 @@ class LoginSyncManager @Inject constructor(
             val userUrl = try {
                 "${UrlUtils.getUrl()}/_users/org.couchdb.user:$userName"
             } catch (e: Exception) {
-                Log.e("LoginSyncManager", "Invalid server URL", e)
+                AppLog.e("LoginSyncManager", "Invalid server URL", e)
                 listener.onSyncFailed("Invalid server URL.")
                 return
             }
@@ -95,7 +95,7 @@ class LoginSyncManager @Inject constructor(
                             listener.onSyncFailed("Authentication failed. Invalid credentials.")
                         }
                     } catch (e: Exception) {
-                        Log.e("LoginSyncManager", "Authentication processing failed", e)
+                        AppLog.e("LoginSyncManager", "Authentication processing failed", e)
                         listener.onSyncFailed("Authentication processing failed.")
                     }
                 } else {
@@ -103,7 +103,7 @@ class LoginSyncManager @Inject constructor(
                 }
             } catch (t: Exception) {
                 try {
-                    Log.e("LoginSyncManager", "Network error during login", t)
+                    AppLog.e("LoginSyncManager", "Network error during login", t)
                     val errorMsg = when (t) {
                         is UnknownHostException -> "Server not reachable. Check your internet connection."
                         is SocketTimeoutException -> "Connection timeout. Please try again."
@@ -112,12 +112,12 @@ class LoginSyncManager @Inject constructor(
                     }
                     listener.onSyncFailed(errorMsg)
                 } catch (e: Exception) {
-                    Log.e("LoginSyncManager", "Error handling network failure", e)
+                    AppLog.e("LoginSyncManager", "Error handling network failure", e)
                     listener.onSyncFailed("Network error occurred.")
                 }
             }
         } catch (e: Exception) {
-            Log.e("LoginSyncManager", "Login initialization failed", e)
+            AppLog.e("LoginSyncManager", "Login initialization failed", e)
             listener.onSyncFailed("Login initialization failed.")
         }
     }

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
@@ -24,6 +23,7 @@ import org.ole.planet.myplanet.services.UserDataUploadScheduler
 import org.ole.planet.myplanet.services.UserDataWorker
 import org.ole.planet.myplanet.services.sync.AdaptiveBatchProcessor
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils.getInt
@@ -105,7 +105,7 @@ class SyncRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.e("SyncRepositoryImpl", "Error in processShelfParallel", e)
+            AppLog.e("SyncRepositoryImpl", "Error in processShelfParallel", e)
         }
 
         return processedItems
@@ -189,7 +189,7 @@ class SyncRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.e("SyncRepositoryImpl", "Error in processShelfDataOptimizedSync", e)
+            AppLog.e("SyncRepositoryImpl", "Error in processShelfDataOptimizedSync", e)
             logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} failed: ${e.message}")
         }
         return processedCount

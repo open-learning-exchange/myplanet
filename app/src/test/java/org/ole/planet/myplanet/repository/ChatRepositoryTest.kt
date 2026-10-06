@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.Gson
-import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,7 +26,6 @@ class ChatRepositoryTest {
 
     @Before
     fun setup() {
-        every { sharedPrefManager.rawPreferences } returns mockk(relaxed = true)
         chatRepository = ChatRepositoryImpl(
             chatDao,
             chatApiService,

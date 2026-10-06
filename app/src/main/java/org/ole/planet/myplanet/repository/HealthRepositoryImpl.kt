@@ -5,7 +5,6 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
-import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
@@ -24,8 +23,9 @@ import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.AndroidDecrypter
+import org.ole.planet.myplanet.utils.DateFormatter
+import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
@@ -36,7 +36,8 @@ class HealthRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val healthExaminationDao: HealthExaminationDao,
     private val userRepository: Lazy<UserRepository>,
-    @PlainGson private val gson: Gson
+    @PlainGson private val gson: Gson,
+    private val dateFormatter: DateFormatter
 ) : HealthRepository {
     override suspend fun getHealthEntry(userId: String): Pair<UserEntity?, HealthExamination?> {
         val userCopy = userRepository.get().getUserById(userId)
@@ -53,7 +54,7 @@ class HealthRepositoryImpl @Inject constructor(
         return withContext(dispatcherProvider.default) {
             val health = MyHealth()
             val profile = MyHealth.MyHealthProfile()
-            health.lastExamination = Date().time
+            health.lastExamination = DateTimeUtils.nowMillis()
             health.userKey = AndroidDecrypter.generateKey()
             health.profile = profile
             health
@@ -210,7 +211,7 @@ class HealthRepositoryImpl @Inject constructor(
             birthPlace = (userData["birthPlace"] as? String)?.trim()
             userData["dob"]?.let { dobVal ->
                 val dobInput = (dobVal as String).trim()
-                dob = TimeUtils.convertDDMMYYYYToISO(dobInput)
+                dob = dateFormatter.convertDDMMYYYYToISO(dobInput)
             }
             isUpdated = true
         }

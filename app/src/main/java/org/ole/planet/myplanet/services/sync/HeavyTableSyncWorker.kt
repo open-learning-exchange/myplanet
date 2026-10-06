@@ -30,7 +30,7 @@ class HeavyTableSyncWorker @AssistedInject constructor(
         val table = inputData.getString(KEY_TABLE) ?: return Result.failure()
         if (syncManager.isMainSyncActive()) return Result.retry()
         transactionSyncManager.syncDb(table, useCheckpoint = true)
-        val interrupted = sharedPrefManager.rawPreferences.getInt("heavy_sync_skip_$table", 0) > 0
+        val interrupted = sharedPrefManager.getHeavySyncSkip(table) > 0
         return if (interrupted) Result.retry() else Result.success()
     }
 
@@ -58,7 +58,7 @@ class HeavyTableSyncWorker @AssistedInject constructor(
 
         fun scheduleIfPending(context: Context, sharedPrefManager: SharedPrefManager) {
             val pending = ALL_HEAVY_TABLES.filter { table ->
-                sharedPrefManager.rawPreferences.getInt("heavy_sync_skip_$table", 0) > 0
+                sharedPrefManager.getHeavySyncSkip(table) > 0
             }
             if (pending.isNotEmpty()) schedule(context, pending)
         }

@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.app.Application
-import android.content.SharedPreferences
 import androidx.room.Room
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -29,7 +28,10 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.AppStorage
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.DownloadLauncher
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
@@ -40,8 +42,8 @@ import org.robolectric.annotation.Config
  * commit (and fsync) once instead of individually. The rest of the suite mocks the DAOs, so this is
  * the only test that verifies the batch actually lands atomically.
  *
- * SDK is pinned below S so `processDescription` short-circuits (it otherwise calls the download
- * service via MainApplication.context, which isn't wired up in a plain unit test).
+ * SDK is pinned below S so `processDescription` short-circuits before extracting description
+ * links for the download launcher.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class, sdk = [26])
@@ -72,11 +74,9 @@ class TeamsRepositoryBulkInsertTransactionTest {
         teamDao = spyk(db.teamDao())
 
         repository = TeamsRepositoryImpl(
-            mockk<android.content.Context>(relaxed = true),
             mockk<UserSessionManager>(relaxed = true),
             mockk<UploadManager>(relaxed = true),
             Gson(),
-            mockk<SharedPreferences>(relaxed = true),
             mockk<SharedPrefManager>(relaxed = true),
             mockk<ServerUrlMapper>(relaxed = true),
             mockk<DispatcherProvider>(relaxed = true),
@@ -89,6 +89,9 @@ class TeamsRepositoryBulkInsertTransactionTest {
             mockk<CourseDao>(relaxed = true),
             mockk<CourseStepDao>(relaxed = true),
             db,
+            mockk<DeviceNameProvider>(relaxed = true),
+            mockk<AppStorage>(relaxed = true),
+            mockk<DownloadLauncher>(relaxed = true),
         )
     }
 

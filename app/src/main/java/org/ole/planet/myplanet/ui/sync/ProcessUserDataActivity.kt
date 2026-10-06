@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.net.Uri
@@ -29,6 +30,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BasePermissionActivity
 import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.callback.OnSuccessListener
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.repository.SyncRepository
 import org.ole.planet.myplanet.repository.SyncUiState
@@ -52,6 +54,10 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
     @Inject
     lateinit var prefData: SharedPrefManager
+
+    @Inject
+    @AppPreferences
+    lateinit var appPreferences: SharedPreferences
 
     @Inject
     lateinit var uploadToShelfService: UploadToShelfService

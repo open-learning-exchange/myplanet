@@ -13,7 +13,7 @@ object AuthUtils {
         if (activity.forceSyncTrigger()) return
 
         withContext(ioDispatcher) {
-            SecurePrefs.saveCredentials(activity, activity.prefData.rawPreferences, name, password)
+            SecurePrefs.saveCredentials(activity, activity.appPreferences, name, password)
         }
 
         val isLoggedIn = activity.authenticateUser(name, password, false)

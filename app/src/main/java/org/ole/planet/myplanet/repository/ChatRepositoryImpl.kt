@@ -5,7 +5,6 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -23,6 +22,7 @@ import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.ServerReachabilityProvider
@@ -64,8 +64,8 @@ class ChatRepositoryImpl @Inject constructor(
                     addProperty("aiProvider", aiProvider.name)
                     addProperty("user", user)
                     addProperty("title", query)
-                    addProperty("createdDate", Date().time)
-                    addProperty("updatedDate", Date().time)
+                    addProperty("createdDate", DateTimeUtils.nowMillis())
+                    addProperty("updatedDate", DateTimeUtils.nowMillis())
                     val conversationsArray = JsonArray()
                     val conversationObject = JsonObject().apply {
                         addProperty("query", query)
@@ -114,7 +114,7 @@ class ChatRepositoryImpl @Inject constructor(
 
     override suspend fun fetchAiProviders(serverUrl: String): Map<String, Boolean>? {
         val mapping = serverUrlMapper.processUrl(serverUrl)
-        serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+        serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager) { url ->
             reachabilityCheck(url)
         }
         return chatApiService.fetchAiProviders()
@@ -182,7 +182,7 @@ class ChatRepositoryImpl @Inject constructor(
                 conversations = conversationsArray.map {
                     gson.fromJson(it, Conversation::class.java)
                 }
-                lastUsed = Date().time
+                lastUsed = DateTimeUtils.nowMillis()
             }
         }
         chatDao.upsertAll(entities)
@@ -196,8 +196,8 @@ class ChatRepositoryImpl @Inject constructor(
             this.response = response
         }
         chatHistory.conversations = (chatHistory.conversations ?: emptyList()) + conversation
-        chatHistory.updatedDate = "${Date().time}"
-        chatHistory.lastUsed = Date().time
+        chatHistory.updatedDate = "${DateTimeUtils.nowMillis()}"
+        chatHistory.lastUsed = DateTimeUtils.nowMillis()
         if (!newRev.isNullOrEmpty()) {
             chatHistory._rev = newRev
         }

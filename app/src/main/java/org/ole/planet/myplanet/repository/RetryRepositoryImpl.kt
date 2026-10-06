@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -13,6 +12,7 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.RetryDao
 import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.model.RetryOperation
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
@@ -73,7 +73,7 @@ class RetryRepositoryImpl @Inject constructor(
                 Json.parseToJsonElement(operation.serializedPayload).jsonObject
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
-                Log.e(TAG, "Invalid payload for ${operation.id}, abandoning")
+                AppLog.e(TAG, "Invalid payload for ${operation.id}, abandoning")
                 markFailed(operation.id, "Invalid payload", null)
                 return RetryOperationResult.TerminalFailure("Invalid payload", null)
             }
@@ -104,23 +104,23 @@ class RetryRepositoryImpl @Inject constructor(
 
             if (response.isSuccessful) {
                 markCompleted(operation.id)
-                Log.d(TAG, "Successfully retried operation ${operation.id}")
+                AppLog.d(TAG, "Successfully retried operation ${operation.id}")
                 RetryOperationResult.Success
             } else if (response.code() == 409) {
                 // 409 Conflict means document already exists - data is already synced
                 markCompleted(operation.id)
-                Log.d(TAG, "Operation ${operation.id} already synced (409 conflict)")
+                AppLog.d(TAG, "Operation ${operation.id} already synced (409 conflict)")
                 RetryOperationResult.Success
             } else {
                 val code = response.code()
                 val isRetryable = code >= 500
                 if (isRetryable) {
                     markFailed(operation.id, "HTTP $code", code)
-                    Log.w(TAG, "Retry failed for ${operation.id}: HTTP $code")
+                    AppLog.w(TAG, "Retry failed for ${operation.id}: HTTP $code")
                     RetryOperationResult.RetryableFailure("HTTP $code", code)
                 } else {
                     markFailed(operation.id, "Non-retryable HTTP $code", code)
-                    Log.w(TAG, "Retry failed for ${operation.id}: HTTP $code")
+                    AppLog.w(TAG, "Retry failed for ${operation.id}: HTTP $code")
                     RetryOperationResult.TerminalFailure("Non-retryable HTTP $code", code)
                 }
             }
@@ -128,11 +128,11 @@ class RetryRepositoryImpl @Inject constructor(
             throw e
         } catch (e: IOException) {
             markFailed(operation.id, e.message, null)
-            Log.w(TAG, "Network error during retry for ${operation.id}", e)
+            AppLog.w(TAG, "Network error during retry for ${operation.id}", e)
             RetryOperationResult.RetryableFailure(e.message, null)
         } catch (e: Exception) {
             markFailed(operation.id, e.message, null)
-            Log.e(TAG, "Unexpected error during retry for ${operation.id}", e)
+            AppLog.e(TAG, "Unexpected error during retry for ${operation.id}", e)
             RetryOperationResult.RetryableFailure(e.message, null)
         }
     }
