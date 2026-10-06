@@ -88,7 +88,18 @@ class LoginViewModel @Inject constructor(
 
     suspend fun createGuestUser(username: String): UserEntity? = userRepository.createGuestUser(username)
 
-    suspend fun syncCommunityDocs(): Boolean = withContext(dispatcherProvider.io) {
-        communityRepository.syncCommunityDocs()
+    private var communityDocsSynced = false
+
+    suspend fun syncCommunityDocs(): Boolean {
+        if (communityDocsSynced) {
+            return true
+        }
+        val result = withContext(dispatcherProvider.io) {
+            communityRepository.syncCommunityDocs()
+        }
+        if (result) {
+            communityDocsSynced = true
+        }
+        return result
     }
 }
