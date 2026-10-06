@@ -166,4 +166,39 @@ class ResourcesAdapterTest {
             holder.binding.tvMeta.text.toString().contains(expectedSize)
         )
     }
+
+    @Test
+    fun `test selectAllItems false clears selections and notifies listener with empty list`() {
+        val item1 = ResourceItem(
+            id = "1", title = "Res 1", description = "desc", createdDate = 0L, averageRating = "0",
+            timesRated = 0, resourceId = "res1", isOffline = false, _rev = "rev1", uploadDate = "date",
+            filename = "file1"
+        )
+        val item2 = ResourceItem(
+            id = "2", title = "Res 2", description = "desc", createdDate = 0L, averageRating = "0",
+            timesRated = 0, resourceId = "res2", isOffline = false, _rev = "rev2", uploadDate = "date",
+            filename = "file2"
+        )
+        val model1 = ResourceListModel(MyLibrary().apply { id = "1" }, item1, emptyList())
+        val model2 = ResourceListModel(MyLibrary().apply { id = "2" }, item2, emptyList())
+        adapter.setLibraryList(listOf(model1, model2))
+
+        var selectedList: List<ResourceItem>? = null
+        val listener = object : org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener {
+            override fun onSelectedListChange(list: List<ResourceItem>) {
+                selectedList = list
+            }
+            override fun onTagClicked(tag: org.ole.planet.myplanet.model.TagItem) {}
+            override fun onResourceClicked(item: ResourceItem) {}
+        }
+        adapter.setListener(listener)
+
+        adapter.selectAllItems(true)
+        assertEquals(true, adapter.areAllSelected())
+        assertEquals(2, selectedList?.size)
+
+        adapter.selectAllItems(false)
+        assertEquals(false, adapter.areAllSelected())
+        assertEquals(0, selectedList?.size)
+    }
 }

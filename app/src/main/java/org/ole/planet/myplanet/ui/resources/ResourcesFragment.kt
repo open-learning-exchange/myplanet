@@ -703,6 +703,14 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override fun onPause() {
         super.onPause()
         saveSearchActivity()
+        if (::adapterLibrary.isInitialized) {
+            adapterLibrary.selectAllItems(false)
+        }
+        selectedItems?.clear()
+        if (_binding != null) {
+            changeButtonStatus()
+            hideButton()
+        }
     }
 
     override fun onDestroyView() {
