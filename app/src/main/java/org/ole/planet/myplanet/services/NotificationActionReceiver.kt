@@ -9,7 +9,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.di.ApplicationScope
@@ -100,7 +99,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
         }
 
         withContext(dispatcherProvider.main) {
-            delay(200)
             val broadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
             broadcastIntent.setPackage(context.packageName)
             broadcastIntent.putExtra("notification_id", notificationId)

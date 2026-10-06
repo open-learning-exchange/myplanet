@@ -26,8 +26,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -59,6 +57,7 @@ import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.debounceDistinct
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
@@ -370,8 +369,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun setupSearchTextListener() {
         etSearch.textChanges()
-            .debounce(300L)
-            .distinctUntilChanged()
+            .debounceDistinct(300L)
             .onEach {
                 if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return@onEach
                 applyFiltersAndUpdateUI()

@@ -40,7 +40,6 @@ import org.ole.planet.myplanet.utils.Utilities
 class CoursesRepositoryImplTest {
 
     private val progressRepository: ProgressRepository = mockk(relaxed = true)
-    private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)
     private val tagsRepository: TagsRepository = mockk(relaxed = true)
     private val ratingsRepository: RatingsRepository = mockk(relaxed = true)
@@ -70,7 +69,6 @@ class CoursesRepositoryImplTest {
         repository = CoursesRepositoryImpl(
             mockk(relaxed = true),
             progressRepository,
-            activitiesRepository,
             submissionsRepository,
             tagsRepository,
             ratingsRepository,
