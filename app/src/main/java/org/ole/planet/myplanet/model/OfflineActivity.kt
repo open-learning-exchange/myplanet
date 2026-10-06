@@ -3,8 +3,8 @@ package org.ole.planet.myplanet.model
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.google.gson.JsonObject
-import org.ole.planet.myplanet.utils.GsonUtils
+import kotlinx.serialization.json.JsonObject
+import org.ole.planet.myplanet.utils.KJson
 
 @Entity(
     tableName = "offline_activity",
@@ -28,8 +28,8 @@ open class OfflineActivity {
     var androidId: String? = null
     fun changeRev(r: JsonObject?) {
         if (r != null) {
-            _rev = GsonUtils.getString("_rev", r)
-            _id = GsonUtils.getString("_id", r)
+            _rev = KJson.getString("_rev", r)
+            _id = KJson.getString("_id", r)
         }
     }
 }

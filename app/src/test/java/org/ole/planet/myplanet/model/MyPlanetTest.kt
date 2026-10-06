@@ -18,6 +18,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.toGson
 
 class MyPlanetTest {
     private lateinit var context: Context
@@ -71,7 +72,7 @@ class MyPlanetTest {
             )
         } returns listOf(mockUsageStats)
 
-        val result = MyPlanet.getTabletUsages(context, sharedPrefManager, now = pinnedNow)
+        val result = MyPlanet.getTabletUsages(context, sharedPrefManager, now = pinnedNow).toGson()
 
         verify(exactly = 1) {
             usageStatsManager.queryUsageStats(
@@ -126,7 +127,7 @@ class MyPlanetTest {
             )
         } returns listOf(matchingStats1, nonMatchingStats, matchingStats2)
 
-        val result = MyPlanet.getTabletUsages(context, sharedPrefManager, now = pinnedNow)
+        val result = MyPlanet.getTabletUsages(context, sharedPrefManager, now = pinnedNow).toGson()
 
         assertEquals(2, result.size())
         for (elem in result) {
@@ -154,7 +155,7 @@ class MyPlanetTest {
             )
         } returns emptyList()
 
-        val json = MyPlanet.getMyPlanetActivities(context, sharedPrefManager, userModel, now = pinnedNow)
+        val json = MyPlanet.getMyPlanetActivities(context, sharedPrefManager, userModel, now = pinnedNow).toGson()
 
         verify(exactly = 1) {
             usageStatsManager.queryUsageStats(
@@ -179,7 +180,7 @@ class MyPlanetTest {
         every { sharedPrefManager.getLastSync() } returns 123456789L
         every { sharedPrefManager.getVersionDetail() } returns null
 
-        val json = MyPlanet.getNormalMyPlanetActivities(context, sharedPrefManager, userModel)
+        val json = MyPlanet.getNormalMyPlanetActivities(context, sharedPrefManager, userModel).toGson()
 
         assertEquals("sync", json.get("type").asString)
         assertEquals(123456789L, json.get("last_synced").asLong)

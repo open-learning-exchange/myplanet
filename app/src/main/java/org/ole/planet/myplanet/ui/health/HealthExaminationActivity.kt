@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.utils.TimeUtils.getAge
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.parseVitalReading
+import org.ole.planet.myplanet.utils.toGsonAsParsed
 
 @AndroidEntryPoint
 class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
@@ -122,7 +123,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             binding.etWeight.setText(getString(R.string.float_placeholder, examination?.weight))
             binding.etVision.setText(examination?.vision)
             binding.etHearing.setText(examination?.hearing)
-            val encrypted = user?.let { examination?.getEncryptedDataAsJson(it) }
+            val encrypted = user?.let { examination?.getEncryptedDataAsJson(it)?.toGsonAsParsed() }
             val saved = encrypted?.let { runCatching { GsonUtils.gson.fromJson(it, Examination::class.java) }.getOrNull() }
             binding.etObservation.setText(saved?.notes.orEmpty())
             binding.etDiag.setText(saved?.diagnosis.orEmpty())

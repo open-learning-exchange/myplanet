@@ -8,8 +8,9 @@ import io.mockk.every
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import io.mockk.unmockkStatic
+import io.mockk.unmockkObject
 import io.mockk.verify
+import kotlinx.serialization.json.jsonArray
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -17,7 +18,10 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 class FeedbackTest {
 
@@ -45,7 +49,7 @@ class FeedbackTest {
         obj.addProperty("message", "Test message")
         jsonArray.add(obj)
 
-        feedback.setMessages(jsonArray)
+        feedback.setMessages(jsonArray.toKotlinx().jsonArray)
         assertEquals("[{\"message\":\"Test message\"}]", feedback.messages)
     }
 
@@ -148,7 +152,7 @@ class FeedbackTest {
         val messageString = "[{\"message\":\"Test message\"}]"
         feedback.messages = messageString
 
-        val serialized = Feedback.serializeFeedback(feedback)
+        val serialized = Feedback.serializeFeedback(feedback).toGson()
 
         assertEquals("Test Title", serialized.get("title").asString)
         assertEquals("Test Source", serialized.get("source").asString)
@@ -184,7 +188,7 @@ class FeedbackTest {
             }
         }
 
-        val jsonObject = Feedback.serializeFeedback(feedback)
+        val jsonObject = Feedback.serializeFeedback(feedback).toGson()
 
         // When an exception is thrown, the "messages" property is not added
         assertNull(jsonObject.get("messages"))
@@ -200,8 +204,8 @@ class FeedbackTest {
         feedback.messages = """[{"message": "First message", "user": "user0", "time": "time0"},
             {"message": "Second message", "user": "user1", "time": "time1"}]"""
 
-        mockkStatic(JsonParser::class)
-        every { JsonParser.parseString(any()) } returns expectedArray
+        mockkObject(KJson)
+        every { KJson.parseOrNull(any()) } returns expectedArray.toKotlinx()
 
         try {
             // Repeated reads of both derived views share one parse of the backing string.
@@ -211,9 +215,9 @@ class FeedbackTest {
             repeat(5) { feedback.message }
             repeat(5) { feedback.messageList }
 
-            verify(exactly = 1) { JsonParser.parseString(any()) }
+            verify(exactly = 1) { KJson.parseOrNull(any()) }
         } finally {
-            unmockkStatic(JsonParser::class)
+            unmockkObject(KJson)
         }
     }
 
@@ -237,7 +241,7 @@ class FeedbackTest {
         val jsonArray = JsonArray().apply {
             add(JsonObject().apply { addProperty("message", "second"); addProperty("user", "u"); addProperty("time", "t") })
         }
-        feedback.setMessages(jsonArray)
+        feedback.setMessages(jsonArray.toKotlinx().jsonArray)
         assertEquals("second", feedback.message)
     }
 

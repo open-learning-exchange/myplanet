@@ -41,6 +41,7 @@ import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
@@ -634,7 +635,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
     override suspend fun getUnuploadedPhotos(): List<Pair<String?, JsonObject>> {
         return submitPhotosDao.getUnuploaded().map { photo ->
-            Pair(photo.id, SubmitPhotos.serialize(photo))
+            Pair(photo.id, SubmitPhotos.serialize(photo).toGson())
         }
     }
 
@@ -817,14 +818,14 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         `object`.addProperty("sender", submission.sender)
         `object`.addProperty("source", sharedPrefManager.getPlanetCode())
         `object`.addProperty("parentCode", sharedPrefManager.getParentCode())
-        `object`.add("answers", Answer.serializeAnswer(submission.answers ?: mutableListOf()))
+        `object`.add("answers", Answer.serializeAnswer(submission.answers ?: mutableListOf()).toGson())
         if (exam != null) {
-            `object`.add("parent", StepExam.serializeExam(exam, payloadData.questions))
+            `object`.add("parent", StepExam.serializeExam(exam, payloadData.questions).toGson())
         } else {
             val parent = gson.fromJson(submission.parent, JsonObject::class.java)
             `object`.add("parent", parent)
         }
-        val freshUser = resolvedUser?.serialize()
+        val freshUser = resolvedUser?.serialize()?.toGson()
         when {
             freshUser != null -> `object`.add("user", freshUser)
             !submission.user.isNullOrEmpty() -> `object`.add("user", JsonParser.parseString(submission.user))
@@ -888,14 +889,14 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             jsonObject.addProperty("sender", submission.sender)
             jsonObject.addProperty("source", source)
             jsonObject.addProperty("parentCode", parentCode)
-            jsonObject.add("answers", Answer.serializeAnswer(submission.answers ?: mutableListOf()))
+            jsonObject.add("answers", Answer.serializeAnswer(submission.answers ?: mutableListOf()).toGson())
             if (exam != null) {
-                jsonObject.add("parent", StepExam.serializeExam(exam, payloadData.questions))
+                jsonObject.add("parent", StepExam.serializeExam(exam, payloadData.questions).toGson())
             } else if (!submission.parent.isNullOrEmpty()) {
                 jsonObject.add("parent", JsonParser.parseString(submission.parent))
             }
 
-            val userJson = payloadData.user?.serialize()
+            val userJson = payloadData.user?.serialize()?.toGson()
                 ?: submission.user?.takeIf { it.isNotEmpty() }?.let { JsonParser.parseString(it).asJsonObject }
             if (userJson != null) {
                 if (submission.membershipDoc != null) {

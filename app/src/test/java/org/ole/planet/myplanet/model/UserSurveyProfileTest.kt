@@ -5,6 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.toGson
 
 class UserSurveyProfileTest {
 
@@ -26,7 +27,7 @@ class UserSurveyProfileTest {
         )
 
         val update = profile.toProfileFieldsUpdate()
-        val json = profile.toJson()
+        val json = profile.toJson().toGson()
 
         val expectedBirthDate = TimeUtils.convertToISO8601(dob)
         val expectedAge = (Calendar.getInstance().get(Calendar.YEAR) - 1990).toString()

@@ -1,12 +1,11 @@
 package org.ole.planet.myplanet.model
 
-import com.google.gson.JsonObject
 import java.util.Calendar
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
 import org.ole.planet.myplanet.utils.TimeUtils
-import org.ole.planet.myplanet.utils.toGson
 
 data class UserSurveyProfile(
     val fname: String,
@@ -46,7 +45,7 @@ data class UserSurveyProfile(
         if (gender.isNotEmpty()) put("gender", gender)
 
         put("betaEnabled", false)
-    }.toGson()
+    }
 
     fun toProfileFieldsUpdate(): ProfileFieldsUpdate {
         val birthDateCalculated = if (dob.isNotEmpty()) {

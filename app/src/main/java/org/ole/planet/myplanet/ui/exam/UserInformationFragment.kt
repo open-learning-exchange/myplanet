@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.toGson
 
 @AndroidEntryPoint
 class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
@@ -186,12 +187,12 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         val teamId = arguments?.getString("teamId")
 
         if (!teamId.isNullOrEmpty()) {
-            saveSubmission(profile.toJson())
+            saveSubmission(profile.toJson().toGson())
         } else if (TextUtils.isEmpty(id)) {
             val userId = userModel?.id
             viewModel.updateProfile(userId, profile.toProfileFieldsUpdate())
         } else {
-            saveSubmission(profile.toJson())
+            saveSubmission(profile.toJson().toGson())
         }
     }
 

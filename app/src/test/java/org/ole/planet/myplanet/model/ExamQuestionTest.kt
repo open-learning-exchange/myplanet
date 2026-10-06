@@ -2,12 +2,15 @@ package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import kotlinx.serialization.json.jsonArray
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 class ExamQuestionTest {
 
@@ -15,7 +18,7 @@ class ExamQuestionTest {
     fun testInsertExamQuestions_emptyArray() {
         val emptyArray = JsonArray()
 
-        val result = ExamQuestion.insertExamQuestions(emptyArray, "exam123")
+        val result = ExamQuestion.insertExamQuestions(emptyArray.toKotlinx().jsonArray, "exam123")
 
         assertTrue(result.isEmpty())
     }
@@ -42,7 +45,7 @@ class ExamQuestionTest {
 
         questionsArray.add(question1)
 
-        val insertedQuestions = ExamQuestion.insertExamQuestions(questionsArray, "exam123")
+        val insertedQuestions = ExamQuestion.insertExamQuestions(questionsArray.toKotlinx().jsonArray, "exam123")
 
         assertEquals(1, insertedQuestions.size)
         val insertedQuestion = insertedQuestions[0]
@@ -60,7 +63,7 @@ class ExamQuestionTest {
     @Test
     fun testInsertExamQuestions_emptyList() {
         val questions = JsonArray()
-        val result = ExamQuestion.insertExamQuestions(questions, "exam1")
+        val result = ExamQuestion.insertExamQuestions(questions.toKotlinx().jsonArray, "exam1")
         assertTrue(result.isEmpty())
     }
 
@@ -104,7 +107,7 @@ class ExamQuestionTest {
         questions.add(q1)
         questions.add(q2)
 
-        val insertedQuestions = ExamQuestion.insertExamQuestions(questions, "examId")
+        val insertedQuestions = ExamQuestion.insertExamQuestions(questions.toKotlinx().jsonArray, "examId")
         assertEquals(2, insertedQuestions.size)
 
         val mockQ1 = insertedQuestions[0]
@@ -119,8 +122,8 @@ class ExamQuestionTest {
         assertNotNull(mockQ1.getCorrectChoice())
         assertEquals(1, mockQ1.getCorrectChoice()?.size)
         assertEquals("Choice A", mockQ1.getCorrectChoice()?.get(0))
-        assertEquals(1, mockQ1.correctChoiceArray.size())
-        assertEquals("Choice A", mockQ1.correctChoiceArray.get(0).asString)
+        assertEquals(1, mockQ1.correctChoiceArray.toGson().size())
+        assertEquals("Choice A", mockQ1.correctChoiceArray.toGson().get(0).asString)
 
         assertEquals("examId", mockQ2.examId)
         assertEquals("Body2", mockQ2.body)
@@ -152,8 +155,8 @@ class ExamQuestionTest {
         }
         questions.add(q1)
 
-        val insertedQuestions = ExamQuestion.insertExamQuestions(questions, "exam1")
-        val serialized = ExamQuestion.serializeQuestions(insertedQuestions)
+        val insertedQuestions = ExamQuestion.insertExamQuestions(questions.toKotlinx().jsonArray, "exam1")
+        val serialized = ExamQuestion.serializeQuestions(insertedQuestions).toGson()
 
         assertNotNull(serialized)
         assertEquals(1, serialized.size())
@@ -181,7 +184,7 @@ class ExamQuestionTest {
         }
         questionsArray.add(question)
 
-        val insertedQuestions = ExamQuestion.insertExamQuestions(questionsArray, "exam123")
+        val insertedQuestions = ExamQuestion.insertExamQuestions(questionsArray.toKotlinx().jsonArray, "exam123")
 
         assertEquals(1, insertedQuestions.size)
         val insertedQuestion = insertedQuestions[0]
@@ -208,7 +211,7 @@ class ExamQuestionTest {
         }
         questionsArray.add(question)
 
-        val insertedQuestions = ExamQuestion.insertExamQuestions(questionsArray, "exam123")
+        val insertedQuestions = ExamQuestion.insertExamQuestions(questionsArray.toKotlinx().jsonArray, "exam123")
 
         assertEquals(1, insertedQuestions.size)
         val insertedQuestion = insertedQuestions[0]

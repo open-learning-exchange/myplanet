@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.model
 
 import android.content.Context
-import com.google.gson.JsonSyntaxException
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import java.io.File
@@ -471,8 +470,9 @@ class ModelPayloadGoldenTest {
 
     @Test
     fun `Answer serializeAnswer throws on a stored null choice`() {
-        // Gson 2.14 rejects a top-level JSON null for JsonObject; the old JsonNull fallback in valueChoicesArray is unreachable.
-        assertThrows(JsonSyntaxException::class.java) {
+        // Gson 2.14 rejected a top-level JSON null for JsonObject (JsonSyntaxException); the kotlinx parse keeps
+        // that rejection (SerializationException). No caller catches either, so only the throw itself is pinned.
+        assertThrows(RuntimeException::class.java) {
             Answer.serializeAnswer(listOf(Answer(id = "a", valueChoices = listOf("null"))))
         }
     }

@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.FinanceReportParams
@@ -16,6 +17,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.toKotlinx
 
 class EnterprisesRepositoryImpl @Inject constructor(
     private val storagePathResolver: StoragePathResolver,
@@ -45,7 +47,7 @@ class EnterprisesRepositoryImpl @Inject constructor(
             addProperty("updated", true)
         }
         val reportEntry = MyTeam().apply { _id = reportId }
-        MyTeam.populateTeamFields(doc, reportEntry)
+        MyTeam.populateTeamFields(doc.toKotlinx().jsonObject, reportEntry)
         teamDao.upsert(reportEntry)
         if (report.imageName != null && report.imageData != null) {
             attachTeamImage(reportId, report.imageName, report.imageData)

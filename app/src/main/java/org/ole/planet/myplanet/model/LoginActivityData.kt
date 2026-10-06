@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.model
 
-import com.google.gson.JsonObject
+import kotlinx.serialization.json.JsonObject
 
 data class LoginActivityData(
     val id: String,

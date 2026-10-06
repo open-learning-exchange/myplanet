@@ -9,6 +9,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.toGson
 
 class RatingTest {
 
@@ -43,7 +44,7 @@ class RatingTest {
             planetCode = "test_planet_code"
         }
 
-        val serialized = Rating.serializeRating(rating, "customDeviceName")
+        val serialized = Rating.serializeRating(rating, "customDeviceName").toGson()
 
         assertEquals("test_id", serialized.get("_id").asString)
         assertEquals("test_rev", serialized.get("_rev").asString)

@@ -7,6 +7,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.unmockkAll
+import kotlinx.serialization.json.jsonArray
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -17,6 +18,7 @@ import org.ole.planet.myplanet.utils.GoldenFixtures
 import org.ole.planet.myplanet.utils.GoldenFixtures.TRICKY
 import org.ole.planet.myplanet.utils.JsonGolden.assertMatchesGolden
 import org.ole.planet.myplanet.utils.JsonGolden.assertMatchesRawGolden
+import org.ole.planet.myplanet.utils.toKotlinx
 
 /**
  * Golden snapshots of JSON text the models write into Room columns and preferences.
@@ -123,7 +125,7 @@ class PersistedJsonGoldenTest {
                 add("user", null)
             })
         }
-        raw("Feedback-messages", Feedback().apply { setMessages(messages) }.messages)
+        raw("Feedback-messages", Feedback().apply { setMessages(messages.toKotlinx().jsonArray) }.messages)
         raw("Feedback-messages-null", Feedback().apply { setMessages(null) }.messages)
     }
 
@@ -140,9 +142,9 @@ class PersistedJsonGoldenTest {
             add(JsonObject().apply { addProperty("title", "<won> & 'placed'") })
         }
         val achievement = Achievement().apply {
-            setAchievements(items)
-            setReferences(items)
-            setLinks(items)
+            setAchievements(items.toKotlinx().jsonArray)
+            setReferences(items.toKotlinx().jsonArray)
+            setLinks(items.toKotlinx().jsonArray)
             setOtherInfo(null)
         }
         raw("Achievement-achievements", achievement.achievements!!.joinToString("\n"))
@@ -157,7 +159,7 @@ class PersistedJsonGoldenTest {
             setCourseIds(JsonArray().apply {
                 add("course_1")
                 add("course<2>")
-            })
+            }.toKotlinx().jsonArray)
         }.courseIds)
         raw("Certification-courseIds-null", Certification().apply { setCourseIds(null) }.courseIds)
     }

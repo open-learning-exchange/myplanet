@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.VersionUtils
+import org.ole.planet.myplanet.utils.toGson
 
 @Singleton
 class UploadConfigs @Inject constructor(
@@ -61,7 +62,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "myplanet_activities",
         modelClassName = "NewsLog",
         fetchPendingItems = { voicesRepository.getPendingNewsLogUploads() },
-        serializer = UploadSerializer.Simple { log -> NewsLog.serialize(log, customDeviceName) },
+        serializer = UploadSerializer.Simple { log -> NewsLog.serialize(log, customDeviceName).toGson() },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -74,7 +75,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "courses_progress",
         modelClassName = "CourseProgress",
         fetchPendingItems = { progressRepository.getPendingCourseProgressUploads() },
-        serializer = UploadSerializer.Simple(org.ole.planet.myplanet.model.CourseProgress::serializeProgress),
+        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.model.CourseProgress.serializeProgress(it).toGson() },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -89,7 +90,7 @@ class UploadConfigs @Inject constructor(
         fetchPendingItems = { teamsSyncRepository.get().getPendingTaskUploads() },
         serializer = UploadSerializer.Async { task ->
             val user = userRepository.getUserById(task.assignee ?: "")
-            org.ole.planet.myplanet.model.TeamTask.serialize(task, user)
+            org.ole.planet.myplanet.model.TeamTask.serialize(task, user).toGson()
         },
         idExtractor = { it.id },
         markUploaded = { results ->
@@ -116,7 +117,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "search_activities",
         modelClassName = "SearchActivity",
         fetchPendingItems = { activitiesRepository.getPendingSearchActivityUploads() },
-        serializer = UploadSerializer.Simple { it.serialize(androidId, customDeviceName) },
+        serializer = UploadSerializer.Simple { it.serialize(androidId, customDeviceName).toGson() },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -159,7 +160,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "course_activities",
         modelClassName = "CourseActivity",
         fetchPendingItems = { activitiesRepository.getPendingCourseActivityUploads() },
-        serializer = UploadSerializer.Simple(CourseActivity::serialize),
+        serializer = UploadSerializer.Simple { CourseActivity.serialize(it).toGson() },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -177,7 +178,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "meetups",
         modelClassName = "Meetup",
         fetchPendingItems = { eventsRepository.getPendingMeetupUploads() },
-        serializer = UploadSerializer.Simple(Meetup::serialize),
+        serializer = UploadSerializer.Simple { Meetup.serialize(it).toGson() },
         idExtractor = { it.id },
         responseHandler = ResponseHandler.Custom("id", "rev"),
         markUploaded = { results ->
@@ -193,7 +194,7 @@ class UploadConfigs @Inject constructor(
         fetchPendingItems = { surveysRepository.getPendingAdoptedSurveys() },
         serializer = UploadSerializer.Async { exam ->
             val questions = surveysRepository.getExamQuestions(exam.id)
-            StepExam.serializeExam(exam, questions)
+            StepExam.serializeExam(exam, questions).toGson()
         },
         idExtractor = { it.id },
         markUploaded = { surveysRepository.markExamsUploaded(it) }
@@ -204,7 +205,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "feedback",
         modelClassName = "Feedback",
         fetchPendingItems = { feedbackRepository.getPendingFeedback() },
-        serializer = UploadSerializer.Simple(org.ole.planet.myplanet.model.Feedback::serializeFeedback),
+        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.model.Feedback.serializeFeedback(it).toGson() },
         idExtractor = { it.id },
         markUploaded = { results ->
             // Mark each uploaded feedback; rows that no longer exist are reported as failures.
@@ -217,7 +218,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "apk_logs",
         modelClassName = "ApkLog",
         fetchPendingItems = { diagnosticsRepository.getPendingApkLogs() },
-        serializer = UploadSerializer.Simple { log -> ApkLog.serialize(log, customDeviceName) },
+        serializer = UploadSerializer.Simple { log -> ApkLog.serialize(log, customDeviceName).toGson() },
         idExtractor = { it.id },
         markUploaded = { results ->
             if (results.isEmpty()) return@RoomUploadConfig emptyList()
@@ -231,7 +232,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "submissions",
         modelClassName = "SubmitPhotos",
         fetchPendingItems = { submissionsRepository.getPendingSubmitPhotosUploads() },
-        serializer = UploadSerializer.Simple(org.ole.planet.myplanet.model.SubmitPhotos::serialize),
+        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.model.SubmitPhotos.serialize(it).toGson() },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -300,7 +301,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "ratings",
         modelClassName = "Rating",
         fetchPendingItems = { ratingsRepository.getPendingRatingUploads() },
-        serializer = UploadSerializer.Simple { rating -> org.ole.planet.myplanet.model.Rating.serializeRating(rating, customDeviceName) },
+        serializer = UploadSerializer.Simple { rating -> org.ole.planet.myplanet.model.Rating.serializeRating(rating, customDeviceName).toGson() },
         idExtractor = { it.id },
         dbIdExtractor = { it._id }, // Enables POST/PUT logic
         markUploaded = { results ->

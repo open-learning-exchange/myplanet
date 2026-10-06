@@ -9,6 +9,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.toGson
 
 class NewsLogTest {
     @Before
@@ -31,7 +32,7 @@ class NewsLogTest {
             time = 100L
         }
 
-        val result = NewsLog.serialize(log, "custom-device")
+        val result = NewsLog.serialize(log, "custom-device").toGson()
 
         assertEquals("user1", result.get("user").asString)
         assertEquals("news", result.get("type").asString)
@@ -50,7 +51,7 @@ class NewsLogTest {
             time = null
         }
 
-        val result = NewsLog.serialize(log, "custom-device")
+        val result = NewsLog.serialize(log, "custom-device").toGson()
 
         assertTrue(result.get("type").isJsonNull)
         assertTrue(result.get("time").isJsonNull)

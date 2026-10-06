@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.CourseDao
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
@@ -49,6 +51,8 @@ import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class CoursesRepositoryImpl @Inject constructor(
@@ -339,7 +343,7 @@ class CoursesRepositoryImpl @Inject constructor(
         subject: String
     ) {
         val filter = JsonObject().apply {
-            add("tags", TagEntity.getTagsArray(tags))
+            add("tags", TagEntity.getTagsArray(tags).toGson())
             addProperty("doc.gradeLevel", grade)
             addProperty("doc.subjectLevel", subject)
         }
@@ -804,7 +808,7 @@ class CoursesRepositoryImpl @Inject constructor(
             Certification().apply {
                 _id = id
                 name = GsonUtils.getString("name", jsonDoc)
-                setCourseIds(GsonUtils.getJsonArray("courseIds", jsonDoc))
+                setCourseIds(GsonUtils.getJsonArray("courseIds", jsonDoc).toKotlinx().jsonArray)
             }
         }
         certificationDao.upsertAll(certifications)
@@ -860,7 +864,7 @@ class CoursesRepositoryImpl @Inject constructor(
             val existing = existingMap[resourceId]
             MyLibrary.insertMyLibrary(
                 MyLibrary.Companion.InsertParams(
-                    doc = pending.doc,
+                    doc = pending.doc.toKotlinx().jsonObject,
                     spm = sharedPrefManager,
                     context = context,
                     courseId = pending.courseId,

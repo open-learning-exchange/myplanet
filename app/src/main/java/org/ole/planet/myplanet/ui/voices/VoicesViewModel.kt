@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.toGsonAsParsed
 
 @HiltViewModel
 class VoicesViewModel @Inject constructor(
@@ -223,7 +224,7 @@ class VoicesViewModel @Inject constructor(
     fun downloadReferencedResources(list: List<News?>) {
         val resourceIds = mutableSetOf<String>()
         list.forEach { news ->
-            val images = news?.imagesArray
+            val images = news?.imagesArray?.toGsonAsParsed()
             if (images?.isEmpty() == false) {
                 val ob = images[0]?.asJsonObject
                 val resourceId = GsonUtils.getString("resourceId", ob?.asJsonObject)

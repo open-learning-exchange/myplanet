@@ -5,12 +5,11 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.google.gson.JsonObject
 import java.util.UUID
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonArray as KJsonArray
-import kotlinx.serialization.json.JsonNull as KJsonNull
-import kotlinx.serialization.json.JsonObject as KJsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
@@ -21,8 +20,6 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities
-import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toKotlinx
 
 /**
  * Room replacement for the former `MyLibrary` model (resources).
@@ -125,7 +122,7 @@ open class MyLibrary {
                 put(addr, buildJsonObject { })
             }
         })
-    }.toGson()
+    }
 
     private fun List<String>?.toJsonArray() = buildJsonArray {
         this@toJsonArray?.forEach { add(it) }
@@ -168,16 +165,16 @@ open class MyLibrary {
             val existing: MyLibrary? = null
         )
 
-        private fun KJsonArray?.mergeInto(target: MutableList<String>) {
+        private fun JsonArray?.mergeInto(target: MutableList<String>) {
             this?.forEach { jsonElement ->
-                val value = (jsonElement as? JsonPrimitive)?.takeIf { it != KJsonNull }?.content ?: return@forEach
+                val value = (jsonElement as? JsonPrimitive)?.takeIf { it != JsonNull }?.content ?: return@forEach
                 if (value !in target) {
                     target.add(value)
                 }
             }
         }
 
-        private fun mergedList(current: List<String>?, array: KJsonArray?): List<String> {
+        private fun mergedList(current: List<String>?, array: JsonArray?): List<String> {
             val target = current?.toMutableList() ?: mutableListOf()
             array.mergeInto(target)
             return target
@@ -188,7 +185,7 @@ open class MyLibrary {
          * [InsertParams.existing] when supplied (mirrors the former find-or-create logic).
          */
         fun insertMyLibrary(params: InsertParams): MyLibrary? {
-            val kDoc = params.doc.toKotlinx().jsonObject
+            val kDoc = params.doc
             if (kDoc.isEmpty()) return null
             val resourceId = JsonUtils.getString("_id", kDoc)
             val resource = params.existing ?: MyLibrary().apply { id = resourceId }
@@ -271,7 +268,7 @@ open class MyLibrary {
                     isPrivate = JsonUtils.getBoolean("private", kDoc)
                     if (isPrivate && kDoc.containsKey("privateFor")) {
                         val privateForElement = kDoc["privateFor"]
-                        if (privateForElement is KJsonObject) {
+                        if (privateForElement is JsonObject) {
                             privateFor = JsonUtils.rawString("teams", privateForElement)
                         }
                     }

@@ -3,10 +3,9 @@ package org.ole.planet.myplanet.model
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.google.gson.JsonArray
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
-import org.ole.planet.myplanet.utils.toGson
 
 /**
  * Room replacement for the former `TagEntity` model. Synced (read-only from the server).
@@ -64,6 +63,6 @@ open class TagEntity {
             for (t in list) {
                 add(t._id)
             }
-        }.toGson()
+        }
     }
 }

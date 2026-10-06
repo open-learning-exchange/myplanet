@@ -7,11 +7,13 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.json.jsonArray
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.distinctByContent
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @Singleton
 class FeedbackRepositoryImpl @Inject constructor(
@@ -54,7 +56,7 @@ class FeedbackRepositoryImpl @Inject constructor(
             addProperty("user", user.orEmpty())
         }
         val msgArray = JsonArray().apply { add(obj) }
-        feedback.setMessages(msgArray)
+        feedback.setMessages(msgArray.toKotlinx().jsonArray)
         return feedback
     }
 
@@ -94,7 +96,7 @@ class FeedbackRepositoryImpl @Inject constructor(
             val messages = feedback.messages
             val msgArray = if (messages.isNullOrEmpty()) JsonArray() else gson.fromJson(messages, JsonArray::class.java)
             msgArray.add(obj)
-            feedback.setMessages(msgArray)
+            feedback.setMessages(msgArray.toKotlinx().jsonArray)
             feedback.isUploaded = false
             feedbackDao.update(feedback)
         }

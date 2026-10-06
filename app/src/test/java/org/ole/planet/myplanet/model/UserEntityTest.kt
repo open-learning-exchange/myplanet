@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
+import org.ole.planet.myplanet.utils.toGson
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserEntityTest {
@@ -158,7 +159,7 @@ class UserEntityTest {
         )
         user.rolesList = mutableListOf("learner")
 
-        val json = user.serialize()
+        val json = user.serialize().toGson()
 
         assertEquals("couch_456", json.get("_id").asString)
         assertEquals("1-abc", json.get("_rev").asString)
@@ -184,7 +185,7 @@ class UserEntityTest {
         val user = UserEntity(id = "local_123", _id = "", name = "New User", password = "plaintext-password")
         user.rolesList = mutableListOf()
 
-        val json = user.serialize()
+        val json = user.serialize().toGson()
 
         assertEquals("plaintext-password", json.get("password").asString)
         assertEquals("unique-id-1", json.get("androidId").asString)
@@ -202,7 +203,7 @@ class UserEntityTest {
         val user = UserEntity(id = "local_123", _id = "couch_456", iterations = "not-a-number")
         user.rolesList = mutableListOf()
 
-        val json = user.serialize()
+        val json = user.serialize().toGson()
 
         assertEquals(10, json.get("iterations").asInt)
     }

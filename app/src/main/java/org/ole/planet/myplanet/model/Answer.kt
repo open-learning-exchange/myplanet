@@ -4,16 +4,12 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.add
-import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import org.ole.planet.myplanet.utils.GsonUtils
-import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toKotlinx
+import org.ole.planet.myplanet.utils.KJson
 
 @Entity(tableName = "answers", indices = [Index("examId"), Index("questionId"), Index("submissionId")])
 open class Answer(
@@ -27,38 +23,25 @@ open class Answer(
     var questionId: String? = null,
     var submissionId: String? = null
 ) {
+    /** Each stored choice parsed as an object (a blank one as `null`); a stored `null` or non-object throws, as Gson did. */
     @get:Ignore
     val valueChoicesArray: JsonArray
-        get() {
-            if (valueChoices == null) {
-                return JsonArray()
-            }
-            return buildJsonArray {
-                for (choice in valueChoices ?: emptyList()) {
-                    val parsed = GsonUtils.gson.fromJson(choice, JsonObject::class.java)
-                    add(parsed?.toKotlinx() ?: JsonNull)
-                }
-            }.toGson()
-        }
+        get() = JsonArray(valueChoices.orEmpty().map { choice -> KJson.parseObjectOrNull(choice) ?: JsonNull })
 
     companion object {
-        fun serializeAnswer(answers: List<Answer>): JsonArray = buildJsonArray {
-            for (ans in answers) {
-                add(createObject(ans).toKotlinx())
-            }
-        }.toGson()
+        fun serializeAnswer(answers: List<Answer>): JsonArray = JsonArray(answers.map { createObject(it) })
 
         private fun createObject(ans: Answer): JsonObject = buildJsonObject {
             if (!ans.value.isNullOrEmpty()) {
                 put("value", ans.value)
             } else {
-                put("value", ans.valueChoicesArray.toKotlinx())
+                put("value", ans.valueChoicesArray)
             }
             put("mistakes", ans.mistakes)
             put("passed", ans.isPassed)
             if (!ans.questionId.isNullOrEmpty()) {
                 put("questionId", ans.questionId)
             }
-        }.toGson()
+        }
     }
 }

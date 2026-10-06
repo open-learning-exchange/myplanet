@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -14,6 +15,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
@@ -45,9 +48,9 @@ class TeamTaskTest {
 
         val userEntity = mockk<UserEntity>()
         val userJson = JsonObject().apply { addProperty("userName", "John Doe") }
-        every { userEntity.serialize() } returns userJson
+        every { userEntity.serialize() } returns userJson.toKotlinx().jsonObject
 
-        val result = TeamTask.serialize(task, userEntity)
+        val result = TeamTask.serialize(task, userEntity).toGson()
 
         assertEquals("task123", result.get("_id").asString)
         assertEquals("rev123", result.get("_rev").asString)
@@ -83,7 +86,7 @@ class TeamTaskTest {
             link = "{\"linkKey\":\"linkValue\"}"
         }
 
-        val result = TeamTask.serialize(task, null)
+        val result = TeamTask.serialize(task, null).toGson()
 
         assertFalse(result.has("_id"))
         assertFalse(result.has("_rev"))
@@ -130,7 +133,7 @@ class TeamTaskTest {
             add("assignee", assignee)
         }
 
-        val task = TeamTask.fromJson(json)
+        val task = TeamTask.fromJson(json.toKotlinx().jsonObject)
 
         assertEquals("task123", task.id)
         assertEquals("task123", task._id)
@@ -157,7 +160,7 @@ class TeamTaskTest {
             add("assignee", assignee)
         }
 
-        val task = TeamTask.fromJson(json)
+        val task = TeamTask.fromJson(json.toKotlinx().jsonObject)
 
         assertNull(task.assignee)
     }
@@ -165,7 +168,7 @@ class TeamTaskTest {
     @Test
     fun testFromJson_withEmptyData() {
         val json = JsonObject()
-        val task = TeamTask.fromJson(json)
+        val task = TeamTask.fromJson(json.toKotlinx().jsonObject)
 
         assertEquals("", task.id)
         assertEquals("", task._id)

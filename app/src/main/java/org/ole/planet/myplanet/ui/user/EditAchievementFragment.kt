@@ -60,6 +60,8 @@ import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toGsonAsParsed
 
 @AndroidEntryPoint
 class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDateSetListener {
@@ -323,7 +325,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             }
             if (`object` != null) referenceArray?.remove(`object`)
             if (referenceArray == null) referenceArray = JsonArray()
-            referenceArray?.add(createReference(name, alertReferenceBinding.etRelationship.text.toString(), alertReferenceBinding.etPhone.text.toString(), alertReferenceBinding.etEmail.text.toString()))
+            referenceArray?.add(createReference(name, alertReferenceBinding.etRelationship.text.toString(), alertReferenceBinding.etPhone.text.toString(), alertReferenceBinding.etEmail.text.toString()).toGson())
             showReference()
             referenceDialog?.dismiss()
         }
@@ -434,7 +436,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                         resourceArray = JsonArray()
                         for (id in selectedIds) {
                             libMap[id]?.let { lib ->
-                                resourceArray?.add(lib.serializeResource())
+                                resourceArray?.add(lib.serializeResource().toGson())
                             }
                         }
                     }
@@ -450,8 +452,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     }
 
     private fun populateAchievementData() {
-        achievementArray = achievement?.achievementsArray ?: achievementArray
-        referenceArray = achievement?.getReferencesArray() ?: referenceArray
+        achievementArray = achievement?.achievementsArray?.toGsonAsParsed() ?: achievementArray
+        referenceArray = achievement?.getReferencesArray()?.toGsonAsParsed() ?: referenceArray
         binding.etAchievement.setText(achievement?.achievementsHeader)
         binding.etPurpose.setText(achievement?.purpose)
         binding.etGoals.setText(achievement?.goals)

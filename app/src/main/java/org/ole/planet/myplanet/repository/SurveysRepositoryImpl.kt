@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import org.json.JSONException
 import org.json.JSONObject
@@ -35,6 +36,7 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
@@ -93,8 +95,9 @@ class SurveysRepositoryImpl @Inject constructor(
                     val mappedSurvey = createMappedSurvey(newSurveyId, examId, exam, userModel, teamName, teamId)
                     examDao.upsert(mappedSurvey ?: return)
 
+                    // The Gson round trip normalised number literals in the copied choices; keep it until this moves to kotlinx.
                     val questionEntities = ExamQuestion.insertExamQuestions(
-                        ExamQuestion.serializeQuestions(getExamQuestions(examId)),
+                        ExamQuestion.serializeQuestions(getExamQuestions(examId)).toGson().toKotlinx().jsonArray,
                         newSurveyId
                     ).mapNotNull { it }
                     if (questionEntities.isNotEmpty()) {
@@ -389,10 +392,11 @@ class SurveysRepositoryImpl @Inject constructor(
             val id = GsonUtils.getString("_id", jsonDoc)
             if (id.startsWith("_design")) continue
 
-            val exam = StepExam.insertCourseStepsExams("", "", jsonDoc, "")
+            val kDoc = jsonDoc.toKotlinx().jsonObject
+            val exam = StepExam.insertCourseStepsExams("", "", kDoc, "")
             exams += exam
             questions += ExamQuestion.insertExamQuestions(
-                GsonUtils.getJsonArray("questions", jsonDoc),
+                KJson.getJsonArray("questions", kDoc),
                 exam.id
             )
         }

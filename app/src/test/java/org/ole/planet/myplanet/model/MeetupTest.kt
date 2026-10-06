@@ -8,6 +8,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
+import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -15,6 +16,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -61,7 +64,7 @@ class MeetupTest {
             add("link", linkObj)
         }
 
-        val meetup = Meetup.fromJson(meetupDoc, userId, null)
+        val meetup = Meetup.fromJson(meetupDoc.toKotlinx().jsonObject, userId, null)
 
         assertEquals("meetup1", meetup.id)
         assertEquals("meetup1", meetup.meetupId)
@@ -96,7 +99,7 @@ class MeetupTest {
         existingMeetup.createdDate = 12345L
         existingMeetup.sync = "synced"
 
-        val meetup = Meetup.fromJson(meetupDoc, userId, existingMeetup)
+        val meetup = Meetup.fromJson(meetupDoc.toKotlinx().jsonObject, userId, existingMeetup)
 
         assertEquals("meetup1", meetup.meetupId)
         assertEquals(userId, meetup.userId)
@@ -112,7 +115,7 @@ class MeetupTest {
             addProperty("_id", "meetup1")
         }
 
-        val meetup = Meetup.fromJson(meetupDoc, "", null)
+        val meetup = Meetup.fromJson(meetupDoc.toKotlinx().jsonObject, "", null)
 
         assertEquals("", meetup.userId)
     }
@@ -122,7 +125,7 @@ class MeetupTest {
         val meetup1 = Meetup().apply { meetupId = "id1" }
         val meetup2 = Meetup().apply { meetupId = "id2" }
 
-        val result = Meetup.getMyMeetUpIds(listOf(meetup1, meetup2))
+        val result = Meetup.getMyMeetUpIds(listOf(meetup1, meetup2)).toGson()
 
         assertEquals(2, result.size())
         assertEquals("id1", result[0].asString)
@@ -131,7 +134,7 @@ class MeetupTest {
 
     @Test
     fun `getMyMeetUpIds with empty list returns empty array`() {
-        val result = Meetup.getMyMeetUpIds(emptyList())
+        val result = Meetup.getMyMeetUpIds(emptyList()).toGson()
         assertEquals(0, result.size())
     }
 
@@ -206,7 +209,7 @@ class MeetupTest {
             link = """{"some":"data"}"""
         }
 
-        val jsonObject = Meetup.serialize(meetup)
+        val jsonObject = Meetup.serialize(meetup).toGson()
 
         assertEquals("meetup1", jsonObject.get("_id").asString)
         assertEquals("rev1", jsonObject.get("_rev").asString)
@@ -239,7 +242,7 @@ class MeetupTest {
             link = null
         }
 
-        val jsonObject = Meetup.serialize(meetup)
+        val jsonObject = Meetup.serialize(meetup).toGson()
 
         assertEquals(false, jsonObject.has("_id"))
         assertEquals(false, jsonObject.has("_rev"))

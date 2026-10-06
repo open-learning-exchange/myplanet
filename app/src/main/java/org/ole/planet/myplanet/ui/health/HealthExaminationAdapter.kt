@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.toGsonAsParsed
 
 class HealthExaminationAdapter(
     private val context: Context,
@@ -60,7 +61,7 @@ class HealthExaminationAdapter(
             val displayNameCache = mutableMapOf<String, String>()
             list.map { item ->
                 val formattedDate = formatDate(item.date, "MMM dd, yyyy")
-                val encrypted = userModel?.let { user -> item.getEncryptedDataAsJson(user) }
+                val encrypted = userModel?.let { user -> item.getEncryptedDataAsJson(user).toGsonAsParsed() }
                 val createdBy = getString("createdBy", encrypted)
 
                 val (resolvedName, isSelfExamination) = if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {

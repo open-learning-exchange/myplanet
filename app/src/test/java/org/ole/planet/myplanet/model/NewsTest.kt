@@ -6,6 +6,7 @@ import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import kotlinx.serialization.json.jsonArray
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -14,6 +15,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 class NewsTest {
 
@@ -133,12 +136,12 @@ class NewsTest {
         val jsonString = """[{"resourceId":"res123"}]"""
         news.images = jsonString
 
-        val firstCall = news.imagesArray
+        val firstCall = news.imagesArray.toGson()
         assertNotNull(firstCall)
         assertEquals(1, firstCall.size())
         assertEquals("res123", firstCall[0].asJsonObject.get("resourceId").asString)
 
-        val secondCall = news.imagesArray
+        val secondCall = news.imagesArray.toGson()
         assertEquals(firstCall, secondCall)
     }
 
@@ -147,11 +150,12 @@ class NewsTest {
         val news = News()
         news.images = """[{"resourceId":"res123"}]"""
 
-        val firstCall = news.imagesArray
+        // Callers bridge to Gson, and each bridge is a fresh mutable copy.
+        val firstCall = news.imagesArray.toGson()
         firstCall.add(JsonObject().apply { addProperty("resourceId", "mutated") })
         assertEquals(2, firstCall.size())
 
-        val secondCall = news.imagesArray
+        val secondCall = news.imagesArray.toGson()
         assertEquals(1, secondCall.size())
         assertEquals("res123", secondCall[0].asJsonObject.get("resourceId").asString)
     }
@@ -161,17 +165,17 @@ class NewsTest {
         val news = News()
         news.images = """[{"resourceId":"res123"}]"""
 
-        val firstCall = news.imagesArray
+        val firstCall = news.imagesArray.toGson()
         assertEquals("res123", firstCall[0].asJsonObject.get("resourceId").asString)
 
         news.images = """[{"resourceId":"res456"}]"""
 
-        val secondCall = news.imagesArray
+        val secondCall = news.imagesArray.toGson()
         assertEquals(1, secondCall.size())
         assertEquals("res456", secondCall[0].asJsonObject.get("resourceId").asString)
 
         news.images = null
-        val thirdCall = news.imagesArray
+        val thirdCall = news.imagesArray.toGson()
         assertTrue(thirdCall.isEmpty)
     }
 
@@ -180,7 +184,7 @@ class NewsTest {
         val news = News()
         news.images = null
 
-        val result = news.imagesArray
+        val result = news.imagesArray.toGson()
         assertNotNull(result)
         assertTrue(result.isEmpty)
     }
@@ -193,7 +197,7 @@ class NewsTest {
                 addProperty("section", "community")
             })
         }
-        news.parsedViewIn = communityArray
+        news.parsedViewIn = communityArray.toKotlinx().jsonArray
         news.viewIn = null
 
         assertTrue(news.isCommunityNews)

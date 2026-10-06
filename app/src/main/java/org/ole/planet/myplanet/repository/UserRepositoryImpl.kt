@@ -32,6 +32,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -285,7 +286,7 @@ class UserRepositoryImpl @Inject constructor(
             salt = GsonUtils.getString("salt", jsonDoc)
             isShowTopbar = true
             isArchived = GsonUtils.getBoolean("isArchived", jsonDoc)
-            addImageUrl(jsonDoc)
+            addImageUrl(jsonDoc.toKotlinx().jsonObject)
         }
 
         if (planetCodes.isNotEmpty()) {
@@ -788,7 +789,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun uploadNewUser(model: UserEntity, updateHealthFn: suspend (String, String) -> Unit) {
         try {
-            val obj = model.serialize()
+            val obj = model.serialize().toGson()
             val createResponse = apiInterface.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj.toKotlinx().jsonObject)
 
             if (createResponse.isSuccessful) {
@@ -813,7 +814,7 @@ class UserRepositoryImpl @Inject constructor(
 
             if (latestDocResponse.isSuccessful) {
                 val latestRev = JsonUtils.getString("_rev", latestDocResponse.body()).takeIf { it.isNotEmpty() }
-                val obj = model.serialize()
+                val obj = model.serialize().toGson()
                 val objMap = obj.entrySet().associate { (key, value) -> key to value }
                 val mutableObj = mutableMapOf<String, Any>().apply { putAll(objMap) }
                 latestRev?.let { rev -> mutableObj["_rev"] = rev as Any }
@@ -942,8 +943,8 @@ class UserRepositoryImpl @Inject constructor(
         achievement.createdOn = createdOn
         achievement.username = username
         achievement.parentCode = parentCode
-        achievement.setAchievements(achievements)
-        achievement.setReferences(references)
+        achievement.setAchievements(achievements.toKotlinx().jsonArray)
+        achievement.setReferences(references.toKotlinx().jsonArray)
         achievement.resumeFileName = resumeFileName
         achievement.isUpdated = true
         achievementDao.upsert(achievement)
@@ -1004,7 +1005,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getAchievementsForUpload(): List<JsonObject> {
-        return achievementDao.getPendingUploads().map { Achievement.serialize(it) }
+        return achievementDao.getPendingUploads().map { Achievement.serialize(it).toGson() }
     }
 
     override suspend fun getSavedUsers(): List<User> = sharedPrefManager.getSavedUsers()
@@ -1070,7 +1071,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertAchievementsFromSync(jsonArray: JsonArray) {
-        val achievements = jsonArray.toSyncDocuments().map { (_, doc) -> Achievement.fromJson(doc) }
+        val achievements = jsonArray.toSyncDocuments().map { (_, doc) -> Achievement.fromJson(doc.toKotlinx().jsonObject) }
         achievementDao.upsertAll(achievements)
     }
 
@@ -1255,7 +1256,7 @@ class UserRepositoryImpl @Inject constructor(
         } else {
             eventsRepositoryLazy.get().getMeetupsForUser(userId)
         }
-        val myMeetups = Meetup.getMyMeetUpIds(userMeetups)
+        val myMeetups = Meetup.getMyMeetUpIds(userMeetups).toGson()
         val removedResources = removedLogDao.getRemovedDocIds("resources", userId)
         val removedCourses = removedLogDao.getRemovedDocIds("courses", userId)
         val mergedResourceIds = mergeJsonArray(myLibs, GsonUtils.getJsonArray("resourceIds", jsonDoc), removedResources)

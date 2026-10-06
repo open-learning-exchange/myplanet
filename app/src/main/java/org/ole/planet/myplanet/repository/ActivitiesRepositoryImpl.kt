@@ -236,7 +236,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
                 LoginActivityData(
                     activity.id,
                     activity.userId ?: return@mapNotNull null,
-                    serializeLoginActivities(activity)
+                    serializeLoginActivities(activity).toKotlinx().jsonObject
                 )
             }
         }
@@ -245,7 +245,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
     private suspend fun markActivitiesUploaded(ids: Array<String>, revMap: Map<String, JsonObject?>) {
         val activities = offlineActivityDao.getByIds(ids.toList())
         activities.forEach { activity ->
-            revMap[activity.id]?.let { activity.changeRev(it) }
+            revMap[activity.id]?.let { activity.changeRev(it.toKotlinx().jsonObject) }
         }
         if (activities.isNotEmpty()) {
             offlineActivityDao.upsertAll(activities)
@@ -362,7 +362,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
                             val `object` = semaphore.withPermit {
                                 apiInterface.postDoc(
                                     UrlUtils.header, "application/json",
-                                    "${UrlUtils.getUrl()}/login_activities", activityData.serialized.toKotlinx().jsonObject
+                                    "${UrlUtils.getUrl()}/login_activities", activityData.serialized
                                 ).body()?.toGson()
                             }
                             activityData.id to `object`
@@ -456,7 +456,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
             UrlUtils.header,
             "application/json",
             "${UrlUtils.getUrl()}/myplanet_activities",
-            MyPlanet.getNormalMyPlanetActivities(context, sharedPrefManager, userModel).toKotlinx().jsonObject
+            MyPlanet.getNormalMyPlanetActivities(context, sharedPrefManager, userModel)
         )
 
         val response = apiInterface.getJsonObject(
@@ -469,13 +469,13 @@ class ActivitiesRepositoryImpl @Inject constructor(
         if (`object` != null) {
             val usages = `object`.getAsJsonArray("usages")
             val tabletUsages = withContext(dispatcherProvider.io) {
-                MyPlanet.getTabletUsages(context, sharedPrefManager)
+                MyPlanet.getTabletUsages(context, sharedPrefManager).toGson()
             }
             usages.addAll(tabletUsages)
             `object`.add("usages", usages)
         } else {
             `object` = withContext(dispatcherProvider.io) {
-                MyPlanet.getMyPlanetActivities(context, sharedPrefManager, userModel)
+                MyPlanet.getMyPlanetActivities(context, sharedPrefManager, userModel).toGson()
             }
         }
 

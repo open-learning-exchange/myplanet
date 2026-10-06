@@ -2,13 +2,14 @@ package org.ole.planet.myplanet.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.google.gson.JsonArray
-import org.ole.planet.myplanet.utils.GsonUtils
+import kotlinx.serialization.json.JsonArray
+import org.ole.planet.myplanet.utils.KJson
 
 /**
  * Room replacement for the former `Certification` model. Read-only sync data (not
  * uploaded); persistence goes through [org.ole.planet.myplanet.data.room.dao.CertificationDao].
- * `courseIds` stores the certification's course-id array as a JSON string.
+ * `courseIds` stores the certification's course-id array as a JSON string, written byte for
+ * byte as Gson did because it is matched with SQL `LIKE`.
  */
 @Entity(tableName = "certification")
 open class Certification {
@@ -19,6 +20,6 @@ open class Certification {
     var courseIds: String? = null
 
     fun setCourseIds(courseIds: JsonArray?) {
-        this.courseIds = GsonUtils.gson.toJson(courseIds)
+        this.courseIds = KJson.gsonToJson(courseIds, KJson.GsonNumbers.LITERAL)
     }
 }

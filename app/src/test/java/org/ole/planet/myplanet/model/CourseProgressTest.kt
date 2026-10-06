@@ -8,6 +8,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.toGson
 
 class CourseProgressTest {
 
@@ -35,7 +36,7 @@ class CourseProgressTest {
             updatedDate = 1672617600000L
         }
 
-        val jsonObject = CourseProgress.serializeProgress(progress)
+        val jsonObject = CourseProgress.serializeProgress(progress).toGson()
 
         assertEquals("user123", jsonObject.get("userId").asString)
         assertEquals("parentCode123", jsonObject.get("parentCode").asString)

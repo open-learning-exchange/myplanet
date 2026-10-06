@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.CourseDao
@@ -56,6 +57,8 @@ import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 @Singleton
@@ -97,7 +100,7 @@ class TeamsRepositoryImpl @Inject constructor(
         return teams.map { team ->
             TeamUploadData(
                 teamId = team._id,
-                serialized = MyTeam.serialize(team, courses, coursesResourcesMap),
+                serialized = MyTeam.serialize(team, courses, coursesResourcesMap).toGson(),
                 isDeletePending = team.isDeletePending,
                 imageName = team.imageName
             )
@@ -1234,7 +1237,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
         val existingTeam = existingTeams?.get(teamId) ?: teamDao.getById(teamId)
         val model = existingTeam ?: MyTeam().apply { _id = teamId }
-        MyTeam.populateTeamFields(doc, model, true)
+        MyTeam.populateTeamFields(doc.toKotlinx().jsonObject, model, true)
         processDescription(model.description)
         teamDao.upsert(model)
         existingTeams?.put(teamId, model)
@@ -1261,7 +1264,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertTasksFromSync(jsonArray: JsonArray) {
-        val tasks = jsonArray.toSyncDocuments().map { (_, doc) -> TeamTask.fromJson(doc) }
+        val tasks = jsonArray.toSyncDocuments().map { (_, doc) -> TeamTask.fromJson(doc.toKotlinx().jsonObject) }
         teamTaskDao.upsertAll(tasks)
     }
 

@@ -23,6 +23,8 @@ import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
@@ -45,6 +47,8 @@ import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.StableIdGenerator
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.makeExpandable
+import org.ole.planet.myplanet.utils.toGsonAsParsed
+import org.ole.planet.myplanet.utils.toKotlinx
 
 class VoicesAdapter(
     var context: Context,
@@ -624,7 +628,7 @@ class VoicesAdapter(
                 if ((it.parsedViewIn == null || it.rawViewIn != it.viewIn) && !TextUtils.isEmpty(it.viewIn)) {
                     val parsed = parseViewIn(it.viewIn)
                     if (parsed != null) {
-                        it.parsedViewIn = parsed
+                        it.parsedViewIn = parsed.toKotlinx().jsonArray
                         it.rawViewIn = it.viewIn
                     }
                 }
@@ -641,7 +645,7 @@ class VoicesAdapter(
                     if (!currentImageUrls.isNullOrEmpty()) {
                         val parsed = parseImageUrls(currentImageUrls)
                         if (parsed != null) {
-                            it.parsedImageUrls = parsed
+                            it.parsedImageUrls = parsed.map { url -> url?.toKotlinx()?.jsonObject }
                             it.rawImageUrls = currentImageUrls
                         }
                     } else {
@@ -851,8 +855,8 @@ class VoicesAdapter(
         }
     }
 
-    private fun getParsedImageUrls(news: News?): List<JsonObject>? {
-        return news?.parsedImageUrls
+    private fun getParsedImageUrls(news: News?): List<JsonObject?>? {
+        return news?.parsedImageUrls?.map { it?.toGsonAsParsed() }
     }
 
     private fun loadImage(binding: RowNewsBinding, news: News?) {
@@ -879,7 +883,7 @@ class VoicesAdapter(
             }
         }
 
-        val imagesToLoad = news?.imagesArray
+        val imagesToLoad = news?.imagesArray?.toGsonAsParsed()
         imagesToLoad?.let { imagesArray ->
             val size = imagesArray.size()
             if (!imagesArray.isEmpty()) {

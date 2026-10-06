@@ -364,7 +364,7 @@ class TransactionSyncManager @Inject constructor(
             val docId = getString("_id", jsonDoc)
             if (docId.startsWith("_design")) continue
             val attachmentName = MyTeam
-                .getFirstAttachmentName(jsonDoc) ?: continue
+                .getFirstAttachmentName(jsonDoc.toKotlinx().jsonObject) ?: continue
             val destFile = MyTeam
                 .getAttachmentFile(context, docId, attachmentName) ?: continue
             if (!destFile.exists()) {

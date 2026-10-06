@@ -5,16 +5,17 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import com.google.gson.JsonSyntaxException
 import java.util.UUID
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import org.ole.planet.myplanet.utils.GsonUtils
-import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.KJson
+import org.ole.planet.myplanet.utils.KJson.GsonNumbers
 
 /**
  * Room replacement for the former `News` model (voices/discussion posts).
@@ -72,7 +73,7 @@ open class News {
     @Ignore
     var parsedConversations: List<Conversation>? = null
     @Ignore
-    var parsedImageUrls: List<JsonObject>? = null
+    var parsedImageUrls: List<JsonObject?>? = null
     @Ignore
     var rawViewIn: String? = null
     @Ignore
@@ -94,19 +95,15 @@ open class News {
             val currentImages = images
             val cache = imagesCache
             if (cache != null && cache.raw == currentImages) {
-                return cache.parsed.deepCopy()
+                return cache.parsed
             }
-            val parsed = if (currentImages == null) {
-                JsonArray()
-            } else {
-                try {
-                    GsonUtils.gson.fromJson(currentImages, JsonArray::class.java) ?: JsonArray()
-                } catch (e: Exception) {
-                    JsonArray()
-                }
+            val parsed = try {
+                KJson.parseArrayOrNull(currentImages) ?: JsonArray(emptyList())
+            } catch (e: Exception) {
+                JsonArray(emptyList())
             }
             imagesCache = ImagesCache(currentImages, parsed)
-            return parsed.deepCopy()
+            return parsed
         }
 
     @get:Ignore
@@ -115,7 +112,7 @@ open class News {
             labels?.forEach { s ->
                 add(s)
             }
-        }.toGson()
+        }
 
     fun updateMessage(newMessage: String) {
         this.message = newMessage
@@ -126,7 +123,7 @@ open class News {
     fun setLabels(images: JsonArray) {
         val newLabels = ArrayList<String>()
         for (ob in images) {
-            newLabels.add(ob.asString)
+            newLabels.add(KJson.gsonAsString(ob, GsonNumbers.LITERAL))
         }
         labels = newLabels
     }
@@ -136,12 +133,12 @@ open class News {
         get() {
             try {
                 val array = parsedViewIn ?: if (!viewIn.isNullOrEmpty()) {
-                    GsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
+                    KJson.parseArrayOrNull(viewIn)
                 } else null
                 if (array != null) {
                     for (e in array) {
-                        val `object` = e.asJsonObject
-                        if (`object`.has("section") && `object`["section"].asString.equals("community", ignoreCase = true)) {
+                        val `object` = KJson.asJsonObject(e)
+                        if (`object`.containsKey("section") && KJson.gsonAsString(`object`["section"], GsonNumbers.LITERAL).equals("community", ignoreCase = true)) {
                             return true
                         }
                     }
@@ -155,11 +152,11 @@ open class News {
     fun calculateSortDate(): Long {
         try {
             if (!viewIn.isNullOrEmpty()) {
-                val ar = parsedViewIn ?: GsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
+                val ar = parsedViewIn ?: KJson.parseArrayOrNull(viewIn) ?: throw NullPointerException("blank viewIn")
                 for (elem in ar) {
-                    val obj = elem.asJsonObject
-                    if (GsonUtils.getString("section", obj).equals("community", true) && obj.has("sharedDate")) {
-                        return GsonUtils.getLong("sharedDate", obj)
+                    val obj = KJson.asJsonObject(elem)
+                    if (KJson.getString("section", obj).equals("community", true) && obj.containsKey("sharedDate")) {
+                        return KJson.getLong("sharedDate", obj)
                     }
                 }
             }
@@ -208,43 +205,43 @@ open class News {
 
             news.userId = user?.id
             news.replyTo = map["replyTo"] ?: ""
-            news.user = GsonUtils.gson.toJson(user?.serialize())
+            news.user = KJson.gsonToJson(user?.serialize())
             news.imageUrls = imageUrls?.toList() ?: emptyList()
 
             map["news"]?.let { newsObj ->
                 try {
                     val newsJsonString = newsObj.replace("=", ":")
-                    val newsJson = GsonUtils.gson.fromJson(newsJsonString, JsonObject::class.java)
-                    news.newsId = GsonUtils.getString("_id", newsJson)
-                    news.newsRev = GsonUtils.getString("_rev", newsJson)
-                    news.newsUser = GsonUtils.getString("user", newsJson)
-                    news.aiProvider = GsonUtils.getString("aiProvider", newsJson)
-                    news.newsTitle = GsonUtils.getString("title", newsJson)
-                    if (newsJson.has("conversations")) {
-                        val conversationsElement = newsJson.get("conversations")
-                        if (conversationsElement.isJsonPrimitive && conversationsElement.asJsonPrimitive.isString) {
-                            val conversationsString = conversationsElement.asString
+                    val newsJson = KJson.parseObjectOrNull(newsJsonString) ?: throw NullPointerException("blank news payload")
+                    news.newsId = KJson.getString("_id", newsJson)
+                    news.newsRev = KJson.getString("_rev", newsJson)
+                    news.newsUser = KJson.getString("user", newsJson)
+                    news.aiProvider = KJson.getString("aiProvider", newsJson)
+                    news.newsTitle = KJson.getString("title", newsJson)
+                    if (newsJson.containsKey("conversations")) {
+                        val conversationsElement = newsJson["conversations"]
+                        if (conversationsElement is JsonPrimitive && conversationsElement.isString) {
+                            val conversationsString = conversationsElement.content
                             try {
-                                val conversationsArray = GsonUtils.gson.fromJson(conversationsString, JsonArray::class.java)
-                                if (!conversationsArray.isEmpty()) {
-                                    val conversationsList = ArrayList<HashMap<String, String>>()
-                                    conversationsArray.forEach { conversationElement ->
-                                        val conversationObj = conversationElement.asJsonObject
+                                val conversationsArray = KJson.parseArrayOrNull(conversationsString) ?: throw NullPointerException("blank conversations")
+                                if (conversationsArray.isNotEmpty()) {
+                                    // HashMap, as Gson serialized it: its iteration order is the stored key order.
+                                    val conversationsList = conversationsArray.map { conversationElement ->
+                                        val conversationObj = KJson.asJsonObject(conversationElement)
                                         val conversationMap = HashMap<String, String>()
-                                        conversationMap["query"] = GsonUtils.getString("query", conversationObj)
-                                        conversationMap["response"] = GsonUtils.getString("response", conversationObj)
-                                        conversationsList.add(conversationMap)
+                                        conversationMap["query"] = KJson.getString("query", conversationObj)
+                                        conversationMap["response"] = KJson.getString("response", conversationObj)
+                                        JsonObject(conversationMap.mapValues { JsonPrimitive(it.value) })
                                     }
-                                    news.conversations = GsonUtils.gson.toJson(conversationsList)
+                                    news.conversations = KJson.gsonToJson(JsonArray(conversationsList))
                                 }
-                            } catch (e: JsonSyntaxException) {
+                            } catch (e: SerializationException) {
                                 Log.w(TAG, "conversation parse failed", e)
                             }
                         }
                     }
-                    news.newsCreatedDate = GsonUtils.getLong("createdDate", newsJson)
-                    news.newsUpdatedDate = GsonUtils.getLong("updatedDate", newsJson)
-                } catch (e: JsonSyntaxException) {
+                    news.newsCreatedDate = KJson.getLong("createdDate", newsJson)
+                    news.newsUpdatedDate = KJson.getLong("updatedDate", newsJson)
+                } catch (e: SerializationException) {
                     Log.w(TAG, "news json parse failed", e)
                 }
             }

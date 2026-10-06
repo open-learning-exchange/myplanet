@@ -4,10 +4,10 @@ import androidx.core.net.toUri
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import java.io.File
 import java.io.InputStream
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -17,11 +17,10 @@ import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utils.DOCUMENT_ORIGIN
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
-import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toKotlinx
 
 @Entity(tableName = "users", indices = [Index("_id"), Index("name"), Index("planetCode")])
 open class UserEntity(
@@ -72,7 +71,7 @@ open class UserEntity(
                 put("_rev", _rev)
             }
             put("name", name)
-            put("roles", getRoles().toKotlinx())
+            put("roles", getRoles())
             if (_id?.isEmpty() == true) {
                 put("password", password)
                 put("androidId", NetworkUtils.getUniqueIdentifier())
@@ -111,7 +110,7 @@ open class UserEntity(
                     })
                 })
             }
-        }.toGson()
+        }
     }
 
     fun encodeImageToBase64(imagePath: String?): String? {
@@ -143,7 +142,7 @@ open class UserEntity(
         for (s in rolesList ?: emptyList()) {
             add(s)
         }
-    }.toGson()
+    }
 
     fun setRoles(roles: List<String>?) {
         rolesList = roles
@@ -166,9 +165,9 @@ open class UserEntity(
     }
 
     fun addImageUrl(jsonDoc: JsonObject?) {
-        if (jsonDoc?.has("_attachments") == true) {
-            val obj = jsonDoc["_attachments"].asJsonObject
-            val key1 = obj.entrySet().firstOrNull()?.key
+        if (jsonDoc?.containsKey("_attachments") == true) {
+            val obj = KJson.asJsonObject(jsonDoc["_attachments"])
+            val key1 = obj.keys.firstOrNull()
             if (key1 != null) {
                 userImage = UrlUtils.getUserImageUrl(id, key1)
             }

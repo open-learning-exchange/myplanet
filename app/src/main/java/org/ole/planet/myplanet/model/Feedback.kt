@@ -3,15 +3,15 @@ package org.ole.planet.myplanet.model
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KJson
+import org.ole.planet.myplanet.utils.KJson.GsonNumbers
 import org.ole.planet.myplanet.utils.addDocumentOrigin
-import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toKotlinx
 
 @Entity(tableName = "feedback", indices = [androidx.room.Index("openTime"), androidx.room.Index("owner"), androidx.room.Index("isUploaded")])
 open class Feedback {
@@ -49,15 +49,16 @@ open class Feedback {
     private var cachedMessageList: List<FeedbackReply>? = null
 
     private fun parsedMessages(): JsonArray {
-        if (messages.isNullOrEmpty()) return JsonArray()
+        if (messages.isNullOrEmpty()) return JsonArray(emptyList())
         cachedMessages?.let { return it }
-        val ar = JsonParser.parseString(messages).asJsonArray
+        val ar = parseMessages(messages) as? JsonArray ?: throw IllegalStateException("Not a JSON Array: $messages")
         cachedMessages = ar
         return ar
     }
 
+    /** Stored exactly as Gson wrote it; [messages] mirrors the caller's Gson tree, so numbers print as written. */
     fun setMessages(messages: JsonArray?) {
-        this.messages = GsonUtils.gson.toJson(messages)
+        this.messages = KJson.gsonToJson(messages, GsonNumbers.LITERAL)
     }
 
     @get:Ignore
@@ -68,13 +69,13 @@ open class Feedback {
             val feedbackReplies: MutableList<FeedbackReply> = ArrayList()
 
             val ar = parsedMessages()
-            for (i in 1 until ar.size()) {
-                val ob = ar[i].asJsonObject
+            for (i in 1 until ar.size) {
+                val ob = KJson.asJsonObject(ar[i])
                 feedbackReplies.add(
                     FeedbackReply(
-                        ob["message"].asString,
-                        ob["user"].asString,
-                        ob["time"].asString
+                        KJson.gsonAsString(ob["message"], GsonNumbers.LITERAL),
+                        KJson.gsonAsString(ob["user"], GsonNumbers.LITERAL),
+                        KJson.gsonAsString(ob["time"], GsonNumbers.LITERAL)
                     )
                 )
             }
@@ -88,22 +89,28 @@ open class Feedback {
             if (messages.isNullOrEmpty()) return ""
 
             val ar = parsedMessages()
-            if (!ar.isEmpty()) {
-                val ob = ar[0].asJsonObject
-                return ob["message"].asString
+            if (ar.isNotEmpty()) {
+                val ob = KJson.asJsonObject(ar[0])
+                return KJson.gsonAsString(ob["message"], GsonNumbers.LITERAL)
             }
             return ""
         }
 
     companion object {
+        /** Gson's `JsonParser.parseString`: blank text reads as JSON `null`, and a `null` string throws. */
+        private fun parseMessages(text: String?): JsonElement {
+            if (text == null) throw NullPointerException("messages is null")
+            return KJson.parseOrNull(text) ?: JsonNull
+        }
+
         fun serializeFeedback(feedback: Feedback): JsonObject {
             val messagesJson = try {
-                JsonParser.parseString(feedback.messages)
+                parseMessages(feedback.messages)
             } catch (err: Exception) {
                 err.printStackTrace()
                 null
             }
-            val `object` = buildJsonObject {
+            return buildJsonObject {
                 put("title", feedback.title)
                 put("source", feedback.source)
                 put("status", feedback.status)
@@ -117,10 +124,9 @@ open class Feedback {
                 put("item", feedback.item)
                 if (feedback._id != null) put("_id", feedback._id)
                 if (feedback._rev != null) put("_rev", feedback._rev)
-                if (messagesJson != null) put("messages", messagesJson.toKotlinx())
-            }.toGson()
-            `object`.addDocumentOrigin()
-            return `object`
+                if (messagesJson != null) put("messages", messagesJson)
+                addDocumentOrigin()
+            }
         }
     }
 }

@@ -6,16 +6,17 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.google.gson.JsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.FileUtils.getOlePath
-import org.ole.planet.myplanet.utils.GsonUtils
-import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toKotlinx
+import org.ole.planet.myplanet.utils.KJson
 
 @Entity(tableName = "courses", indices = [Index("courseId"), Index("_id"), Index("courseTitleNormal"), Index("gradeLevel"), Index("subjectLevel")])
 open class MyCourse(
@@ -97,7 +98,7 @@ open class MyCourse(
         fun saveConcatenatedLinksToPrefs(spm: SharedPrefManager) {
             val existingJsonLinks = spm.getConcatenatedLinks()
             val existingConcatenatedLinks = if (existingJsonLinks != null) {
-                GsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toHashSet()
+                readStoredLinks(existingJsonLinks)
             } else {
                 hashSetOf()
             }
@@ -106,8 +107,24 @@ open class MyCourse(
                 linksToProcess = concatenatedLinks.toList()
             }
             existingConcatenatedLinks.addAll(linksToProcess)
-            val jsonConcatenatedLinks = GsonUtils.gson.toJson(existingConcatenatedLinks)
+            val jsonConcatenatedLinks = KJson.gsonToJson(JsonArray(existingConcatenatedLinks.map { JsonPrimitive(it) }))
             spm.setConcatenatedLinks(jsonConcatenatedLinks)
+        }
+
+        /**
+         * Gson's `fromJson(text, Array<String>::class.java)` as a set: string, number and boolean
+         * entries read as their text, `null` stays `null`; blank text (Gson's `null` array) and
+         * any other shape throw, as they did.
+         */
+        private fun readStoredLinks(text: String): HashSet<String?> {
+            val array = KJson.parseArrayOrNull(text) ?: throw NullPointerException("stored links are blank")
+            return array.mapTo(HashSet()) { element ->
+                when (element) {
+                    is JsonNull -> null
+                    is JsonPrimitive -> element.content
+                    else -> throw IllegalStateException("Expected a string but was $element")
+                }
+            }
         }
 
         fun serialize(course: MyCourse, resourcesByStepId: Map<String?, List<MyLibrary>>): JsonObject = buildJsonObject {
@@ -133,13 +150,13 @@ open class MyCourse(
                         val stepResources = resourcesByStepId[step.id] ?: emptyList()
                         put("resources", buildJsonArray {
                             stepResources.forEach { resource ->
-                                add(resource.serializeResource().toKotlinx())
+                                add(resource.serializeResource())
                             }
                         })
                     })
                 }
             })
             put("images", buildJsonArray { })
-        }.toGson()
+        }
     }
 }

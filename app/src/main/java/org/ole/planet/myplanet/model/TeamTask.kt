@@ -3,16 +3,13 @@ package org.ole.planet.myplanet.model
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.google.gson.JsonObject
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
-import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.addDocumentOrigin
-import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toKotlinx
 
 @Entity(tableName = "team_tasks", indices = [Index("teamId")])
 class TeamTask {
@@ -41,32 +38,31 @@ class TeamTask {
 
     companion object {
         fun fromJson(obj: JsonObject?): TeamTask {
-            val kObj = obj?.toKotlinx()?.jsonObject
             val task = TeamTask()
-            task.id = JsonUtils.getString("_id", kObj)
-            task._id = JsonUtils.getString("_id", kObj)
-            task._rev = JsonUtils.getString("_rev", kObj)
-            task.title = JsonUtils.getString("title", kObj)
-            task.status = JsonUtils.getString("status", kObj)
-            task.deadline = JsonUtils.getLong("deadline", kObj)
-            task.completedTime = JsonUtils.getLong("completedTime", kObj)
-            task.description = JsonUtils.getString("description", kObj)
-            val kLink = JsonUtils.getJsonObject("link", kObj)
+            task.id = JsonUtils.getString("_id", obj)
+            task._id = JsonUtils.getString("_id", obj)
+            task._rev = JsonUtils.getString("_rev", obj)
+            task.title = JsonUtils.getString("title", obj)
+            task.status = JsonUtils.getString("status", obj)
+            task.deadline = JsonUtils.getLong("deadline", obj)
+            task.completedTime = JsonUtils.getLong("completedTime", obj)
+            task.description = JsonUtils.getString("description", obj)
+            val kLink = JsonUtils.getJsonObject("link", obj)
             task.link = kLink.toString()
-            task.sync = JsonUtils.getJsonObject("sync", kObj).toString()
+            task.sync = JsonUtils.getJsonObject("sync", obj).toString()
             task.teamId = JsonUtils.getString("teams", kLink)
-            val user = JsonUtils.getJsonObject("assignee", kObj)
+            val user = JsonUtils.getJsonObject("assignee", obj)
             if (user.containsKey("_id")) {
                 task.assignee = JsonUtils.getString("_id", user)
             }
-            task.completed = JsonUtils.getBoolean("completed", kObj)
+            task.completed = JsonUtils.getBoolean("completed", obj)
             return task
         }
 
         fun serialize(task: TeamTask, user: UserEntity?): JsonObject {
-            val syncJson = GsonUtils.gson.fromJson(task.sync, JsonObject::class.java)
-            val linkJson = GsonUtils.gson.fromJson(task.link, JsonObject::class.java)
-            val `object` = buildJsonObject {
+            val syncJson = KJson.parseObjectOrNull(task.sync)
+            val linkJson = KJson.parseObjectOrNull(task.link)
+            return buildJsonObject {
                 if (!task._id.isNullOrEmpty()) {
                     put("_id", task._id)
                     put("_rev", task._rev)
@@ -76,12 +72,11 @@ class TeamTask {
                 put("description", task.description)
                 put("completed", task.completed)
                 put("completedTime", task.completedTime)
-                if (user != null) put("assignee", user.serialize().toKotlinx()) else put("assignee", "")
-                put("sync", syncJson?.toKotlinx() ?: JsonNull)
-                put("link", linkJson?.toKotlinx() ?: JsonNull)
-            }.toGson()
-            `object`.addDocumentOrigin()
-            return `object`
+                if (user != null) put("assignee", user.serialize()) else put("assignee", "")
+                put("sync", syncJson ?: JsonNull)
+                put("link", linkJson ?: JsonNull)
+                addDocumentOrigin()
+            }
         }
     }
 }

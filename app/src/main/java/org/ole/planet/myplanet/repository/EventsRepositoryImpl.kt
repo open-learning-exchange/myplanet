@@ -7,12 +7,14 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @Singleton
 class EventsRepositoryImpl @Inject constructor(
@@ -113,7 +115,7 @@ class EventsRepositoryImpl @Inject constructor(
             if (existing?.updated == true) {
                 null
             } else {
-                Meetup.fromJson(meetupDoc, "", existing)
+                Meetup.fromJson(meetupDoc.toKotlinx().jsonObject, "", existing)
             }
         }
         if (meetupsToInsert.isNotEmpty()) {

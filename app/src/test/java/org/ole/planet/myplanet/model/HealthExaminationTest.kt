@@ -8,6 +8,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.utils.toGson
 
 class HealthExaminationTest {
 
@@ -117,7 +118,7 @@ class HealthExaminationTest {
             age = 0
         }
 
-        val json = HealthExamination.serialize(health)
+        val json = HealthExamination.serialize(health).toGson()
 
         assertEquals(false, json.has("_id"))
         assertEquals(false, json.has("_rev"))
@@ -164,7 +165,7 @@ class HealthExaminationTest {
             conditions = """{"diabetes": true}"""
         }
 
-        val json = HealthExamination.serialize(health)
+        val json = HealthExamination.serialize(health).toGson()
 
         assertEquals("user-1", json.get("_id").asString)
         assertEquals("1-abc", json.get("_rev").asString)

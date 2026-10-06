@@ -6,10 +6,12 @@ import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.toKotlinx
 
 class StepExamBenchmarkTest {
 
@@ -54,7 +56,7 @@ class StepExamBenchmarkTest {
 
         repeat(10) {
             documentList.forEach { jsonDoc ->
-                StepExam.insertCourseStepsExams("", "", jsonDoc)
+                StepExam.insertCourseStepsExams("", "", jsonDoc.toKotlinx().jsonObject)
             }
         }
 

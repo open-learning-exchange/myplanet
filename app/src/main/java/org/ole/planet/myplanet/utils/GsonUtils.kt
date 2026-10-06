@@ -8,6 +8,7 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser.parseString
 import com.google.gson.JsonPrimitive
+import com.google.gson.internal.LazilyParsedNumber
 import kotlinx.serialization.json.JsonArray as KJsonArray
 import kotlinx.serialization.json.JsonElement as KJsonElement
 import kotlinx.serialization.json.JsonNull as KJsonNull
@@ -43,6 +44,27 @@ private fun KJsonPrimitive.toGsonPrimitive(): JsonElement {
     longOrNull?.let { return JsonPrimitive(it) }
     doubleOrNull?.let { return JsonPrimitive(it) }
     return JsonPrimitive(content)
+}
+
+/**
+ * Like [toGson], but numbers keep their text the way Gson's own parser holds them
+ * (`LazilyParsedNumber`), so `1e2` stays `1e2` instead of becoming `100`. The exact inverse of
+ * [toKotlinx] for a tree Gson parsed itself (Room columns, preferences): use it where a model
+ * value that used to be a Gson parse result reaches Gson code.
+ */
+fun KJsonArray.toGsonAsParsed(): JsonArray = toGsonElementAsParsed() as JsonArray
+
+fun KJsonObject.toGsonAsParsed(): JsonObject = toGsonElementAsParsed() as JsonObject
+
+fun KJsonElement.toGsonElementAsParsed(): JsonElement = when (this) {
+    is KJsonNull -> JsonNull.INSTANCE
+    is KJsonObject -> JsonObject().also { result -> for ((key, value) in this) result.add(key, value.toGsonElementAsParsed()) }
+    is KJsonArray -> JsonArray().also { result -> for (element in this) result.add(element.toGsonElementAsParsed()) }
+    is KJsonPrimitive -> when {
+        isString -> JsonPrimitive(content)
+        content == "true" || content == "false" -> JsonPrimitive(content.toBoolean())
+        else -> JsonPrimitive(LazilyParsedNumber(content))
+    }
 }
 
 fun JsonElement.toKotlinx(): KJsonElement = when {
@@ -85,7 +107,7 @@ object GsonUtils {
 
     fun extractSharedTeamName(news: News?): String {
         if (news == null) return ""
-        val ar = news.parsedViewIn ?: if (!news.viewIn.isNullOrEmpty()) {
+        val ar = news.parsedViewIn?.toGsonAsParsed() ?: if (!news.viewIn.isNullOrEmpty()) {
             try {
                 gson.fromJson(news.viewIn, JsonArray::class.java)
             } catch (e: Exception) {

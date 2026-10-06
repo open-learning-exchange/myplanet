@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -47,6 +48,7 @@ import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @ExperimentalCoroutinesApi
 class SubmissionsRepositoryImplTest {
@@ -661,7 +663,7 @@ class SubmissionsRepositoryImplTest {
         // Fresh user record from Room (attachment-free, current) must win over the persisted
         // blob, whose _attachments were stripped for storage safety.
         val freshUser = mockk<UserEntity>()
-        every { freshUser.serialize() } returns JsonObject().apply { addProperty("_id", "fresh_user") }
+        every { freshUser.serialize() } returns JsonObject().apply { addProperty("_id", "fresh_user") }.toKotlinx().jsonObject
 
         val submission = Submission().apply {
             id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"

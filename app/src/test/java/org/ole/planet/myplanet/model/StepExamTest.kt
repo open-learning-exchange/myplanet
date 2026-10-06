@@ -8,6 +8,7 @@ import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import java.util.UUID
+import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -16,6 +17,8 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 class StepExamTest {
 
@@ -57,7 +60,7 @@ class StepExamTest {
             add("questions", JsonArray().apply { add(JsonObject()) })
         }
 
-        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson.toKotlinx().jsonObject)
 
         assertEquals(examId, result.id)
         assertEquals("Test Exam", result.name)
@@ -81,7 +84,7 @@ class StepExamTest {
             add("questions", JsonArray())
         }
 
-        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson, "parent-nation-id")
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson.toKotlinx().jsonObject, "parent-nation-id")
 
         assertEquals(examId, result.id)
         assertEquals("Nation Exam", result.name)
@@ -100,7 +103,7 @@ class StepExamTest {
             })
         }
 
-        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson.toKotlinx().jsonObject)
 
         assertEquals(3, result.noOfQuestions)
     }
@@ -112,7 +115,7 @@ class StepExamTest {
             add("questions", com.google.gson.JsonNull.INSTANCE)
         }
 
-        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson.toKotlinx().jsonObject)
 
         assertEquals(0, result.noOfQuestions)
     }
@@ -124,7 +127,7 @@ class StepExamTest {
             add("questions", JsonObject())
         }
 
-        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson.toKotlinx().jsonObject)
 
         assertEquals(0, result.noOfQuestions)
     }
@@ -135,7 +138,7 @@ class StepExamTest {
             addProperty("_id", "examMissing")
         }
 
-        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson.toKotlinx().jsonObject)
 
         assertEquals(0, result.noOfQuestions)
     }
@@ -146,7 +149,7 @@ class StepExamTest {
             addProperty("_id", "examNoType")
         }
 
-        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson.toKotlinx().jsonObject)
 
         assertEquals("exam", result.type)
     }
@@ -179,7 +182,7 @@ class StepExamTest {
                 setCorrectChoices(listOf("Choice A"))
             }
         )
-        val json = StepExam.serializeExam(exam, questions)
+        val json = StepExam.serializeExam(exam, questions).toGson()
 
         assertEquals("exam1", json.get("_id").asString)
         assertEquals("Test Exam", json.get("name").asString)

@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utils
 
 import android.util.Log
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -92,13 +93,41 @@ object KJson {
         else -> p.content
     }
 
-    /** Gson's `JsonElement.getAsString()` on the bridged tree. */
-    private fun gsonAsString(element: JsonElement): String = when (element) {
+    /**
+     * Gson's `JsonElement.getAsString()`, throwing where it throws (a missing element as the
+     * `NullPointerException` Kotlin raised on the platform-typed `null`). [numbers] says which
+     * Gson tree this mirrors: [GsonNumbers.BRIDGED] for a kotlinx tree Gson saw through
+     * [toGson], [GsonNumbers.LITERAL] for a mirror of a tree Gson parsed itself.
+     */
+    fun gsonAsString(element: JsonElement?, numbers: GsonNumbers = GsonNumbers.BRIDGED): String = when (element) {
+        null -> throw NullPointerException("JsonElement is null")
         is JsonNull -> throw UnsupportedOperationException("JsonNull")
-        is JsonPrimitive -> bridged(element).toString()
+        is JsonPrimitive -> if (numbers == GsonNumbers.LITERAL) element.content else bridged(element).toString()
         is JsonObject -> throw UnsupportedOperationException("JsonObject")
-        is JsonArray -> if (element.size == 1) gsonAsString(element[0]) else throw IllegalStateException("Array must have size 1, but has size ${element.size}")
+        is JsonArray -> if (element.size == 1) gsonAsString(element[0], numbers) else throw IllegalStateException("Array must have size 1, but has size ${element.size}")
     }
+
+    /**
+     * Gson's `fromJson(text, JsonElement::class.java)`, through [GsonLenientParser]: `null` for
+     * null text or an empty document, Gson's lenient grammar (single quotes, unquoted tokens as
+     * strings, comments, ...), and [SerializationException] on malformed text. The result keeps
+     * number literals as written, like Gson's `LazilyParsedNumber`.
+     */
+    fun parseOrNull(text: String?): JsonElement? = text?.let { GsonLenientParser.parse(it) }
+
+    /** Gson's `fromJson(text, JsonObject::class.java)`: as [parseOrNull], throwing for any non-object (including `null`). */
+    fun parseObjectOrNull(text: String?): JsonObject? = parseOrNull(text)?.let {
+        it as? JsonObject ?: throw SerializationException("Expected a JSON object but was $it")
+    }
+
+    /** Gson's `fromJson(text, JsonArray::class.java)`: as [parseOrNull], throwing for any non-array (including `null`). */
+    fun parseArrayOrNull(text: String?): JsonArray? = parseOrNull(text)?.let {
+        it as? JsonArray ?: throw SerializationException("Expected a JSON array but was $it")
+    }
+
+    /** Gson's `JsonElement.getAsJsonObject()`: throws `IllegalStateException` for anything else. */
+    fun asJsonObject(element: JsonElement?): JsonObject =
+        element as? JsonObject ?: throw IllegalStateException("Not a JSON Object: $element")
 
     fun getString(fieldName: String, jsonObject: JsonObject?): String = safeGet({ "" }) {
         val p = primitive(jsonObject?.get(fieldName)) ?: return@safeGet ""

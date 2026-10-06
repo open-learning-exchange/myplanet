@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.model
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.ole.planet.myplanet.utils.toGson
 
 class MyTeamTest {
     @Test
@@ -14,7 +15,7 @@ class MyTeamTest {
         team._id = "test_id"
         team._rev = "test_rev"
 
-        val serialized = MyTeam.serialize(team)
+        val serialized = MyTeam.serialize(team).toGson()
 
         // Assert that null fields are stripped from the resulting JsonObject
         assertFalse("Null name should be stripped", serialized.has("name"))

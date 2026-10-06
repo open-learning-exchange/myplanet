@@ -5,20 +5,17 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.google.gson.JsonArray
 import java.util.Locale
-import kotlinx.serialization.json.JsonArray as KJsonArray
-import kotlinx.serialization.json.JsonObject as KJsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
-import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toKotlinx
+import org.ole.planet.myplanet.utils.KJson
 
 @Entity(tableName = "exam_questions", indices = [Index("examId")])
 open class ExamQuestion(
@@ -36,7 +33,7 @@ open class ExamQuestion(
     var hasOtherOption: Boolean = false,
     var scaleMax: Int = 9
 ) {
-    private fun setCorrectChoiceArray(array: KJsonArray, question: ExamQuestion?) {
+    private fun setCorrectChoiceArray(array: JsonArray, question: ExamQuestion?) {
         if (question == null) return
         val list = question.correctChoiceList?.toMutableList() ?: mutableListOf()
         val defaultLocale = Locale.getDefault()
@@ -60,17 +57,16 @@ open class ExamQuestion(
             for (s in correctChoiceList ?: emptyList()) {
                 add(s)
             }
-        }.toGson()
+        }
 
     companion object {
         fun insertExamQuestions(questions: JsonArray, examId: String?): List<ExamQuestion> {
             if (questions.isEmpty()) return emptyList()
 
-            val kQuestions = questions.toKotlinx().jsonArray
             val questionsToInsert = mutableListOf<ExamQuestion>()
 
-            for (i in kQuestions.indices) {
-                val question = kQuestions[i].jsonObject
+            for (i in questions.indices) {
+                val question = questions[i].jsonObject
                 val questionId = if (question.containsKey("id")) {
                     JsonUtils.getString("id", question)
                 } else {
@@ -102,8 +98,8 @@ open class ExamQuestion(
             return questionsToInsert
         }
 
-        private fun insertCorrectChoice(array: KJsonArray, question: KJsonObject, myQuestion: ExamQuestion?) {
-            if (question.containsKey("correctChoice") && question.getValue("correctChoice") is KJsonArray) {
+        private fun insertCorrectChoice(array: JsonArray, question: JsonObject, myQuestion: ExamQuestion?) {
+            if (question.containsKey("correctChoice") && question.getValue("correctChoice") is JsonArray) {
                 myQuestion?.correctChoiceList = mutableListOf()
                 myQuestion?.setCorrectChoiceArray(JsonUtils.getJsonArray("correctChoice", question), myQuestion)
             } else {
@@ -125,11 +121,11 @@ open class ExamQuestion(
                     put("body", que.body)
                     put("type", que.type)
                     put("marks", que.marks)
-                    put("choices", GsonUtils.getStringAsJsonArray(que.choices).toKotlinx())
-                    put("correctChoice", que.correctChoiceArray.toKotlinx())
+                    put("choices", KJson.getStringAsJsonArray(que.choices))
+                    put("correctChoice", que.correctChoiceArray)
                     put("hasOtherOption", que.hasOtherOption)
                 })
             }
-        }.toGson()
+        }
     }
 }

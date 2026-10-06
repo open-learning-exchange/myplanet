@@ -5,12 +5,14 @@ import android.content.Context
 import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.toKotlinx
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
@@ -63,7 +65,7 @@ class MyLibraryTest {
         )
 
         val params1 = MyLibrary.Companion.InsertParams(
-            doc = doc,
+            doc = doc.toKotlinx().jsonObject,
             spm = mockSpm,
             context = context
         )
@@ -74,7 +76,7 @@ class MyLibraryTest {
         val initialAttachments = result1?.attachments?.toList()
 
         val params2 = MyLibrary.Companion.InsertParams(
-            doc = doc,
+            doc = doc.toKotlinx().jsonObject,
             spm = mockSpm,
             context = context,
             existing = result1
@@ -96,7 +98,7 @@ class MyLibraryTest {
         )
 
         val params1 = MyLibrary.Companion.InsertParams(
-            doc = initialDoc,
+            doc = initialDoc.toKotlinx().jsonObject,
             spm = mockSpm,
             context = context
         )
@@ -114,7 +116,7 @@ class MyLibraryTest {
         )
 
         val params2 = MyLibrary.Companion.InsertParams(
-            doc = updatedDoc,
+            doc = updatedDoc.toKotlinx().jsonObject,
             spm = mockSpm,
             context = context,
             existing = result1
@@ -136,7 +138,7 @@ class MyLibraryTest {
         )
 
         val params = MyLibrary.Companion.InsertParams(
-            doc = doc,
+            doc = doc.toKotlinx().jsonObject,
             spm = mockSpm,
             context = context
         )
@@ -150,7 +152,7 @@ class MyLibraryTest {
         every { mockSpm.getCouchdbUrl() } returns "http://newserver:5984"
 
         val params2 = MyLibrary.Companion.InsertParams(
-            doc = doc,
+            doc = doc.toKotlinx().jsonObject,
             spm = mockSpm,
             context = context,
             existing = result

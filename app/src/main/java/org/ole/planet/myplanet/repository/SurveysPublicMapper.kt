@@ -6,6 +6,7 @@ import com.google.gson.JsonParser
 import com.google.gson.JsonPrimitive
 import javax.inject.Inject
 import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.utils.toGson
 
 class SurveysPublicMapper @Inject constructor(
     private val surveysRepository: SurveysRepository
@@ -16,7 +17,7 @@ class SurveysPublicMapper @Inject constructor(
         val payload = JsonArray()
         questions.forEach { question ->
             val answer = answersByQuestion[question.id]
-            val choices = answer?.valueChoicesArray ?: JsonArray()
+            val choices = answer?.valueChoicesArray?.toGson() ?: JsonArray()
             when {
                 question.type.equals("selectMultiple", ignoreCase = true) -> payload.add(choices)
                 question.type.equals("select", ignoreCase = true) && !choices.isEmpty() -> payload.add(choices[0])

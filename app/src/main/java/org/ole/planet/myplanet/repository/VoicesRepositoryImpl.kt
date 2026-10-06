@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.jsonArray
 import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.di.PlainGson
@@ -23,6 +24,9 @@ import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toGsonAsParsed
+import org.ole.planet.myplanet.utils.toKotlinx
 
 class VoicesRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
@@ -122,7 +126,7 @@ class VoicesRepositoryImpl @Inject constructor(
         }
 
         return try {
-            val array = news.parsedViewIn ?: gson.fromJson(viewIn, JsonArray::class.java)
+            val array = news.parsedViewIn?.toGsonAsParsed() ?: gson.fromJson(viewIn, JsonArray::class.java)
             array?.any { element ->
                 if (element == null || !element.isJsonObject) return@any false
                 val obj = element.asJsonObject
@@ -159,7 +163,7 @@ class VoicesRepositoryImpl @Inject constructor(
             .map { allNews ->
                 allNews.mapNotNull { news ->
                     news.viewIn?.takeIf { it.isNotEmpty() }?.let { s ->
-                        news.parsedViewIn = try { gson.fromJson(s, JsonArray::class.java) } catch (e: Exception) { null }
+                        news.parsedViewIn = try { gson.fromJson(s, JsonArray::class.java)?.toKotlinx()?.jsonArray } catch (e: Exception) { null }
                     }
 
                     if (isVisibleToUser(news, userIdentifier)) {
@@ -411,7 +415,7 @@ class VoicesRepositoryImpl @Inject constructor(
         news.images = plainGson.toJson(images)
         val labels = GsonUtils.getJsonArray("labels", doc)
         news.viewIn = plainGson.toJson(GsonUtils.getJsonArray("viewIn", doc))
-        news.setLabels(labels)
+        news.setLabels(labels.toKotlinx().jsonArray)
         news.chat = GsonUtils.getBoolean("chat", doc)
 
         val newsObj = GsonUtils.getJsonObject("news", doc)
@@ -443,8 +447,8 @@ class VoicesRepositoryImpl @Inject constructor(
         `object`.addProperty("createdOn", news.createdOn)
         `object`.addProperty("replyTo", news.replyTo)
         `object`.addProperty("parentCode", news.parentCode)
-        `object`.add("images", news.imagesArray)
-        `object`.add("labels", news.labelsArray)
+        `object`.add("images", news.imagesArray.toGsonAsParsed())
+        `object`.add("labels", news.labelsArray.toGson())
         `object`.add("user", plainGson.fromJson(news.user, JsonObject::class.java))
         val newsObject = JsonObject()
         newsObject.addProperty("_id", news.newsId)

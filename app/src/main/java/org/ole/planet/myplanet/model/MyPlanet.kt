@@ -3,21 +3,22 @@ package org.ole.planet.myplanet.model
 import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.content.Context
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import java.io.Serializable
 import java.util.Calendar
 import java.util.Date
 import kotlinx.serialization.Serializable as KSerializable
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonArrayBuilder
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
-import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toKotlinx
 
 @KSerializable
 class MyPlanet : Serializable {
@@ -32,13 +33,23 @@ class MyPlanet : Serializable {
     }
 
     companion object {
+        /**
+         * The cached version detail, which `ConfigurationsRepositoryImpl` writes with Gson. Like
+         * Gson's `fromJson(text, MyPlanet::class.java)`, blank text or JSON `null` gives `null`.
+         */
+        private fun cachedPlanet(spm: SharedPrefManager): MyPlanet? {
+            val element = KJson.parseOrNull(spm.getVersionDetail()) ?: return null
+            if (element is JsonNull) return null
+            return KJson.lenientJson.decodeFromJsonElement(serializer(), element)
+        }
+
         fun getMyPlanetActivities(
             context: Context,
             spm: SharedPrefManager,
             model: UserEntity,
             now: Long = System.currentTimeMillis()
         ): JsonObject {
-            val planet = GsonUtils.gson.fromJson(spm.getVersionDetail() ?: "", MyPlanet::class.java)
+            val planet = cachedPlanet(spm)
             val usages = getTabletUsages(context, spm, now)
             return buildJsonObject {
                 if (planet != null) put("planetVersion", planet.planetVersion)
@@ -47,13 +58,13 @@ class MyPlanet : Serializable {
                 put("parentCode", model.parentCode)
                 put("createdOn", model.planetCode)
                 put("type", "usages")
-                put("usages", usages.toKotlinx())
-            }.toGson()
+                put("usages", usages)
+            }
         }
 
         fun getNormalMyPlanetActivities(context: Context, spm: SharedPrefManager, model: UserEntity): JsonObject {
-            val planet = GsonUtils.gson.fromJson(spm.getVersionDetail() ?: "", MyPlanet::class.java)
-            val postJSON = buildJsonObject {
+            val planet = cachedPlanet(spm)
+            return buildJsonObject {
                 if (planet != null) put("planetVersion", planet.planetVersion)
                 put("last_synced", spm.getLastSync())
                 put("parentCode", model.parentCode)
@@ -65,9 +76,8 @@ class MyPlanet : Serializable {
                 put("deviceName", NetworkUtils.getDeviceName())
                 put("time", Date().time)
                 put("type", "sync")
-            }.toGson()
-            postJSON.addDocumentOrigin()
-            return postJSON
+                addDocumentOrigin()
+            }
         }
 
         fun getTabletUsages(
@@ -77,23 +87,23 @@ class MyPlanet : Serializable {
         ): JsonArray {
             val cal = Calendar.getInstance()
             cal.timeInMillis = spm.getLastUsageUploaded()
-            val arr = JsonArray()
             val mUsageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
             val queryUsageStats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, cal.timeInMillis, now)
-            if (queryUsageStats != null) {
-                val packageName = context.packageName
-                val customDeviceName = NetworkUtils.getCustomDeviceName(context)
-                val deviceName = NetworkUtils.getDeviceName()
-                for (s in queryUsageStats) {
-                    addStats(s, arr, context, packageName, customDeviceName, deviceName, now)
+            return buildJsonArray {
+                if (queryUsageStats != null) {
+                    val packageName = context.packageName
+                    val customDeviceName = NetworkUtils.getCustomDeviceName(context)
+                    val deviceName = NetworkUtils.getDeviceName()
+                    for (s in queryUsageStats) {
+                        addStats(s, this, context, packageName, customDeviceName, deviceName, now)
+                    }
                 }
             }
-            return arr
         }
 
         private fun addStats(
             s: UsageStats,
-            arr: JsonArray,
+            arr: JsonArrayBuilder,
             context: Context,
             packageName: String,
             customDeviceName: String,
@@ -102,7 +112,7 @@ class MyPlanet : Serializable {
         ) {
             if (s.packageName == packageName) {
                 val totalUsed = s.lastTimeUsed - s.firstTimeStamp
-                val `object` = buildJsonObject {
+                arr.add(buildJsonObject {
                     put("lastTimeUsed", if (s.lastTimeUsed > 0) s.lastTimeUsed else 0)
                     put("firstTimeUsed", if (s.firstTimeStamp > 0) s.lastTimeStamp else 0)
                     put("totalForegroundTime", s.totalTimeInForeground)
@@ -112,9 +122,8 @@ class MyPlanet : Serializable {
                     put("customDeviceName", customDeviceName)
                     put("deviceName", deviceName)
                     put("time", now)
-                }.toGson()
-                `object`.addDocumentOrigin()
-                arr.add(`object`)
+                    addDocumentOrigin()
+                })
             }
         }
     }

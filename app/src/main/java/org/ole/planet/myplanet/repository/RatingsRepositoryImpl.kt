@@ -11,6 +11,7 @@ import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.RatingPromptLog
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.toGson
 
 class RatingsRepositoryImpl @Inject constructor(
     private val gson: Gson,
@@ -143,7 +144,7 @@ class RatingsRepositoryImpl @Inject constructor(
             createdOn = resolvedUser.parentCode
             parentCode = resolvedUser.parentCode
             planetCode = resolvedUser.planetCode
-            user = gson.toJson(resolvedUser.serialize())
+            user = gson.toJson(resolvedUser.serialize().toGson())
             this.type = type
             item = itemId
             this.title = title

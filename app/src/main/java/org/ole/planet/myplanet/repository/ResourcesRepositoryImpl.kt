@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
@@ -48,6 +49,8 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.distinctByContent
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 class ResourcesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -464,7 +467,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         mediums: Set<String>
     ) {
         val filter = JsonObject().apply {
-            add("tags", TagEntity.getTagsArray(tags))
+            add("tags", TagEntity.getTagsArray(tags).toGson())
             add("subjects", getJsonArrayFromList(subjects))
             add("language", getJsonArrayFromList(languages))
             add("level", getJsonArrayFromList(levels))
@@ -653,7 +656,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                 val existing = existingItems[resourceId]
                 val library = MyLibrary.insertMyLibrary(
                     MyLibrary.Companion.InsertParams(
-                        doc = doc,
+                        doc = doc.toKotlinx().jsonObject,
                         spm = sharedPrefManager,
                         context = context,
                         userId = shelfId,
@@ -702,7 +705,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                 val existing = existingItems[_id]
                 val library = MyLibrary.insertMyLibrary(
                     MyLibrary.Companion.InsertParams(
-                        doc = doc,
+                        doc = doc.toKotlinx().jsonObject,
                         spm = sharedPrefManager,
                         context = context,
                         existing = existing

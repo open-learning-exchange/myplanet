@@ -3,15 +3,13 @@ package org.ole.planet.myplanet.model
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.google.gson.JsonObject
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
-import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toKotlinx
 
 @Entity(
     tableName = "search_activity",
@@ -33,8 +31,8 @@ open class SearchActivity(
     var parentCode: String = ""
 ) {
     fun serialize(androidId: String?, customDeviceName: String): JsonObject {
-        val filterJson = GsonUtils.gson.fromJson(filter, JsonObject::class.java)
-        val obj = buildJsonObject {
+        val filterJson = KJson.parseObjectOrNull(filter)
+        return buildJsonObject {
             put("text", text)
             put("type", type)
             put("time", time)
@@ -43,10 +41,9 @@ open class SearchActivity(
             put("deviceName", NetworkUtils.getDeviceName())
             put("createdOn", createdOn)
             put("parentCode", parentCode)
-            put("filter", filterJson?.toKotlinx() ?: JsonNull)
-        }.toGson()
-        obj.addDocumentOrigin(androidId)
-        return obj
+            put("filter", filterJson ?: JsonNull)
+            addDocumentOrigin(androidId)
+        }
     }
 
 }

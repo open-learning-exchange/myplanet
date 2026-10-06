@@ -28,10 +28,15 @@ import org.ole.planet.myplanet.utils.JsonGolden.assertMatchesGolden
 import org.ole.planet.myplanet.utils.JsonGolden.assertMatchesRawGolden
 import org.ole.planet.myplanet.utils.VersionUtils
 import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toGsonAsParsed
+import org.ole.planet.myplanet.utils.toKotlinx
 
 /**
  * Goldens for the model JSON builders and readers the first golden pass left out, recorded
- * from the Gson-era code before the model package moves to kotlinx.serialization.
+ * from the Gson-era code before the model package moved to kotlinx.serialization. Inputs and
+ * outputs cross the same bridges the (still Gson) callers use, so each row pins what a caller
+ * sees: `toGson()` for values that used to be built and bridged, `toGsonAsParsed()` for values
+ * that used to be Gson parse results.
  */
 class ModelGapGoldenTest {
 
@@ -97,8 +102,8 @@ class ModelGapGoldenTest {
             createdOn = "planet"
             parentCode = "parent"
         }
-        golden("CourseActivity-full", CourseActivity.serialize(full))
-        golden("CourseActivity-sparse", CourseActivity.serialize(CourseActivity()))
+        golden("CourseActivity-full", CourseActivity.serialize(full).toGson())
+        golden("CourseActivity-sparse", CourseActivity.serialize(CourseActivity()).toGson())
     }
 
     @Test
@@ -108,14 +113,14 @@ class ModelGapGoldenTest {
             filter = """{"tags":["a<b>"],"subjects":[],"levels":["x"],"n":1.0,"big":1e2,"nested":{"k":null}}""",
             createdOn = "planet", parentCode = "parent",
         )
-        golden("SearchActivity-full", full.serialize("android-id", "custom <name>"))
-        golden("SearchActivity-sparse", SearchActivity().serialize(null, ""))
+        golden("SearchActivity-full", full.serialize("android-id", "custom <name>").toGson())
+        golden("SearchActivity-sparse", SearchActivity().serialize(null, "").toGson())
     }
 
     @Test
     fun `TagEntity getTagsArray`() {
         val tags = listOf(TagEntity().apply { _id = "tag<1>" }, TagEntity(), TagEntity().apply { _id = "" })
-        golden("TagEntity-tagsArray", TagEntity.getTagsArray(tags))
+        golden("TagEntity-tagsArray", TagEntity.getTagsArray(tags).toGson())
     }
 
     private fun usageStats(pkg: String, last: Long, first: Long, lastStamp: Long, fg: Long) = mockk<UsageStats>(relaxed = true) {
@@ -145,14 +150,14 @@ class ModelGapGoldenTest {
         val user = UserEntity(id = "u", parentCode = "parent<1>", planetCode = "planet&1")
         val versionDetail = """{"planetVersion":"0.20.1 <beta>","minapkcode":1,"latestapkcode":7064,"apkpath":"https://x.org/a?b=1&c=2"}"""
 
-        golden("MyPlanet-tabletUsages", MyPlanet.getTabletUsages(context, prefs(versionDetail), now = 5000L))
-        golden("MyPlanet-activities", MyPlanet.getMyPlanetActivities(context, prefs(versionDetail), user, now = 5000L))
-        golden("MyPlanet-activities-no-version", MyPlanet.getMyPlanetActivities(context, prefs(null), user, now = 5000L))
-        golden("MyPlanet-normalActivities", pinTime(MyPlanet.getNormalMyPlanetActivities(context, prefs(versionDetail), user)))
-        golden("MyPlanet-normalActivities-empty-version", pinTime(MyPlanet.getNormalMyPlanetActivities(context, prefs(""), user)))
-        golden("MyPlanet-normalActivities-json-null", pinTime(MyPlanet.getNormalMyPlanetActivities(context, prefs("null"), user)))
-        golden("MyPlanet-normalActivities-unknown-keys", pinTime(MyPlanet.getNormalMyPlanetActivities(context, prefs("""{"planetVersion":"v<1>","extra":{"a":[1]},"localapkpath":null}"""), user)))
-        golden("MyPlanet-normalActivities-null-planetVersion", pinTime(MyPlanet.getNormalMyPlanetActivities(context, prefs("""{"minapkcode":1}"""), user)))
+        golden("MyPlanet-tabletUsages", MyPlanet.getTabletUsages(context, prefs(versionDetail), now = 5000L).toGson())
+        golden("MyPlanet-activities", MyPlanet.getMyPlanetActivities(context, prefs(versionDetail), user, now = 5000L).toGson())
+        golden("MyPlanet-activities-no-version", MyPlanet.getMyPlanetActivities(context, prefs(null), user, now = 5000L).toGson())
+        golden("MyPlanet-normalActivities", pinTime(MyPlanet.getNormalMyPlanetActivities(context, prefs(versionDetail), user).toGson()))
+        golden("MyPlanet-normalActivities-empty-version", pinTime(MyPlanet.getNormalMyPlanetActivities(context, prefs(""), user).toGson()))
+        golden("MyPlanet-normalActivities-json-null", pinTime(MyPlanet.getNormalMyPlanetActivities(context, prefs("null"), user).toGson()))
+        golden("MyPlanet-normalActivities-unknown-keys", pinTime(MyPlanet.getNormalMyPlanetActivities(context, prefs("""{"planetVersion":"v<1>","extra":{"a":[1]},"localapkpath":null}"""), user).toGson()))
+        golden("MyPlanet-normalActivities-null-planetVersion", pinTime(MyPlanet.getNormalMyPlanetActivities(context, prefs("""{"minapkcode":1}"""), user).toGson()))
     }
 
     @Test
@@ -163,7 +168,7 @@ class ModelGapGoldenTest {
             put("references", Json.parseToJsonElement("""[{"name":"r","phone":"1"}]"""))
             put("links", Json.parseToJsonElement("""[]"""))
         }
-        val achievement = Achievement.fromJson(doc.toGson())
+        val achievement = Achievement.fromJson(doc.toGson().toKotlinx().jsonObject)
         assertMatchesRawGolden("model/persisted/Achievement-fromJson-achievements", achievement.achievements!!.joinToString("\n"))
         assertMatchesRawGolden("model/persisted/Achievement-fromJson-references", achievement.references!!.joinToString("\n"))
         assertMatchesRawGolden("model/persisted/Achievement-fromJson-links-otherInfo", "${achievement.links}|${achievement.otherInfo}")
@@ -175,9 +180,9 @@ class ModelGapGoldenTest {
         fun row(name: String, block: () -> Any?) = table.addProperty(name, outcome(block))
 
         val images = listOf(null, "", "[]", """[{"imageUrl":"a<b>","n":1.0,"e":1e2}]""", "not json", "{}", """["x",1]""")
-        images.forEachIndexed { i, s -> row("News.imagesArray[$i]") { News().apply { this.images = s }.imagesArray } }
+        images.forEachIndexed { i, s -> row("News.imagesArray[$i]") { News().apply { this.images = s }.imagesArray.toGsonAsParsed() } }
         val labels = listOf(null, emptyList(), listOf("a<b>", "", "c = d"))
-        labels.forEachIndexed { i, l -> row("News.labelsArray[$i]") { News().apply { this.labels = l }.labelsArray } }
+        labels.forEachIndexed { i, l -> row("News.labelsArray[$i]") { News().apply { this.labels = l }.labelsArray.toGson() } }
 
         val viewIns = listOf(
             null, "", "[]", "not json",
@@ -214,19 +219,19 @@ class ModelGapGoldenTest {
         )
         decrypted.forEachIndexed { i, d ->
             every { AndroidDecrypter.decrypt(any(), any(), any()) } returns d
-            row("HealthExamination.getEncryptedDataAsJson[$i]") { HealthExamination().apply { data = "x" }.getEncryptedDataAsJson(UserEntity()) }
+            row("HealthExamination.getEncryptedDataAsJson[$i]") { HealthExamination().apply { data = "x" }.getEncryptedDataAsJson(UserEntity()).toGsonAsParsed() }
         }
-        row("HealthExamination.getEncryptedDataAsJson[no data]") { HealthExamination().getEncryptedDataAsJson(UserEntity()) }
+        row("HealthExamination.getEncryptedDataAsJson[no data]") { HealthExamination().getEncryptedDataAsJson(UserEntity()).toGsonAsParsed() }
 
         val choices = listOf(null, emptyList(), listOf("""{"id":"a","text":"<A>","n":1.0}""", """{"b":1e2}"""), listOf(""))
-        choices.forEachIndexed { i, c -> row("Answer.valueChoicesArray[$i]") { Answer(valueChoices = c).valueChoicesArray } }
+        choices.forEachIndexed { i, c -> row("Answer.valueChoicesArray[$i]") { Answer(valueChoices = c).valueChoicesArray.toGson() } }
 
         val stored = listOf(null, emptyList(), listOf("""{"title":"<won>","n":1.0,"e":1e2}""", "\"plain\"", "7", "null"))
         stored.forEachIndexed { i, s ->
-            row("Achievement.achievementsArray[$i]") { Achievement().apply { achievements = s }.achievementsArray }
-            row("Achievement.getReferencesArray[$i]") { Achievement().apply { references = s }.getReferencesArray() }
-            row("Achievement.linksArray[$i]") { Achievement().apply { links = s }.linksArray }
-            row("Achievement.otherInfoArray[$i]") { Achievement().apply { otherInfo = s }.otherInfoArray }
+            row("Achievement.achievementsArray[$i]") { Achievement().apply { achievements = s }.achievementsArray.toGsonAsParsed() }
+            row("Achievement.getReferencesArray[$i]") { Achievement().apply { references = s }.getReferencesArray().toGsonAsParsed() }
+            row("Achievement.linksArray[$i]") { Achievement().apply { links = s }.linksArray.toGsonAsParsed() }
+            row("Achievement.otherInfoArray[$i]") { Achievement().apply { otherInfo = s }.otherInfoArray.toGsonAsParsed() }
         }
 
         row("ExamQuestion.correctChoiceArray[null]") { ExamQuestion().correctChoiceArray }
@@ -235,14 +240,14 @@ class ModelGapGoldenTest {
         val revs = listOf(null, """{"_id":"x","_rev":"1-a"}""", """{"_id":5,"_rev":null}""", "{}")
         revs.forEachIndexed { i, r ->
             row("OfflineActivity.changeRev[$i]") {
-                val doc = r?.let { Json.parseToJsonElement(it).jsonObject.toGson() }
+                val doc = r?.let { Json.parseToJsonElement(it).jsonObject.toGson().toKotlinx().jsonObject }
                 OfflineActivity().apply { _id = "old"; _rev = "old" }.apply { changeRev(doc) }.let { "${it._id}|${it._rev}" }
             }
         }
 
         val docs = listOf(null, "{}", """{"_attachments":{}}""", """{"_attachments":{"b.jpg":{},"a.png":{}}}""", """{"_attachments":"x"}""")
         docs.forEachIndexed { i, d ->
-            val gsonDoc = d?.let { Json.parseToJsonElement(it).jsonObject.toGson() }
+            val gsonDoc = d?.let { Json.parseToJsonElement(it).jsonObject.toGson().toKotlinx().jsonObject }
             row("UserEntity.addImageUrl[$i]") { UserEntity(id = "org.couchdb.user:u").apply { addImageUrl(gsonDoc) }.userImage }
             if (gsonDoc != null) row("MyTeam.getFirstAttachmentName[$i]") { MyTeam.getFirstAttachmentName(gsonDoc) }
         }

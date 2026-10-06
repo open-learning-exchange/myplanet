@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.model
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.ole.planet.myplanet.utils.toGson
 
 class MyCourseTest {
 
@@ -88,7 +89,7 @@ class MyCourseTest {
             CourseStep(id = "step1", stepTitle = "Step One", description = "First step")
         )
 
-        val json = MyCourse.serialize(course, mapOf("step1" to listOf(resource)))
+        val json = MyCourse.serialize(course, mapOf("step1" to listOf(resource))).toGson()
 
         assertEquals("course1", json.get("_id").asString)
         assertEquals("1-abc", json.get("_rev").asString)
@@ -113,7 +114,7 @@ class MyCourseTest {
         val course = MyCourse(id = "c1", courseId = "course1")
         course.courseSteps = mutableListOf(CourseStep(id = "step1", stepTitle = "Step One"))
 
-        val json = MyCourse.serialize(course, emptyMap())
+        val json = MyCourse.serialize(course, emptyMap()).toGson()
 
         val step = json.getAsJsonArray("steps")[0].asJsonObject
         assertEquals(0, step.getAsJsonArray("resources").size())
