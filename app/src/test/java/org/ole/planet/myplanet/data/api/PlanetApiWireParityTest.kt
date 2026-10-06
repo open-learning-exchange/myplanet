@@ -8,7 +8,11 @@ import kotlinx.serialization.json.put
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import mockwebserver3.RecordedRequest
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -101,6 +105,67 @@ class PlanetApiWireParityTest {
         for ((name, call) in calls) {
             val responseBody = if (name == "postDocArray") "[]" else "{}"
             assertEquals(name, capture(retrofit, responseBody, call), capture(ktor, responseBody, call))
+        }
+    }
+
+    /**
+     * An unconfigured server leaves `UrlUtils` building `/db/...`, `:///...` and the like; Retrofit
+     * resolves those against its base URL, and Ktor must send them to the same place (and fail
+     * the same way when even that cannot parse). An interceptor answers in place of the network,
+     * recording the URL an app interceptor sees.
+     */
+    @Test
+    fun relativeAndUnparseableUrls_resolveOrFailIdentically() {
+        val seen = mutableListOf<String>()
+        val okHttp = {
+            OkHttpClient.Builder().addInterceptor { chain ->
+                seen += chain.request().url.toString()
+                Response.Builder()
+                    .request(chain.request())
+                    .protocol(Protocol.HTTP_1_1)
+                    .code(200)
+                    .message("OK")
+                    .body("{}".toResponseBody("application/json".toMediaType()))
+                    .build()
+            }.build()
+        }
+        val json = NetworkModule.provideJson()
+        val retrofitApi = NetworkModule.providePlanetApi(
+            NetworkModule.provideApiInterface(NetworkModule.provideStandardRetrofit(okHttp(), NetworkModule.provideGson(), json))
+        )
+        val client = NetworkModule.provideKtorHttpClient(okHttp())
+        val ktorApi = KtorPlanetApi(client, json, JvmKtorPlatform)
+        val sentTo = linkedMapOf(
+            "" to "https://vi.media.mit.edu/",
+            "/db" to "https://vi.media.mit.edu/db",
+            "/db/resources/r1/100% guide.pdf" to "https://vi.media.mit.edu/db/resources/r1/100%%20guide.pdf",
+            "/db/_users/org.couchdb.user:alice?rev=1" to "https://vi.media.mit.edu/db/_users/org.couchdb.user:alice?rev=1",
+            "db/x" to "https://vi.media.mit.edu/db/x",
+            "?x=1" to "https://vi.media.mit.edu/?x=1",
+            "#f" to "https://vi.media.mit.edu/#f",
+            "://:5000/" to "https://vi.media.mit.edu/://:5000/",
+            "://:5000/checkProviders/" to "https://vi.media.mit.edu/://:5000/checkProviders/",
+            "/versions" to "https://vi.media.mit.edu/versions",
+            "//other.host/db" to "https://other.host/db",
+        )
+        val malformed = listOf("http://", "http://host:99999/db", "ftp://host/db")
+        try {
+            for (url in sentTo.keys + malformed) {
+                val outcomes = listOf(retrofitApi, ktorApi).map { api ->
+                    seen.clear()
+                    try {
+                        val response = runBlocking { api.getJsonObject(null, url) }
+                        "${response.code} ${response.requestUrl} via $seen"
+                    } catch (e: Exception) {
+                        "${e::class.java.name}: ${e.message} via $seen"
+                    }
+                }
+                val expected = sentTo[url]?.let { "200 $it via [$it]" }
+                    ?: "java.lang.IllegalArgumentException: Malformed URL. Base: https://vi.media.mit.edu/, Relative: $url via []"
+                assertEquals(url, listOf(expected, expected), outcomes)
+            }
+        } finally {
+            client.close()
         }
     }
 }

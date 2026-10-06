@@ -396,6 +396,92 @@ abstract class PlanetApiContractTest {
         }
     }
 
+    /**
+     * `UrlUtils.getUrl(id, file, base)` appends a resource's raw file name, so whatever a name
+     * holds — a bare `%`, a malformed escape, spaces, any script, `#` or `?` — must download
+     * from where OkHttp sends it rather than fail the call.
+     */
+    @Test
+    fun resourceFileNames_reachTheServerAsOkHttpSendsThem() = runBlocking {
+        val base = url("/db").trimEnd('/')
+        val expectedTargets = linkedMapOf(
+            "100% guide.pdf" to "/db/resources/r1/100%%20guide.pdf",
+            "50%off.mp4" to "/db/resources/r1/50%off.mp4",
+            "a%zzb.txt" to "/db/resources/r1/a%zzb.txt",
+            "trailing%" to "/db/resources/r1/trailing%",
+            "%" to "/db/resources/r1/%",
+            "%ff raw byte.bin" to "/db/resources/r1/%ff%20raw%20byte.bin",
+            "already%20encoded.pdf" to "/db/resources/r1/already%20encoded.pdf",
+            "my notes (v2).pdf" to "/db/resources/r1/my%20notes%20(v2).pdf",
+            "résumé.pdf" to "/db/resources/r1/r%C3%A9sum%C3%A9.pdf",
+            "كتاب الرياضيات.pdf" to "/db/resources/r1/%D9%83%D8%AA%D8%A7%D8%A8%20%D8%A7%D9%84%D8%B1%D9%8A%D8%A7%D8%B6%D9%8A%D8%A7%D8%AA.pdf",
+            "पुस्तक.pdf" to "/db/resources/r1/%E0%A4%AA%E0%A5%81%E0%A4%B8%E0%A5%8D%E0%A4%A4%E0%A4%95.pdf",
+            "a#b.pdf" to "/db/resources/r1/a",
+            "what?.pdf" to "/db/resources/r1/what?.pdf",
+            "50% off?x=1%zz&y=é#frag%zz é" to "/db/resources/r1/50%%20off?x=1%zz&y=%C3%A9",
+            "100%#ü.pdf" to "/db/resources/r1/100%",
+        )
+        for ((fileName, target) in expectedTargets) {
+            // Exactly what UrlUtils.getUrl("r1", fileName, base) builds.
+            val raw = "$base/resources/r1/$fileName"
+            server.enqueue(MockResponse.Builder().body("data").build())
+
+            val response = api.downloadFile("Basic abc", raw)
+
+            val body = requireNotNull(response.body) { fileName }
+            assertEquals(fileName, "data", body.source().readUtf8())
+            body.close()
+            val request = takeRequest()
+            assertEquals(fileName, "GET $target HTTP/1.1", request.requestLine)
+            assertEquals(fileName, "Basic abc", request.headers["Authorization"])
+            request.assertHeaderNames("Authorization")
+            assertEquals(fileName, 200, response.code)
+            assertEquals(fileName, raw.toHttpUrl().toString(), response.requestUrl)
+        }
+    }
+
+    @Test
+    fun strayPercent_inEveryEndpointKind_isSentAsOkHttpSendsIt() = runBlocking {
+        val raw = url("/db") + "/resources/r1/100% guide.pdf?rev=50%off"
+        val target = "/db/resources/r1/100%%20guide.pdf?rev=50%off"
+
+        enqueueJson("{}")
+        api.getJsonObject("Basic abc", raw)
+        assertEquals("GET $target HTTP/1.1", takeRequest().requestLine)
+
+        enqueueJson("{}")
+        api.putDoc("Basic abc", "application/json", raw, doc)
+        val put = takeRequest()
+        assertEquals("PUT $target HTTP/1.1", put.requestLine)
+        assertEquals(docBytes, put.bodyUtf8())
+        put.assertHeaderNames("Authorization", "Content-Type", "Content-Length")
+
+        enqueueJson("{}")
+        api.uploadResource(mapOf("Authorization" to "Basic abc"), raw, UploadBody.TextContent("x", "text/plain"))
+        val upload = takeRequest()
+        assertEquals("PUT $target HTTP/1.1", upload.requestLine)
+        upload.assertHeaderNames("Authorization", "Content-Type", "Content-Length")
+
+        server.enqueue(MockResponse.Builder().body("ok").build())
+        val text = api.healthAccess(raw)
+        assertEquals("GET $target HTTP/1.1", takeRequest().requestLine)
+        assertEquals("ok", text.body)
+        assertEquals(raw.toHttpUrl().toString(), text.requestUrl)
+    }
+
+    @Test
+    fun strayPercent_survivesARedirect() = runBlocking {
+        server.enqueue(MockResponse.Builder().code(302).setHeader("Location", "/db/final/50%off.pdf").build())
+        server.enqueue(MockResponse.Builder().body("data").build())
+
+        val response = api.downloadFile(null, url("/db") + "/resources/r1/100% guide.pdf")
+        response.body?.close()
+
+        assertEquals("GET /db/resources/r1/100%%20guide.pdf HTTP/1.1", takeRequest().requestLine)
+        assertEquals("GET /db/final/50%off.pdf HTTP/1.1", takeRequest().requestLine)
+        assertEquals(url("/db") + "/final/50%off.pdf", response.requestUrl)
+    }
+
     @Test
     fun redirect_isFollowedAndRequestUrlIsTheFinalUrl() = runBlocking {
         server.enqueue(MockResponse.Builder().code(302).setHeader("Location", "/db/final?x=1").build())

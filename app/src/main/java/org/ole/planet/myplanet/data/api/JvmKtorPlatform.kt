@@ -16,8 +16,8 @@ import okio.source
 
 /** [KtorPlatform] on the JVM: URLs through OkHttp's `HttpUrl`, files through `java.io.File`. */
 object JvmKtorPlatform : KtorPlatform {
-    /** Retrofit resolves an absolute `@Url` to exactly this `HttpUrl`, so both send the same bytes. */
-    override fun canonicalUrl(url: String): String? = url.toHttpUrlOrNull()?.toString()
+    /** Retrofit resolves an `@Url` against its base to exactly this `HttpUrl`, so both send the same bytes. */
+    override fun canonicalUrl(base: String, url: String): String? = base.toHttpUrlOrNull()?.resolve(url)?.toString()
 
     override fun fileContent(path: String): OutgoingContent = FileContent(File(path))
 

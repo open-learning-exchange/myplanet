@@ -23,6 +23,7 @@ import io.ktor.utils.io.charsets.forName
 import io.ktor.utils.io.core.String
 import io.ktor.utils.io.core.toByteArray
 import io.ktor.utils.io.toByteArray
+import kotlin.io.encoding.Base64
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -54,7 +55,7 @@ import org.ole.planet.myplanet.model.MyPlanet
  * - [downloadFile] returns as soon as the headers arrive and streams the body afterwards.
  *
  * Nothing here is JVM-specific: URL canonicalisation, files and blocking reads go through
- * [platform], and the engine-side half (redirects, User-Agent, the final request URL) lives in
+ * [platform], and the engine-side half (redirects, User-Agent, the exact and final request URL) lives in
  * [KtorHttpClients].
  */
 class KtorPlanetApi(
@@ -246,15 +247,25 @@ class KtorPlanetApi(
     // region request building
 
     /**
-     * Points the request at [url] as OkHttp would send it. Ktor's own parser percent-encodes
+     * Points the request at [url] as OkHttp would send it, resolving a relative or scheme-less
+     * [url] against [RELATIVE_URL_BASE] as Retrofit did. Ktor's own parser percent-encodes
      * characters OkHttp leaves alone (`[`, `]` in a path) and regroups repeated query keys, so
-     * the canonical path and query are written back verbatim. One gap remains: a malformed escape
-     * such as `%zz`, which OkHttp sends untouched, makes Ktor fail the call with URLDecodeException.
+     * the canonical path and query are written back verbatim.
+     *
+     * Ktor decodes every escape while building the request, so a malformed one that OkHttp sends
+     * untouched (`100% guide.pdf` becomes `100%%20guide.pdf`) would fail the call. Such a URL is
+     * handed to Ktor with each stray `%` escaped, and the exact URL rides in [EXACT_URL_HEADER]
+     * for the engine side to put back before anything else sees the request.
      */
     private fun HttpRequestBuilder.target(httpMethod: HttpMethod, url: String?) {
         method = httpMethod
-        val absolute = requireNotNull(url) { "@Url parameter is null." }
-        val canonical = requireNotNull(platform.canonicalUrl(absolute)) { "Malformed URL: $absolute" }
+        val raw = requireNotNull(url) { "@Url parameter is null." }
+        val exact = requireNotNull(platform.canonicalUrl(RELATIVE_URL_BASE, raw)) {
+            "Malformed URL. Base: $RELATIVE_URL_BASE, Relative: $raw"
+        }
+        val canonical = escapeStrayPercents(exact)
+        // Base64, because OkHttp keeps a fragment's non-ASCII characters and rejects them in a header.
+        if (canonical != exact) headers[EXACT_URL_HEADER] = Base64.encode(exact.encodeToByteArray())
         val pathStart = canonical.indexOf('/', canonical.indexOf("://") + 3).let { if (it == -1) canonical.length else it }
         val queryStart = canonical.indexOf('?', pathStart).takeIf { it != -1 }
         val fragmentStart = canonical.indexOf('#', pathStart).takeIf { it != -1 } ?: canonical.length
@@ -322,6 +333,19 @@ class KtorPlanetApi(
          */
         const val REQUEST_URL_HEADER = "X-Planet-Request-Url"
 
+        /**
+         * Request header carrying the exact URL to send, UTF-8 in Base64, when Ktor could only be
+         * given an escaped stand-in for it; the engine side swaps it in and removes the header.
+         * Never sent.
+         */
+        const val EXACT_URL_HEADER = "X-Planet-Exact-Url"
+
+        /**
+         * Where Retrofit resolved a relative `@Url`, kept so an unconfigured server URL (an empty
+         * base, so `/db/...`) goes where it always went rather than failing the call.
+         */
+        const val RELATIVE_URL_BASE = "https://vi.media.mit.edu/"
+
         private const val JSON_MEDIA_TYPE = "application/json"
 
         private const val TOKEN = "[a-zA-Z0-9-!#$%&'*+.^_`{|}~]+"
@@ -343,6 +367,19 @@ class KtorPlanetApi(
             require(isMediaType(value)) { "Malformed content type: $value" }
             return value
         }
+
+        /** [url] with every `%` that does not start a two-hex-digit escape written as `%25`. */
+        private fun escapeStrayPercents(url: String): String {
+            if (url.indices.none { url[it] == '%' && !isEscape(url, it) }) return url
+            return buildString(url.length + 8) {
+                url.forEachIndexed { index, c -> append(if (c == '%' && !isEscape(url, index)) "%25" else c) }
+            }
+        }
+
+        private fun isEscape(url: String, index: Int): Boolean =
+            index + 2 < url.length && url[index + 1].isHexDigit() && url[index + 2].isHexDigit()
+
+        private fun Char.isHexDigit(): Boolean = this in '0'..'9' || this in 'a'..'f' || this in 'A'..'F'
 
         private fun charsetOf(contentType: String): Charset? = try {
             ContentType.parse(contentType).parameter("charset")?.trim('\'')?.let { Charsets.forName(it) }

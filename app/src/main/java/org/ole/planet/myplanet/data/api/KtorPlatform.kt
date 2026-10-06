@@ -12,10 +12,11 @@ import okio.BufferedSource
  */
 interface KtorPlatform {
     /**
-     * [url] exactly as the platform's HTTP stack puts it on the wire (percent-encoding, host and
-     * port normalised), or null when it cannot be parsed as an absolute http(s) URL.
+     * [url], resolved against [base] when it is relative, exactly as the platform's HTTP stack
+     * puts it on the wire (percent-encoding, host and port normalised), or null when it cannot
+     * be resolved to an http(s) URL.
      */
-    fun canonicalUrl(url: String): String?
+    fun canonicalUrl(base: String, url: String): String?
 
     /** The bytes of the file at [path], read from disk only while the request is written. */
     fun fileContent(path: String): OutgoingContent

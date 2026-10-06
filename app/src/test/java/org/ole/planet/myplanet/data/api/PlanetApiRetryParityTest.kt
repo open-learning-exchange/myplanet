@@ -163,4 +163,14 @@ class PlanetApiRetryParityTest {
         assertEquals(200, outcome.code)
         assertEquals("_users,", outcome.body)
     }
+
+    @Test
+    fun strayPercentDownload_isRetriedAtTheSameUrl() {
+        val outcome = parity({ listOf(status(503), status(200, "payload")) }) {
+            downloadFile("Basic abc", it.url("/db").toString() + "/resources/r/100% guide.pdf")
+        }
+
+        assertEquals(List(2) { "GET /db/resources/r/100%%20guide.pdf HTTP/1.1" }, outcome.requests)
+        assertEquals("payload", outcome.body)
+    }
 }
