@@ -12,6 +12,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.impl.WorkManagerImpl
 import io.mockk.MockKAnnotations
+import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -28,8 +29,10 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.model.RetryOperation
@@ -60,11 +63,27 @@ class RetryQueueWorkerTest {
 
     private lateinit var worker: RetryQueueWorker
 
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkStatic(Log::class)
+            mockkStatic(WorkManagerImpl::class)
+            mockkStatic(WorkManager::class)
+            mockkObject(MainApplication)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkAll()
+        }
+    }
+
     @Before
     fun setUp() {
         MockKAnnotations.init(this, relaxed = true)
 
-        mockkStatic(Log::class)
         every { Log.d(any<String>(), any<String>()) } returns 0
         every { Log.i(any<String>(), any<String>()) } returns 0
         every { Log.w(any<String>(), any<String>()) } returns 0
@@ -73,22 +92,18 @@ class RetryQueueWorkerTest {
 
         every { context.applicationContext } returns context
 
-        mockkStatic(WorkManagerImpl::class)
         every { WorkManagerImpl.getInstance(any()) } returns workManagerImpl
 
-        mockkStatic(WorkManager::class)
         every { WorkManager.getInstance(any()) } returns workManagerImpl
 
         every { syncManager.isMainSyncActive() } returns false
 
         worker = RetryQueueWorker(context, workerParams, retryQueue, retryRepository, syncManager)
-
-        mockkObject(MainApplication)
     }
 
     @After
     fun tearDown() {
-        unmockkAll()
+        clearAllMocks(answers = false, childMocks = false)
     }
 
     @Test
