@@ -170,7 +170,19 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
         binding.courseProgress.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
                 if (b && i <= currentCourseProgress + 1) {
-                    binding.viewPager2.currentItem = i
+                    if (i == 0) {
+                        binding.viewPager2.currentItem = 0
+                    } else {
+                        val targetStep = steps.getOrNull(i - 1)
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            if (viewModel.isStepLocked(targetStep, steps, userModel?.id)) {
+                                Snackbar.make(binding.root, getString(R.string.sway_area_and_balance_must_be_finished_first), Snackbar.LENGTH_SHORT).show()
+                                binding.courseProgress.progress = binding.viewPager2.currentItem
+                            } else {
+                                binding.viewPager2.currentItem = i
+                            }
+                        }
+                    }
                 }
             }
 
@@ -282,7 +294,14 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
         if (!containsUserId) return
         val index = steps.indexOfFirst { it?.id == stepId }
         if (index < 0) return
-        binding.viewPager2.setCurrentItem(index + 1, true)
+        val targetStep = steps.getOrNull(index)
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (viewModel.isStepLocked(targetStep, steps, userModel?.id)) {
+                Snackbar.make(binding.root, getString(R.string.sway_area_and_balance_must_be_finished_first), Snackbar.LENGTH_SHORT).show()
+            } else {
+                binding.viewPager2.setCurrentItem(index + 1, true)
+            }
+        }
     }
 
     override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
@@ -291,6 +310,16 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
         if (!this::steps.isInitialized) return
         isNextStepLocked = false
         this.position = position
+        val currentSelectedStep = steps.getOrNull(position - 1)
+        if (position > 0 && currentSelectedStep != null) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                if (viewModel.isStepLocked(currentSelectedStep, steps, userModel?.id)) {
+                    Snackbar.make(binding.root, getString(R.string.sway_area_and_balance_must_be_finished_first), Snackbar.LENGTH_SHORT).show()
+                    binding.viewPager2.setCurrentItem(0, false)
+                    return@launch
+                }
+            }
+        }
         if (position > 0 && position - 1 < steps.size) {
             changeNextButtonState(position)
         }
@@ -299,9 +328,13 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
     }
 
     private fun changeNextButtonState(position: Int) {
-        if (courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
-            val stepId = steps.getOrNull(position - 1)?.id
-            viewLifecycleOwner.lifecycleScope.launch {
+        val nextStep = steps.getOrNull(position)
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (viewModel.isStepLocked(nextStep, steps, userModel?.id)) {
+                isNextStepLocked = true
+                lockedStepMessage = getString(R.string.sway_area_and_balance_must_be_finished_first)
+            } else if (courseId == MANDATORY_SURVEY_COURSE_ID) {
+                val stepId = steps.getOrNull(position - 1)?.id
                 val stepData = stepId?.let { viewModel.getCourseStepData(it, userModel?.id) }
                 val hasExam = stepData?.stepExams?.isNotEmpty() == true
                 val hasSurvey = stepData?.stepSurvey?.isNotEmpty() == true
@@ -317,9 +350,9 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
                 } else {
                     isNextStepLocked = false
                 }
+            } else {
+                isNextStepLocked = false
             }
-        } else {
-            isNextStepLocked = false
         }
     }
     override fun onPageScrollStateChanged(state: Int) {}

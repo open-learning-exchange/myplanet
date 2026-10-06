@@ -1409,4 +1409,5 @@
 
     <string name="playback_speed">Vitesse de lecture</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="sway_area_and_balance_must_be_finished_first">La zone d\'oscillation et l\'équilibre doivent être terminés en premier</string>
 </resources>

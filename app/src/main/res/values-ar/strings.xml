@@ -1421,4 +1421,5 @@
 
     <string name="playback_speed">سرعة التشغيل</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="sway_area_and_balance_must_be_finished_first">يجب الانتهاء من منطقة التأرجح والتوازن أولاً</string>
 </resources>

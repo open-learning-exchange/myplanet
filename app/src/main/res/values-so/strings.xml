@@ -1405,4 +1405,5 @@
 
     <string name="playback_speed">Xawaaraha dib-u-daawashada</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="sway_area_and_balance_must_be_finished_first">Sway area and balance must be finished first</string>
 </resources>

@@ -173,4 +173,48 @@ class TakeCourseViewModelTest {
         coEvery { ratingsRepository.getRatingSummary("course", "course_1", "user_1") } returns summary
         assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision("course_1", "user_1"))
     }
+
+    @Test
+    fun isStepLocked_returnsFalse_forNonDependentStep() = runTest {
+        val target = CourseStep(id = "step_1", stepTitle = "Intro to Balance")
+        val steps = listOf(target)
+        assertFalse(viewModel.isStepLocked(target, steps, "user_1"))
+    }
+
+    @Test
+    fun isStepLocked_returnsTrue_whenPrerequisitesIncomplete() = runTest {
+        val swayStep = CourseStep(id = "step_sway", stepTitle = "Sway Area Assessment")
+        val balanceStep = CourseStep(id = "step_balance", stepTitle = "Balance Test")
+        val dualTaskStep = CourseStep(id = "step_dt", stepTitle = "Dual Task Evaluation")
+        val steps = listOf(swayStep, balanceStep, dualTaskStep)
+
+        coEvery { coursesRepository.isStepCompleted("step_sway", "user_1") } returns true
+        coEvery { coursesRepository.isStepCompleted("step_balance", "user_1") } returns false
+
+        assertTrue(viewModel.isStepLocked(dualTaskStep, steps, "user_1"))
+    }
+
+    @Test
+    fun isStepLocked_returnsFalse_whenPrerequisitesCompleted() = runTest {
+        val swayStep = CourseStep(id = "step_sway", stepTitle = "Sway Area Assessment")
+        val balanceStep = CourseStep(id = "step_balance", stepTitle = "Balance Test")
+        val dualTaskStep = CourseStep(id = "step_dt", stepTitle = "Dual Task Evaluation")
+        val steps = listOf(swayStep, balanceStep, dualTaskStep)
+
+        coEvery { coursesRepository.isStepCompleted("step_sway", "user_1") } returns true
+        coEvery { coursesRepository.isStepCompleted("step_balance", "user_1") } returns true
+
+        assertFalse(viewModel.isStepLocked(dualTaskStep, steps, "user_1"))
+    }
+
+    @Test
+    fun isStepLocked_handlesSensoryAtaxiaVariantsAndTypo() = runTest {
+        val swayStep = CourseStep(id = "step_sway", stepTitle = "Sway Area Assessment")
+        val sensoryAtaxiaStep = CourseStep(id = "step_sa", stepTitle = "Sensory Tataxia")
+        val steps = listOf(swayStep, sensoryAtaxiaStep)
+
+        coEvery { coursesRepository.isStepCompleted("step_sway", "user_1") } returns false
+
+        assertTrue(viewModel.isStepLocked(sensoryAtaxiaStep, steps, "user_1"))
+    }
 }

@@ -68,6 +68,37 @@ class TakeCourseViewModel @Inject constructor(
         return coursesRepository.isStepCompleted(stepId, userId)
     }
 
+    suspend fun isStepLocked(targetStep: CourseStep?, steps: List<CourseStep?>?, userId: String?): Boolean {
+        if (targetStep == null || steps.isNullOrEmpty()) return false
+        val title = targetStep.stepTitle ?: return false
+        if (!isDependentStep(title)) return false
+
+        val prereqSteps = steps.filterNotNull().filter { isPrerequisiteStep(it.stepTitle) }
+        if (prereqSteps.isEmpty()) return false
+
+        for (prereq in prereqSteps) {
+            if (!isStepCompleted(prereq.id, userId)) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun isPrerequisiteStep(stepTitle: String?): Boolean {
+        if (stepTitle.isNullOrBlank()) return false
+        val t = stepTitle.lowercase()
+        return t.contains("sway area") || t.contains("balance")
+    }
+
+    private fun isDependentStep(stepTitle: String?): Boolean {
+        if (stepTitle.isNullOrBlank()) return false
+        val t = stepTitle.lowercase()
+        return t.contains("dual task") ||
+               t.contains("sensory ataxia") ||
+               t.contains("sensory tataxia") ||
+               (t.contains("sensory") && t.contains("ataxia"))
+    }
+
     suspend fun getCourseById(courseId: String): MyCourse? {
         return coursesRepository.getCourseById(courseId)
     }
