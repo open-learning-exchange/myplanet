@@ -63,7 +63,7 @@ class RetryRepositoryImplTest {
 
     @Test
     fun `recordFailure inserts when none exists`() = runTest {
-        coEvery { retryDao.findExisting("itemId", "testUploadType") } returns null
+        coEvery { retryDao.findExistingId("itemId", "testUploadType") } returns null
         val insertedSlot = slot<RetryOperation>()
         coEvery { retryDao.insert(capture(insertedSlot)) } returns Unit
 
@@ -90,12 +90,7 @@ class RetryRepositoryImplTest {
 
     @Test
     fun `recordFailure marks failed when one exists`() = runTest {
-        val existing = RetryOperation().apply {
-            id = "existingOpId"
-            itemId = "itemId"
-            uploadType = "testUploadType"
-        }
-        coEvery { retryDao.findExisting("itemId", "testUploadType") } returns existing
+        coEvery { retryDao.findExistingId("itemId", "testUploadType") } returns "existingOpId"
         coEvery { retryDao.recordFailedAttempt("existingOpId", "test error", 500, timeProvider.now()) } returns 1
 
         val retryFailure = RetryFailure("itemId", "test error", 500)
@@ -110,15 +105,15 @@ class RetryRepositoryImplTest {
 
     @Test
     fun `recordFailure concurrent calls for same item inserts only once`() = runTest {
-        var existingRow: RetryOperation? = null
-        coEvery { retryDao.findExisting("item1", "type1") } coAnswers {
-            val result = existingRow
+        var existingOpId: String? = null
+        coEvery { retryDao.findExistingId("item1", "type1") } coAnswers {
+            val result = existingOpId
             delay(10)
             result
         }
         coEvery { retryDao.insert(any()) } answers {
             val op = firstArg<RetryOperation>()
-            existingRow = op
+            existingOpId = op.id
         }
 
         val failure = RetryFailure("item1", "error msg", 500)
@@ -349,12 +344,17 @@ class RetryRepositoryImplTest {
     }
 
     @Test
-    fun `getPendingCount returns dao active count`() = runTest {
+    fun `getRetryQueueSnapshot returns snapshot with active count and pending ops`() = runTest {
+        val op1 = RetryOperation().apply { id = "op1"; attemptCount = 1; maxAttempts = 5 }
         coEvery { retryDao.getActiveCount() } returns 10L
+        coEvery { retryDao.getPending(timeProvider.now()) } returns listOf(op1)
 
-        val count = repository.getPendingCount()
+        val snapshot = repository.getRetryQueueSnapshot()
 
-        assertEquals(10L, count)
+        assertEquals(10L, snapshot.pendingCount)
+        assertEquals(1, snapshot.pendingOps.size)
+        assertEquals(op1, snapshot.pendingOps[0])
+        assertEquals(false, snapshot.isProcessing)
     }
 
     @Test
@@ -363,13 +363,6 @@ class RetryRepositoryImplTest {
 
         val expectedCutoff = timeProvider.now() - 24 * 60 * 60 * 1000L
         coVerify { retryDao.deleteOldCompleted(expectedCutoff) }
-    }
-
-    @Test
-    fun `deletePendingAndAbandonedOperations delegates to dao`() = runTest {
-        repository.deletePendingAndAbandonedOperations()
-
-        coVerify { retryDao.deletePendingAndAbandoned() }
     }
 
     @Test
