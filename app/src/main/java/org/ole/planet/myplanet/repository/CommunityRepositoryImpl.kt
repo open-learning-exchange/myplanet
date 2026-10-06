@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import com.google.gson.JsonArray
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -8,6 +7,7 @@ import kotlinx.coroutines.CancellationException
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
 import org.ole.planet.myplanet.model.Community
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.toGson
 
@@ -54,7 +54,7 @@ class CommunityRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.w(TAG, "syncCommunityDocs failed", e)
+            AppLog.w(TAG, "syncCommunityDocs failed", e)
             false
         }
     }

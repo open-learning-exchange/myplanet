@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.services.sync
 
-import android.content.SharedPreferences
 import android.net.Uri
-import android.util.Log
 import androidx.core.net.toUri
 import java.net.HttpURLConnection
 import java.net.URL
@@ -10,6 +8,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
+import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
@@ -42,7 +42,7 @@ class ServerUrlMapper @Inject constructor(
             val isDefaultPort = (scheme == "http" && port == 80) || (scheme == "https" && port == 443)
             if (port != -1 && !isDefaultPort) "$scheme://$host:$port" else "$scheme://$host"
         } catch (e: Exception) {
-            Log.w(TAG, "Could not extract base url", e)
+            AppLog.w(TAG, "Could not extract base url", e)
             null
         }
     }
@@ -53,7 +53,7 @@ class ServerUrlMapper @Inject constructor(
         return UrlMapping(url, alternativeUrl, extractedUrl)
     }
 
-    fun updateUrlPreferences(editor: SharedPreferences.Editor, uri: Uri, alternativeUrl: String, url: String, settings: SharedPreferences) {
+    fun updateUrlPreferences(settings: SharedPrefManager, uri: Uri, alternativeUrl: String, url: String) {
         val altUri = alternativeUrl.toUri()
         val urlUser: String
         val urlPwd: String
@@ -65,7 +65,7 @@ class ServerUrlMapper @Inject constructor(
             urlPwd = pwd
         } else {
             urlUser = "satellite"
-            urlPwd = settings.getString("serverPin", "") ?: ""
+            urlPwd = settings.getServerPin()
         }
 
         val scheme = altUri.scheme
@@ -82,21 +82,18 @@ class ServerUrlMapper @Inject constructor(
             "$scheme://$urlUser:$urlPwd@$host:$port"
         }
 
-        editor.apply {
-            putString("url_user", urlUser)
-            putString("url_pwd", urlPwd)
-            putString("url_Scheme", uri.scheme)
-            putString("url_Host", uri.host)
-            putString("alternativeUrl", url)
-            putString("processedAlternativeUrl", couchdbURL)
-            putBoolean("isAlternativeUrl", true)
-            apply()
-        }
-        UrlUtils.invalidateCaches()
+        settings.saveAlternativeUrlConfig(
+            urlUser = urlUser,
+            urlPwd = urlPwd,
+            urlScheme = uri.scheme,
+            urlHost = uri.host,
+            alternativeUrl = url,
+            processedAlternativeUrl = couchdbURL
+        )
     }
 
     suspend fun updateServerIfNecessary(
-        mapping: UrlMapping, settings: SharedPreferences,
+        mapping: UrlMapping, settings: SharedPrefManager,
         isServerReachable: suspend (String) -> Boolean
     ) {
         val primaryAvailable = isServerReachable(mapping.primaryUrl)
@@ -106,8 +103,7 @@ class ServerUrlMapper @Inject constructor(
 
         if (!primaryAvailable && alternativeAvailable) {
             mapping.alternativeUrl.let { alternativeUrl ->
-                val editor = settings.edit()
-                updateUrlPreferences(editor, mapping.primaryUrl.toUri(), alternativeUrl, mapping.primaryUrl, settings)
+                updateUrlPreferences(settings, mapping.primaryUrl.toUri(), alternativeUrl, mapping.primaryUrl)
             }
         }
     }

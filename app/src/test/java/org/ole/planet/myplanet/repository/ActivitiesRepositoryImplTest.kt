@@ -13,6 +13,7 @@ import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
+import io.mockk.verify
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -49,6 +50,8 @@ import org.ole.planet.myplanet.model.UserChallengeActions
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.AppInfo
+import org.ole.planet.myplanet.utils.AppUsageStats
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -71,6 +74,8 @@ class ActivitiesRepositoryImplTest {
     private lateinit var removedLogDao: RemovedLogDao
     private lateinit var searchActivityDao: org.ole.planet.myplanet.data.room.dao.SearchActivityDao
     private lateinit var deviceNameProvider: DeviceNameProvider
+    private lateinit var appInfo: AppInfo
+    private lateinit var appUsageStats: AppUsageStats
     private lateinit var dispatcherProvider: DispatcherProvider
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
@@ -103,12 +108,14 @@ class ActivitiesRepositoryImplTest {
         searchActivityDao = mockk(relaxed = true)
         deviceNameProvider = mockk(relaxed = true)
         every { deviceNameProvider.getCustomDeviceName() } returns "mock_custom_device_provider"
+        appInfo = mockk(relaxed = true)
+        every { appInfo.androidId() } returns "mock_android_id"
+        appUsageStats = mockk(relaxed = true)
         dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
         UrlUtils.init(sharedPrefManager)
 
         repository = ActivitiesRepositoryImpl(
-            context,
             dispatcherProvider,
             lazyUserRepository,
             apiInterface,
@@ -120,7 +127,9 @@ class ActivitiesRepositoryImplTest {
             offlineActivityDao,
             removedLogDao,
             searchActivityDao,
-            deviceNameProvider
+            deviceNameProvider,
+            appInfo,
+            appUsageStats
         )
     }
 
@@ -590,9 +599,7 @@ class ActivitiesRepositoryImplTest {
 
     @Test
     fun `uploadMyPlanetActivities posts activities and usage stats when existing doc found`() = testScope.runTest {
-        val usageStatsManager = mockk<android.app.usage.UsageStatsManager>(relaxed = true)
-        every { context.getSystemService(Context.USAGE_STATS_SERVICE) } returns usageStatsManager
-        every { usageStatsManager.queryUsageStats(any(), any(), any()) } returns emptyList()
+        every { appUsageStats.queryDailyUsage(any(), any()) } returns emptyList()
 
         val mockResponseBody = buildJsonObject {
             putJsonArray("usages") { }
@@ -609,14 +616,15 @@ class ActivitiesRepositoryImplTest {
         repository.uploadMyPlanetActivities(userModel)
 
         coVerify(exactly = 2) { apiInterface.postDoc(any(), eq("application/json"), any(), any()) }
-        coVerify(exactly = 1) { apiInterface.getJsonObject(any(), any()) }
+        coVerify(exactly = 1) {
+            apiInterface.getJsonObject(any(), match { it.endsWith("/myplanet_activities/mock_android_id@mock_unique_id") })
+        }
+        verify(exactly = 1) { appUsageStats.queryDailyUsage(any(), any()) }
     }
 
     @Test
     fun `uploadMyPlanetActivities posts fallback activities when no existing doc found`() = testScope.runTest {
-        val usageStatsManager = mockk<android.app.usage.UsageStatsManager>(relaxed = true)
-        every { context.getSystemService(Context.USAGE_STATS_SERVICE) } returns usageStatsManager
-        every { usageStatsManager.queryUsageStats(any(), any(), any()) } returns emptyList()
+        every { appUsageStats.queryDailyUsage(any(), any()) } returns emptyList()
 
         val mockResponse = mockk<retrofit2.Response<KJsonObject>>()
         every { mockResponse.body() } returns null

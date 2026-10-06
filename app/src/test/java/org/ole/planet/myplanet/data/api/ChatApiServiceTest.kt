@@ -1,13 +1,10 @@
 package org.ole.planet.myplanet.data.api
 
-import android.util.Log
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.mockkStatic
 import io.mockk.unmockkObject
-import io.mockk.unmockkStatic
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -36,20 +33,17 @@ class ChatApiServiceTest {
     fun setUp() {
         apiInterface = mockk()
         // Inject a mockContext but don't hold it as a class field since it's never used by public methods
-        chatApiService = ChatApiService(apiInterface, mockk(), TestDispatcherProvider(UnconfinedTestDispatcher()))
+        chatApiService = ChatApiService(apiInterface, TestDispatcherProvider(UnconfinedTestDispatcher()))
 
         // Note: mockkObject(UrlUtils) makes UrlUtils a global singleton mock.
         // Parallel tests would be flaky due to this shared state.
         // It's a limitation due to the production code using the static/singleton UrlUtils directly.
         mockkObject(UrlUtils)
-        mockkStatic(Log::class)
-        every { Log.w(any<String>(), any<String>(), any()) } returns 0
     }
 
     @After
     fun tearDown() {
         unmockkObject(UrlUtils)
-        unmockkStatic(Log::class)
     }
 
     @Test

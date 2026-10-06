@@ -209,6 +209,7 @@ dependencies {
 }
 dependencies {
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
+    implementation(project(':shared'))
     implementation platform(libs.kotlin.bom)
     implementation(libs.annotation)
     implementation(libs.appcompat)
@@ -237,9 +238,6 @@ dependencies {
     implementation(libs.circular.progress.view)
     implementation(libs.material)
     implementation(libs.gson)
-    implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
-    ksp(libs.room.compiler)
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
     implementation(libs.toggle.button.group)
@@ -260,6 +258,7 @@ dependencies {
     implementation(libs.kotlin.stdlib)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.datetime)
     implementation(libs.android.gif.drawable)
     implementation(libs.tink.android)
     implementation(libs.webkit)

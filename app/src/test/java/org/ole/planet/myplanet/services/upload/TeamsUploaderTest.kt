@@ -14,6 +14,7 @@ import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
@@ -25,7 +26,9 @@ import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.getAttachmentFile
 import org.ole.planet.myplanet.repository.TeamUploadData
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadRepository
@@ -33,7 +36,6 @@ import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TeamsUploaderTest {
@@ -91,7 +93,7 @@ class TeamsUploaderTest {
             add(JsonObject().apply { addProperty("id", "team2"); addProperty("error", "conflict") })
             add(JsonObject().apply { addProperty("id", "team3"); addProperty("rev", "rev3") })
         }
-        coEvery { uploadRepository.postUploadArray(any(), any()) } returns Response.success(bulkResponse)
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns NetworkResult.Success(bulkResponse)
 
         coEvery { retryQueue.queueFailedOperation(any(), any(), any(), any(), any(), any(), any()) } returns Unit
         coEvery { mockRepo.markTeamsUploaded(any()) } returns Unit
@@ -116,7 +118,7 @@ class TeamsUploaderTest {
         val bulkResponse = JsonArray().apply {
             add(JsonObject().apply { addProperty("id", "serverGeneratedId1"); addProperty("rev", "rev1") })
         }
-        coEvery { uploadRepository.postUploadArray(any(), any()) } returns Response.success(bulkResponse)
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns NetworkResult.Success(bulkResponse)
         coEvery { mockRepo.markTeamsUploaded(any()) } returns Unit
 
         teamsUploader.uploadTeams()
@@ -133,8 +135,7 @@ class TeamsUploaderTest {
         val mockTeam = TeamUploadData("team1", JsonObject(), false, null)
         coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
 
-        val errorBody = okhttp3.ResponseBody.create(null, "Error")
-        coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.error(500, errorBody)
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns NetworkResult.Error(500, null)
         coEvery { retryQueue.queueFailedOperation(any(), any(), any(), any(), any(), any(), any()) } returns Unit
 
         teamsUploader.uploadTeams()
@@ -172,15 +173,15 @@ class TeamsUploaderTest {
         val bulkResponse = JsonArray().apply {
             add(JsonObject().apply { addProperty("id", "team1"); addProperty("rev", "rev1") })
         }
-        coEvery { uploadRepository.postUploadArray(any(), any()) } returns Response.success(bulkResponse)
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns NetworkResult.Success(bulkResponse)
 
-        mockkObject(MyTeam)
+        mockkStatic("org.ole.planet.myplanet.model.MyTeamFilesKt")
         val mockFile = mockk<File>()
         every { MyTeam.getAttachmentFile(context, "team1", "image.png") } returns mockFile
         every { mockFile.exists() } returns true
 
         val cancelExc = CancellationException("Upload cancelled")
-        coEvery { uploadRepository.uploadResource(any(), any(), any()) } throws cancelExc
+        coEvery { uploadRepository.uploadResource(any(), any(), any(), any()) } throws cancelExc
 
         var caught: Exception? = null
         try {
@@ -188,7 +189,7 @@ class TeamsUploaderTest {
         } catch (e: Exception) {
             caught = e
         } finally {
-            unmockkObject(MyTeam)
+            unmockkStatic("org.ole.planet.myplanet.model.MyTeamFilesKt")
         }
 
         assertTrue("Expected CancellationException, got $caught", caught is CancellationException || (caught != null && caught.cause is CancellationException))
@@ -205,14 +206,14 @@ class TeamsUploaderTest {
         val bulkResponse = JsonArray().apply {
             add(JsonObject().apply { addProperty("id", "team1"); addProperty("rev", "rev1") })
         }
-        coEvery { uploadRepository.postUploadArray(any(), any()) } returns Response.success(bulkResponse)
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns NetworkResult.Success(bulkResponse)
 
-        mockkObject(MyTeam)
+        mockkStatic("org.ole.planet.myplanet.model.MyTeamFilesKt")
         val mockFile = mockk<File>()
         every { MyTeam.getAttachmentFile(context, "team1", "image.png") } returns mockFile
         every { mockFile.exists() } returns true
 
-        coEvery { uploadRepository.uploadResource(any(), any(), any()) } throws IOException("Attachment upload failed")
+        coEvery { uploadRepository.uploadResource(any(), any(), any(), any()) } throws IOException("Attachment upload failed")
         coEvery { mockRepo.markTeamsUploaded(any()) } returns Unit
 
         teamsUploader.uploadTeams()
@@ -220,6 +221,6 @@ class TeamsUploaderTest {
 
         coVerify(exactly = 1) { mockRepo.markTeamsUploaded(mapOf("team1" to "rev1")) }
 
-        unmockkObject(MyTeam)
+        unmockkStatic("org.ole.planet.myplanet.model.MyTeamFilesKt")
     }
 }

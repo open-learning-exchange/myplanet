@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.util.Log
+import androidx.room.RoomRawQuery
 import com.google.gson.JsonParser
 import dagger.Lazy
 import io.mockk.coEvery
@@ -33,6 +34,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.data.room.boundArgs
 import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
@@ -46,12 +48,15 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.LibraryTitle
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.AppStorage
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.DownloadLauncher
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.StoragePathResolver
+import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
@@ -77,6 +82,9 @@ class ResourcesRepositoryImplTest {
     private val deviceNameProvider: DeviceNameProvider = mockk(relaxed = true)
     private val timeProvider: TimeProvider = mockk(relaxed = true)
     private val storagePathResolver: StoragePathResolver = mockk(relaxed = true)
+    private val appStorage: AppStorage = mockk(relaxed = true)
+    private val downloadLauncher: DownloadLauncher = mockk(relaxed = true)
+    private val stringProvider: StringProvider = mockk(relaxed = true)
     private val appScope = TestScope(testDispatcher)
 
     @get:Rule
@@ -98,7 +106,6 @@ class ResourcesRepositoryImplTest {
         NetworkUtils.resetForTesting()
 
         repository = ResourcesRepositoryImpl(
-            context,
             activitiesRepository,
             sharedPrefManager,
             tagsRepository,
@@ -115,7 +122,10 @@ class ResourcesRepositoryImplTest {
             deviceNameProvider,
             timeProvider,
             appScope,
-            storagePathResolver
+            storagePathResolver,
+            appStorage,
+            downloadLauncher,
+            stringProvider
         )
         every { dispatcherProvider.io } returns testDispatcher
     }
@@ -388,7 +398,7 @@ class ResourcesRepositoryImplTest {
         val mathBook = MyLibrary().apply { title = "Math Book"; titleNormal = "math book" }
         val scienceBook = MyLibrary().apply { title = "Science Book"; titleNormal = "science book" }
 
-        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        val querySlot = slot<RoomRawQuery>()
         coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns listOf(mathBook)
 
         val result = repository.search("math", false, null)
@@ -399,16 +409,7 @@ class ResourcesRepositoryImplTest {
         val capturedQuery = querySlot.captured
         assertTrue(capturedQuery.sql.contains("titleNormal LIKE ? ESCAPE '\\'"))
 
-        val bindArgs = mutableMapOf<Int, Any?>()
-        capturedQuery.bindTo(object : androidx.sqlite.db.SupportSQLiteProgram {
-            override fun bindNull(index: Int) { bindArgs[index] = null }
-            override fun bindLong(index: Int, value: Long) { bindArgs[index] = value }
-            override fun bindDouble(index: Int, value: Double) { bindArgs[index] = value }
-            override fun bindString(index: Int, value: String) { bindArgs[index] = value }
-            override fun bindBlob(index: Int, value: ByteArray) { bindArgs[index] = value }
-            override fun clearBindings() {}
-            override fun close() {}
-        })
+        val bindArgs = capturedQuery.boundArgs()
 
         assertEquals("%math%", bindArgs[1])
     }
@@ -440,7 +441,7 @@ class ResourcesRepositoryImplTest {
         val containsLib = MyLibrary().apply { title = "Green Ápple"; titleNormal = "green apple" }
         val notMatchLib = MyLibrary().apply { title = "Banana"; titleNormal = "banana" }
 
-        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        val querySlot = slot<RoomRawQuery>()
         coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns listOf(startsWithLib, containsLib)
 
         val result = repository.search("Apple", false, null)
@@ -458,7 +459,7 @@ class ResourcesRepositoryImplTest {
         val matchLib = MyLibrary().apply { title = "The Apple Tree"; titleNormal = "the apple tree" }
         val notMatchLib = MyLibrary().apply { title = "The Orange Tree"; titleNormal = "the orange tree" }
 
-        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        val querySlot = slot<RoomRawQuery>()
         coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns listOf(matchLib)
 
         val result = repository.search("Ápple Tree", false, null)
@@ -472,21 +473,12 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `search properly escapes wildcards in query`() = runTest {
-        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        val querySlot = slot<RoomRawQuery>()
         coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns emptyList()
 
         repository.search("100% _real_ \\deal", false, null)
 
-        val bindArgs = mutableMapOf<Int, Any?>()
-        querySlot.captured.bindTo(object : androidx.sqlite.db.SupportSQLiteProgram {
-            override fun bindNull(index: Int) { bindArgs[index] = null }
-            override fun bindLong(index: Int, value: Long) { bindArgs[index] = value }
-            override fun bindDouble(index: Int, value: Double) { bindArgs[index] = value }
-            override fun bindString(index: Int, value: String) { bindArgs[index] = value }
-            override fun bindBlob(index: Int, value: ByteArray) { bindArgs[index] = value }
-            override fun clearBindings() {}
-            override fun close() {}
-        })
+        val bindArgs = querySlot.captured.boundArgs()
 
         assertEquals("%100\\%%", bindArgs[1])
         assertEquals("%\\_real\\_%", bindArgs[2])
@@ -500,7 +492,7 @@ class ResourcesRepositoryImplTest {
         val startsWith2 = MyLibrary().apply { id = "sw2"; title = "Math Geometry"; titleNormal = "math geometry" }
         val contains2 = MyLibrary().apply { id = "c2"; title = "Discrete Math"; titleNormal = "discrete math" }
 
-        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        val querySlot = slot<RoomRawQuery>()
         coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns listOf(startsWith1, contains1, startsWith2, contains2)
 
         val result = repository.search("Math", false, null)
@@ -513,7 +505,7 @@ class ResourcesRepositoryImplTest {
     fun `search with query containing percent and underscore escapes wildcards and prevents matching arbitrary characters`() = runTest {
         val exactMatch = MyLibrary().apply { id = "1"; title = "100%_pure"; titleNormal = "100%_pure" }
 
-        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        val querySlot = slot<RoomRawQuery>()
         coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns listOf(exactMatch)
 
         val result = repository.search("100%_pure", false, null)
@@ -521,16 +513,7 @@ class ResourcesRepositoryImplTest {
         assertEquals(1, result.size)
         assertEquals("100%_pure", result[0].title)
 
-        val bindArgs = mutableMapOf<Int, Any?>()
-        querySlot.captured.bindTo(object : androidx.sqlite.db.SupportSQLiteProgram {
-            override fun bindNull(index: Int) { bindArgs[index] = null }
-            override fun bindLong(index: Int, value: Long) { bindArgs[index] = value }
-            override fun bindDouble(index: Int, value: Double) { bindArgs[index] = value }
-            override fun bindString(index: Int, value: String) { bindArgs[index] = value }
-            override fun bindBlob(index: Int, value: ByteArray) { bindArgs[index] = value }
-            override fun clearBindings() {}
-            override fun close() {}
-        })
+        val bindArgs = querySlot.captured.boundArgs()
 
         assertEquals("%100\\%\\_pure%", bindArgs[1])
     }
@@ -1030,13 +1013,12 @@ class ResourcesRepositoryImplTest {
         try {
             coEvery { configurationsRepository.checkServerAvailability() } returns true
             every { DownloadUtils.downloadAllFiles(any()) } returns arrayListOf("http://example.com/file1.pdf")
-            every { DownloadUtils.openDownloadService(context, arrayListOf("http://example.com/file1.pdf"), false) } returns Unit
 
             val library = MyLibrary().apply { _id = "lib1"; resourceId = "r1" }
             val result = repository.downloadFiles(listOf(library))
 
             assertEquals(1, result.size)
-            verify(exactly = 1) { DownloadUtils.openDownloadService(context, arrayListOf("http://example.com/file1.pdf"), false) }
+            verify(exactly = 1) { downloadLauncher.startDownloads(listOf("http://example.com/file1.pdf"), false) }
         } finally {
             unmockkObject(DownloadUtils)
         }
@@ -1080,7 +1062,7 @@ class ResourcesRepositoryImplTest {
 
         every { dispatcherProvider.io } returns testDispatcher
         mockkObject(FileUtils)
-        every { FileUtils.getExternalFilesDir(context) } returns externalFilesDir
+        every { appStorage.externalFilesDirPath() } returns externalFilesDir.path
         every { FileUtils.getLibraryFile(externalFilesDir, any(), "report.pdf") } answers {
             File(externalFilesDir, "ole/${secondArg<String>()}/report.pdf")
         }
@@ -1288,7 +1270,7 @@ class ResourcesRepositoryImplTest {
         coEvery { myLibraryDao.upsert(capture(savedSlot)) } returns Unit
 
         mockkObject(FileUtils)
-        every { FileUtils.getExternalFilesDir(context) } returns externalFilesDir
+        every { appStorage.externalFilesDirPath() } returns externalFilesDir.path
         every { FileUtils.getLibraryFile(externalFilesDir, any(), "report.pdf") } answers {
             File(externalFilesDir, "ole/${secondArg<String>()}/report.pdf")
         }
@@ -1336,17 +1318,10 @@ class ResourcesRepositoryImplTest {
             resourceRemoteAddress = "http://example.com/file3.pdf"
         }
 
-        mockkObject(DownloadUtils)
-        try {
-            every { DownloadUtils.openPriorityDownloadService(context, arrayListOf("http://example.com/file3.pdf")) } returns Unit
+        val result = repository.downloadResources(listOf(offlineResource, onlineResourceNoUrl, onlineResourceWithUrl))
 
-            val result = repository.downloadResources(listOf(offlineResource, onlineResourceNoUrl, onlineResourceWithUrl))
-
-            assertTrue(result)
-            verify(exactly = 1) { DownloadUtils.openPriorityDownloadService(context, arrayListOf("http://example.com/file3.pdf")) }
-        } finally {
-            unmockkObject(DownloadUtils)
-        }
+        assertTrue(result)
+        verify(exactly = 1) { downloadLauncher.startPriorityDownloads(listOf("http://example.com/file3.pdf")) }
     }
 
     @Test
@@ -1543,7 +1518,7 @@ class ResourcesRepositoryImplTest {
             ResourceTitleProjection("res2", "")
         )
         coEvery { myLibraryDao.getResourceTitlesByResourceIds(any()) } returns projections
-        every { context.getString(org.ole.planet.myplanet.R.string.storage_unknown_resource) } returns "Unknown Resource"
+        every { stringProvider.getString(org.ole.planet.myplanet.R.string.storage_unknown_resource) } returns "Unknown Resource"
 
         val knownExtensions = setOf("mp4", "pdf")
 

@@ -170,7 +170,7 @@ class NotificationDaoTest {
         assertEquals(1200, fetchedIds.size)
 
         // Test markAsRead(ids, date)
-        val markDate = java.util.Date()
+        val markDate = System.currentTimeMillis()
         val markResult = notificationDao.markAsRead(ids, markDate)
         assertEquals(1200, markResult)
 
@@ -189,7 +189,7 @@ class NotificationDaoTest {
     fun chunkedListOperations_handleEmptyInputs() = runBlocking {
         assertTrue(notificationDao.getByIds(emptyList()).isEmpty())
         assertTrue(notificationDao.getIdsByIds(emptyList()).isEmpty())
-        assertEquals(0, notificationDao.markAsRead(emptyList(), java.util.Date()))
+        assertEquals(0, notificationDao.markAsRead(emptyList(), System.currentTimeMillis()))
         assertEquals(0, notificationDao.deleteByIds(emptyList()))
     }
 
@@ -227,7 +227,7 @@ class NotificationDaoTest {
         val n2 = createNotification("n2").apply { isRead = false }
         notificationDao.upsertAll(listOf(n1, n2))
 
-        val result = notificationDao.markExistingAsRead(listOf("n1", "n3"), java.util.Date())
+        val result = notificationDao.markExistingAsRead(listOf("n1", "n3"), System.currentTimeMillis())
 
         assertEquals(listOf("n1"), result)
         assertTrue(notificationDao.getById("n1")!!.isRead)
@@ -255,7 +255,7 @@ class NotificationDaoTest {
         val userB1 = createNotification("userB_1").apply { userId = "userB"; isRead = false }
         notificationDao.upsertAll(listOf(userA1, userA2, userB1))
 
-        val result = notificationDao.markAllUnreadAsReadReturningIds("userA", java.util.Date())
+        val result = notificationDao.markAllUnreadAsReadReturningIds("userA", System.currentTimeMillis())
 
         assertEquals(listOf("userA_1"), result)
         assertTrue(notificationDao.getById("userA_1")!!.isRead)

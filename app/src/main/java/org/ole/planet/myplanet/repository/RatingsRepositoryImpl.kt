@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.roundToInt
@@ -10,6 +9,8 @@ import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.RatingPromptLog
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.serialize
+import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 
 class RatingsRepositoryImpl @Inject constructor(
@@ -138,7 +139,7 @@ class RatingsRepositoryImpl @Inject constructor(
             isUpdated = true
             this.comment = comment
             rate = roundToSupportedRating(rating)
-            time = Date().time
+            time = DateTimeUtils.nowMillis()
             userId = resolvedUserId
             createdOn = resolvedUser.parentCode
             parentCode = resolvedUser.parentCode

@@ -3,10 +3,7 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
-import java.util.Calendar
-import java.util.Date
 import java.util.LinkedHashSet
-import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.async
@@ -18,6 +15,7 @@ import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.model.TeamNotificationInfo
+import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.TaskNotificationUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.toSyncDocuments
@@ -102,7 +100,7 @@ class NotificationsRepositoryImpl @Inject constructor(
                 this.relatedId = relatedId
                 if (valueChanged) {
                     this.isRead = false
-                    this.createdAt = Date(timeProvider.now())
+                    this.createdAt = timeProvider.now()
                 }
             } ?: AppNotification().apply {
                 this.id = notificationId
@@ -110,7 +108,7 @@ class NotificationsRepositoryImpl @Inject constructor(
                 this.type = type
                 this.message = formattedMessage
                 this.relatedId = relatedId
-                this.createdAt = Date(timeProvider.now())
+                this.createdAt = timeProvider.now()
             }
             notificationDao.upsert(notification)
         } else {
@@ -120,12 +118,12 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun markNotificationsAsRead(notificationIds: Set<String>): Set<String> {
         if (notificationIds.isEmpty()) return emptySet()
-        return notificationDao.markExistingAsRead(notificationIds.toList(), Date(timeProvider.now())).toSet()
+        return notificationDao.markExistingAsRead(notificationIds.toList(), timeProvider.now()).toSet()
     }
 
     override suspend fun markAllUnreadAsRead(userId: String?): Set<String> {
         val actualUserId = userId ?: return emptySet()
-        return notificationDao.markAllUnreadAsReadReturningIds(actualUserId, Date(timeProvider.now())).toSet()
+        return notificationDao.markAllUnreadAsReadReturningIds(actualUserId, timeProvider.now()).toSet()
     }
 
     suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean = false): List<NotificationPayload> {
@@ -139,7 +137,7 @@ class NotificationsRepositoryImpl @Inject constructor(
                 userId = it.userId,
                 message = it.message,
                 isRead = it.isRead,
-                createdAt = it.createdAt.time,
+                createdAt = it.createdAt,
                 type = it.type,
                 relatedId = it.relatedId,
                 title = it.title,
@@ -380,8 +378,8 @@ class NotificationsRepositoryImpl @Inject constructor(
         val chatCountsById = voicesRepository.countTopLevelByTeams(notificationsById.keys.toList())
 
         val current = timeProvider.now()
-        val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
-        val tasks = teamsRepository.get().getTasksForUserBetween(userId, current, tomorrow.timeInMillis)
+        val tomorrow = DateTimeUtils.plusDays(current, 1)
+        val tasks = teamsRepository.get().getTasksForUserBetween(userId, current, tomorrow)
         val taskTeamIds = tasks.mapNotNull { it.teamId }.toSet()
 
         for (teamId in teamIds) {
@@ -403,11 +401,11 @@ class NotificationsRepositoryImpl @Inject constructor(
     }
 
     override fun resolveType(type: String, message: String, subType: String?): String {
-        val lowerType = type.lowercase(Locale.ROOT)
+        val lowerType = type.lowercase()
         if (lowerType in NotificationsRepository.KNOWN_TYPES) return lowerType
-        val lower = message.lowercase(Locale.ROOT)
+        val lower = message.lowercase()
         if (lowerType == "team") {
-            if (subType != null) return subType.lowercase(Locale.ROOT)
+            if (subType != null) return subType.lowercase()
             return when {
                 lower.contains("requested to join") || lower.contains("wants to join") ||
                     lower.contains("solicitado unirse") -> "join_request"
@@ -446,7 +444,7 @@ class NotificationsRepositoryImpl @Inject constructor(
             priority = doc.get("priority")?.asInt ?: 0
             rev = doc.get("_rev")?.asString
             isRead = doc.get("status")?.asString != "unread"
-            createdAt = doc.get("time")?.let { Date(it.asLong) } ?: Date(timeProvider.now())
+            createdAt = doc.get("time")?.asLong ?: timeProvider.now()
             isFromServer = true
         }
     }

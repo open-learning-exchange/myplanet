@@ -22,12 +22,12 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserAchievementsRepository
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AchievementUploaderTest {
@@ -95,7 +95,7 @@ class AchievementUploaderTest {
         coEvery { userAchievementsRepository.getAchievementsForUpload() } returns listOf(achievement1, achievement2)
 
         coEvery { uploadRepository.putUpload("http://mock.url/achievements/ach1", achievement1) } throws IOException("Network error")
-        val successResponse = Response.success(JsonObject().apply { addProperty("rev", "rev2") })
+        val successResponse = NetworkResult.Success(JsonObject().apply { addProperty("rev", "rev2") })
         coEvery { uploadRepository.putUpload("http://mock.url/achievements/ach2", achievement2) } returns successResponse
 
         achievementUploader.uploadAchievement()
@@ -113,7 +113,7 @@ class AchievementUploaderTest {
         }
         coEvery { userAchievementsRepository.getAchievementsForUpload() } returns listOf(achievement)
 
-        val successResponse = Response.success(JsonObject().apply { addProperty("rev", "rev1") })
+        val successResponse = NetworkResult.Success(JsonObject().apply { addProperty("rev", "rev1") })
         coEvery { uploadRepository.putUpload("http://mock.url/achievements/ach1", achievement) } returns successResponse
 
         val cvFolder = temporaryFolder.newFolder("cv")
@@ -122,7 +122,7 @@ class AchievementUploaderTest {
 
         every { FileUtils.getOlePath(context) } returns temporaryFolder.root.absolutePath + "/"
 
-        coEvery { uploadRepository.uploadResource(any(), any(), any()) } throws CancellationException("Cancelled")
+        coEvery { uploadRepository.uploadResource(any(), any(), any(), any()) } throws CancellationException("Cancelled")
 
         var caughtCancellation = false
         try {

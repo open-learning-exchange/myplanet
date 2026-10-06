@@ -14,6 +14,7 @@ import com.bumptech.glide.signature.ObjectKey
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.getCoverImageFile
 
 internal object CoursesItemUtils {
     private val coverExistenceCache = FileExistenceCache()
@@ -66,7 +67,7 @@ internal object CoursesItemUtils {
         ivSubjectIcon: ImageView
     ) {
         setCoverColor(context, coverContainer, subject)
-        val coverFile = MyCourse.getCoverImageFile(context, course.courseId, course.coverFileName)
+        val coverFile = MyCourse.getCoverImageFile(FileUtils.getOlePath(context), course.courseId, course.coverFileName)
         val model: Any? = if (coverExistenceCache.exists(coverFile, timeProvider.now())) {
             coverFile
         } else {

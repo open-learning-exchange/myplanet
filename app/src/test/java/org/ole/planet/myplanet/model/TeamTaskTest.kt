@@ -5,6 +5,8 @@ import androidx.test.core.app.ApplicationProvider
 import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -27,6 +29,7 @@ class TeamTaskTest {
     @After
     fun tearDown() {
         MainApplication.testContext = null
+        unmockkStatic("org.ole.planet.myplanet.model.UserEntityJsonKt")
     }
 
     @Test
@@ -44,6 +47,7 @@ class TeamTaskTest {
         }
 
         val userEntity = mockk<UserEntity>()
+        mockkStatic("org.ole.planet.myplanet.model.UserEntityJsonKt")
         val userJson = JsonObject().apply { addProperty("userName", "John Doe") }
         every { userEntity.serialize() } returns userJson
 

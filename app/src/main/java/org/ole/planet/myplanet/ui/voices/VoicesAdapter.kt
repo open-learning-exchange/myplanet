@@ -32,6 +32,10 @@ import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.imagesArray
+import org.ole.planet.myplanet.model.isCommunityNews
+import org.ole.planet.myplanet.model.parsedImageUrls
+import org.ole.planet.myplanet.model.parsedViewIn
 import org.ole.planet.myplanet.repository.VoicesEditActions
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter

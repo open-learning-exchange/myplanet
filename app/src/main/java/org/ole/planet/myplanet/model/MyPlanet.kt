@@ -1,20 +1,19 @@
 package org.ole.planet.myplanet.model
 
-import android.app.usage.UsageStats
-import android.app.usage.UsageStatsManager
-import android.content.Context
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.Serializable
-import java.util.Calendar
-import java.util.Date
 import kotlinx.serialization.Serializable as KSerializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.AppInfo
+import org.ole.planet.myplanet.utils.AppUsageStat
+import org.ole.planet.myplanet.utils.AppUsageStats
+import org.ole.planet.myplanet.utils.DateTimeUtils
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
-import org.ole.planet.myplanet.utils.VersionUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
@@ -33,16 +32,18 @@ class MyPlanet : Serializable {
 
     companion object {
         fun getMyPlanetActivities(
-            context: Context,
+            appInfo: AppInfo,
+            deviceNameProvider: DeviceNameProvider,
+            usageStats: AppUsageStats,
             spm: SharedPrefManager,
             model: UserEntity,
-            now: Long = System.currentTimeMillis()
+            now: Long = DateTimeUtils.nowMillis()
         ): JsonObject {
             val planet = GsonUtils.gson.fromJson(spm.getVersionDetail() ?: "", MyPlanet::class.java)
-            val usages = getTabletUsages(context, spm, now)
+            val usages = getTabletUsages(appInfo, deviceNameProvider, usageStats, spm, now)
             return buildJsonObject {
                 if (planet != null) put("planetVersion", planet.planetVersion)
-                put("_id", VersionUtils.getAndroidId(context) + "@" + NetworkUtils.getUniqueIdentifier())
+                put("_id", appInfo.androidId() + "@" + NetworkUtils.getUniqueIdentifier())
                 put("last_synced", spm.getLastSync())
                 put("parentCode", model.parentCode)
                 put("createdOn", model.planetCode)
@@ -51,19 +52,24 @@ class MyPlanet : Serializable {
             }.toGson()
         }
 
-        fun getNormalMyPlanetActivities(context: Context, spm: SharedPrefManager, model: UserEntity): JsonObject {
+        fun getNormalMyPlanetActivities(
+            appInfo: AppInfo,
+            deviceNameProvider: DeviceNameProvider,
+            spm: SharedPrefManager,
+            model: UserEntity
+        ): JsonObject {
             val planet = GsonUtils.gson.fromJson(spm.getVersionDetail() ?: "", MyPlanet::class.java)
             val postJSON = buildJsonObject {
                 if (planet != null) put("planetVersion", planet.planetVersion)
                 put("last_synced", spm.getLastSync())
                 put("parentCode", model.parentCode)
                 put("createdOn", model.planetCode)
-                put("version", VersionUtils.getVersionCode(context))
-                put("versionName", VersionUtils.getVersionName(context))
-                put("uniqueAndroidId", VersionUtils.getAndroidId(context))
-                put("customDeviceName", NetworkUtils.getCustomDeviceName(context))
-                put("deviceName", NetworkUtils.getDeviceName())
-                put("time", Date().time)
+                put("version", appInfo.versionCode())
+                put("versionName", appInfo.versionName())
+                put("uniqueAndroidId", appInfo.androidId())
+                put("customDeviceName", deviceNameProvider.getCustomDeviceName())
+                put("deviceName", deviceNameProvider.getDeviceName())
+                put("time", DateTimeUtils.nowMillis())
                 put("type", "sync")
             }.toGson()
             postJSON.addDocumentOrigin()
@@ -71,30 +77,29 @@ class MyPlanet : Serializable {
         }
 
         fun getTabletUsages(
-            context: Context,
+            appInfo: AppInfo,
+            deviceNameProvider: DeviceNameProvider,
+            usageStats: AppUsageStats,
             spm: SharedPrefManager,
-            now: Long = System.currentTimeMillis()
+            now: Long = DateTimeUtils.nowMillis()
         ): JsonArray {
-            val cal = Calendar.getInstance()
-            cal.timeInMillis = spm.getLastUsageUploaded()
             val arr = JsonArray()
-            val mUsageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-            val queryUsageStats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, cal.timeInMillis, now)
+            val queryUsageStats = usageStats.queryDailyUsage(spm.getLastUsageUploaded(), now)
             if (queryUsageStats != null) {
-                val packageName = context.packageName
-                val customDeviceName = NetworkUtils.getCustomDeviceName(context)
-                val deviceName = NetworkUtils.getDeviceName()
+                val packageName = appInfo.packageName
+                val customDeviceName = deviceNameProvider.getCustomDeviceName()
+                val deviceName = deviceNameProvider.getDeviceName()
                 for (s in queryUsageStats) {
-                    addStats(s, arr, context, packageName, customDeviceName, deviceName, now)
+                    addStats(s, arr, appInfo, packageName, customDeviceName, deviceName, now)
                 }
             }
             return arr
         }
 
         private fun addStats(
-            s: UsageStats,
+            s: AppUsageStat,
             arr: JsonArray,
-            context: Context,
+            appInfo: AppInfo,
             packageName: String,
             customDeviceName: String,
             deviceName: String,
@@ -107,8 +112,8 @@ class MyPlanet : Serializable {
                     put("firstTimeUsed", if (s.firstTimeStamp > 0) s.lastTimeStamp else 0)
                     put("totalForegroundTime", s.totalTimeInForeground)
                     put("totalUsed", if (totalUsed > 0) totalUsed else 0)
-                    put("version", VersionUtils.getVersionCode(context))
-                    put("versionName", VersionUtils.getVersionName(context))
+                    put("version", appInfo.versionCode())
+                    put("versionName", appInfo.versionName())
                     put("customDeviceName", customDeviceName)
                     put("deviceName", deviceName)
                     put("time", now)

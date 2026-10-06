@@ -1,19 +1,12 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import android.content.SharedPreferences
 import android.text.TextUtils
-import android.util.Log
-import androidx.core.content.edit
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
 import java.net.URLEncoder
 import java.text.Normalizer
-import java.util.Calendar
-import java.util.Date
 import java.util.UUID
 import java.util.regex.Pattern
 import javax.inject.Inject
@@ -39,7 +32,6 @@ import org.ole.planet.myplanet.data.room.dao.AchievementDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.UserDao
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.AchievementData
@@ -48,19 +40,28 @@ import org.ole.planet.myplanet.model.LearnerRegistrationInfo
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.addImageUrl
+import org.ole.planet.myplanet.model.fromJson
+import org.ole.planet.myplanet.model.getMyMeetUpIds
+import org.ole.planet.myplanet.model.serialize
+import org.ole.planet.myplanet.model.setAchievements
+import org.ole.planet.myplanet.model.setReferences
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter
+import org.ole.planet.myplanet.utils.AppInfo
+import org.ole.planet.myplanet.utils.AppLog
+import org.ole.planet.myplanet.utils.CredentialStore
+import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.RetryUtils
-import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
-import org.ole.planet.myplanet.utils.VersionUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
@@ -68,13 +69,12 @@ import org.ole.planet.myplanet.utils.toSyncDocuments
 
 @Singleton
 class UserRepositoryImpl @Inject constructor(
-    @param:AppPreferences private val settings: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
     private val apiInterface: ApiInterface,
     private val resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository>,
     private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>,
     private val uploadToShelfService: Lazy<UploadToShelfService>,
-    @param:ApplicationContext private val context: Context,
+    private val credentialStore: CredentialStore,
     private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val appScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
@@ -85,7 +85,9 @@ class UserRepositoryImpl @Inject constructor(
     private val achievementDao: AchievementDao,
     private val userDao: UserDao,
     private val realtimeSyncManager: RealtimeSyncManager,
-    private val deviceNameProvider: DeviceNameProvider
+    private val deviceNameProvider: DeviceNameProvider,
+    private val appInfo: AppInfo,
+    private val stringProvider: StringProvider
 ) : UserRepository, UserSyncRepository {
     override val achievementUpdates: Flow<Unit> = realtimeSyncManager.dataUpdateFlow
         .filter { it.table == "achievements" && it.shouldRefreshUI }
@@ -195,7 +197,7 @@ class UserRepositoryImpl @Inject constructor(
         return userDao.getPendingSyncUsers(limit)
     }
 
-    private fun applyJsonToUser(jsonDoc: JsonObject?, user: UserEntity, settings: SharedPreferences) {
+    private fun applyJsonToUser(jsonDoc: JsonObject?, user: UserEntity) {
         if (jsonDoc == null) return
 
         val planetCodes = GsonUtils.getString("planetCode", jsonDoc)
@@ -289,7 +291,7 @@ class UserRepositoryImpl @Inject constructor(
         }
 
         if (planetCodes.isNotEmpty()) {
-            settings.edit { putString("planetCode", planetCodes) }
+            sharedPrefManager.setPlanetCode(planetCodes)
         }
     }
 
@@ -325,7 +327,7 @@ class UserRepositoryImpl @Inject constructor(
                 }
                 ?: UserEntity().apply { this.id = id }
 
-            applyJsonToUser(jsonDoc, user, settings)
+            applyJsonToUser(jsonDoc, user)
             user
         } catch (err: Exception) {
             err.printStackTrace()
@@ -370,7 +372,7 @@ class UserRepositoryImpl @Inject constructor(
     ): UserEntity? {
         if (jsonDoc == null) return null
         val user = buildUserFromJson(jsonDoc) ?: run {
-            Log.e("UserRepositoryImpl", "Failed to save user: unable to build user model")
+            AppLog.e("UserRepositoryImpl", "Failed to save user: unable to build user model")
             return null
         }
         key?.let { user.key = it }
@@ -526,7 +528,7 @@ class UserRepositoryImpl @Inject constructor(
             addProperty("middleName", user.mName)
             addProperty("password", user.password)
             addProperty("isUserAdmin", false)
-            addProperty("joinDate", Calendar.getInstance().timeInMillis)
+            addProperty("joinDate", DateTimeUtils.nowMillis())
             addProperty("email", user.email)
             addProperty("planetCode", sharedPrefManager.getPlanetCode())
             addProperty("parentCode", sharedPrefManager.getParentCode())
@@ -538,7 +540,7 @@ class UserRepositoryImpl @Inject constructor(
             addProperty("type", "user")
             addProperty("betaEnabled", false)
             addDocumentOrigin()
-            addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context))
+            addProperty("uniqueAndroidId", appInfo.androidId())
             addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
             val roles = JsonArray().apply { add("learner") }
             add("roles", roles)
@@ -561,7 +563,7 @@ class UserRepositoryImpl @Inject constructor(
                 }
 
                 if (existsResponse.isSuccessful && existsResponse.body()?.toGson()?.has("_id") == true) {
-                    Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
+                    Pair(false, stringProvider.getString(R.string.unable_to_create_user_user_already_exists))
                 } else {
                     val createResponse = withContext(dispatcherProvider.io) {
                         apiInterface.putDoc(null, "application/json", userUrl, obj.toKotlinx().jsonObject)
@@ -577,28 +579,28 @@ class UserRepositoryImpl @Inject constructor(
 
                         val result = saveUserToDb(id, obj)
                         if (result.isSuccess) {
-                            Pair(true, context.getString(R.string.user_created_successfully))
+                            Pair(true, stringProvider.getString(R.string.user_created_successfully))
                         } else {
-                            Pair(false, context.getString(R.string.unable_to_save_user_please_sync))
+                            Pair(false, stringProvider.getString(R.string.unable_to_save_user_please_sync))
                         }
                     } else {
-                        Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
+                        Pair(false, stringProvider.getString(R.string.unable_to_create_user_user_already_exists))
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
+                Pair(false, stringProvider.getString(R.string.unable_to_create_user_user_already_exists))
             }
         } else {
             val existingUser = getUserByName(userName)
             if (existingUser != null && existingUser._id?.startsWith("guest") != true) {
-                return Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
+                return Pair(false, stringProvider.getString(R.string.unable_to_create_user_user_already_exists))
             }
 
             val keyString = AndroidDecrypter.generateKey()
             val iv = AndroidDecrypter.generateIv()
             saveUser(obj, keyString, iv)
-            return Pair(true, context.getString(R.string.not_connect_to_planet_created_user_offline))
+            return Pair(true, stringProvider.getString(R.string.not_connect_to_planet_created_user_offline))
         }
     }
 
@@ -682,7 +684,7 @@ class UserRepositoryImpl @Inject constructor(
 
         ob.addProperty("key", keyString)
         ob.addProperty("iv", iv)
-        ob.addProperty("createdOn", Date().time)
+        ob.addProperty("createdOn", DateTimeUtils.nowMillis())
 
         val maxAttempts = 3
         val retryDelayMs = 2000L
@@ -717,7 +719,7 @@ class UserRepositoryImpl @Inject constructor(
 
     private fun replacedUrl(model: UserEntity): String {
         val url = UrlUtils.getUrl()
-        val password = SecurePrefs.getPassword(context, settings) ?: ""
+        val password = credentialStore.getPassword() ?: ""
         val replacedUrl = url.replace(USERINFO_REGEX) { "${enc(model.name)}:${enc(password)}@" }
         val protocolIndex = url.indexOf("://")
         val protocol = url.substring(0, protocolIndex)
@@ -726,7 +728,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun checkAndUploadUser(model: UserEntity, password: String?, updateHealthFn: suspend (String, String) -> Unit) {
         try {
-            val pwd = password ?: SecurePrefs.getPassword(context, settings) ?: ""
+            val pwd = password ?: credentialStore.getPassword() ?: ""
             val header = UrlUtils.basicAuthHeader(model.name.toString(), pwd)
             val userExists = checkIfUserExists(header, model)
             if (!userExists) {
@@ -752,7 +754,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun processUserAfterCreation(model: UserEntity, obj: JsonObject, updateHealthFn: suspend (String, String) -> Unit) {
         try {
-            val password = model.password ?: SecurePrefs.getPassword(context, settings) ?: ""
+            val password = model.password ?: credentialStore.getPassword() ?: ""
             val header = UrlUtils.basicAuthHeader(model.name.toString(), password)
             val fetchDataResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")
 
@@ -840,20 +842,20 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun validateUsername(username: String): String? {
         val firstChar = username.firstOrNull()
         when {
-            username.isEmpty() -> return context.getString(R.string.username_cannot_be_empty)
-            username.contains(" ") -> return context.getString(R.string.invalid_username)
+            username.isEmpty() -> return stringProvider.getString(R.string.username_cannot_be_empty)
+            username.contains(" ") -> return stringProvider.getString(R.string.invalid_username)
             firstChar != null && !firstChar.isDigit() && !firstChar.isLetter() ->
-                return context.getString(R.string.must_start_with_letter_or_number)
+                return stringProvider.getString(R.string.must_start_with_letter_or_number)
             username.any { it != '_' && it != '.' && it != '-' && !it.isDigit() && !it.isLetter() } ||
             SPECIAL_CHAR_PATTERN.matcher(username).matches() ||
             !Normalizer.normalize(username, Normalizer.Form.NFD).codePoints().allMatch { code ->
                 Character.isLetterOrDigit(code) || code == '.'.code || code == '-'.code || code == '_'.code
-            } -> return context.getString(R.string.only_letters_numbers_and_are_allowed)
+            } -> return stringProvider.getString(R.string.only_letters_numbers_and_are_allowed)
         }
 
         val isTaken = userDao.getByName(username)?.let { !it._id.orEmpty().startsWith("guest") } == true
 
-        return if (isTaken) context.getString(R.string.username_taken) else null
+        return if (isTaken) stringProvider.getString(R.string.username_taken) else null
     }
 
     override suspend fun cleanupDuplicateUsers() {
@@ -1144,7 +1146,7 @@ class UserRepositoryImpl @Inject constructor(
                     }
                     ?: UserEntity().apply { this.id = id }
 
-                applyJsonToUser(jsonDoc, user, settings)
+                applyJsonToUser(jsonDoc, user)
                 val entity = user
 
                 usersToUpsert[entity.id] = entity

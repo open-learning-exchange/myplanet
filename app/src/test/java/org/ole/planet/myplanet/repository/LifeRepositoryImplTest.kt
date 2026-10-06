@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.SharedPreferences
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -18,12 +17,12 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.model.MyLife
+import org.ole.planet.myplanet.utils.KeyValueStore
 
 class LifeRepositoryImplTest {
 
     private lateinit var myLifeDao: MyLifeDao
-    private lateinit var mockSharedPreferences: SharedPreferences
-    private lateinit var mockEditor: SharedPreferences.Editor
+    private lateinit var mockSharedPreferences: KeyValueStore
     private lateinit var json: Json
     private lateinit var lifeCache: LifeCache
     private lateinit var repository: LifeRepositoryImpl
@@ -34,10 +33,6 @@ class LifeRepositoryImplTest {
         Logger.getLogger("io.mockk").level = Level.OFF
         myLifeDao = mockk(relaxed = true)
         mockSharedPreferences = mockk(relaxed = true)
-        mockEditor = mockk(relaxed = true)
-        every { mockSharedPreferences.edit() } returns mockEditor
-        every { mockEditor.putString(any(), any()) } returns mockEditor
-        every { mockEditor.apply() } returns Unit
 
         json = Json {
             ignoreUnknownKeys = true
@@ -184,7 +179,7 @@ class LifeRepositoryImplTest {
         repository.updateVisibility(false, myLifeId, callerUserId)
 
         coVerify(exactly = 1) { myLifeDao.getByUserId(callerUserId) }
-        coVerify(exactly = 1) { mockEditor.putString("myLifeCache_$callerUserId", any()) }
+        coVerify(exactly = 1) { mockSharedPreferences.putString("myLifeCache_$callerUserId", any()) }
     }
 
     @Test
@@ -231,7 +226,7 @@ class LifeRepositoryImplTest {
         repository.updateMyLifeListOrder(list, callerUserId)
 
         coVerify(exactly = 1) { myLifeDao.getByUserId(callerUserId) }
-        coVerify(exactly = 1) { mockEditor.putString("myLifeCache_$callerUserId", any()) }
+        coVerify(exactly = 1) { mockSharedPreferences.putString("myLifeCache_$callerUserId", any()) }
     }
 
     @Test

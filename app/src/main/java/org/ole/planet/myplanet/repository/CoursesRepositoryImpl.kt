@@ -1,14 +1,10 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import android.util.Log
+import androidx.room.RoomRawQuery
 import androidx.room.withTransaction
-import androidx.sqlite.db.SimpleSQLiteQuery
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Base64
-import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -34,6 +30,7 @@ import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.MyLibraryInsertParams
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.StepExam
@@ -41,8 +38,16 @@ import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TagEntity
+import org.ole.planet.myplanet.model.addConcatenatedLink
+import org.ole.planet.myplanet.model.getTagsArray
+import org.ole.planet.myplanet.model.insertMyLibrary
+import org.ole.planet.myplanet.model.saveConcatenatedLinksToPrefs
+import org.ole.planet.myplanet.model.setCourseIds
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import org.ole.planet.myplanet.utils.AppLog
+import org.ole.planet.myplanet.utils.AppStorage
+import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
@@ -52,7 +57,7 @@ import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class CoursesRepositoryImpl @Inject constructor(
-    @param:ApplicationContext private val context: Context,
+    private val appStorage: AppStorage,
     private val progressRepository: ProgressRepository,
     private val activitiesRepository: ActivitiesRepository,
     private val submissionsRepository: SubmissionsRepository,
@@ -277,7 +282,7 @@ class CoursesRepositoryImpl @Inject constructor(
         val normalizedQuery = Utilities.normalizeText(query)
 
         val queryBuilder = StringBuilder("SELECT * FROM courses WHERE 1 = 1")
-        val bindArgs = mutableListOf<Any>()
+        val bindArgs = mutableListOf<String>()
         normalizedQueryParts.forEach { token ->
             val escapedToken = token
                 .replace("\\", "\\\\")
@@ -287,7 +292,11 @@ class CoursesRepositoryImpl @Inject constructor(
             bindArgs.add("%${escapedToken}%")
         }
 
-        val matching = courseDao.filterByTitleNormal(SimpleSQLiteQuery(queryBuilder.toString(), bindArgs.toTypedArray()))
+        val matching = courseDao.filterByTitleNormal(
+            RoomRawQuery(queryBuilder.toString()) { stmt ->
+                bindArgs.forEachIndexed { i, arg -> stmt.bindText(i + 1, arg) }
+            }
+        )
 
         val startsWithQuery = mutableListOf<MyCourse>()
         val containsQuery = mutableListOf<MyCourse>()
@@ -347,7 +356,7 @@ class CoursesRepositoryImpl @Inject constructor(
             SearchActivity(
                 id = UUID.randomUUID().toString(),
                 user = userName,
-                time = Calendar.getInstance().timeInMillis,
+                time = DateTimeUtils.nowMillis(),
                 createdOn = planetCode,
                 parentCode = parentCode,
                 text = searchText,
@@ -859,10 +868,10 @@ class CoursesRepositoryImpl @Inject constructor(
             val resourceId = GsonUtils.getString("_id", pending.doc)
             val existing = existingMap[resourceId]
             MyLibrary.insertMyLibrary(
-                MyLibrary.Companion.InsertParams(
+                MyLibraryInsertParams(
                     doc = pending.doc,
                     spm = sharedPrefManager,
-                    context = context,
+                    storage = appStorage,
                     courseId = pending.courseId,
                     stepId = pending.stepId,
                     existing = existing
@@ -879,7 +888,7 @@ class CoursesRepositoryImpl @Inject constructor(
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
-                        Log.w("CoursesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
+                        AppLog.w("CoursesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
                     }
                 }
             }

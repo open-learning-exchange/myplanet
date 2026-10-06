@@ -60,7 +60,7 @@ class NotificationsRepositoryImplTest {
         assertEquals("", notification.userId)
         assertEquals("", notification.message)
         assertFalse(notification.isRead)
-        assertNotNull(notification.createdAt)
+        assertTrue(notification.createdAt > 0)
         assertEquals("", notification.type)
         assertEquals(null, notification.relatedId)
         assertEquals(null, notification.title)
@@ -106,7 +106,7 @@ class NotificationsRepositoryImplTest {
         assertEquals(1, savedNotification.priority)
         assertEquals("testRev", savedNotification.rev)
         assertTrue(savedNotification.isRead)
-        assertEquals(123456789L, savedNotification.createdAt.time)
+        assertEquals(123456789L, savedNotification.createdAt)
         assertTrue(savedNotification.isFromServer)
     }
 
@@ -130,7 +130,7 @@ class NotificationsRepositoryImplTest {
         assertEquals("updatedMessage", savedNotification.message)
         assertEquals("updatedType", savedNotification.type)
         assertFalse(savedNotification.isRead)
-        assertEquals(987654321L, savedNotification.createdAt.time)
+        assertEquals(987654321L, savedNotification.createdAt)
         assertTrue(savedNotification.isFromServer)
     }
 
@@ -361,14 +361,14 @@ class NotificationsRepositoryImplTest {
     @Test
     fun `markNotificationsAsRead marks existing notifications as read using timeProvider now`() = runTest {
         val ids = setOf("id1", "id2", "id3")
-        val dateSlot = slot<java.util.Date>()
+        val dateSlot = slot<Long>()
         coEvery { notificationDao.markExistingAsRead(eq(ids.toList()), capture(dateSlot)) } returns listOf("id1", "id2")
 
         val result = repository.markNotificationsAsRead(ids)
 
         assertEquals(setOf("id1", "id2"), result)
         coVerify { notificationDao.markExistingAsRead(ids.toList(), any()) }
-        assertEquals(TestTimeProvider().now(), dateSlot.captured.time)
+        assertEquals(TestTimeProvider().now(), dateSlot.captured)
     }
 
     @Test
@@ -381,14 +381,14 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `markAllUnreadAsRead fetches unread ids and updates all unread`() = runTest {
-        val dateSlot = slot<java.util.Date>()
+        val dateSlot = slot<Long>()
         coEvery { notificationDao.markAllUnreadAsReadReturningIds(eq("user1"), capture(dateSlot)) } returns listOf("id1", "id2")
 
         val result = repository.markAllUnreadAsRead("user1")
 
         assertEquals(setOf("id1", "id2"), result)
         coVerify { notificationDao.markAllUnreadAsReadReturningIds("user1", any()) }
-        assertEquals(TestTimeProvider().now(), dateSlot.captured.time)
+        assertEquals(TestTimeProvider().now(), dateSlot.captured)
     }
 
     @Test
@@ -893,7 +893,7 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `updateResourceNotification when count unchanged skips the write`() = runTest {
-        val initialDate = java.util.Date(1000000L)
+        val initialDate = 1000000L
         val existing = AppNotification().apply {
             id = "user1:resource:count"
             userId = "user1"
@@ -915,7 +915,7 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `updateResourceNotification when count changed marks unread and updates createdAt`() = runTest {
-        val initialDate = java.util.Date(1000000L)
+        val initialDate = 1000000L
         val existing = AppNotification().apply {
             id = "user1:resource:count"
             userId = "user1"
@@ -935,7 +935,7 @@ class NotificationsRepositoryImplTest {
         assertFalse(saved.isRead)
         assertEquals("10", saved.message)
         assertEquals("10", saved.relatedId)
-        assertEquals(TestTimeProvider().now(), saved.createdAt.time)
+        assertEquals(TestTimeProvider().now(), saved.createdAt)
     }
 
     @Test
@@ -979,7 +979,7 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `updateStorageNotification when percent unchanged skips the write`() = runTest {
-        val initialDate = java.util.Date(1000000L)
+        val initialDate = 1000000L
         val existing = AppNotification().apply {
             id = "user1:storage"
             userId = "user1"
@@ -1000,7 +1000,7 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `updateStorageNotification legacy message without percent updates message and preserves state`() = runTest {
-        val initialDate = java.util.Date(1000000L)
+        val initialDate = 1000000L
         val existing = AppNotification().apply {
             id = "user1:storage"
             userId = "user1"
@@ -1024,7 +1024,7 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `updateStorageNotification when percent changed marks unread and updates createdAt`() = runTest {
-        val initialDate = java.util.Date(1000000L)
+        val initialDate = 1000000L
         val existing = AppNotification().apply {
             id = "user1:storage"
             userId = "user1"
@@ -1044,7 +1044,7 @@ class NotificationsRepositoryImplTest {
         assertFalse(saved.isRead)
         assertEquals("5%", saved.message)
         assertEquals("storage", saved.relatedId)
-        assertEquals(TestTimeProvider().now(), saved.createdAt.time)
+        assertEquals(TestTimeProvider().now(), saved.createdAt)
     }
 
     @Test

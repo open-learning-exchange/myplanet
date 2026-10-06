@@ -48,8 +48,11 @@ import org.ole.planet.myplanet.databinding.EditOtherInfoBinding
 import org.ole.planet.myplanet.databinding.FragmentEditAchievementBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.Achievement
-import org.ole.planet.myplanet.model.Achievement.Companion.createReference
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.achievementsArray
+import org.ole.planet.myplanet.model.createReference
+import org.ole.planet.myplanet.model.getReferencesArray
+import org.ole.planet.myplanet.model.serializeResource
 import org.ole.planet.myplanet.repository.LibraryTitle
 import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
@@ -323,7 +326,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             }
             if (`object` != null) referenceArray?.remove(`object`)
             if (referenceArray == null) referenceArray = JsonArray()
-            referenceArray?.add(createReference(name, alertReferenceBinding.etRelationship.text.toString(), alertReferenceBinding.etPhone.text.toString(), alertReferenceBinding.etEmail.text.toString()))
+            referenceArray?.add(Achievement.createReference(name, alertReferenceBinding.etRelationship.text.toString(), alertReferenceBinding.etPhone.text.toString(), alertReferenceBinding.etEmail.text.toString()))
             showReference()
             referenceDialog?.dismiss()
         }

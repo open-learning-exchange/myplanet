@@ -5,7 +5,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.io.File
-import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Provider
@@ -35,7 +34,12 @@ import org.ole.planet.myplanet.model.SubmissionRowProjection
 import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.model.TeamReference
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.serialize
+import org.ole.planet.myplanet.model.serializeAnswer
+import org.ole.planet.myplanet.model.serializeExam
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.DateFormatter
+import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.GsonUtils
@@ -54,7 +58,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     private val examDao: ExamDao,
     private val questionDao: QuestionDao,
     @PlainGson private val gson: Gson,
-    private val deviceNameProvider: DeviceNameProvider
+    private val deviceNameProvider: DeviceNameProvider,
+    private val dateFormatter: DateFormatter
 ) : SubmissionsRepository {
 
     override suspend fun generateSubmissionPdf(submissionId: String): File? {
@@ -257,7 +262,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                     this.parentId = parentId
                     status = "pending"
                     type = "survey"
-                    startTime = Date().time
+                    startTime = DateTimeUtils.nowMillis()
                     lastUpdateTime = startTime
                     answers = mutableListOf()
                 }
@@ -442,7 +447,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 this.examId = examId
                 this.courseId = courseId
                 this.memberId = memberId
-                date = Date().toString()
+                date = dateFormatter.formatLegacyTimestamp(DateTimeUtils.nowMillis())
                 uniqueId = NetworkUtils.getUniqueIdentifier()
                 photoLocation = photoPath
                 uploaded = false
@@ -483,7 +488,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         val persistedTeamId = teamId?.takeIf { it.isNotBlank() }
         val team = persistedTeamId?.let { getTeamByIdOrNull(it) }
 
-        val now = Date().time
+        val now = DateTimeUtils.nowMillis()
         val submission = Submission().apply {
             id = UUID.randomUUID().toString()
             parentId = when {
@@ -592,7 +597,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 isFinal && isExplicitSubmission -> "requires grading"
                 else -> "pending"
             }
-            val now = Date().time
+            val now = DateTimeUtils.nowMillis()
             val answer = Answer(
                 id = existing?.id ?: UUID.randomUUID().toString(),
                 value = value,
@@ -675,7 +680,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             this.parentId = parentId
             status = "pending"
             type = "survey"
-            startTime = Date().time
+            startTime = DateTimeUtils.nowMillis()
             lastUpdateTime = startTime
             answers = mutableListOf()
         }
@@ -693,7 +698,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         upsertRoomSubmissionsFromSync(listOf(submission))
     }
 
-    private fun upsertRoomSubmissionsFromSync(documentList: List<JsonObject>) {
+    private suspend fun upsertRoomSubmissionsFromSync(documentList: List<JsonObject>) {
         val submissions = ArrayList<Submission>(documentList.size)
         val answers = ArrayList<Answer>()
 
@@ -764,8 +769,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
         if (submissions.isEmpty() && answers.isEmpty()) return
 
-        if (submissions.isNotEmpty()) submissionDao.upsertAllBlocking(submissions)
-        if (answers.isNotEmpty()) answerDao.upsertAllBlocking(answers)
+        if (submissions.isNotEmpty()) submissionDao.upsertAll(submissions)
+        if (answers.isNotEmpty()) answerDao.upsertAll(answers)
     }
 
     private fun normalizeSubmissionUserId(userId: String): String {

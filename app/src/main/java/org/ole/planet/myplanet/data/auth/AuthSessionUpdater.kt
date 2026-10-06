@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.data.auth
 
-import android.util.Log
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -16,6 +15,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
@@ -82,7 +82,7 @@ class AuthSessionUpdater @AssistedInject constructor(
             }
         } catch (e: Exception) {
             callback.onError(e.message.orEmpty())
-            Log.w("AuthSessionUpdater", "Error in sendPost", e)
+            AppLog.w("AuthSessionUpdater", "Error in sendPost", e)
         }
     }
 
@@ -93,7 +93,7 @@ class AuthSessionUpdater @AssistedInject constructor(
             jsonParam.put("password", sharedPrefManager.getUrlPwd())
             jsonParam
         } catch (e: Exception) {
-            Log.w("AuthSessionUpdater", "Error in getJsonObject", e)
+            AppLog.w("AuthSessionUpdater", "Error in getJsonObject", e)
             null
         }
     }
@@ -105,7 +105,7 @@ class AuthSessionUpdater @AssistedInject constructor(
             val serverUrl = URL(urlString)
             serverUrl
         } catch (e: Exception) {
-            Log.w("AuthSessionUpdater", "Error in getSessionUrl", e)
+            AppLog.w("AuthSessionUpdater", "Error in getSessionUrl", e)
             null
         }
     }

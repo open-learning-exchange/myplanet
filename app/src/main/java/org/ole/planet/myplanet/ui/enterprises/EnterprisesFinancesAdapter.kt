@@ -15,8 +15,10 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.Transaction
+import org.ole.planet.myplanet.model.getAttachmentFile
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileExistenceCache
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ImageViewerUtils
 import org.ole.planet.myplanet.utils.SystemTimeProvider
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -70,7 +72,7 @@ class EnterprisesFinancesAdapter(
     }
 
     private fun bindFinanceImage(binding: RowFinanceBinding, item: Transaction) {
-        val imageFile = MyTeam.getAttachmentFile(context, item.id, item.imageName)
+        val imageFile = MyTeam.getAttachmentFile(FileUtils.getOlePath(context), item.id, item.imageName)
         val exists = attachmentPresenceCache.exists(imageFile, timeProvider.now())
 
         if (imageFile != null && exists) {

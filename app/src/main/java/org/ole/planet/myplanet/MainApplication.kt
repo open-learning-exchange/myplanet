@@ -48,6 +48,8 @@ import org.ole.planet.myplanet.services.TaskNotificationWorker
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.utils.ANRWatchdog
+import org.ole.planet.myplanet.utils.AndroidLogSink
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.CrashLogStore
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
@@ -65,6 +67,12 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @HiltAndroidApp
 class MainApplication : Application(), WorkManagerConfiguration.Provider {
+    init {
+        // Before attachBaseContext, content providers and Hilt injection in onCreate, so no
+        // AppLog line from shared code is dropped by the default no-op sink.
+        AppLog.sink = AndroidLogSink
+    }
+
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 

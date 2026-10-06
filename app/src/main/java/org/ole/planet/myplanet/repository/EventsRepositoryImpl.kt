@@ -11,6 +11,7 @@ import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.fromJson
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 
