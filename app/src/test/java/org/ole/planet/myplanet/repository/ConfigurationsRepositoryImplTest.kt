@@ -455,7 +455,7 @@ class ConfigurationsRepositoryImplTest {
 
         assertTrue(result)
         coVerify(exactly = 0) { apiInterface.isPlanetAvailable("http://alt.url") }
-        verify(exactly = 0) { serverUrlMapper.updateUrlPreferences(any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { serverUrlMapper.updateUrlPreferences(any(), any(), any(), any()) }
     }
 
     @Test
