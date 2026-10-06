@@ -611,6 +611,7 @@
     <string name="file_already_exists">फाइल पहिले नै अवस्थित छ…</string>
     <string name="feature_not_available">विशेषता उपलब्ध छैन</string>
     <string name="sync">सिंक</string>
+    <string name="remove_item_format">हटाउनुहोस् %s</string>
     <string name="session_expired">सत्र समाप्त भयो।</string>
     <string name="downloading_started_please_check_notificati">डाउनलोड सुरु भयो, कृपया सूचना जाँच गर्नुहोस्…</string>
     <string name="dictionary">शब्दकोश</string>
@@ -1022,9 +1023,10 @@
     <string name="user_name">%1$s (%2$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
-    <string name="member_description">%1$s (%2$d भ्रमण)</string>
+    <string name="member_description">%1$s (%2$d टोली भ्रमण)</string>
     <string name="last_visit">पछिल्लो भ्रमण: %1$s</string>
     <string name="no_visit">भ्रमण छैन</string>
+    <string name="no_logout_record_found">लगआउट रेकर्ड फेला परेन</string>
     <string name="dark_mode">अँध्यारो मोड</string>
     <string name="dark_mode_off">बन्द</string>
     <string name="dark_mode_on">खुला</string>
@@ -1318,7 +1320,7 @@
     <string name="download_pdf">PDF डाउनलोड गर्नुहोस्</string>
     <string name="label_answer">उत्तर:</string>
     <string name="label_link">लिङ्क: </string>
-    <string name="number_of_visits">भ्रमण संख्या</string>
+    <string name="number_of_visits">कुल भ्रमण</string>
     <string name="label_name_with_colon">नाम:</string>
     <string name="label_relationship">सम्बन्ध:</string>
     <string name="label_phone_no">फोन नम्बर:</string>

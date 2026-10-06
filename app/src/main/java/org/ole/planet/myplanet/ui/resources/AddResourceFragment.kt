@@ -179,6 +179,7 @@ class AddResourceFragment : BaseBindingBottomSheetFragment<FragmentAddResourceBi
 
             override fun onError(error: String?) {
                 Utilities.toast(activity, error)
+                floatingActionButton?.setImageResource(R.drawable.ic_mic)
             }
         })
     }
