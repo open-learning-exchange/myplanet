@@ -23,6 +23,7 @@ class TeamPagerAdapter(
 ) : FragmentStateAdapter(parentFragment) {
     private val itemIds = mutableMapOf<String, Long>()
     private var nextId = 1L
+    private var currentIds: Set<Long> = emptySet()
 
     init {
         pages.forEach { page ->
@@ -30,6 +31,7 @@ class TeamPagerAdapter(
                 itemIds[page.id] = nextId++
             }
         }
+        rebuildIds()
     }
 
     fun updatePages(newPages: List<TeamPageConfig>) {
@@ -45,7 +47,12 @@ class TeamPagerAdapter(
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )
         pages = newPages
+        rebuildIds()
         diffResult.dispatchUpdatesTo(this)
+    }
+
+    private fun rebuildIds() {
+        currentIds = pages.mapNotNullTo(HashSet()) { itemIds[it.id] }
     }
 
     override fun getItemCount(): Int = pages.size
@@ -60,7 +67,7 @@ class TeamPagerAdapter(
     }
 
     override fun containsItem(itemId: Long): Boolean {
-        return pages.any { itemIds[it.id] == itemId }
+        return itemId in currentIds
     }
 
     override fun createFragment(position: Int): Fragment {
