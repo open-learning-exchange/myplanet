@@ -34,7 +34,7 @@ jobs:
           # submodules: recursive  # uncomment when a job needs .agents/skills
 
       - name: setup gradle
-        uses: gradle/actions/setup-gradle@v6.3.0
+        uses: gradle/actions/setup-gradle@v6.4.0
         with:
           gradle-version: wrapper
           cache-read-only: false

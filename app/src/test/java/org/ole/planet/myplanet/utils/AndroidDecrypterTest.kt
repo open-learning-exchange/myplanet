@@ -151,4 +151,58 @@ class AndroidDecrypterTest {
         assertTrue(key!!.isNotBlank())
         assertEquals(64, key.length) // 32 bytes = 64 hex chars
     }
+
+    @Test
+    fun generateIv_returnsDistinctLowercaseHex() {
+        val regex = Regex("^[0-9a-f]{32}$")
+        val results = mutableSetOf<String>()
+        repeat(100) {
+            val iv = AndroidDecrypter.generateIv()
+            assertTrue(regex.matches(iv))
+            results.add(iv)
+        }
+        assertEquals(100, results.size)
+    }
+
+    @Test
+    fun generateIv_isSafeUnderConcurrentCalls() {
+        val threadCount = 8
+        val callsPerThread = 125 // 8 * 125 = 1,000 total calls
+        val executor = java.util.concurrent.Executors.newFixedThreadPool(threadCount)
+        val regex = Regex("^[0-9a-f]{32}$")
+
+        val tasks = List(threadCount) {
+            java.util.concurrent.Callable {
+                val list = mutableListOf<String>()
+                repeat(callsPerThread) {
+                    list.add(AndroidDecrypter.generateIv())
+                }
+                list
+            }
+        }
+
+        val futures = executor.invokeAll(tasks)
+        val allIvs = futures.flatMap { it.get() }
+        executor.shutdown()
+
+        assertEquals(1000, allIvs.size)
+        allIvs.forEach { iv ->
+            assertTrue(regex.matches(iv))
+        }
+        val uniqueIvs = allIvs.toSet()
+        assertEquals(1000, uniqueIvs.size)
+    }
+
+    @Test
+    fun generateIv_roundTripsThroughEncryptDecrypt() {
+        val key = AndroidDecrypter.generateKey()!!
+        val iv = AndroidDecrypter.generateIv()
+        val plainText = "hello"
+
+        val encrypted = AndroidDecrypter.encrypt(plainText, key, iv)
+        assertNotNull(encrypted)
+
+        val decrypted = AndroidDecrypter.decrypt(encrypted, key, iv)
+        assertEquals(plainText, decrypted)
+    }
 }
