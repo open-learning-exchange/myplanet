@@ -210,12 +210,8 @@ class SyncManagerTest {
     fun `resourceTransactionSync skips removeDeletedResources when batch failure occurs`() = runTest {
         coEvery { transactionSyncManager.authenticate() } returns true
 
-        val totalRowsJson = kotlinx.serialization.json.buildJsonObject {
-            put("total_rows", 10)
-        }
-        val totalRowsResponse = Response.success(totalRowsJson)
-        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } returns totalRowsResponse
-        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true") }) } throws RuntimeException("Network error")
+        coEvery { syncRepository.fetchResourceTotalRows() } returns 10
+        coEvery { syncRepository.fetchResourceRows(any(), any()) } returns null
 
         syncManager.start(listener, "sync", listOf())
 
@@ -226,26 +222,17 @@ class SyncManagerTest {
     fun `resourceTransactionSync calls removeDeletedResources with full id list when batch succeeds`() = runTest {
         coEvery { transactionSyncManager.authenticate() } returns true
 
-        val totalRowsJson = kotlinx.serialization.json.buildJsonObject {
-            put("total_rows", 2)
-        }
-        val totalRowsResponse = Response.success(totalRowsJson)
-        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } returns totalRowsResponse
+        coEvery { syncRepository.fetchResourceTotalRows() } returns 2
 
-        val doc1 = kotlinx.serialization.json.buildJsonObject { put("_id", "res_1") }
-        val doc2 = kotlinx.serialization.json.buildJsonObject { put("_id", "res_2") }
-        val row1 = kotlinx.serialization.json.buildJsonObject { put("doc", doc1) }
-        val row2 = kotlinx.serialization.json.buildJsonObject { put("doc", doc2) }
-        val rowsArray = kotlinx.serialization.json.buildJsonArray {
-            add(row1)
-            add(row2)
-        }
-        val batchJson = kotlinx.serialization.json.buildJsonObject {
-            put("rows", rowsArray)
-        }
-        val batchResponse = Response.success(batchJson)
-        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true") }) } returns batchResponse
-        coEvery { resourcesRepository.batchInsertResources(any()) } returns listOf("res_1", "res_2")
+        val rows = com.google.gson.JsonArray()
+        val doc1 = com.google.gson.JsonObject().apply { addProperty("_id", "res_1") }
+        val doc2 = com.google.gson.JsonObject().apply { addProperty("_id", "res_2") }
+        rows.add(com.google.gson.JsonObject().apply { add("doc", doc1) })
+        rows.add(com.google.gson.JsonObject().apply { add("doc", doc2) })
+
+        coEvery { syncRepository.fetchResourceRows(any(), any()) } returns rows
+        every { syncRepository.filterSyncableResourceDocs(rows) } returns listOf(doc1, doc2)
+        coEvery { resourcesRepository.batchInsertResources(listOf(doc1, doc2)) } returns listOf("res_1", "res_2")
 
         syncManager.start(listener, "sync", listOf())
 
@@ -256,14 +243,10 @@ class SyncManagerTest {
     fun `resource batch fetch cancellation stops processing and does not report failure`() = runTest {
         coEvery { transactionSyncManager.authenticate() } returns true
 
-        val totalRowsJson = kotlinx.serialization.json.buildJsonObject {
-            put("total_rows", 500)
-        }
-        val totalRowsResponse = Response.success(totalRowsJson)
-        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } returns totalRowsResponse
+        coEvery { syncRepository.fetchResourceTotalRows() } returns 500
 
         coEvery {
-            apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true") })
+            syncRepository.fetchResourceRows(any(), any())
         } coAnswers {
             testScope.cancel()
             throw CancellationException("Cancelled")
@@ -272,7 +255,7 @@ class SyncManagerTest {
         syncManager.start(listener, "sync", listOf())
 
         coVerify(exactly = 1) {
-            apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true") })
+            syncRepository.fetchResourceRows(any(), any())
         }
         verify(exactly = 0) { listener.onSyncFailed(any()) }
     }
@@ -281,20 +264,43 @@ class SyncManagerTest {
     fun `resourceTransactionSync keeps paging and skips cleanup when the resource count is unavailable`() = runTest {
         coEvery { transactionSyncManager.authenticate() } returns true
 
-        val countWithoutTotal = Response.success(kotlinx.serialization.json.buildJsonObject {})
-        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } returns countWithoutTotal
+        coEvery { syncRepository.fetchResourceTotalRows() } returns null
 
-        val doc1 = kotlinx.serialization.json.buildJsonObject { put("_id", "res_1") }
-        val rowsArray = kotlinx.serialization.json.buildJsonArray {
-            add(kotlinx.serialization.json.buildJsonObject { put("doc", doc1) })
-        }
-        val batchResponse = Response.success(kotlinx.serialization.json.buildJsonObject { put("rows", rowsArray) })
-        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true") }) } returns batchResponse
-        coEvery { resourcesRepository.batchInsertResources(any()) } returns listOf("res_1")
+        val rows = com.google.gson.JsonArray()
+        val doc1 = com.google.gson.JsonObject().apply { addProperty("_id", "res_1") }
+        rows.add(com.google.gson.JsonObject().apply { add("doc", doc1) })
+
+        coEvery { syncRepository.fetchResourceRows(any(), any()) } returns rows
+        every { syncRepository.filterSyncableResourceDocs(rows) } returns listOf(doc1)
+        coEvery { resourcesRepository.batchInsertResources(listOf(doc1)) } returns listOf("res_1")
 
         syncManager.start(listener, "sync", listOf())
 
-        coVerify(exactly = 1) { resourcesRepository.batchInsertResources(any()) }
+        coVerify(exactly = 1) { resourcesRepository.batchInsertResources(listOf(doc1)) }
         coVerify(exactly = 0) { resourcesRepository.removeDeletedResources(any()) }
+    }
+
+    @Test
+    fun `resourceTransactionSync when count is unknown and short page has design doc stops paging after short page and inserts 1 doc`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+
+        coEvery { syncRepository.fetchResourceTotalRows() } returns null
+
+        val rows = com.google.gson.JsonArray()
+        val docDesign = com.google.gson.JsonObject().apply { addProperty("_id", "_design/res") }
+        val doc1 = com.google.gson.JsonObject().apply { addProperty("_id", "res_1") }
+        rows.add(com.google.gson.JsonObject().apply { add("doc", docDesign) })
+        rows.add(com.google.gson.JsonObject().apply { add("doc", doc1) })
+
+        // Page returns 2 raw rows, which is < batchSize (100)
+        coEvery { syncRepository.fetchResourceRows(100, 0) } returns rows
+        every { syncRepository.filterSyncableResourceDocs(rows) } returns listOf(doc1)
+        coEvery { resourcesRepository.batchInsertResources(listOf(doc1)) } returns listOf("res_1")
+
+        syncManager.start(listener, "sync", listOf())
+
+        // Ensure fetchResourceRows was called only once (paging stopped because raw rows.size() < 100)
+        coVerify(exactly = 1) { syncRepository.fetchResourceRows(100, 0) }
+        coVerify(exactly = 1) { resourcesRepository.batchInsertResources(listOf(doc1)) }
     }
 }
