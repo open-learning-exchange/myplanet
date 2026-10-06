@@ -246,7 +246,6 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         }
 
     private fun saveData() {
-        // Prepare data synchronously (or in a lightweight way)
         try {
             createPojo()
             if (examination == null) {
@@ -287,7 +286,6 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             examination?.isHasInfo = hasInfo
             pojo?.isUpdated = true
 
-            // Delegate save to ViewModel
             viewModel.saveExamination(examination, pojo, user, sign)
 
         } catch (e: Exception) {
@@ -418,11 +416,6 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     companion object {
         private const val TAG = "HealthExaminationActivity"
 
-        /**
-         * Stored condition keys: the English @array/diagnosis_list, whatever the device language, so
-         * records match across languages and with Planet. Position i is the same condition in every
-         * translation, so keys[i] pairs with the localized diagnosis_list[i].
-         */
         fun diagnosisKeys(context: Context): Array<String> {
             val english = Configuration(context.resources.configuration).apply { setLocale(Locale.ENGLISH) }
             return context.createConfigurationContext(english).resources.getStringArray(R.array.diagnosis_list)
