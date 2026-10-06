@@ -9,7 +9,6 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import io.ktor.client.HttpClient
 import java.lang.reflect.Modifier
-import java.lang.reflect.Type
 import java.net.InetAddress
 import java.net.Socket
 import java.util.concurrent.TimeUnit
@@ -17,24 +16,15 @@ import javax.inject.Qualifier
 import javax.inject.Singleton
 import javax.net.SocketFactory
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonObject
 import okhttp3.ConnectionPool
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
-import org.ole.planet.myplanet.data.api.AllowlistFactory
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.api.JvmKtorPlatform
 import org.ole.planet.myplanet.data.api.KtorHttpClients
 import org.ole.planet.myplanet.data.api.KtorPlanetApi
 import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.data.api.RetryInterceptor
-import org.ole.planet.myplanet.model.ChatResponse
-import org.ole.planet.myplanet.model.DocumentResponse
-import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.utils.Constants.NETWORK_TRAFFIC_TAG
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 
 private class TaggedSocketFactory(private val delegate: SocketFactory) : SocketFactory() {
     private fun tag() = TrafficStats.setThreadStatsTag(NETWORK_TRAFFIC_TAG)
@@ -52,10 +42,6 @@ annotation class StandardHttpClient
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class ReachabilityHttpClient
-
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class StandardRetrofit
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
@@ -94,14 +80,6 @@ object NetworkModule {
             coerceInputValues = true
         }
     }
-
-    private val kotlinxHandledTypes: Set<Type> = setOf(
-        MyPlanet::class.java,
-        ChatResponse::class.java,
-        DocumentResponse::class.java,
-        JsonObject::class.java,
-        JsonArray::class.java
-    )
 
     private const val MAX_REQUESTS_PER_HOST = 20
 
@@ -164,28 +142,6 @@ object NetworkModule {
             REACHABILITY_TIMEOUT_SECONDS,
             connectionPool
         )
-    }
-
-    @Provides
-    @Singleton
-    @StandardRetrofit
-    fun provideStandardRetrofit(
-        @StandardHttpClient okHttpClient: OkHttpClient,
-        gson: Gson,
-        json: Json
-    ): Retrofit {
-        return Retrofit.Builder()
-            .baseUrl("https://vi.media.mit.edu/")
-            .client(okHttpClient)
-            .addConverterFactory(AllowlistFactory(json, kotlinxHandledTypes))
-            .addConverterFactory(GsonConverterFactory.create(gson))
-            .build()
-    }
-
-    @Provides
-    @Singleton
-    fun provideApiInterface(@StandardRetrofit retrofit: Retrofit): ApiInterface {
-        return retrofit.create(ApiInterface::class.java)
     }
 
     /**

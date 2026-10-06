@@ -20,11 +20,11 @@ import org.junit.Test
 import org.ole.planet.myplanet.di.NetworkModule
 
 /**
- * Network failures through both [PlanetApi] implementations on identically configured OkHttp
- * clients: callers branch on the exception type (UnknownHostException, SocketTimeoutException,
- * ConnectException, IOException), so type and message must be the same.
+ * Network failures through [KtorPlanetApi]: callers branch on the exception type
+ * (UnknownHostException, SocketTimeoutException, ConnectException, IOException), so each must
+ * surface as the exception OkHttp itself threw, with the type and message Retrofit handed over.
  */
-class PlanetApiFailureParityTest {
+class PlanetApiFailureTest {
 
     private lateinit var server: MockWebServer
     private val ktorClients = mutableListOf<HttpClient>()
@@ -40,72 +40,63 @@ class PlanetApiFailureParityTest {
         server.close()
     }
 
-    private fun apis(okHttp: () -> OkHttpClient): List<PlanetApi> {
-        val json = NetworkModule.provideJson()
-        val retrofit = RetrofitPlanetApi(
-            NetworkModule.provideApiInterface(NetworkModule.provideStandardRetrofit(okHttp(), NetworkModule.provideGson(), json))
-        )
-        val client = NetworkModule.provideKtorHttpClient(okHttp()).also { ktorClients += it }
-        return listOf(retrofit, KtorPlanetApi(client, json, JvmKtorPlatform))
+    /** Runs [call] on the production wiring over [okHttp] and returns the failure, as "Type: message". */
+    private fun failure(okHttp: OkHttpClient, before: () -> Unit = {}, call: suspend PlanetApi.() -> Unit): String {
+        val client = NetworkModule.provideKtorHttpClient(okHttp).also { ktorClients += it }
+        val api = NetworkModule.providePlanetApi(client, NetworkModule.provideJson())
+        before()
+        return try {
+            runBlocking { api.call() }
+            "no failure"
+        } catch (e: Exception) {
+            "${e::class.java.name}: ${e.message}"
+        }
     }
 
-    /** Runs [call] on both implementations and returns the failure each threw, as "Type: message". */
-    private fun failures(okHttp: () -> OkHttpClient, before: () -> Unit = {}, call: suspend PlanetApi.() -> Unit): List<String> =
-        apis(okHttp).map { api ->
-            before()
-            try {
-                runBlocking { api.call() }
-                "no failure"
-            } catch (e: Exception) {
-                "${e::class.java.name}: ${e.message}"
-            }
-        }
-
     /**
-     * Both implementations threw [expectedType]. Messages are compared too unless [sameMessage] is
-     * false: OkHttp itself words a read timeout either "timeout" or "Read timed out", depending on
-     * whether okio's watchdog or the socket's own timeout fires first.
+     * The call threw [expectedType], with [expectedMessage] when given. A read timeout's message is
+     * not pinned: OkHttp itself words it either "timeout" or "Read timed out", depending on whether
+     * okio's watchdog or the socket's own timeout fires first.
      */
-    private fun assertSameFailure(expectedType: Class<out Exception>, failures: List<String>, sameMessage: Boolean = true) {
-        val compared = if (sameMessage) failures else failures.map { it.substringBefore(':') }
-        assertEquals("Retrofit vs Ktor", compared[0], compared[1])
-        assertEquals(failures.toString(), expectedType.name, failures[0].substringBefore(':'))
+    private fun assertFailure(expectedType: Class<out Exception>, failure: String, expectedMessage: String? = null) {
+        assertEquals(failure, expectedType.name, failure.substringBefore(':'))
+        if (expectedMessage != null) assertEquals("${expectedType.name}: $expectedMessage", failure)
     }
 
     @Test
     fun unknownHost_throwsUnknownHostException() {
-        val failures = failures({ OkHttpClient.Builder().dns { host -> throw UnknownHostException("no such host: $host") }.build() }) {
+        val failure = failure(OkHttpClient.Builder().dns { host -> throw UnknownHostException("no such host: $host") }.build()) {
             getJsonObject(null, "http://planet.invalid/db/_all_dbs")
         }
 
-        assertSameFailure(UnknownHostException::class.java, failures)
+        assertFailure(UnknownHostException::class.java, failure, "no such host: planet.invalid")
     }
 
     @Test
     fun connectTimeout_throwsSocketTimeoutException() {
-        val failures = failures({ OkHttpClient.Builder().socketFactory(TimingOutSocketFactory).build() }) {
+        val failure = failure(OkHttpClient.Builder().socketFactory(TimingOutSocketFactory).build()) {
             isPlanetAvailable(server.url("/db/_all_dbs").toString())
         }
 
-        assertSameFailure(SocketTimeoutException::class.java, failures)
+        assertFailure(SocketTimeoutException::class.java, failure, "connect timed out")
     }
 
     @Test
     fun readTimeout_beforeHeaders_throwsSocketTimeoutException() {
-        val failures = failures(
-            { OkHttpClient.Builder().readTimeout(200, TimeUnit.MILLISECONDS).build() },
+        val failure = failure(
+            OkHttpClient.Builder().readTimeout(200, TimeUnit.MILLISECONDS).build(),
             before = { server.enqueue(MockResponse.Builder().onResponseStart(SocketEffect.Stall).build()) },
         ) {
             getJsonObject(null, server.url("/db/users").toString())
         }
 
-        assertSameFailure(SocketTimeoutException::class.java, failures, sameMessage = false)
+        assertFailure(SocketTimeoutException::class.java, failure)
     }
 
     @Test
     fun readTimeout_whileStreaming_throwsSocketTimeoutException() {
-        val failures = failures(
-            { OkHttpClient.Builder().readTimeout(200, TimeUnit.MILLISECONDS).build() },
+        val failure = failure(
+            OkHttpClient.Builder().readTimeout(200, TimeUnit.MILLISECONDS).build(),
             before = {
                 server.enqueue(MockResponse.Builder().setHeader("Content-Length", 1_000).onResponseBody(SocketEffect.Stall).build())
             },
@@ -113,7 +104,7 @@ class PlanetApiFailureParityTest {
             requireNotNull(downloadFile(null, server.url("/big.bin").toString()).body).use { it.source().readByteArray() }
         }
 
-        assertSameFailure(SocketTimeoutException::class.java, failures, sameMessage = false)
+        assertFailure(SocketTimeoutException::class.java, failure)
     }
 
     /** A socket whose connect always times out, as OkHttp's platform layer reports it. */

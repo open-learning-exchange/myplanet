@@ -41,8 +41,8 @@ import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.MyPlanet
 
 /**
- * [PlanetApi] over a Ktor [HttpClient], reproducing [RetrofitPlanetApi] on the wire and in what
- * callers observe (pinned by `PlanetApiContractTest`):
+ * [PlanetApi] over a Ktor [HttpClient], reproducing the Retrofit client it replaced on the wire
+ * and in what callers observe (pinned by `PlanetApiContractTest`):
  *
  * - the [client] must be built with `expectSuccess = false`, `followRedirects = false` and
  *   `useDefaultTransformers = false`, so Ktor adds no Accept/Accept-Charset headers and leaves

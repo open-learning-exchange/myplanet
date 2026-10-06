@@ -39,7 +39,8 @@ import org.junit.rules.TemporaryFolder
  * the contract, but no other header may appear. URLs must reach the server as OkHttp
  * canonicalises them, and failures surface as the exception types callers branch on
  * (IOException, IllegalArgumentException, SerializationException). Subclasses only supply
- * [createApi]; [PlanetApiWireParityTest] compares the two implementations byte for byte.
+ * [createApi]; [PlanetApiWireTest] pins the transport's headers too, byte for byte as Retrofit
+ * sent them.
  */
 abstract class PlanetApiContractTest {
 
