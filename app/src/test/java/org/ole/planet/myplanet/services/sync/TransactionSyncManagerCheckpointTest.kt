@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services.sync
 
-import android.content.SharedPreferences
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.every
@@ -23,7 +22,8 @@ import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.ApiResponse
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatSyncWriter
 import org.ole.planet.myplanet.repository.CoursesRepository
@@ -41,26 +41,26 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.AppStorage
+import org.ole.planet.myplanet.utils.CredentialStore
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.SyncTimeLogger
+import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.robolectric.RobolectricTestRunner
-import retrofit2.Response
 
 /**
  * Covers the checkpoint/cancellation behaviour added to [TransactionSyncManager.syncDb] for
  * background heavy-table sync (see the resume/interrupt handling in `HeavyTableSyncWorker`).
- * Robolectric supplies working `android.util.Log`/`SystemClock` shadows that syncDb relies on.
+ * Robolectric supplies the working `android.util.Log` shadow that syncDb relies on.
  */
 @RunWith(RobolectricTestRunner::class)
 class TransactionSyncManagerCheckpointTest {
 
     private lateinit var transactionSyncManager: TransactionSyncManager
-    private val apiInterface: ApiInterface = mockk()
+    private val planetApi: PlanetApi = mockk()
     private val sharedPrefManager: SharedPrefManager = mockk()
     private val ratingsRepository: RatingsRepository = mockk()
-    private val prefs: SharedPreferences = mockk()
-    private val editor: SharedPreferences.Editor = mockk()
     private val putValues = mutableListOf<Int>()
 
     // Plain Dispatchers.Unconfined + runBlocking (no TestDispatcher/runTest): syncDb only needs
@@ -68,7 +68,7 @@ class TransactionSyncManagerCheckpointTest {
     // flagging the CancellationException/RuntimeException these tests deliberately drive.
     private val dispatcherProvider: DispatcherProvider = mockk()
 
-    private fun rowsResponse(count: Int): Response<KJsonObject> {
+    private fun rowsResponse(count: Int): ApiResponse<KJsonObject> {
         val body = buildJsonObject {
             putJsonArray("rows") {
                 repeat(count) { i ->
@@ -78,11 +78,7 @@ class TransactionSyncManagerCheckpointTest {
                 }
             }
         }
-        val response = mockk<Response<KJsonObject>>()
-        every { response.isSuccessful } returns true
-        every { response.body() } returns body
-        every { response.code() } returns 200
-        return response
+        return ApiResponse.success(body)
     }
 
     @Before
@@ -99,16 +95,14 @@ class TransactionSyncManagerCheckpointTest {
         every { dispatcherProvider.io } returns Dispatchers.Unconfined
         every { dispatcherProvider.main } returns Dispatchers.Unconfined
 
-        every { sharedPrefManager.rawPreferences } returns prefs
-        every { prefs.getInt(any(), any()) } returns 0
-        every { prefs.edit() } returns editor
-        every { editor.putInt(any(), capture(putValues)) } returns editor
-        every { editor.remove(any()) } returns editor
-        every { editor.apply() } returns Unit
+        every { sharedPrefManager.getHeavySyncSkip(any()) } returns 0
+        every { sharedPrefManager.setHeavySyncSkip(any(), capture(putValues)) } returns Unit
+        every { sharedPrefManager.clearHeavySyncSkip(any()) } returns Unit
 
         transactionSyncManager = TransactionSyncManager(
-            apiInterface,
-            mockk(relaxed = true),
+            planetApi,
+            mockk<AppStorage>(relaxed = true),
+            mockk<CredentialStore>(relaxed = true),
             mockk<VoicesRepository>(relaxed = true),
             mockk<ChatSyncWriter>(relaxed = true),
             mockk<FeedbackSyncWriter>(relaxed = true),
@@ -127,6 +121,7 @@ class TransactionSyncManagerCheckpointTest {
             mockk<ProgressRepository>(relaxed = true),
             mockk<SurveysRepository>(relaxed = true),
             dispatcherProvider,
+            TestTimeProvider(),
             mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true),
             mockSyncTimeLogger
         )
@@ -139,7 +134,7 @@ class TransactionSyncManagerCheckpointTest {
 
     @Test
     fun `checkpoint persists the committed batch boundary`() = runBlocking {
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returnsMany
+        coEvery { planetApi.postDoc(any(), any(), any(), any()) } returnsMany
             listOf(rowsResponse(20), rowsResponse(0))
         coEvery { ratingsRepository.insertRatingsFromSync(any()) } returns Unit
 
@@ -155,7 +150,7 @@ class TransactionSyncManagerCheckpointTest {
     // re-flagged by runTest's uncaught-exception detection as it unwinds the withContext child.
     @Test
     fun `checkpoint does not advance past a batch that failed to commit`() = runBlocking {
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns rowsResponse(20)
+        coEvery { planetApi.postDoc(any(), any(), any(), any()) } returns rowsResponse(20)
         coEvery { ratingsRepository.insertRatingsFromSync(any()) } throws RuntimeException("insert boom")
 
         val total = transactionSyncManager.syncDb("ratings", useCheckpoint = true)
@@ -171,7 +166,7 @@ class TransactionSyncManagerCheckpointTest {
     // withContext boundary isn't misread by runTest's uncaught-exception detection.
     @Test
     fun `cancellation propagates instead of being swallowed`() = runBlocking {
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } throws
+        coEvery { planetApi.postDoc(any(), any(), any(), any()) } throws
             CancellationException("worker stopped")
 
         try {

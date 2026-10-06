@@ -9,6 +9,7 @@ import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkAll
@@ -43,8 +44,10 @@ import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.TeamReference
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.serialize
 import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.AndroidDateFormatter
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
 
@@ -86,7 +89,8 @@ class SubmissionsRepositoryImplTest {
             examDao,
             questionDao,
             Gson(),
-            deviceNameProvider
+            deviceNameProvider,
+            AndroidDateFormatter()
         ), recordPrivateCalls = true)
     }
 
@@ -391,7 +395,7 @@ class SubmissionsRepositoryImplTest {
 
         repository.bulkInsertFromSync(jsonArray)
 
-        verify { submissionDao.upsertAllBlocking(match { it.single().id == "test_id" }) }
+        coVerify { submissionDao.upsertAll(match { it.single().id == "test_id" }) }
     }
 
     @Test
@@ -415,8 +419,8 @@ class SubmissionsRepositoryImplTest {
         // UnsupportedOperationException and failed the entire submissions sync.
         repository.bulkInsertFromSync(jsonArray)
 
-        verify {
-            answerDao.upsertAllBlocking(
+        coVerify {
+            answerDao.upsertAll(
                 match { list -> list.single().value == "{\"text\":\"nested\"}" }
             )
         }
@@ -441,8 +445,8 @@ class SubmissionsRepositoryImplTest {
 
         repository.bulkInsertFromSync(jsonArray)
 
-        verify {
-            answerDao.upsertAllBlocking(
+        coVerify {
+            answerDao.upsertAll(
                 match { list ->
                     val answer = list.single()
                     answer.value == null && answer.valueChoices?.size == 2
@@ -455,7 +459,7 @@ class SubmissionsRepositoryImplTest {
     fun `insertSubmission skips if _attachments present`() = runTest {
         val submission = JsonObject().apply { addProperty("_attachments", "test") }
         repository.insertSubmission(submission)
-        verify(exactly = 0) { submissionDao.upsertAllBlocking(any()) }
+        coVerify(exactly = 0) { submissionDao.upsertAll(any()) }
     }
 
     @Test
@@ -467,7 +471,7 @@ class SubmissionsRepositoryImplTest {
 
         repository.insertSubmission(submission)
 
-        verify { submissionDao.upsertAllBlocking(match { it.single().id == "test_id" }) }
+        coVerify { submissionDao.upsertAll(match { it.single().id == "test_id" }) }
     }
 
     @Test
@@ -661,6 +665,7 @@ class SubmissionsRepositoryImplTest {
         // Fresh user record from Room (attachment-free, current) must win over the persisted
         // blob, whose _attachments were stripped for storage safety.
         val freshUser = mockk<UserEntity>()
+        mockkStatic("org.ole.planet.myplanet.model.UserEntityJsonKt")
         every { freshUser.serialize() } returns JsonObject().apply { addProperty("_id", "fresh_user") }
 
         val submission = Submission().apply {

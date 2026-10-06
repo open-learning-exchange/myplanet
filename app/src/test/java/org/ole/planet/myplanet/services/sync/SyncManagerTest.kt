@@ -23,12 +23,14 @@ import kotlinx.serialization.json.add
 import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
@@ -37,13 +39,15 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.LogLevel
+import org.ole.planet.myplanet.utils.NetworkStatus
+import org.ole.planet.myplanet.utils.RecordingLogSink
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -53,7 +57,7 @@ class SyncManagerTest {
     private lateinit var syncManager: SyncManager
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
-    private val apiInterface: ApiInterface = mockk(relaxed = true)
+    private val planetApi: PlanetApi = mockk(relaxed = true)
     private val transactionSyncManager: TransactionSyncManager = mockk(relaxed = true)
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
     private val loginSyncManager: LoginSyncManager = mockk(relaxed = true)
@@ -66,7 +70,13 @@ class SyncManagerTest {
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val syncRepository: SyncRepository = mockk(relaxed = true)
     private val syncTimeLogger: SyncTimeLogger = mockk(relaxed = true)
+    private val networkStatus: NetworkStatus = mockk {
+        every { currentWifiSsid() } returns null
+    }
     private val userModel: UserEntity = mockk(relaxed = true)
+
+    @get:Rule
+    val logs = RecordingLogSink()
 
     @Before
     fun setup() {
@@ -83,7 +93,7 @@ class SyncManagerTest {
         syncManager = SyncManager(
             context = context,
             sharedPrefManager = sharedPrefManager,
-            apiInterface = apiInterface,
+            planetApi = planetApi,
             transactionSyncManager = transactionSyncManager,
             resourcesRepository = resourcesRepository,
             loginSyncManager = loginSyncManager,
@@ -91,6 +101,7 @@ class SyncManagerTest {
             activitiesRepository = activitiesRepository,
             dispatcherProvider = dispatcherProvider,
             timeProvider = TestTimeProvider(),
+            networkStatus = networkStatus,
             userSyncRepository = userSyncRepository,
             userRepository = userRepository,
             syncRepository = syncRepository,
@@ -147,6 +158,25 @@ class SyncManagerTest {
     }
 
     @Test
+    fun `full sync stores the current wifi ssid`() = runTest {
+        every { networkStatus.currentWifiSsid() } returns "\"school-wifi\""
+        coEvery { transactionSyncManager.authenticate() } returns true
+
+        syncManager.start(listener, "sync", listOf())
+
+        verify { sharedPrefManager.setLastWifiSsid("\"school-wifi\"") }
+    }
+
+    @Test
+    fun `full sync leaves the last wifi ssid alone when not on wifi`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+
+        syncManager.start(listener, "sync", listOf())
+
+        verify(exactly = 0) { sharedPrefManager.setLastWifiSsid(any()) }
+    }
+
+    @Test
     fun `cancelBackgroundSync clears background sync and listener`() = runTest {
         // Suspend in authenticate so the background sync stays in-flight until we cancel it
         coEvery { transactionSyncManager.authenticate() } coAnswers { awaitCancellation() }
@@ -182,28 +212,22 @@ class SyncManagerTest {
 
     @Test
     fun `syncPerf logging is evaluated when isVerbose returns true`() = runTest {
-        io.mockk.mockkStatic(android.util.Log::class)
         every { syncTimeLogger.isVerbose } returns true
-        every { android.util.Log.d(any(), any()) } returns 0
-
         coEvery { transactionSyncManager.authenticate() } returns true
 
         syncManager.start(listener, "sync", listOf())
 
-        verify { android.util.Log.d("SyncPerf", match { it.contains("FULL SYNC STARTED") }) }
+        assertTrue(logs.entries(LogLevel.DEBUG, "SyncPerf").any { it.message.contains("FULL SYNC STARTED") })
     }
 
     @Test
     fun `syncPerf logging is skipped when isVerbose returns false`() = runTest {
-        io.mockk.mockkStatic(android.util.Log::class)
         every { syncTimeLogger.isVerbose } returns false
-        every { android.util.Log.d(any(), any()) } returns 0
-
         coEvery { transactionSyncManager.authenticate() } returns true
 
         syncManager.start(listener, "sync", listOf())
 
-        verify(exactly = 0) { android.util.Log.d("SyncPerf", any()) }
+        assertTrue(logs.entries(LogLevel.DEBUG, "SyncPerf").isEmpty())
     }
 
     @Test

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import androidx.room.RoomRawQuery
 import androidx.room.withTransaction
 import com.google.gson.JsonParser
 import io.mockk.coEvery
@@ -20,6 +21,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.data.room.boundArgs
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.CourseDao
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
@@ -134,7 +136,7 @@ class CoursesRepositoryImplTest {
 
     @Test
     fun `search filters query parts before fetching and sorts startsWith before contains`() = runTest {
-        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        val querySlot = slot<RoomRawQuery>()
         coEvery { courseDao.filterByTitleNormal(capture(querySlot)) } returns listOf(
             MyCourse(id = "1", courseId = "1", courseTitle = "Basic Math", courseTitleNormal = "basic math"),
             MyCourse(id = "3", courseId = "3", courseTitle = "Math 101", courseTitleNormal = "math 101")
@@ -165,21 +167,12 @@ class CoursesRepositoryImplTest {
 
     @Test
     fun `search escapes LIKE wildcards present in the query`() = runTest {
-        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        val querySlot = slot<RoomRawQuery>()
         coEvery { courseDao.filterByTitleNormal(capture(querySlot)) } returns emptyList()
 
         repository.search("100%_test")
 
-        val bindArgs = mutableMapOf<Int, Any?>()
-        querySlot.captured.bindTo(object : androidx.sqlite.db.SupportSQLiteProgram {
-            override fun bindNull(index: Int) { bindArgs[index] = null }
-            override fun bindLong(index: Int, value: Long) { bindArgs[index] = value }
-            override fun bindDouble(index: Int, value: Double) { bindArgs[index] = value }
-            override fun bindString(index: Int, value: String) { bindArgs[index] = value }
-            override fun bindBlob(index: Int, value: ByteArray) { bindArgs[index] = value }
-            override fun clearBindings() {}
-            override fun close() {}
-        })
+        val bindArgs = querySlot.captured.boundArgs()
 
         assertEquals("%100\\%\\_test%", bindArgs[1])
     }

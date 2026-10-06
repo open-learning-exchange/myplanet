@@ -16,11 +16,11 @@ import dagger.assisted.AssistedInject
 import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
-import okhttp3.ResponseBody
 import okio.Buffer
 import okio.buffer
 import okio.sink
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.data.api.StreamBody
 import org.ole.planet.myplanet.di.DownloadPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.DownloadResult
@@ -133,8 +133,8 @@ class DownloadWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun downloadFileBody(body: ResponseBody, url: String, index: Int, total: Int) {
-        val fileSize = body.contentLength()
+    private suspend fun downloadFileBody(body: StreamBody, url: String, index: Int, total: Int) {
+        val fileSize = body.contentLength
         val outputFile: File = FileUtils.getSDPathFromUrl(context, url)
         outputFile.parentFile?.mkdirs()
         var totalBytes: Long = 0

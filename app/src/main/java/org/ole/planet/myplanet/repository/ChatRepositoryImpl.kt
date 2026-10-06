@@ -5,12 +5,10 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.data.api.ChatApiService
+import org.ole.planet.myplanet.data.api.UploadBody
 import org.ole.planet.myplanet.data.room.dao.ChatDao
 import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.AiProvider
@@ -23,6 +21,7 @@ import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.ServerReachabilityProvider
@@ -51,9 +50,9 @@ class ChatRepositoryImpl @Inject constructor(
         return try {
             val chatData = ChatRequest(data = ContentData(user ?: "", query, aiProvider), save = true)
             val jsonContent = gson.toJson(chatData)
-            val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
+            val requestBody = UploadBody.TextContent(jsonContent, "application/json")
             val response = chatApiService.sendChatRequest(requestBody)
-            val responseBody = response.body()
+            val responseBody = response.body
             if (response.isSuccessful && responseBody != null && responseBody.status == "Success") {
                 val chatResponse = responseBody.chat ?: ""
                 val id = responseBody.couchDBResponse?.id ?: ""
@@ -64,8 +63,8 @@ class ChatRepositoryImpl @Inject constructor(
                     addProperty("aiProvider", aiProvider.name)
                     addProperty("user", user)
                     addProperty("title", query)
-                    addProperty("createdDate", Date().time)
-                    addProperty("updatedDate", Date().time)
+                    addProperty("createdDate", DateTimeUtils.nowMillis())
+                    addProperty("updatedDate", DateTimeUtils.nowMillis())
                     val conversationsArray = JsonArray()
                     val conversationObject = JsonObject().apply {
                         addProperty("query", query)
@@ -77,7 +76,7 @@ class ChatRepositoryImpl @Inject constructor(
                 saveNewChat(jsonObject)
                 ChatResult.Success(chatResponse, id, rev)
             } else {
-                ChatResult.Error(responseBody?.message ?: response.message() ?: "Request failed")
+                ChatResult.Error(responseBody?.message ?: response.message)
             }
         } catch (e: Exception) {
             ChatResult.Error(e.message ?: "Request failed")
@@ -94,9 +93,9 @@ class ChatRepositoryImpl @Inject constructor(
         return try {
             val continueChatData = ContinueChatRequest(data = Data(user ?: "", message, aiProvider, id, rev), save = true)
             val jsonContent = gson.toJson(continueChatData)
-            val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
+            val requestBody = UploadBody.TextContent(jsonContent, "application/json")
             val response = chatApiService.sendChatRequest(requestBody)
-            val responseBody = response.body()
+            val responseBody = response.body
             if (response.isSuccessful && responseBody != null && responseBody.status == "Success") {
                 val chatResponse = responseBody.chat ?: ""
                 val newRev = responseBody.couchDBResponse?.rev ?: rev
@@ -104,7 +103,7 @@ class ChatRepositoryImpl @Inject constructor(
                 ChatResult.Success(chatResponse, id, newRev)
             } else {
                 continueConversation(id, message, "", rev)
-                ChatResult.Error(responseBody?.message ?: response.message() ?: "Request failed")
+                ChatResult.Error(responseBody?.message ?: response.message)
             }
         } catch (e: Exception) {
             continueConversation(id, message, "", rev)
@@ -114,7 +113,7 @@ class ChatRepositoryImpl @Inject constructor(
 
     override suspend fun fetchAiProviders(serverUrl: String): Map<String, Boolean>? {
         val mapping = serverUrlMapper.processUrl(serverUrl)
-        serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+        serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager) { url ->
             reachabilityCheck(url)
         }
         return chatApiService.fetchAiProviders()
@@ -182,7 +181,7 @@ class ChatRepositoryImpl @Inject constructor(
                 conversations = conversationsArray.map {
                     gson.fromJson(it, Conversation::class.java)
                 }
-                lastUsed = Date().time
+                lastUsed = DateTimeUtils.nowMillis()
             }
         }
         chatDao.upsertAll(entities)
@@ -196,8 +195,8 @@ class ChatRepositoryImpl @Inject constructor(
             this.response = response
         }
         chatHistory.conversations = (chatHistory.conversations ?: emptyList()) + conversation
-        chatHistory.updatedDate = "${Date().time}"
-        chatHistory.lastUsed = Date().time
+        chatHistory.updatedDate = "${DateTimeUtils.nowMillis()}"
+        chatHistory.lastUsed = DateTimeUtils.nowMillis()
         if (!newRev.isNullOrEmpty()) {
             chatHistory._rev = newRev
         }

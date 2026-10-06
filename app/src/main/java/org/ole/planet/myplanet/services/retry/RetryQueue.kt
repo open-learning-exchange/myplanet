@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services.retry
 
-import android.util.Log
 import com.google.gson.JsonObject
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -8,6 +7,7 @@ import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.repository.RetryRepository
 import org.ole.planet.myplanet.services.upload.UploadError
+import org.ole.planet.myplanet.utils.AppLog
 
 @Singleton
 class RetryQueue @Inject constructor(
@@ -36,7 +36,7 @@ class RetryQueue @Inject constructor(
         userId: String? = null
     ) {
         if (!error.retryable) {
-            Log.d(TAG, "Skipping non-retryable error for item ${error.itemId}: ${error.message}")
+            AppLog.d(TAG, "Skipping non-retryable error for item ${error.itemId}: ${error.message}")
             return
         }
 
@@ -45,7 +45,7 @@ class RetryQueue @Inject constructor(
             uploadType, failure, payload.toString(), endpoint,
             httpMethod, dbId, modelClassName, userId
         )
-        Log.i(TAG, "RETRY_QUEUE: Recorded failure - type=$uploadType, itemId=${error.itemId}, error=${error.message}")
+        AppLog.i(TAG, "RETRY_QUEUE: Recorded failure - type=$uploadType, itemId=${error.itemId}, error=${error.message}")
     }
 
     suspend fun getPendingOperations(): List<RetryOperation> {
@@ -58,7 +58,7 @@ class RetryQueue @Inject constructor(
 
     suspend fun markCompleted(operationId: String) {
         retryRepository.markCompleted(operationId)
-        Log.d(TAG, "Marked operation $operationId as completed")
+        AppLog.d(TAG, "Marked operation $operationId as completed")
     }
 
     suspend fun markFailed(operationId: String, errorMessage: String?, httpCode: Int?) {

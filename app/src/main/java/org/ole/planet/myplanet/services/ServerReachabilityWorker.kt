@@ -8,7 +8,6 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
@@ -83,9 +82,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
                 val timeSinceLastNotification = currentTime - lastNotificationTime
                 if (timeSinceLastNotification > NOTIFICATION_COOLDOWN_MS) {
                     showServerNotification()
-                    sharedPrefManager.rawPreferences.edit {
-                        putLong(LAST_NOTIFICATION_TIME_KEY, currentTime)
-                    }
+                    sharedPrefManager.setRawLong(LAST_NOTIFICATION_TIME_KEY, currentTime)
                 }
                 checkAvailableServerAndUpload()
             }
@@ -109,7 +106,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
                 }
 
                 if (alternativeReachable) {
-                    serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+                    serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager) { url ->
                         isServerReachable(url)
                     }
 
@@ -119,9 +116,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
                         val timeSinceLastNotification = currentTime - lastNotificationTime
                         if (timeSinceLastNotification > NOTIFICATION_COOLDOWN_MS) {
                             showServerNotification()
-                            sharedPrefManager.rawPreferences.edit {
-                                putLong(LAST_NOTIFICATION_TIME_KEY, currentTime)
-                            }
+                            sharedPrefManager.setRawLong(LAST_NOTIFICATION_TIME_KEY, currentTime)
                         }
                         checkAvailableServerAndUpload()
                     }
@@ -185,8 +180,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
             if (!primaryAvailable && alternativeAvailable) {
                 mapping.alternativeUrl?.let { alternativeUrl ->
                     val uri = updateUrl.toUri()
-                    val editor = sharedPrefManager.rawPreferences.edit()
-                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, sharedPrefManager.rawPreferences)
+                    serverUrlMapper.updateUrlPreferences(sharedPrefManager, uri, alternativeUrl, mapping.primaryUrl)
                 }
             }
             uploadSubmissions()

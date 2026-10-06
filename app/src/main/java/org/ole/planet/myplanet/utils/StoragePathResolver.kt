@@ -5,6 +5,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.getAttachmentFile
 
 class StoragePathResolver @Inject constructor(
     @ApplicationContext private val context: Context
@@ -13,5 +14,5 @@ class StoragePathResolver @Inject constructor(
     fun resolveOleDirectory(): File = File(FileUtils.getOlePath(context))
 
     fun resolveTeamAttachment(teamId: String?, imageName: String?): File? =
-        MyTeam.getAttachmentFile(context, teamId, imageName)
+        MyTeam.getAttachmentFile(FileUtils.getOlePath(context), teamId, imageName)
 }

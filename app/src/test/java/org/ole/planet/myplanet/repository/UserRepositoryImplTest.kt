@@ -1,8 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import android.content.SharedPreferences
-import android.util.Log
 import com.google.gson.JsonObject
 import dagger.Lazy
 import io.mockk.Runs
@@ -12,11 +9,9 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkObject
-import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -35,29 +30,32 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.ApiResponse
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.LearnerRegistrationInfo
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
+import org.ole.planet.myplanet.utils.AppInfo
+import org.ole.planet.myplanet.utils.CredentialStore
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.VersionUtils
-import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserRepositoryImplTest {
 
-    private lateinit var settings: SharedPreferences
     private lateinit var sharedPrefManager: SharedPrefManager
-    private lateinit var apiInterface: ApiInterface
+    private lateinit var planetApi: PlanetApi
     private lateinit var uploadToShelfService: Lazy<UploadToShelfService>
-    private lateinit var context: Context
+    private lateinit var credentialStore: CredentialStore
+    private lateinit var appInfo: AppInfo
+    private lateinit var stringProvider: StringProvider
     private lateinit var configurationsRepository: ConfigurationsRepository
     private lateinit var appScope: CoroutineScope
     private lateinit var dispatcherProvider: DispatcherProvider
@@ -85,15 +83,12 @@ class UserRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "mock_unique_id"
 
-        mockkStatic(Log::class)
-        every { Log.e(any(), any()) } returns 0
-        every { Log.e(any(), any(), any()) } returns 0
-
-        settings = mockk(relaxed = true)
         sharedPrefManager = mockk(relaxed = true)
-        apiInterface = mockk(relaxed = true)
+        planetApi = mockk(relaxed = true)
         uploadToShelfService = mockk(relaxed = true)
-        context = mockk(relaxed = true)
+        credentialStore = mockk(relaxed = true)
+        appInfo = mockk(relaxed = true)
+        stringProvider = mockk(relaxed = true)
         configurationsRepository = mockk(relaxed = true)
         appScope = TestScope(testDispatcher)
 
@@ -125,13 +120,12 @@ class UserRepositoryImplTest {
         deviceNameProvider = mockk(relaxed = true)
 
         repository = UserRepositoryImpl(
-            settings,
             sharedPrefManager,
-            apiInterface,
+            planetApi,
             resourcesRepositoryLazy,
             coursesRepositoryLazy,
             uploadToShelfService,
-            context,
+            credentialStore,
             configurationsRepository,
             appScope,
             dispatcherProvider,
@@ -142,7 +136,9 @@ class UserRepositoryImplTest {
             mockk(relaxed = true),
             userDao,
             mockk(relaxed = true),
-            deviceNameProvider
+            deviceNameProvider,
+            appInfo,
+            stringProvider
         )
     }
 
@@ -150,7 +146,6 @@ class UserRepositoryImplTest {
     fun tearDown() {
         unmockkObject(UrlUtils)
         unmockkObject(NetworkUtils)
-        unmockkStatic(Log::class)
     }
 
     @Test
@@ -224,12 +219,12 @@ class UserRepositoryImplTest {
         val errorMessage = "User already exists"
 
         coEvery { configurationsRepository.checkServerAvailability() } returns true
-        every { context.getString(R.string.unable_to_create_user_user_already_exists) } returns errorMessage
+        every { stringProvider.getString(R.string.unable_to_create_user_user_already_exists) } returns errorMessage
 
         // Mock API response to simulate user already exists
         val existsResponseBody = buildJsonObject { put("_id", "some_id") }
-        val response = Response.success(existsResponseBody)
-        coEvery { apiInterface.getJsonObject("Basic auth", userUrl) } returns response
+        val response = ApiResponse.success(existsResponseBody)
+        coEvery { planetApi.getJsonObject("Basic auth", userUrl) } returns response
 
         val result = repository.becomeMember(userObj)
         advanceUntilIdle()
@@ -247,27 +242,27 @@ class UserRepositoryImplTest {
         val id = "new_user_id"
 
         coEvery { configurationsRepository.checkServerAvailability() } returns true
-        every { context.getString(R.string.user_created_successfully) } returns successMessage
+        every { stringProvider.getString(R.string.user_created_successfully) } returns successMessage
 
         // 1. User doesn't exist check
         val notExistsResponseBody = KJsonObject(emptyMap())
-        val notFoundResponse = Response.success(notExistsResponseBody)
-        coEvery { apiInterface.getJsonObject("Basic auth", userUrl) } returns notFoundResponse
+        val notFoundResponse = ApiResponse.success(notExistsResponseBody)
+        coEvery { planetApi.getJsonObject("Basic auth", userUrl) } returns notFoundResponse
 
         // 2. User creation mock
         val createdResponseBody = buildJsonObject { put("id", id) }
-        val createdResponse = Response.success(createdResponseBody)
+        val createdResponse = ApiResponse.success(createdResponseBody)
         coEvery {
-            apiInterface.putDoc(null, "application/json", userUrl, buildJsonObject { put("name", userName) })
+            planetApi.putDoc(null, "application/json", userUrl, buildJsonObject { put("name", userName) })
         } returns createdResponse
 
         // 3. User save to db fetch
         val userFetchUrl = "http://test.url/_users/$id"
-        val userFetchResponse = Response.success(buildJsonObject {
+        val userFetchResponse = ApiResponse.success(buildJsonObject {
             put("_id", id)
             put("name", userName)
         })
-        coEvery { apiInterface.getJsonObject("Basic auth", userFetchUrl) } returns userFetchResponse
+        coEvery { planetApi.getJsonObject("Basic auth", userFetchUrl) } returns userFetchResponse
 
         // Stub saveUser to return a mocked UserEntity instead of attempting DB operations
         val spyRepository = spyk(repository)
@@ -431,9 +426,8 @@ class UserRepositoryImplTest {
     }
 
     @Test
-    fun `createMember carries deviceNameProvider device name and injected context android id`() = runTest(testDispatcher) {
-        mockkObject(VersionUtils)
-        every { VersionUtils.getAndroidId(any()) } returns "mock_android_id"
+    fun `createMember carries deviceNameProvider device name and appInfo android id`() = runTest(testDispatcher) {
+        every { appInfo.androidId() } returns "mock_android_id"
         every { deviceNameProvider.getCustomDeviceName() } returns "mock_device_name"
 
         val spyRepository = spyk(repository)
@@ -460,10 +454,8 @@ class UserRepositoryImplTest {
         val builtJson = jsonSlot.captured
         assertEquals("mock_android_id", builtJson.get("uniqueAndroidId").asString)
         assertEquals("mock_device_name", builtJson.get("customDeviceName").asString)
-        verify { VersionUtils.getAndroidId(context) }
+        verify { appInfo.androidId() }
         verify { deviceNameProvider.getCustomDeviceName() }
-
-        unmockkObject(VersionUtils)
     }
 
     @Test
@@ -495,11 +487,11 @@ class UserRepositoryImplTest {
         coEvery { achievementDao.getById("user1@planet1") } returns achievement
 
         val repo = UserRepositoryImpl(
-            settings, sharedPrefManager, apiInterface, resourcesRepositoryLazy,
-            mockk(relaxed = true), uploadToShelfService, context, configurationsRepository,
+            sharedPrefManager, planetApi, resourcesRepositoryLazy,
+            mockk(relaxed = true), uploadToShelfService, credentialStore, configurationsRepository,
             appScope, dispatcherProvider, activitiesRepositoryLazy, eventsRepositoryLazy,
             mockk(relaxed = true), mockk(relaxed = true), achievementDao, userDao,
-            mockk(relaxed = true), deviceNameProvider
+            mockk(relaxed = true), deviceNameProvider, appInfo, stringProvider
         )
 
         repo.getAchievementData("user1", "planet1")
@@ -513,8 +505,8 @@ class UserRepositoryImplTest {
             id = "user1"
             _id = "org.couchdb.user:user1"
         }
-        val response = Response.success(buildJsonObject { put("_rev", "1-abc") })
-        coEvery { apiInterface.getJsonObject(any(), any()) } returns response
+        val response = ApiResponse.success(buildJsonObject { put("_rev", "1-abc") })
+        coEvery { planetApi.getJsonObject(any(), any()) } returns response
         coEvery { eventsRepository.getMeetupsForUser("user1") } returns emptyList()
 
         repository.uploadShelfData(user)
@@ -526,11 +518,11 @@ class UserRepositoryImplTest {
     fun `checkIfUserExists properly encodes password containing special characters`() = runTest(testDispatcher) {
         mockkObject(SecurePrefs)
         try {
-            every { SecurePrefs.getPassword(context, settings) } returns "p\$a@s\\s"
+            every { credentialStore.getPassword() } returns "p\$a@s\\s"
             every { UrlUtils.getUrl() } returns "http://admin:secret@localhost:5984"
 
             val urlSlot = slot<String>()
-            coEvery { apiInterface.getJsonObject(any(), capture(urlSlot)) } returns Response.success(buildJsonObject { put("ok", true) })
+            coEvery { planetApi.getJsonObject(any(), capture(urlSlot)) } returns ApiResponse.success(buildJsonObject { put("ok", true) })
 
             val user = UserEntity().apply { name = "john" }
             repository.checkIfUserExists("Basic auth", user)
@@ -551,11 +543,11 @@ class UserRepositoryImplTest {
     fun `checkIfUserExists matches expected URL output for plain alphanumeric password`() = runTest(testDispatcher) {
         mockkObject(SecurePrefs)
         try {
-            every { SecurePrefs.getPassword(context, settings) } returns "plainpass123"
+            every { credentialStore.getPassword() } returns "plainpass123"
             every { UrlUtils.getUrl() } returns "http://admin:secret@localhost:5984"
 
             val urlSlot = slot<String>()
-            coEvery { apiInterface.getJsonObject(any(), capture(urlSlot)) } returns Response.success(buildJsonObject { put("ok", true) })
+            coEvery { planetApi.getJsonObject(any(), capture(urlSlot)) } returns ApiResponse.success(buildJsonObject { put("ok", true) })
 
             val user = UserEntity().apply { name = "john" }
             repository.checkIfUserExists("Basic auth", user)
@@ -570,7 +562,7 @@ class UserRepositoryImplTest {
 
     @Test
     fun `fetchUserSecurityData rethrows CancellationException`() = runTest(testDispatcher) {
-        coEvery { apiInterface.getJsonObject(any(), any()) } throws CancellationException("Cancelled")
+        coEvery { planetApi.getJsonObject(any(), any()) } throws CancellationException("Cancelled")
 
         try {
             repository.fetchUserSecurityData("john")

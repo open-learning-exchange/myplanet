@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.onboarding
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
@@ -19,6 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityOnboardingBinding
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.OnboardingItem
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -43,6 +45,9 @@ class OnboardingActivity : AppCompatActivity() {
     lateinit var prefData: SharedPrefManager
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
+    @Inject
+    @AppPreferences
+    lateinit var appPreferences: SharedPreferences
     private var pageChangeListener: ViewPager.OnPageChangeListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -93,8 +98,8 @@ class OnboardingActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val (savedUser, savedPass) = withContext(dispatcherProvider.io) {
                 Pair(
-                    SecurePrefs.getUserName(this@OnboardingActivity, prefData.rawPreferences),
-                    SecurePrefs.getPassword(this@OnboardingActivity, prefData.rawPreferences)
+                    SecurePrefs.getUserName(this@OnboardingActivity, appPreferences),
+                    SecurePrefs.getPassword(this@OnboardingActivity, appPreferences)
                 )
             }
             if (!savedUser.isNullOrEmpty() && !savedPass.isNullOrEmpty() && !prefData.isLoggedIn()) {

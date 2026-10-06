@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.SharedPreferences
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -15,26 +14,22 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.MyLife
+import org.ole.planet.myplanet.utils.KeyValueStore
 
 class LifeCacheTest {
 
-    private lateinit var mockSharedPreferences: SharedPreferences
-    private lateinit var mockEditor: SharedPreferences.Editor
+    private lateinit var mockSharedPreferences: KeyValueStore
     private lateinit var json: Json
     private lateinit var lifeCache: LifeCache
 
     @Before
     fun setUp() {
         mockSharedPreferences = mockk(relaxed = true)
-        mockEditor = mockk(relaxed = true)
         json = Json {
             ignoreUnknownKeys = true
             isLenient = true
             coerceInputValues = true
         }
-
-        every { mockSharedPreferences.edit() } returns mockEditor
-        every { mockEditor.putString(any(), any()) } returns mockEditor
 
         lifeCache = LifeCache(mockSharedPreferences, json)
     }
@@ -92,12 +87,12 @@ class LifeCacheTest {
         }
 
         val jsonSlot = slot<String>()
-        every { mockEditor.putString(any(), capture(jsonSlot)) } returns mockEditor
+        every { mockSharedPreferences.putString(any(), capture(jsonSlot)) } returns Unit
 
         lifeCache.write("user_round_trip", listOf(item1))
 
         val writtenJson = jsonSlot.captured
-        val sharedPrefs = mockk<SharedPreferences>(relaxed = true)
+        val sharedPrefs = mockk<KeyValueStore>(relaxed = true)
         val cacheForRead = LifeCache(sharedPrefs, json)
         every { sharedPrefs.getString("myLifeCache_user_round_trip", null) } returns writtenJson
 
@@ -131,11 +126,11 @@ class LifeCacheTest {
         val keySlot = slot<String>()
         val jsonSlot = slot<String>()
 
-        every { mockEditor.putString(capture(keySlot), capture(jsonSlot)) } returns mockEditor
+        every { mockSharedPreferences.putString(capture(keySlot), capture(jsonSlot)) } returns Unit
 
         lifeCache.write("user1", listOf(item1))
 
-        verify(exactly = 1) { mockEditor.putString(any(), any()) }
+        verify(exactly = 1) { mockSharedPreferences.putString(any(), any()) }
         assertEquals("myLifeCache_user1", keySlot.captured)
 
         val readBack = json.decodeFromString<List<CachedMyLifeItem>>(jsonSlot.captured)
@@ -149,7 +144,7 @@ class LifeCacheTest {
     @Test
     fun write_handlesFallbackCacheKey() {
         val keySlot = slot<String>()
-        every { mockEditor.putString(capture(keySlot), any()) } returns mockEditor
+        every { mockSharedPreferences.putString(capture(keySlot), any()) } returns Unit
 
         lifeCache.write("--", emptyList())
 

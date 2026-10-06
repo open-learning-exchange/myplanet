@@ -1,12 +1,7 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import android.content.SharedPreferences
-import android.util.Log
-import androidx.core.content.edit
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -20,30 +15,35 @@ import kotlinx.serialization.json.jsonObject
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
+import org.ole.planet.myplanet.di.SurveyReminderPreferences
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.insertCourseStepsExams
+import org.ole.planet.myplanet.model.insertExamQuestions
+import org.ole.planet.myplanet.model.serializeQuestions
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.AppLog
+import org.ole.planet.myplanet.utils.DateFormatter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KeyValueStore
+import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.TimeProvider
-import org.ole.planet.myplanet.utils.TimeUtils.formatDate
-import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
 class SurveysRepositoryImpl @Inject constructor(
-    @param:ApplicationContext private val context: Context,
-    private val apiInterface: ApiInterface,
+    private val planetApi: PlanetApi,
     private val serverUrlMapper: ServerUrlMapper,
     private val userSessionManager: UserSessionManager,
     private val sharedPrefManager: SharedPrefManager,
@@ -53,15 +53,13 @@ class SurveysRepositoryImpl @Inject constructor(
     private val questionDao: QuestionDao,
     private val submissionDao: SubmissionDao,
     private val teamsRepository: dagger.Lazy<TeamsRepository>,
+    private val stringProvider: StringProvider,
+    @param:SurveyReminderPreferences private val reminderPrefs: KeyValueStore,
+    private val dateFormatter: DateFormatter,
 ) : SurveysRepository {
-
-    private val reminderPrefs: SharedPreferences by lazy {
-        context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE)
-    }
 
     companion object {
         private const val TAG = "SurveysRepository"
-        private const val PREF_SURVEY_REMINDERS = "survey_reminders"
         private const val KEY_LAST_SURVEY_DIALOG_SHOWN = "last_survey_dialog_shown"
     }
 
@@ -326,16 +324,16 @@ class SurveysRepositoryImpl @Inject constructor(
             val submissionCount = surveySubmissions.size
             surveyId to SurveyInfo(
                 surveyId = surveyId,
-                submissionCount = context.resources.getQuantityString(
+                submissionCount = stringProvider.getQuantityString(
                     R.plurals.survey_taken_count,
                     submissionCount,
                     submissionCount
                 ),
                 lastSubmissionDate = surveySubmissions.maxByOrNull { it.startTime }
                     ?.startTime
-                    ?.let { getFormattedDateWithTime(it) }
+                    ?.let { dateFormatter.formatDateWithTime(it) }
                     .orEmpty(),
-                creationDate = formatDate(survey.createdDate, "MMM dd, yyyy")
+                creationDate = dateFormatter.format(survey.createdDate, "MMM dd, yyyy")
             )
         }.toMap()
     }
@@ -411,10 +409,10 @@ class SurveysRepositoryImpl @Inject constructor(
             val toShow = mutableListOf<String>()
             val toRemove = mutableListOf<String>()
 
-            for (entry in reminderPrefs.all) {
-                if (entry.key.startsWith("reminder_time_")) {
-                    val surveyIds = entry.key.removePrefix("reminder_time_")
-                    val reminderTime = reminderPrefs.getLong(entry.key, 0)
+            for (key in reminderPrefs.keys()) {
+                if (key.startsWith("reminder_time_")) {
+                    val surveyIds = key.removePrefix("reminder_time_")
+                    val reminderTime = reminderPrefs.getLong(key, 0)
                     if (reminderTime <= currentTime) {
                         toShow.add(surveyIds)
                         toRemove.add(surveyIds)
@@ -443,14 +441,12 @@ class SurveysRepositoryImpl @Inject constructor(
         val reminderTime = timeProvider.now() + timeUnit.toMillis(value.toLong())
         reminderPrefs.edit {
             putLong("reminder_time_$surveyIds", reminderTime)
-                .putString("reminder_surveys_$surveyIds", surveyIds)
+            putString("reminder_surveys_$surveyIds", surveyIds)
         }
     }
 
     override suspend fun setLastSurveyDialogShown(time: Long) {
-        reminderPrefs.edit {
-            putLong(KEY_LAST_SURVEY_DIALOG_SHOWN, time)
-        }
+        reminderPrefs.putLong(KEY_LAST_SURVEY_DIALOG_SHOWN, time)
     }
 
     override suspend fun getLastSurveyDialogShown(): Long {
@@ -518,12 +514,12 @@ class SurveysRepositoryImpl @Inject constructor(
     private suspend fun fetchPublicSurveyFrom(baseUrl: String, teamId: String, surveyId: String): JsonObject? {
         return try {
             val url = "${baseUrl.trimEnd('/')}/api/public/surveys/$teamId/$surveyId"
-            val response = apiInterface.getJsonObject(null, url)
-            if (response.isSuccessful) response.body()?.toGson() else null
+            val response = planetApi.getJsonObject(null, url)
+            if (response.isSuccessful) response.body?.toGson() else null
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.w(TAG, "fetchPublicSurveyFrom failed", e)
+            AppLog.w(TAG, "fetchPublicSurveyFrom failed", e)
             null
         }
     }
@@ -535,11 +531,11 @@ class SurveysRepositoryImpl @Inject constructor(
                 add("answers", answers)
                 respondent?.let { add("user", it) }
             }
-            apiInterface.postDoc(null, "application/json", url, body.toKotlinx().jsonObject).isSuccessful
+            planetApi.postDoc(null, "application/json", url, body.toKotlinx().jsonObject).isSuccessful
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.w(TAG, "submitPublicSurveyTo failed", e)
+            AppLog.w(TAG, "submitPublicSurveyTo failed", e)
             false
         }
     }

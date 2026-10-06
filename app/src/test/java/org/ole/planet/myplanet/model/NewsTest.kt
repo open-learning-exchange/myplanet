@@ -17,9 +17,10 @@ import org.junit.Test
 
 class NewsTest {
 
-    // News logs its parse-failure fallbacks through android.util.Log, and GsonUtils logs on its
-    // own fallback path, neither of which has a JVM implementation in a plain unit test. The
-    // malformed-input cases below reach both, so Log needs stubbing. Mirrors HealthExaminationTest.
+    // News logs its parse-failure fallbacks through AppLog, which drops them with no sink
+    // installed, but GsonUtils still logs on its own fallback path through android.util.Log,
+    // which has no JVM implementation in a plain unit test. The malformed-input cases below reach
+    // it, so Log needs stubbing. Mirrors HealthExaminationTest.
     @Before
     fun setUp() {
         mockkStatic(Log::class)

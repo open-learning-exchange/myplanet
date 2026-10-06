@@ -18,9 +18,6 @@ import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import okhttp3.MediaType
-import okhttp3.ResponseBody
-import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
 import okio.BufferedSource
 import okio.Source
@@ -34,6 +31,8 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.data.api.StreamBody
+import org.ole.planet.myplanet.data.api.toStreamBody
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.FileUtils
@@ -58,9 +57,9 @@ class DownloadServiceResumeTest {
     private class SingleShotThrowingBody(
         private val goodBytes: ByteArray,
         private val declaredContentLength: Long
-    ) : ResponseBody() {
-        override fun contentType(): MediaType? = null
-        override fun contentLength(): Long = declaredContentLength
+    ) : StreamBody {
+        override val contentLength: Long = declaredContentLength
+        override fun close() {}
         override fun source(): BufferedSource {
             var delivered = false
             val source = object : Source {
@@ -108,10 +107,10 @@ class DownloadServiceResumeTest {
         return service
     }
 
-    private fun invokeDownloadFile(service: DownloadService, body: ResponseBody, isPartial: Boolean, validator: String? = null) {
+    private fun invokeDownloadFile(service: DownloadService, body: StreamBody, isPartial: Boolean, validator: String? = null) {
         val method = DownloadService::class.java.getDeclaredMethod(
             "downloadFile",
-            ResponseBody::class.java,
+            StreamBody::class.java,
             String::class.java,
             Boolean::class.javaPrimitiveType,
             String::class.java,
@@ -157,7 +156,7 @@ class DownloadServiceResumeTest {
         validatorFile.writeText("\"etag-123\"")
 
         val remainingBytes = "second-half".toByteArray()
-        val body = remainingBytes.toResponseBody(null)
+        val body = remainingBytes.toStreamBody()
 
         val service = newService()
         invokeDownloadFile(service, body, true, "\"etag-123\"")
@@ -171,7 +170,7 @@ class DownloadServiceResumeTest {
     @Test
     fun `downloadFile persists the response validator so a later resume can send If-Range`() {
         val service = newService()
-        val body = "whole-file".toByteArray().toResponseBody(null)
+        val body = "whole-file".toByteArray().toStreamBody()
 
         try {
             invokeDownloadFile(service, body, false, "\"fresh-etag\"")
@@ -220,7 +219,7 @@ class DownloadServiceResumeTest {
         tempFile.writeBytes(staleBytes)
 
         val fullBytes = "brand-new-full-file".toByteArray()
-        val body = fullBytes.toResponseBody(null)
+        val body = fullBytes.toStreamBody()
 
         val service = newService()
         invokeDownloadFile(service, body, false)
@@ -255,7 +254,7 @@ class DownloadServiceResumeTest {
         tempFile.parentFile?.mkdirs()
         tempFile.writeBytes(completeBytes)
 
-        val body = ByteArray(0).toResponseBody(null)
+        val body = ByteArray(0).toStreamBody()
 
         val service = newService()
         invokeDownloadFile(service, body, true)

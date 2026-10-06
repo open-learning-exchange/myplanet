@@ -1,19 +1,12 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import android.content.SharedPreferences
 import android.text.TextUtils
-import android.util.Log
-import androidx.core.content.edit
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
 import java.net.URLEncoder
 import java.text.Normalizer
-import java.util.Calendar
-import java.util.Date
 import java.util.UUID
 import java.util.regex.Pattern
 import javax.inject.Inject
@@ -34,12 +27,11 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.data.room.dao.AchievementDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.UserDao
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.AchievementData
@@ -48,19 +40,28 @@ import org.ole.planet.myplanet.model.LearnerRegistrationInfo
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.addImageUrl
+import org.ole.planet.myplanet.model.fromJson
+import org.ole.planet.myplanet.model.getMyMeetUpIds
+import org.ole.planet.myplanet.model.serialize
+import org.ole.planet.myplanet.model.setAchievements
+import org.ole.planet.myplanet.model.setReferences
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter
+import org.ole.planet.myplanet.utils.AppInfo
+import org.ole.planet.myplanet.utils.AppLog
+import org.ole.planet.myplanet.utils.CredentialStore
+import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.RetryUtils
-import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
-import org.ole.planet.myplanet.utils.VersionUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
@@ -68,13 +69,12 @@ import org.ole.planet.myplanet.utils.toSyncDocuments
 
 @Singleton
 class UserRepositoryImpl @Inject constructor(
-    @param:AppPreferences private val settings: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
-    private val apiInterface: ApiInterface,
+    private val planetApi: PlanetApi,
     private val resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository>,
     private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>,
     private val uploadToShelfService: Lazy<UploadToShelfService>,
-    @param:ApplicationContext private val context: Context,
+    private val credentialStore: CredentialStore,
     private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val appScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
@@ -85,7 +85,9 @@ class UserRepositoryImpl @Inject constructor(
     private val achievementDao: AchievementDao,
     private val userDao: UserDao,
     private val realtimeSyncManager: RealtimeSyncManager,
-    private val deviceNameProvider: DeviceNameProvider
+    private val deviceNameProvider: DeviceNameProvider,
+    private val appInfo: AppInfo,
+    private val stringProvider: StringProvider
 ) : UserRepository, UserSyncRepository {
     override val achievementUpdates: Flow<Unit> = realtimeSyncManager.dataUpdateFlow
         .filter { it.table == "achievements" && it.shouldRefreshUI }
@@ -195,7 +197,7 @@ class UserRepositoryImpl @Inject constructor(
         return userDao.getPendingSyncUsers(limit)
     }
 
-    private fun applyJsonToUser(jsonDoc: JsonObject?, user: UserEntity, settings: SharedPreferences) {
+    private fun applyJsonToUser(jsonDoc: JsonObject?, user: UserEntity) {
         if (jsonDoc == null) return
 
         val planetCodes = GsonUtils.getString("planetCode", jsonDoc)
@@ -289,7 +291,7 @@ class UserRepositoryImpl @Inject constructor(
         }
 
         if (planetCodes.isNotEmpty()) {
-            settings.edit { putString("planetCode", planetCodes) }
+            sharedPrefManager.setPlanetCode(planetCodes)
         }
     }
 
@@ -325,7 +327,7 @@ class UserRepositoryImpl @Inject constructor(
                 }
                 ?: UserEntity().apply { this.id = id }
 
-            applyJsonToUser(jsonDoc, user, settings)
+            applyJsonToUser(jsonDoc, user)
             user
         } catch (err: Exception) {
             err.printStackTrace()
@@ -370,7 +372,7 @@ class UserRepositoryImpl @Inject constructor(
     ): UserEntity? {
         if (jsonDoc == null) return null
         val user = buildUserFromJson(jsonDoc) ?: run {
-            Log.e("UserRepositoryImpl", "Failed to save user: unable to build user model")
+            AppLog.e("UserRepositoryImpl", "Failed to save user: unable to build user model")
             return null
         }
         key?.let { user.key = it }
@@ -382,11 +384,11 @@ class UserRepositoryImpl @Inject constructor(
         try {
             val userDocUrl = "${UrlUtils.getUrl()}/tablet_users/org.couchdb.user:$name"
             val response = withContext(dispatcherProvider.io) {
-                apiInterface.getJsonObject(UrlUtils.header, userDocUrl)
+                planetApi.getJsonObject(UrlUtils.header, userDocUrl)
             }
 
-            if (response.isSuccessful && response.body() != null) {
-                val userDoc = response.body()?.toGson()
+            if (response.isSuccessful && response.body != null) {
+                val userDoc = response.body?.toGson()
                 val derivedKey = userDoc?.get("derived_key")?.asString
                 val salt = userDoc?.get("salt")?.asString
                 val passwordScheme = userDoc?.get("password_scheme")?.asString
@@ -526,7 +528,7 @@ class UserRepositoryImpl @Inject constructor(
             addProperty("middleName", user.mName)
             addProperty("password", user.password)
             addProperty("isUserAdmin", false)
-            addProperty("joinDate", Calendar.getInstance().timeInMillis)
+            addProperty("joinDate", DateTimeUtils.nowMillis())
             addProperty("email", user.email)
             addProperty("planetCode", sharedPrefManager.getPlanetCode())
             addProperty("parentCode", sharedPrefManager.getParentCode())
@@ -538,7 +540,7 @@ class UserRepositoryImpl @Inject constructor(
             addProperty("type", "user")
             addProperty("betaEnabled", false)
             addDocumentOrigin()
-            addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context))
+            addProperty("uniqueAndroidId", appInfo.androidId())
             addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
             val roles = JsonArray().apply { add("learner") }
             add("roles", roles)
@@ -557,16 +559,16 @@ class UserRepositoryImpl @Inject constructor(
                 val userUrl = "${UrlUtils.getUrl()}/_users/org.couchdb.user:$userName"
 
                 val existsResponse = withContext(dispatcherProvider.io) {
-                    apiInterface.getJsonObject(header, userUrl)
+                    planetApi.getJsonObject(header, userUrl)
                 }
 
-                if (existsResponse.isSuccessful && existsResponse.body()?.toGson()?.has("_id") == true) {
-                    Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
+                if (existsResponse.isSuccessful && existsResponse.body?.toGson()?.has("_id") == true) {
+                    Pair(false, stringProvider.getString(R.string.unable_to_create_user_user_already_exists))
                 } else {
                     val createResponse = withContext(dispatcherProvider.io) {
-                        apiInterface.putDoc(null, "application/json", userUrl, obj.toKotlinx().jsonObject)
+                        planetApi.putDoc(null, "application/json", userUrl, obj.toKotlinx().jsonObject)
                     }
-                    val createBody = createResponse.body()?.toGson()
+                    val createBody = createResponse.body?.toGson()
 
                     if (createResponse.isSuccessful && createBody?.has("id") == true) {
                         val id = createBody.get("id")?.asString ?: ""
@@ -577,35 +579,35 @@ class UserRepositoryImpl @Inject constructor(
 
                         val result = saveUserToDb(id, obj)
                         if (result.isSuccess) {
-                            Pair(true, context.getString(R.string.user_created_successfully))
+                            Pair(true, stringProvider.getString(R.string.user_created_successfully))
                         } else {
-                            Pair(false, context.getString(R.string.unable_to_save_user_please_sync))
+                            Pair(false, stringProvider.getString(R.string.unable_to_save_user_please_sync))
                         }
                     } else {
-                        Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
+                        Pair(false, stringProvider.getString(R.string.unable_to_create_user_user_already_exists))
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
+                Pair(false, stringProvider.getString(R.string.unable_to_create_user_user_already_exists))
             }
         } else {
             val existingUser = getUserByName(userName)
             if (existingUser != null && existingUser._id?.startsWith("guest") != true) {
-                return Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
+                return Pair(false, stringProvider.getString(R.string.unable_to_create_user_user_already_exists))
             }
 
             val keyString = AndroidDecrypter.generateKey()
             val iv = AndroidDecrypter.generateIv()
             saveUser(obj, keyString, iv)
-            return Pair(true, context.getString(R.string.not_connect_to_planet_created_user_offline))
+            return Pair(true, stringProvider.getString(R.string.not_connect_to_planet_created_user_offline))
         }
     }
 
     private suspend fun uploadToShelf(obj: JsonObject) {
         try {
             val url = UrlUtils.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString
-            apiInterface.putDoc(null, "application/json", url, JsonObject().toKotlinx().jsonObject)
+            planetApi.putDoc(null, "application/json", url, JsonObject().toKotlinx().jsonObject)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -614,7 +616,7 @@ class UserRepositoryImpl @Inject constructor(
     private suspend fun saveUserToDb(id: String, obj: JsonObject): Result<UserEntity?> {
         return try {
             val userModel = withTimeout(20000) {
-                val response = apiInterface.getJsonObject(
+                val response = planetApi.getJsonObject(
                     UrlUtils.header,
                     "${UrlUtils.getUrl()}/_users/$id"
                 )
@@ -622,7 +624,7 @@ class UserRepositoryImpl @Inject constructor(
                 ensureActive()
 
                 if (response.isSuccessful) {
-                    response.body()?.toGson()?.let { saveUser(it, null, null) }
+                    response.body?.toGson()?.let { saveUser(it, null, null) }
                 } else {
                     null
                 }
@@ -647,9 +649,9 @@ class UserRepositoryImpl @Inject constructor(
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
         val header = UrlUtils.basicAuthHeader(obj["name"].asString, obj["password"].asString)
         try {
-            val response = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")
-            if (response.body() != null) {
-                val jsonObject = response.body()?.toGson()
+            val response = planetApi.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")
+            if (response.body != null) {
+                val jsonObject = response.body?.toGson()
                 val members = jsonObject?.getAsJsonObject("members")
                 val rolesArray: JsonArray = if (members?.has("roles") == true) {
                     members.getAsJsonArray("roles")
@@ -659,7 +661,7 @@ class UserRepositoryImpl @Inject constructor(
                 rolesArray.add("health")
                 members?.add("roles", rolesArray)
                 jsonObject?.add("members", members)
-                apiInterface.putDoc(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", jsonObject?.toKotlinx()?.jsonObject)
+                planetApi.putDoc(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", jsonObject?.toKotlinx()?.jsonObject)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -682,7 +684,7 @@ class UserRepositoryImpl @Inject constructor(
 
         ob.addProperty("key", keyString)
         ob.addProperty("iv", iv)
-        ob.addProperty("createdOn", Date().time)
+        ob.addProperty("createdOn", DateTimeUtils.nowMillis())
 
         val maxAttempts = 3
         val retryDelayMs = 2000L
@@ -690,7 +692,7 @@ class UserRepositoryImpl @Inject constructor(
 
         withContext(dispatcherProvider.io) {
             try {
-                apiInterface.putDoc(header, "application/json", dbUrl, JsonObject().toKotlinx().jsonObject)
+                planetApi.putDoc(header, "application/json", dbUrl, JsonObject().toKotlinx().jsonObject)
             } catch (e: Exception) {
                 null
             }
@@ -700,13 +702,13 @@ class UserRepositoryImpl @Inject constructor(
             RetryUtils.retry(
                 maxAttempts = maxAttempts,
                 delayMs = retryDelayMs,
-                shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
+                shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body == null }
             ) {
-                apiInterface.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob.toKotlinx().jsonObject)
+                planetApi.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob.toKotlinx().jsonObject)
             }
         }
 
-        if (response?.isSuccessful == true && response.body() != null) {
+        if (response?.isSuccessful == true && response.body != null) {
             changeUserSecurity(model, obj)
 
             markUserKeyIvSaved(model.id ?: "", keyString ?: "", iv)
@@ -717,7 +719,7 @@ class UserRepositoryImpl @Inject constructor(
 
     private fun replacedUrl(model: UserEntity): String {
         val url = UrlUtils.getUrl()
-        val password = SecurePrefs.getPassword(context, settings) ?: ""
+        val password = credentialStore.getPassword() ?: ""
         val replacedUrl = url.replace(USERINFO_REGEX) { "${enc(model.name)}:${enc(password)}@" }
         val protocolIndex = url.indexOf("://")
         val protocol = url.substring(0, protocolIndex)
@@ -726,7 +728,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun checkAndUploadUser(model: UserEntity, password: String?, updateHealthFn: suspend (String, String) -> Unit) {
         try {
-            val pwd = password ?: SecurePrefs.getPassword(context, settings) ?: ""
+            val pwd = password ?: credentialStore.getPassword() ?: ""
             val header = UrlUtils.basicAuthHeader(model.name.toString(), pwd)
             val userExists = checkIfUserExists(header, model)
             if (!userExists) {
@@ -741,8 +743,8 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun checkIfUserExists(header: String, model: UserEntity): Boolean {
         try {
-            val res = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
-            val exists = res.body() != null
+            val res = planetApi.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
+            val exists = res.body != null
             return exists
         } catch (e: Exception) {
             e.printStackTrace()
@@ -752,15 +754,15 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun processUserAfterCreation(model: UserEntity, obj: JsonObject, updateHealthFn: suspend (String, String) -> Unit) {
         try {
-            val password = model.password ?: SecurePrefs.getPassword(context, settings) ?: ""
+            val password = model.password ?: credentialStore.getPassword() ?: ""
             val header = UrlUtils.basicAuthHeader(model.name.toString(), password)
-            val fetchDataResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")
+            val fetchDataResponse = planetApi.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")
 
             if (fetchDataResponse.isSuccessful) {
-                val passwordScheme = JsonUtils.getString("password_scheme", fetchDataResponse.body())
-                val derivedKey = JsonUtils.getString("derived_key", fetchDataResponse.body())
-                val salt = JsonUtils.getString("salt", fetchDataResponse.body())
-                val iterations = JsonUtils.getString("iterations", fetchDataResponse.body())
+                val passwordScheme = JsonUtils.getString("password_scheme", fetchDataResponse.body)
+                val derivedKey = JsonUtils.getString("derived_key", fetchDataResponse.body)
+                val salt = JsonUtils.getString("salt", fetchDataResponse.body)
+                val iterations = JsonUtils.getString("iterations", fetchDataResponse.body)
 
                 model.password_scheme = passwordScheme
                 model.derived_key = derivedKey
@@ -789,11 +791,11 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun uploadNewUser(model: UserEntity, updateHealthFn: suspend (String, String) -> Unit) {
         try {
             val obj = model.serialize()
-            val createResponse = apiInterface.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj.toKotlinx().jsonObject)
+            val createResponse = planetApi.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj.toKotlinx().jsonObject)
 
             if (createResponse.isSuccessful) {
-                val id = JsonUtils.getString("id", createResponse.body()).takeIf { it.isNotEmpty() }
-                val rev = JsonUtils.getString("rev", createResponse.body()).takeIf { it.isNotEmpty() }
+                val id = JsonUtils.getString("id", createResponse.body).takeIf { it.isNotEmpty() }
+                val rev = JsonUtils.getString("rev", createResponse.body).takeIf { it.isNotEmpty() }
                 model._id = id
                 model._rev = rev
 
@@ -809,10 +811,10 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun updateExistingUser(header: String, model: UserEntity) {
         try {
-            val latestDocResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
+            val latestDocResponse = planetApi.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
 
             if (latestDocResponse.isSuccessful) {
-                val latestRev = JsonUtils.getString("_rev", latestDocResponse.body()).takeIf { it.isNotEmpty() }
+                val latestRev = JsonUtils.getString("_rev", latestDocResponse.body).takeIf { it.isNotEmpty() }
                 val obj = model.serialize()
                 val objMap = obj.entrySet().associate { (key, value) -> key to value }
                 val mutableObj = mutableMapOf<String, Any>().apply { putAll(objMap) }
@@ -821,10 +823,10 @@ class UserRepositoryImpl @Inject constructor(
                 val jsonElement = GsonUtils.gson.toJsonTree(mutableObj)
                 val jsonObject = jsonElement.asJsonObject
 
-                val updateResponse = apiInterface.putDoc(header, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", jsonObject.toKotlinx().jsonObject)
+                val updateResponse = planetApi.putDoc(header, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", jsonObject.toKotlinx().jsonObject)
 
                 if (updateResponse.isSuccessful) {
-                    val updatedRev = JsonUtils.getString("rev", updateResponse.body()).takeIf { it.isNotEmpty() }
+                    val updatedRev = JsonUtils.getString("rev", updateResponse.body).takeIf { it.isNotEmpty() }
                     markUserRevUpdated(model.id ?: "", updatedRev)
                 }
             }
@@ -840,20 +842,20 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun validateUsername(username: String): String? {
         val firstChar = username.firstOrNull()
         when {
-            username.isEmpty() -> return context.getString(R.string.username_cannot_be_empty)
-            username.contains(" ") -> return context.getString(R.string.invalid_username)
+            username.isEmpty() -> return stringProvider.getString(R.string.username_cannot_be_empty)
+            username.contains(" ") -> return stringProvider.getString(R.string.invalid_username)
             firstChar != null && !firstChar.isDigit() && !firstChar.isLetter() ->
-                return context.getString(R.string.must_start_with_letter_or_number)
+                return stringProvider.getString(R.string.must_start_with_letter_or_number)
             username.any { it != '_' && it != '.' && it != '-' && !it.isDigit() && !it.isLetter() } ||
             SPECIAL_CHAR_PATTERN.matcher(username).matches() ||
             !Normalizer.normalize(username, Normalizer.Form.NFD).codePoints().allMatch { code ->
                 Character.isLetterOrDigit(code) || code == '.'.code || code == '-'.code || code == '_'.code
-            } -> return context.getString(R.string.only_letters_numbers_and_are_allowed)
+            } -> return stringProvider.getString(R.string.only_letters_numbers_and_are_allowed)
         }
 
         val isTaken = userDao.getByName(username)?.let { !it._id.orEmpty().startsWith("guest") } == true
 
-        return if (isTaken) context.getString(R.string.username_taken) else null
+        return if (isTaken) stringProvider.getString(R.string.username_taken) else null
     }
 
     override suspend fun cleanupDuplicateUsers() {
@@ -1144,7 +1146,7 @@ class UserRepositoryImpl @Inject constructor(
                     }
                     ?: UserEntity().apply { this.id = id }
 
-                applyJsonToUser(jsonDoc, user, settings)
+                applyJsonToUser(jsonDoc, user)
                 val entity = user
 
                 usersToUpsert[entity.id] = entity
@@ -1191,12 +1193,12 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun uploadShelfData(user: UserEntity) {
         try {
-            val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${user._id}").body()?.toGson()
+            val jsonDoc = planetApi.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${user._id}").body?.toGson()
             val myLibs = resourcesRepositoryLazy.get().getMyLibIds(user.id ?: "")
             val myCourseIds = coursesRepositoryLazy.get().getMyCourseIds(user.id ?: "")
             val shelfData = getShelfData(user.id, jsonDoc, myLibs, myCourseIds)
             shelfData.addProperty("_rev", GsonUtils.getString("_rev", jsonDoc))
-            apiInterface.putDoc(
+            planetApi.putDoc(
                 UrlUtils.header,
                 "application/json",
                 "${UrlUtils.getUrl()}/shelf/${user._id}",
@@ -1216,13 +1218,13 @@ class UserRepositoryImpl @Inject constructor(
         }
 
         val response = org.ole.planet.myplanet.data.api.ApiClient.executeWithRetryAndWrap {
-            apiInterface.postDoc(
+            planetApi.postDoc(
                 org.ole.planet.myplanet.utils.UrlUtils.header,
                 "application/json",
                 "${org.ole.planet.myplanet.utils.UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true",
                 keysObject.toKotlinx().jsonObject
             )
-        }?.body()?.toGson()
+        }?.body?.toGson()
 
         response?.let { responseBody ->
             val rows = org.ole.planet.myplanet.utils.GsonUtils.getJsonArray("rows", responseBody)

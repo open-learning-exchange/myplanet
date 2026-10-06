@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
@@ -17,13 +16,14 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.data.api.ApiClient
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserDataUploadScheduler
 import org.ole.planet.myplanet.services.UserDataWorker
 import org.ole.planet.myplanet.services.sync.AdaptiveBatchProcessor
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils.getInt
@@ -39,7 +39,7 @@ import org.ole.planet.myplanet.utils.toKotlinx
 
 @Singleton
 class SyncRepositoryImpl @Inject constructor(
-    private val apiInterface: ApiInterface,
+    private val planetApi: PlanetApi,
     private val dispatcherProvider: DispatcherProvider,
     private val resourcesRepository: ResourcesRepository,
     private val coursesRepository: CoursesRepository,
@@ -75,12 +75,12 @@ class SyncRepositoryImpl @Inject constructor(
             val shelfDoc: JsonObject? = withContext(dispatcherProvider.io) {
                 var doc: JsonObject? = null
                 ApiClient.executeWithRetryAndWrap {
-                    apiInterface.getJsonObject(
+                    planetApi.getJsonObject(
                         UrlUtils.header,
                         "${UrlUtils.getUrl()}/shelf/$shelfId"
                     )
                 }?.let {
-                    doc = it.body()?.toGson()
+                    doc = it.body?.toGson()
                 }
                 coroutineContext.ensureActive()
                 doc
@@ -105,7 +105,7 @@ class SyncRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.e("SyncRepositoryImpl", "Error in processShelfParallel", e)
+            AppLog.e("SyncRepositoryImpl", "Error in processShelfParallel", e)
         }
 
         return processedItems
@@ -138,14 +138,14 @@ class SyncRepositoryImpl @Inject constructor(
                 val apiStartTime = timeProvider.elapsedRealtime()
                 var response: JsonObject? = null
                 ApiClient.executeWithRetryAndWrap {
-                    apiInterface.postDoc(
+                    planetApi.postDoc(
                         UrlUtils.header,
                         "application/json",
                         "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true",
                         keysObject.toKotlinx().jsonObject
                     )
                 }?.let {
-                    response = it.body()?.toGson()
+                    response = it.body?.toGson()
                 }
                 val apiDuration = timeProvider.elapsedRealtime() - apiStartTime
 
@@ -189,7 +189,7 @@ class SyncRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.e("SyncRepositoryImpl", "Error in processShelfDataOptimizedSync", e)
+            AppLog.e("SyncRepositoryImpl", "Error in processShelfDataOptimizedSync", e)
             logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} failed: ${e.message}")
         }
         return processedCount
@@ -199,9 +199,9 @@ class SyncRepositoryImpl @Inject constructor(
         val url = UrlUtils.getUrl()
         val header = UrlUtils.header
         val response = ApiClient.executeWithRetryAndWrap {
-            apiInterface.getJsonObject(header, "$url/resources/_all_docs?limit=0")
+            planetApi.getJsonObject(header, "$url/resources/_all_docs?limit=0")
         }
-        val body = response?.body()?.toGson()
+        val body = response?.body?.toGson()
         return if (body != null && body.has("total_rows")) {
             getInt("total_rows", body)
         } else {
@@ -213,9 +213,9 @@ class SyncRepositoryImpl @Inject constructor(
         val url = UrlUtils.getUrl()
         val header = UrlUtils.header
         val response = ApiClient.executeWithRetryAndWrap {
-            apiInterface.getJsonObject(header, "$url/resources/_all_docs?include_docs=true&limit=$limit&skip=$skip")
+            planetApi.getJsonObject(header, "$url/resources/_all_docs?include_docs=true&limit=$limit&skip=$skip")
         }
-        val body = response?.body()?.toGson() ?: return null
+        val body = response?.body?.toGson() ?: return null
         return getJsonArray("rows", body)
     }
 
@@ -257,8 +257,8 @@ class SyncRepositoryImpl @Inject constructor(
         val header = UrlUtils.header
 
         val allShelves = ApiClient.executeWithRetryAndWrap {
-            apiInterface.getDocuments(header, "$url/shelf/_all_docs")
-        }?.body()?.rows ?: return emptyList()
+            planetApi.getDocuments(header, "$url/shelf/_all_docs")
+        }?.body?.rows ?: return emptyList()
 
         coroutineScope {
             val semaphore = Semaphore(8)

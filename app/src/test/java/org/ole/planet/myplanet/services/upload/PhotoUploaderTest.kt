@@ -23,6 +23,7 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.callback.OnSuccessListener
+import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.repository.PhotoUpload
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -30,7 +31,6 @@ import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PhotoUploaderTest {
@@ -116,7 +116,7 @@ class PhotoUploaderTest {
                 addProperty("id", "doc-$idx")
                 addProperty("rev", "1-rev")
             }
-            Response.success(resp)
+            NetworkResult.Success(resp)
         }
 
         val result = photoUploader.uploadSubmitPhotos(null)
@@ -147,7 +147,7 @@ class PhotoUploaderTest {
             addProperty("id", "remote-1")
             addProperty("rev", "2-abc")
         }
-        coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success(responseObj)
+        coEvery { uploadRepository.postUpload(any(), any()) } returns NetworkResult.Success(responseObj)
 
         val slot = slot<List<PhotoUpload>>()
         coEvery { submissionsRepository.markPhotosUploadedBatch(capture(slot)) } returns Unit
@@ -190,7 +190,7 @@ class PhotoUploaderTest {
                 addProperty("id", "doc-$idx")
                 addProperty("rev", "1-rev")
             }
-            Response.success(resp)
+            NetworkResult.Success(resp)
         }
 
         val result = photoUploader.uploadSubmitPhotos(null)
@@ -223,7 +223,7 @@ class PhotoUploaderTest {
             addProperty("id", "doc-1")
             addProperty("rev", "1-rev")
         }
-        coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success(responseObj)
+        coEvery { uploadRepository.postUpload(any(), any()) } returns NetworkResult.Success(responseObj)
 
         val submitPhoto = SubmitPhotos().apply {
             id = "photo-1"
@@ -232,7 +232,7 @@ class PhotoUploaderTest {
         coEvery { submissionsRepository.getPhotosByIds(arrayOf("photo-1")) } returns listOf(submitPhoto)
 
         val mockAttachmentResp = JsonObject().apply { addProperty("ok", true) }
-        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns Response.success(mockAttachmentResp)
+        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns NetworkResult.Success(mockAttachmentResp)
 
         val listener: OnSuccessListener = mockk(relaxed = true)
 

@@ -12,7 +12,10 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.NetworkResult
+import org.ole.planet.myplanet.data.api.ApiResponse
+import org.ole.planet.myplanet.data.api.PlanetApi
+import org.ole.planet.myplanet.data.api.UploadBody
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
@@ -28,13 +31,13 @@ class UploadRepositoryImplTest {
         override val unconfined = testDispatcher
     }
 
-    private lateinit var apiInterface: ApiInterface
+    private lateinit var planetApi: PlanetApi
     private lateinit var repository: UploadRepositoryImpl
 
     @Before
     fun setUp() {
-        apiInterface = mockk(relaxed = true)
-        repository = UploadRepositoryImpl(apiInterface, dispatcherProvider)
+        planetApi = mockk(relaxed = true)
+        repository = UploadRepositoryImpl(planetApi, dispatcherProvider)
 
         val spm = mockk<org.ole.planet.myplanet.services.SharedPrefManager>(relaxed = true)
         every { spm.getUrlUser() } returns "user"
@@ -50,67 +53,91 @@ class UploadRepositoryImplTest {
     }
 
     @Test
-    fun `postUpload calls postDoc on ApiInterface`() = runTest {
+    fun `postUpload calls postDoc on PlanetApi`() = runTest {
         val url = "testUrl"
         val data = com.google.gson.JsonObject()
         val kotlinxData = kotlinx.serialization.json.JsonObject(emptyMap())
-        val expectedResponse = retrofit2.Response.success(kotlinxData)
-        coEvery { apiInterface.postDoc(any(), eq("application/json"), eq(url), eq(kotlinxData)) } returns expectedResponse
+        val expectedResponse = ApiResponse.success(kotlinxData)
+        coEvery { planetApi.postDoc(any(), eq("application/json"), eq(url), eq(kotlinxData)) } returns expectedResponse
 
         val result = repository.postUpload(url, data)
 
-        assertEquals(true, result.isSuccessful)
-        coVerify(exactly = 1) { apiInterface.postDoc(any(), eq("application/json"), eq(url), eq(kotlinxData)) }
+        assertEquals(true, result is NetworkResult.Success)
+        coVerify(exactly = 1) { planetApi.postDoc(any(), eq("application/json"), eq(url), eq(kotlinxData)) }
     }
 
     @Test
-    fun `postUploadArray calls postDocArray on ApiInterface`() = runTest {
+    fun `postUploadArray calls postDocArray on PlanetApi`() = runTest {
         val url = "testUrl"
         val data = com.google.gson.JsonObject()
         val kotlinxData = kotlinx.serialization.json.JsonObject(emptyMap())
-        val expectedResponse = retrofit2.Response.success(kotlinx.serialization.json.JsonArray(emptyList()))
-        coEvery { apiInterface.postDocArray(any(), eq("application/json"), eq(url), eq(kotlinxData)) } returns expectedResponse
+        val expectedResponse = ApiResponse.success(kotlinx.serialization.json.JsonArray(emptyList()))
+        coEvery { planetApi.postDocArray(any(), eq("application/json"), eq(url), eq(kotlinxData)) } returns expectedResponse
 
         val result = repository.postUploadArray(url, data)
 
-        assertEquals(true, result.isSuccessful)
-        coVerify(exactly = 1) { apiInterface.postDocArray(any(), eq("application/json"), eq(url), eq(kotlinxData)) }
+        assertEquals(true, result is NetworkResult.Success)
+        coVerify(exactly = 1) { planetApi.postDocArray(any(), eq("application/json"), eq(url), eq(kotlinxData)) }
     }
 
     @Test
-    fun `putUpload calls putDoc on ApiInterface`() = runTest {
+    fun `putUpload calls putDoc on PlanetApi`() = runTest {
         val url = "testUrl"
         val data = com.google.gson.JsonObject()
         val kotlinxData = kotlinx.serialization.json.JsonObject(emptyMap())
-        val expectedResponse = retrofit2.Response.success(kotlinxData)
-        coEvery { apiInterface.putDoc(any(), eq("application/json"), eq(url), eq(kotlinxData)) } returns expectedResponse
+        val expectedResponse = ApiResponse.success(kotlinxData)
+        coEvery { planetApi.putDoc(any(), eq("application/json"), eq(url), eq(kotlinxData)) } returns expectedResponse
 
         val result = repository.putUpload(url, data)
 
-        assertEquals(true, result.isSuccessful)
-        coVerify(exactly = 1) { apiInterface.putDoc(any(), eq("application/json"), eq(url), eq(kotlinxData)) }
+        assertEquals(true, result is NetworkResult.Success)
+        coVerify(exactly = 1) { planetApi.putDoc(any(), eq("application/json"), eq(url), eq(kotlinxData)) }
     }
 
     @Test
-    fun `fetchExistingDoc calls getJsonObject on ApiInterface`() = runTest {
+    fun `fetchExistingDoc calls getJsonObject on PlanetApi`() = runTest {
         val url = "testUrl"
-        val expectedResponse = retrofit2.Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
-        coEvery { apiInterface.getJsonObject(any(), eq(url)) } returns expectedResponse
+        val expectedResponse = ApiResponse.success(kotlinx.serialization.json.JsonObject(emptyMap()))
+        coEvery { planetApi.getJsonObject(any(), eq(url)) } returns expectedResponse
 
         val result = repository.fetchExistingDoc(url)
 
-        assertEquals(true, result.isSuccessful)
-        coVerify(exactly = 1) { apiInterface.getJsonObject(any(), eq(url)) }
+        assertEquals(true, result is NetworkResult.Success)
+        coVerify(exactly = 1) { planetApi.getJsonObject(any(), eq(url)) }
     }
 
     @Test
-    fun `uploadAttachment calls uploadResource on ApiInterface`() = runTest {
+    fun `uploadResource builds a request body with the given mime type and calls PlanetApi`() = runTest {
+        val file = java.io.File.createTempFile("test", "png")
+        file.writeText("test content")
+        file.deleteOnExit()
+
+        val bodySlot = io.mockk.slot<UploadBody>()
+        val expectedResponse = ApiResponse.success(kotlinx.serialization.json.JsonObject(emptyMap()))
+        coEvery { planetApi.uploadResource(any(), eq("testUrl"), capture(bodySlot)) } returns expectedResponse
+
+        val result = repository.uploadResource(
+            headerMap = mapOf("Authorization" to "mock"),
+            url = "testUrl",
+            file = file,
+            mimeType = "image/png"
+        )
+
+        assertEquals(true, result is NetworkResult.Success)
+        val captured = bodySlot.captured as UploadBody.FileContent
+        assertEquals("image/png", captured.contentType)
+        assertEquals(file.path, captured.path)
+        coVerify(exactly = 1) { planetApi.uploadResource(any(), eq("testUrl"), any()) }
+    }
+
+    @Test
+    fun `uploadAttachment calls uploadResource on PlanetApi`() = runTest {
         val file = java.io.File.createTempFile("test", "txt")
         file.writeText("test content")
         file.deleteOnExit()
 
-        val expectedResponse = retrofit2.Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
-        coEvery { apiInterface.uploadResource(any(), any(), any()) } returns expectedResponse
+        val expectedResponse = ApiResponse.success(kotlinx.serialization.json.JsonObject(emptyMap()))
+        coEvery { planetApi.uploadResource(any(), any(), any()) } returns expectedResponse
 
         val result = repository.uploadAttachment(
             file = file,
@@ -120,8 +147,8 @@ class UploadRepositoryImplTest {
             name = "file.txt"
         )
 
-        assertEquals(true, result.isSuccessful)
-        coVerify(exactly = 1) { apiInterface.uploadResource(any(), any(), any()) }
+        assertEquals(true, result is NetworkResult.Success)
+        coVerify(exactly = 1) { planetApi.uploadResource(any(), any(), any()) }
     }
 
     @Test
@@ -140,7 +167,7 @@ class UploadRepositoryImplTest {
             file.deleteOnExit()
 
             val slot = io.mockk.slot<Map<String, String>>()
-            coEvery { apiInterface.uploadResource(capture(slot), any(), any()) } returns retrofit2.Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
+            coEvery { planetApi.uploadResource(capture(slot), any(), any()) } returns ApiResponse.success(kotlinx.serialization.json.JsonObject(emptyMap()))
 
             repository.uploadAttachment(
                 file = file,
@@ -159,7 +186,7 @@ class UploadRepositoryImplTest {
         extensionlessFile.deleteOnExit()
 
         val slot = io.mockk.slot<Map<String, String>>()
-        coEvery { apiInterface.uploadResource(capture(slot), any(), any()) } returns retrofit2.Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
+        coEvery { planetApi.uploadResource(capture(slot), any(), any()) } returns ApiResponse.success(kotlinx.serialization.json.JsonObject(emptyMap()))
 
         repository.uploadAttachment(
             file = extensionlessFile,

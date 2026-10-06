@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.databinding.FragmentReportsBinding
 import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.getAttachmentFile
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils
@@ -217,7 +218,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         val v: View = dialogAddReportBinding.root
         selectedImageUri = null
         dialogImagePreview = dialogAddReportBinding.reportImagePreview
-        val existingImage = MyTeam.getAttachmentFile(requireContext(), currentReport._id, currentReport.imageName)
+        val existingImage = MyTeam.getAttachmentFile(FileUtils.getOlePath(requireContext()), currentReport._id, currentReport.imageName)
         if (existingImage != null && existingImage.exists()) {
             dialogAddReportBinding.reportImagePreview.visibility = View.VISIBLE
             Glide.with(this).load(existingImage).into(dialogAddReportBinding.reportImagePreview)

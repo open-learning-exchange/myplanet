@@ -1,23 +1,18 @@
 package org.ole.planet.myplanet.data.api
 
-import android.content.Context
-import android.util.Log
 import com.google.gson.reflect.TypeToken
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.withContext
-import okhttp3.RequestBody
 import org.ole.planet.myplanet.model.ChatResponse
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
-import retrofit2.Response
 
 @Singleton
 class ChatApiService @Inject constructor(
-    private val apiInterface: ApiInterface,
-    @param:ApplicationContext private val context: Context,
+    private val planetApi: PlanetApi,
     private val dispatcherProvider: DispatcherProvider
 ) {
     suspend fun fetchAiProviders(): Map<String, Boolean>? {
@@ -28,14 +23,14 @@ class ChatApiService @Inject constructor(
             }
 
             val checkProvidersUrl = "${hostUrl}checkProviders/"
-            val response = apiInterface.checkAiProviders(checkProvidersUrl)
+            val response = planetApi.checkAiProviders(checkProvidersUrl)
 
-            if (!response.isSuccessful || response.body() == null) {
+            if (!response.isSuccessful) {
                 return null
             }
 
             val responseString = withContext(dispatcherProvider.io) {
-                response.body()?.string()
+                response.body
             }
             if (responseString.isNullOrBlank()) {
                 return null
@@ -46,16 +41,16 @@ class ChatApiService @Inject constructor(
                 object : TypeToken<Map<String, Boolean>>() {}.type
             )
         } catch (e: Exception) {
-            Log.w("ChatApiService", "Failed to fetch AI providers from: ${UrlUtils.hostUrl}checkProviders/", e)
+            AppLog.w("ChatApiService", "Failed to fetch AI providers from: ${UrlUtils.hostUrl}checkProviders/", e)
             null
         }
     }
 
-    suspend fun sendChatRequest(content: RequestBody): Response<ChatResponse> {
+    suspend fun sendChatRequest(content: UploadBody): ApiResponse<ChatResponse> {
         val hostUrl = UrlUtils.hostUrl
         if (hostUrl.isBlank()) {
             throw IllegalArgumentException("Host URL is not available")
         }
-        return apiInterface.chatGpt(hostUrl, content)
+        return planetApi.chatGpt(hostUrl, content)
     }
 }

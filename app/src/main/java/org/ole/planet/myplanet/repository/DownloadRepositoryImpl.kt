@@ -7,36 +7,33 @@ import java.net.UnknownHostException
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
-import okhttp3.HttpUrl
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 
 class DownloadRepositoryImpl @Inject constructor(
-    private val apiInterface: ApiInterface,
+    private val planetApi: PlanetApi,
     private val dispatcherProvider: DispatcherProvider,
     private val diagnosticsRepository: DiagnosticsRepository,
     private val timeProvider: TimeProvider
 ) : DownloadRepository {
 
-    private fun diagnosticUrl(u: HttpUrl): String = u.newBuilder().username("").password("").query(null).fragment(null).build().toString()
-
     override suspend fun downloadFileResponse(url: String, authHeader: String, resumeOffset: Long, ifRange: String?): DownloadResult = withContext(dispatcherProvider.io) {
         try {
             val rangeHeader = if (resumeOffset > 0) "bytes=$resumeOffset-" else null
             val ifRangeHeader = if (resumeOffset > 0) ifRange else null
-            val response = apiInterface.downloadFile(authHeader, url, rangeHeader, ifRangeHeader)
+            val response = planetApi.downloadFile(authHeader, url, rangeHeader, ifRangeHeader)
             if (response.isSuccessful) {
-                val responseBody = response.body()
+                val responseBody = response.body
                 if (responseBody == null) {
                     return@withContext DownloadResult.Error("Empty response body")
                 } else {
-                    val validator = response.headers()["ETag"] ?: response.headers()["Last-Modified"]
-                    return@withContext DownloadResult.Success(responseBody, response.code(), validator)
+                    val validator = response.header("ETag") ?: response.header("Last-Modified")
+                    return@withContext DownloadResult.Success(responseBody, response.code, validator)
                 }
             } else {
-                val errorMessage = when (response.code()) {
+                val errorMessage = when (response.code) {
                     401 -> "Unauthorized access"
                     403 -> "Forbidden - Access denied"
                     404 -> "File not found"
@@ -46,12 +43,12 @@ class DownloadRepositoryImpl @Inject constructor(
                     502 -> "Bad gateway"
                     503 -> "Service unavailable"
                     504 -> "Gateway timeout"
-                    else -> "Connection failed (${response.code()})"
+                    else -> "Connection failed (${response.code})"
                 }
 
-                if (response.code() == 404) diagnosticsRepository.saveLogToRoom("File Not Found", diagnosticUrl(response.raw().request.url), "${timeProvider.now()}")
+                if (response.code == 404) diagnosticsRepository.saveLogToRoom("File Not Found", diagnosticUrl(response.requestUrl ?: url), "${timeProvider.now()}")
 
-                return@withContext DownloadResult.Error(errorMessage, response.code())
+                return@withContext DownloadResult.Error(errorMessage, response.code)
             }
         } catch (e: CancellationException) {
             throw e
@@ -67,4 +64,16 @@ class DownloadRepositoryImpl @Inject constructor(
             return@withContext DownloadResult.Error("Network error: ${e.localizedMessage ?: "Unknown error"}")
         }
     }
+}
+
+/**
+ * [url] is a canonical URL as the HTTP client renders it (`scheme://[userinfo@]host[:port]/path[?query][#fragment]`,
+ * with `@`, `/`, `?` and `#` escaped inside each part); the result drops the userinfo, query and fragment.
+ */
+internal fun diagnosticUrl(url: String): String {
+    val authorityStart = url.indexOf("://") + 3
+    val pathStart = url.indexOf('/', authorityStart).let { if (it == -1) url.length else it }
+    val hostStart = url.lastIndexOf('@', pathStart - 1).let { if (it < authorityStart) authorityStart else it + 1 }
+    val pathEnd = url.indexOfAny(charArrayOf('?', '#'), pathStart).let { if (it == -1) url.length else it }
+    return url.substring(0, authorityStart) + url.substring(hostStart, pathEnd)
 }

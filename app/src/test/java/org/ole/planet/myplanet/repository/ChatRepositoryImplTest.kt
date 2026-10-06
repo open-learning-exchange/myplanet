@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -19,7 +18,9 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.data.api.ApiResponse
 import org.ole.planet.myplanet.data.api.ChatApiService
+import org.ole.planet.myplanet.data.api.UploadBody
 import org.ole.planet.myplanet.data.room.dao.ChatDao
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
@@ -44,7 +45,6 @@ class ChatRepositoryImplTest {
 
     @Before
     fun setup() {
-        every { sharedPrefManager.rawPreferences } returns mockk(relaxed = true)
         chatRepository = ChatRepositoryImpl(chatDao, chatApiService, serverUrlMapper, sharedPrefManager, dispatcherProvider, serverReachabilityProvider, Gson())
     }
 
@@ -58,9 +58,6 @@ class ChatRepositoryImplTest {
         val serverUrl = "http://example.com"
         val mockMapping = ServerUrlMapper.UrlMapping(primaryUrl = serverUrl)
         val mockResponse = mapOf("provider1" to true, "provider2" to false)
-        val mockPrefs = mockk<SharedPreferences>(relaxed = true)
-
-        every { sharedPrefManager.rawPreferences } returns mockPrefs
         every { serverUrlMapper.processUrl(serverUrl) } returns mockMapping
         coEvery { serverUrlMapper.updateServerIfNecessary(any(), any(), any()) } answers { }
         coEvery { chatApiService.fetchAiProviders() } returns mockResponse
@@ -70,7 +67,7 @@ class ChatRepositoryImplTest {
 
         assertEquals(mockResponse, result)
         verify(exactly = 1) { serverUrlMapper.processUrl(serverUrl) }
-        coVerify(exactly = 1) { serverUrlMapper.updateServerIfNecessary(mockMapping, mockPrefs, any()) }
+        coVerify(exactly = 1) { serverUrlMapper.updateServerIfNecessary(mockMapping, sharedPrefManager, any()) }
         coVerify(exactly = 1) { chatApiService.fetchAiProviders() }
     }
 
@@ -169,14 +166,14 @@ class ChatRepositoryImplTest {
         val user = "testUser"
         val aiProvider = AiProvider("OpenAI", "GPT-4")
         val couchDb = CouchDBResponse(ok = true, id = "test-id", rev = "test-rev")
-        val mockResponse = retrofit2.Response.success(ChatResponse(status = "Success", chat = "test chat", couchDBResponse = couchDb))
+        val mockResponse = ApiResponse.success(ChatResponse(status = "Success", chat = "test chat", couchDBResponse = couchDb))
 
         coEvery { chatApiService.sendChatRequest(any()) } returns mockResponse
 
         val result = chatRepository.sendNewChatRequest(query, user, aiProvider)
 
         assertEquals(ChatResult.Success("test chat", "test-id", "test-rev"), result)
-        coVerify(exactly = 1) { chatApiService.sendChatRequest(any<okhttp3.RequestBody>()) }
+        coVerify(exactly = 1) { chatApiService.sendChatRequest(any<UploadBody>()) }
     }
 
     @Test
@@ -187,14 +184,14 @@ class ChatRepositoryImplTest {
         val id = "chat-123"
         val rev = "1-rev"
         val couchDb = CouchDBResponse(ok = true, id = id, rev = "2-rev")
-        val mockResponse = retrofit2.Response.success(ChatResponse(status = "Success", chat = "test chat", couchDBResponse = couchDb))
+        val mockResponse = ApiResponse.success(ChatResponse(status = "Success", chat = "test chat", couchDBResponse = couchDb))
 
         coEvery { chatApiService.sendChatRequest(any()) } returns mockResponse
 
         val result = chatRepository.sendContinueChatRequest(message, user, aiProvider, id, rev)
 
         assertEquals(ChatResult.Success("test chat", id, "2-rev"), result)
-        coVerify(exactly = 1) { chatApiService.sendChatRequest(any<okhttp3.RequestBody>()) }
+        coVerify(exactly = 1) { chatApiService.sendChatRequest(any<UploadBody>()) }
     }
 
     @Test

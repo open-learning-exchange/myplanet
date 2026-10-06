@@ -13,6 +13,7 @@ import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
+import io.mockk.verify
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -34,7 +35,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.ApiResponse
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
@@ -49,6 +51,8 @@ import org.ole.planet.myplanet.model.UserChallengeActions
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.AppInfo
+import org.ole.planet.myplanet.utils.AppUsageStats
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -61,7 +65,7 @@ class ActivitiesRepositoryImplTest {
 
     private lateinit var context: Context
     private lateinit var userRepository: UserRepository
-    private lateinit var apiInterface: ApiInterface
+    private lateinit var planetApi: PlanetApi
     private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var timeProvider: TimeProvider
     private lateinit var userChallengeActionsDao: UserChallengeActionsDao
@@ -71,6 +75,8 @@ class ActivitiesRepositoryImplTest {
     private lateinit var removedLogDao: RemovedLogDao
     private lateinit var searchActivityDao: org.ole.planet.myplanet.data.room.dao.SearchActivityDao
     private lateinit var deviceNameProvider: DeviceNameProvider
+    private lateinit var appInfo: AppInfo
+    private lateinit var appUsageStats: AppUsageStats
     private lateinit var dispatcherProvider: DispatcherProvider
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
@@ -92,7 +98,7 @@ class ActivitiesRepositoryImplTest {
         MainApplication.testContext = context
         userRepository = mockk(relaxed = true)
         val lazyUserRepository = Lazy { userRepository }
-        apiInterface = mockk(relaxed = true)
+        planetApi = mockk(relaxed = true)
         sharedPrefManager = mockk(relaxed = true)
         timeProvider = mockk(relaxed = true)
         userChallengeActionsDao = mockk(relaxed = true)
@@ -103,15 +109,17 @@ class ActivitiesRepositoryImplTest {
         searchActivityDao = mockk(relaxed = true)
         deviceNameProvider = mockk(relaxed = true)
         every { deviceNameProvider.getCustomDeviceName() } returns "mock_custom_device_provider"
+        appInfo = mockk(relaxed = true)
+        every { appInfo.androidId() } returns "mock_android_id"
+        appUsageStats = mockk(relaxed = true)
         dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
         UrlUtils.init(sharedPrefManager)
 
         repository = ActivitiesRepositoryImpl(
-            context,
             dispatcherProvider,
             lazyUserRepository,
-            apiInterface,
+            planetApi,
             sharedPrefManager,
             timeProvider,
             userChallengeActionsDao,
@@ -120,7 +128,9 @@ class ActivitiesRepositoryImplTest {
             offlineActivityDao,
             removedLogDao,
             searchActivityDao,
-            deviceNameProvider
+            deviceNameProvider,
+            appInfo,
+            appUsageStats
         )
     }
 
@@ -568,10 +578,9 @@ class ActivitiesRepositoryImplTest {
         coEvery { offlineActivityDao.getPendingLoginUploads() } returns listOf(mockActivity)
 
         val postedBodySlot = slot<KJsonObject>()
-        val mockResponse = mockk<retrofit2.Response<KJsonObject>>()
-        every { mockResponse.body() } returns buildJsonObject { put("ok", true) }
+        val mockResponse = ApiResponse.success(buildJsonObject { put("ok", true) })
         coEvery {
-            apiInterface.postDoc(
+            planetApi.postDoc(
                 any(),
                 eq("application/json"),
                 any(),
@@ -590,16 +599,13 @@ class ActivitiesRepositoryImplTest {
 
     @Test
     fun `uploadMyPlanetActivities posts activities and usage stats when existing doc found`() = testScope.runTest {
-        val usageStatsManager = mockk<android.app.usage.UsageStatsManager>(relaxed = true)
-        every { context.getSystemService(Context.USAGE_STATS_SERVICE) } returns usageStatsManager
-        every { usageStatsManager.queryUsageStats(any(), any(), any()) } returns emptyList()
+        every { appUsageStats.queryDailyUsage(any(), any()) } returns emptyList()
 
         val mockResponseBody = buildJsonObject {
             putJsonArray("usages") { }
         }
-        val mockResponse = mockk<retrofit2.Response<KJsonObject>>()
-        every { mockResponse.body() } returns mockResponseBody
-        coEvery { apiInterface.getJsonObject(any(), any()) } returns mockResponse
+        val mockResponse = ApiResponse.success(mockResponseBody)
+        coEvery { planetApi.getJsonObject(any(), any()) } returns mockResponse
 
         val userModel = UserEntity().apply {
             parentCode = "parent"
@@ -608,19 +614,19 @@ class ActivitiesRepositoryImplTest {
 
         repository.uploadMyPlanetActivities(userModel)
 
-        coVerify(exactly = 2) { apiInterface.postDoc(any(), eq("application/json"), any(), any()) }
-        coVerify(exactly = 1) { apiInterface.getJsonObject(any(), any()) }
+        coVerify(exactly = 2) { planetApi.postDoc(any(), eq("application/json"), any(), any()) }
+        coVerify(exactly = 1) {
+            planetApi.getJsonObject(any(), match { it.endsWith("/myplanet_activities/mock_android_id@mock_unique_id") })
+        }
+        verify(exactly = 1) { appUsageStats.queryDailyUsage(any(), any()) }
     }
 
     @Test
     fun `uploadMyPlanetActivities posts fallback activities when no existing doc found`() = testScope.runTest {
-        val usageStatsManager = mockk<android.app.usage.UsageStatsManager>(relaxed = true)
-        every { context.getSystemService(Context.USAGE_STATS_SERVICE) } returns usageStatsManager
-        every { usageStatsManager.queryUsageStats(any(), any(), any()) } returns emptyList()
+        every { appUsageStats.queryDailyUsage(any(), any()) } returns emptyList()
 
-        val mockResponse = mockk<retrofit2.Response<KJsonObject>>()
-        every { mockResponse.body() } returns null
-        coEvery { apiInterface.getJsonObject(any(), any()) } returns mockResponse
+        val mockResponse = ApiResponse.success<KJsonObject>(null)
+        coEvery { planetApi.getJsonObject(any(), any()) } returns mockResponse
 
         val userModel = UserEntity().apply {
             parentCode = "parent"
@@ -629,8 +635,8 @@ class ActivitiesRepositoryImplTest {
 
         repository.uploadMyPlanetActivities(userModel)
 
-        coVerify(exactly = 2) { apiInterface.postDoc(any(), eq("application/json"), any(), any()) }
-        coVerify(exactly = 1) { apiInterface.getJsonObject(any(), any()) }
+        coVerify(exactly = 2) { planetApi.postDoc(any(), eq("application/json"), any(), any()) }
+        coVerify(exactly = 1) { planetApi.getJsonObject(any(), any()) }
     }
 
     @Test

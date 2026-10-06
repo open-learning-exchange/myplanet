@@ -14,13 +14,12 @@ class UserRepositoryBulkInsertTest {
     fun `benchmark insertUsersFromSync`() = runTest {
         val userDao = mockk<UserDao>(relaxed = true)
         val userRepository = UserRepositoryImpl(
-            settings = mockk(relaxed = true),
             sharedPrefManager = mockk(relaxed = true),
-            apiInterface = mockk(relaxed = true),
+            planetApi = mockk(relaxed = true),
             resourcesRepositoryLazy = mockk(relaxed = true),
             coursesRepositoryLazy = mockk(relaxed = true),
             uploadToShelfService = mockk(relaxed = true),
-            context = mockk(relaxed = true),
+            credentialStore = mockk(relaxed = true),
             configurationsRepository = mockk(relaxed = true),
             appScope = mockk(relaxed = true),
             dispatcherProvider = mockk(relaxed = true),
@@ -31,7 +30,9 @@ class UserRepositoryBulkInsertTest {
             achievementDao = mockk(relaxed = true),
             userDao = userDao,
             realtimeSyncManager = mockk(relaxed = true),
-            deviceNameProvider = mockk(relaxed = true)
+            deviceNameProvider = mockk(relaxed = true),
+            appInfo = mockk(relaxed = true),
+            stringProvider = mockk(relaxed = true)
         )
         coEvery { userDao.getUsersByAnyIds(any()) } returns emptyList()
         coEvery { userDao.getGuestUsersByNames(any()) } returns emptyList()
@@ -60,13 +61,12 @@ class UserRepositoryBulkInsertTest {
     fun `insertUsersFromSync handles existing user and guest promotion correctly`() = runTest {
         val userDao = mockk<UserDao>(relaxed = true)
         val userRepository = UserRepositoryImpl(
-            settings = mockk(relaxed = true),
             sharedPrefManager = mockk(relaxed = true),
-            apiInterface = mockk(relaxed = true),
+            planetApi = mockk(relaxed = true),
             resourcesRepositoryLazy = mockk(relaxed = true),
             coursesRepositoryLazy = mockk(relaxed = true),
             uploadToShelfService = mockk(relaxed = true),
-            context = mockk(relaxed = true),
+            credentialStore = mockk(relaxed = true),
             configurationsRepository = mockk(relaxed = true),
             appScope = mockk(relaxed = true),
             dispatcherProvider = mockk(relaxed = true),
@@ -77,7 +77,9 @@ class UserRepositoryBulkInsertTest {
             achievementDao = mockk(relaxed = true),
             userDao = userDao,
             realtimeSyncManager = mockk(relaxed = true),
-            deviceNameProvider = mockk(relaxed = true)
+            deviceNameProvider = mockk(relaxed = true),
+            appInfo = mockk(relaxed = true),
+            stringProvider = mockk(relaxed = true)
         )
 
         val existingGuest = org.ole.planet.myplanet.model.UserEntity().apply {
@@ -106,13 +108,12 @@ class UserRepositoryBulkInsertTest {
     fun `insertUsersFromSync deduplicates ids correctly`() = runTest {
         val userDao = mockk<UserDao>(relaxed = true)
         val userRepository = UserRepositoryImpl(
-            settings = mockk(relaxed = true),
             sharedPrefManager = mockk(relaxed = true),
-            apiInterface = mockk(relaxed = true),
+            planetApi = mockk(relaxed = true),
             resourcesRepositoryLazy = mockk(relaxed = true),
             coursesRepositoryLazy = mockk(relaxed = true),
             uploadToShelfService = mockk(relaxed = true),
-            context = mockk(relaxed = true),
+            credentialStore = mockk(relaxed = true),
             configurationsRepository = mockk(relaxed = true),
             appScope = mockk(relaxed = true),
             dispatcherProvider = mockk(relaxed = true),
@@ -123,7 +124,9 @@ class UserRepositoryBulkInsertTest {
             achievementDao = mockk(relaxed = true),
             userDao = userDao,
             realtimeSyncManager = mockk(relaxed = true),
-            deviceNameProvider = mockk(relaxed = true)
+            deviceNameProvider = mockk(relaxed = true),
+            appInfo = mockk(relaxed = true),
+            stringProvider = mockk(relaxed = true)
         )
         coEvery { userDao.getUsersByAnyIds(any()) } returns emptyList()
         coEvery { userDao.getGuestUsersByNames(any()) } returns emptyList()

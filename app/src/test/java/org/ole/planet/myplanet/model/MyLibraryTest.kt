@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.model
 
 import android.app.Application
-import android.content.Context
 import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockk
@@ -11,6 +10,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.AndroidAppStorage
+import org.ole.planet.myplanet.utils.AppStorage
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
@@ -20,12 +21,12 @@ import org.robolectric.annotation.Config
 class MyLibraryTest {
 
     private lateinit var mockSpm: SharedPrefManager
-    private lateinit var context: Context
+    private lateinit var storage: AppStorage
 
     @Before
     fun setUp() {
         mockSpm = mockk(relaxed = true)
-        context = RuntimeEnvironment.getApplication()
+        storage = AndroidAppStorage(RuntimeEnvironment.getApplication())
         every { mockSpm.getCouchdbUrl() } returns "http://localhost:5984"
     }
 
@@ -62,10 +63,10 @@ class MyLibraryTest {
             )
         )
 
-        val params1 = MyLibrary.Companion.InsertParams(
+        val params1 = MyLibraryInsertParams(
             doc = doc,
             spm = mockSpm,
-            context = context
+            storage = storage
         )
 
         val result1 = MyLibrary.insertMyLibrary(params1)
@@ -73,10 +74,10 @@ class MyLibraryTest {
         assertEquals(2, result1?.attachments?.size)
         val initialAttachments = result1?.attachments?.toList()
 
-        val params2 = MyLibrary.Companion.InsertParams(
+        val params2 = MyLibraryInsertParams(
             doc = doc,
             spm = mockSpm,
-            context = context,
+            storage = storage,
             existing = result1
         )
 
@@ -95,10 +96,10 @@ class MyLibraryTest {
             )
         )
 
-        val params1 = MyLibrary.Companion.InsertParams(
+        val params1 = MyLibraryInsertParams(
             doc = initialDoc,
             spm = mockSpm,
-            context = context
+            storage = storage
         )
 
         val result1 = MyLibrary.insertMyLibrary(params1)
@@ -113,10 +114,10 @@ class MyLibraryTest {
             )
         )
 
-        val params2 = MyLibrary.Companion.InsertParams(
+        val params2 = MyLibraryInsertParams(
             doc = updatedDoc,
             spm = mockSpm,
-            context = context,
+            storage = storage,
             existing = result1
         )
 
@@ -135,10 +136,10 @@ class MyLibraryTest {
             )
         )
 
-        val params = MyLibrary.Companion.InsertParams(
+        val params = MyLibraryInsertParams(
             doc = doc,
             spm = mockSpm,
-            context = context
+            storage = storage
         )
 
         val result = MyLibrary.insertMyLibrary(params)
@@ -149,10 +150,10 @@ class MyLibraryTest {
         // Change base URL in SPM
         every { mockSpm.getCouchdbUrl() } returns "http://newserver:5984"
 
-        val params2 = MyLibrary.Companion.InsertParams(
+        val params2 = MyLibraryInsertParams(
             doc = doc,
             spm = mockSpm,
-            context = context,
+            storage = storage,
             existing = result
         )
 

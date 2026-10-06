@@ -14,7 +14,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatSyncWriter
 import org.ole.planet.myplanet.repository.CoursesRepository
@@ -35,8 +35,26 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
+import org.ole.planet.myplanet.utils.AndroidAppInfo
+import org.ole.planet.myplanet.utils.AndroidAppLocale
+import org.ole.planet.myplanet.utils.AndroidAppStorage
+import org.ole.planet.myplanet.utils.AndroidAppUsageStats
+import org.ole.planet.myplanet.utils.AndroidCredentialStore
+import org.ole.planet.myplanet.utils.AndroidDateFormatter
+import org.ole.planet.myplanet.utils.AndroidDownloadLauncher
+import org.ole.planet.myplanet.utils.AndroidNetworkStatus
+import org.ole.planet.myplanet.utils.AndroidStringProvider
+import org.ole.planet.myplanet.utils.AppInfo
+import org.ole.planet.myplanet.utils.AppLocale
+import org.ole.planet.myplanet.utils.AppStorage
+import org.ole.planet.myplanet.utils.AppUsageStats
+import org.ole.planet.myplanet.utils.CredentialStore
+import org.ole.planet.myplanet.utils.DateFormatter
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.DownloadLauncher
+import org.ole.planet.myplanet.utils.NetworkStatus
 import org.ole.planet.myplanet.utils.NotificationUtils
+import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TimeProvider
 
@@ -69,6 +87,42 @@ object ServiceModule {
 
     @Provides
     @Singleton
+    fun provideNetworkStatus(impl: AndroidNetworkStatus): NetworkStatus = impl
+
+    @Provides
+    @Singleton
+    fun provideStringProvider(impl: AndroidStringProvider): StringProvider = impl
+
+    @Provides
+    @Singleton
+    fun provideAppInfo(impl: AndroidAppInfo): AppInfo = impl
+
+    @Provides
+    @Singleton
+    fun provideAppUsageStats(impl: AndroidAppUsageStats): AppUsageStats = impl
+
+    @Provides
+    @Singleton
+    fun provideAppStorage(impl: AndroidAppStorage): AppStorage = impl
+
+    @Provides
+    @Singleton
+    fun provideDownloadLauncher(impl: AndroidDownloadLauncher): DownloadLauncher = impl
+
+    @Provides
+    @Singleton
+    fun provideAppLocale(impl: AndroidAppLocale): AppLocale = impl
+
+    @Provides
+    @Singleton
+    fun provideCredentialStore(impl: AndroidCredentialStore): CredentialStore = impl
+
+    @Provides
+    @Singleton
+    fun provideDateFormatter(impl: AndroidDateFormatter): DateFormatter = impl
+
+    @Provides
+    @Singleton
     fun provideUploadToShelfService(
         @ApplicationContext context: Context,
         @AppPreferences preferences: SharedPreferences,
@@ -84,8 +138,9 @@ object ServiceModule {
     @Provides
     @Singleton
     fun provideTransactionSyncManager(
-        apiInterface: ApiInterface,
-        @ApplicationContext context: Context,
+        planetApi: PlanetApi,
+        appStorage: AppStorage,
+        credentialStore: CredentialStore,
         voicesRepository: VoicesRepository,
         chatRepository: ChatSyncWriter,
         feedbackRepository: FeedbackSyncWriter,
@@ -104,9 +159,10 @@ object ServiceModule {
         progressRepository: ProgressRepository,
         surveysRepository: SurveysRepository,
         dispatcherProvider: DispatcherProvider,
+        timeProvider: TimeProvider,
         userSessionManager: UserSessionManager,
         syncTimeLogger: SyncTimeLogger
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, eventsSyncWriter, healthRepository, progressRepository, surveysRepository, dispatcherProvider, userSessionManager, syncTimeLogger)
+        return TransactionSyncManager(planetApi, appStorage, credentialStore, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, eventsSyncWriter, healthRepository, progressRepository, surveysRepository, dispatcherProvider, timeProvider, userSessionManager, syncTimeLogger)
     }
 }

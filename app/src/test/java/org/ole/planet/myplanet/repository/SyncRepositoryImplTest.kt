@@ -25,7 +25,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.ApiResponse
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -39,12 +40,11 @@ import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SyncRepositoryImplTest {
 
-    private val apiInterface: ApiInterface = mockk(relaxed = true)
+    private val planetApi: PlanetApi = mockk(relaxed = true)
     private val testDispatcher: TestDispatcher = UnconfinedTestDispatcher()
     private val dispatcherProvider: DispatcherProvider = TestDispatcherProvider(testDispatcher)
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
@@ -105,7 +105,7 @@ class SyncRepositoryImplTest {
         UrlUtils.init(sharedPrefManager)
 
         syncRepository = SyncRepositoryImpl(
-            apiInterface = apiInterface,
+            planetApi = planetApi,
             dispatcherProvider = dispatcherProvider,
             resourcesRepository = resourcesRepository,
             coursesRepository = coursesRepository,
@@ -169,21 +169,21 @@ class SyncRepositoryImplTest {
         }
 
         coEvery {
-            apiInterface.getJsonObject(any(), any())
+            planetApi.getJsonObject(any(), any())
         } answers {
-            Response.success(shelfDoc)
+            ApiResponse.success(shelfDoc)
         }
 
-        fun createDocResponse(id: String): Response<KJsonObject> {
+        fun createDocResponse(id: String): ApiResponse<KJsonObject> {
             val doc = buildJsonObject { put("_id", id) }
             val row = buildJsonObject { put("doc", doc) }
             val rows = buildJsonArray { add(row) }
             val body = buildJsonObject { put("rows", rows) }
-            return Response.success(body)
+            return ApiResponse.success(body)
         }
 
         coEvery {
-            apiInterface.postDoc(any(), any(), any(), any())
+            planetApi.postDoc(any(), any(), any(), any())
         } answers {
             val url = thirdArg<String>()
             when {
@@ -191,7 +191,7 @@ class SyncRepositoryImplTest {
                 url.contains("courses") -> createDocResponse("course1")
                 url.contains("meetups") -> createDocResponse("meetup1")
                 url.contains("teams") -> createDocResponse("team1")
-                else -> Response.success(KJsonObject(emptyMap()))
+                else -> ApiResponse.success(KJsonObject(emptyMap()))
             }
         }
 
@@ -218,15 +218,15 @@ class SyncRepositoryImplTest {
         }
 
         coEvery {
-            apiInterface.getJsonObject(any(), any())
+            planetApi.getJsonObject(any(), any())
         } answers {
-            Response.success(shelfDoc)
+            ApiResponse.success(shelfDoc)
         }
 
         coEvery {
-            apiInterface.postDoc(any(), any(), any(), any())
+            planetApi.postDoc(any(), any(), any(), any())
         } answers {
-            Response.success(buildJsonObject {
+            ApiResponse.success(buildJsonObject {
                 val doc = buildJsonObject { put("_id", "unknownItem1") }
                 val row = buildJsonObject { put("doc", doc) }
                 putJsonArray("rows") { add(row) }
@@ -338,16 +338,16 @@ class SyncRepositoryImplTest {
         }
 
         coEvery {
-            apiInterface.getJsonObject(any(), match { it.contains("/shelf/$shelfId") })
-        } returns Response.success(shelfDoc)
+            planetApi.getJsonObject(any(), match { it.contains("/shelf/$shelfId") })
+        } returns ApiResponse.success(shelfDoc)
 
         val doc1 = buildJsonObject { put("_id", "res1") }
         val row1 = buildJsonObject { put("doc", doc1) }
         val rows = buildJsonArray { add(row1) }
         val body = buildJsonObject { put("rows", rows) }
         coEvery {
-            apiInterface.postDoc(any(), any(), any(), any())
-        } returns Response.success(body)
+            planetApi.postDoc(any(), any(), any(), any())
+        } returns ApiResponse.success(body)
 
         coEvery {
             resourcesRepository.batchInsertMyLibrary(shelfId, any())
@@ -366,7 +366,7 @@ class SyncRepositoryImplTest {
         val result = syncRepository.getShelvesWithData()
 
         assertEquals(listOf("shelf1", "shelf2"), result)
-        coVerify(exactly = 0) { apiInterface.getDocuments(any(), any()) }
+        coVerify(exactly = 0) { planetApi.getDocuments(any(), any()) }
     }
 
     @Test
@@ -380,13 +380,13 @@ class SyncRepositoryImplTest {
                 Rows().apply { id = "shelf2" }
             )
         }
-        coEvery { apiInterface.getDocuments(any(), any()) } returns Response.success(docResponse)
+        coEvery { planetApi.getDocuments(any(), any()) } returns ApiResponse.success(docResponse)
         coEvery { userSyncRepository.get().checkShelfBatchForDataOptimized(listOf("shelf1", "shelf2")) } returns listOf("shelf1")
 
         val result = syncRepository.getShelvesWithData()
 
         assertEquals(listOf("shelf1"), result)
-        coVerify(exactly = 1) { apiInterface.getDocuments(any(), any()) }
+        coVerify(exactly = 1) { planetApi.getDocuments(any(), any()) }
         coVerify(exactly = 1) { userSyncRepository.get().checkShelfBatchForDataOptimized(listOf("shelf1", "shelf2")) }
         assertEquals("shelf1", storedStringMap["shelves_with_data"])
         assertEquals(now, storedLongMap["shelves_cache_time"])
@@ -397,12 +397,12 @@ class SyncRepositoryImplTest {
         val now = 1000000000000L
         (timeProvider as TestTimeProvider).currentTime = now
 
-        coEvery { apiInterface.getDocuments(any(), any()) } returns Response.error(500, okhttp3.ResponseBody.create(null, ""))
+        coEvery { planetApi.getDocuments(any(), any()) } returns ApiResponse.error(500, "")
 
         val result = syncRepository.getShelvesWithData()
 
         assertEquals(emptyList<String>(), result)
-        coVerify(atLeast = 1) { apiInterface.getDocuments(any(), any()) }
+        coVerify(atLeast = 1) { planetApi.getDocuments(any(), any()) }
         coVerify(exactly = 0) { userSyncRepository.get().checkShelfBatchForDataOptimized(any()) }
         assertEquals(null, storedStringMap["shelves_with_data"])
     }
@@ -410,7 +410,7 @@ class SyncRepositoryImplTest {
     @Test
     fun `fetchResourceTotalRows returns 42 for total_rows 42`() = runTest {
         val body = buildJsonObject { put("total_rows", 42) }
-        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } returns Response.success(body)
+        coEvery { planetApi.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } returns ApiResponse.success(body)
 
         val result = syncRepository.fetchResourceTotalRows()
 
@@ -420,7 +420,7 @@ class SyncRepositoryImplTest {
     @Test
     fun `fetchResourceTotalRows returns null for empty object`() = runTest {
         val body = buildJsonObject {}
-        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } returns Response.success(body)
+        coEvery { planetApi.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } returns ApiResponse.success(body)
 
         val result = syncRepository.fetchResourceTotalRows()
 
@@ -429,7 +429,7 @@ class SyncRepositoryImplTest {
 
     @Test
     fun `fetchResourceTotalRows returns null for a null response`() = runTest {
-        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } throws RuntimeException("Network error")
+        coEvery { planetApi.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } throws RuntimeException("Network error")
 
         val result = syncRepository.fetchResourceTotalRows()
 
@@ -443,8 +443,8 @@ class SyncRepositoryImplTest {
             putJsonArray("rows") { add(row1) }
         }
         coEvery {
-            apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true&limit=7&skip=14") })
-        } returns Response.success(body)
+            planetApi.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true&limit=7&skip=14") })
+        } returns ApiResponse.success(body)
 
         val rows = syncRepository.fetchResourceRows(7, 14)
 
@@ -454,7 +454,7 @@ class SyncRepositoryImplTest {
 
     @Test
     fun `fetchResourceRows returns null for a null response`() = runTest {
-        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true") }) } throws RuntimeException("Network error")
+        coEvery { planetApi.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true") }) } throws RuntimeException("Network error")
 
         val rows = syncRepository.fetchResourceRows(7, 14)
 

@@ -1,0 +1,18 @@
+package org.ole.planet.myplanet.model
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+/**
+ * Room replacement for the former `Certification` model. Read-only sync data (not
+ * uploaded); persistence goes through [org.ole.planet.myplanet.data.room.dao.CertificationDao].
+ * `courseIds` stores the certification's course-id array as a JSON string.
+ */
+@Entity(tableName = "certification")
+open class Certification {
+    @PrimaryKey
+    var _id: String = ""
+    var _rev: String? = null
+    var name: String? = null
+    var courseIds: String? = null
+}

@@ -1,8 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import android.content.SharedPreferences
-import android.util.Log
 import com.google.gson.Gson
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -28,9 +25,6 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.put
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.ResponseBody
-import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -40,33 +34,42 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.ApiResponse
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.parseLeadersJson
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.AppInfo
+import org.ole.planet.myplanet.utils.AppLocale
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.LogLevel
+import org.ole.planet.myplanet.utils.NetworkStatus
+import org.ole.planet.myplanet.utils.RecordingLogSink
 import org.ole.planet.myplanet.utils.Sha256Utils
 import org.ole.planet.myplanet.utils.StoragePathResolver
+import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
-import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConfigurationsRepositoryImplTest {
 
     private lateinit var repository: ConfigurationsRepositoryImpl
     private val testDispatcher = UnconfinedTestDispatcher()
-    private val context: Context = mockk()
-    private val apiInterface: ApiInterface = mockk()
-    private val preferences: SharedPreferences = mockk(relaxed = true)
+    private val planetApi: PlanetApi = mockk()
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val appDatabase: AppDatabase = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
     private val storagePathResolver: StoragePathResolver = mockk(relaxed = true)
+    private val stringProvider: StringProvider = mockk()
+    private val appInfo: AppInfo = mockk()
+    private val appLocale: AppLocale = mockk(relaxed = true)
+    private val networkStatus: NetworkStatus = mockk()
     // Handed to the repository under test; cancelled in @After so nothing escapes the fork.
     private val serviceScope = CoroutineScope(SupervisorJob() + testDispatcher)
 
@@ -81,21 +84,19 @@ class ConfigurationsRepositoryImplTest {
     @get:Rule
     val temporaryFolder = TemporaryFolder()
 
+    @get:Rule
+    val logs = RecordingLogSink()
+
     @After
     fun tearDown() {
-        unmockkStatic(Log::class)
         serviceScope.cancel()
     }
 
     @Before
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
-        mockkStatic(Log::class)
-        every { Log.e(any<String>(), any<String>()) } returns 0
-        every { Log.e(any<String>(), any<String>(), any<Throwable>()) } returns 0
         repository = ConfigurationsRepositoryImpl(
-            context,
-            apiInterface,
+            planetApi,
             serviceScope,
             sharedPrefManager,
             appDatabase,
@@ -103,7 +104,11 @@ class ConfigurationsRepositoryImplTest {
             dispatcherProvider,
             TestTimeProvider(),
             storagePathResolver,
-            Gson()
+            Gson(),
+            stringProvider,
+            appInfo,
+            appLocale,
+            networkStatus
         )
     }
 
@@ -111,9 +116,6 @@ class ConfigurationsRepositoryImplTest {
     fun `checkHealth calls listener with success message when server is accessible`() = runTest(testDispatcher) {
         val healthUrl = "http://test.url/healthaccess?p=1234"
 
-        val rawPrefs: SharedPreferences = mockk()
-        every { sharedPrefManager.rawPreferences } returns rawPrefs
-        every { rawPrefs.getString(any(), any()) } returns "http://test.url"
         every { sharedPrefManager.getServerUrl() } returns "http://test.url"
         every { sharedPrefManager.isAlternativeUrl() } returns false
         every { sharedPrefManager.getCouchdbUrl() } returns "http://test.url"
@@ -121,14 +123,14 @@ class ConfigurationsRepositoryImplTest {
 
         UrlUtils.resetForTesting()
 
-        val responseBody = "".toResponseBody("application/json".toMediaTypeOrNull())
-        val response = Response.success(200, responseBody)
+        val responseBody = ""
+        val response = ApiResponse.success(responseBody)
 
-        coEvery { apiInterface.healthAccess(any()) } returns response
+        coEvery { planetApi.healthAccess(any()) } returns response
 
         val result = repository.checkHealth()
 
-        coVerify { apiInterface.healthAccess(healthUrl) }
+        coVerify { planetApi.healthAccess(healthUrl) }
         assertEquals(HealthCheckResult.Healthy, result)
     }
 
@@ -136,9 +138,6 @@ class ConfigurationsRepositoryImplTest {
     fun `checkHealth logs tagged error and returns network message when the request throws`() = runTest(testDispatcher) {
         val healthUrl = "http://test.url/healthaccess?p=1234"
 
-        val rawPrefs: SharedPreferences = mockk()
-        every { sharedPrefManager.rawPreferences } returns rawPrefs
-        every { rawPrefs.getString(any(), any()) } returns "http://test.url"
         every { sharedPrefManager.getServerUrl() } returns "http://test.url"
         every { sharedPrefManager.isAlternativeUrl() } returns false
         every { sharedPrefManager.getCouchdbUrl() } returns "http://test.url"
@@ -146,12 +145,12 @@ class ConfigurationsRepositoryImplTest {
 
         UrlUtils.resetForTesting()
 
-        coEvery { apiInterface.healthAccess(any()) } throws IOException("boom")
+        coEvery { planetApi.healthAccess(any()) } throws IOException("boom")
 
         val result = repository.checkHealth()
 
         assertEquals(HealthCheckResult.Failed("Network connection error"), result)
-        verify { Log.e("ConfigurationsRepository", "Health access request failed", any<Throwable>()) }
+        assertTrue(logs.entries(LogLevel.ERROR, "ConfigurationsRepository").any { it.message == "Health access request failed" && it.throwable != null })
     }
 
     @Test
@@ -169,9 +168,6 @@ class ConfigurationsRepositoryImplTest {
     fun `checkHealth returns Failed when server returns 503`() = runTest(testDispatcher) {
         val healthUrl = "http://test.url/healthaccess?p=1234"
 
-        val rawPrefs: SharedPreferences = mockk()
-        every { sharedPrefManager.rawPreferences } returns rawPrefs
-        every { rawPrefs.getString(any(), any()) } returns "http://test.url"
         every { sharedPrefManager.getServerUrl() } returns "http://test.url"
         every { sharedPrefManager.isAlternativeUrl() } returns false
         every { sharedPrefManager.getCouchdbUrl() } returns "http://test.url"
@@ -179,14 +175,14 @@ class ConfigurationsRepositoryImplTest {
 
         UrlUtils.resetForTesting()
 
-        val responseBody = "".toResponseBody("application/json".toMediaTypeOrNull())
-        val response = Response.error<ResponseBody>(503, responseBody)
+        val responseBody = ""
+        val response = ApiResponse.error<String>(503, responseBody)
 
-        coEvery { apiInterface.healthAccess(any()) } returns response
+        coEvery { planetApi.healthAccess(any()) } returns response
 
         val result = repository.checkHealth()
 
-        coVerify { apiInterface.healthAccess(healthUrl) }
+        coVerify { planetApi.healthAccess(healthUrl) }
         assertEquals(HealthCheckResult.Failed("Service temporarily unavailable"), result)
     }
 
@@ -201,7 +197,7 @@ class ConfigurationsRepositoryImplTest {
     fun `checkVersion calls onError if baseUrl is empty`() = runTest(testDispatcher) {
         every { sharedPrefManager.isAlternativeUrl() } returns false
         every { sharedPrefManager.getCouchdbUrl() } returns ""
-        every { context.getString(R.string.server_url_not_configured) } returns "Server URL not configured"
+        every { stringProvider.getString(R.string.server_url_not_configured) } returns "Server URL not configured"
 
         UrlUtils.init(sharedPrefManager)
 
@@ -217,11 +213,8 @@ class ConfigurationsRepositoryImplTest {
         every { sharedPrefManager.isAlternativeUrl() } returns false
         every { sharedPrefManager.getCouchdbUrl() } returns "http://test.url"
 
-        val rawPrefs: SharedPreferences = mockk(relaxed = true)
-        every { sharedPrefManager.rawPreferences } returns rawPrefs
-
         // Return 0 for last check, and we will keep timeProvider.now() at 0
-        every { rawPrefs.getLong("last_version_check_timestamp", 0) } returns 0L
+        every { sharedPrefManager.getLastVersionCheckTimestamp() } returns 0L
 
         val myPlanet = MyPlanet().apply {
             planetVersion = "v1.0"
@@ -231,27 +224,13 @@ class ConfigurationsRepositoryImplTest {
         val planetJson = GsonUtils.gson.toJson(myPlanet)
 
         every { sharedPrefManager.getVersionDetail() } returns planetJson
-        every { rawPrefs.getInt("cachedApkVersion", -1) } returns 2
+        every { sharedPrefManager.getCachedApkVersion() } returns 2
 
-        every { context.packageName } returns "org.ole.planet.myplanet"
+        every { appInfo.versionCode() } returns 1
 
-        // Mock getVersionCode from context
-        val pm = mockk<android.content.pm.PackageManager>()
-        val packageInfo = android.content.pm.PackageInfo().apply {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                longVersionCode = 1L
-            } else {
-                @Suppress("DEPRECATION")
-                versionCode = 1
-            }
-        }
-        every { context.packageManager } returns pm
-        every { pm.getPackageInfo("org.ole.planet.myplanet", 0) } returns packageInfo
+        every { stringProvider.getString(R.string.planet_is_up_to_date) } returns "Planet is up to date"
 
-        every { context.getString(R.string.planet_is_up_to_date) } returns "Planet is up to date"
-
-        io.mockk.mockkObject(org.ole.planet.myplanet.utils.Constants)
-        every { org.ole.planet.myplanet.utils.Constants.showBetaFeature(any(), any()) } returns false
+        every { sharedPrefManager.isBetaFeatureEnabled() } returns false
 
         UrlUtils.init(sharedPrefManager)
 
@@ -265,7 +244,6 @@ class ConfigurationsRepositoryImplTest {
         verify { callback.onCheckingVersion() }
         verify(exactly = 1) { callback.onUpdateAvailable(any(), any()) }
 
-        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.Constants)
     }
 
     @Test
@@ -277,13 +255,9 @@ class ConfigurationsRepositoryImplTest {
         every { sharedPrefManager.getUrlPwd() } returns "pwd"
         every { sharedPrefManager.getUrlScheme() } returns "http"
         every { sharedPrefManager.getUrlHost() } returns "test.url"
-        every { sharedPrefManager.rawPreferences.getInt("url_port", 80) } returns 80
-
-        val rawPrefs: SharedPreferences = mockk(relaxed = true)
-        every { sharedPrefManager.rawPreferences } returns rawPrefs
 
         // Return a time older than 24 hours (24 * 60 * 60 * 1000 = 86400000)
-        every { rawPrefs.getLong("last_version_check_timestamp", 0) } returns -86400001L
+        every { sharedPrefManager.getLastVersionCheckTimestamp() } returns -86400001L
 
         val myPlanet = MyPlanet().apply {
             planetVersion = "v1.0"
@@ -291,34 +265,20 @@ class ConfigurationsRepositoryImplTest {
             latestapkcode = 2
         }
 
-        val responsePlanet = retrofit2.Response.success(myPlanet)
+        val responsePlanet = ApiResponse.success(myPlanet)
         val apkStringJson = GsonUtils.gson.toJson("v3")
-        val responseApk = retrofit2.Response.success(apkStringJson.toResponseBody("application/json".toMediaTypeOrNull()))
+        val responseApk = ApiResponse.success(apkStringJson)
 
-        coEvery { apiInterface.checkVersion(any()) } returns responsePlanet
-        coEvery { apiInterface.getApkVersion(any()) } returns responseApk
+        coEvery { planetApi.checkVersion(any()) } returns responsePlanet
+        coEvery { planetApi.getApkVersion(any()) } returns responseApk
 
-        every { context.getString(R.string.planet_is_up_to_date) } returns "Planet is up to date"
-        every { context.packageName } returns "org.ole.planet.myplanet"
+        every { stringProvider.getString(R.string.planet_is_up_to_date) } returns "Planet is up to date"
+        every { appInfo.versionCode() } returns 1
 
-        // Mock getVersionCode from context
-        val pm = mockk<android.content.pm.PackageManager>()
-        val packageInfo = android.content.pm.PackageInfo().apply {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                longVersionCode = 1L
-            } else {
-                @Suppress("DEPRECATION")
-                versionCode = 1
-            }
-        }
-        every { context.packageManager } returns pm
-        every { pm.getPackageInfo("org.ole.planet.myplanet", 0) } returns packageInfo
-
-        io.mockk.mockkObject(org.ole.planet.myplanet.utils.Constants)
-        every { org.ole.planet.myplanet.utils.Constants.showBetaFeature(any(), any()) } returns false
+        every { sharedPrefManager.isBetaFeatureEnabled() } returns false
 
         io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
-        every { org.ole.planet.myplanet.utils.NetworkUtils.getCurrentNetworkId(context) } returns 1
+        every { networkStatus.currentWifiNetworkId() } returns 1
 
         UrlUtils.init(sharedPrefManager)
 
@@ -329,136 +289,135 @@ class ConfigurationsRepositoryImplTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         verify { callback.onCheckingVersion() }
-        coVerify(exactly = 1) { apiInterface.checkVersion(any()) }
-        coVerify(exactly = 1) { apiInterface.getApkVersion(any()) }
+        coVerify(exactly = 1) { planetApi.checkVersion(any()) }
+        coVerify(exactly = 1) { planetApi.getApkVersion(any()) }
         verify(exactly = 1) { callback.onUpdateAvailable(any(), any()) }
 
-        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.Constants)
         io.mockk.unmockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
     }
 
     @Test
     fun `checkServerAvailability with string url returns true when response has 8 or more items`() = runTest(testDispatcher) {
         val url = "http://test.url"
-        val mockBody = "1,2,3,4,5,6,7,8".toResponseBody("text/plain".toMediaTypeOrNull())
-        val response = Response.success(200, mockBody)
+        val mockBody = "1,2,3,4,5,6,7,8"
+        val response = ApiResponse.success(mockBody)
 
-        coEvery { apiInterface.isPlanetAvailable(url) } returns response
+        coEvery { planetApi.isPlanetAvailable(url) } returns response
 
         val result = repository.checkServerAvailability(url)
 
         assertTrue(result)
-        coVerify { apiInterface.isPlanetAvailable(url) }
+        coVerify { planetApi.isPlanetAvailable(url) }
     }
 
     @Test
     fun `checkServerAvailability with string url returns false when response has less than 8 items`() = runTest(testDispatcher) {
         val url = "http://test.url"
-        val mockBody = "1,2,3".toResponseBody("text/plain".toMediaTypeOrNull())
-        val response = Response.success(200, mockBody)
+        val mockBody = "1,2,3"
+        val response = ApiResponse.success(mockBody)
 
-        coEvery { apiInterface.isPlanetAvailable(url) } returns response
+        coEvery { planetApi.isPlanetAvailable(url) } returns response
 
         val result = repository.checkServerAvailability(url)
 
         assertFalse(result)
-        coVerify { apiInterface.isPlanetAvailable(url) }
+        coVerify { planetApi.isPlanetAvailable(url) }
     }
 
     @Test
     fun `checkServerAvailability with string url counts trailing commas as a single entry`() = runTest(testDispatcher) {
         val url = "http://test.url"
-        val mockBody = "1,2,3,4,5,6,7,8,,".toResponseBody("text/plain".toMediaTypeOrNull())
-        val response = Response.success(200, mockBody)
+        val mockBody = "1,2,3,4,5,6,7,8,,"
+        val response = ApiResponse.success(mockBody)
 
-        coEvery { apiInterface.isPlanetAvailable(url) } returns response
+        coEvery { planetApi.isPlanetAvailable(url) } returns response
 
         val result = repository.checkServerAvailability(url)
 
         assertTrue(result)
-        coVerify { apiInterface.isPlanetAvailable(url) }
+        coVerify { planetApi.isPlanetAvailable(url) }
     }
 
     @Test
     fun `checkServerAvailability with string url returns false when response is only commas`() = runTest(testDispatcher) {
         val url = "http://test.url"
-        val mockBody = ",,,".toResponseBody("text/plain".toMediaTypeOrNull())
-        val response = Response.success(200, mockBody)
+        val mockBody = ",,,"
+        val response = ApiResponse.success(mockBody)
 
-        coEvery { apiInterface.isPlanetAvailable(url) } returns response
+        coEvery { planetApi.isPlanetAvailable(url) } returns response
 
         val result = repository.checkServerAvailability(url)
 
         assertFalse(result)
-        coVerify { apiInterface.isPlanetAvailable(url) }
+        coVerify { planetApi.isPlanetAvailable(url) }
     }
 
     @Test
     fun `checkServerAvailability with string url returns false when response body is empty`() = runTest(testDispatcher) {
         val url = "http://test.url"
-        val mockBody = "".toResponseBody("text/plain".toMediaTypeOrNull())
-        val response = Response.success(200, mockBody)
+        val mockBody = ""
+        val response = ApiResponse.success(mockBody)
 
-        coEvery { apiInterface.isPlanetAvailable(url) } returns response
+        coEvery { planetApi.isPlanetAvailable(url) } returns response
 
         val result = repository.checkServerAvailability(url)
 
         assertFalse(result)
-        coVerify { apiInterface.isPlanetAvailable(url) }
+        coVerify { planetApi.isPlanetAvailable(url) }
     }
 
     @Test
     fun `checkServerAvailability with string url keeps internal empty entries when counting`() = runTest(testDispatcher) {
         val url = "http://test.url"
-        val mockBody = "a,,,b,,,,,,,h".toResponseBody("text/plain".toMediaTypeOrNull())
-        val response = Response.success(200, mockBody)
+        val mockBody = "a,,,b,,,,,,,h"
+        val response = ApiResponse.success(mockBody)
 
-        coEvery { apiInterface.isPlanetAvailable(url) } returns response
+        coEvery { planetApi.isPlanetAvailable(url) } returns response
 
         val result = repository.checkServerAvailability(url)
 
         assertTrue(result)
-        coVerify { apiInterface.isPlanetAvailable(url) }
+        coVerify { planetApi.isPlanetAvailable(url) }
     }
 
     @Test
     fun `checkServerAvailability with string url returns false when response has exactly seven items`() = runTest(testDispatcher) {
         val url = "http://test.url"
-        val mockBody = "1,2,3,4,5,6,7".toResponseBody("text/plain".toMediaTypeOrNull())
-        val response = Response.success(200, mockBody)
+        val mockBody = "1,2,3,4,5,6,7"
+        val response = ApiResponse.success(mockBody)
 
-        coEvery { apiInterface.isPlanetAvailable(url) } returns response
+        coEvery { planetApi.isPlanetAvailable(url) } returns response
 
         val result = repository.checkServerAvailability(url)
 
         assertFalse(result)
-        coVerify { apiInterface.isPlanetAvailable(url) }
+        coVerify { planetApi.isPlanetAvailable(url) }
     }
 
     @Test
     fun `checkServerAvailability with string url returns true when response is 401`() = runTest(testDispatcher) {
         val url = "http://test.url"
-        val mockBody = "".toResponseBody("text/plain".toMediaTypeOrNull())
-        val response = Response.error<ResponseBody>(401, mockBody)
+        val mockBody = ""
+        val response = ApiResponse.error<String>(401, mockBody)
 
-        coEvery { apiInterface.isPlanetAvailable(url) } returns response
+        coEvery { planetApi.isPlanetAvailable(url) } returns response
 
         val result = repository.checkServerAvailability(url)
 
         assertTrue(result)
-        coVerify { apiInterface.isPlanetAvailable(url) }
+        coVerify { planetApi.isPlanetAvailable(url) }
     }
 
     @Test
     fun `checkServerAvailability with string url returns false when exception is thrown`() = runTest(testDispatcher) {
         val url = "http://test.url"
 
-        coEvery { apiInterface.isPlanetAvailable(url) } throws Exception("Network error")
+        coEvery { planetApi.isPlanetAvailable(url) } throws Exception("Network error")
 
         val result = repository.checkServerAvailability(url)
 
         assertFalse(result)
-        coVerify { apiInterface.isPlanetAvailable(url) }
+        coVerify { planetApi.isPlanetAvailable(url) }
     }
 
     @Test
@@ -470,9 +429,9 @@ class ConfigurationsRepositoryImplTest {
         every { serverUrlMapper.processUrl(updateUrl) } returns mapping
 
         // Mock `checkServerAvailability` for primary
-        val mockBody = "1,2,3,4,5,6,7,8".toResponseBody("text/plain".toMediaTypeOrNull())
-        val response = Response.success(200, mockBody)
-        coEvery { apiInterface.isPlanetAvailable("http://primary.url") } returns response
+        val mockBody = "1,2,3,4,5,6,7,8"
+        val response = ApiResponse.success(mockBody)
+        coEvery { planetApi.isPlanetAvailable("http://primary.url") } returns response
 
         val result = repository.checkServerAvailability()
 
@@ -488,15 +447,15 @@ class ConfigurationsRepositoryImplTest {
         val mapping = ServerUrlMapper.UrlMapping("http://primary.url", "http://alt.url")
         every { serverUrlMapper.processUrl(updateUrl) } returns mapping
 
-        val mockBody = "1,2,3,4,5,6,7,8".toResponseBody("text/plain".toMediaTypeOrNull())
-        val response = Response.success(200, mockBody)
-        coEvery { apiInterface.isPlanetAvailable("http://primary.url") } returns response
+        val mockBody = "1,2,3,4,5,6,7,8"
+        val response = ApiResponse.success(mockBody)
+        coEvery { planetApi.isPlanetAvailable("http://primary.url") } returns response
 
         val result = repository.checkServerAvailability()
 
         assertTrue(result)
-        coVerify(exactly = 0) { apiInterface.isPlanetAvailable("http://alt.url") }
-        verify(exactly = 0) { serverUrlMapper.updateUrlPreferences(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { planetApi.isPlanetAvailable("http://alt.url") }
+        verify(exactly = 0) { serverUrlMapper.updateUrlPreferences(any(), any(), any(), any()) }
     }
 
     @Test
@@ -508,18 +467,16 @@ class ConfigurationsRepositoryImplTest {
         every { serverUrlMapper.processUrl(updateUrl) } returns mapping
 
         // Mock `checkServerAvailability` for primary (fails)
-        val failBody = "1".toResponseBody("text/plain".toMediaTypeOrNull())
-        val failResponse = Response.success(200, failBody)
-        coEvery { apiInterface.isPlanetAvailable("http://primary.url") } returns failResponse
+        val failBody = "1"
+        val failResponse = ApiResponse.success(failBody)
+        coEvery { planetApi.isPlanetAvailable("http://primary.url") } returns failResponse
 
         // Mock `checkServerAvailability` for alternative (succeeds)
-        val successBody = "1,2,3,4,5,6,7,8".toResponseBody("text/plain".toMediaTypeOrNull())
-        val successResponse = Response.success(200, successBody)
-        coEvery { apiInterface.isPlanetAvailable("http://alt.url") } returns successResponse
+        val successBody = "1,2,3,4,5,6,7,8"
+        val successResponse = ApiResponse.success(successBody)
+        coEvery { planetApi.isPlanetAvailable("http://alt.url") } returns successResponse
 
-        val editor = mockk<SharedPreferences.Editor>(relaxed = true)
-        every { sharedPrefManager.rawPreferences.edit() } returns editor
-        every { serverUrlMapper.updateUrlPreferences(any(), any(), any(), any(), any()) } returns Unit
+        every { serverUrlMapper.updateUrlPreferences(any(), any(), any(), any()) } returns Unit
 
         io.mockk.mockkStatic(android.net.Uri::class)
         val mockUri = mockk<android.net.Uri>(relaxed = true)
@@ -529,7 +486,7 @@ class ConfigurationsRepositoryImplTest {
 
         assertTrue(result)
         verify { serverUrlMapper.processUrl(updateUrl) }
-        verify { serverUrlMapper.updateUrlPreferences(editor, any(), "http://alt.url", "http://primary.url", any()) }
+        verify { serverUrlMapper.updateUrlPreferences(sharedPrefManager, any(), "http://alt.url", "http://primary.url") }
         io.mockk.unmockkStatic(android.net.Uri::class)
     }
 
@@ -545,9 +502,9 @@ class ConfigurationsRepositoryImplTest {
         UrlUtils.init(sharedPrefManager)
 
         // Mock api response
-        val mockBody = expectedChecksum.toResponseBody("text/plain".toMediaTypeOrNull())
-        val response = Response.success(200, mockBody)
-        coEvery { apiInterface.getChecksum(any()) } returns response
+        val mockBody = expectedChecksum
+        val response = ApiResponse.success(mockBody)
+        coEvery { planetApi.getChecksum(any()) } returns response
 
         val mockFile = mockk<java.io.File>()
         every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
@@ -576,9 +533,9 @@ class ConfigurationsRepositoryImplTest {
         UrlUtils.init(sharedPrefManager)
 
         // Mock api response
-        val mockBody = expectedChecksum.toResponseBody("text/plain".toMediaTypeOrNull())
-        val response = Response.success(200, mockBody)
-        coEvery { apiInterface.getChecksum(any()) } returns response
+        val mockBody = expectedChecksum
+        val response = ApiResponse.success(mockBody)
+        coEvery { planetApi.getChecksum(any()) } returns response
 
         val mockFile = mockk<java.io.File>()
         every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
@@ -605,12 +562,9 @@ class ConfigurationsRepositoryImplTest {
         UrlUtils.init(sharedPrefManager)
 
         // Mock api response
-        val mockBody = expectedChecksum.toResponseBody("text/plain".toMediaTypeOrNull())
-        val response = Response.success(200, mockBody)
-        coEvery { apiInterface.getChecksum(any()) } returns response
-
-        io.mockk.mockkStatic(android.util.Log::class)
-        every { android.util.Log.w(any(), any<String>()) } returns 0
+        val mockBody = expectedChecksum
+        val response = ApiResponse.success(mockBody)
+        coEvery { planetApi.getChecksum(any()) } returns response
 
         val mockFile = mockk<java.io.File>()
         every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
@@ -623,7 +577,6 @@ class ConfigurationsRepositoryImplTest {
 
         assertFalse(result)
 
-        io.mockk.unmockkStatic(android.util.Log::class)
         io.mockk.unmockkConstructor(Sha256Utils::class)
     }
 
@@ -639,9 +592,9 @@ class ConfigurationsRepositoryImplTest {
         UrlUtils.init(sharedPrefManager)
 
         // Mock api response
-        val mockBody = expectedChecksum.toResponseBody("text/plain".toMediaTypeOrNull())
-        val response = Response.success(200, mockBody)
-        coEvery { apiInterface.getChecksum(any()) } returns response
+        val mockBody = expectedChecksum
+        val response = ApiResponse.success(mockBody)
+        coEvery { planetApi.getChecksum(any()) } returns response
 
         val mockFile = mockk<java.io.File>()
         every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
@@ -661,9 +614,9 @@ class ConfigurationsRepositoryImplTest {
         every { sharedPrefManager.getCouchdbUrl() } returns "http://test.url"
         UrlUtils.init(sharedPrefManager)
 
-        val mockBody = "".toResponseBody("text/plain".toMediaTypeOrNull())
-        val response = Response.error<ResponseBody>(500, mockBody)
-        coEvery { apiInterface.getChecksum(any()) } returns response
+        val mockBody = ""
+        val response = ApiResponse.error<String>(500, mockBody)
+        coEvery { planetApi.getChecksum(any()) } returns response
 
         val result = repository.checkCheckSum(path)
 
@@ -675,7 +628,7 @@ class ConfigurationsRepositoryImplTest {
         val url = "http://test.url"
         val pin = "1234"
 
-        every { context.getString(R.string.app_version) } returns "1.0.0"
+        every { stringProvider.getString(R.string.app_version) } returns "1.0.0"
 
         val mapping = ServerUrlMapper.UrlMapping(url, null)
         every { serverUrlMapper.processUrl(url) } returns mapping
@@ -685,7 +638,7 @@ class ConfigurationsRepositoryImplTest {
         val versionsJson = kotlinx.serialization.json.buildJsonObject {
             put("minapk", "1.0.0")
         }
-        val versionsResponse = Response.success(200, versionsJson)
+        val versionsResponse = ApiResponse.success(versionsJson)
 
         // Mock fetchConfiguration response (configUrl)
         io.mockk.mockkStatic(android.net.Uri::class)
@@ -710,18 +663,18 @@ class ConfigurationsRepositoryImplTest {
         val configJson = kotlinx.serialization.json.buildJsonObject {
             put("rows", rowsArray)
         }
-        val configResponse = Response.success(200, configJson)
+        val configResponse = ApiResponse.success(configJson)
 
-        coEvery { apiInterface.getConfiguration(versionsUrl) } returns versionsResponse
-        coEvery { apiInterface.getConfiguration(configUrl) } returns configResponse
+        coEvery { planetApi.getConfiguration(versionsUrl) } returns versionsResponse
+        coEvery { planetApi.getConfiguration(configUrl) } returns configResponse
 
         io.mockk.mockkObject(VersionUtils)
         every { VersionUtils.isVersionAllowed(any(), any()) } returns true
 
         every { sharedPrefManager.setParentCode("parent_code") } returns Unit
 
-        every { context.getString(R.string.http_protocol) } returns "http"
-        every { context.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
+        every { stringProvider.getString(R.string.http_protocol) } returns "http"
+        every { stringProvider.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
 
         io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
         every { org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol(url) } returns "http"
@@ -750,7 +703,7 @@ class ConfigurationsRepositoryImplTest {
         val url = "http://test.url"
         val pin = "1234"
 
-        every { context.getString(R.string.app_version) } returns "1.0.0"
+        every { stringProvider.getString(R.string.app_version) } returns "1.0.0"
 
         val mapping = ServerUrlMapper.UrlMapping(url, null)
         every { serverUrlMapper.processUrl(url) } returns mapping
@@ -760,15 +713,15 @@ class ConfigurationsRepositoryImplTest {
         val versionsJson = kotlinx.serialization.json.buildJsonObject {
             put("minapk", "2.0.0")
         }
-        val versionsResponse = Response.success(200, versionsJson)
+        val versionsResponse = ApiResponse.success(versionsJson)
 
-        coEvery { apiInterface.getConfiguration(versionsUrl) } returns versionsResponse
+        coEvery { planetApi.getConfiguration(versionsUrl) } returns versionsResponse
 
         io.mockk.mockkObject(VersionUtils)
         every { VersionUtils.isVersionAllowed(any(), any()) } returns false
 
-        every { context.getString(R.string.http_protocol) } returns "http"
-        every { context.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
+        every { stringProvider.getString(R.string.http_protocol) } returns "http"
+        every { stringProvider.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
 
         io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
         every { org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol(url) } returns "http"
@@ -793,10 +746,10 @@ class ConfigurationsRepositoryImplTest {
         every { serverUrlMapper.processUrl(url) } returns mapping
 
         val versionsUrl = "$url/versions"
-        coEvery { apiInterface.getConfiguration(versionsUrl) } returns Response.error(500, "".toResponseBody("text/plain".toMediaTypeOrNull()))
+        coEvery { planetApi.getConfiguration(versionsUrl) } returns ApiResponse.error(500, "")
 
-        every { context.getString(R.string.http_protocol) } returns "http"
-        every { context.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
+        every { stringProvider.getString(R.string.http_protocol) } returns "http"
+        every { stringProvider.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
 
         io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
         every { org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol(url) } returns "http"
@@ -906,7 +859,7 @@ class ConfigurationsRepositoryImplTest {
         val expectedLeaders = listOf(UserEntity(id = "leader_1", name = "Alice"))
 
         every { sharedPrefManager.getCommunityLeaders() } returns leadersJson
-        mockkObject(UserEntity.Companion)
+        mockkStatic("org.ole.planet.myplanet.model.UserEntityJsonKt")
         every { UserEntity.parseLeadersJson(leadersJson) } returns expectedLeaders
 
         try {
@@ -916,7 +869,7 @@ class ConfigurationsRepositoryImplTest {
             verify { sharedPrefManager.getCommunityLeaders() }
             verify { UserEntity.parseLeadersJson(leadersJson) }
         } finally {
-            unmockkObject(UserEntity.Companion)
+            unmockkStatic("org.ole.planet.myplanet.model.UserEntityJsonKt")
         }
     }
 
@@ -938,7 +891,7 @@ class ConfigurationsRepositoryImplTest {
         val responseJson = kotlinx.serialization.json.buildJsonObject {
             put("total_rows", 1)
         }
-        coEvery { apiInterface.postDoc("Basic header", "application/json", "http://test.url/_users/_find", any()) } returns Response.success(responseJson)
+        coEvery { planetApi.postDoc("Basic header", "application/json", "http://test.url/_users/_find", any()) } returns ApiResponse.success(responseJson)
 
         repository.syncCommunityLeaders()
 
@@ -953,8 +906,8 @@ class ConfigurationsRepositoryImplTest {
         every { UrlUtils.header } returns "Basic header"
         every { UrlUtils.getUrl() } returns "http://test.url"
 
-        val errorResponseBody = "".toResponseBody("application/json".toMediaTypeOrNull())
-        coEvery { apiInterface.postDoc("Basic header", "application/json", "http://test.url/_users/_find", any()) } returns Response.error(500, errorResponseBody)
+        val errorResponseBody = ""
+        coEvery { planetApi.postDoc("Basic header", "application/json", "http://test.url/_users/_find", any()) } returns ApiResponse.error(500, errorResponseBody)
 
         repository.syncCommunityLeaders()
 
@@ -970,7 +923,7 @@ class ConfigurationsRepositoryImplTest {
 
         repository.syncCommunityLeaders()
 
-        coVerify(exactly = 0) { apiInterface.postDoc(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { planetApi.postDoc(any(), any(), any(), any()) }
 
         unmockkObject(UrlUtils)
     }

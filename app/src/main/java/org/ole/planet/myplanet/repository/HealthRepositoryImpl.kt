@@ -5,7 +5,6 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
-import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
@@ -15,28 +14,32 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.jsonObject
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.HealthExamination
-import org.ole.planet.myplanet.model.HealthExamination.Companion.serialize
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.fromJson
+import org.ole.planet.myplanet.model.getEncryptedDataAsJson
+import org.ole.planet.myplanet.model.serialize
 import org.ole.planet.myplanet.utils.AndroidDecrypter
+import org.ole.planet.myplanet.utils.DateFormatter
+import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class HealthRepositoryImpl @Inject constructor(
-    private val apiInterface: ApiInterface,
+    private val planetApi: PlanetApi,
     private val dispatcherProvider: DispatcherProvider,
     private val healthExaminationDao: HealthExaminationDao,
     private val userRepository: Lazy<UserRepository>,
-    @PlainGson private val gson: Gson
+    @PlainGson private val gson: Gson,
+    private val dateFormatter: DateFormatter
 ) : HealthRepository {
     override suspend fun getHealthEntry(userId: String): Pair<UserEntity?, HealthExamination?> {
         val userCopy = userRepository.get().getUserById(userId)
@@ -53,7 +56,7 @@ class HealthRepositoryImpl @Inject constructor(
         return withContext(dispatcherProvider.default) {
             val health = MyHealth()
             val profile = MyHealth.MyHealthProfile()
-            health.lastExamination = Date().time
+            health.lastExamination = DateTimeUtils.nowMillis()
             health.userKey = AndroidDecrypter.generateKey()
             health.profile = profile
             health
@@ -124,13 +127,13 @@ class HealthRepositoryImpl @Inject constructor(
                 async {
                     semaphore.withPermit {
                         try {
-                            val res = apiInterface.postDoc(
+                            val res = planetApi.postDoc(
                                 UrlUtils.header,
                                 "application/json",
                                 "${UrlUtils.getUrl()}/health",
-                                serialize(pojo).toKotlinx().jsonObject
+                                HealthExamination.serialize(pojo).toKotlinx().jsonObject
                             )
-                            val resBody = res.body()?.toGson()
+                            val resBody = res.body?.toGson()
 
                             if (resBody != null && resBody.has("id") == true) {
                                 val rev = resBody.get("rev")?.asString
@@ -210,7 +213,7 @@ class HealthRepositoryImpl @Inject constructor(
             birthPlace = (userData["birthPlace"] as? String)?.trim()
             userData["dob"]?.let { dobVal ->
                 val dobInput = (dobVal as String).trim()
-                dob = TimeUtils.convertDDMMYYYYToISO(dobInput)
+                dob = dateFormatter.convertDDMMYYYYToISO(dobInput)
             }
             isUpdated = true
         }

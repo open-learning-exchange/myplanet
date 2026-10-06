@@ -34,8 +34,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import okhttp3.ResponseBody
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.data.api.StreamBody
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.DownloadPreferences
 import org.ole.planet.myplanet.di.getBroadcastService
@@ -339,7 +339,7 @@ class DownloadService : Service() {
 
         result as DownloadResult.Success
         val isPartial = result.code == 206
-        val contentLength = result.body.contentLength()
+        val contentLength = result.body.contentLength
         Log.d(TAG, "tryDownload [$source]: $fileName responded contentLength=${if (contentLength == -1L) "unknown" else "${contentLength}B"} partial=$isPartial")
 
         val storageError = getStorageError(contentLength)
@@ -427,7 +427,7 @@ class DownloadService : Service() {
     }
 
     @Throws(IOException::class)
-    private suspend fun downloadFile(body: ResponseBody, url: String, isPartial: Boolean, validator: String? = null) {
+    private suspend fun downloadFile(body: StreamBody, url: String, isPartial: Boolean, validator: String? = null) {
         val finalFile = FileUtils.getSDPathFromUrl(this@DownloadService, url)
         finalFile.parentFile?.mkdirs()
         val tempFile = File(finalFile.parentFile, "${finalFile.name}.tmp")
@@ -440,7 +440,7 @@ class DownloadService : Service() {
         }
         writeValidator(url, validator)
 
-        val remoteRemaining = body.contentLength()
+        val remoteRemaining = body.contentLength
         val fileSize = if (remoteRemaining > 0) resumeOffset + remoteRemaining else -1L
         var total = resumeOffset
         Log.d(
@@ -450,7 +450,7 @@ class DownloadService : Service() {
         )
 
         try {
-            BufferedInputStream(body.byteStream(), BUFFER_SIZE).use { bis ->
+            BufferedInputStream(body.source().inputStream(), BUFFER_SIZE).use { bis ->
                 FileOutputStream(tempFile, isPartial).use { output ->
                     val download = Download().apply {
                         this.fileName = getFileNameFromUrl(url)

@@ -12,16 +12,18 @@ import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.populateTeamFields
+import org.ole.planet.myplanet.utils.DateFormatter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TimeProvider
-import org.ole.planet.myplanet.utils.TimeUtils
 
 class EnterprisesRepositoryImpl @Inject constructor(
     private val storagePathResolver: StoragePathResolver,
     private val teamDao: TeamDao,
     private val timeProvider: TimeProvider,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val dateFormatter: DateFormatter
 ) : EnterprisesRepository {
 
     override suspend fun addReport(report: FinanceReportParams) {
@@ -93,10 +95,10 @@ class EnterprisesRepositoryImpl @Inject constructor(
             val totalExpenses = report.wages + report.otherExpenses
             val profitLoss = totalIncome - totalExpenses
             val endingBalance = profitLoss + report.beginningBalance
-            csvBuilder.append(TimeUtils.formatDateForCsv(report.startDate)).append(", ")
-                .append(TimeUtils.formatDateForCsv(report.endDate)).append(", ")
-                .append(TimeUtils.formatDateForCsv(report.createdDate)).append(", ")
-                .append(TimeUtils.formatDateForCsv(report.updatedDate)).append(", ")
+            csvBuilder.append(dateFormatter.formatForCsv(report.startDate)).append(", ")
+                .append(dateFormatter.formatForCsv(report.endDate)).append(", ")
+                .append(dateFormatter.formatForCsv(report.createdDate)).append(", ")
+                .append(dateFormatter.formatForCsv(report.updatedDate)).append(", ")
                 .append(report.beginningBalance).append(", ")
                 .append(report.sales).append(", ")
                 .append(report.otherIncome).append(", ")
