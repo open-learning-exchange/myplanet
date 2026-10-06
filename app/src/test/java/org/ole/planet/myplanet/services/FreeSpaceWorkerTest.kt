@@ -211,4 +211,44 @@ class FreeSpaceWorkerTest {
         assertEquals(2, outputData.getInt("deletedFiles", -1))
         assertEquals(expectedFreedBytes, outputData.getLong("freedBytes", -1L))
     }
+
+    @Test
+    fun `doWork flushes batch when size reaches batch size and flushes remaining on completion`() = runTest(testDispatcher) {
+        val batches = mutableListOf<Set<String>>()
+        coEvery { resourcesRepository.markResourcesAsNotOffline(any()) } answers {
+            batches += firstArg<Collection<String>>().toSet()
+        }
+
+        val expectedIds = (0 until 26).map { "res$it" }.toSet()
+        expectedIds.forEach { id -> addResource(id, "f.txt") }
+
+        val result = worker.doWork()
+        advanceUntilIdle()
+
+        assertTrue(result is Result.Success)
+        assertEquals(2, batches.size)
+        assertEquals(25, batches[0].size)
+        assertEquals(1, batches[1].size)
+        assertTrue(batches[0].intersect(batches[1]).isEmpty())
+        assertEquals(expectedIds, batches[0] + batches[1])
+    }
+
+    @Test
+    fun `doWork flushes exactly one batch when directory count is exactly batch size`() = runTest(testDispatcher) {
+        val batches = mutableListOf<Set<String>>()
+        coEvery { resourcesRepository.markResourcesAsNotOffline(any()) } answers {
+            batches += firstArg<Collection<String>>().toSet()
+        }
+
+        val expectedIds = (0 until 25).map { "res$it" }.toSet()
+        expectedIds.forEach { id -> addResource(id, "f.txt") }
+
+        val result = worker.doWork()
+        advanceUntilIdle()
+
+        assertTrue(result is Result.Success)
+        assertEquals(1, batches.size)
+        assertEquals(25, batches[0].size)
+        assertEquals(expectedIds, batches[0])
+    }
 }

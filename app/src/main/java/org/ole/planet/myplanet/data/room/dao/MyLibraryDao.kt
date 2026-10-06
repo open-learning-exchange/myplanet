@@ -33,10 +33,20 @@ interface MyLibraryDao {
     suspend fun getByUnderscoreId(underscoreId: String): MyLibrary?
 
     @Query("SELECT * FROM my_library WHERE id IN (:ids)")
-    suspend fun getByIds(ids: List<String>): List<MyLibrary>
+    suspend fun getByIdsInternal(ids: List<String>): List<MyLibrary>
+
+    suspend fun getByIds(ids: List<String>): List<MyLibrary> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.distinct().chunked(900).flatMap { getByIdsInternal(it) }
+    }
 
     @Query("SELECT * FROM my_library WHERE resourceId IN (:resourceIds)")
-    suspend fun getByResourceIds(resourceIds: List<String>): List<MyLibrary>
+    suspend fun getByResourceIdsInternal(resourceIds: List<String>): List<MyLibrary>
+
+    suspend fun getByResourceIds(resourceIds: List<String>): List<MyLibrary> {
+        if (resourceIds.isEmpty()) return emptyList()
+        return resourceIds.distinct().chunked(900).flatMap { getByResourceIdsInternal(it) }
+    }
 
     @Query("SELECT * FROM my_library WHERE isPrivate = 0")
     suspend fun getPublic(): List<MyLibrary>
@@ -49,9 +59,6 @@ interface MyLibraryDao {
 
     @Query("SELECT * FROM my_library WHERE stepId = :stepId")
     suspend fun getByStepId(stepId: String): List<MyLibrary>
-
-    @Query("SELECT * FROM my_library WHERE courseId = :courseId")
-    suspend fun getByCourseId(courseId: String): List<MyLibrary>
 
     @Query("SELECT * FROM my_library WHERE courseId IN (:courseIds)")
     suspend fun getByCourseIdsInternal(courseIds: List<String>): List<MyLibrary>
@@ -155,7 +162,12 @@ interface MyLibraryDao {
         "SELECT * FROM my_library WHERE resourceId IN (:resourceIds) " +
             "AND (userId IS NULL OR userId NOT LIKE :userPattern ESCAPE '\\')"
     )
-    suspend fun getByResourceIdsNotUserPattern(resourceIds: List<String>, userPattern: String): List<MyLibrary>
+    suspend fun getByResourceIdsNotUserPatternInternal(resourceIds: List<String>, userPattern: String): List<MyLibrary>
+
+    suspend fun getByResourceIdsNotUserPattern(resourceIds: List<String>, userPattern: String): List<MyLibrary> {
+        if (resourceIds.isEmpty()) return emptyList()
+        return resourceIds.distinct().chunked(900).flatMap { getByResourceIdsNotUserPatternInternal(it, userPattern) }
+    }
 
     @Query("UPDATE my_library SET resourceOffline = 0 WHERE resourceId IN (:ids) AND resourceOffline = 1")
     suspend fun markAsNotOfflineByResourceIdsInternal(ids: List<String>)
