@@ -31,6 +31,9 @@ kotlin {
         commonMain.dependencies {
             // api: AppDatabase extends RoomDatabase, so Room is part of this module's public surface.
             api(libs.room.runtime)
+            // api: PlanetApi and KtorPlanetApi expose HttpClient, Ktor content/channel types and okio sources.
+            api(libs.ktor.client.core)
+            api(libs.okio)
             implementation(libs.kotlinx.serialization.json)
         }
         commonTest.dependencies {

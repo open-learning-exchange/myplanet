@@ -7,8 +7,8 @@ import okio.BufferedSource
 /**
  * What [KtorPlanetApi] cannot do in common code: canonicalise a URL the way the platform's HTTP
  * stack will send it, open a file lazily for an upload, and expose a response channel as a
- * blocking okio source for [StreamBody]. Keeping these behind one seam leaves [KtorPlanetApi]
- * free of `java.*` so it can move to `:shared`.
+ * blocking okio source for [StreamBody]. Keeping these behind one seam keeps [KtorPlanetApi] in
+ * common code; the app supplies the OkHttp-backed implementation (`JvmKtorPlatform`).
  */
 interface KtorPlatform {
     /**

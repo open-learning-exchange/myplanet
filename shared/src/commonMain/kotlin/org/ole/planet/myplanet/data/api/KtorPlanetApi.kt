@@ -418,7 +418,7 @@ class KtorPlanetApi(
  * message — and a failure while streaming reaches the body reader inside one or more
  * ClosedByteChannelExceptions. Callers branch on these types, so the wrappers come off.
  */
-internal fun Throwable.withoutEngineWrapper(): Throwable {
+fun Throwable.withoutEngineWrapper(): Throwable {
     var error = this
     while (error is ClosedByteChannelException) error = error.cause ?: break
     val original = error.cause

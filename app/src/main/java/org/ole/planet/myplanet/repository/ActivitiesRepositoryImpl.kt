@@ -30,6 +30,9 @@ import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.UserChallengeActions
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.changeRev
+import org.ole.planet.myplanet.model.getMyPlanetActivities
+import org.ole.planet.myplanet.model.getNormalMyPlanetActivities
+import org.ole.planet.myplanet.model.getTabletUsages
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.AppInfo
