@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
-import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DimenUtils.dpToPx
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
@@ -278,16 +277,9 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             examination?.isUpdated = true
             examination?.isHasInfo = hasInfo
             pojo?.isUpdated = true
-            try {
-                val key = user?.key ?: generateKey().also { user?.key = it }
-                val iv = user?.iv ?: generateIv().also { user?.iv = it }
-                examination?.data = encrypt(GsonUtils.gson.toJson(sign), key, iv)
-            } catch (e: Exception) {
-                Log.w(TAG, "Encrypting examination data failed", e)
-            }
 
             // Delegate save to ViewModel
-            viewModel.saveExamination(examination, pojo, user)
+            viewModel.saveExamination(examination, pojo, user, sign)
 
         } catch (e: Exception) {
             Log.w(TAG, "Saving examination data failed", e)
