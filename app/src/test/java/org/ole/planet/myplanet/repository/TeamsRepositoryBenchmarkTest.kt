@@ -25,14 +25,12 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.utils.AndroidDateFormatter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TeamsRepositoryBenchmarkTest {
     private lateinit var teamsRepository: TeamsRepositoryImpl
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
-    private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val uploadManager: UploadManager = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
@@ -59,7 +57,6 @@ class TeamsRepositoryBenchmarkTest {
         every { dispatcherProvider.unconfined } returns testDispatcher
 
         teamsRepository = TeamsRepositoryImpl(
-            activitiesRepository,
             userSessionManager,
             uploadManager,
             gson,
@@ -78,7 +75,6 @@ class TeamsRepositoryBenchmarkTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
-            AndroidDateFormatter(),
         )
     }
 

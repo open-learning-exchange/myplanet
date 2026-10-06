@@ -55,25 +55,18 @@ class EnterprisesRepositoryImpl @Inject constructor(
 
     override suspend fun updateReport(reportId: String, payload: FinanceReportParams) {
         if (reportId.isBlank()) return
-        val doc = JsonObject().apply {
-            addProperty("description", payload.description)
-            addProperty("beginningBalance", payload.beginningBalance)
-            addProperty("sales", payload.sales)
-            addProperty("otherIncome", payload.otherIncome)
-            addProperty("wages", payload.wages)
-            addProperty("otherExpenses", payload.otherExpenses)
-            addProperty("startDate", payload.startDate)
-            addProperty("endDate", payload.endDate)
-            addProperty("updatedDate", timeProvider.now())
-            addProperty("updated", true)
-        }
-        updateTeamEntityById(reportId) { report ->
-            MyTeam.populateReportFields(doc, report)
-            report.updated = true
-            if (report.updatedDate == 0L) {
-                report.updatedDate = timeProvider.now()
-            }
-        }
+        teamDao.updateReportFields(
+            id = reportId,
+            description = payload.description,
+            beginningBalance = payload.beginningBalance,
+            sales = payload.sales,
+            otherIncome = payload.otherIncome,
+            wages = payload.wages,
+            otherExpenses = payload.otherExpenses,
+            startDate = payload.startDate,
+            endDate = payload.endDate,
+            updatedDate = timeProvider.now()
+        )
         if (payload.imageName != null && payload.imageData != null) {
             attachTeamImage(reportId, payload.imageName, payload.imageData)
         }
@@ -127,13 +120,6 @@ class EnterprisesRepositoryImpl @Inject constructor(
         teamDao.setImageNameById(teamId, imageName)
     }
 
-    private suspend fun updateTeamEntityById(id: String, updater: (MyTeam) -> Unit): Boolean {
-        val entity = teamDao.getById(id) ?: return false
-        val model = entity
-        updater(model)
-        teamDao.upsert(model)
-        return true
-    }
 }
 
 private fun MyTeam.toFinanceReport(): FinanceReport {

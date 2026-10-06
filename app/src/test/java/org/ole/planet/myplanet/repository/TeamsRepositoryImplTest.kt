@@ -40,7 +40,6 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.utils.AndroidDateFormatter
 import org.ole.planet.myplanet.utils.AppStorage
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -52,7 +51,6 @@ class TeamsRepositoryImplTest {
 
     private lateinit var teamsRepository: TeamsRepositoryImpl
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
-    private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val uploadManager: UploadManager = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
@@ -89,7 +87,6 @@ class TeamsRepositoryImplTest {
         every { sharedPrefManager.getServerUrl() } returns "http://test.com"
 
         teamsRepository = TeamsRepositoryImpl(
-            activitiesRepository,
             userSessionManager,
             uploadManager,
             gson,
@@ -108,7 +105,6 @@ class TeamsRepositoryImplTest {
             deviceNameProvider,
             appStorage,
             downloadLauncher,
-            AndroidDateFormatter(),
         )
     }
 
@@ -681,15 +677,10 @@ class TeamsRepositoryImplTest {
         val logNullTime = TeamLog().apply { user = "Bob"; time = null }
 
         coEvery { teamLogDao.getTeamVisitsForUsers(teamId, listOf("Alice", "Bob", "Charlie")) } returns listOf(log1, log2, log3, logNullTime)
-        coEvery { activitiesRepository.getLastVisits(listOf("Alice", "Bob", "Charlie")) } returns mapOf("Alice" to 5000L)
-        coEvery { activitiesRepository.getOfflineVisitCounts(listOf("user1", "user2", "user3")) } returns mapOf("user1" to 5)
 
         val result = teamsRepository.getJoinedMembersWithVisitInfo(teamId)
 
         assertEquals(3, result.size)
-
-        coVerify(exactly = 1) { activitiesRepository.getLastVisits(listOf("Alice", "Bob", "Charlie")) }
-        coVerify(exactly = 1) { activitiesRepository.getOfflineVisitCounts(listOf("user1", "user2", "user3")) }
 
         // Leader (Alice) should be first
         val aliceData = result[0]
@@ -697,7 +688,6 @@ class TeamsRepositoryImplTest {
         assertEquals(3L, aliceData.visitCount)
         assertEquals(3000L, aliceData.lastVisitDate)
         assertEquals(true, aliceData.isLeader)
-        assertEquals("5", aliceData.offlineVisits)
 
         // Bob: 1 log with null time
         val bobData = result[1]
@@ -705,8 +695,6 @@ class TeamsRepositoryImplTest {
         assertEquals(1L, bobData.visitCount)
         assertEquals(0L, bobData.lastVisitDate) // null log.time resolves to 0L
         assertEquals(false, bobData.isLeader)
-        assertEquals("0", bobData.offlineVisits)
-        assertEquals("No logout record found", bobData.profileLastVisit)
 
         // Charlie: 0 logs
         val charlieData = result[2]
@@ -714,8 +702,6 @@ class TeamsRepositoryImplTest {
         assertEquals(0L, charlieData.visitCount)
         assertEquals(null, charlieData.lastVisitDate)
         assertEquals(false, charlieData.isLeader)
-        assertEquals("0", charlieData.offlineVisits)
-        assertEquals("No logout record found", charlieData.profileLastVisit)
     }
 
     @Test

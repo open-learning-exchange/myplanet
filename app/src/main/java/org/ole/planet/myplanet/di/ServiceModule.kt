@@ -53,6 +53,7 @@ import org.ole.planet.myplanet.utils.DateFormatter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadLauncher
 import org.ole.planet.myplanet.utils.NetworkStatus
+import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -66,6 +67,13 @@ private const val APPLICATION_SCOPE_LOG_TAG = "ApplicationScope"
 @Module
 @InstallIn(SingletonComponent::class)
 object ServiceModule {
+
+    @Provides
+    @Singleton
+    fun provideNotificationManager(
+        @ApplicationContext context: Context,
+        timeProvider: TimeProvider
+    ): NotificationUtils.NotificationManager = NotificationUtils.NotificationManager(context, timeProvider)
 
     @Provides
     @Singleton

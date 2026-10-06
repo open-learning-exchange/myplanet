@@ -97,7 +97,7 @@ class ServerUrlMapper @Inject constructor(
         isServerReachable: suspend (String) -> Boolean
     ) {
         val primaryAvailable = isServerReachable(mapping.primaryUrl)
-        val alternativeAvailable = mapping.alternativeUrl?.let { altUrl ->
+        val alternativeAvailable = !primaryAvailable && mapping.alternativeUrl?.let { altUrl ->
             isServerReachable(altUrl)
         } == true
 

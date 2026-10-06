@@ -40,9 +40,9 @@ class RetryRepositoryImpl @Inject constructor(
         userId: String?
     ) {
         mutex.withLock {
-            val existing = retryDao.findExisting(failure.itemId, uploadType)
-            if (existing != null) {
-                markFailed(existing.id, failure.message, failure.httpCode)
+            val existingId = retryDao.findExistingId(failure.itemId, uploadType)
+            if (existingId != null) {
+                markFailed(existingId, failure.message, failure.httpCode)
             } else {
                 val operation = RetryOperation.createFromRetryFailure(
                     uploadType, failure, payload, endpoint,
@@ -141,7 +141,7 @@ class RetryRepositoryImpl @Inject constructor(
         return retryDao.getPending(timeProvider.now())
     }
 
-    override suspend fun getPendingCount(): Long {
+    private suspend fun getPendingCount(): Long {
         return retryDao.getActiveCount()
     }
 
@@ -150,7 +150,7 @@ class RetryRepositoryImpl @Inject constructor(
         retryDao.deleteOldCompleted(cutoffTime)
     }
 
-    override suspend fun deletePendingAndAbandonedOperations() {
+    private suspend fun deletePendingAndAbandonedOperations() {
         retryDao.deletePendingAndAbandoned()
     }
 

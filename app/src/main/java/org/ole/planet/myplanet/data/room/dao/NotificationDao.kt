@@ -122,4 +122,50 @@ interface NotificationDao {
         if (ids.isEmpty()) return 0
         return ids.chunked(900).sumOf { chunk -> deleteByIdsInternal(chunk) }
     }
+
+    @Transaction
+    suspend fun upsertAllPreservingPendingRead(items: List<AppNotification>) {
+        if (items.isEmpty()) return
+        val existing = getByIds(items.map { it.id }).associateBy { it.id }
+        for (item in items) {
+            val existingItem = existing[item.id]
+            if (existingItem?.needsSync == true) {
+                item.needsSync = true
+                item.isRead = existingItem.isRead
+            }
+        }
+        upsertAll(items)
+    }
+
+    @Transaction
+    suspend fun upsertPreservingPendingRead(item: AppNotification) {
+        upsertAllPreservingPendingRead(listOf(item))
+    }
+
+    @Transaction
+    suspend fun markExistingAsRead(ids: List<String>, createdAt: Long): List<String> {
+        val found = getIdsByIds(ids)
+        if (found.isNotEmpty()) {
+            markAsRead(found, createdAt)
+        }
+        return found
+    }
+
+    @Transaction
+    suspend fun markAllUnreadAsReadReturningIds(userId: String, createdAt: Long): List<String> {
+        val unreadIds = getUnreadIds(userId)
+        if (unreadIds.isNotEmpty()) {
+            markAllUnreadAsRead(userId, createdAt)
+        }
+        return unreadIds
+    }
+
+    @Transaction
+    suspend fun deleteExisting(ids: List<String>): List<String> {
+        val found = getIdsByIds(ids)
+        if (found.isNotEmpty()) {
+            deleteByIds(found)
+        }
+        return found
+    }
 }
