@@ -105,9 +105,9 @@ object GsonUtils {
     }
 
     private fun fieldElement(fieldName: String, jsonObject: JsonObject?): JsonElement? =
-        jsonObject?.takeIf { it.has(fieldName) }?.get(fieldName)
+        jsonObject?.get(fieldName)
 
-    private fun <T> getPrimitive(default: T, elementSupplier: () -> JsonElement?, extract: (JsonElement) -> T): T = safeGet({ default }) {
+    private inline fun <T> getPrimitive(default: T, elementSupplier: () -> JsonElement?, extract: (JsonElement) -> T): T = safeGet({ default }) {
         val el = elementSupplier()
         if (el == null || el is JsonNull) default else extract(el)
     }
@@ -184,10 +184,8 @@ object GsonUtils {
     }
 
     private fun getJsonElement(fieldName: String, jsonObject: JsonObject, type: Class<*>): JsonElement {
-        if (!jsonObject.has(fieldName)) return if (type == JsonObject::class.java) JsonObject() else JsonArray()
-        return safeGet({ if (type == JsonObject::class.java) JsonObject() else JsonArray() }) {
-            jsonObject.get(fieldName)
-        }
+        val el = jsonObject.get(fieldName) ?: return if (type == JsonObject::class.java) JsonObject() else JsonArray()
+        return el
     }
 
     fun getLong(fieldName: String, jsonObject: JsonObject?): Long =

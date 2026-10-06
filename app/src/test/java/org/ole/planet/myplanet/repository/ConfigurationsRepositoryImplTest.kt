@@ -443,6 +443,25 @@ class ConfigurationsRepositoryImplTest {
     }
 
     @Test
+    fun `checkServerAvailability does not probe alternative url when primary succeeds`() = runTest(testDispatcher) {
+        val updateUrl = "http://test.url"
+        every { sharedPrefManager.getServerUrl() } returns updateUrl
+
+        val mapping = ServerUrlMapper.UrlMapping("http://primary.url", "http://alt.url")
+        every { serverUrlMapper.processUrl(updateUrl) } returns mapping
+
+        val mockBody = "1,2,3,4,5,6,7,8".toResponseBody("text/plain".toMediaTypeOrNull())
+        val response = Response.success(200, mockBody)
+        coEvery { apiInterface.isPlanetAvailable("http://primary.url") } returns response
+
+        val result = repository.checkServerAvailability()
+
+        assertTrue(result)
+        coVerify(exactly = 0) { apiInterface.isPlanetAvailable("http://alt.url") }
+        verify(exactly = 0) { serverUrlMapper.updateUrlPreferences(any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `checkServerAvailability falls back to alternative url when primary fails`() = runTest(testDispatcher) {
         val updateUrl = "http://test.url"
         every { sharedPrefManager.getServerUrl() } returns updateUrl

@@ -50,7 +50,6 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.AppStorage
-import org.ole.planet.myplanet.utils.DateFormatter
 import org.ole.planet.myplanet.utils.DateTimeUtils
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -63,7 +62,6 @@ import org.ole.planet.myplanet.utils.toSyncDocuments
 
 @Singleton
 class TeamsRepositoryImpl @Inject constructor(
-    private val activitiesRepository: ActivitiesRepository,
     private val userSessionManager: UserSessionManager,
     private val uploadManager: UploadManager,
     private val gson: Gson,
@@ -82,7 +80,6 @@ class TeamsRepositoryImpl @Inject constructor(
     private val deviceNameProvider: DeviceNameProvider,
     private val appStorage: AppStorage,
     private val downloadLauncher: DownloadLauncher,
-    private val dateFormatter: DateFormatter,
 ) : TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<TeamTask>> {
         return teamTaskDao.getOpenTasksForUser(userId).flowOn(dispatcherProvider.default)
@@ -1040,28 +1037,12 @@ class TeamsRepositoryImpl @Inject constructor(
             stats.latestVisit = stats.latestVisit?.let { maxOf(it, logTime) } ?: logTime
         }
 
-        val memberNames = orderedMembers.map { it.name ?: "" }.distinct()
-        val memberIds = orderedMembers.map { it.id }.distinct()
-        val lastVisits = activitiesRepository.getLastVisits(memberNames)
-        val counts = activitiesRepository.getOfflineVisitCounts(memberIds)
-
         return orderedMembers.map { member ->
             val stats = visitStatsMap[member.name]
-            val visitCount = stats?.count ?: 0L
-            val lastVisitTimestamp = stats?.latestVisit
-            val lastLogoutTimestamp = lastVisits[member.name ?: ""]
-            val profileLastVisit = if (lastLogoutTimestamp != null) {
-                dateFormatter.formatMonthDayYearTime(lastLogoutTimestamp)
-            } else {
-                "No logout record found"
-            }
-            val offlineVisits = "${counts[member.id] ?: 0}"
             JoinedMemberData(
                 user = member,
-                visitCount = visitCount,
-                lastVisitDate = lastVisitTimestamp,
-                offlineVisits = offlineVisits,
-                profileLastVisit = profileLastVisit,
+                visitCount = stats?.count ?: 0L,
+                lastVisitDate = stats?.latestVisit,
                 isLeader = member.id in leaderIds
             )
         }

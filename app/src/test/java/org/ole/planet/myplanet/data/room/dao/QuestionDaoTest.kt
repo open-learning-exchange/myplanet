@@ -36,6 +36,25 @@ class QuestionDaoTest {
     }
 
     @Test
+    fun getByIds_handlesMoreThan1000IdsAndDuplicates() = runBlocking {
+        val questions = (0 until 1200).map { i ->
+            ExamQuestion(id = "question_$i", examId = "exam_$i")
+        }
+        questionDao.upsertAll(questions)
+
+        val ids = (0 until 1200).map { "question_$it" }
+        val idsWithDuplicates = ids + ids.take(100)
+
+        val result = questionDao.getByIds(idsWithDuplicates)
+
+        assertEquals(1200, result.size)
+        assertEquals(1200, result.map { it.id }.distinct().size)
+
+        val emptyResult = questionDao.getByIds(emptyList())
+        assertEquals(0, emptyResult.size)
+    }
+
+    @Test
     fun getByExamIds_handlesMoreThan1000ExamIdsAndDuplicatesWithoutThrowing() = runBlocking {
         val questions = (0 until 1200).map { i ->
             ExamQuestion(id = "question_$i", examId = "exam_$i")

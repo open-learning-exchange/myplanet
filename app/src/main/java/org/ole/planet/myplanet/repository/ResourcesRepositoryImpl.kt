@@ -905,6 +905,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             if (matchesCategory) {
                 val relative = file.relativeTo(oleDir).invariantSeparatorsPath
                 if (!relative.contains('/')) return@forEach
+
                 val resourceId = relative.substringBefore('/')
                 val accumulator = grouped.getOrPut(resourceId) { ResourceAccumulator() }
                 accumulator.filePaths.add(file.absolutePath)

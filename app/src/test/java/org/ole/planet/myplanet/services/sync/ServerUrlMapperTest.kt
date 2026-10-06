@@ -188,10 +188,15 @@ class ServerUrlMapperTest {
             extractedBaseUrl = "http://primary.com"
         )
 
-        val isServerReachable: suspend (String) -> Boolean = { true }
+        val probedUrls = mutableListOf<String>()
+        val isServerReachable: suspend (String) -> Boolean = { url ->
+            probedUrls.add(url)
+            true
+        }
 
         serverUrlMapper.updateServerIfNecessary(mapping, fakeSharedPrefManager(store), isServerReachable)
 
+        assertEquals(listOf("http://primary.com"), probedUrls)
         assertEquals(0, store.editCount)
         assertFalse(store.contains("processedAlternativeUrl"))
     }

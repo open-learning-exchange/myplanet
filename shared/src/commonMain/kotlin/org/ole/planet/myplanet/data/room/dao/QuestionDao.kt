@@ -7,7 +7,13 @@ import org.ole.planet.myplanet.model.ExamQuestion
 
 @Dao
 interface QuestionDao {
-    @Query("SELECT * FROM exam_questions WHERE id IN (:ids)") suspend fun getByIds(ids: List<String>): List<ExamQuestion>
+    @Query("SELECT * FROM exam_questions WHERE id IN (:ids)") suspend fun getByIdsInternal(ids: List<String>): List<ExamQuestion>
+
+    suspend fun getByIds(ids: List<String>): List<ExamQuestion> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.distinct().chunked(900).flatMap { getByIdsInternal(it) }
+    }
+
     @Query("SELECT * FROM exam_questions WHERE examId = :examId") suspend fun getByExamId(examId: String): List<ExamQuestion>
     @Query("SELECT * FROM exam_questions WHERE examId IN (:examIds)")
     suspend fun getByExamIdsInternal(examIds: List<String>): List<ExamQuestion>
