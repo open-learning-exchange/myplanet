@@ -5,12 +5,12 @@ import org.ole.planet.myplanet.di.NetworkModule
 
 /**
  * Runs the [PlanetApiContractTest] fixtures against [RetrofitPlanetApi] wired exactly as the app
- * wires it (same Retrofit converters, Gson and Json instances), minus the retry interceptor,
- * which [RetryInterceptorTest] covers on its own.
+ * wired it before the switch to Ktor (same Retrofit converters, Gson and Json instances), minus
+ * the retry interceptor, which [RetryInterceptorTest] covers on its own.
  */
 class RetrofitPlanetApiTest : PlanetApiContractTest() {
     override fun createApi(baseUrl: String): PlanetApi {
         val retrofit = NetworkModule.provideStandardRetrofit(OkHttpClient(), NetworkModule.provideGson(), NetworkModule.provideJson())
-        return NetworkModule.providePlanetApi(NetworkModule.provideApiInterface(retrofit))
+        return RetrofitPlanetApi(NetworkModule.provideApiInterface(retrofit))
     }
 }

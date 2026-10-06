@@ -49,7 +49,7 @@ class PlanetApiRetryParityTest {
 
     private fun retrofitApi(): PlanetApi {
         val retrofit = NetworkModule.provideStandardRetrofit(productionOkHttp(), NetworkModule.provideGson(), NetworkModule.provideJson())
-        return NetworkModule.providePlanetApi(NetworkModule.provideApiInterface(retrofit))
+        return RetrofitPlanetApi(NetworkModule.provideApiInterface(retrofit))
     }
 
     private fun ktorApi(): PlanetApi {

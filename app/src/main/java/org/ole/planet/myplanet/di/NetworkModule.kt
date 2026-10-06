@@ -24,9 +24,10 @@ import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.data.api.AllowlistFactory
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.JvmKtorPlatform
 import org.ole.planet.myplanet.data.api.KtorHttpClients
+import org.ole.planet.myplanet.data.api.KtorPlanetApi
 import org.ole.planet.myplanet.data.api.PlanetApi
-import org.ole.planet.myplanet.data.api.RetrofitPlanetApi
 import org.ole.planet.myplanet.data.api.RetryInterceptor
 import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.DocumentResponse
@@ -187,7 +188,10 @@ object NetworkModule {
         return retrofit.create(ApiInterface::class.java)
     }
 
-    /** Not injected anywhere yet: [KtorPlanetApi] runs beside [RetrofitPlanetApi] until it takes over. */
+    /**
+     * App-lifetime and never closed: it runs on the shared @StandardHttpClient, and closing it
+     * would evict that client's connection pool and shut down its dispatcher.
+     */
     @Provides
     @Singleton
     fun provideKtorHttpClient(@StandardHttpClient okHttpClient: OkHttpClient): HttpClient {
@@ -196,7 +200,7 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun providePlanetApi(apiInterface: ApiInterface): PlanetApi {
-        return RetrofitPlanetApi(apiInterface)
+    fun providePlanetApi(httpClient: HttpClient, json: Json): PlanetApi {
+        return KtorPlanetApi(httpClient, json, JvmKtorPlatform)
     }
 }

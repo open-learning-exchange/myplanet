@@ -42,7 +42,7 @@ class PlanetApiFailureParityTest {
 
     private fun apis(okHttp: () -> OkHttpClient): List<PlanetApi> {
         val json = NetworkModule.provideJson()
-        val retrofit = NetworkModule.providePlanetApi(
+        val retrofit = RetrofitPlanetApi(
             NetworkModule.provideApiInterface(NetworkModule.provideStandardRetrofit(okHttp(), NetworkModule.provideGson(), json))
         )
         val client = NetworkModule.provideKtorHttpClient(okHttp()).also { ktorClients += it }

@@ -40,7 +40,7 @@ class PlanetApiWireParityTest {
     fun setUp() {
         server = MockWebServer().apply { start() }
         val json = NetworkModule.provideJson()
-        retrofit = NetworkModule.providePlanetApi(
+        retrofit = RetrofitPlanetApi(
             NetworkModule.provideApiInterface(NetworkModule.provideStandardRetrofit(OkHttpClient(), NetworkModule.provideGson(), json))
         )
         ktorClient = NetworkModule.provideKtorHttpClient(OkHttpClient())
@@ -130,7 +130,7 @@ class PlanetApiWireParityTest {
             }.build()
         }
         val json = NetworkModule.provideJson()
-        val retrofitApi = NetworkModule.providePlanetApi(
+        val retrofitApi = RetrofitPlanetApi(
             NetworkModule.provideApiInterface(NetworkModule.provideStandardRetrofit(okHttp(), NetworkModule.provideGson(), json))
         )
         val client = NetworkModule.provideKtorHttpClient(okHttp())
