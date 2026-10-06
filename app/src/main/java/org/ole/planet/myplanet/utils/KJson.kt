@@ -191,6 +191,108 @@ object KJson {
         jsonObject?.get(fieldName) as? JsonArray ?: JsonArray(emptyList())
     }
 
+    /**
+     * How [toGsonString] prints a number, matching what the replaced Gson tree held.
+     * - [BRIDGED]: the tree came from kotlinx (built in code, or server data decoded by the API
+     *   layer) and Gson saw it through [toGson]: an integral literal prints as a `Long`, anything
+     *   else as a `Double` (`1e2` -> `100.0`, `1.50` -> `1.5`).
+     * - [LITERAL]: Gson parsed the text itself (Room columns, preferences), so its
+     *   `LazilyParsedNumber` prints the source text unchanged, which is what kotlinx keeps too.
+     */
+    enum class GsonNumbers { BRIDGED, LITERAL }
+
+    /**
+     * Byte-for-byte what Gson writes for this tree. With the defaults it is Gson's
+     * `JsonElement.toString()` (no HTML escaping, `null` members kept); [gsonToJson] gives the
+     * `Gson().toJson(...)` flavour. Use it wherever the text is stored and later matched as text
+     * (SQL `LIKE`, ids derived from the text, string post-processing); plain payloads can use
+     * kotlinx's own encoding, which is structurally equal.
+     *
+     * Escaping follows Gson's `JsonWriter`: `"` and `\` backslashed, `\t \b \n \r \f` short
+     * forms, every other char below U+0020 as a lowercase `\u00xx`, U+2028/U+2029 always
+     * escaped, `/` and U+007F never; [htmlSafe] adds `< > & = '` as `\u003c \u003e \u0026
+     * \u003d \u0027`. With [serializeNulls] false an object member whose value is `null` is
+     * dropped (array `null`s stay), as Gson's writer does.
+     */
+    fun toGsonString(
+        element: JsonElement,
+        htmlSafe: Boolean = false,
+        serializeNulls: Boolean = true,
+        numbers: GsonNumbers = GsonNumbers.BRIDGED,
+    ): String = StringBuilder().also { writeGson(it, element, htmlSafe, serializeNulls, numbers) }.toString()
+
+    /** `Gson().toJson(...)` of the same tree: HTML-safe, `null` members dropped; a Kotlin `null` writes `null`. */
+    fun gsonToJson(element: JsonElement?, numbers: GsonNumbers = GsonNumbers.BRIDGED): String =
+        toGsonString(element ?: JsonNull, htmlSafe = true, serializeNulls = false, numbers = numbers)
+
+    private fun writeGson(out: StringBuilder, element: JsonElement, htmlSafe: Boolean, serializeNulls: Boolean, numbers: GsonNumbers) {
+        when (element) {
+            is JsonNull -> out.append("null")
+            is JsonObject -> {
+                out.append('{')
+                var first = true
+                for ((key, value) in element) {
+                    if (value is JsonNull && !serializeNulls) continue
+                    if (!first) out.append(',')
+                    first = false
+                    writeGsonString(out, key, htmlSafe)
+                    out.append(':')
+                    writeGson(out, value, htmlSafe, serializeNulls, numbers)
+                }
+                out.append('}')
+            }
+            is JsonArray -> {
+                out.append('[')
+                element.forEachIndexed { index, value ->
+                    if (index > 0) out.append(',')
+                    writeGson(out, value, htmlSafe, serializeNulls, numbers)
+                }
+                out.append(']')
+            }
+            is JsonPrimitive -> when {
+                element.isString -> writeGsonString(out, element.content, htmlSafe)
+                numbers == GsonNumbers.LITERAL && isJsonLiteral(element.content) -> out.append(element.content)
+                numbers == GsonNumbers.LITERAL -> writeGsonString(out, element.content, htmlSafe)
+                else -> when (val value = bridged(element)) {
+                    is String -> writeGsonString(out, value, htmlSafe)
+                    else -> out.append(value.toString())
+                }
+            }
+        }
+    }
+
+    private fun writeGsonString(out: StringBuilder, value: String, htmlSafe: Boolean) {
+        out.append('"')
+        for (c in value) {
+            when {
+                c == '"' -> out.append("\\\"")
+                c == '\\' -> out.append("\\\\")
+                c == '\t' -> out.append("\\t")
+                c == '\b' -> out.append("\\b")
+                c == '\n' -> out.append("\\n")
+                c == '\r' -> out.append("\\r")
+                c == '\u000c' -> out.append("\\f")
+                c < ' ' || c == '\u2028' || c == '\u2029' -> appendUnicodeEscape(out, c)
+                htmlSafe && (c == '<' || c == '>' || c == '&' || c == '=' || c == '\'') -> appendUnicodeEscape(out, c)
+                else -> out.append(c)
+            }
+        }
+        out.append('"')
+    }
+
+    private val jsonNumberPattern = Regex("-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][-+]?[0-9]+)?")
+
+    /** Gson's lenient parser reads any other unquoted token (`[a, b]`) as a string. */
+    private fun isJsonLiteral(content: String): Boolean =
+        content == "true" || content == "false" || jsonNumberPattern.matches(content)
+
+    private fun appendUnicodeEscape(out: StringBuilder, c: Char) {
+        val hex = c.code.toString(16)
+        out.append("\\u")
+        repeat(4 - hex.length) { out.append('0') }
+        out.append(hex)
+    }
+
     /** Unlike Gson, the returned child is immutable: GsonUtils hands back the live child, so callers' edits reach the parent. */
     fun getJsonObject(fieldName: String, jsonObject: JsonObject?): JsonObject = safeGet({ JsonObject(emptyMap()) }) {
         jsonObject?.get(fieldName) as? JsonObject ?: JsonObject(emptyMap())
