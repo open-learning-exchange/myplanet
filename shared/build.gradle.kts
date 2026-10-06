@@ -34,6 +34,9 @@ kotlin {
             // api: PlanetApi and KtorPlanetApi expose HttpClient, Ktor content/channel types and okio sources.
             api(libs.ktor.client.core)
             api(libs.okio)
+            // api: DispatcherProvider exposes CoroutineDispatcher; DateTimeUtils takes kotlinx-datetime TimeZone.
+            api(libs.kotlinx.coroutines.core)
+            api(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serialization.json)
         }
         commonTest.dependencies {
