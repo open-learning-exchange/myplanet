@@ -140,4 +140,17 @@ class RemovedLogDaoTest {
         assertEquals(listOf("doc1", "doc2"), user1CourseDocs)
         assertEquals(listOf("doc3"), nullUserCourseDocs)
     }
+
+    @Test
+    fun getRemovedDocIds_excludesNullDocIds() = runBlocking {
+        val nonNullDocLog = createLog(id = "1", type = "courses", userId = "user1", docId = "doc1")
+        val nullDocLog = createLog(id = "2", type = "courses", userId = "user1", docId = null)
+        val nullUserNonNullDocLog = createLog(id = "3", type = "courses", userId = null, docId = "doc2")
+        val nullUserNullDocLog = createLog(id = "4", type = "courses", userId = null, docId = null)
+
+        removedLogDao.insertAll(listOf(nonNullDocLog, nullDocLog, nullUserNonNullDocLog, nullUserNullDocLog))
+
+        assertEquals(listOf("doc1"), removedLogDao.getRemovedDocIds("courses", "user1"))
+        assertEquals(listOf("doc2"), removedLogDao.getRemovedDocIds("courses", null))
+    }
 }
