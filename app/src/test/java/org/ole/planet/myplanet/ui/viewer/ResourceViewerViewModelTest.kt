@@ -49,7 +49,6 @@ class ResourceViewerViewModelTest {
         context = ApplicationProvider.getApplicationContext()
         sharedPrefManager = SharedPrefManager(context, mockk(relaxed = true))
         viewModel = ResourceViewerViewModel(
-            context = context,
             resourcesRepository = resourcesRepository,
             authSessionUpdaterFactory = mockk(relaxed = true),
             ratingsRepository = ratingsRepository,
@@ -227,5 +226,12 @@ class ResourceViewerViewModelTest {
         advanceUntilIdle()
 
         coVerify(exactly = 1) { resourcesRepository.updateLibraryItem("lib1", any()) }
+    }
+
+    @Test
+    fun extractPdfText_returnsEmptyStringForNonExistentFile() = runTest {
+        val nonExistentFile = java.io.File("/non_existent_directory/non_existent_file.pdf")
+        val result = viewModel.extractPdfText(nonExistentFile)
+        assertEquals("", result)
     }
 }
