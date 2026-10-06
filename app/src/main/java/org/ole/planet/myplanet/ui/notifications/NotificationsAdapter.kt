@@ -86,10 +86,19 @@ class NotificationsAdapter(
         }
     }
 
-    class HeaderViewHolder(
+    inner class HeaderViewHolder(
         private val binding: RowNotificationHeaderBinding,
         private val onToggleGroupExpansion: (String) -> Unit
     ) : RecyclerView.ViewHolder(binding.root) {
+
+        init {
+            binding.root.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                val header = getItem(pos) as? NotificationListItem.Header ?: return@setOnClickListener
+                onToggleGroupExpansion(header.type)
+            }
+        }
 
         fun bind(header: NotificationListItem.Header) {
             binding.tvHeaderLabel.setText(labelResFor(header.type))
@@ -101,7 +110,6 @@ class NotificationsAdapter(
                 binding.tvUnreadBadge.visibility = View.GONE
             }
             binding.ivExpand.rotation = if (header.isExpanded) 0f else 180f
-            binding.root.setOnClickListener { onToggleGroupExpansion(header.type) }
         }
     }
 
@@ -111,6 +119,40 @@ class NotificationsAdapter(
         private val onNotificationClick: (Notification) -> Unit,
         private val onToggleSelection: (String) -> Unit
     ) : RecyclerView.ViewHolder(binding.root) {
+
+        init {
+            binding.root.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                val item = getItem(pos) as? NotificationListItem.Item ?: return@setOnClickListener
+                if (item.isSelectionMode) {
+                    onToggleSelection(item.notification.id)
+                } else {
+                    onNotificationClick(item.notification)
+                }
+            }
+
+            binding.root.setOnLongClickListener {
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnLongClickListener false
+                val item = getItem(pos) as? NotificationListItem.Item ?: return@setOnLongClickListener false
+                if (item.isSelectionMode) {
+                    false
+                } else {
+                    onToggleSelection(item.notification.id)
+                    true
+                }
+            }
+
+            binding.btnMarkAsRead.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                val item = getItem(pos) as? NotificationListItem.Item ?: return@setOnClickListener
+                if (!item.notification.isRead) {
+                    onMarkAsReadClick(item.notification.id)
+                }
+            }
+        }
 
         fun bind(item: NotificationListItem.Item) {
             val notification = item.notification
@@ -131,21 +173,12 @@ class NotificationsAdapter(
                 binding.cbSelect.visibility = View.VISIBLE
                 binding.cbSelect.isChecked = item.isSelected
                 binding.btnMarkAsRead.visibility = View.GONE
-                binding.root.setOnClickListener { onToggleSelection(notification.id) }
-                binding.root.setOnLongClickListener(null)
             } else {
                 binding.cbSelect.visibility = View.GONE
                 if (notification.isRead) {
                     binding.btnMarkAsRead.visibility = View.GONE
-                    binding.btnMarkAsRead.setOnClickListener(null)
                 } else {
                     binding.btnMarkAsRead.visibility = View.VISIBLE
-                    binding.btnMarkAsRead.setOnClickListener { onMarkAsReadClick(notification.id) }
-                }
-                binding.root.setOnClickListener { onNotificationClick(notification) }
-                binding.root.setOnLongClickListener {
-                    onToggleSelection(notification.id)
-                    true
                 }
             }
         }

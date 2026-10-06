@@ -13,8 +13,6 @@ import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -31,6 +29,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.debounceDistinct
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
@@ -86,8 +85,7 @@ class ChatHistoryFragment : BaseBindingFragment<FragmentChatHistoryBinding>(Frag
 
         binding.searchBar.textChanges()
             .drop(1)
-            .debounce(300)
-            .distinctUntilChanged()
+            .debounceDistinct(300)
             .onEach { text -> sharedViewModel.searchChats(text?.toString() ?: "", isFullSearch, isQuestion) }
             .launchIn(viewLifecycleOwner.lifecycleScope)
 
