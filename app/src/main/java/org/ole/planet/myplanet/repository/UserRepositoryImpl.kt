@@ -1256,8 +1256,8 @@ class UserRepositoryImpl @Inject constructor(
             eventsRepositoryLazy.get().getMeetupsForUser(userId)
         }
         val myMeetups = Meetup.getMyMeetUpIds(userMeetups)
-        val removedResources = removedLogDao.getRemovedDocIds("resources", userId).filterNotNull()
-        val removedCourses = removedLogDao.getRemovedDocIds("courses", userId).filterNotNull()
+        val removedResources = removedLogDao.getRemovedDocIds("resources", userId)
+        val removedCourses = removedLogDao.getRemovedDocIds("courses", userId)
         val mergedResourceIds = mergeJsonArray(myLibs, GsonUtils.getJsonArray("resourceIds", jsonDoc), removedResources)
         val mergedCourseIds = mergeJsonArray(myCourseIds, GsonUtils.getJsonArray("courseIds", jsonDoc), removedCourses)
         val `object` = JsonObject()
