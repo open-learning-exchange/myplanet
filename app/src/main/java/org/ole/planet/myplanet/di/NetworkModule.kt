@@ -7,6 +7,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import io.ktor.client.HttpClient
 import java.lang.reflect.Modifier
 import java.lang.reflect.Type
 import java.net.InetAddress
@@ -23,6 +24,7 @@ import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.data.api.AllowlistFactory
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.KtorHttpClients
 import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.data.api.RetrofitPlanetApi
 import org.ole.planet.myplanet.data.api.RetryInterceptor
@@ -183,6 +185,13 @@ object NetworkModule {
     @Singleton
     fun provideApiInterface(@StandardRetrofit retrofit: Retrofit): ApiInterface {
         return retrofit.create(ApiInterface::class.java)
+    }
+
+    /** Not injected anywhere yet: [KtorPlanetApi] runs beside [RetrofitPlanetApi] until it takes over. */
+    @Provides
+    @Singleton
+    fun provideKtorHttpClient(@StandardHttpClient okHttpClient: OkHttpClient): HttpClient {
+        return KtorHttpClients.create(okHttpClient)
     }
 
     @Provides

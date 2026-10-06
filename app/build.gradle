@@ -248,6 +248,8 @@ dependencies {
     implementation(libs.converter.gson)
     implementation(libs.retrofit.converter.kotlinx.serialization)
     implementation(libs.okhttp)
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp)
     implementation(libs.circleimageview)
     implementation(libs.pbkdf2)
     implementation(libs.markwon.editor)
