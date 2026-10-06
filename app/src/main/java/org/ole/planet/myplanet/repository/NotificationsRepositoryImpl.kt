@@ -133,24 +133,7 @@ class NotificationsRepositoryImpl @Inject constructor(
             "read", "unread" -> filter
             else -> ""
         }
-        return notificationDao.getNotifications(userId, normalizedFilter, isAdmin).map {
-            NotificationPayload(
-                id = it.id,
-                userId = it.userId,
-                message = it.message,
-                isRead = it.isRead,
-                createdAt = it.createdAt.time,
-                type = it.type,
-                relatedId = it.relatedId,
-                title = it.title,
-                link = it.link,
-                priority = it.priority,
-                isFromServer = it.isFromServer,
-                rev = it.rev,
-                needsSync = it.needsSync,
-                subType = it.subType
-            )
-        }
+        return notificationDao.getNotifications(userId, normalizedFilter, isAdmin)
     }
 
     override suspend fun getEnrichedNotifications(userId: String, filter: String, isAdmin: Boolean): EnrichedNotifications {
