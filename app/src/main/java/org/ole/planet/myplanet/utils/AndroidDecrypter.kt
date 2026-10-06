@@ -16,6 +16,7 @@ class AndroidDecrypter {
     companion object {
         private const val TAG = "AndroidDecrypter"
         private val HEX_CHARS = "0123456789abcdef".toCharArray()
+        private val secureRandom: SecureRandom by lazy { SecureRandom() }
 
         @Throws(Exception::class)
         fun encrypt(plainText: String, key: String?, iv: String?): String {
@@ -114,8 +115,7 @@ class AndroidDecrypter {
         fun generateIv(): String {
             try {
                 val iv = ByteArray(16)
-                val random = SecureRandom()
-                random.nextBytes(iv)
+                secureRandom.nextBytes(iv)
                 return bytesToHex(iv)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to generate IV", e)
