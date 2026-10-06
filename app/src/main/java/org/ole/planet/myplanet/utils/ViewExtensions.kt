@@ -10,11 +10,18 @@ import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.onStart
 import org.ole.planet.myplanet.R
+
+@OptIn(FlowPreview::class)
+fun <T> Flow<T>.debounceDistinct(timeoutMillis: Long): Flow<T> =
+    debounce(timeoutMillis).distinctUntilChanged()
 
 fun EditText.textChanges(): Flow<CharSequence?> {
     return callbackFlow {
