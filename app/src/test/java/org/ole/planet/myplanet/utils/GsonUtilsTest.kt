@@ -185,4 +185,48 @@ class GsonUtilsTest {
         // not the quiet DEBUG fallback used for expected type mismatches
         verify(atLeast = 1) { Log.w("GsonUtils", "failed to parse viewIn", any()) }
     }
+
+    @Test
+    fun testGettersWithAbsentKeyJsonNullAndNullJsonObject() {
+        val jsonObjectWithNull = JsonObject().apply {
+            add("nullKey", JsonNull.INSTANCE)
+        }
+        val emptyJsonObject = JsonObject()
+        val nullJsonObject: JsonObject? = null
+
+        // getString
+        assertEquals("", GsonUtils.getString("absentKey", emptyJsonObject))
+        assertEquals("", GsonUtils.getString("nullKey", jsonObjectWithNull))
+        assertEquals("", GsonUtils.getString("anyKey", nullJsonObject))
+
+        // getInt
+        assertEquals(0, GsonUtils.getInt("absentKey", emptyJsonObject))
+        assertEquals(0, GsonUtils.getInt("nullKey", jsonObjectWithNull))
+        assertEquals(0, GsonUtils.getInt("anyKey", nullJsonObject))
+
+        // getLong
+        assertEquals(0L, GsonUtils.getLong("absentKey", emptyJsonObject))
+        assertEquals(0L, GsonUtils.getLong("nullKey", jsonObjectWithNull))
+        assertEquals(0L, GsonUtils.getLong("anyKey", nullJsonObject))
+
+        // getFloat
+        assertEquals(0f, GsonUtils.getFloat("absentKey", emptyJsonObject), 0.0f)
+        assertEquals(0f, GsonUtils.getFloat("nullKey", jsonObjectWithNull), 0.0f)
+        assertEquals(0f, GsonUtils.getFloat("anyKey", nullJsonObject), 0.0f)
+
+        // getBoolean
+        assertEquals(false, GsonUtils.getBoolean("absentKey", emptyJsonObject))
+        assertEquals(false, GsonUtils.getBoolean("nullKey", jsonObjectWithNull))
+        assertEquals(false, GsonUtils.getBoolean("anyKey", nullJsonObject))
+
+        // getJsonArray
+        assertEquals(JsonArray(), GsonUtils.getJsonArray("absentKey", emptyJsonObject))
+        assertEquals(JsonArray(), GsonUtils.getJsonArray("nullKey", jsonObjectWithNull))
+        assertEquals(JsonArray(), GsonUtils.getJsonArray("anyKey", nullJsonObject))
+
+        // getJsonObject
+        assertEquals(JsonObject(), GsonUtils.getJsonObject("absentKey", emptyJsonObject))
+        assertEquals(JsonObject(), GsonUtils.getJsonObject("nullKey", jsonObjectWithNull))
+        assertEquals(JsonObject(), GsonUtils.getJsonObject("anyKey", nullJsonObject))
+    }
 }
