@@ -60,7 +60,7 @@ class RatingsViewModel @Inject constructor(
                     return@launch
                 }
 
-                val userId = user.id?.takeIf { it.isNotBlank() } ?: user._id ?: ""
+                val userId = user.id.takeIf { it.isNotBlank() } ?: user._id ?: ""
 
                 val summary = ratingsRepository.getRatingSummary(type, itemId, userId)
                 _ratingState.value = summary.toUiState()

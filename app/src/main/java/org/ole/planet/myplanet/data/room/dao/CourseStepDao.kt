@@ -15,5 +15,4 @@ interface CourseStepDao {
     }
     @Query("SELECT * FROM course_steps WHERE id = :id LIMIT 1") suspend fun getById(id: String): CourseStep?
     @Upsert suspend fun upsertAll(items: List<CourseStep>)
-    @Upsert fun upsertAllBlocking(items: List<CourseStep>)
 }

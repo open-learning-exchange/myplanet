@@ -163,21 +163,6 @@ class HealthRepositoryImpl @Inject constructor(
         healthExaminationDao.upsert(examination)
     }
 
-    override suspend fun getPatientById(id: String): UserEntity? {
-        return userRepository.get().getUserById(id)
-    }
-
-    override suspend fun getPatientsSortedBy(fieldName: String, descending: Boolean): List<UserEntity> {
-        return userRepository.get().getUsersSortedBy(fieldName, descending)
-    }
-
-    override suspend fun searchPatients(query: String, sortField: String, descending: Boolean): List<UserEntity> {
-        return if (query.isBlank()) {
-            userRepository.get().getUsersSortedBy(sortField, descending)
-        } else {
-            userRepository.get().searchUsers(query, sortField, descending)
-        }
-    }
 
     private fun decodeHealth(healthPojo: HealthExamination?, userModel: UserEntity?): MyHealth? {
         val data = healthPojo?.data
