@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
-import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -9,9 +7,10 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
+import org.ole.planet.myplanet.utils.AppLog
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
-class DictionaryRepositoryImpl @Inject constructor(
+class DictionaryRepositoryImpl(
     private val dictionaryDao: DictionaryDao,
     private val dispatcherProvider: DispatcherProvider,
     private val dictionaryFileReader: DictionaryFileReader
@@ -58,7 +57,7 @@ class DictionaryRepositoryImpl @Inject constructor(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    Log.e("DictionaryRepositoryImpl", "Failed to insert dictionary data", e)
+                    AppLog.e("DictionaryRepositoryImpl", "Failed to insert dictionary data", e)
                     DictionaryLoad.Failed(e)
                 }
             }

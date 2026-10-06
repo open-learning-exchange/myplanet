@@ -10,8 +10,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Qualifier
 import javax.inject.Singleton
-import kotlinx.serialization.json.Json
-import org.ole.planet.myplanet.repository.LifeCache
 import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.utils.AndroidKeyValueStore
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
@@ -79,14 +77,5 @@ object SharedPreferencesModule {
     @SurveyReminderPreferences
     fun provideSurveyReminderKeyValueStore(@ApplicationContext context: Context): KeyValueStore {
         return AndroidKeyValueStore(context.getSharedPreferences(SURVEY_REMINDERS_PREFS_NAME, Context.MODE_PRIVATE))
-    }
-
-    @Provides
-    @Singleton
-    fun provideLifeCache(
-        @AppPreferences store: KeyValueStore,
-        json: Json
-    ): LifeCache {
-        return LifeCache(store, json)
     }
 }

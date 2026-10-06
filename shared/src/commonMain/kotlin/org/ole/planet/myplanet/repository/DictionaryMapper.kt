@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.repository
 
-import java.util.UUID
+import kotlin.uuid.Uuid
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -12,7 +12,7 @@ object DictionaryMapper {
         return json.map { js ->
             val doc = js.jsonObject
             DictionaryEntity(
-                id = UUID.randomUUID().toString(),
+                id = Uuid.random().toString(),
                 code = doc.str("code"),
                 language = doc.str("language"),
                 advanceCode = doc.str("advance_code"),

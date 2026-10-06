@@ -1,14 +1,11 @@
 package org.ole.planet.myplanet.repository
 
-import java.util.concurrent.ConcurrentHashMap
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.utils.KeyValueStore
+import org.ole.planet.myplanet.utils.concurrentMutableMap
 
 @Serializable
 data class CachedMyLifeItem(
@@ -18,12 +15,11 @@ data class CachedMyLifeItem(
     var weight: Int
 )
 
-@Singleton
-class LifeCache @Inject constructor(
-    @param:AppPreferences private val preferences: KeyValueStore,
+class LifeCache(
+    private val preferences: KeyValueStore,
     private val json: Json
 ) {
-    private val memoryCache = ConcurrentHashMap<String, List<CachedMyLifeItem>>()
+    private val memoryCache = concurrentMutableMap<String, List<CachedMyLifeItem>>()
 
     fun read(cacheKey: String): List<CachedMyLifeItem>? {
         memoryCache[cacheKey]?.let { cached ->

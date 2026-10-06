@@ -1,13 +1,12 @@
 package org.ole.planet.myplanet.repository
 
-import java.util.UUID
-import javax.inject.Inject
+import kotlin.uuid.Uuid
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.model.MyLife
 
-class LifeRepositoryImpl @Inject constructor(
+class LifeRepositoryImpl(
     private val myLifeDao: MyLifeDao,
     private val lifeCache: LifeCache
 ) : LifeRepository {
@@ -126,7 +125,7 @@ class LifeRepositoryImpl @Inject constructor(
                 var weight = 1
                 val newItems = items.map { item ->
                     MyLife().apply {
-                        _id = UUID.randomUUID().toString()
+                        _id = Uuid.random().toString()
                         title = item.title
                         imageId = item.imageId
                         this.weight = weight++

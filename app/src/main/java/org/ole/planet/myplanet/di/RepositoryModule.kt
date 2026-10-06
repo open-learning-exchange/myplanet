@@ -20,8 +20,6 @@ import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.repository.DiagnosticsRepositoryImpl
 import org.ole.planet.myplanet.repository.DictionaryFileReader
 import org.ole.planet.myplanet.repository.DictionaryFileReaderImpl
-import org.ole.planet.myplanet.repository.DictionaryRepository
-import org.ole.planet.myplanet.repository.DictionaryRepositoryImpl
 import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.repository.DownloadRepositoryImpl
 import org.ole.planet.myplanet.repository.EnterprisesRepository
@@ -34,8 +32,6 @@ import org.ole.planet.myplanet.repository.FeedbackRepositoryImpl
 import org.ole.planet.myplanet.repository.FeedbackSyncWriter
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.HealthRepositoryImpl
-import org.ole.planet.myplanet.repository.LifeRepository
-import org.ole.planet.myplanet.repository.LifeRepositoryImpl
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.NotificationsRepositoryImpl
 import org.ole.planet.myplanet.repository.PersonalsRepository
@@ -89,10 +85,6 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindDictionaryRepository(impl: DictionaryRepositoryImpl): DictionaryRepository
-
-    @Binds
-    @Singleton
     abstract fun bindDownloadRepository(impl: DownloadRepositoryImpl): DownloadRepository
 
     @Binds
@@ -138,10 +130,6 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindHealthRepository(impl: HealthRepositoryImpl): HealthRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindLifeRepository(impl: LifeRepositoryImpl): LifeRepository
 
     @Binds
     @Singleton

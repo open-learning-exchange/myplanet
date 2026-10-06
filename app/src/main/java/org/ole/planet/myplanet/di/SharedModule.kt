@@ -1,8 +1,21 @@
 package org.ole.planet.myplanet.di
 
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+import kotlinx.serialization.json.Json
+import org.ole.planet.myplanet.data.room.dao.DictionaryDao
+import org.ole.planet.myplanet.data.room.dao.MyLifeDao
+import org.ole.planet.myplanet.repository.DictionaryFileReader
+import org.ole.planet.myplanet.repository.DictionaryRepository
+import org.ole.planet.myplanet.repository.DictionaryRepositoryImpl
+import org.ole.planet.myplanet.repository.LifeCache
+import org.ole.planet.myplanet.repository.LifeRepository
+import org.ole.planet.myplanet.repository.LifeRepositoryImpl
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.KeyValueStore
 
 /**
  * Hilt wiring for classes that live in the `:shared` module.
@@ -25,4 +38,30 @@ import dagger.hilt.components.SingletonComponent
  */
 @Module
 @InstallIn(SingletonComponent::class)
-object SharedModule
+object SharedModule {
+
+    @Provides
+    @Singleton
+    fun provideLifeCache(
+        @AppPreferences store: KeyValueStore,
+        json: Json
+    ): LifeCache {
+        return LifeCache(store, json)
+    }
+
+    @Provides
+    @Singleton
+    fun provideLifeRepository(myLifeDao: MyLifeDao, lifeCache: LifeCache): LifeRepository {
+        return LifeRepositoryImpl(myLifeDao, lifeCache)
+    }
+
+    @Provides
+    @Singleton
+    fun provideDictionaryRepository(
+        dictionaryDao: DictionaryDao,
+        dispatcherProvider: DispatcherProvider,
+        dictionaryFileReader: DictionaryFileReader
+    ): DictionaryRepository {
+        return DictionaryRepositoryImpl(dictionaryDao, dispatcherProvider, dictionaryFileReader)
+    }
+}

@@ -5,11 +5,6 @@ import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.StoragePathResolver
 
-interface DictionaryFileReader {
-    fun exists(): Boolean
-    fun readText(): String?
-}
-
 class DictionaryFileReaderImpl @Inject constructor(
     private val storagePathResolver: StoragePathResolver
 ) : DictionaryFileReader {
