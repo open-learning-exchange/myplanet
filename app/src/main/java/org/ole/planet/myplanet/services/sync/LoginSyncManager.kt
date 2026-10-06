@@ -140,12 +140,7 @@ class LoginSyncManager @Inject constructor(
 
     private fun isManager(jsonDoc: JsonObject?): Boolean {
         val roles = jsonDoc?.get("roles")?.asJsonArray
-        var isManager = false
-        roles?.forEach { role ->
-            if (role.isJsonPrimitive && role.asString.equals("manager", ignoreCase = true)) {
-                isManager = true
-            }
-        }
-        return jsonDoc?.get("isUserAdmin")?.asBoolean == true || isManager
+        val isUserAdmin = jsonDoc?.get("isUserAdmin")?.asBoolean == true
+        return isUserAdmin || roles?.any { it.isJsonPrimitive && it.asString.equals("manager", ignoreCase = true) } == true
     }
 }

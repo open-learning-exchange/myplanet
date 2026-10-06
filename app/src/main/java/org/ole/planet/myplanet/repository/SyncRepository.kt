@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 
 interface SyncRepository {
@@ -8,6 +10,9 @@ interface SyncRepository {
     suspend fun processShelfParallel(shelfId: String): Int
     suspend fun syncDashboardKeyId(role: String?): SyncUiState
     suspend fun getShelvesWithData(): List<String>
+    suspend fun fetchResourceTotalRows(): Int?
+    suspend fun fetchResourceRows(limit: Int, skip: Int): JsonArray?
+    fun filterSyncableResourceDocs(rows: JsonArray): List<JsonObject>
 }
 
 sealed class SyncUiState {
