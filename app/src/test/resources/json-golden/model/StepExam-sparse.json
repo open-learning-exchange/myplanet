@@ -1,0 +1,16 @@
+{
+  "_id": "",
+  "name": null,
+  "description": null,
+  "passingPercentage": null,
+  "type": null,
+  "updatedDate": 0,
+  "createdDate": 0,
+  "adoptionDate": 0,
+  "sourcePlanet": null,
+  "totalMarks": 0,
+  "createdBy": null,
+  "questions": [],
+  "androidId": "golden-android-id",
+  "app": "myplanet"
+}

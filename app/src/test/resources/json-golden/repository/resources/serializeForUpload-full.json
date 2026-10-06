@@ -1,0 +1,35 @@
+{
+  "title": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+  "uploadDate": 1717171717171,
+  "createdDate": 9007199254740993,
+  "filename": "",
+  "author": "",
+  "addedBy": "org.couchdb.user:learner",
+  "medium": "Text",
+  "description": "desc & <b>",
+  "year": "2020",
+  "language": "Español",
+  "publisher": "",
+  "linkToLicense": "",
+  "subject": [
+    "Math",
+    "<Art>"
+  ],
+  "level": [],
+  "resourceType": "Activities",
+  "openWith": "PDF.js",
+  "mediaType": "other",
+  "resourceFor": [],
+  "private": true,
+  "privateFor": {
+    "teams": "team-1"
+  },
+  "isDownloadable": true,
+  "sourcePlanet": "planet",
+  "resideOn": "planet",
+  "updatedDate": 1717171717171,
+  "androidId": "golden-android-id",
+  "app": "myplanet",
+  "deviceName": "golden-device",
+  "customDeviceName": "golden <custom> & 'device'"
+}

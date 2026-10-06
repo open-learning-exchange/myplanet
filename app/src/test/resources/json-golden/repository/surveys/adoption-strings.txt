@@ -1,0 +1,4 @@
+parent={"_id":"exam\/1","name":"Tricky <b>&amp;<\/b> 'q' = \"dq\" \\ \/ — ünïcødé 漢字 🌍\n\tline sep","courseId":"","sourcePlanet":"planet","teamShareAllowed":true,"noOfQuestions":3,"isFromNation":false}
+parent-empty={"_id":"","courseId":"","sourcePlanet":"","teamShareAllowed":false,"noOfQuestions":0,"isFromNation":false}
+user-team={"doc":{"_id":"org.couchdb.user:learner","name":"<learner>","userId":"org.couchdb.user:learner","teamPlanetCode":"planet","status":"active","type":"team","createdBy":"org.couchdb.user:learner"},"membershipDoc":{"teamId":"team\/1"}}
+user-null={"doc":{"userId":"","teamPlanetCode":"","status":"active","type":"team","createdBy":""}}

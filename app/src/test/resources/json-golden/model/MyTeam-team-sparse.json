@@ -1,0 +1,16 @@
+{
+  "limit": 0,
+  "amount": 0,
+  "date": 0,
+  "public": false,
+  "isLeader": false,
+  "createdDate": 0,
+  "beginningBalance": 0,
+  "sales": 0,
+  "otherIncome": 0,
+  "wages": 0,
+  "otherExpenses": 0,
+  "startDate": 0,
+  "endDate": 0,
+  "updatedDate": 0
+}

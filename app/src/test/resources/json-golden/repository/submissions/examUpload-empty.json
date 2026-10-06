@@ -1,0 +1,17 @@
+{
+  "parentId": null,
+  "type": null,
+  "grade": 0,
+  "startTime": 0,
+  "lastUpdateTime": 0,
+  "status": null,
+  "androidId": "golden-android-id",
+  "app": "myplanet",
+  "deviceName": "golden-device",
+  "customDeviceName": "golden <custom> & 'device'",
+  "sender": null,
+  "source": "planet",
+  "parentCode": "parent",
+  "answers": [],
+  "parent": null
+}

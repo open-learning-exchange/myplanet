@@ -1,0 +1,100 @@
+{
+  "savedUsers": {
+    "[]": {
+      "gson": "[]",
+      "kotlinx": "[]"
+    },
+    "[{}]": {
+      "gson": "[null]",
+      "kotlinx": "[null]"
+    },
+    "[{\"name\":\"a\",\"extra\":1}]": {
+      "gson": "[a]",
+      "kotlinx": "[a]"
+    },
+    "[{\"name\":5}]": {
+      "gson": "[5]",
+      "kotlinx": "[5]"
+    },
+    "[{\"name\":true}]": {
+      "gson": "[true]",
+      "kotlinx": "[true]"
+    },
+    "[{\"name\":{\"x\":1}}]": {
+      "gson": "throws JsonSyntaxException",
+      "kotlinx": "throws JsonDecodingException"
+    },
+    "[null]": {
+      "gson": "throws NullPointerException",
+      "kotlinx": "throws JsonDecodingException"
+    },
+    "null": {
+      "gson": "null",
+      "kotlinx": "throws JsonDecodingException"
+    },
+    "<empty>": {
+      "gson": "null",
+      "kotlinx": "throws JsonDecodingException"
+    },
+    "[{\"name\":\"a\",}]": {
+      "gson": "throws JsonSyntaxException",
+      "kotlinx": "throws JsonDecodingException"
+    },
+    "{\"name\":\"a\"}": {
+      "gson": "throws JsonSyntaxException",
+      "kotlinx": "throws JsonDecodingException"
+    },
+    "[{name:a}]": {
+      "gson": "[a]",
+      "kotlinx": "[a]"
+    },
+    "[{'name':'a'}]": {
+      "gson": "[a]",
+      "kotlinx": "[null]"
+    }
+  },
+  "stepMistake": {
+    "{\"1\":2}": {
+      "gson": "{1=2}",
+      "kotlinx": "{1=2}"
+    },
+    "{\"1\":\"2\"}": {
+      "gson": "{1=2}",
+      "kotlinx": "{1=2}"
+    },
+    "{\"1\":2.0}": {
+      "gson": "{1=2}",
+      "kotlinx": "throws JsonDecodingException"
+    },
+    "{\"1\":2.5}": {
+      "gson": "throws JsonSyntaxException",
+      "kotlinx": "throws JsonDecodingException"
+    },
+    "{\"1\":null}": {
+      "gson": "{1=null}",
+      "kotlinx": "throws JsonDecodingException"
+    },
+    "{}": {
+      "gson": "{}",
+      "kotlinx": "{}"
+    }
+  },
+  "apkVersionString": {
+    "\"0.70.64\"": {
+      "gson": "0.70.64",
+      "kotlinx": "0.70.64"
+    },
+    "0.70.64": {
+      "gson": "0.70.64",
+      "kotlinx": "0.70.64"
+    },
+    "7064": {
+      "gson": "7064",
+      "kotlinx": "7064"
+    },
+    "<empty>": {
+      "gson": "null",
+      "kotlinx": "throws JsonDecodingException"
+    }
+  }
+}

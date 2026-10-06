@@ -1,0 +1,16 @@
+{
+  "<null>": "",
+  "": "",
+  "[]": "",
+  "not json": "",
+  "{}": "",
+  "[{\"name\":\"only\"}]": "",
+  "[{\"name\":\"Team <A>\",\"_id\":\"t\"},{\"section\":\"community\"}]": "Team <A>",
+  "[{\"name\":5.0},{}]": "5.0",
+  "[{\"name\":null},{}]": "",
+  "[{\"_id\":\"t\"},{}]": "",
+  "[{\"name\":[\"solo\"]},{}]": "solo",
+  "[{\"name\":[\"a\",\"b\"]},{}]": "throws IllegalStateException",
+  "[{\"name\":{\"x\":1}},{}]": "throws UnsupportedOperationException",
+  "[\"string\",{}]": "throws IllegalStateException"
+}

@@ -1,0 +1,42 @@
+[
+  {
+    "header": "Header <1>",
+    "body": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+    "type": "selectMultiple",
+    "marks": "1",
+    "choices": [
+      {
+        "id": "a",
+        "text": "<A>"
+      },
+      {
+        "id": "b",
+        "text": "B",
+        "n": 1.0
+      }
+    ],
+    "correctChoice": [
+      "a",
+      "b & c"
+    ],
+    "hasOtherOption": true
+  },
+  {
+    "header": null,
+    "body": null,
+    "type": null,
+    "marks": null,
+    "choices": [],
+    "correctChoice": [],
+    "hasOtherOption": false
+  },
+  {
+    "header": null,
+    "body": null,
+    "type": null,
+    "marks": null,
+    "choices": [],
+    "correctChoice": [],
+    "hasOtherOption": false
+  }
+]

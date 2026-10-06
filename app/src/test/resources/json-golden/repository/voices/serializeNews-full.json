@@ -1,0 +1,57 @@
+{
+  "chat": true,
+  "message": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+  "_id": "news-1",
+  "_rev": "1-n",
+  "time": 9007199254740993,
+  "createdOn": "planet",
+  "docType": "message",
+  "viewableId": "team-1",
+  "viewableBy": "teams",
+  "viewIn": [
+    {
+      "_id": "team-1",
+      "section": "teams",
+      "name": "Team <1>"
+    }
+  ],
+  "avatar": "",
+  "messageType": "sync",
+  "messagePlanetCode": "planet",
+  "replyTo": "",
+  "parentCode": "parent",
+  "images": [
+    {
+      "resourceId": "r1",
+      "markdown": "![<img>](x=1)"
+    }
+  ],
+  "labels": [
+    "help",
+    "<offer>"
+  ],
+  "user": {
+    "_id": "u1",
+    "name": "<n>",
+    "age": 1.0,
+    "none": null
+  },
+  "news": {
+    "_id": "chat-1",
+    "_rev": "1-c",
+    "user": "learner",
+    "aiProvider": "openai",
+    "title": "title = <x>",
+    "conversations": [
+      {
+        "query": "q = 1",
+        "response": "<r>"
+      }
+    ],
+    "createdDate": 1,
+    "updatedDate": 2,
+    "sharedBy": "sharer"
+  },
+  "androidId": "golden-android-id",
+  "app": "myplanet"
+}

@@ -1,0 +1,26 @@
+{
+  "_id": "meetup-1",
+  "_rev": "1-m",
+  "title": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+  "description": "desc <b>",
+  "startDate": 9007199254740993,
+  "endDate": 1717171717171,
+  "startTime": "09:00",
+  "endTime": "10:00",
+  "recurring": "weekly",
+  "meetupLocation": "Room & 'A'",
+  "meetupLink": "https://planet.example/a?b=1&c=<2>#'x'",
+  "createdBy": "learner",
+  "teamId": "team",
+  "category": "cat",
+  "createdDate": 1,
+  "recurringNumber": 3,
+  "sourcePlanet": "planet",
+  "sync": "{\"type\":\"local\",\"planetCode\":\"planet\"}",
+  "link": {
+    "teams": "team",
+    "n": 1.0
+  },
+  "androidId": "golden-android-id",
+  "app": "myplanet"
+}

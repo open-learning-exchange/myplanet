@@ -1,0 +1,13 @@
+{
+  "id": "photo-1",
+  "submissionId": "sub",
+  "type": "photo",
+  "courseId": "course",
+  "examId": "exam",
+  "memberId": "member",
+  "date": "2024-01-01",
+  "macAddress": "mac:aa:bb",
+  "photoLocation": "/sdcard/<photo>&.jpg",
+  "androidId": "golden-android-id",
+  "app": "myplanet"
+}

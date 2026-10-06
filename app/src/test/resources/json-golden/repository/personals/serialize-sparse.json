@@ -1,0 +1,18 @@
+{
+  "title": null,
+  "uploadDate": 1717171717171,
+  "createdDate": 0,
+  "filename": "",
+  "author": null,
+  "addedBy": null,
+  "description": null,
+  "resourceType": "Activities",
+  "private": true,
+  "androidId": "golden-android-id",
+  "app": "myplanet",
+  "deviceName": "golden-device",
+  "customDeviceName": "golden <custom> & 'device'",
+  "privateFor": {
+    "users": null
+  }
+}

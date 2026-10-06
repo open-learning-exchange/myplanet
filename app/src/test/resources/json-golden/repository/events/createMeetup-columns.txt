@@ -1,0 +1,2 @@
+sync={"type":"local","planetCode":null}
+link={"teams":"team \u003c1\u003e"}

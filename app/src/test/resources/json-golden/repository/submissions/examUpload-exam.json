@@ -1,0 +1,104 @@
+{
+  "_id": "sub-1",
+  "_rev": "2-s",
+  "parentId": "exam-1@course-1",
+  "type": "exam",
+  "team": {
+    "_id": "team-1",
+    "name": "Team <1>",
+    "type": "team"
+  },
+  "grade": 3,
+  "startTime": 9007199254740993,
+  "lastUpdateTime": 1717171717171,
+  "status": "complete",
+  "androidId": "golden-android-id",
+  "app": "myplanet",
+  "deviceName": "golden-device",
+  "customDeviceName": "golden <custom> & 'device'",
+  "sender": "learner",
+  "source": "planet",
+  "parentCode": "parent",
+  "answers": [
+    {
+      "value": "<answer> & 'it'",
+      "mistakes": 1,
+      "passed": true,
+      "questionId": "q1"
+    },
+    {
+      "value": [
+        {
+          "id": "a",
+          "text": "A & B"
+        }
+      ],
+      "mistakes": 0,
+      "passed": false,
+      "questionId": "q2"
+    }
+  ],
+  "parent": {
+    "_id": "exam-1",
+    "_rev": "1-e",
+    "name": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+    "description": null,
+    "passingPercentage": null,
+    "type": "exam",
+    "updatedDate": 0,
+    "createdDate": 9007199254740993,
+    "adoptionDate": 0,
+    "sourcePlanet": null,
+    "totalMarks": 5,
+    "createdBy": null,
+    "questions": [
+      {
+        "header": "H",
+        "body": "B <1>",
+        "type": "select",
+        "marks": null,
+        "choices": [
+          {
+            "id": "a",
+            "text": "A & B"
+          }
+        ],
+        "correctChoice": [
+          "a"
+        ],
+        "hasOtherOption": false
+      }
+    ],
+    "androidId": "golden-android-id",
+    "app": "myplanet"
+  },
+  "user": {
+    "_id": "org.couchdb.user:learner",
+    "_rev": "1-u",
+    "name": "learner",
+    "roles": [
+      "learner"
+    ],
+    "derived_key": null,
+    "salt": null,
+    "password_scheme": null,
+    "isUserAdmin": null,
+    "joinDate": 0,
+    "firstName": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+    "lastName": null,
+    "middleName": null,
+    "email": null,
+    "language": null,
+    "level": null,
+    "type": "user",
+    "gender": null,
+    "phoneNumber": null,
+    "birthDate": null,
+    "age": null,
+    "iterations": 10,
+    "parentCode": "parent",
+    "planetCode": "planet",
+    "birthPlace": null,
+    "isArchived": false
+  }
+}

@@ -1,0 +1,1738 @@
+{
+  "getString": {
+    "<missing>": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "null": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "\"abc\"": {
+      "gson": "abc",
+      "gsonParsed": "abc",
+      "kjson": "abc",
+      "jsonUtils": "abc"
+    },
+    "\"\"": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "\"5\"": {
+      "gson": "5",
+      "gsonParsed": "5",
+      "kjson": "5",
+      "jsonUtils": "5"
+    },
+    "\" 5\"": {
+      "gson": " 5",
+      "gsonParsed": " 5",
+      "kjson": " 5",
+      "jsonUtils": " 5"
+    },
+    "\"5.7\"": {
+      "gson": "5.7",
+      "gsonParsed": "5.7",
+      "kjson": "5.7",
+      "jsonUtils": "5.7"
+    },
+    "\"1e3\"": {
+      "gson": "1e3",
+      "gsonParsed": "1e3",
+      "kjson": "1e3",
+      "jsonUtils": "1e3"
+    },
+    "\"3000000000\"": {
+      "gson": "3000000000",
+      "gsonParsed": "3000000000",
+      "kjson": "3000000000",
+      "jsonUtils": "3000000000"
+    },
+    "\"true\"": {
+      "gson": "true",
+      "gsonParsed": "true",
+      "kjson": "true",
+      "jsonUtils": "true"
+    },
+    "\"TRUE\"": {
+      "gson": "TRUE",
+      "gsonParsed": "TRUE",
+      "kjson": "TRUE",
+      "jsonUtils": "TRUE"
+    },
+    "\"yes\"": {
+      "gson": "yes",
+      "gsonParsed": "yes",
+      "kjson": "yes",
+      "jsonUtils": "yes"
+    },
+    "\"NaN\"": {
+      "gson": "NaN",
+      "gsonParsed": "NaN",
+      "kjson": "NaN",
+      "jsonUtils": "NaN"
+    },
+    "\"Infinity\"": {
+      "gson": "Infinity",
+      "gsonParsed": "Infinity",
+      "kjson": "Infinity",
+      "jsonUtils": "Infinity"
+    },
+    "\"-Infinity\"": {
+      "gson": "-Infinity",
+      "gsonParsed": "-Infinity",
+      "kjson": "-Infinity",
+      "jsonUtils": "-Infinity"
+    },
+    "5": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "-5": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "0": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "-0": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "5.0": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "5.7": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "-5.7": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "0.1": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "1e3": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "1E2": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "1.5e1": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "2.5e-3": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "3000000000": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "9007199254740993": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "9223372036854775807": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "9223372036854775808": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "1e400": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "-1e400": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "true": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "false": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "{}": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "{\"a\":1}": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "[]": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "[1]": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "[\"x\"]": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    },
+    "[\"x\",\"y\"]": {
+      "gson": "",
+      "gsonParsed": "",
+      "kjson": "",
+      "jsonUtils": ""
+    }
+  },
+  "getInt": {
+    "<missing>": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "null": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "\"abc\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "\"\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "\"5\"": {
+      "gson": "5",
+      "gsonParsed": "5",
+      "kjson": "5",
+      "jsonUtils": "5"
+    },
+    "\" 5\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "5"
+    },
+    "\"5.7\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "\"1e3\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "1000"
+    },
+    "\"3000000000\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "-1294967296"
+    },
+    "\"true\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "\"TRUE\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "\"yes\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "\"NaN\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "\"Infinity\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "\"-Infinity\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "5": {
+      "gson": "5",
+      "gsonParsed": "5",
+      "kjson": "5",
+      "jsonUtils": "5"
+    },
+    "-5": {
+      "gson": "-5",
+      "gsonParsed": "-5",
+      "kjson": "-5",
+      "jsonUtils": "-5"
+    },
+    "0": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "-0": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "5.0": {
+      "gson": "5",
+      "gsonParsed": "5",
+      "kjson": "5",
+      "jsonUtils": "0"
+    },
+    "5.7": {
+      "gson": "5",
+      "gsonParsed": "5",
+      "kjson": "5",
+      "jsonUtils": "0"
+    },
+    "-5.7": {
+      "gson": "-5",
+      "gsonParsed": "-5",
+      "kjson": "-5",
+      "jsonUtils": "0"
+    },
+    "0.1": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "1e3": {
+      "gson": "1000",
+      "gsonParsed": "1000",
+      "kjson": "1000",
+      "jsonUtils": "1000"
+    },
+    "1E2": {
+      "gson": "100",
+      "gsonParsed": "100",
+      "kjson": "100",
+      "jsonUtils": "100"
+    },
+    "1.5e1": {
+      "gson": "15",
+      "gsonParsed": "15",
+      "kjson": "15",
+      "jsonUtils": "0"
+    },
+    "2.5e-3": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "3000000000": {
+      "gson": "-1294967296",
+      "gsonParsed": "-1294967296",
+      "kjson": "-1294967296",
+      "jsonUtils": "-1294967296"
+    },
+    "9007199254740993": {
+      "gson": "1",
+      "gsonParsed": "1",
+      "kjson": "1",
+      "jsonUtils": "1"
+    },
+    "9223372036854775807": {
+      "gson": "-1",
+      "gsonParsed": "-1",
+      "kjson": "-1",
+      "jsonUtils": "-1"
+    },
+    "9223372036854775808": {
+      "gson": "2147483647",
+      "gsonParsed": "0",
+      "kjson": "2147483647",
+      "jsonUtils": "0"
+    },
+    "1e400": {
+      "gson": "2147483647",
+      "gsonParsed": "0",
+      "kjson": "2147483647",
+      "jsonUtils": "0"
+    },
+    "-1e400": {
+      "gson": "-2147483648",
+      "gsonParsed": "0",
+      "kjson": "-2147483648",
+      "jsonUtils": "0"
+    },
+    "true": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "false": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "{}": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "{\"a\":1}": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "[]": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "[1]": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "[\"x\"]": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "[\"x\",\"y\"]": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    }
+  },
+  "getLong": {
+    "<missing>": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "null": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "\"abc\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "\"\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "\"5\"": {
+      "gson": "5",
+      "gsonParsed": "5",
+      "kjson": "5",
+      "jsonUtils": "5"
+    },
+    "\" 5\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "5"
+    },
+    "\"5.7\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "\"1e3\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "1000"
+    },
+    "\"3000000000\"": {
+      "gson": "3000000000",
+      "gsonParsed": "3000000000",
+      "kjson": "3000000000",
+      "jsonUtils": "3000000000"
+    },
+    "\"true\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "\"TRUE\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "\"yes\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "\"NaN\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "\"Infinity\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "\"-Infinity\"": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "5": {
+      "gson": "5",
+      "gsonParsed": "5",
+      "kjson": "5",
+      "jsonUtils": "5"
+    },
+    "-5": {
+      "gson": "-5",
+      "gsonParsed": "-5",
+      "kjson": "-5",
+      "jsonUtils": "-5"
+    },
+    "0": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "-0": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "5.0": {
+      "gson": "5",
+      "gsonParsed": "5",
+      "kjson": "5",
+      "jsonUtils": "0"
+    },
+    "5.7": {
+      "gson": "5",
+      "gsonParsed": "5",
+      "kjson": "5",
+      "jsonUtils": "0"
+    },
+    "-5.7": {
+      "gson": "-5",
+      "gsonParsed": "-5",
+      "kjson": "-5",
+      "jsonUtils": "0"
+    },
+    "0.1": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "1e3": {
+      "gson": "1000",
+      "gsonParsed": "1000",
+      "kjson": "1000",
+      "jsonUtils": "1000"
+    },
+    "1E2": {
+      "gson": "100",
+      "gsonParsed": "100",
+      "kjson": "100",
+      "jsonUtils": "100"
+    },
+    "1.5e1": {
+      "gson": "15",
+      "gsonParsed": "15",
+      "kjson": "15",
+      "jsonUtils": "0"
+    },
+    "2.5e-3": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "3000000000": {
+      "gson": "3000000000",
+      "gsonParsed": "3000000000",
+      "kjson": "3000000000",
+      "jsonUtils": "3000000000"
+    },
+    "9007199254740993": {
+      "gson": "9007199254740993",
+      "gsonParsed": "9007199254740993",
+      "kjson": "9007199254740993",
+      "jsonUtils": "9007199254740993"
+    },
+    "9223372036854775807": {
+      "gson": "9223372036854775807",
+      "gsonParsed": "9223372036854775807",
+      "kjson": "9223372036854775807",
+      "jsonUtils": "9223372036854775807"
+    },
+    "9223372036854775808": {
+      "gson": "9223372036854775807",
+      "gsonParsed": "-9223372036854775808",
+      "kjson": "9223372036854775807",
+      "jsonUtils": "0"
+    },
+    "1e400": {
+      "gson": "9223372036854775807",
+      "gsonParsed": "0",
+      "kjson": "9223372036854775807",
+      "jsonUtils": "0"
+    },
+    "-1e400": {
+      "gson": "-9223372036854775808",
+      "gsonParsed": "0",
+      "kjson": "-9223372036854775808",
+      "jsonUtils": "0"
+    },
+    "true": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "false": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "{}": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "{\"a\":1}": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "[]": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "[1]": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "[\"x\"]": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    },
+    "[\"x\",\"y\"]": {
+      "gson": "0",
+      "gsonParsed": "0",
+      "kjson": "0",
+      "jsonUtils": "0"
+    }
+  },
+  "getFloat": {
+    "<missing>": {
+      "gson": "0.0",
+      "gsonParsed": "0.0",
+      "kjson": "0.0",
+      "jsonUtils": "0.0"
+    },
+    "null": {
+      "gson": "0.0",
+      "gsonParsed": "0.0",
+      "kjson": "0.0",
+      "jsonUtils": "0.0"
+    },
+    "\"abc\"": {
+      "gson": "0.0",
+      "gsonParsed": "0.0",
+      "kjson": "0.0",
+      "jsonUtils": "0.0"
+    },
+    "\"\"": {
+      "gson": "0.0",
+      "gsonParsed": "0.0",
+      "kjson": "0.0",
+      "jsonUtils": "0.0"
+    },
+    "\"5\"": {
+      "gson": "5.0",
+      "gsonParsed": "5.0",
+      "kjson": "5.0",
+      "jsonUtils": "5.0"
+    },
+    "\" 5\"": {
+      "gson": "5.0",
+      "gsonParsed": "5.0",
+      "kjson": "5.0",
+      "jsonUtils": "5.0"
+    },
+    "\"5.7\"": {
+      "gson": "5.7",
+      "gsonParsed": "5.7",
+      "kjson": "5.7",
+      "jsonUtils": "5.7"
+    },
+    "\"1e3\"": {
+      "gson": "1000.0",
+      "gsonParsed": "1000.0",
+      "kjson": "1000.0",
+      "jsonUtils": "1000.0"
+    },
+    "\"3000000000\"": {
+      "gson": "3.0E9",
+      "gsonParsed": "3.0E9",
+      "kjson": "3.0E9",
+      "jsonUtils": "3.0E9"
+    },
+    "\"true\"": {
+      "gson": "0.0",
+      "gsonParsed": "0.0",
+      "kjson": "0.0",
+      "jsonUtils": "0.0"
+    },
+    "\"TRUE\"": {
+      "gson": "0.0",
+      "gsonParsed": "0.0",
+      "kjson": "0.0",
+      "jsonUtils": "0.0"
+    },
+    "\"yes\"": {
+      "gson": "0.0",
+      "gsonParsed": "0.0",
+      "kjson": "0.0",
+      "jsonUtils": "0.0"
+    },
+    "\"NaN\"": {
+      "gson": "NaN",
+      "gsonParsed": "NaN",
+      "kjson": "NaN",
+      "jsonUtils": "NaN"
+    },
+    "\"Infinity\"": {
+      "gson": "Infinity",
+      "gsonParsed": "Infinity",
+      "kjson": "Infinity",
+      "jsonUtils": "Infinity"
+    },
+    "\"-Infinity\"": {
+      "gson": "-Infinity",
+      "gsonParsed": "-Infinity",
+      "kjson": "-Infinity",
+      "jsonUtils": "-Infinity"
+    },
+    "5": {
+      "gson": "5.0",
+      "gsonParsed": "5.0",
+      "kjson": "5.0",
+      "jsonUtils": "5.0"
+    },
+    "-5": {
+      "gson": "-5.0",
+      "gsonParsed": "-5.0",
+      "kjson": "-5.0",
+      "jsonUtils": "-5.0"
+    },
+    "0": {
+      "gson": "0.0",
+      "gsonParsed": "0.0",
+      "kjson": "0.0",
+      "jsonUtils": "0.0"
+    },
+    "-0": {
+      "gson": "0.0",
+      "gsonParsed": "-0.0",
+      "kjson": "0.0",
+      "jsonUtils": "-0.0"
+    },
+    "5.0": {
+      "gson": "5.0",
+      "gsonParsed": "5.0",
+      "kjson": "5.0",
+      "jsonUtils": "5.0"
+    },
+    "5.7": {
+      "gson": "5.7",
+      "gsonParsed": "5.7",
+      "kjson": "5.7",
+      "jsonUtils": "5.7"
+    },
+    "-5.7": {
+      "gson": "-5.7",
+      "gsonParsed": "-5.7",
+      "kjson": "-5.7",
+      "jsonUtils": "-5.7"
+    },
+    "0.1": {
+      "gson": "0.1",
+      "gsonParsed": "0.1",
+      "kjson": "0.1",
+      "jsonUtils": "0.1"
+    },
+    "1e3": {
+      "gson": "1000.0",
+      "gsonParsed": "1000.0",
+      "kjson": "1000.0",
+      "jsonUtils": "1000.0"
+    },
+    "1E2": {
+      "gson": "100.0",
+      "gsonParsed": "100.0",
+      "kjson": "100.0",
+      "jsonUtils": "100.0"
+    },
+    "1.5e1": {
+      "gson": "15.0",
+      "gsonParsed": "15.0",
+      "kjson": "15.0",
+      "jsonUtils": "15.0"
+    },
+    "2.5e-3": {
+      "gson": "0.0025",
+      "gsonParsed": "0.0025",
+      "kjson": "0.0025",
+      "jsonUtils": "0.0025"
+    },
+    "3000000000": {
+      "gson": "3.0E9",
+      "gsonParsed": "3.0E9",
+      "kjson": "3.0E9",
+      "jsonUtils": "3.0E9"
+    },
+    "9007199254740993": {
+      "gson": "9.007199E15",
+      "gsonParsed": "9.007199E15",
+      "kjson": "9.007199E15",
+      "jsonUtils": "9.007199E15"
+    },
+    "9223372036854775807": {
+      "gson": "9.223372E18",
+      "gsonParsed": "9.223372E18",
+      "kjson": "9.223372E18",
+      "jsonUtils": "9.223372E18"
+    },
+    "9223372036854775808": {
+      "gson": "9.223372E18",
+      "gsonParsed": "9.223372E18",
+      "kjson": "9.223372E18",
+      "jsonUtils": "9.223372E18"
+    },
+    "1e400": {
+      "gson": "Infinity",
+      "gsonParsed": "Infinity",
+      "kjson": "Infinity",
+      "jsonUtils": "Infinity"
+    },
+    "-1e400": {
+      "gson": "-Infinity",
+      "gsonParsed": "-Infinity",
+      "kjson": "-Infinity",
+      "jsonUtils": "-Infinity"
+    },
+    "true": {
+      "gson": "0.0",
+      "gsonParsed": "0.0",
+      "kjson": "0.0",
+      "jsonUtils": "0.0"
+    },
+    "false": {
+      "gson": "0.0",
+      "gsonParsed": "0.0",
+      "kjson": "0.0",
+      "jsonUtils": "0.0"
+    },
+    "{}": {
+      "gson": "0.0",
+      "gsonParsed": "0.0",
+      "kjson": "0.0",
+      "jsonUtils": "0.0"
+    },
+    "{\"a\":1}": {
+      "gson": "0.0",
+      "gsonParsed": "0.0",
+      "kjson": "0.0",
+      "jsonUtils": "0.0"
+    },
+    "[]": {
+      "gson": "0.0",
+      "gsonParsed": "0.0",
+      "kjson": "0.0",
+      "jsonUtils": "0.0"
+    },
+    "[1]": {
+      "gson": "0.0",
+      "gsonParsed": "0.0",
+      "kjson": "0.0",
+      "jsonUtils": "0.0"
+    },
+    "[\"x\"]": {
+      "gson": "0.0",
+      "gsonParsed": "0.0",
+      "kjson": "0.0",
+      "jsonUtils": "0.0"
+    },
+    "[\"x\",\"y\"]": {
+      "gson": "0.0",
+      "gsonParsed": "0.0",
+      "kjson": "0.0",
+      "jsonUtils": "0.0"
+    }
+  },
+  "getBoolean": {
+    "<missing>": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "null": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "\"abc\"": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "\"\"": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "\"5\"": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "\" 5\"": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "\"5.7\"": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "\"1e3\"": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "\"3000000000\"": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "\"true\"": {
+      "gson": "true",
+      "gsonParsed": "true",
+      "kjson": "true",
+      "jsonUtils": "true"
+    },
+    "\"TRUE\"": {
+      "gson": "true",
+      "gsonParsed": "true",
+      "kjson": "true",
+      "jsonUtils": "true"
+    },
+    "\"yes\"": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "\"NaN\"": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "\"Infinity\"": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "\"-Infinity\"": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "5": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "-5": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "0": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "-0": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "5.0": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "5.7": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "-5.7": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "0.1": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "1e3": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "1E2": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "1.5e1": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "2.5e-3": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "3000000000": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "9007199254740993": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "9223372036854775807": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "9223372036854775808": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "1e400": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "-1e400": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "true": {
+      "gson": "true",
+      "gsonParsed": "true",
+      "kjson": "true",
+      "jsonUtils": "true"
+    },
+    "false": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "{}": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "{\"a\":1}": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "[]": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "[1]": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "[\"x\"]": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    },
+    "[\"x\",\"y\"]": {
+      "gson": "false",
+      "gsonParsed": "false",
+      "kjson": "false",
+      "jsonUtils": "false"
+    }
+  },
+  "getJsonObject": {
+    "<missing>": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "null": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "\"abc\"": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "\"\"": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "\"5\"": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "\" 5\"": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "\"5.7\"": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "\"1e3\"": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "\"3000000000\"": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "\"true\"": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "\"TRUE\"": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "\"yes\"": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "\"NaN\"": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "\"Infinity\"": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "\"-Infinity\"": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "5": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "-5": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "0": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "-0": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "5.0": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "5.7": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "-5.7": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "0.1": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "1e3": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "1E2": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "1.5e1": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "2.5e-3": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "3000000000": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "9007199254740993": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "9223372036854775807": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "9223372036854775808": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "1e400": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "-1e400": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "true": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "false": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "{}": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "{\"a\":1}": {
+      "gson": "{\"a\":1}",
+      "gsonParsed": "{\"a\":1}",
+      "kjson": "{\"a\":1}",
+      "jsonUtils": "{\"a\":1}"
+    },
+    "[]": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "[1]": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "[\"x\"]": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    },
+    "[\"x\",\"y\"]": {
+      "gson": "{}",
+      "gsonParsed": "{}",
+      "kjson": "{}",
+      "jsonUtils": "{}"
+    }
+  },
+  "getJsonArray": {
+    "<missing>": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "null": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "\"abc\"": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "\"\"": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "\"5\"": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "\" 5\"": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "\"5.7\"": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "\"1e3\"": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "\"3000000000\"": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "\"true\"": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "\"TRUE\"": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "\"yes\"": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "\"NaN\"": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "\"Infinity\"": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "\"-Infinity\"": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "5": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "-5": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "0": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "-0": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "5.0": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "5.7": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "-5.7": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "0.1": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "1e3": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "1E2": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "1.5e1": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "2.5e-3": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "3000000000": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "9007199254740993": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "9223372036854775807": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "9223372036854775808": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "1e400": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "-1e400": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "true": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "false": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "{}": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "{\"a\":1}": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "[]": {
+      "gson": "[]",
+      "gsonParsed": "[]",
+      "kjson": "[]",
+      "jsonUtils": "[]"
+    },
+    "[1]": {
+      "gson": "[1]",
+      "gsonParsed": "[1]",
+      "kjson": "[1]",
+      "jsonUtils": "[1]"
+    },
+    "[\"x\"]": {
+      "gson": "[\"x\"]",
+      "gsonParsed": "[\"x\"]",
+      "kjson": "[\"x\"]",
+      "jsonUtils": "[\"x\"]"
+    },
+    "[\"x\",\"y\"]": {
+      "gson": "[\"x\",\"y\"]",
+      "gsonParsed": "[\"x\",\"y\"]",
+      "kjson": "[\"x\",\"y\"]",
+      "jsonUtils": "[\"x\",\"y\"]"
+    }
+  }
+}

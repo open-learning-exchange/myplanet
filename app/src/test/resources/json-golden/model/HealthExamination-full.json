@@ -1,0 +1,25 @@
+{
+  "_id": "health-user",
+  "_rev": "1-h",
+  "data": "encrypted<blob>==",
+  "temperature": 36.6,
+  "pulse": 72,
+  "bp": "120/80",
+  "height": 0.1,
+  "weight": 1.5,
+  "vision": "20/20",
+  "hearing": "ok & fine",
+  "date": 9007199254740993,
+  "selfExamination": true,
+  "planetCode": "planet",
+  "hasInfo": true,
+  "profileId": "profile",
+  "creatorId": "profile",
+  "gender": "male",
+  "age": 42,
+  "conditions": {
+    "Asthma": true,
+    "Diabetes": false,
+    "Other <x>": true
+  }
+}

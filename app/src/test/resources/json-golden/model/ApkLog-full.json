@@ -1,0 +1,14 @@
+{
+  "type": "crash",
+  "error": "java.lang.IllegalStateException: <boom> & 'bang'\n\tat Foo.kt:1",
+  "page": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+  "time": "1717171717171",
+  "userId": "org.couchdb.user:learner",
+  "version": "0.70.64",
+  "createdOn": "planet",
+  "deviceName": "golden-device",
+  "customDeviceName": "custom <name>",
+  "parentCode": "parent",
+  "androidId": "golden-android-id",
+  "app": "myplanet"
+}

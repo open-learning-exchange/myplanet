@@ -1,0 +1,52 @@
+{
+  "parentId": "survey-x",
+  "type": "survey",
+  "team": {
+    "_id": "local-team",
+    "name": "Local <team>",
+    "type": "team"
+  },
+  "grade": 0,
+  "startTime": 0,
+  "lastUpdateTime": 0,
+  "status": "pending",
+  "androidId": "golden-android-id",
+  "app": "myplanet",
+  "deviceName": "golden-device",
+  "customDeviceName": "golden <custom> & 'device'",
+  "sender": null,
+  "source": "src",
+  "parentCode": "",
+  "answers": [
+    {
+      "value": "<answer> & 'it'",
+      "mistakes": 1,
+      "passed": true,
+      "questionId": "q1"
+    },
+    {
+      "value": [
+        {
+          "id": "a",
+          "text": "A & B"
+        }
+      ],
+      "mistakes": 0,
+      "passed": false,
+      "questionId": "q2"
+    }
+  ],
+  "parent": {
+    "_id": "survey-x",
+    "name": "Survey & 'more'",
+    "questions": []
+  },
+  "user": {
+    "_id": "org.couchdb.user:old",
+    "name": "old <user>",
+    "age": 1.0,
+    "membershipDoc": {
+      "teamId": "local-team"
+    }
+  }
+}

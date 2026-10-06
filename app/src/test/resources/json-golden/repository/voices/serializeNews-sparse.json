@@ -1,0 +1,28 @@
+{
+  "chat": false,
+  "message": null,
+  "time": 0,
+  "createdOn": null,
+  "docType": null,
+  "avatar": null,
+  "messageType": null,
+  "messagePlanetCode": null,
+  "replyTo": null,
+  "parentCode": null,
+  "images": [],
+  "labels": [],
+  "user": null,
+  "news": {
+    "_id": null,
+    "_rev": null,
+    "user": null,
+    "aiProvider": null,
+    "title": null,
+    "conversations": null,
+    "createdDate": 0,
+    "updatedDate": 0,
+    "sharedBy": null
+  },
+  "androidId": "golden-android-id",
+  "app": "myplanet"
+}

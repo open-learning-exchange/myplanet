@@ -1,0 +1,39 @@
+{
+  "_id": "res-1",
+  "_rev": "1-r",
+  "need_optimization": true,
+  "resourceFor": [
+    "learner",
+    "<leader>"
+  ],
+  "publisher": "OLE & co",
+  "linkToLicense": "https://planet.example/a?b=1&c=<2>#'x'",
+  "addedBy": "admin",
+  "uploadDate": "2024-01-01",
+  "openWith": "PDF.js",
+  "subject": [
+    "Math",
+    "Science"
+  ],
+  "kind": "Resource",
+  "medium": "Text",
+  "language": "Français",
+  "author": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+  "sum": 9,
+  "createdDate": "2024-01-01",
+  "level": [],
+  "languages": [
+    "fr"
+  ],
+  "tag": [],
+  "timesRated": 3,
+  "year": "2020",
+  "title": "Title <1>",
+  "averageRating": "4.5",
+  "filename": "file name.pdf",
+  "mediaType": "pdf",
+  "description": "desc",
+  "_attachments": {
+    "local/file name.pdf": {}
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "learner",
+  "roles": [
+    "learner",
+    "leader"
+  ],
+  "password": "p@ss<word>&'",
+  "androidId": "golden-android-id",
+  "app": "myplanet",
+  "uniqueAndroidId": "golden-android-id",
+  "customDeviceName": "golden <custom> & 'device'",
+  "isUserAdmin": null,
+  "joinDate": 9007199254740993,
+  "firstName": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+  "lastName": "Ñandú",
+  "middleName": "",
+  "email": "a&b@example.org",
+  "language": "Español",
+  "level": "Beginner",
+  "type": "user",
+  "gender": "female",
+  "phoneNumber": "+1 (555) 0100",
+  "birthDate": "1990-01-01T00:00:00.000Z",
+  "age": "35",
+  "iterations": 10,
+  "parentCode": "parent&1",
+  "planetCode": "planet<1>",
+  "birthPlace": "Kathmandu",
+  "isArchived": true
+}

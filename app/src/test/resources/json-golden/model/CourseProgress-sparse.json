@@ -1,0 +1,12 @@
+{
+  "userId": null,
+  "parentCode": null,
+  "courseId": null,
+  "passed": false,
+  "stepNum": 0,
+  "createdOn": null,
+  "createdDate": 0,
+  "updatedDate": 0,
+  "androidId": "golden-android-id",
+  "app": "myplanet"
+}

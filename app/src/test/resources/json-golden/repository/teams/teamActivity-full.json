@@ -1,0 +1,15 @@
+{
+  "user": "learner",
+  "type": "teamVisit",
+  "createdOn": "planet",
+  "parentCode": "parent",
+  "teamType": "local",
+  "time": 9007199254740993,
+  "teamId": "team<1>",
+  "androidId": "golden-android-id",
+  "app": "myplanet",
+  "deviceName": "golden-device",
+  "customDeviceName": "golden <custom> & 'device'",
+  "_rev": "1-l",
+  "_id": "log-1"
+}

@@ -1,0 +1,18 @@
+{
+  "title": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+  "uploadDate": 1717171717171,
+  "createdDate": 9007199254740993,
+  "filename": "",
+  "author": "learner",
+  "addedBy": "learner",
+  "description": "desc",
+  "resourceType": "Activities",
+  "private": true,
+  "androidId": "golden-android-id",
+  "app": "myplanet",
+  "deviceName": "golden-device",
+  "customDeviceName": "golden <custom> & 'device'",
+  "privateFor": {
+    "users": "org.couchdb.user:learner"
+  }
+}

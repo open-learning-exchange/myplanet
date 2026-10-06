@@ -1,0 +1,21 @@
+{
+  "_id": "team-1",
+  "_rev": "1-x",
+  "name": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+  "userId": "user",
+  "teamId": "parent-team",
+  "teamType": "local",
+  "teamPlanetCode": "planet",
+  "docType": "request",
+  "status": "active",
+  "userPlanetCode": "planet",
+  "parentCode": "parent",
+  "type": "team",
+  "route": "/teams",
+  "sourcePlanet": "planet",
+  "services": "services",
+  "createdBy": "creator",
+  "resourceId": "resource",
+  "title": "title 'x'",
+  "rules": "rules = none"
+}

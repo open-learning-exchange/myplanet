@@ -1,0 +1,11 @@
+userId=org.couchdb.user:learner
+user={"_id":"learner@planet","name":"\u003clearner\u003e","membershipDoc":{"teamId":"t1"},"age":30,"ratio":0.1}
+parent={"_id":"exam-1","name":"Exam \u0026 \u0027quiz\u0027","n":1.0,"e":1000}
+grade=2
+lastUpdateTime=1717171700000
+teamId=t1
+answer sub-9-0 value=<v> valueChoices=null mistakes=2 passed=true questionId=exam-1-0
+answer sub-9-1 value=null valueChoices=["a", {"id":"b"}] mistakes=0 passed=false questionId=exam-1-1
+answer sub-9-2 value={"x":1} valueChoices=null mistakes=0 passed=false questionId=exam-1-2
+answer sub-9-3 value=null valueChoices=null mistakes=0 passed=false questionId=exam-1-3
+answer sub-9-4 value=5 valueChoices=null mistakes=0 passed=false questionId=exam-1-4

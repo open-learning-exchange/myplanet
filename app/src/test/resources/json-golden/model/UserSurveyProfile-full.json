@@ -1,0 +1,11 @@
+{
+  "firstName": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+  "middleName": "Mid",
+  "lastName": "Last",
+  "email": "a&b@c.d",
+  "language": "Nepali",
+  "phoneNumber": "+1 <555>",
+  "level": "Beginner",
+  "gender": "female",
+  "betaEnabled": false
+}

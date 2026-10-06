@@ -1,0 +1,16 @@
+{
+  "user": null,
+  "item": null,
+  "type": null,
+  "title": null,
+  "time": 0,
+  "comment": null,
+  "rate": 0,
+  "createdOn": null,
+  "parentCode": null,
+  "planetCode": null,
+  "customDeviceName": "",
+  "deviceName": "golden-device",
+  "androidId": "golden-android-id",
+  "app": "myplanet"
+}

@@ -1,0 +1,36 @@
+{
+  "_id": "org.couchdb.user:learner",
+  "_rev": "3-abc",
+  "name": "learner",
+  "roles": [
+    "learner",
+    "leader"
+  ],
+  "derived_key": "deadbeef",
+  "salt": "s@lt=",
+  "password_scheme": "pbkdf2",
+  "isUserAdmin": false,
+  "joinDate": 9007199254740993,
+  "firstName": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+  "lastName": "Ñandú",
+  "middleName": "",
+  "email": "a&b@example.org",
+  "language": "Español",
+  "level": "Beginner",
+  "type": "user",
+  "gender": "female",
+  "phoneNumber": "+1 (555) 0100",
+  "birthDate": "1990-01-01T00:00:00.000Z",
+  "age": "35",
+  "iterations": 10000,
+  "parentCode": "parent&1",
+  "planetCode": "planet<1>",
+  "birthPlace": "Kathmandu",
+  "isArchived": true,
+  "_attachments": {
+    "img": {
+      "content_type": "image/jpeg",
+      "data": "AAEC//48Pg=="
+    }
+  }
+}

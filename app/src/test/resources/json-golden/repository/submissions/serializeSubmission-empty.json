@@ -1,0 +1,16 @@
+{
+  "parentId": "",
+  "type": "survey",
+  "grade": 0,
+  "startTime": 0,
+  "lastUpdateTime": 0,
+  "status": "pending",
+  "androidId": "golden-android-id",
+  "app": "myplanet",
+  "deviceName": "golden-device",
+  "customDeviceName": "golden <custom> & 'device'",
+  "sender": null,
+  "source": "",
+  "parentCode": "",
+  "answers": []
+}

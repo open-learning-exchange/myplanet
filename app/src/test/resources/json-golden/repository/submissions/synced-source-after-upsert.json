@@ -1,0 +1,53 @@
+{
+  "_id": "sub-9",
+  "_rev": "1-x",
+  "parentId": "exam-1@course-1",
+  "type": "exam",
+  "status": "complete",
+  "startTime": 1717171717171,
+  "lastUpdateTime": 1.7171717E12,
+  "grade": 2.5,
+  "user": {
+    "_id": "learner@planet",
+    "name": "<learner>",
+    "membershipDoc": {
+      "teamId": "t1"
+    },
+    "age": 30,
+    "ratio": 0.1,
+    "none": null
+  },
+  "parent": {
+    "_id": "exam-1",
+    "name": "Exam & 'quiz'",
+    "n": 1.0,
+    "e": 1000
+  },
+  "answers": [
+    {
+      "value": "<v>",
+      "mistakes": "2",
+      "passed": "true",
+      "questionId": ""
+    },
+    {
+      "value": [
+        "a",
+        {
+          "id": "b"
+        }
+      ]
+    },
+    {
+      "value": {
+        "x": 1
+      }
+    },
+    {
+      "value": null
+    },
+    {
+      "value": 5
+    }
+  ]
+}

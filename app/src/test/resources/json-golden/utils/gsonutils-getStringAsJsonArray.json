@@ -1,0 +1,54 @@
+{
+  "<null>": {
+    "gson": "[]",
+    "kjson": "[]"
+  },
+  "": {
+    "gson": "[]",
+    "kjson": "[]"
+  },
+  "   ": {
+    "gson": "[]",
+    "kjson": "[]"
+  },
+  "[1,2.0,\"<a>\"]": {
+    "gson": "[1,2.0,\"<a>\"]",
+    "kjson": "[1,2.0,\"<a>\"]"
+  },
+  "{}": {
+    "gson": "[]",
+    "kjson": "[]"
+  },
+  "null": {
+    "gson": "[]",
+    "kjson": "[]"
+  },
+  "\"s\"": {
+    "gson": "[]",
+    "kjson": "[]"
+  },
+  "[a, b]": {
+    "gson": "[\"a\",\"b\"]",
+    "kjson": "[\"a\",\"b\"]"
+  },
+  "['a']": {
+    "gson": "[\"a\"]",
+    "kjson": "[\"'a'\"]"
+  },
+  "[1,]": {
+    "gson": "[1,null]",
+    "kjson": "throws JsonDecodingException"
+  },
+  "[1] // c": {
+    "gson": "throws JsonSyntaxException",
+    "kjson": "throws JsonDecodingException"
+  },
+  "not json": {
+    "gson": "throws JsonSyntaxException",
+    "kjson": "throws JsonDecodingException"
+  },
+  "[1] [2]": {
+    "gson": "throws JsonSyntaxException",
+    "kjson": "throws JsonDecodingException"
+  }
+}

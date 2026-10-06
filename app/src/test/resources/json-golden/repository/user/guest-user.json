@@ -1,0 +1,10 @@
+{
+  "_id": "guest_guest <name> & 'x'",
+  "name": "guest <name> & 'x'",
+  "firstName": "guest <name> & 'x'",
+  "planetCode": "planet",
+  "parentCode": "parent",
+  "roles": [
+    "guest"
+  ]
+}

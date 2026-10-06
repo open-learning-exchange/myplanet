@@ -1,0 +1,15 @@
+{
+  "user": null,
+  "type": null,
+  "createdOn": null,
+  "parentCode": null,
+  "teamType": null,
+  "time": null,
+  "teamId": null,
+  "androidId": "golden-android-id",
+  "app": "myplanet",
+  "deviceName": "golden-device",
+  "customDeviceName": "golden <custom> & 'device'",
+  "_rev": null,
+  "_id": null
+}

@@ -1,0 +1,48 @@
+{
+  "_id": "task-1",
+  "_rev": "1-t",
+  "title": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+  "deadline": 9007199254740993,
+  "description": "do <it>",
+  "completed": true,
+  "completedTime": 5,
+  "assignee": {
+    "_id": "org.couchdb.user:learner",
+    "_rev": "3-abc",
+    "name": "learner",
+    "roles": [
+      "learner",
+      "leader"
+    ],
+    "derived_key": "deadbeef",
+    "salt": "s@lt=",
+    "password_scheme": "pbkdf2",
+    "isUserAdmin": false,
+    "joinDate": 9007199254740993,
+    "firstName": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+    "lastName": "Ñandú",
+    "middleName": "",
+    "email": "a&b@example.org",
+    "language": "Español",
+    "level": "Beginner",
+    "type": "user",
+    "gender": "female",
+    "phoneNumber": "+1 (555) 0100",
+    "birthDate": "1990-01-01T00:00:00.000Z",
+    "age": "35",
+    "iterations": 10000,
+    "parentCode": "parent&1",
+    "planetCode": "planet<1>",
+    "birthPlace": "Kathmandu",
+    "isArchived": true
+  },
+  "sync": {
+    "type": "local",
+    "planetCode": "planet"
+  },
+  "link": {
+    "teams": "team"
+  },
+  "androidId": "golden-android-id",
+  "app": "myplanet"
+}

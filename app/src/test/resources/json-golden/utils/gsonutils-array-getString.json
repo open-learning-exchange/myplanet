@@ -1,0 +1,72 @@
+{
+  "-1": {
+    "gson": "",
+    "gsonParsed": "",
+    "jsonUtils": ""
+  },
+  "0": {
+    "gson": "s",
+    "gsonParsed": "s",
+    "jsonUtils": "s"
+  },
+  "1": {
+    "gson": "5",
+    "gsonParsed": "5",
+    "jsonUtils": "5"
+  },
+  "2": {
+    "gson": "5.7",
+    "gsonParsed": "5.70",
+    "jsonUtils": "5.70"
+  },
+  "3": {
+    "gson": "1000",
+    "gsonParsed": "1e3",
+    "jsonUtils": "1e3"
+  },
+  "4": {
+    "gson": "1.5E300",
+    "gsonParsed": "1.5e300",
+    "jsonUtils": "1.5e300"
+  },
+  "5": {
+    "gson": "true",
+    "gsonParsed": "true",
+    "jsonUtils": "true"
+  },
+  "6": {
+    "gson": "",
+    "gsonParsed": "",
+    "jsonUtils": "null"
+  },
+  "7": {
+    "gson": "",
+    "gsonParsed": "",
+    "jsonUtils": ""
+  },
+  "8": {
+    "gson": "",
+    "gsonParsed": "",
+    "jsonUtils": ""
+  },
+  "9": {
+    "gson": "",
+    "gsonParsed": "",
+    "jsonUtils": ""
+  },
+  "10": {
+    "gson": "",
+    "gsonParsed": "",
+    "jsonUtils": ""
+  },
+  "11": {
+    "gson": "",
+    "gsonParsed": "",
+    "jsonUtils": ""
+  },
+  "12": {
+    "gson": "",
+    "gsonParsed": "",
+    "jsonUtils": ""
+  }
+}

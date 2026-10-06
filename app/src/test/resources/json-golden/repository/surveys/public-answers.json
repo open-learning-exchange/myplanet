@@ -1,0 +1,20 @@
+[
+  [
+    {
+      "id": "a",
+      "text": "<A>"
+    },
+    {
+      "id": "b",
+      "text": "B & 'c'",
+      "n": 1.0
+    }
+  ],
+  {
+    "id": "x",
+    "text": "X"
+  },
+  "fallback",
+  "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+  ""
+]

@@ -1,0 +1,1 @@
+{"_id":"org.couchdb.user:learner","_rev":"1-u","name":"learner","roles":["learner"],"joinDate":0,"firstName":"Tricky \u003cb\u003e\u0026amp;\u003c/b\u003e \u0027q\u0027 \u003d \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep","type":"user","iterations":10,"parentCode":"parent","planetCode":"planet","isArchived":false}

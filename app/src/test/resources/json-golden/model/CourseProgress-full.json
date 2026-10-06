@@ -1,0 +1,12 @@
+{
+  "userId": "user",
+  "parentCode": "parent",
+  "courseId": "course",
+  "passed": true,
+  "stepNum": 7,
+  "createdOn": "planet",
+  "createdDate": 9007199254740993,
+  "updatedDate": 9223372036854775807,
+  "androidId": "golden-android-id",
+  "app": "myplanet"
+}

@@ -1,0 +1,34 @@
+{
+  "_id": "ach-1",
+  "_rev": "1-a",
+  "goals": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+  "purpose": "purpose <x>",
+  "achievementsHeader": "header",
+  "sendToNation": true,
+  "dateSortOrder": "asc",
+  "createdOn": "planet",
+  "username": "learner",
+  "parentCode": "parent",
+  "references": [
+    {
+      "name": "ref",
+      "phone": "123"
+    }
+  ],
+  "achievements": [
+    {
+      "title": "<won>",
+      "date": "2024",
+      "n": 1.0
+    },
+    "plain string"
+  ],
+  "links": [
+    {
+      "title": "site",
+      "url": "https://x.org/?a=1&b=2"
+    }
+  ],
+  "otherInfo": [],
+  "resumeFileName": "cv.pdf"
+}

@@ -1,0 +1,15 @@
+{
+  "title": "photo <1> & 'x'.jpg",
+  "createdDate": 1717171717171,
+  "filename": "photo <1> & 'x'.jpg",
+  "private": true,
+  "addedBy": "org.couchdb.user:learner",
+  "resideOn": "parent",
+  "sourcePlanet": "planet",
+  "androidId": "golden-android-id",
+  "app": "myplanet",
+  "deviceName": "golden-device",
+  "customDeviceName": "golden <custom> & 'device'",
+  "privateFor": {},
+  "mediaType": "image"
+}

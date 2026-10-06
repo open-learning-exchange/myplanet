@@ -1,0 +1,106 @@
+{
+  "_id": "team-1",
+  "_rev": "1-x",
+  "name": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+  "userId": "user",
+  "limit": 12,
+  "amount": -5,
+  "date": 1,
+  "public": true,
+  "isLeader": true,
+  "createdDate": 9007199254740993,
+  "description": "desc <b>&</b>",
+  "beginningBalance": 100,
+  "sales": 2,
+  "otherIncome": 3,
+  "wages": 4,
+  "otherExpenses": 5,
+  "startDate": 6,
+  "endDate": 7,
+  "updatedDate": 8,
+  "teamId": "parent-team",
+  "teamType": "local",
+  "teamPlanetCode": "planet",
+  "docType": "team",
+  "status": "active",
+  "userPlanetCode": "planet",
+  "parentCode": "parent",
+  "type": "team",
+  "route": "/teams",
+  "sourcePlanet": "planet",
+  "services": "services",
+  "createdBy": "creator",
+  "resourceId": "resource",
+  "title": "title 'x'",
+  "rules": "rules = none",
+  "courses": [
+    {
+      "_id": "course-1",
+      "_rev": "2-c",
+      "courseTitle": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+      "description": "desc <b>",
+      "languageOfInstruction": "English",
+      "gradeLevel": "1",
+      "subjectLevel": "beginner",
+      "createdDate": 9007199254740993,
+      "method": "online",
+      "memberLimit": 0,
+      "coverFileName": "cover <1>.png",
+      "steps": [
+        {
+          "stepTitle": "Step 'one'",
+          "description": "first & only",
+          "id": "step-1",
+          "resources": [
+            {
+              "_id": "res-1",
+              "_rev": "1-r",
+              "need_optimization": true,
+              "resourceFor": [
+                "learner",
+                "<leader>"
+              ],
+              "publisher": "OLE & co",
+              "linkToLicense": "https://planet.example/a?b=1&c=<2>#'x'",
+              "addedBy": "admin",
+              "uploadDate": "2024-01-01",
+              "openWith": "PDF.js",
+              "subject": [
+                "Math",
+                "Science"
+              ],
+              "kind": "Resource",
+              "medium": "Text",
+              "language": "Français",
+              "author": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+              "sum": 9,
+              "createdDate": "2024-01-01",
+              "level": [],
+              "languages": [
+                "fr"
+              ],
+              "tag": [],
+              "timesRated": 3,
+              "year": "2020",
+              "title": "Title <1>",
+              "averageRating": "4.5",
+              "filename": "file name.pdf",
+              "mediaType": "pdf",
+              "description": "desc",
+              "_attachments": {
+                "local/file name.pdf": {}
+              }
+            }
+          ]
+        },
+        {
+          "stepTitle": null,
+          "description": null,
+          "id": "step-2",
+          "resources": []
+        }
+      ],
+      "images": []
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "_id": null,
+  "_rev": null,
+  "courseTitle": null,
+  "description": null,
+  "languageOfInstruction": null,
+  "gradeLevel": null,
+  "subjectLevel": null,
+  "createdDate": 0,
+  "method": null,
+  "memberLimit": null,
+  "steps": [],
+  "images": []
+}
