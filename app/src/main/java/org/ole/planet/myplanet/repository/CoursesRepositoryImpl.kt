@@ -54,7 +54,6 @@ import org.ole.planet.myplanet.utils.toSyncDocuments
 class CoursesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val progressRepository: ProgressRepository,
-    private val activitiesRepository: ActivitiesRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val tagsRepository: TagsRepository,
     private val ratingsRepository: RatingsRepository,
@@ -586,10 +585,6 @@ class CoursesRepositoryImpl @Inject constructor(
         leaveCourses(courseIds, userId).getOrThrow()
     }
 
-    override suspend fun logCourseVisit(courseId: String, title: String, userId: String) {
-        activitiesRepository.logCourseVisit(courseId, title, userId)
-    }
-
     override suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int {
         return progressRepository.getCurrentProgress(steps, userId, courseId)
     }
@@ -661,7 +656,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 }
             } catch (e: Exception) {
                 if (!continueOnError) throw e
-                e.printStackTrace()
+                Log.w("CoursesRepository", "Failed to insert course from sync document", e)
             }
         }
 
