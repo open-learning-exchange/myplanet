@@ -247,8 +247,10 @@ class KtorPlanetApi(
     // region request building
 
     /**
-     * Points the request at [url] as OkHttp would send it, resolving a relative or scheme-less
-     * [url] against [RELATIVE_URL_BASE] as Retrofit did. Ktor's own parser percent-encodes
+     * Points the request at [url] as OkHttp would send it. Only absolute http(s) URLs are sent:
+     * an empty, relative or scheme-less [url] (e.g. before a server is configured) fails with
+     * [IllegalArgumentException] instead of being resolved against a placeholder host, as
+     * Retrofit's `https://vi.media.mit.edu/` base used to do. Ktor's own parser percent-encodes
      * characters OkHttp leaves alone (`[`, `]` in a path) and regroups repeated query keys, so
      * the canonical path and query are written back verbatim.
      *
@@ -260,8 +262,8 @@ class KtorPlanetApi(
     private fun HttpRequestBuilder.target(httpMethod: HttpMethod, url: String?) {
         method = httpMethod
         val raw = requireNotNull(url) { "@Url parameter is null." }
-        val exact = requireNotNull(platform.canonicalUrl(RELATIVE_URL_BASE, raw)) {
-            "Malformed URL. Base: $RELATIVE_URL_BASE, Relative: $raw"
+        val exact = requireNotNull(platform.canonicalUrl(raw)) {
+            "Not an absolute http(s) URL: $raw"
         }
         val canonical = escapeStrayPercents(exact)
         // Base64, because OkHttp keeps a fragment's non-ASCII characters and rejects them in a header.
@@ -344,8 +346,6 @@ class KtorPlanetApi(
          * Where Retrofit resolved a relative `@Url`, kept so an unconfigured server URL (an empty
          * base, so `/db/...`) goes where it always went rather than failing the call.
          */
-        const val RELATIVE_URL_BASE = "https://vi.media.mit.edu/"
-
         private const val JSON_MEDIA_TYPE = "application/json"
 
         private const val TOKEN = "[a-zA-Z0-9-!#$%&'*+.^_`{|}~]+"

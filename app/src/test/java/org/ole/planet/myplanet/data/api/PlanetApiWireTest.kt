@@ -184,13 +184,15 @@ class PlanetApiWireTest {
     }
 
     /**
-     * An unconfigured server leaves `UrlUtils` building `/db/...`, `://:5000/...` and the like;
-     * Retrofit resolved those against its base URL, and they still go there (and fail with
-     * Retrofit's message when even that cannot parse). An interceptor answers in place of the
-     * network, recording the URL an app interceptor sees.
+     * An unconfigured server leaves `UrlUtils` building `""`, `/db/...`, `://:5000/...` and the
+     * like. Retrofit resolved those against its placeholder base and sent them to
+     * vi.media.mit.edu; now nothing is sent and the call fails with IllegalArgumentException,
+     * which the callers (reachability check, background uploads) already catch. Absolute URLs,
+     * including the odd-but-valid ones, still go out as OkHttp writes them. An interceptor
+     * answers in place of the network, recording the URL an app interceptor sees.
      */
     @Test
-    fun relativeAndUnparseableUrls_resolveOrFailAsRetrofitDid() {
+    fun nonAbsoluteUrls_failWithoutSending_absoluteUrlsStillGoOut() {
         val seen = mutableListOf<String>()
         val okHttp = OkHttpClient.Builder().addInterceptor { chain ->
             seen += chain.request().url.toString()
@@ -205,21 +207,18 @@ class PlanetApiWireTest {
         val offlineClient = NetworkModule.provideKtorHttpClient(okHttp)
         val offlineApi = NetworkModule.providePlanetApi(offlineClient, NetworkModule.provideJson())
         val sentTo = linkedMapOf(
-            "" to "https://vi.media.mit.edu/",
-            "/db" to "https://vi.media.mit.edu/db",
-            "/db/resources/r1/100% guide.pdf" to "https://vi.media.mit.edu/db/resources/r1/100%%20guide.pdf",
-            "/db/_users/org.couchdb.user:alice?rev=1" to "https://vi.media.mit.edu/db/_users/org.couchdb.user:alice?rev=1",
-            "db/x" to "https://vi.media.mit.edu/db/x",
-            "?x=1" to "https://vi.media.mit.edu/?x=1",
-            "#f" to "https://vi.media.mit.edu/#f",
-            "://:5000/" to "https://vi.media.mit.edu/://:5000/",
-            "://:5000/checkProviders/" to "https://vi.media.mit.edu/://:5000/checkProviders/",
-            "/versions" to "https://vi.media.mit.edu/versions",
-            "//other.host/db" to "https://other.host/db",
+            "http://planet.local/db" to "http://planet.local/db",
+            "HTTPS://Planet.Local:443/db/x" to "https://planet.local/db/x",
+            "  http://planet.local/db/_users/org.couchdb.user:alice?rev=1 " to "http://planet.local/db/_users/org.couchdb.user:alice?rev=1",
+            "http://planet.local/db/resources/r1/100% guide.pdf" to "http://planet.local/db/resources/r1/100%%20guide.pdf",
         )
-        val malformed = listOf("http://", "http://host:99999/db", "ftp://host/db")
+        val rejected = listOf(
+            "", "/db", "/db/resources/r1/100% guide.pdf", "/db/_users/org.couchdb.user:alice?rev=1",
+            "db/x", "?x=1", "#f", "://:5000/", "://:5000/checkProviders/", "/versions",
+            "//other.host/db", "http://", "http://host:99999/db", "ftp://host/db",
+        )
         try {
-            for (url in sentTo.keys + malformed) {
+            for (url in sentTo.keys + rejected) {
                 seen.clear()
                 val outcome = try {
                     val response = runBlocking { offlineApi.getJsonObject(null, url) }
@@ -228,7 +227,7 @@ class PlanetApiWireTest {
                     "${e::class.java.name}: ${e.message} via $seen"
                 }
                 val expected = sentTo[url]?.let { "200 $it via [$it]" }
-                    ?: "java.lang.IllegalArgumentException: Malformed URL. Base: https://vi.media.mit.edu/, Relative: $url via []"
+                    ?: "java.lang.IllegalArgumentException: Not an absolute http(s) URL: $url via []"
                 assertEquals(url, expected, outcome)
             }
         } finally {
