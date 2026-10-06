@@ -22,8 +22,5 @@ interface HealthRepository {
     suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>)
     suspend fun getByProfileId(profileId: String): List<HealthExamination>
     suspend fun upsert(examination: HealthExamination)
-    suspend fun getPatientById(id: String): UserEntity?
-    suspend fun getPatientsSortedBy(fieldName: String, descending: Boolean): List<UserEntity>
-    suspend fun searchPatients(query: String, sortField: String, descending: Boolean): List<UserEntity>
     suspend fun getPatientHealthRecords(userId: String, currentUser: UserEntity): HealthRecord?
 }
