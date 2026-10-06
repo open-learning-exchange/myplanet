@@ -23,11 +23,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.data.api.toStreamBody
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
@@ -170,7 +170,7 @@ class DownloadWorkerTest {
         every { android.os.SystemClock.elapsedRealtime() } returnsMany listOf(1000L, 1600L, 2200L, 2800L, 3400L)
 
         val bodyData = ByteArray(8192 * 3)
-        val responseBody = bodyData.toResponseBody(null)
+        val responseBody = bodyData.toStreamBody()
         coEvery { downloadRepository.downloadFileResponse(any(), any()) } returns DownloadResult.Success(responseBody, 200)
 
         val result = worker.doWork()
@@ -203,7 +203,7 @@ class DownloadWorkerTest {
         every { android.os.SystemClock.elapsedRealtime() } returnsMany listOf(1000L, 1600L, 2200L, 2800L)
 
         val bodyData = ByteArray(8192 * 3)
-        val responseBody = bodyData.toResponseBody(null)
+        val responseBody = bodyData.toStreamBody()
         coEvery { downloadRepository.downloadFileResponse(any(), any()) } returns DownloadResult.Success(responseBody, 200)
 
         val result = worker.doWork()

@@ -30,7 +30,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.ApiResponse
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.LearnerRegistrationInfo
 import org.ole.planet.myplanet.model.User
@@ -45,13 +46,12 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.StringProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserRepositoryImplTest {
 
     private lateinit var sharedPrefManager: SharedPrefManager
-    private lateinit var apiInterface: ApiInterface
+    private lateinit var planetApi: PlanetApi
     private lateinit var uploadToShelfService: Lazy<UploadToShelfService>
     private lateinit var credentialStore: CredentialStore
     private lateinit var appInfo: AppInfo
@@ -84,7 +84,7 @@ class UserRepositoryImplTest {
         every { NetworkUtils.getUniqueIdentifier() } returns "mock_unique_id"
 
         sharedPrefManager = mockk(relaxed = true)
-        apiInterface = mockk(relaxed = true)
+        planetApi = mockk(relaxed = true)
         uploadToShelfService = mockk(relaxed = true)
         credentialStore = mockk(relaxed = true)
         appInfo = mockk(relaxed = true)
@@ -121,7 +121,7 @@ class UserRepositoryImplTest {
 
         repository = UserRepositoryImpl(
             sharedPrefManager,
-            apiInterface,
+            planetApi,
             resourcesRepositoryLazy,
             coursesRepositoryLazy,
             uploadToShelfService,
@@ -223,8 +223,8 @@ class UserRepositoryImplTest {
 
         // Mock API response to simulate user already exists
         val existsResponseBody = buildJsonObject { put("_id", "some_id") }
-        val response = Response.success(existsResponseBody)
-        coEvery { apiInterface.getJsonObject("Basic auth", userUrl) } returns response
+        val response = ApiResponse.success(existsResponseBody)
+        coEvery { planetApi.getJsonObject("Basic auth", userUrl) } returns response
 
         val result = repository.becomeMember(userObj)
         advanceUntilIdle()
@@ -246,23 +246,23 @@ class UserRepositoryImplTest {
 
         // 1. User doesn't exist check
         val notExistsResponseBody = KJsonObject(emptyMap())
-        val notFoundResponse = Response.success(notExistsResponseBody)
-        coEvery { apiInterface.getJsonObject("Basic auth", userUrl) } returns notFoundResponse
+        val notFoundResponse = ApiResponse.success(notExistsResponseBody)
+        coEvery { planetApi.getJsonObject("Basic auth", userUrl) } returns notFoundResponse
 
         // 2. User creation mock
         val createdResponseBody = buildJsonObject { put("id", id) }
-        val createdResponse = Response.success(createdResponseBody)
+        val createdResponse = ApiResponse.success(createdResponseBody)
         coEvery {
-            apiInterface.putDoc(null, "application/json", userUrl, buildJsonObject { put("name", userName) })
+            planetApi.putDoc(null, "application/json", userUrl, buildJsonObject { put("name", userName) })
         } returns createdResponse
 
         // 3. User save to db fetch
         val userFetchUrl = "http://test.url/_users/$id"
-        val userFetchResponse = Response.success(buildJsonObject {
+        val userFetchResponse = ApiResponse.success(buildJsonObject {
             put("_id", id)
             put("name", userName)
         })
-        coEvery { apiInterface.getJsonObject("Basic auth", userFetchUrl) } returns userFetchResponse
+        coEvery { planetApi.getJsonObject("Basic auth", userFetchUrl) } returns userFetchResponse
 
         // Stub saveUser to return a mocked UserEntity instead of attempting DB operations
         val spyRepository = spyk(repository)
@@ -487,7 +487,7 @@ class UserRepositoryImplTest {
         coEvery { achievementDao.getById("user1@planet1") } returns achievement
 
         val repo = UserRepositoryImpl(
-            sharedPrefManager, apiInterface, resourcesRepositoryLazy,
+            sharedPrefManager, planetApi, resourcesRepositoryLazy,
             mockk(relaxed = true), uploadToShelfService, credentialStore, configurationsRepository,
             appScope, dispatcherProvider, activitiesRepositoryLazy, eventsRepositoryLazy,
             mockk(relaxed = true), mockk(relaxed = true), achievementDao, userDao,
@@ -505,8 +505,8 @@ class UserRepositoryImplTest {
             id = "user1"
             _id = "org.couchdb.user:user1"
         }
-        val response = Response.success(buildJsonObject { put("_rev", "1-abc") })
-        coEvery { apiInterface.getJsonObject(any(), any()) } returns response
+        val response = ApiResponse.success(buildJsonObject { put("_rev", "1-abc") })
+        coEvery { planetApi.getJsonObject(any(), any()) } returns response
         coEvery { eventsRepository.getMeetupsForUser("user1") } returns emptyList()
 
         repository.uploadShelfData(user)
@@ -522,7 +522,7 @@ class UserRepositoryImplTest {
             every { UrlUtils.getUrl() } returns "http://admin:secret@localhost:5984"
 
             val urlSlot = slot<String>()
-            coEvery { apiInterface.getJsonObject(any(), capture(urlSlot)) } returns Response.success(buildJsonObject { put("ok", true) })
+            coEvery { planetApi.getJsonObject(any(), capture(urlSlot)) } returns ApiResponse.success(buildJsonObject { put("ok", true) })
 
             val user = UserEntity().apply { name = "john" }
             repository.checkIfUserExists("Basic auth", user)
@@ -547,7 +547,7 @@ class UserRepositoryImplTest {
             every { UrlUtils.getUrl() } returns "http://admin:secret@localhost:5984"
 
             val urlSlot = slot<String>()
-            coEvery { apiInterface.getJsonObject(any(), capture(urlSlot)) } returns Response.success(buildJsonObject { put("ok", true) })
+            coEvery { planetApi.getJsonObject(any(), capture(urlSlot)) } returns ApiResponse.success(buildJsonObject { put("ok", true) })
 
             val user = UserEntity().apply { name = "john" }
             repository.checkIfUserExists("Basic auth", user)
@@ -562,7 +562,7 @@ class UserRepositoryImplTest {
 
     @Test
     fun `fetchUserSecurityData rethrows CancellationException`() = runTest(testDispatcher) {
-        coEvery { apiInterface.getJsonObject(any(), any()) } throws CancellationException("Cancelled")
+        coEvery { planetApi.getJsonObject(any(), any()) } throws CancellationException("Cancelled")
 
         try {
             repository.fetchUserSecurityData("john")

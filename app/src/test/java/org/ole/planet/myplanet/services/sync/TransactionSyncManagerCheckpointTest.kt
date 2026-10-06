@@ -22,7 +22,8 @@ import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.ApiResponse
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatSyncWriter
 import org.ole.planet.myplanet.repository.CoursesRepository
@@ -47,7 +48,6 @@ import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.robolectric.RobolectricTestRunner
-import retrofit2.Response
 
 /**
  * Covers the checkpoint/cancellation behaviour added to [TransactionSyncManager.syncDb] for
@@ -58,7 +58,7 @@ import retrofit2.Response
 class TransactionSyncManagerCheckpointTest {
 
     private lateinit var transactionSyncManager: TransactionSyncManager
-    private val apiInterface: ApiInterface = mockk()
+    private val planetApi: PlanetApi = mockk()
     private val sharedPrefManager: SharedPrefManager = mockk()
     private val ratingsRepository: RatingsRepository = mockk()
     private val putValues = mutableListOf<Int>()
@@ -68,7 +68,7 @@ class TransactionSyncManagerCheckpointTest {
     // flagging the CancellationException/RuntimeException these tests deliberately drive.
     private val dispatcherProvider: DispatcherProvider = mockk()
 
-    private fun rowsResponse(count: Int): Response<KJsonObject> {
+    private fun rowsResponse(count: Int): ApiResponse<KJsonObject> {
         val body = buildJsonObject {
             putJsonArray("rows") {
                 repeat(count) { i ->
@@ -78,11 +78,7 @@ class TransactionSyncManagerCheckpointTest {
                 }
             }
         }
-        val response = mockk<Response<KJsonObject>>()
-        every { response.isSuccessful } returns true
-        every { response.body() } returns body
-        every { response.code() } returns 200
-        return response
+        return ApiResponse.success(body)
     }
 
     @Before
@@ -104,7 +100,7 @@ class TransactionSyncManagerCheckpointTest {
         every { sharedPrefManager.clearHeavySyncSkip(any()) } returns Unit
 
         transactionSyncManager = TransactionSyncManager(
-            apiInterface,
+            planetApi,
             mockk<AppStorage>(relaxed = true),
             mockk<CredentialStore>(relaxed = true),
             mockk<VoicesRepository>(relaxed = true),
@@ -138,7 +134,7 @@ class TransactionSyncManagerCheckpointTest {
 
     @Test
     fun `checkpoint persists the committed batch boundary`() = runBlocking {
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returnsMany
+        coEvery { planetApi.postDoc(any(), any(), any(), any()) } returnsMany
             listOf(rowsResponse(20), rowsResponse(0))
         coEvery { ratingsRepository.insertRatingsFromSync(any()) } returns Unit
 
@@ -154,7 +150,7 @@ class TransactionSyncManagerCheckpointTest {
     // re-flagged by runTest's uncaught-exception detection as it unwinds the withContext child.
     @Test
     fun `checkpoint does not advance past a batch that failed to commit`() = runBlocking {
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns rowsResponse(20)
+        coEvery { planetApi.postDoc(any(), any(), any(), any()) } returns rowsResponse(20)
         coEvery { ratingsRepository.insertRatingsFromSync(any()) } throws RuntimeException("insert boom")
 
         val total = transactionSyncManager.syncDb("ratings", useCheckpoint = true)
@@ -170,7 +166,7 @@ class TransactionSyncManagerCheckpointTest {
     // withContext boundary isn't misread by runTest's uncaught-exception detection.
     @Test
     fun `cancellation propagates instead of being swallowed`() = runBlocking {
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } throws
+        coEvery { planetApi.postDoc(any(), any(), any(), any()) } throws
             CancellationException("worker stopped")
 
         try {

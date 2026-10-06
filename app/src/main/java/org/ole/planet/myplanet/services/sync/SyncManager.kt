@@ -20,7 +20,7 @@ import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.saveConcatenatedLinksToPrefs
@@ -44,7 +44,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 class SyncManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val sharedPrefManager: SharedPrefManager,
-    private val apiInterface: ApiInterface,
+    private val planetApi: PlanetApi,
     private val transactionSyncManager: TransactionSyncManager,
     private val resourcesRepository: ResourcesRepository,
     private val loginSyncManager: LoginSyncManager,

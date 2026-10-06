@@ -77,6 +77,7 @@ test-ext = { module = "androidx.test.ext:junit", version.ref = "testExtJunit" }
 test-runner = { module = "androidx.test:runner", version.ref = "testRunner" }
 test-arch = { module = "androidx.arch.core:core-testing", version.ref = "testArch" }
 test-hilt = { module = "com.google.dagger:hilt-android-testing", version.ref = "hilt" }
+test-mockwebserver = { module = "com.squareup.okhttp3:mockwebserver3", version.ref = "okhttp" }
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "gradle" }
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }

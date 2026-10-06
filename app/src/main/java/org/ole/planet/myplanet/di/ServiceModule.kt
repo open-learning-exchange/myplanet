@@ -14,7 +14,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatSyncWriter
 import org.ole.planet.myplanet.repository.CoursesRepository
@@ -138,7 +138,7 @@ object ServiceModule {
     @Provides
     @Singleton
     fun provideTransactionSyncManager(
-        apiInterface: ApiInterface,
+        planetApi: PlanetApi,
         appStorage: AppStorage,
         credentialStore: CredentialStore,
         voicesRepository: VoicesRepository,
@@ -163,6 +163,6 @@ object ServiceModule {
         userSessionManager: UserSessionManager,
         syncTimeLogger: SyncTimeLogger
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, appStorage, credentialStore, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, eventsSyncWriter, healthRepository, progressRepository, surveysRepository, dispatcherProvider, timeProvider, userSessionManager, syncTimeLogger)
+        return TransactionSyncManager(planetApi, appStorage, credentialStore, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, eventsSyncWriter, healthRepository, progressRepository, surveysRepository, dispatcherProvider, timeProvider, userSessionManager, syncTimeLogger)
     }
 }

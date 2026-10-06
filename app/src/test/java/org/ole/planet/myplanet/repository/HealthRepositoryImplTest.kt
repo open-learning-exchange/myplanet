@@ -24,7 +24,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.ApiResponse
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.MyHealth
@@ -39,7 +40,7 @@ class HealthRepositoryImplTest {
     private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
-    private val mockApiInterface: ApiInterface = mockk(relaxed = true)
+    private val mockPlanetApi: PlanetApi = mockk(relaxed = true)
     private val healthExaminationDao: HealthExaminationDao = mockk(relaxed = true)
     private val lazyUserRepository: dagger.Lazy<UserRepository> = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
@@ -49,7 +50,7 @@ class HealthRepositoryImplTest {
         every { lazyUserRepository.get() } returns userRepository
         every { dispatcherProvider.default } returns testDispatcher
         repository = HealthRepositoryImpl(
-            mockApiInterface,
+            mockPlanetApi,
             dispatcherProvider,
             healthExaminationDao,
             lazyUserRepository,
@@ -287,8 +288,8 @@ class HealthRepositoryImplTest {
             put("id", "exam1")
             put("rev", "rev1")
     }
-        val mockResponse = retrofit2.Response.success(mockResponseObject)
-        coEvery { mockApiInterface.postDoc(any(), any(), any(), any()) } returns mockResponse
+        val mockResponse = ApiResponse.success(mockResponseObject)
+        coEvery { mockPlanetApi.postDoc(any(), any(), any(), any()) } returns mockResponse
 
         val result = repository.uploadHealthData(myHealths)
         advanceUntilIdle()
@@ -360,7 +361,7 @@ class HealthRepositoryImplTest {
             }
         )
 
-        coEvery { mockApiInterface.postDoc(any(), any(), any(), any()) } throws CancellationException("Upload cancelled")
+        coEvery { mockPlanetApi.postDoc(any(), any(), any(), any()) } throws CancellationException("Upload cancelled")
 
         try {
             repository.uploadHealthData(myHealths)
@@ -391,7 +392,7 @@ class HealthRepositoryImplTest {
         })
 
         // Mock a failure response, like a network error
-        coEvery { mockApiInterface.postDoc(any(), any(), any(), any()) } throws RuntimeException("Network Error")
+        coEvery { mockPlanetApi.postDoc(any(), any(), any(), any()) } throws RuntimeException("Network Error")
 
         val result = repository.uploadHealthData(myHealths)
         advanceUntilIdle()
@@ -511,14 +512,14 @@ class HealthRepositoryImplTest {
             put("id", "exam1")
             put("rev", "rev1")
     }
-        val mockResponse = retrofit2.Response.success(mockResponseObject)
-        coEvery { mockApiInterface.postDoc(any(), any(), any(), any()) } returns mockResponse
+        val mockResponse = ApiResponse.success(mockResponseObject)
+        coEvery { mockPlanetApi.postDoc(any(), any(), any(), any()) } returns mockResponse
 
         repository.syncPendingHealthExaminations()
         advanceUntilIdle()
 
         coVerify { healthExaminationDao.getUpdated() }
-        coVerify { mockApiInterface.postDoc(any(), any(), any(), any()) }
+        coVerify { mockPlanetApi.postDoc(any(), any(), any(), any()) }
         coVerify { healthExaminationDao.markUploaded(mapOf("exam1" to "rev1")) }
 
         unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
@@ -548,14 +549,14 @@ class HealthRepositoryImplTest {
             put("id", "exam2")
             put("rev", "rev2")
     }
-        val mockResponse = retrofit2.Response.success(mockResponseObject)
-        coEvery { mockApiInterface.postDoc(any(), any(), any(), any()) } returns mockResponse
+        val mockResponse = ApiResponse.success(mockResponseObject)
+        coEvery { mockPlanetApi.postDoc(any(), any(), any(), any()) } returns mockResponse
 
         repository.syncPendingHealthExaminationsForUser("user1")
         advanceUntilIdle()
 
         coVerify { healthExaminationDao.getUpdatedForUser("user1") }
-        coVerify { mockApiInterface.postDoc(any(), any(), any(), any()) }
+        coVerify { mockPlanetApi.postDoc(any(), any(), any(), any()) }
         coVerify { healthExaminationDao.markUploaded(mapOf("exam2" to "rev2")) }
 
         unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)

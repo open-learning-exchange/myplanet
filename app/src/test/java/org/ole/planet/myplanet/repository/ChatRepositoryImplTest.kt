@@ -18,7 +18,9 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.data.api.ApiResponse
 import org.ole.planet.myplanet.data.api.ChatApiService
+import org.ole.planet.myplanet.data.api.UploadBody
 import org.ole.planet.myplanet.data.room.dao.ChatDao
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
@@ -164,14 +166,14 @@ class ChatRepositoryImplTest {
         val user = "testUser"
         val aiProvider = AiProvider("OpenAI", "GPT-4")
         val couchDb = CouchDBResponse(ok = true, id = "test-id", rev = "test-rev")
-        val mockResponse = retrofit2.Response.success(ChatResponse(status = "Success", chat = "test chat", couchDBResponse = couchDb))
+        val mockResponse = ApiResponse.success(ChatResponse(status = "Success", chat = "test chat", couchDBResponse = couchDb))
 
         coEvery { chatApiService.sendChatRequest(any()) } returns mockResponse
 
         val result = chatRepository.sendNewChatRequest(query, user, aiProvider)
 
         assertEquals(ChatResult.Success("test chat", "test-id", "test-rev"), result)
-        coVerify(exactly = 1) { chatApiService.sendChatRequest(any<okhttp3.RequestBody>()) }
+        coVerify(exactly = 1) { chatApiService.sendChatRequest(any<UploadBody>()) }
     }
 
     @Test
@@ -182,14 +184,14 @@ class ChatRepositoryImplTest {
         val id = "chat-123"
         val rev = "1-rev"
         val couchDb = CouchDBResponse(ok = true, id = id, rev = "2-rev")
-        val mockResponse = retrofit2.Response.success(ChatResponse(status = "Success", chat = "test chat", couchDBResponse = couchDb))
+        val mockResponse = ApiResponse.success(ChatResponse(status = "Success", chat = "test chat", couchDBResponse = couchDb))
 
         coEvery { chatApiService.sendChatRequest(any()) } returns mockResponse
 
         val result = chatRepository.sendContinueChatRequest(message, user, aiProvider, id, rev)
 
         assertEquals(ChatResult.Success("test chat", id, "2-rev"), result)
-        coVerify(exactly = 1) { chatApiService.sendChatRequest(any<okhttp3.RequestBody>()) }
+        coVerify(exactly = 1) { chatApiService.sendChatRequest(any<UploadBody>()) }
     }
 
     @Test

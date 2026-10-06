@@ -15,7 +15,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.ApiResponse
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatSyncWriter
@@ -39,13 +40,12 @@ import org.ole.planet.myplanet.utils.CredentialStore
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TransactionSyncManagerTest {
 
     private lateinit var transactionSyncManager: TransactionSyncManager
-    private val apiInterface: ApiInterface = mockk()
+    private val planetApi: PlanetApi = mockk()
     private val voicesRepository: VoicesRepository = mockk()
     private val chatRepository: ChatSyncWriter = mockk()
     private val feedbackRepository: FeedbackSyncWriter = mockk()
@@ -77,7 +77,7 @@ class TransactionSyncManagerTest {
         every { dispatcherProvider.main } returns testDispatcher
 
         transactionSyncManager = TransactionSyncManager(
-            apiInterface,
+            planetApi,
             mockk<AppStorage>(relaxed = true),
             mockk<CredentialStore>(relaxed = true),
             voicesRepository,
@@ -111,10 +111,8 @@ class TransactionSyncManagerTest {
 
     @Test
     fun authenticate_success_returnsTrue() = testScope.runTest {
-        val mockResponse = mockk<Response<DocumentResponse>>()
-        every { mockResponse.code() } returns 200
-        every { mockResponse.body() } returns mockk<DocumentResponse>()
-        coEvery { apiInterface.getDocuments(any(), any()) } returns mockResponse
+        val mockResponse = ApiResponse.success(mockk<DocumentResponse>())
+        coEvery { planetApi.getDocuments(any(), any()) } returns mockResponse
 
         val result = transactionSyncManager.authenticate()
 
@@ -123,9 +121,8 @@ class TransactionSyncManagerTest {
 
     @Test
     fun authenticate_failure_returnsFalse() = testScope.runTest {
-        val mockResponse = mockk<Response<DocumentResponse>>()
-        every { mockResponse.code() } returns 401
-        coEvery { apiInterface.getDocuments(any(), any()) } returns mockResponse
+        val mockResponse = ApiResponse.error<DocumentResponse>(401)
+        coEvery { planetApi.getDocuments(any(), any()) } returns mockResponse
 
         val result = transactionSyncManager.authenticate()
 
@@ -134,7 +131,7 @@ class TransactionSyncManagerTest {
 
     @Test
     fun authenticate_exception_returnsFalse() = testScope.runTest {
-        coEvery { apiInterface.getDocuments(any(), any()) } throws Exception("Network Error")
+        coEvery { planetApi.getDocuments(any(), any()) } throws Exception("Network Error")
 
         val result = transactionSyncManager.authenticate()
 

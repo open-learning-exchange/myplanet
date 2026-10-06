@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
@@ -29,7 +29,7 @@ class LoginSyncManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val sharedPrefManager: SharedPrefManager,
     private val userSyncRepository: UserSyncRepository,
-    private val apiInterface: ApiInterface,
+    private val planetApi: PlanetApi,
     private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider
@@ -61,26 +61,26 @@ class LoginSyncManager @Inject constructor(
             }
 
             try {
-                val response = apiInterface.getJsonObject(authHeader, userUrl)
+                val response = planetApi.getJsonObject(authHeader, userUrl)
                 when {
                     !response.isSuccessful -> {
-                        val errorMsg = when (response.code()) {
+                        val errorMsg = when (response.code) {
                             401 -> "Name or password is incorrect."
                             404 -> "User not found."
                             500 -> "Server error. Please try again later."
-                            else -> "Login failed. Error code: ${response.code()}"
+                            else -> "Login failed. Error code: ${response.code}"
                         }
                         listener.onSyncFailed(errorMsg)
                         return
                     }
 
-                    response.body() == null -> {
+                    response.body == null -> {
                         listener.onSyncFailed("Empty response from server.")
                         return
                     }
                 }
 
-                val jsonDoc = response.body()?.toGson()
+                val jsonDoc = response.body?.toGson()
                 if (jsonDoc?.has("derived_key") == true && jsonDoc.has("salt")) {
                     try {
                         val derivedKey = jsonDoc["derived_key"].asString

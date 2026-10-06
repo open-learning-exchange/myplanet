@@ -35,7 +35,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.ApiResponse
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
@@ -64,7 +65,7 @@ class ActivitiesRepositoryImplTest {
 
     private lateinit var context: Context
     private lateinit var userRepository: UserRepository
-    private lateinit var apiInterface: ApiInterface
+    private lateinit var planetApi: PlanetApi
     private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var timeProvider: TimeProvider
     private lateinit var userChallengeActionsDao: UserChallengeActionsDao
@@ -97,7 +98,7 @@ class ActivitiesRepositoryImplTest {
         MainApplication.testContext = context
         userRepository = mockk(relaxed = true)
         val lazyUserRepository = Lazy { userRepository }
-        apiInterface = mockk(relaxed = true)
+        planetApi = mockk(relaxed = true)
         sharedPrefManager = mockk(relaxed = true)
         timeProvider = mockk(relaxed = true)
         userChallengeActionsDao = mockk(relaxed = true)
@@ -118,7 +119,7 @@ class ActivitiesRepositoryImplTest {
         repository = ActivitiesRepositoryImpl(
             dispatcherProvider,
             lazyUserRepository,
-            apiInterface,
+            planetApi,
             sharedPrefManager,
             timeProvider,
             userChallengeActionsDao,
@@ -577,10 +578,9 @@ class ActivitiesRepositoryImplTest {
         coEvery { offlineActivityDao.getPendingLoginUploads() } returns listOf(mockActivity)
 
         val postedBodySlot = slot<KJsonObject>()
-        val mockResponse = mockk<retrofit2.Response<KJsonObject>>()
-        every { mockResponse.body() } returns buildJsonObject { put("ok", true) }
+        val mockResponse = ApiResponse.success(buildJsonObject { put("ok", true) })
         coEvery {
-            apiInterface.postDoc(
+            planetApi.postDoc(
                 any(),
                 eq("application/json"),
                 any(),
@@ -604,9 +604,8 @@ class ActivitiesRepositoryImplTest {
         val mockResponseBody = buildJsonObject {
             putJsonArray("usages") { }
         }
-        val mockResponse = mockk<retrofit2.Response<KJsonObject>>()
-        every { mockResponse.body() } returns mockResponseBody
-        coEvery { apiInterface.getJsonObject(any(), any()) } returns mockResponse
+        val mockResponse = ApiResponse.success(mockResponseBody)
+        coEvery { planetApi.getJsonObject(any(), any()) } returns mockResponse
 
         val userModel = UserEntity().apply {
             parentCode = "parent"
@@ -615,9 +614,9 @@ class ActivitiesRepositoryImplTest {
 
         repository.uploadMyPlanetActivities(userModel)
 
-        coVerify(exactly = 2) { apiInterface.postDoc(any(), eq("application/json"), any(), any()) }
+        coVerify(exactly = 2) { planetApi.postDoc(any(), eq("application/json"), any(), any()) }
         coVerify(exactly = 1) {
-            apiInterface.getJsonObject(any(), match { it.endsWith("/myplanet_activities/mock_android_id@mock_unique_id") })
+            planetApi.getJsonObject(any(), match { it.endsWith("/myplanet_activities/mock_android_id@mock_unique_id") })
         }
         verify(exactly = 1) { appUsageStats.queryDailyUsage(any(), any()) }
     }
@@ -626,9 +625,8 @@ class ActivitiesRepositoryImplTest {
     fun `uploadMyPlanetActivities posts fallback activities when no existing doc found`() = testScope.runTest {
         every { appUsageStats.queryDailyUsage(any(), any()) } returns emptyList()
 
-        val mockResponse = mockk<retrofit2.Response<KJsonObject>>()
-        every { mockResponse.body() } returns null
-        coEvery { apiInterface.getJsonObject(any(), any()) } returns mockResponse
+        val mockResponse = ApiResponse.success<KJsonObject>(null)
+        coEvery { planetApi.getJsonObject(any(), any()) } returns mockResponse
 
         val userModel = UserEntity().apply {
             parentCode = "parent"
@@ -637,8 +635,8 @@ class ActivitiesRepositoryImplTest {
 
         repository.uploadMyPlanetActivities(userModel)
 
-        coVerify(exactly = 2) { apiInterface.postDoc(any(), eq("application/json"), any(), any()) }
-        coVerify(exactly = 1) { apiInterface.getJsonObject(any(), any()) }
+        coVerify(exactly = 2) { planetApi.postDoc(any(), eq("application/json"), any(), any()) }
+        coVerify(exactly = 1) { planetApi.getJsonObject(any(), any()) }
     }
 
     @Test

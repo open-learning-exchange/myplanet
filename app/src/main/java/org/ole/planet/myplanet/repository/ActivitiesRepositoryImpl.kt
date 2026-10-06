@@ -13,7 +13,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.jsonObject
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
@@ -49,7 +49,7 @@ import org.ole.planet.myplanet.utils.toKotlinx
 class ActivitiesRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val userRepository: Lazy<UserRepository>,
-    private val apiInterface: ApiInterface,
+    private val planetApi: PlanetApi,
     private val sharedPrefManager: SharedPrefManager,
     private val timeProvider: TimeProvider,
     private val userChallengeActionsDao: UserChallengeActionsDao,
@@ -362,10 +362,10 @@ class ActivitiesRepositoryImpl @Inject constructor(
                     async {
                         try {
                             val `object` = semaphore.withPermit {
-                                apiInterface.postDoc(
+                                planetApi.postDoc(
                                     UrlUtils.header, "application/json",
                                     "${UrlUtils.getUrl()}/login_activities", activityData.serialized.toKotlinx().jsonObject
-                                ).body()?.toGson()
+                                ).body?.toGson()
                             }
                             activityData.id to `object`
                         } catch (e: IOException) {
@@ -454,19 +454,19 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
 
     override suspend fun uploadMyPlanetActivities(userModel: UserEntity) {
-        apiInterface.postDoc(
+        planetApi.postDoc(
             UrlUtils.header,
             "application/json",
             "${UrlUtils.getUrl()}/myplanet_activities",
             MyPlanet.getNormalMyPlanetActivities(appInfo, deviceNameProvider, sharedPrefManager, userModel).toKotlinx().jsonObject
         )
 
-        val response = apiInterface.getJsonObject(
+        val response = planetApi.getJsonObject(
             UrlUtils.header,
             "${UrlUtils.getUrl()}/myplanet_activities/${appInfo.androidId()}@${NetworkUtils.getUniqueIdentifier()}"
         )
 
-        var `object` = response.body()?.toGson()
+        var `object` = response.body?.toGson()
 
         if (`object` != null) {
             val usages = `object`.getAsJsonArray("usages")
@@ -481,7 +481,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
             }
         }
 
-        apiInterface.postDoc(
+        planetApi.postDoc(
             UrlUtils.header,
             "application/json",
             "${UrlUtils.getUrl()}/myplanet_activities",

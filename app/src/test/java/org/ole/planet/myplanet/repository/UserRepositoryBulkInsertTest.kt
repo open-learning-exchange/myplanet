@@ -15,7 +15,7 @@ class UserRepositoryBulkInsertTest {
         val userDao = mockk<UserDao>(relaxed = true)
         val userRepository = UserRepositoryImpl(
             sharedPrefManager = mockk(relaxed = true),
-            apiInterface = mockk(relaxed = true),
+            planetApi = mockk(relaxed = true),
             resourcesRepositoryLazy = mockk(relaxed = true),
             coursesRepositoryLazy = mockk(relaxed = true),
             uploadToShelfService = mockk(relaxed = true),
@@ -62,7 +62,7 @@ class UserRepositoryBulkInsertTest {
         val userDao = mockk<UserDao>(relaxed = true)
         val userRepository = UserRepositoryImpl(
             sharedPrefManager = mockk(relaxed = true),
-            apiInterface = mockk(relaxed = true),
+            planetApi = mockk(relaxed = true),
             resourcesRepositoryLazy = mockk(relaxed = true),
             coursesRepositoryLazy = mockk(relaxed = true),
             uploadToShelfService = mockk(relaxed = true),
@@ -109,7 +109,7 @@ class UserRepositoryBulkInsertTest {
         val userDao = mockk<UserDao>(relaxed = true)
         val userRepository = UserRepositoryImpl(
             sharedPrefManager = mockk(relaxed = true),
-            apiInterface = mockk(relaxed = true),
+            planetApi = mockk(relaxed = true),
             resourcesRepositoryLazy = mockk(relaxed = true),
             coursesRepositoryLazy = mockk(relaxed = true),
             uploadToShelfService = mockk(relaxed = true),

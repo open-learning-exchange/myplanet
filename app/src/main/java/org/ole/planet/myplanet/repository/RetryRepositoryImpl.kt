@@ -8,7 +8,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.data.room.dao.RetryDao
 import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.model.RetryOperation
@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 class RetryRepositoryImpl @Inject constructor(
     private val retryDao: RetryDao,
-    private val apiInterface: ApiInterface,
+    private val planetApi: PlanetApi,
     private val timeProvider: TimeProvider
 ) : RetryRepository {
 
@@ -87,14 +87,14 @@ class RetryRepositoryImpl @Inject constructor(
             }
 
             val response = if (operation.httpMethod == "PUT" && !operation.dbId.isNullOrEmpty()) {
-                apiInterface.putDoc(
+                planetApi.putDoc(
                     authHeader,
                     "application/json",
                     requestUrl,
                     payload
                 )
             } else {
-                apiInterface.postDoc(
+                planetApi.postDoc(
                     authHeader,
                     "application/json",
                     requestUrl,
@@ -106,13 +106,13 @@ class RetryRepositoryImpl @Inject constructor(
                 markCompleted(operation.id)
                 AppLog.d(TAG, "Successfully retried operation ${operation.id}")
                 RetryOperationResult.Success
-            } else if (response.code() == 409) {
+            } else if (response.code == 409) {
                 // 409 Conflict means document already exists - data is already synced
                 markCompleted(operation.id)
                 AppLog.d(TAG, "Operation ${operation.id} already synced (409 conflict)")
                 RetryOperationResult.Success
             } else {
-                val code = response.code()
+                val code = response.code
                 val isRetryable = code >= 500
                 if (isRetryable) {
                     markFailed(operation.id, "HTTP $code", code)

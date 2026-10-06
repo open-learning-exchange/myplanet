@@ -1,31 +1,17 @@
 package org.ole.planet.myplanet.data.api
 
-import io.mockk.every
-import io.mockk.mockk
 import java.io.IOException
 import kotlinx.coroutines.test.runTest
-import okhttp3.ResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.ole.planet.myplanet.data.NetworkResult
-import retrofit2.Response
 
 class ApiClientTest {
 
-    private fun success(body: String?): Response<String> = mockk {
-        every { isSuccessful } returns true
-        every { body() } returns body
-        every { code() } returns 200
-    }
+    private fun success(body: String?): ApiResponse<String> = ApiResponse.success(body)
 
-    private fun httpError(code: Int, errorBody: String?): Response<String> = mockk {
-        every { isSuccessful } returns false
-        every { this@mockk.code() } returns code
-        every { errorBody() } returns errorBody?.let {
-            mockk<ResponseBody> { every { string() } returns it }
-        }
-    }
+    private fun httpError(code: Int, errorBody: String?): ApiResponse<String> = ApiResponse.error(code, errorBody)
 
     @Test
     fun `executeWithRetryAndWrap returns success without retrying`() = runTest {
@@ -96,7 +82,7 @@ class ApiClientTest {
             httpError(404, "not found")
         }
         assertEquals(1, calls)
-        assertEquals(404, result?.code())
+        assertEquals(404, result?.code)
     }
 
     @Test

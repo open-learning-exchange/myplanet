@@ -15,7 +15,7 @@ import kotlinx.serialization.json.jsonObject
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
@@ -43,7 +43,7 @@ import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
 class SurveysRepositoryImpl @Inject constructor(
-    private val apiInterface: ApiInterface,
+    private val planetApi: PlanetApi,
     private val serverUrlMapper: ServerUrlMapper,
     private val userSessionManager: UserSessionManager,
     private val sharedPrefManager: SharedPrefManager,
@@ -514,8 +514,8 @@ class SurveysRepositoryImpl @Inject constructor(
     private suspend fun fetchPublicSurveyFrom(baseUrl: String, teamId: String, surveyId: String): JsonObject? {
         return try {
             val url = "${baseUrl.trimEnd('/')}/api/public/surveys/$teamId/$surveyId"
-            val response = apiInterface.getJsonObject(null, url)
-            if (response.isSuccessful) response.body()?.toGson() else null
+            val response = planetApi.getJsonObject(null, url)
+            if (response.isSuccessful) response.body?.toGson() else null
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -531,7 +531,7 @@ class SurveysRepositoryImpl @Inject constructor(
                 add("answers", answers)
                 respondent?.let { add("user", it) }
             }
-            apiInterface.postDoc(null, "application/json", url, body.toKotlinx().jsonObject).isSuccessful
+            planetApi.postDoc(null, "application/json", url, body.toKotlinx().jsonObject).isSuccessful
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

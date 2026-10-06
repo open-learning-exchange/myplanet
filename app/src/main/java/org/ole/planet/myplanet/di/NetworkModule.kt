@@ -23,6 +23,8 @@ import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.data.api.AllowlistFactory
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.PlanetApi
+import org.ole.planet.myplanet.data.api.RetrofitPlanetApi
 import org.ole.planet.myplanet.data.api.RetryInterceptor
 import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.DocumentResponse
@@ -181,5 +183,11 @@ object NetworkModule {
     @Singleton
     fun provideApiInterface(@StandardRetrofit retrofit: Retrofit): ApiInterface {
         return retrofit.create(ApiInterface::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun providePlanetApi(apiInterface: ApiInterface): PlanetApi {
+        return RetrofitPlanetApi(apiInterface)
     }
 }

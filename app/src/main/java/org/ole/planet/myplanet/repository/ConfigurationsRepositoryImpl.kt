@@ -21,7 +21,7 @@ import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.data.api.ApiClient
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.PlainGson
@@ -46,7 +46,7 @@ import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
 class ConfigurationsRepositoryImpl @Inject constructor(
-    private val apiInterface: ApiInterface,
+    private val planetApi: PlanetApi,
     @param:ApplicationScope private val serviceScope: CoroutineScope,
     private val sharedPrefManager: SharedPrefManager,
     private val appDatabase: AppDatabase,
@@ -74,8 +74,8 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
 
             try {
-                val response = apiInterface.healthAccess(healthUrl)
-                when (response.code()) {
+                val response = planetApi.healthAccess(healthUrl)
+                when (response.code) {
                     200 -> HealthCheckResult.Healthy
                     401 -> HealthCheckResult.Failed("Unauthorized - Invalid credentials")
                     404 -> HealthCheckResult.Failed("Server endpoint not found")
@@ -83,7 +83,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     502 -> HealthCheckResult.Failed("Bad gateway - Server unavailable")
                     503 -> HealthCheckResult.Failed("Service temporarily unavailable")
                     504 -> HealthCheckResult.Failed("Gateway timeout")
-                    else -> HealthCheckResult.Failed("Server error: ${response.code()}")
+                    else -> HealthCheckResult.Failed("Server error: ${response.code}")
                 }
             } catch (t: Exception) {
                 AppLog.e(TAG, "Health access request failed", t)
@@ -214,10 +214,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
     override suspend fun checkServerAvailability(url: String): Boolean {
         return try {
-            val response = apiInterface.isPlanetAvailable(url)
-            val code = response.code()
+            val response = planetApi.isPlanetAvailable(url)
+            val code = response.code
             if (response.isSuccessful) {
-                val ss = withContext(dispatcherProvider.io) { response.body()?.string() }
+                val ss = withContext(dispatcherProvider.io) { response.body }
                 val dbCount = countCommaEntries(ss)
                 dbCount >= 8
             } else {
@@ -242,9 +242,9 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
     override suspend fun checkCheckSum(path: String): Boolean {
         return try {
-            val response = apiInterface.getChecksum(UrlUtils.getChecksumUrl(sharedPrefManager))
+            val response = planetApi.getChecksum(UrlUtils.getChecksumUrl(sharedPrefManager))
             if (response.isSuccessful) {
-                val checksum = withContext(dispatcherProvider.io) { response.body()?.string() }
+                val checksum = withContext(dispatcherProvider.io) { response.body }
                 if (!checksum.isNullOrEmpty()) {
                     val f = storagePathResolver.resolveFileFromUrl(path)
                     if (f.exists()) {
@@ -310,11 +310,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             val versionsUrl = "$currentUrl/versions"
 
             val versionsResponse = withTimeout(15_000) {
-                apiInterface.getConfiguration(versionsUrl)
+                planetApi.getConfiguration(versionsUrl)
             }
 
             if (versionsResponse.isSuccessful) {
-                val jsonObject = versionsResponse.body()?.toGson()
+                val jsonObject = versionsResponse.body?.toGson()
                 val minApkVersion = jsonObject?.get("minapk")?.asString
                 val currentVersion = stringProvider.getString(R.string.app_version)
 
@@ -340,11 +340,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         return try {
             val configUrl = "${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true"
             val configResponse = withTimeout(15_000) {
-                apiInterface.getConfiguration(configUrl)
+                planetApi.getConfiguration(configUrl)
             }
 
             if (configResponse.isSuccessful) {
-                val rows = configResponse.body()?.toGson()?.getAsJsonArray("rows")
+                val rows = configResponse.body?.toGson()?.getAsJsonArray("rows")
 
                 if (rows != null && !rows.isEmpty()) {
                     val firstRow = rows[0].asJsonObject
@@ -434,9 +434,9 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
 
             try {
-                val response = apiInterface.postDoc(header, "application/json", url, `object`.toKotlinx().jsonObject)
-                if (response.isSuccessful && response.body() != null) {
-                    val responseBody = response.body()?.toGson()
+                val response = planetApi.postDoc(header, "application/json", url, `object`.toKotlinx().jsonObject)
+                if (response.isSuccessful && response.body != null) {
+                    val responseBody = response.body?.toGson()
                     sharedPrefManager.setCommunityLeaders("$responseBody")
                 }
             } catch (e: Exception) {
@@ -517,7 +517,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     private suspend fun fetchVersionInfo(spm: SharedPrefManager): MyPlanet? =
         withContext(dispatcherProvider.io) {
             val result = ApiClient.executeWithResult {
-                apiInterface.checkVersion(UrlUtils.getUpdateUrl(spm))
+                planetApi.checkVersion(UrlUtils.getUpdateUrl(spm))
             }
             when (result) {
                 is NetworkResult.Success -> result.data
@@ -528,10 +528,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     private suspend fun fetchApkVersionString(spm: SharedPrefManager): String? =
         withContext(dispatcherProvider.io) {
             val result = ApiClient.executeWithResult {
-                apiInterface.getApkVersion(UrlUtils.getApkVersionUrl(spm))
+                planetApi.getApkVersion(UrlUtils.getApkVersionUrl(spm))
             }
             when (result) {
-                is NetworkResult.Success -> result.data.string()
+                is NetworkResult.Success -> result.data
                 else -> null
             }
         }

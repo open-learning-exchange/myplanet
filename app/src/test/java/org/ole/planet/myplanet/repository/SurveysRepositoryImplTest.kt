@@ -46,7 +46,7 @@ class SurveysRepositoryImplTest {
     private lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var reminderStore: FakeKeyValueStore
     private val timeProvider = TestTimeProvider(currentTime = 1_700_000_000_000L)
-    private val apiInterface: org.ole.planet.myplanet.data.api.ApiInterface = mockk(relaxed = true)
+    private val planetApi: org.ole.planet.myplanet.data.api.PlanetApi = mockk(relaxed = true)
     private val serverUrlMapper: org.ole.planet.myplanet.services.sync.ServerUrlMapper = mockk(relaxed = true)
     private val examDao: ExamDao = mockk(relaxed = true)
     private val questionDao: QuestionDao = mockk(relaxed = true)
@@ -64,7 +64,7 @@ class SurveysRepositoryImplTest {
         reminderStore = FakeKeyValueStore()
 
         repository = SurveysRepositoryImpl(
-            apiInterface,
+            planetApi,
             serverUrlMapper,
             userSessionManager,
             sharedPrefManager,

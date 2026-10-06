@@ -30,7 +30,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
@@ -48,7 +48,6 @@ import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -58,7 +57,7 @@ class SyncManagerTest {
     private lateinit var syncManager: SyncManager
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
-    private val apiInterface: ApiInterface = mockk(relaxed = true)
+    private val planetApi: PlanetApi = mockk(relaxed = true)
     private val transactionSyncManager: TransactionSyncManager = mockk(relaxed = true)
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
     private val loginSyncManager: LoginSyncManager = mockk(relaxed = true)
@@ -94,7 +93,7 @@ class SyncManagerTest {
         syncManager = SyncManager(
             context = context,
             sharedPrefManager = sharedPrefManager,
-            apiInterface = apiInterface,
+            planetApi = planetApi,
             transactionSyncManager = transactionSyncManager,
             resourcesRepository = resourcesRepository,
             loginSyncManager = loginSyncManager,

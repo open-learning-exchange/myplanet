@@ -7,9 +7,8 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import javax.inject.Inject
 import javax.inject.Singleton
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.data.api.ChatApiService
+import org.ole.planet.myplanet.data.api.UploadBody
 import org.ole.planet.myplanet.data.room.dao.ChatDao
 import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.AiProvider
@@ -51,9 +50,9 @@ class ChatRepositoryImpl @Inject constructor(
         return try {
             val chatData = ChatRequest(data = ContentData(user ?: "", query, aiProvider), save = true)
             val jsonContent = gson.toJson(chatData)
-            val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
+            val requestBody = UploadBody.TextContent(jsonContent, "application/json")
             val response = chatApiService.sendChatRequest(requestBody)
-            val responseBody = response.body()
+            val responseBody = response.body
             if (response.isSuccessful && responseBody != null && responseBody.status == "Success") {
                 val chatResponse = responseBody.chat ?: ""
                 val id = responseBody.couchDBResponse?.id ?: ""
@@ -77,7 +76,7 @@ class ChatRepositoryImpl @Inject constructor(
                 saveNewChat(jsonObject)
                 ChatResult.Success(chatResponse, id, rev)
             } else {
-                ChatResult.Error(responseBody?.message ?: response.message() ?: "Request failed")
+                ChatResult.Error(responseBody?.message ?: response.message)
             }
         } catch (e: Exception) {
             ChatResult.Error(e.message ?: "Request failed")
@@ -94,9 +93,9 @@ class ChatRepositoryImpl @Inject constructor(
         return try {
             val continueChatData = ContinueChatRequest(data = Data(user ?: "", message, aiProvider, id, rev), save = true)
             val jsonContent = gson.toJson(continueChatData)
-            val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
+            val requestBody = UploadBody.TextContent(jsonContent, "application/json")
             val response = chatApiService.sendChatRequest(requestBody)
-            val responseBody = response.body()
+            val responseBody = response.body
             if (response.isSuccessful && responseBody != null && responseBody.status == "Success") {
                 val chatResponse = responseBody.chat ?: ""
                 val newRev = responseBody.couchDBResponse?.rev ?: rev
@@ -104,7 +103,7 @@ class ChatRepositoryImpl @Inject constructor(
                 ChatResult.Success(chatResponse, id, newRev)
             } else {
                 continueConversation(id, message, "", rev)
-                ChatResult.Error(responseBody?.message ?: response.message() ?: "Request failed")
+                ChatResult.Error(responseBody?.message ?: response.message)
             }
         } catch (e: Exception) {
             continueConversation(id, message, "", rev)

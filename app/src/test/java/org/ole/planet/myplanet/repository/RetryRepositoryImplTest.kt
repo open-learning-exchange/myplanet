@@ -17,25 +17,24 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
-import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.ApiResponse
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.data.room.dao.RetryDao
 import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RetryRepositoryImplTest {
     private lateinit var retryDao: RetryDao
-    private lateinit var apiInterface: ApiInterface
+    private lateinit var planetApi: PlanetApi
     private lateinit var repository: RetryRepositoryImpl
     private val timeProvider = TestTimeProvider(currentTime = 1_700_000_000_000L)
 
@@ -48,11 +47,11 @@ class RetryRepositoryImplTest {
     fun setUp() {
         MockKAnnotations.init(this, relaxed = true)
         retryDao = mockk(relaxed = true)
-        apiInterface = mockk(relaxed = true)
+        planetApi = mockk(relaxed = true)
         mockkObject(UrlUtils)
         every { UrlUtils.getUrl() } returns "http://mock.url"
         every { UrlUtils.header } returns "mockHeader"
-        repository = RetryRepositoryImpl(retryDao, apiInterface, timeProvider)
+        repository = RetryRepositoryImpl(retryDao, planetApi, timeProvider)
     }
 
     @Test
@@ -176,7 +175,7 @@ class RetryRepositoryImplTest {
             endpoint = "test"
             httpMethod = "POST"
         }
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
+        coEvery { planetApi.postDoc(any(), any(), any(), any()) } returns ApiResponse.success(kotlinx.serialization.json.JsonObject(emptyMap()))
 
         val result = repository.executeOperation(op)
 
@@ -193,7 +192,7 @@ class RetryRepositoryImplTest {
             endpoint = "test"
             httpMethod = "POST"
         }
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns Response.error(409, "Conflict".toResponseBody(null))
+        coEvery { planetApi.postDoc(any(), any(), any(), any()) } returns ApiResponse.error(409, "Conflict")
 
         val result = repository.executeOperation(op)
 
@@ -210,7 +209,7 @@ class RetryRepositoryImplTest {
             endpoint = "test"
             httpMethod = "POST"
         }
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns Response.error(500, "Server Error".toResponseBody(null))
+        coEvery { planetApi.postDoc(any(), any(), any(), any()) } returns ApiResponse.error(500, "Server Error")
 
         val result = repository.executeOperation(op)
 
@@ -227,7 +226,7 @@ class RetryRepositoryImplTest {
             endpoint = "test"
             httpMethod = "POST"
         }
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } throws IOException("Connection failed")
+        coEvery { planetApi.postDoc(any(), any(), any(), any()) } throws IOException("Connection failed")
 
         val result = repository.executeOperation(op)
 
@@ -244,7 +243,7 @@ class RetryRepositoryImplTest {
             endpoint = "test"
             httpMethod = "POST"
         }
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns Response.error(400, "Bad Request".toResponseBody(null))
+        coEvery { planetApi.postDoc(any(), any(), any(), any()) } returns ApiResponse.error(400, "Bad Request")
 
         val result = repository.executeOperation(op)
 
@@ -286,7 +285,7 @@ class RetryRepositoryImplTest {
     }
 
     @Test
-    fun `executeOperation valid object payload reaches apiInterface with equal kotlinx JsonObject`() = runTest {
+    fun `executeOperation valid object payload reaches planetApi with equal kotlinx JsonObject`() = runTest {
         val payloadJson = """{"key":"value","num":123}"""
         val expectedJsonObject = Json.parseToJsonElement(payloadJson).jsonObject
         val op = RetryOperation().apply {
@@ -296,7 +295,7 @@ class RetryRepositoryImplTest {
             httpMethod = "POST"
         }
         val payloadSlot = slot<kotlinx.serialization.json.JsonObject>()
-        coEvery { apiInterface.postDoc(any(), any(), any(), capture(payloadSlot)) } returns Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
+        coEvery { planetApi.postDoc(any(), any(), any(), capture(payloadSlot)) } returns ApiResponse.success(kotlinx.serialization.json.JsonObject(emptyMap()))
 
         val result = repository.executeOperation(op)
 
@@ -312,7 +311,7 @@ class RetryRepositoryImplTest {
             endpoint = "test"
             httpMethod = "POST"
         }
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } throws CancellationException("Job cancelled")
+        coEvery { planetApi.postDoc(any(), any(), any(), any()) } throws CancellationException("Job cancelled")
 
         try {
             repository.executeOperation(op)

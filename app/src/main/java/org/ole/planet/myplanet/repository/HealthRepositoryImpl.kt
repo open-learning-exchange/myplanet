@@ -14,7 +14,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.jsonObject
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.HealthExamination
@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.utils.toKotlinx
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class HealthRepositoryImpl @Inject constructor(
-    private val apiInterface: ApiInterface,
+    private val planetApi: PlanetApi,
     private val dispatcherProvider: DispatcherProvider,
     private val healthExaminationDao: HealthExaminationDao,
     private val userRepository: Lazy<UserRepository>,
@@ -127,13 +127,13 @@ class HealthRepositoryImpl @Inject constructor(
                 async {
                     semaphore.withPermit {
                         try {
-                            val res = apiInterface.postDoc(
+                            val res = planetApi.postDoc(
                                 UrlUtils.header,
                                 "application/json",
                                 "${UrlUtils.getUrl()}/health",
                                 HealthExamination.serialize(pojo).toKotlinx().jsonObject
                             )
-                            val resBody = res.body()?.toGson()
+                            val resBody = res.body?.toGson()
 
                             if (resBody != null && resBody.has("id") == true) {
                                 val rev = resBody.get("rev")?.asString

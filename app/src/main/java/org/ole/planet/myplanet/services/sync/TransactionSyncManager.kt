@@ -20,7 +20,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.jsonObject
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.PlanetApi
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.UserEntity
@@ -62,7 +62,7 @@ import org.ole.planet.myplanet.utils.toKotlinx
 
 @Singleton
 class TransactionSyncManager @Inject constructor(
-    private val apiInterface: ApiInterface,
+    private val planetApi: PlanetApi,
     private val appStorage: AppStorage,
     private val credentialStore: CredentialStore,
     private val voicesRepository: VoicesRepository,
@@ -127,8 +127,8 @@ class TransactionSyncManager @Inject constructor(
     suspend fun authenticate(): Boolean {
         try {
             val targetUrl = "${UrlUtils.getUrl()}/tablet_users/_all_docs"
-            val response = apiInterface.getDocuments(UrlUtils.header, targetUrl)
-            return response.code() == 200 && response.body() != null
+            val response = planetApi.getDocuments(UrlUtils.header, targetUrl)
+            return response.code == 200 && response.body != null
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -162,12 +162,12 @@ class TransactionSyncManager @Inject constructor(
             "userdb-${userModel.planetCode?.let { Utilities.toHex(it) }}-${userModel.name?.let { Utilities.toHex(it) }}"
         try {
             val response =
-                apiInterface.getDocuments(header, "${UrlUtils.getUrl()}/$table/_all_docs")
-            val ob = response.body()
+                planetApi.getDocuments(header, "${UrlUtils.getUrl()}/$table/_all_docs")
+            val ob = response.body
             if (ob != null && ob.rows?.isNotEmpty() == true) {
                 val r = ob.rows?.firstOrNull()
                 r?.id?.let { id ->
-                    val jsonDoc = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/$table/$id").body()?.toGson()
+                    val jsonDoc = planetApi.getJsonObject(header, "${UrlUtils.getUrl()}/$table/$id").body?.toGson()
                     val key = getString("key", jsonDoc)
                     val iv = getString("iv", jsonDoc)
 
@@ -231,18 +231,18 @@ class TransactionSyncManager @Inject constructor(
                 }
                 val batchStartTime = timeProvider.elapsedRealtime()
                 val batchApiStartTime = timeProvider.elapsedRealtime()
-                val response = apiInterface.postDoc(
+                val response = planetApi.postDoc(
                     authHeader,
                     "application/json",
                     "$url/$table/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",
                     JsonObject().toKotlinx().jsonObject // Empty body for GET-style query
                 )
                 val batchApiDuration = timeProvider.elapsedRealtime() - batchApiStartTime
-                if (response.body() == null || !response.isSuccessful) {
-                    AppLog.d("SyncPerf", "  ✗ Failed $table batch $batchNumber: HTTP ${response.code()}")
+                if (response.body == null || !response.isSuccessful) {
+                    AppLog.d("SyncPerf", "  ✗ Failed $table batch $batchNumber: HTTP ${response.code}")
                     break
                 }
-                val arr = getJsonArray("rows", response.body()?.toGson())
+                val arr = getJsonArray("rows", response.body?.toGson())
                 if (arr.isEmpty()) {
                     syncCompletedFully = true
                     break
@@ -392,12 +392,12 @@ class TransactionSyncManager @Inject constructor(
         try {
             val encodedName = android.net.Uri.encode(coverFileName)
             val url = "${UrlUtils.getUrl()}/courses/$docId/$encodedName"
-            val response = apiInterface.downloadFile(UrlUtils.header, url)
+            val response = planetApi.downloadFile(UrlUtils.header, url)
             if (response.isSuccessful) {
-                response.body()?.let { body ->
+                response.body?.let { body ->
                     destFile.parentFile?.mkdirs()
                     destFile.outputStream().use { out ->
-                        body.byteStream().use { it.copyTo(out) }
+                        body.source().inputStream().use { it.copyTo(out) }
                     }
                 }
             }
@@ -408,12 +408,12 @@ class TransactionSyncManager @Inject constructor(
         try {
             val encodedName = Uri.encode(attachmentName)
             val url = "${UrlUtils.getUrl()}/teams/$docId/$encodedName"
-            val response = apiInterface.downloadFile(UrlUtils.header, url)
+            val response = planetApi.downloadFile(UrlUtils.header, url)
             if (response.isSuccessful) {
-                response.body()?.let { body ->
+                response.body?.let { body ->
                     destFile.parentFile?.mkdirs()
                     destFile.outputStream().use { out ->
-                        body.byteStream().use { it.copyTo(out) }
+                        body.source().inputStream().use { it.copyTo(out) }
                     }
                 }
             }
@@ -423,12 +423,12 @@ class TransactionSyncManager @Inject constructor(
     private suspend fun downloadCvAttachment(docId: String, destFile: File) {
         try {
             val url = "${UrlUtils.getUrl()}/achievements/$docId/resume.pdf"
-            val response = apiInterface.downloadFile(UrlUtils.header, url)
+            val response = planetApi.downloadFile(UrlUtils.header, url)
             if (response.isSuccessful) {
-                response.body()?.let { body ->
+                response.body?.let { body ->
                     destFile.parentFile?.mkdirs()
                     destFile.outputStream().use { out ->
-                        body.byteStream().use { it.copyTo(out) }
+                        body.source().inputStream().use { it.copyTo(out) }
                     }
                 }
             }
@@ -454,14 +454,14 @@ class TransactionSyncManager @Inject constructor(
                     addProperty("time", notification.createdAt)
                 }
                 try {
-                    val response = apiInterface.putDoc(
+                    val response = planetApi.putDoc(
                         UrlUtils.header,
                         "application/json",
                         "${UrlUtils.getUrl()}/notifications/${notification.id}",
                         body.toKotlinx().jsonObject
                     )
                     if (response.isSuccessful) {
-                        val newRev = JsonUtils.getString("rev", response.body()).takeIf { it.isNotEmpty() }
+                        val newRev = JsonUtils.getString("rev", response.body).takeIf { it.isNotEmpty() }
                         Pair(notification.id, newRev)
                     } else null
                 } catch (e: CancellationException) {
