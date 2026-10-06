@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.LibraryTitle
 import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.UserAchievementsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
 data class AchievementSaveRequest(
@@ -39,9 +40,10 @@ data class AchievementSaveRequest(
 @HiltViewModel
 class AchievementViewModel @Inject constructor(
     private val userRepository: UserRepository,
+    private val userAchievementsRepository: UserAchievementsRepository,
     private val resourcesRepository: ResourcesRepository
 ) : ViewModel() {
-    val achievementUpdates: SharedFlow<Unit> = userRepository.achievementUpdates
+    val achievementUpdates: SharedFlow<Unit> = userAchievementsRepository.achievementUpdates
         .shareIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -63,12 +65,12 @@ class AchievementViewModel @Inject constructor(
             _user.value = userModel
             val id = userModel?.let { it.id + "@" + it.planetCode }
             _achievementId.value = id
-            _achievement.value = id?.let { userRepository.initializeAchievement(it) }
+            _achievement.value = id?.let { userAchievementsRepository.initializeAchievement(it) }
         }
     }
 
     suspend fun saveAchievement(request: AchievementSaveRequest) {
-        userRepository.updateAchievement(
+        userAchievementsRepository.updateAchievement(
             achievementId = request.achievementId,
             header = request.header,
             goals = request.goals,
@@ -93,7 +95,7 @@ class AchievementViewModel @Inject constructor(
     }
 
     suspend fun getAchievementData(userId: String, planetCode: String): AchievementData {
-        return userRepository.getAchievementData(userId, planetCode)
+        return userAchievementsRepository.getAchievementData(userId, planetCode)
     }
 
     suspend fun getUserModel(): UserEntity? {
