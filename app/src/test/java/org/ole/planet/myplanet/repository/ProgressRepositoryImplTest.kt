@@ -12,6 +12,8 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -29,6 +31,12 @@ import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.asInt
+import org.ole.planet.myplanet.utils.asJsonObject
+import org.ole.planet.myplanet.utils.asString
+import org.ole.planet.myplanet.utils.size
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @ExperimentalCoroutinesApi
 class ProgressRepositoryImplTest {
@@ -72,7 +80,7 @@ class ProgressRepositoryImplTest {
     fun fetchCourseData_executes_successfully() = runTest(testDispatcher) {
         coEvery { mockSubmissionsRepository.getExamSubmissionsByUser("user123") } returns emptyList()
         val result = repository.fetchCourseData("user123")
-        assertEquals(JsonArray(), result)
+        assertEquals(JsonArray(), result.toGson())
     }
 
     @Test
@@ -225,7 +233,7 @@ class ProgressRepositoryImplTest {
             })
         }
 
-        coEvery { repository.fetchCourseData("user1") } returns jsonArray
+        coEvery { repository.fetchCourseData("user1") } returns jsonArray.toKotlinx().jsonArray
 
         val rows = repository.getCourseProgressRows("user1")
         advanceUntilIdle()
@@ -552,7 +560,7 @@ class ProgressRepositoryImplTest {
         coEvery { courseProgressDao.getByIds(listOf("doc1")) } returns emptyList()
         coEvery { courseProgressDao.getByCourseUsersAndSteps(listOf(Triple("course1", "user1", 1))) } returns emptyList()
 
-        repository.insertCourseProgressFromSync(listOf(doc1))
+        repository.insertCourseProgressFromSync(listOf(doc1).map { it.toKotlinx().jsonObject })
 
         coVerify {
             courseProgressDao.upsertAll(match { progress ->
@@ -587,7 +595,7 @@ class ProgressRepositoryImplTest {
         coEvery { courseProgressDao.getByIds(listOf("doc1")) } returns emptyList()
         coEvery { courseProgressDao.getByCourseUsersAndSteps(listOf(Triple("course1", "user1", 1))) } returns listOf(existingProgress)
 
-        repository.insertCourseProgressFromSync(listOf(doc1))
+        repository.insertCourseProgressFromSync(listOf(doc1).map { it.toKotlinx().jsonObject })
 
         coVerify {
             courseProgressDao.upsertAll(match { progress ->
@@ -715,17 +723,17 @@ class ProgressRepositoryImplTest {
         jsonArray.add(course1)
         jsonArray.add(course2)
 
-        val result1 = repository.findProgressForCourse(jsonArray, "course1")
+        val result1 = repository.findProgressForCourse(jsonArray.toKotlinx().jsonArray, "course1")
         assertEquals(10, result1?.get("max")?.asInt)
 
-        val result2 = repository.findProgressForCourse(jsonArray, "course3")
+        val result2 = repository.findProgressForCourse(jsonArray.toKotlinx().jsonArray, "course3")
         assertNull(result2)
     }
 
     @Test
     fun testFindProgressForCourse_emptyArray() {
         val jsonArray = JsonArray()
-        val result = repository.findProgressForCourse(jsonArray, "course1")
+        val result = repository.findProgressForCourse(jsonArray.toKotlinx().jsonArray, "course1")
         assertNull(result)
     }
 
@@ -737,7 +745,7 @@ class ProgressRepositoryImplTest {
         }
         jsonArray.add(course1)
 
-        val result = repository.findProgressForCourse(jsonArray, "course1")
+        val result = repository.findProgressForCourse(jsonArray.toKotlinx().jsonArray, "course1")
         assertNull(result)
     }
 
@@ -954,7 +962,7 @@ class ProgressRepositoryImplTest {
         coEvery { courseProgressDao.getByIds(listOf("doc1", "doc2")) } returns emptyList()
         coEvery { courseProgressDao.getByCourseUsersAndSteps(listOf(Triple("course1", "user1", 1), Triple("course2", "user1", 2))) } returns emptyList()
 
-        repository.insertCourseProgressFromSync(listOf(doc1, doc2, doc3))
+        repository.insertCourseProgressFromSync(listOf(doc1, doc2, doc3).map { it.toKotlinx().jsonObject })
 
         coVerify {
             courseProgressDao.getByIds(listOf("doc1", "doc2"))

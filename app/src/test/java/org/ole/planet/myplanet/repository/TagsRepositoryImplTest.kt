@@ -7,12 +7,14 @@ import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.model.TagEntity
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TagsRepositoryImplTest {
@@ -329,7 +331,7 @@ class TagsRepositoryImplTest {
             }
         )
 
-        repository.insert(documentList)
+        repository.insert(documentList.map { it.toKotlinx().jsonObject })
 
         coVerify {
             tagDao.upsertAll(match { list ->
@@ -362,7 +364,7 @@ class TagsRepositoryImplTest {
             }
         )
 
-        repository.insert(documentList)
+        repository.insert(documentList.map { it.toKotlinx().jsonObject })
 
         coVerify {
             tagDao.upsertAll(match { list ->

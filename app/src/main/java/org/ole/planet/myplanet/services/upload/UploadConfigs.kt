@@ -5,7 +5,6 @@ import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.CourseProgress
@@ -38,7 +37,6 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.KJson.GsonNumbers
 import org.ole.planet.myplanet.utils.VersionUtils
-import org.ole.planet.myplanet.utils.toKotlinx
 import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
 @Singleton
@@ -138,7 +136,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "resource_activities",
         modelClassName = "ResourceActivity",
         fetchPendingItems = { activitiesRepository.getPendingResourceActivityUploads() },
-        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it).toKotlinx().jsonObject },
+        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
         idExtractor = { it.id },
         payloadNumbers = GsonNumbers.LITERAL,
         markUploaded = { results ->
@@ -152,7 +150,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "admin_activities",
         modelClassName = "ResourceActivity",
         fetchPendingItems = { activitiesRepository.getPendingResourceActivitySyncUploads() },
-        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it).toKotlinx().jsonObject },
+        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
         idExtractor = { it.id },
         payloadNumbers = GsonNumbers.LITERAL,
         markUploaded = { results ->
@@ -287,7 +285,7 @@ class UploadConfigs @Inject constructor(
             modelClassName = "MyLibrary",
             fetchPendingItems = { resourcesRepository.getPendingResourceUploads() },
             serializer = UploadSerializer.Simple { library ->
-                resourcesRepository.serializeForUpload(library, user).toKotlinx().jsonObject
+                resourcesRepository.serializeForUpload(library, user)
             },
             idExtractor = { it.id },
             payloadNumbers = GsonNumbers.LITERAL,

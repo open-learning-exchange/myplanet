@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import android.app.Application
-import com.google.gson.JsonArray
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -236,7 +235,7 @@ class DashboardViewModelTest {
         val userId = "user1"
         val validUrl = "https://example.org"
 
-        coEvery { progressRepository.fetchCourseData(userId) } returns JsonArray()
+        coEvery { progressRepository.fetchCourseData(userId) } returns kotlinx.serialization.json.JsonArray(emptyList())
         coEvery { voicesRepository.getCommunityVoiceDateCount(any(), any(), eq(userId)) } returns 5
         coEvery { voicesRepository.getCommunityVoiceDateCount(any(), any(), isNull()) } returns 7
         coEvery { coursesRepository.getCourseTitleById(any()) } returns "Course"

@@ -24,6 +24,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject as KJsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import org.junit.After
@@ -55,6 +56,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ActivitiesRepositoryImplTest {
@@ -492,7 +494,7 @@ class ActivitiesRepositoryImplTest {
             offlineActivityDao.getByLoginTimesAndUserNames(listOf(100L, 200L), listOf("alice", "bob"))
         } returns emptyList()
 
-        repository.insertLoginActivitiesFromSync(docs)
+        repository.insertLoginActivitiesFromSync(docs.map { it.toKotlinx().jsonObject })
 
         coVerify(exactly = 1) { offlineActivityDao.getByRemoteIds(listOf("a1", "a2")) }
         coVerify(exactly = 1) {
@@ -514,7 +516,7 @@ class ActivitiesRepositoryImplTest {
             offlineActivityDao.getByLoginTimesAndUserNames(listOf(100L), listOf("alice"))
         } returns emptyList()
 
-        repository.insertLoginActivitiesFromSync(docs)
+        repository.insertLoginActivitiesFromSync(docs.map { it.toKotlinx().jsonObject })
 
         coVerify(exactly = 1) { offlineActivityDao.getByRemoteIds(listOf("a1")) }
         coVerify(exactly = 1) {
@@ -537,7 +539,7 @@ class ActivitiesRepositoryImplTest {
             offlineActivityDao.getByLoginTimesAndUserNames(listOf(100L), listOf("alice"))
         } returns emptyList()
 
-        repository.insertLoginActivitiesFromSync(docs)
+        repository.insertLoginActivitiesFromSync(docs.map { it.toKotlinx().jsonObject })
 
         coVerify(exactly = 1) { offlineActivityDao.getByRemoteIds(listOf("a1")) }
         val slot = slot<List<OfflineActivity>>()
@@ -549,7 +551,7 @@ class ActivitiesRepositoryImplTest {
     fun `insertLoginActivitiesFromSync returns early when only design docs`() = runTest {
         val docs = listOf(JsonObject().apply { addProperty("_id", "_design/someview") })
 
-        repository.insertLoginActivitiesFromSync(docs)
+        repository.insertLoginActivitiesFromSync(docs.map { it.toKotlinx().jsonObject })
 
         coVerify(exactly = 0) { offlineActivityDao.getByRemoteIds(any()) }
         coVerify(exactly = 0) { offlineActivityDao.getByLoginTimesAndUserNames(any(), any()) }
@@ -643,7 +645,7 @@ class ActivitiesRepositoryImplTest {
         )
         coEvery { offlineActivityDao.getByRemoteIds(listOf("a1")) } returns emptyList()
 
-        repository.insertLoginActivitiesFromSync(docs)
+        repository.insertLoginActivitiesFromSync(docs.map { it.toKotlinx().jsonObject })
 
         coVerify(exactly = 0) {
             offlineActivityDao.getByLoginTimesAndUserNames(any(), any())

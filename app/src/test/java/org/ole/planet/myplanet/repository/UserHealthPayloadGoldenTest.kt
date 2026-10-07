@@ -295,7 +295,7 @@ class UserHealthPayloadGoldenTest {
 
     @Test
     fun `shelf documents`() = runTest {
-        coEvery { resourcesRepository.getMyLibIds(any()) } returns com.google.gson.JsonArray().apply { add("r1"); add("r2") }
+        coEvery { resourcesRepository.getMyLibIds(any()) } returns JsonArray(listOf(JsonPrimitive("r1"), JsonPrimitive("r2")))
         coEvery { coursesRepository.getMyCourseIds(any()) } returns JsonArray(listOf(JsonPrimitive("c1")))
         coEvery { eventsRepository.getMeetupsForUser(any()) } returns listOf(Meetup().apply { meetupId = "m1" })
         coEvery { removedLogDao.getRemovedDocIds("resources", any()) } returns listOf("removed-r")

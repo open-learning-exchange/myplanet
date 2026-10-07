@@ -9,6 +9,8 @@ import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -21,6 +23,7 @@ import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.utils.TestTimeProvider
+import org.ole.planet.myplanet.utils.toKotlinx
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -75,7 +78,7 @@ class NotificationsRepositoryImplTest {
     fun `insert with missing id does nothing`() = runTest {
         val jsonObject = JsonObject()
 
-        repository.insert(jsonObject)
+        repository.insert(jsonObject.toKotlinx().jsonObject)
 
         coVerify(exactly = 0) { notificationDao.upsertPreservingPendingRead(any()) }
     }
@@ -96,7 +99,7 @@ class NotificationsRepositoryImplTest {
         val upsertSlot = slot<AppNotification>()
         coEvery { notificationDao.upsertPreservingPendingRead(capture(upsertSlot)) } returns Unit
 
-        repository.insert(jsonObject)
+        repository.insert(jsonObject.toKotlinx().jsonObject)
 
         val savedNotification = upsertSlot.captured
         assertEquals("testUser", savedNotification.userId)
@@ -123,7 +126,7 @@ class NotificationsRepositoryImplTest {
         val upsertSlot = slot<AppNotification>()
         coEvery { notificationDao.upsertPreservingPendingRead(capture(upsertSlot)) } returns Unit
 
-        repository.insert(jsonObject)
+        repository.insert(jsonObject.toKotlinx().jsonObject)
 
         val savedNotification = upsertSlot.captured
         assertEquals("updatedUser", savedNotification.userId)
@@ -143,7 +146,7 @@ class NotificationsRepositoryImplTest {
         val upsertSlot = slot<AppNotification>()
         coEvery { notificationDao.upsertPreservingPendingRead(capture(upsertSlot)) } returns Unit
 
-        repository.insert(jsonObject)
+        repository.insert(jsonObject.toKotlinx().jsonObject)
 
         assertEquals("testId", upsertSlot.captured.id)
         assertFalse(upsertSlot.captured.isRead)
@@ -164,7 +167,7 @@ class NotificationsRepositoryImplTest {
         val upsertSlot = slot<AppNotification>()
         coEvery { notificationDao.upsertPreservingPendingRead(capture(upsertSlot)) } returns Unit
 
-        repository.insert(jsonObject)
+        repository.insert(jsonObject.toKotlinx().jsonObject)
 
         val saved = upsertSlot.captured
         assertEquals("team", saved.type)
@@ -186,7 +189,7 @@ class NotificationsRepositoryImplTest {
         val upsertSlot = slot<AppNotification>()
         coEvery { notificationDao.upsertPreservingPendingRead(capture(upsertSlot)) } returns Unit
 
-        repository.insert(jsonObject)
+        repository.insert(jsonObject.toKotlinx().jsonObject)
 
         val saved = upsertSlot.captured
         assertEquals("team", saved.type)
@@ -207,7 +210,7 @@ class NotificationsRepositoryImplTest {
         val upsertSlot = slot<AppNotification>()
         coEvery { notificationDao.upsertPreservingPendingRead(capture(upsertSlot)) } returns Unit
 
-        repository.insert(jsonObject)
+        repository.insert(jsonObject.toKotlinx().jsonObject)
 
         val saved = upsertSlot.captured
         assertEquals("replyMessage", saved.type)
@@ -227,7 +230,7 @@ class NotificationsRepositoryImplTest {
         val upsertSlot = slot<AppNotification>()
         coEvery { notificationDao.upsertPreservingPendingRead(capture(upsertSlot)) } returns Unit
 
-        repository.insert(jsonObject)
+        repository.insert(jsonObject.toKotlinx().jsonObject)
 
         val saved = upsertSlot.captured
         assertEquals("newTask", saved.type)
@@ -247,7 +250,7 @@ class NotificationsRepositoryImplTest {
         val upsertSlot = slot<AppNotification>()
         coEvery { notificationDao.upsertPreservingPendingRead(capture(upsertSlot)) } returns Unit
 
-        repository.insert(jsonObject)
+        repository.insert(jsonObject.toKotlinx().jsonObject)
 
         val saved = upsertSlot.captured
         assertEquals("newResource", saved.type)
@@ -441,7 +444,7 @@ class NotificationsRepositoryImplTest {
         val upsertSlot = slot<List<AppNotification>>()
         coEvery { notificationDao.upsertAllPreservingPendingRead(capture(upsertSlot)) } returns Unit
 
-        repository.bulkInsertFromSync(jsonArray)
+        repository.bulkInsertFromSync(jsonArray.toKotlinx().jsonArray)
 
         val saved = upsertSlot.captured
         assertEquals(2, saved.size)
@@ -462,7 +465,7 @@ class NotificationsRepositoryImplTest {
         val upsertSlot = slot<List<AppNotification>>()
         coEvery { notificationDao.upsertAllPreservingPendingRead(capture(upsertSlot)) } returns Unit
 
-        repository.bulkInsertFromSync(jsonArray)
+        repository.bulkInsertFromSync(jsonArray.toKotlinx().jsonArray)
 
         val saved = upsertSlot.captured
         assertTrue(saved.isEmpty())

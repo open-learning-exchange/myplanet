@@ -4,8 +4,6 @@ import android.content.Context
 import android.util.Log
 import androidx.core.content.edit
 import androidx.core.net.toUri
-import com.google.gson.Gson
-import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
 import java.net.ConnectException
@@ -20,15 +18,21 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -36,6 +40,7 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AppVersionProvider
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Sha256Utils
@@ -43,8 +48,7 @@ import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
-import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toKotlinx
+import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
 class ConfigurationsRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -56,7 +60,6 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider,
     private val storagePathResolver: StoragePathResolver,
-    @PlainGson private val gson: Gson,
     private val appVersionProvider: AppVersionProvider
 ) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
@@ -121,7 +124,8 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
                 if (cachedVersionDetail != null && cachedApkVersion != -1) {
                     try {
-                        val cachedInfo = gson.fromJson(cachedVersionDetail, MyPlanet::class.java)
+                        val cachedInfo = MyPlanet.fromVersionDetail(cachedVersionDetail)
+                            ?: throw NullPointerException("cached version detail is empty")
                         handleVersionEvaluation(cachedInfo, cachedApkVersion, callback)
                         return@launch
                     } catch (e: Exception) {
@@ -141,10 +145,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                     putLong("last_version_check_timestamp", timeProvider.now())
                 }
                 sharedPrefManager.setLastWifiId(NetworkUtils.getCurrentNetworkId(context))
-                sharedPrefManager.setVersionDetail(gson.toJson(planetInfo))
+                sharedPrefManager.setVersionDetail(planetInfo.toVersionDetail())
 
                 val rawApkVersion = fetchApkVersionString(sharedPrefManager)
-                val versionStr = gson.fromJson(rawApkVersion, String::class.java)
+                val versionStr = gsonStringOf(rawApkVersion)
                 if (versionStr.isNullOrEmpty()) {
                     callback.onError(context.getString(R.string.planet_is_up_to_date), false)
                     return@launch
@@ -320,8 +324,8 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
 
             if (versionsResponse.isSuccessful) {
-                val jsonObject = versionsResponse.body()?.toGson()
-                val minApkVersion = jsonObject?.get("minapk")?.asString
+                val jsonObject = versionsResponse.body()
+                val minApkVersion = jsonObject?.get("minapk")?.let { KJson.gsonAsString(it) }
                 val currentVersion = appVersionProvider.versionName
 
                 if (minApkVersion != null && VersionUtils.isVersionAllowed(currentVersion, minApkVersion)) {
@@ -350,13 +354,15 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
 
             if (configResponse.isSuccessful) {
-                val rows = configResponse.body()?.toGson()?.getAsJsonArray("rows")
+                val rows = configResponse.body()?.withGsonBridgedNumbers()?.get("rows")
+                    ?.let { it as? JsonArray ?: throw ClassCastException("Not a JSON Array: $it") }
 
                 if (rows != null && !rows.isEmpty()) {
-                    val firstRow = rows[0].asJsonObject
-                    val id = firstRow.getAsJsonPrimitive("id").asString
-                    val doc = firstRow.getAsJsonObject("doc")
-                    val code = doc.getAsJsonPrimitive("code").asString
+                    val firstRow = KJson.asJsonObject(rows[0])
+                    val id = KJson.gsonAsString(firstRow.gsonPrimitive("id"))
+                    val doc = firstRow["doc"]?.let { it as? JsonObject ?: throw ClassCastException("Not a JSON Object: $it") }
+                        ?: throw NullPointerException("doc is missing")
+                    val code = KJson.gsonAsString(doc.gsonPrimitive("code"))
                     processConfigurationDoc(doc)
                     return Pair(id, code)
                 }
@@ -372,11 +378,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     }
 
     private suspend fun processConfigurationDoc(doc: JsonObject) = withContext(dispatcherProvider.io) {
-        val parentCode = doc.getAsJsonPrimitive("parentCode").asString
+        val parentCode = KJson.gsonAsString(doc.gsonPrimitive("parentCode"))
         sharedPrefManager.setParentCode(parentCode)
 
-        if (doc.has("preferredLang")) {
-            val preferredLang = doc.getAsJsonPrimitive("preferredLang").asString
+        if (doc.containsKey("preferredLang")) {
+            val preferredLang = KJson.gsonAsString(doc.gsonPrimitive("preferredLang"))
             val languageCode = getLanguageCodeFromName(preferredLang)
             if (languageCode != null) {
                 LocaleUtils.setLocale(context, languageCode)
@@ -384,14 +390,17 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
         }
 
-        if (doc.has("models")) {
-            val modelsMap = doc.getAsJsonObject("models").entrySet()
-                .associate { it.key to it.value.asString }
-            sharedPrefManager.rawPreferences.edit { putString("ai_models", gson.toJson(modelsMap)) }
+        if (doc.containsKey("models")) {
+            val models = doc["models"]?.let { it as? JsonObject ?: throw ClassCastException("Not a JSON Object: $it") }
+                ?: throw NullPointerException("models is null")
+            val modelsMap = models.entries.associate { it.key to KJson.gsonAsString(it.value) }
+            // Stored text: Gson().toJson's bytes for this map.
+            val modelsJson = KJson.gsonToJson(JsonObject(modelsMap.mapValues { (_, model) -> JsonPrimitive(model) }))
+            sharedPrefManager.rawPreferences.edit { putString("ai_models", modelsJson) }
         }
 
-        if (doc.has("planetType")) {
-            val planetType = doc.getAsJsonPrimitive("planetType").asString
+        if (doc.containsKey("planetType")) {
+            val planetType = KJson.gsonAsString(doc.gsonPrimitive("planetType"))
             sharedPrefManager.rawPreferences.edit { putString("planetType", planetType) }
         }
     }
@@ -422,10 +431,9 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
     override suspend fun syncCommunityLeaders() {
         try {
-            val `object` = JsonObject()
-            val selector = JsonObject()
-            selector.addProperty("isUserAdmin", true)
-            `object`.add("selector", selector)
+            val `object` = buildJsonObject {
+                putJsonObject("selector") { put("isUserAdmin", true) }
+            }
 
             val header = UrlUtils.header
             if (header.isBlank()) {
@@ -440,10 +448,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
 
             try {
-                val response = apiInterface.postDoc(header, "application/json", url, `object`.toKotlinx().jsonObject)
-                if (response.isSuccessful && response.body() != null) {
-                    val responseBody = response.body()?.toGson()
-                    sharedPrefManager.setCommunityLeaders("$responseBody")
+                val response = apiInterface.postDoc(header, "application/json", url, `object`)
+                val responseBody = response.body()
+                if (response.isSuccessful && responseBody != null) {
+                    // Stored text: the Gson tree's toString bytes.
+                    sharedPrefManager.setCommunityLeaders(KJson.toGsonString(responseBody))
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Admin sync request failed", e)
@@ -509,6 +518,17 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             "french", "français" -> "fr"
             else -> null
         }
+    }
+
+    /** Gson's `getAsJsonPrimitive(name)`: `null` when absent, a `ClassCastException` for a non-primitive (JSON `null` included). */
+    private fun JsonObject.gsonPrimitive(name: String): JsonPrimitive? =
+        this[name]?.let { if (it is JsonPrimitive && it !is JsonNull) it else throw ClassCastException("Not a JSON Primitive: $it") }
+
+    /** Gson's `fromJson(text, String::class.java)`: `null` for blank text or `null`, a primitive as its text, anything else throws. */
+    private fun gsonStringOf(text: String?): String? = when (val element = KJson.parseOrNull(text)) {
+        null, is JsonNull -> null
+        is JsonPrimitive -> element.content
+        else -> throw SerializationException("Expected a string but was $element")
     }
 
     private fun getUrl(couchdbURL: String): String {

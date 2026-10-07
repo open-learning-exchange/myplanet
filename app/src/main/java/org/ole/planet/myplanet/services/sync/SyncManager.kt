@@ -337,9 +337,9 @@ class SyncManager @Inject constructor(
                     }
                     batchSizer.recordSuccess(batchApiDuration)
 
-                    syncTimeLogger.logApiCall("$url/resources/_all_docs (batch $batchCount)", batchApiDuration, true, rows.size())
+                    syncTimeLogger.logApiCall("$url/resources/_all_docs (batch $batchCount)", batchApiDuration, true, rows.size)
 
-                    if (rows.isEmpty) {
+                    if (rows.isEmpty()) {
                         break
                     }
 
@@ -347,7 +347,7 @@ class SyncManager @Inject constructor(
                     val validDocuments = syncRepository.filterSyncableResourceDocs(rows)
                     val parseDuration = SystemClock.elapsedRealtime() - parseStartTime
                     if (parseDuration > 100) {
-                        syncTimeLogger.logDetail("resource_sync", "Batch $batchCount: Parse took ${parseDuration}ms for ${rows.size()} docs")
+                        syncTimeLogger.logDetail("resource_sync", "Batch $batchCount: Parse took ${parseDuration}ms for ${rows.size} docs")
                     }
 
                     if (validDocuments.isNotEmpty()) {
@@ -363,8 +363,8 @@ class SyncManager @Inject constructor(
                         }
                     }
 
-                    skip += rows.size()
-                    if (!countKnown && rows.size() < batchSize) break
+                    skip += rows.size
+                    if (!countKnown && rows.size < batchSize) break
                     val resourcesDone = skip.coerceAtMost(totalRows)
                     _syncStatus.value = SyncStatus.Syncing(
                         context.getString(R.string.sync_phase_resources), 2, 4,

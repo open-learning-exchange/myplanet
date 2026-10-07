@@ -32,16 +32,31 @@ class MyPlanet : Serializable {
         return appname ?: ""
     }
 
+    /** The cached version detail text, byte for byte `Gson().toJson(this)`: fields in order, `null`s dropped, HTML-safe. */
+    fun toVersionDetail(): String = KJson.gsonToJson(
+        buildJsonObject {
+            put("planetVersion", planetVersion)
+            put("minapkcode", minapkcode)
+            put("latestapkcode", latestapkcode)
+            put("apkpath", apkpath)
+            put("appname", appname)
+            put("localapkpath", localapkpath)
+        }
+    )
+
     companion object {
         /**
-         * The cached version detail, which `ConfigurationsRepositoryImpl` writes with Gson. Like
-         * Gson's `fromJson(text, MyPlanet::class.java)`, blank text or JSON `null` gives `null`.
+         * Reads the cached version detail ([toVersionDetail]'s text, written by Gson before).
+         * Like Gson's `fromJson(text, MyPlanet::class.java)`, blank text or JSON `null` gives
+         * `null`; malformed text throws.
          */
-        private fun cachedPlanet(spm: SharedPrefManager): MyPlanet? {
-            val element = KJson.parseOrNull(spm.getVersionDetail()) ?: return null
+        fun fromVersionDetail(text: String?): MyPlanet? {
+            val element = KJson.parseOrNull(text) ?: return null
             if (element is JsonNull) return null
             return KJson.lenientJson.decodeFromJsonElement(serializer(), element)
         }
+
+        private fun cachedPlanet(spm: SharedPrefManager): MyPlanet? = fromVersionDetail(spm.getVersionDetail())
 
         fun getMyPlanetActivities(
             context: Context,

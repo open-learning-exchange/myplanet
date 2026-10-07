@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.util.Log
-import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
@@ -15,7 +14,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
@@ -36,14 +38,13 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.distinctByContent
-import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toKotlinx
+import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
 class ActivitiesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -236,7 +237,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
                 LoginActivityData(
                     activity.id,
                     activity.userId ?: return@mapNotNull null,
-                    serializeLoginActivities(activity).toKotlinx().jsonObject
+                    serializeLoginActivities(activity)
                 )
             }
         }
@@ -245,7 +246,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
     private suspend fun markActivitiesUploaded(ids: Array<String>, revMap: Map<String, JsonObject?>) {
         val activities = offlineActivityDao.getByIds(ids.toList())
         activities.forEach { activity ->
-            revMap[activity.id]?.let { activity.changeRev(it.toKotlinx().jsonObject) }
+            revMap[activity.id]?.let { activity.changeRev(it) }
         }
         if (activities.isNotEmpty()) {
             offlineActivityDao.upsertAll(activities)
@@ -292,24 +293,24 @@ class ActivitiesRepositoryImpl @Inject constructor(
         existingActivitiesMap: MutableMap<String, OfflineActivity>,
         fallbackActivitiesMap: MutableMap<String, OfflineActivity>
     ): OfflineActivity {
-        val serverId = GsonUtils.getString("_id", json)
-        val loginTime = GsonUtils.getLong("loginTime", json)
-        val userName = GsonUtils.getString("user", json)
+        val serverId = KJson.getString("_id", json)
+        val loginTime = KJson.getLong("loginTime", json)
+        val userName = KJson.getString("user", json)
 
         val fallbackKey = "${loginTime}_${userName}"
         val activity = existingActivitiesMap[serverId]
             ?: fallbackActivitiesMap[fallbackKey]
             ?: OfflineActivity().apply { id = serverId }
 
-        activity._rev = GsonUtils.getString("_rev", json)
+        activity._rev = KJson.getString("_rev", json)
         activity._id = serverId
         activity.loginTime = loginTime
-        activity.type = GsonUtils.getString("type", json)
+        activity.type = KJson.getString("type", json)
         activity.userName = userName
-        activity.parentCode = GsonUtils.getString("parentCode", json)
-        activity.createdOn = GsonUtils.getString("createdOn", json)
-        activity.logoutTime = GsonUtils.getLong("logoutTime", json)
-        activity.androidId = GsonUtils.getString("androidId", json)
+        activity.parentCode = KJson.getString("parentCode", json)
+        activity.createdOn = KJson.getString("createdOn", json)
+        activity.logoutTime = KJson.getLong("logoutTime", json)
+        activity.androidId = KJson.getString("androidId", json)
 
         existingActivitiesMap[serverId] = activity
         if (loginTime > 0 && userName.isNotEmpty()) {
@@ -328,24 +329,22 @@ class ActivitiesRepositoryImpl @Inject constructor(
         return userChallengeActionsDao.countByUserAndType(userId, "sync") > 0
     }
 
-    private fun serializeLoginActivities(activity: OfflineActivity): JsonObject {
-        val ob = JsonObject()
-        ob.addProperty("user", activity.userName)
-        ob.addProperty("type", activity.type)
-        ob.addProperty("loginTime", activity.loginTime)
-        ob.addProperty("logoutTime", activity.logoutTime)
-        ob.addProperty("createdOn", activity.createdOn)
-        ob.addProperty("parentCode", activity.parentCode)
-        ob.addDocumentOrigin()
-        ob.addProperty("deviceName", NetworkUtils.getDeviceName())
-        ob.addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
+    private fun serializeLoginActivities(activity: OfflineActivity): JsonObject = buildJsonObject {
+        put("user", activity.userName)
+        put("type", activity.type)
+        put("loginTime", activity.loginTime)
+        put("logoutTime", activity.logoutTime)
+        put("createdOn", activity.createdOn)
+        put("parentCode", activity.parentCode)
+        addDocumentOrigin()
+        put("deviceName", NetworkUtils.getDeviceName())
+        put("customDeviceName", deviceNameProvider.getCustomDeviceName())
         if (activity._id != null) {
-            ob.addProperty("_id", activity._id)
+            put("_id", activity._id)
         }
         if (activity._rev != null) {
-            ob.addProperty("_rev", activity._rev)
+            put("_rev", activity._rev)
         }
-        return ob
     }
 
     override suspend fun uploadActivities() {
@@ -363,7 +362,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
                                 apiInterface.postDoc(
                                     UrlUtils.header, "application/json",
                                     "${UrlUtils.getUrl()}/login_activities", activityData.serialized
-                                ).body()?.toGson()
+                                ).body()?.withGsonBridgedNumbers()
                             }
                             activityData.id to `object`
                         } catch (e: IOException) {
@@ -386,7 +385,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
     override suspend fun insertLoginActivitiesFromSync(docs: List<JsonObject>) {
         val documentList = docs.filter { jsonDoc ->
-            !GsonUtils.getString("_id", jsonDoc).startsWith("_design")
+            !KJson.getString("_id", jsonDoc).startsWith("_design")
         }
         if (documentList.isEmpty()) return
 
@@ -394,11 +393,11 @@ class ActivitiesRepositoryImpl @Inject constructor(
         val loginTimes = LinkedHashSet<Long>()
         val userNames = LinkedHashSet<String>()
         for (jsonDoc in documentList) {
-            val id = GsonUtils.getString("_id", jsonDoc)
+            val id = KJson.getString("_id", jsonDoc)
             if (id.isNotEmpty()) ids.add(id)
-            val loginTime = GsonUtils.getLong("loginTime", jsonDoc)
+            val loginTime = KJson.getLong("loginTime", jsonDoc)
             if (loginTime > 0) loginTimes.add(loginTime)
-            val userName = GsonUtils.getString("user", jsonDoc)
+            val userName = KJson.getString("user", jsonDoc)
             if (userName.isNotEmpty()) userNames.add(userName)
         }
 
@@ -464,18 +463,19 @@ class ActivitiesRepositoryImpl @Inject constructor(
             "${UrlUtils.getUrl()}/myplanet_activities/${org.ole.planet.myplanet.utils.VersionUtils.getAndroidId(context)}@${NetworkUtils.getUniqueIdentifier()}"
         )
 
-        var `object` = response.body()?.toGson()
+        val existing = response.body()?.withGsonBridgedNumbers()
 
-        if (`object` != null) {
-            val usages = `object`.getAsJsonArray("usages")
+        val `object` = if (existing != null) {
+            // Gson's getAsJsonArray: a missing member failed at addAll, anything else at the cast.
+            val usages = existing["usages"]?.let { it as? JsonArray ?: throw ClassCastException("Not a JSON Array: $it") }
+                ?: throw NullPointerException("usages is missing")
             val tabletUsages = withContext(dispatcherProvider.io) {
-                MyPlanet.getTabletUsages(context, sharedPrefManager).toGson()
+                MyPlanet.getTabletUsages(context, sharedPrefManager).withGsonBridgedNumbers()
             }
-            usages.addAll(tabletUsages)
-            `object`.add("usages", usages)
+            JsonObject(existing + ("usages" to JsonArray(usages + tabletUsages)))
         } else {
-            `object` = withContext(dispatcherProvider.io) {
-                MyPlanet.getMyPlanetActivities(context, sharedPrefManager, userModel).toGson()
+            withContext(dispatcherProvider.io) {
+                MyPlanet.getMyPlanetActivities(context, sharedPrefManager, userModel).withGsonBridgedNumbers()
             }
         }
 
@@ -483,21 +483,19 @@ class ActivitiesRepositoryImpl @Inject constructor(
             UrlUtils.header,
             "application/json",
             "${UrlUtils.getUrl()}/myplanet_activities",
-            `object`.toKotlinx().jsonObject
+            `object`
         )
     }
 }
 
-internal fun serializeResourceActivities(activity: ResourceActivity): JsonObject {
-    val ob = JsonObject()
-    ob.addProperty("user", activity.user)
-    ob.addProperty("resourceId", activity.resourceId)
-    ob.addProperty("type", activity.type)
-    ob.addProperty("title", activity.title)
-    ob.addProperty("time", activity.time)
-    ob.addProperty("createdOn", activity.createdOn)
-    ob.addProperty("parentCode", activity.parentCode)
-    ob.addDocumentOrigin()
-    ob.addProperty("deviceName", NetworkUtils.getDeviceName())
-    return ob
+internal fun serializeResourceActivities(activity: ResourceActivity): JsonObject = buildJsonObject {
+    put("user", activity.user)
+    put("resourceId", activity.resourceId)
+    put("type", activity.type)
+    put("title", activity.title)
+    put("time", activity.time)
+    put("createdOn", activity.createdOn)
+    put("parentCode", activity.parentCode)
+    addDocumentOrigin()
+    put("deviceName", NetworkUtils.getDeviceName())
 }

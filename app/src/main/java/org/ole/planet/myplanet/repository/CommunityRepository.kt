@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonArray
+import kotlinx.serialization.json.JsonArray
 import org.ole.planet.myplanet.model.Community
 
 interface CommunityRepository {

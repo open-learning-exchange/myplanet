@@ -1,15 +1,14 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Log
-import com.google.gson.JsonArray
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.json.JsonArray
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
 import org.ole.planet.myplanet.model.Community
-import org.ole.planet.myplanet.utils.GsonUtils
-import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.KJson
 
 @Singleton
 class CommunityRepositoryImpl @Inject constructor(
@@ -20,18 +19,18 @@ class CommunityRepositoryImpl @Inject constructor(
     override suspend fun replaceAll(rows: JsonArray) {
         val communities = mutableListOf<Community>()
         for (j in rows) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = GsonUtils.getJsonObject("doc", jsonDoc)
-            val id = GsonUtils.getString("_id", jsonDoc)
+            var jsonDoc = KJson.asJsonObject(j)
+            jsonDoc = KJson.getJsonObject("doc", jsonDoc)
+            val id = KJson.getString("_id", jsonDoc)
             val community = Community()
             community.id = id
-            if (GsonUtils.getString("name", jsonDoc) == "learning") {
+            if (KJson.getString("name", jsonDoc) == "learning") {
                 community.weight = 0
             }
-            community.localDomain = GsonUtils.getString("localDomain", jsonDoc)
-            community.name = GsonUtils.getString("name", jsonDoc)
-            community.parentDomain = GsonUtils.getString("parentDomain", jsonDoc)
-            community.registrationRequest = GsonUtils.getString("registrationRequest", jsonDoc)
+            community.localDomain = KJson.getString("localDomain", jsonDoc)
+            community.name = KJson.getString("name", jsonDoc)
+            community.parentDomain = KJson.getString("parentDomain", jsonDoc)
+            community.registrationRequest = KJson.getString("registrationRequest", jsonDoc)
             communities.add(community)
         }
         communityDao.replaceAll(communities)
@@ -45,7 +44,7 @@ class CommunityRepositoryImpl @Inject constructor(
         return try {
             val response = apiInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true")
             if (response.isSuccessful && response.body() != null) {
-                val arr = GsonUtils.getJsonArray("rows", response.body()?.toGson())
+                val arr = KJson.getJsonArray("rows", response.body())
                 replaceAll(arr)
                 true
             } else {

@@ -20,6 +20,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.add
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -41,6 +43,7 @@ import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.toKotlinx
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import retrofit2.Response
@@ -230,9 +233,9 @@ class SyncManagerTest {
         rows.add(com.google.gson.JsonObject().apply { add("doc", doc1) })
         rows.add(com.google.gson.JsonObject().apply { add("doc", doc2) })
 
-        coEvery { syncRepository.fetchResourceRows(any(), any()) } returns rows
-        every { syncRepository.filterSyncableResourceDocs(rows) } returns listOf(doc1, doc2)
-        coEvery { resourcesRepository.batchInsertResources(listOf(doc1, doc2)) } returns listOf("res_1", "res_2")
+        coEvery { syncRepository.fetchResourceRows(any(), any()) } returns rows.toKotlinx().jsonArray
+        every { syncRepository.filterSyncableResourceDocs(rows.toKotlinx().jsonArray) } returns listOf(doc1, doc2).map { it.toKotlinx().jsonObject }
+        coEvery { resourcesRepository.batchInsertResources(listOf(doc1, doc2).map { it.toKotlinx().jsonObject }) } returns listOf("res_1", "res_2")
 
         syncManager.start(listener, "sync", listOf())
 
@@ -270,13 +273,13 @@ class SyncManagerTest {
         val doc1 = com.google.gson.JsonObject().apply { addProperty("_id", "res_1") }
         rows.add(com.google.gson.JsonObject().apply { add("doc", doc1) })
 
-        coEvery { syncRepository.fetchResourceRows(any(), any()) } returns rows
-        every { syncRepository.filterSyncableResourceDocs(rows) } returns listOf(doc1)
-        coEvery { resourcesRepository.batchInsertResources(listOf(doc1)) } returns listOf("res_1")
+        coEvery { syncRepository.fetchResourceRows(any(), any()) } returns rows.toKotlinx().jsonArray
+        every { syncRepository.filterSyncableResourceDocs(rows.toKotlinx().jsonArray) } returns listOf(doc1).map { it.toKotlinx().jsonObject }
+        coEvery { resourcesRepository.batchInsertResources(listOf(doc1).map { it.toKotlinx().jsonObject }) } returns listOf("res_1")
 
         syncManager.start(listener, "sync", listOf())
 
-        coVerify(exactly = 1) { resourcesRepository.batchInsertResources(listOf(doc1)) }
+        coVerify(exactly = 1) { resourcesRepository.batchInsertResources(listOf(doc1).map { it.toKotlinx().jsonObject }) }
         coVerify(exactly = 0) { resourcesRepository.removeDeletedResources(any()) }
     }
 
@@ -293,14 +296,14 @@ class SyncManagerTest {
         rows.add(com.google.gson.JsonObject().apply { add("doc", doc1) })
 
         // Page returns 2 raw rows, which is < batchSize (100)
-        coEvery { syncRepository.fetchResourceRows(100, 0) } returns rows
-        every { syncRepository.filterSyncableResourceDocs(rows) } returns listOf(doc1)
-        coEvery { resourcesRepository.batchInsertResources(listOf(doc1)) } returns listOf("res_1")
+        coEvery { syncRepository.fetchResourceRows(100, 0) } returns rows.toKotlinx().jsonArray
+        every { syncRepository.filterSyncableResourceDocs(rows.toKotlinx().jsonArray) } returns listOf(doc1).map { it.toKotlinx().jsonObject }
+        coEvery { resourcesRepository.batchInsertResources(listOf(doc1).map { it.toKotlinx().jsonObject }) } returns listOf("res_1")
 
         syncManager.start(listener, "sync", listOf())
 
         // Ensure fetchResourceRows was called only once (paging stopped because raw rows.size() < 100)
         coVerify(exactly = 1) { syncRepository.fetchResourceRows(100, 0) }
-        coVerify(exactly = 1) { resourcesRepository.batchInsertResources(listOf(doc1)) }
+        coVerify(exactly = 1) { resourcesRepository.batchInsertResources(listOf(doc1).map { it.toKotlinx().jsonObject }) }
     }
 }

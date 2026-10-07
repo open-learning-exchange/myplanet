@@ -1,12 +1,16 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import com.google.gson.reflect.TypeToken
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.CourseStepDao
 import org.ole.planet.myplanet.data.room.dao.ExamDao
@@ -18,7 +22,7 @@ import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.CoursesProgressRow
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KJson
 
 class ProgressRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
@@ -55,7 +59,7 @@ class ProgressRepositoryImpl @Inject constructor(
 
     override suspend fun fetchCourseData(userId: String?): JsonArray {
         val mycourses = coursesRepositoryLazy.get().getMyCourses(userId ?: "")
-        val arr = JsonArray()
+        val arr = mutableListOf<JsonElement>()
         val courseIds = mycourses.mapNotNull { it.courseId }
         val courseProgress = getCourseProgress(courseIds, userId)
 
@@ -78,18 +82,18 @@ class ProgressRepositoryImpl @Inject constructor(
             }
 
         mycourses.forEach { course ->
-            val obj = JsonObject()
-            obj.addProperty("courseName", course.courseTitle)
-            obj.addProperty("courseId", course.courseId)
+            val obj = LinkedHashMap<String, JsonElement>()
+            obj["courseName"] = JsonPrimitive(course.courseTitle)
+            obj["courseId"] = JsonPrimitive(course.courseId)
 
             val progressState = courseProgress[course.courseId]
-            if (progressState != null) {
-                val progressObj = JsonObject()
-                progressObj.addProperty("max", progressState.max)
-                progressObj.addProperty("current", progressState.current)
-                obj.add("progress", progressObj)
+            obj["progress"] = if (progressState != null) {
+                buildJsonObject {
+                    put("max", progressState.max)
+                    put("current", progressState.current)
+                }
             } else {
-                obj.add("progress", null)
+                JsonNull
             }
 
             val submissions = submissionsByCourseId[course.courseId].orEmpty()
@@ -100,9 +104,9 @@ class ProgressRepositoryImpl @Inject constructor(
             if (!submissions.isNullOrEmpty()) {
                 submissionMap(submissions, examIds, obj)
             }
-            arr.add(obj)
+            arr.add(JsonObject(obj))
         }
-        return arr
+        return JsonArray(arr)
     }
 
     override suspend fun getCourseProgressRows(userId: String?): List<CoursesProgressRow> = withContext(dispatcherProvider.default) {
@@ -112,22 +116,21 @@ class ProgressRepositoryImpl @Inject constructor(
 
     private fun parseCourseProgressRows(jsonArray: JsonArray): List<CoursesProgressRow> {
         return jsonArray.mapNotNull { element ->
-            if (!element.isJsonObject) return@mapNotNull null
-            val obj = element.asJsonObject
+            val obj = element as? JsonObject ?: return@mapNotNull null
 
-            val courseId = if (obj.has("courseId") && !obj.get("courseId").isJsonNull) obj.get("courseId").asString else null
-            val courseName = if (obj.has("courseName") && !obj.get("courseName").isJsonNull) obj.get("courseName").asString else null
+            val courseId = obj["courseId"]?.takeIf { it !is JsonNull }?.let { KJson.gsonAsString(it) }
+            val courseName = obj["courseName"]?.takeIf { it !is JsonNull }?.let { KJson.gsonAsString(it) }
             if (courseId == null || courseName == null) return@mapNotNull null
 
-            val progressObj = obj.get("progress")?.takeIf { it.isJsonObject }?.asJsonObject
-            val progressCurrent = progressObj?.get("current")?.takeIf { !it.isJsonNull }?.asInt
-            val progressMax = progressObj?.get("max")?.takeIf { !it.isJsonNull }?.asInt
+            val progressObj = obj["progress"] as? JsonObject
+            val progressCurrent = progressObj?.get("current")?.takeIf { it !is JsonNull }?.let { KJson.gsonAsInt(it) }
+            val progressMax = progressObj?.get("max")?.takeIf { it !is JsonNull }?.let { KJson.gsonAsInt(it) }
 
-            val mistakes = obj.get("mistakes")?.takeIf { !it.isJsonNull }?.asInt
+            val mistakes = obj["mistakes"]?.takeIf { it !is JsonNull }?.let { KJson.gsonAsInt(it) }
 
-            val stepMistakeElem = obj.get("stepMistake")
-            val stepMistake: Map<String, Int>? = if (stepMistakeElem != null && !stepMistakeElem.isJsonNull) {
-                GsonUtils.gson.fromJson(stepMistakeElem, stepMistakeMapType)
+            val stepMistakeElem = obj["stepMistake"]
+            val stepMistake: Map<String, Int>? = if (stepMistakeElem != null && stepMistakeElem !is JsonNull) {
+                KJson.asJsonObject(stepMistakeElem).entries.associate { (key, value) -> key to KJson.gsonAsInt(value) }
             } else {
                 null
             }
@@ -170,7 +173,7 @@ class ProgressRepositoryImpl @Inject constructor(
     }
 
     private suspend fun submissionMap(
-        submissions: List<Submission>, examIds: List<String>, obj: JsonObject
+        submissions: List<Submission>, examIds: List<String>, obj: MutableMap<String, JsonElement>
     ) {
         val examIndexMap = HashMap<String, String>()
         examIds.forEachIndexed { index, id ->
@@ -204,8 +207,9 @@ class ProgressRepositoryImpl @Inject constructor(
                     }
                 }
             }
-            obj.add("stepMistake", GsonUtils.gson.toJsonTree(mistakesMap).asJsonObject)
-            obj.addProperty("mistakes", totalMistakes)
+            // In the map's own order, as Gson's toJsonTree wrote it.
+            obj["stepMistake"] = JsonObject(mistakesMap.mapValues { (_, count) -> JsonPrimitive(count) })
+            obj["mistakes"] = JsonPrimitive(totalMistakes)
         }
     }
 
@@ -279,7 +283,7 @@ class ProgressRepositoryImpl @Inject constructor(
         existingProgress: CourseProgress?,
         localRecord: CourseProgress?
     ): CourseProgress {
-        val docId = GsonUtils.getString("_id", act)
+        val docId = KJson.getString("_id", act)
         val localPassed = localRecord?.passed ?: false
         val courseProgress = existingProgress
             ?: localRecord
@@ -287,17 +291,17 @@ class ProgressRepositoryImpl @Inject constructor(
 
         courseProgress.id = docId
         courseProgress._id = docId
-        courseProgress._rev = GsonUtils.getString("_rev", act)
+        courseProgress._rev = KJson.getString("_rev", act)
         if (courseProgress.passed != true) {
-            courseProgress.passed = GsonUtils.getBoolean("passed", act) || localPassed
+            courseProgress.passed = KJson.getBoolean("passed", act) || localPassed
         }
-        courseProgress.stepNum = GsonUtils.getInt("stepNum", act)
-        courseProgress.userId = GsonUtils.getString("userId", act)
-        courseProgress.parentCode = GsonUtils.getString("parentCode", act)
-        courseProgress.courseId = GsonUtils.getString("courseId", act)
-        courseProgress.createdOn = GsonUtils.getString("createdOn", act)
-        courseProgress.createdDate = GsonUtils.getLong("createdDate", act)
-        courseProgress.updatedDate = GsonUtils.getLong("updatedDate", act)
+        courseProgress.stepNum = KJson.getInt("stepNum", act)
+        courseProgress.userId = KJson.getString("userId", act)
+        courseProgress.parentCode = KJson.getString("parentCode", act)
+        courseProgress.courseId = KJson.getString("courseId", act)
+        courseProgress.createdOn = KJson.getString("createdOn", act)
+        courseProgress.createdDate = KJson.getLong("createdDate", act)
+        courseProgress.updatedDate = KJson.getLong("updatedDate", act)
         return courseProgress
     }
 
@@ -313,10 +317,10 @@ class ProgressRepositoryImpl @Inject constructor(
         val syncKeys = docs.map { act ->
             CourseProgressSyncKeys(
                 doc = act,
-                docId = GsonUtils.getString("_id", act),
-                courseId = GsonUtils.getString("courseId", act),
-                userId = GsonUtils.getString("userId", act),
-                stepNum = GsonUtils.getInt("stepNum", act)
+                docId = KJson.getString("_id", act),
+                courseId = KJson.getString("courseId", act),
+                userId = KJson.getString("userId", act),
+                stepNum = KJson.getInt("stepNum", act)
             )
         }
 
@@ -361,9 +365,9 @@ class ProgressRepositoryImpl @Inject constructor(
 
     override fun findProgressForCourse(courseData: JsonArray, courseId: String): JsonObject? {
         courseData.forEach { element ->
-            val course = element.asJsonObject
-            if (GsonUtils.getString("courseId", course) == courseId) {
-                return course.getAsJsonObject("progress")
+            val course = KJson.asJsonObject(element)
+            if (KJson.getString("courseId", course) == courseId) {
+                return course["progress"]?.let { it as? JsonObject ?: throw ClassCastException("Not a JSON Object: $it") }
             }
         }
         return null
@@ -375,9 +379,5 @@ class ProgressRepositoryImpl @Inject constructor(
 
     override suspend fun markCourseProgressUploaded(localId: String, remoteId: String, rev: String): Boolean {
         return courseProgressDao.markUploaded(localId, remoteId, rev) != 0
-    }
-
-    companion object {
-        private val stepMistakeMapType = object : TypeToken<Map<String, Int>>() {}.type
     }
 }

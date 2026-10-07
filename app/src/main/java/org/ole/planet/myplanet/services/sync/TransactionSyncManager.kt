@@ -59,7 +59,6 @@ import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
-import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
 @Singleton
@@ -99,9 +98,8 @@ class TransactionSyncManager @Inject constructor(
     
     /**
      * Each handler hands its writer the trees the writers have always seen: the page as it looked
-     * after the response was bridged to Gson on arrival. Writers on kotlinx get it through
-     * [bridged] (numbers held as Gson held them, see [withGsonBridgedNumbers]); the writers still
-     * on Gson get the page bridged with [toGson].
+     * after the response was bridged to Gson on arrival, through [bridged] (numbers held as Gson
+     * held them, see [withGsonBridgedNumbers]).
      */
     private val tableSyncHandlers: Map<String, suspend (JsonArray) -> Unit> = mapOf(
         "news" to { arr -> voicesRepository.insertNewsList(extractDocs(arr).bridged()) },
@@ -109,14 +107,14 @@ class TransactionSyncManager @Inject constructor(
         "chat_history" to { arr -> chatRepository.insertChatHistoryFromSync(rowObjects(arr).bridged()) },
         "tablet_users" to { arr -> userSyncRepository.insertUsersFromSync(rowObjects(arr).bridged()) },
         "meetups" to { arr -> eventsSyncWriter.insertMeetupsFromSync(extractDocs(arr).bridged()) },
-        "login_activities" to { arr -> activitiesRepository.insertLoginActivitiesFromSync(extractDocs(arr).toGsonList()) },
-        "courses_progress" to { arr -> progressRepository.insertCourseProgressFromSync(extractDocs(arr).toGsonList()) },
+        "login_activities" to { arr -> activitiesRepository.insertLoginActivitiesFromSync(extractDocs(arr).bridged()) },
+        "courses_progress" to { arr -> progressRepository.insertCourseProgressFromSync(extractDocs(arr).bridged()) },
         "ratings" to { arr -> ratingsRepository.insertRatingsFromSync(extractDocs(arr).bridged()) },
         "certifications" to { arr -> coursesRepository.insertCertificationsFromSync(arr.bridged()) },
-        "tags" to { arr -> tagsRepository.insert(extractDocs(arr).toGsonList()) },
+        "tags" to { arr -> tagsRepository.insert(extractDocs(arr).bridged()) },
         "team_activities" to { arr -> teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(arr.bridged()) },
         "tasks" to { arr -> teamsSyncRepository.get().bulkInsertTasksFromSync(arr.bridged()) },
-        "notifications" to { arr -> notificationsRepository.bulkInsertFromSync(arr.toGson()) },
+        "notifications" to { arr -> notificationsRepository.bulkInsertFromSync(arr.bridged()) },
         "achievements" to { arr -> userSyncRepository.bulkInsertAchievementsFromSync(arr.bridged()) },
         "health" to { arr -> healthRepository.bulkInsertFromSync(arr.bridged()) },
         "courses" to { arr ->
@@ -129,8 +127,6 @@ class TransactionSyncManager @Inject constructor(
         "submissions" to { arr -> submissionsRepository.bulkInsertFromSync(arr.bridged()) },
         "teams" to { arr -> teamsSyncRepository.get().bulkInsertFromSync(arr.bridged()) }
     )
-
-    private fun List<JsonObject>.toGsonList() = map { it.toGson() }
 
     private fun List<JsonObject>.bridged() = map { it.withGsonBridgedNumbers() }
 

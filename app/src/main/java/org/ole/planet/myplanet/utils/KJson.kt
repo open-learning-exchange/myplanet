@@ -106,6 +106,37 @@ object KJson {
     }
 
     /**
+     * Gson's `JsonElement.getAsLong()` on a tree Gson saw through [toGson]: a number as its
+     * bridged `Long`/`Double` value (a `Double` truncated), any other primitive parsed with
+     * `Long.parseLong` (so a boolean or non-numeric string throws `NumberFormatException`), a
+     * one-element array as its element; throws where Gson throws, like [gsonAsString].
+     */
+    fun gsonAsLong(element: JsonElement?): Long = when (element) {
+        null -> throw NullPointerException("JsonElement is null")
+        is JsonNull -> throw UnsupportedOperationException("JsonNull")
+        is JsonPrimitive -> when (val value = if (element.isString) element.content else bridged(element)) {
+            is Long -> value
+            is Double -> value.toLong()
+            else -> java.lang.Long.parseLong(value.toString())
+        }
+        is JsonObject -> throw UnsupportedOperationException("JsonObject")
+        is JsonArray -> if (element.size == 1) gsonAsLong(element[0]) else throw IllegalStateException("Array must have size 1, but has size ${element.size}")
+    }
+
+    /** Gson's `JsonElement.getAsInt()`, as [gsonAsLong]: a number narrowed like `Number.intValue()`, other text by `Integer.parseInt`. */
+    fun gsonAsInt(element: JsonElement?): Int = when (element) {
+        null -> throw NullPointerException("JsonElement is null")
+        is JsonNull -> throw UnsupportedOperationException("JsonNull")
+        is JsonPrimitive -> when (val value = if (element.isString) element.content else bridged(element)) {
+            is Long -> value.toInt()
+            is Double -> value.toInt()
+            else -> Integer.parseInt(value.toString())
+        }
+        is JsonObject -> throw UnsupportedOperationException("JsonObject")
+        is JsonArray -> if (element.size == 1) gsonAsInt(element[0]) else throw IllegalStateException("Array must have size 1, but has size ${element.size}")
+    }
+
+    /**
      * Gson's `fromJson(text, JsonElement::class.java)`, through [GsonLenientParser]: `null` for
      * null text or an empty document, Gson's lenient grammar (single quotes, unquoted tokens as
      * strings, comments, ...), and [SerializationException] on malformed text. The result keeps

@@ -3,8 +3,6 @@ package org.ole.planet.myplanet.repository
 import android.content.Context
 import android.util.Log
 import androidx.sqlite.db.SimpleSQLiteQuery
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.IOException
@@ -19,7 +17,12 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
@@ -42,7 +45,7 @@ import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -50,8 +53,6 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.distinctByContent
-import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toKotlinx
 
 @Singleton
 class ResourcesRepositoryImpl @Inject constructor(
@@ -468,14 +469,15 @@ class ResourcesRepositoryImpl @Inject constructor(
         levels: Set<String>,
         mediums: Set<String>
     ) {
-        val filter = JsonObject().apply {
-            add("tags", TagEntity.getTagsArray(tags).toGson())
-            add("subjects", getJsonArrayFromList(subjects))
-            add("language", getJsonArrayFromList(languages))
-            add("level", getJsonArrayFromList(levels))
-            add("mediaType", getJsonArrayFromList(mediums))
+        val filter = buildJsonObject {
+            put("tags", TagEntity.getTagsArray(tags))
+            put("subjects", getJsonArrayFromList(subjects))
+            put("language", getJsonArrayFromList(languages))
+            put("level", getJsonArrayFromList(levels))
+            put("mediaType", getJsonArrayFromList(mediums))
         }
-        val filterPayload = GsonUtils.gson.toJson(filter)
+        // Stored text: Gson().toJson's bytes.
+        val filterPayload = KJson.gsonToJson(filter)
 
         searchActivityDao.insert(
             SearchActivity(
@@ -491,11 +493,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         )
     }
 
-    private fun getJsonArrayFromList(list: Set<String>): JsonArray {
-        val array = JsonArray()
-        list.forEach { array.add(it) }
-        return array
-    }
+    private fun getJsonArrayFromList(list: Set<String>): JsonArray = JsonArray(list.map { JsonPrimitive(it) })
 
     override suspend fun downloadResources(resources: List<MyLibrary>): Boolean {
         return try {
@@ -583,9 +581,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun getMyLibIds(userId: String): JsonArray {
         val ids = myLibraryDao.getIdsForUserPattern(userIdPattern(userId))
-        val jsonArray = JsonArray()
-        ids.forEach { jsonArray.add(it) }
-        return jsonArray
+        return JsonArray(ids.map { JsonPrimitive(it) })
     }
 
     override suspend fun removeResourceFromShelf(resourceId: String, userId: String) {
@@ -643,7 +639,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun batchInsertMyLibrary(shelfId: String?, documents: List<JsonObject>): Int {
         var processedCount = 0
 
-        val resourceIds = documents.mapNotNull { GsonUtils.getString("_id", it).takeIf { id -> id.isNotBlank() } }
+        val resourceIds = documents.mapNotNull { KJson.getString("_id", it).takeIf { id -> id.isNotBlank() } }
         val existingItems = mutableMapOf<String, MyLibrary>()
         if (resourceIds.isNotEmpty()) {
             resourceIds.chunked(900).forEach { chunk ->
@@ -654,11 +650,11 @@ class ResourcesRepositoryImpl @Inject constructor(
         val librariesToUpsert = mutableListOf<MyLibrary>()
         documents.forEach { doc ->
             try {
-                val resourceId = GsonUtils.getString("_id", doc)
+                val resourceId = KJson.getString("_id", doc)
                 val existing = existingItems[resourceId]
                 val library = MyLibrary.insertMyLibrary(
                     MyLibrary.Companion.InsertParams(
-                        doc = doc.toKotlinx().jsonObject,
+                        doc = doc,
                         spm = sharedPrefManager,
                         context = context,
                         userId = shelfId,
@@ -688,7 +684,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val validDocs = ArrayList<Pair<JsonObject, String>>(documents.size)
         val resourceIds = ArrayList<String>(documents.size)
         for (doc in documents) {
-            val id = GsonUtils.getString("_id", doc)
+            val id = KJson.getString("_id", doc)
             if (id.isNotBlank() && !id.startsWith("_design")) {
                 validDocs.add(doc to id)
                 resourceIds.add(id)
@@ -707,7 +703,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                 val existing = existingItems[_id]
                 val library = MyLibrary.insertMyLibrary(
                     MyLibrary.Companion.InsertParams(
-                        doc = doc.toKotlinx().jsonObject,
+                        doc = doc,
                         spm = sharedPrefManager,
                         context = context,
                         existing = existing
@@ -959,38 +955,36 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override fun serializeForUpload(library: MyLibrary, user: UserEntity?): JsonObject {
-        return JsonObject().apply {
-            addProperty("title", library.title)
-            addProperty("uploadDate", timeProvider.now())
-            addProperty("createdDate", library.createdDate)
-            addProperty("filename", FileUtils.getFileNameFromUrl(library.resourceLocalAddress))
-            addProperty("author", library.author ?: "")
-            addProperty("addedBy", user?.id)
-            addProperty("medium", library.medium)
-            addProperty("description", library.description)
-            addProperty("year", library.year)
-            addProperty("language", library.language)
-            addProperty("publisher", library.publisher ?: "")
-            addProperty("linkToLicense", library.linkToLicense ?: "")
-            add("subject", GsonUtils.getAsJsonArray(library.subject))
-            add("level", GsonUtils.getAsJsonArray(library.level))
-            addProperty("resourceType", library.resourceType)
-            addProperty("openWith", library.openWith)
-            addProperty("mediaType", library.mediaType ?: "other")
-            add("resourceFor", GsonUtils.getAsJsonArray(library.resourceFor))
-            addProperty("private", library.isPrivate)
+        return buildJsonObject {
+            put("title", library.title)
+            put("uploadDate", timeProvider.now())
+            put("createdDate", library.createdDate)
+            put("filename", FileUtils.getFileNameFromUrl(library.resourceLocalAddress))
+            put("author", library.author ?: "")
+            put("addedBy", user?.id)
+            put("medium", library.medium)
+            put("description", library.description)
+            put("year", library.year)
+            put("language", library.language)
+            put("publisher", library.publisher ?: "")
+            put("linkToLicense", library.linkToLicense ?: "")
+            put("subject", KJson.getAsJsonArray(library.subject))
+            put("level", KJson.getAsJsonArray(library.level))
+            put("resourceType", library.resourceType)
+            put("openWith", library.openWith)
+            put("mediaType", library.mediaType ?: "other")
+            put("resourceFor", KJson.getAsJsonArray(library.resourceFor))
+            put("private", library.isPrivate)
             if (library.isPrivate && library.privateFor != null) {
-                val privateForObj = JsonObject()
-                privateForObj.addProperty("teams", library.privateFor)
-                add("privateFor", privateForObj)
+                putJsonObject("privateFor") { put("teams", library.privateFor) }
             }
-            addProperty("isDownloadable", true)
-            addProperty("sourcePlanet", user?.planetCode)
-            addProperty("resideOn", user?.planetCode)
-            addProperty("updatedDate", timeProvider.now())
+            put("isDownloadable", true)
+            put("sourcePlanet", user?.planetCode)
+            put("resideOn", user?.planetCode)
+            put("updatedDate", timeProvider.now())
             addDocumentOrigin()
-            addProperty("deviceName", NetworkUtils.getDeviceName())
-            addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
+            put("deviceName", NetworkUtils.getDeviceName())
+            put("customDeviceName", deviceNameProvider.getCustomDeviceName())
         }
     }
 }

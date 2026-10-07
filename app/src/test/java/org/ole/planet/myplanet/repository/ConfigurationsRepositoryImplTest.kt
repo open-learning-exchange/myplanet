@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.repository
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
-import com.google.gson.Gson
 import io.mockk.clearStaticMockk
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -122,7 +121,6 @@ class ConfigurationsRepositoryImplTest {
             dispatcherProvider,
             TestTimeProvider(),
             storagePathResolver,
-            Gson(),
             appVersionProvider
         )
     }

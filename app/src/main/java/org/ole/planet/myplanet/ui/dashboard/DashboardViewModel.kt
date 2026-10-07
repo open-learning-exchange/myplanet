@@ -47,6 +47,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NotificationConfig
 import org.ole.planet.myplanet.utils.RetryUtils
+import org.ole.planet.myplanet.utils.toGson
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
@@ -321,7 +322,8 @@ class DashboardViewModel @Inject constructor(
                     val courseName = courseNameDeferred.await()
                     val hasUnfinishedSurvey = hasUnfinishedSurveyDeferred.await()
 
-                    val progress = progressRepository.findProgressForCourse(courseData, courseId)
+                    // The challenge status still reads Gson; bridged until the UI moves.
+                    val progress = progressRepository.findProgressForCourse(courseData, courseId)?.toGson()
 
                     val today = LocalDate.now()
                     val endDate = LocalDate.of(2025, 1, 16)

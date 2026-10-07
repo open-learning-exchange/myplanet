@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import dagger.Lazy
 import java.util.Calendar
 import java.util.Date
@@ -11,6 +9,8 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.model.AppNotification
@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.model.TeamNotificationInfo
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.TaskNotificationUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.toSyncDocuments
@@ -430,37 +431,41 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
+    /** Gson's `get(name)?.asString`: absent is `null`; a JSON `null`, object or longer array throws. */
+    private fun JsonObject.gsonString(name: String): String? = this[name]?.let { KJson.gsonAsString(it) }
+
     private fun parseNotification(doc: JsonObject): AppNotification? {
-        val id = doc.get("_id")?.asString ?: return null
-        val rawType = doc.get("type")?.asString ?: ""
-        val message = doc.get("message")?.asString ?: ""
-        val link = doc.get("link")?.asString
+        val id = doc.gsonString("_id") ?: return null
+        val rawType = doc.gsonString("type") ?: ""
+        val message = doc.gsonString("message") ?: ""
+        val link = doc.gsonString("link")
         return AppNotification().apply {
             this.id = id
-            userId = doc.get("user")?.asString ?: ""
+            userId = doc.gsonString("user") ?: ""
             this.message = message
             type = rawType
             subType = extractTeamSubtype(rawType, doc)
             relatedId = extractRelatedId(rawType, link, doc)
             this.link = link
-            priority = doc.get("priority")?.asInt ?: 0
-            rev = doc.get("_rev")?.asString
-            isRead = doc.get("status")?.asString != "unread"
-            createdAt = doc.get("time")?.let { Date(it.asLong) } ?: Date(timeProvider.now())
+            priority = doc["priority"]?.let { KJson.gsonAsInt(it) } ?: 0
+            rev = doc.gsonString("_rev")
+            isRead = doc.gsonString("status") != "unread"
+            createdAt = doc["time"]?.let { Date(KJson.gsonAsLong(it)) } ?: Date(timeProvider.now())
             isFromServer = true
         }
     }
 
     private fun extractTeamSubtype(rawType: String, doc: JsonObject): String? {
         if (rawType != "team") return null
-        val activeTab = doc.getAsJsonObject("linkParams")?.get("activeTab")?.asString
+        val linkParams = doc["linkParams"]?.let { it as? JsonObject ?: throw ClassCastException("Not a JSON Object: $it") }
+        val activeTab = linkParams?.gsonString("activeTab")
         return if (activeTab == "applicantTab") "join_request" else null
     }
 
     private fun extractRelatedId(rawType: String, link: String?, doc: JsonObject): String? {
         return when (rawType) {
-            "team" -> doc.get("item")?.asString
-            "replyMessage" -> doc.get("replyTo")?.asString
+            "team" -> doc.gsonString("item")
+            "replyMessage" -> doc.gsonString("replyTo")
             "newTask" -> extractIdFromLink(link)
             else -> null
         }

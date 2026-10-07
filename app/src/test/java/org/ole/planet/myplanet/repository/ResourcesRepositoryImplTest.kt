@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -55,6 +56,12 @@ import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
+import org.ole.planet.myplanet.utils.asBoolean
+import org.ole.planet.myplanet.utils.asString
+import org.ole.planet.myplanet.utils.getAsJsonArray
+import org.ole.planet.myplanet.utils.getAsJsonObject
+import org.ole.planet.myplanet.utils.size
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ResourcesRepositoryImplTest {
@@ -808,7 +815,7 @@ class ResourcesRepositoryImplTest {
         coEvery { myLibraryDao.getByIds(any()) } returns emptyList()
         coEvery { myLibraryDao.upsertAll(any()) } returns Unit
 
-        repository.batchInsertResources(documents)
+        repository.batchInsertResources(documents.map { it.toKotlinx().jsonObject })
 
         coVerify(exactly = 1) { myLibraryDao.upsertAll(match { it.size == 5 }) }
         coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
@@ -829,7 +836,7 @@ class ResourcesRepositoryImplTest {
             addProperty("title", "Resource 2")
         }
 
-        val documents = listOf(docBlank, doc1, docDesign, doc2)
+        val documents = listOf(docBlank, doc1, docDesign, doc2).map { it.toKotlinx().jsonObject }
 
         coEvery { myLibraryDao.getByIds(listOf("id_1", "id_2")) } returns emptyList()
         coEvery { myLibraryDao.upsertAll(any()) } returns Unit
@@ -848,10 +855,10 @@ class ResourcesRepositoryImplTest {
             addProperty("_rev", "1-rev")
             addProperty("title", "Valid 1")
         }
-        val docNull = mockk<com.google.gson.JsonObject>()
-        every { docNull.entrySet() } returns mutableSetOf()
-        every { docNull.has("_id") } returns true
-        every { docNull.get("_id") } returns com.google.gson.JsonPrimitive("null_doc")
+        val docNull = mockk<kotlinx.serialization.json.JsonObject>()
+        every { docNull.entries } returns mutableSetOf()
+        every { docNull.containsKey("_id") } returns true
+        every { docNull["_id"] } returns kotlinx.serialization.json.JsonPrimitive("null_doc")
         val docThrow = com.google.gson.JsonObject().apply {
             addProperty("_id", "throw_doc")
             addProperty("_attachments", "invalid_type_causes_throw")
@@ -862,7 +869,7 @@ class ResourcesRepositoryImplTest {
             addProperty("title", "Valid 2")
         }
 
-        val documents = listOf(docValid1, docNull, docThrow, docValid2)
+        val documents = listOf(docValid1.toKotlinx().jsonObject, docNull, docThrow.toKotlinx().jsonObject, docValid2.toKotlinx().jsonObject)
 
         coEvery { myLibraryDao.getByIds(listOf("valid_1", "null_doc", "throw_doc", "valid_2")) } returns emptyList()
         coEvery { myLibraryDao.upsertAll(any()) } returns Unit
@@ -887,7 +894,7 @@ class ResourcesRepositoryImplTest {
         coEvery { myLibraryDao.getByIds(any()) } returns emptyList()
         coEvery { myLibraryDao.upsertAll(any()) } returns Unit
 
-        repository.batchInsertMyLibrary("shelfUserA", documents)
+        repository.batchInsertMyLibrary("shelfUserA", documents.map { it.toKotlinx().jsonObject })
 
         coVerify(exactly = 1) { myLibraryDao.upsertAll(match { it.size == 5 }) }
         coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
@@ -1204,7 +1211,7 @@ class ResourcesRepositoryImplTest {
         coEvery { myLibraryDao.upsertAll(any()) } returns Unit
 
         try {
-            repository.batchInsertResources(listOf(doc1, doc2))
+            repository.batchInsertResources(listOf(doc1, doc2).map { it.toKotlinx().jsonObject })
 
             coVerify(exactly = 0) { myLibraryDao.getByResourceId(any()) }
             // Expect exactly 2 upsertAll calls: 1 for inserting documents initially, 1 for reconcileHtmlLibraries with both items
@@ -1239,7 +1246,7 @@ class ResourcesRepositoryImplTest {
         coEvery { myLibraryDao.upsertAll(any()) } returns Unit
 
         try {
-            repository.batchInsertResources(listOf(doc1))
+            repository.batchInsertResources(listOf(doc1).map { it.toKotlinx().jsonObject })
 
             coVerify(exactly = 0) { myLibraryDao.getByResourceId(any()) }
             coVerify(exactly = 1) {

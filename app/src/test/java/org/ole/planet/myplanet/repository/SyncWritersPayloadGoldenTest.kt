@@ -37,7 +37,6 @@ import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
-import org.ole.planet.myplanet.di.NetworkModule
 import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.Community
@@ -448,7 +447,7 @@ class SyncWritersPayloadGoldenTest {
         every { serverUrlMapper.processUrl(any()) } answers { ServerUrlMapper.UrlMapping(firstArg()) }
         return relaxedInstance<ConfigurationsRepositoryImpl>(
             api, scope, sharedPrefManager, serverUrlMapper, TestDispatcherProvider(UnconfinedTestDispatcher(scope.testScheduler)), time,
-            NetworkModule.providePlainGson(), mockk<AppVersionProvider> { every { versionName } returns "0.70.64" },
+            mockk<AppVersionProvider> { every { versionName } returns "0.70.64" },
         )
     }
 

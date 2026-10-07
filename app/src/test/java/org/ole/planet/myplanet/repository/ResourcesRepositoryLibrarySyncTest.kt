@@ -6,6 +6,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -22,6 +23,7 @@ import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.toKotlinx
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
@@ -93,7 +95,7 @@ class ResourcesRepositoryLibrarySyncTest {
                 resourceDoc("res1", "Algebra"),
                 resourceDoc("res2", "Biology"),
                 JsonObject().apply { addProperty("_id", "_design/resources") },
-            )
+            ).map { it.toKotlinx().jsonObject }
         )
 
         assertEquals(setOf("res1", "res2"), savedIds.toSet())
@@ -108,12 +110,12 @@ class ResourcesRepositoryLibrarySyncTest {
 
     @Test
     fun `batchInsertMyLibrary merges shelf ids so one resource can span shelves`() = runBlocking {
-        val count1 = repository.batchInsertMyLibrary("shelfUserA", listOf(resourceDoc("res1", "Algebra")))
+        val count1 = repository.batchInsertMyLibrary("shelfUserA", listOf(resourceDoc("res1", "Algebra")).map { it.toKotlinx().jsonObject })
         assertEquals(1, count1)
         assertEquals(listOf("shelfUserA"), myLibraryDao.getById("res1")?.userId)
 
         // The same resource synced under a second shelf must merge, not overwrite.
-        val count2 = repository.batchInsertMyLibrary("shelfUserB", listOf(resourceDoc("res1", "Algebra")))
+        val count2 = repository.batchInsertMyLibrary("shelfUserB", listOf(resourceDoc("res1", "Algebra")).map { it.toKotlinx().jsonObject })
         assertEquals(1, count2)
 
         val merged = myLibraryDao.getById("res1")?.userId
@@ -132,14 +134,14 @@ class ResourcesRepositoryLibrarySyncTest {
             addProperty("openWhichFile", "sudoku/index.html")
         }
 
-        repository.batchInsertResources(listOf(doc))
+        repository.batchInsertResources(listOf(doc).map { it.toKotlinx().jsonObject })
 
         assertEquals("sudoku/index.html", myLibraryDao.getById("sudoku")?.openWhichFile)
     }
 
     @Test
     fun `batchInsertResources leaves openWhichFile null when doc omits it`() = runBlocking {
-        repository.batchInsertResources(listOf(resourceDoc("res1", "Algebra")))
+        repository.batchInsertResources(listOf(resourceDoc("res1", "Algebra")).map { it.toKotlinx().jsonObject })
 
         assertNull(myLibraryDao.getById("res1")?.openWhichFile)
     }

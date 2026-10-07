@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonObject
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -8,7 +7,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.FinanceReportParams
@@ -17,7 +17,6 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
-import org.ole.planet.myplanet.utils.toKotlinx
 
 class EnterprisesRepositoryImpl @Inject constructor(
     private val storagePathResolver: StoragePathResolver,
@@ -28,26 +27,26 @@ class EnterprisesRepositoryImpl @Inject constructor(
 
     override suspend fun addReport(report: FinanceReportParams) {
         val reportId = UUID.randomUUID().toString()
-        val doc = JsonObject().apply {
-            addProperty("_id", reportId)
-            addProperty("createdDate", timeProvider.now())
-            addProperty("description", report.description)
-            addProperty("beginningBalance", report.beginningBalance)
-            addProperty("sales", report.sales)
-            addProperty("otherIncome", report.otherIncome)
-            addProperty("wages", report.wages)
-            addProperty("otherExpenses", report.otherExpenses)
-            addProperty("startDate", report.startDate)
-            addProperty("endDate", report.endDate)
-            addProperty("updatedDate", timeProvider.now())
-            addProperty("teamId", report.teamId)
-            addProperty("teamType", report.teamType)
-            addProperty("teamPlanetCode", report.teamPlanetCode)
-            addProperty("docType", "report")
-            addProperty("updated", true)
+        val doc = buildJsonObject {
+            put("_id", reportId)
+            put("createdDate", timeProvider.now())
+            put("description", report.description)
+            put("beginningBalance", report.beginningBalance)
+            put("sales", report.sales)
+            put("otherIncome", report.otherIncome)
+            put("wages", report.wages)
+            put("otherExpenses", report.otherExpenses)
+            put("startDate", report.startDate)
+            put("endDate", report.endDate)
+            put("updatedDate", timeProvider.now())
+            put("teamId", report.teamId)
+            put("teamType", report.teamType)
+            put("teamPlanetCode", report.teamPlanetCode)
+            put("docType", "report")
+            put("updated", true)
         }
         val reportEntry = MyTeam().apply { _id = reportId }
-        MyTeam.populateTeamFields(doc.toKotlinx().jsonObject, reportEntry)
+        MyTeam.populateTeamFields(doc, reportEntry)
         teamDao.upsert(reportEntry)
         if (report.imageName != null && report.imageData != null) {
             attachTeamImage(reportId, report.imageName, report.imageData)

@@ -1,9 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Log
-import com.google.gson.JsonArray
-import com.google.gson.JsonNull
-import com.google.gson.JsonObject
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -15,7 +12,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.Rows
@@ -26,16 +28,15 @@ import org.ole.planet.myplanet.services.sync.AdaptiveBatchProcessor
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.GsonUtils.getInt
-import org.ole.planet.myplanet.utils.GsonUtils.getJsonArray
-import org.ole.planet.myplanet.utils.GsonUtils.getJsonObject
-import org.ole.planet.myplanet.utils.GsonUtils.getString
-import org.ole.planet.myplanet.utils.GsonUtils.gson
+import org.ole.planet.myplanet.utils.KJson
+import org.ole.planet.myplanet.utils.KJson.getInt
+import org.ole.planet.myplanet.utils.KJson.getJsonArray
+import org.ole.planet.myplanet.utils.KJson.getJsonObject
+import org.ole.planet.myplanet.utils.KJson.getString
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toKotlinx
+import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
 @Singleton
 class SyncRepositoryImpl @Inject constructor(
@@ -56,10 +57,9 @@ class SyncRepositoryImpl @Inject constructor(
     private val shelfDispatchMap: Map<String, suspend (String?, List<JsonObject>) -> Int> by lazy {
         mapOf(
             "resources" to { shelfId, docs -> resourcesRepository.batchInsertMyLibrary(shelfId, docs) },
-            // Courses, meetups and teams already read kotlinx; their documents are bridged back until this repository moves.
-            "courses" to { shelfId, docs -> coursesRepository.batchInsertMyCourses(shelfId, docs.map { it.toKotlinx().jsonObject }) },
-            "meetups" to { _, docs -> eventsRepository.batchInsertMeetups(docs.map { it.toKotlinx().jsonObject }) },
-            "teams" to { _, docs -> teamsSyncRepository.batchInsertMyTeams(docs.map { it.toKotlinx().jsonObject }) }
+            "courses" to { shelfId, docs -> coursesRepository.batchInsertMyCourses(shelfId, docs) },
+            "meetups" to { _, docs -> eventsRepository.batchInsertMeetups(docs) },
+            "teams" to { _, docs -> teamsSyncRepository.batchInsertMyTeams(docs) }
         )
     }
 
@@ -81,7 +81,7 @@ class SyncRepositoryImpl @Inject constructor(
                         "${UrlUtils.getUrl()}/shelf/$shelfId"
                     )
                 }?.let {
-                    doc = it.body()?.toGson()
+                    doc = it.body()?.withGsonBridgedNumbers()
                 }
                 coroutineContext.ensureActive()
                 doc
@@ -118,7 +118,7 @@ class SyncRepositoryImpl @Inject constructor(
 
         try {
             val array = getJsonArray(shelfData.key, shelfDoc)
-            val validIds = array.filterNot { it is JsonNull }.map { it.asString }
+            val validIds = array.filterNot { it is JsonNull }.map { KJson.gsonAsString(it) }
 
             val batchSizer = AdaptiveBatchProcessor(initialSize = 50)
             var i = 0
@@ -132,8 +132,9 @@ class SyncRepositoryImpl @Inject constructor(
                 val batch = validIds.subList(i, end)
                 i = end
 
-                val keysObject = JsonObject()
-                keysObject.add("keys", gson.toJsonTree(batch))
+                val keysObject = buildJsonObject {
+                    put("keys", JsonArray(batch.map { JsonPrimitive(it) }))
+                }
 
                 // API call
                 val apiStartTime = timeProvider.elapsedRealtime()
@@ -143,10 +144,10 @@ class SyncRepositoryImpl @Inject constructor(
                         UrlUtils.header,
                         "application/json",
                         "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true",
-                        keysObject.toKotlinx().jsonObject
+                        keysObject
                     )
                 }?.let {
-                    response = it.body()?.toGson()
+                    response = it.body()?.withGsonBridgedNumbers()
                 }
                 val apiDuration = timeProvider.elapsedRealtime() - apiStartTime
 
@@ -158,14 +159,14 @@ class SyncRepositoryImpl @Inject constructor(
                 batchSizer.recordSuccess(apiDuration)
 
                 val responseRows = getJsonArray("rows", response)
-                logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum)", apiDuration, true, responseRows.size())
+                logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum)", apiDuration, true, responseRows.size)
 
                 if (responseRows.isEmpty()) continue
 
                 val documentsToProcess = mutableListOf<JsonObject>()
                 for (rowElement in responseRows) {
-                    val rowObj = rowElement.asJsonObject
-                    if (rowObj.has("doc")) {
+                    val rowObj = KJson.asJsonObject(rowElement)
+                    if (rowObj.containsKey("doc")) {
                         val doc = getJsonObject("doc", rowObj)
                         documentsToProcess.add(doc)
                     }
@@ -202,8 +203,8 @@ class SyncRepositoryImpl @Inject constructor(
         val response = ApiClient.executeWithRetryAndWrap {
             apiInterface.getJsonObject(header, "$url/resources/_all_docs?limit=0")
         }
-        val body = response?.body()?.toGson()
-        return if (body != null && body.has("total_rows")) {
+        val body = response?.body()
+        return if (body != null && body.containsKey("total_rows")) {
             getInt("total_rows", body)
         } else {
             null
@@ -216,15 +217,15 @@ class SyncRepositoryImpl @Inject constructor(
         val response = ApiClient.executeWithRetryAndWrap {
             apiInterface.getJsonObject(header, "$url/resources/_all_docs?include_docs=true&limit=$limit&skip=$skip")
         }
-        val body = response?.body()?.toGson() ?: return null
+        val body = response?.body()?.withGsonBridgedNumbers() ?: return null
         return getJsonArray("rows", body)
     }
 
     override fun filterSyncableResourceDocs(rows: JsonArray): List<JsonObject> {
         val validDocuments = mutableListOf<JsonObject>()
         for (rowElement in rows) {
-            val rowObj = rowElement.asJsonObject
-            if (rowObj.has("doc")) {
+            val rowObj = KJson.asJsonObject(rowElement)
+            if (rowObj.containsKey("doc")) {
                 val doc = getJsonObject("doc", rowObj)
                 val id = getString("_id", doc)
 

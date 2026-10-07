@@ -7,6 +7,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonObject
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
@@ -16,6 +17,7 @@ import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ResourcesRepositoryBenchmarkTest {
@@ -72,7 +74,7 @@ class ResourcesRepositoryBenchmarkTest {
         coEvery { myLibraryDao.getByIds(any()) } returns emptyList()
         coEvery { myLibraryDao.upsert(any()) } returns Unit
 
-        resourcesRepository.batchInsertMyLibrary(shelfId = "shelf1", documents = docs)
+        resourcesRepository.batchInsertMyLibrary(shelfId = "shelf1", documents = docs.map { it.toKotlinx().jsonObject })
 
         coVerify(exactly = 0) { myLibraryDao.getById(any()) }
         coVerify(exactly = 1) { myLibraryDao.getByIds(match { it.size == 100 }) }

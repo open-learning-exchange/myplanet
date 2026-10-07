@@ -37,7 +37,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import org.ole.planet.myplanet.R
@@ -69,7 +68,6 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
-import org.ole.planet.myplanet.utils.toKotlinx
 import org.ole.planet.myplanet.utils.toSyncDocuments
 import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
@@ -1200,8 +1198,7 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun uploadShelfData(user: UserEntity) {
         try {
             val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${user._id}").body()?.withGsonBridgedNumbers()
-            // ResourcesRepository is still on Gson; bridged until it moves.
-            val myLibs = resourcesRepositoryLazy.get().getMyLibIds(user.id ?: "").toKotlinx().jsonArray
+            val myLibs = resourcesRepositoryLazy.get().getMyLibIds(user.id ?: "")
             val myCourseIds = coursesRepositoryLazy.get().getMyCourseIds(user.id ?: "").withGsonBridgedNumbers()
             val shelfData = getShelfData(user.id, jsonDoc, myLibs, myCourseIds)
             apiInterface.putDoc(
