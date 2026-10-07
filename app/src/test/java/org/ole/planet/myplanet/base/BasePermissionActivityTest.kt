@@ -145,4 +145,93 @@ class BasePermissionActivityTest {
 
         assertTrue(result)
     }
+
+    @Test
+    fun `calling requestAllPermissions twice queries packageManager getPackageInfo exactly once`() {
+        mockkStatic(androidx.core.app.ActivityCompat::class)
+        try {
+            every { activity.requestAllPermissions() } answers { callOriginal() }
+            every { activity["isPermissionDeclaredInManifest"](any<String>()) } answers { callOriginal() }
+            val packageManager = mockk<PackageManager>()
+            val packageInfo = android.content.pm.PackageInfo().apply {
+                requestedPermissions = arrayOf(Manifest.permission.POST_NOTIFICATIONS, Manifest.permission.CAMERA)
+            }
+            every { activity.packageManager } returns packageManager
+            every { activity.packageName } returns "org.ole.planet.myplanet"
+            every { packageManager.getPackageInfo(any<String>(), any<Int>()) } returns packageInfo
+            every { ContextCompat.checkSelfPermission(any(), any()) } returns PackageManager.PERMISSION_DENIED
+            every { androidx.core.app.ActivityCompat.requestPermissions(any(), any(), any()) } returns Unit
+
+            activity.requestAllPermissions()
+            activity.requestAllPermissions()
+
+            io.mockk.verify(exactly = 1) { packageManager.getPackageInfo(any<String>(), any<Int>()) }
+        } finally {
+            unmockkStatic(androidx.core.app.ActivityCompat::class)
+        }
+    }
+
+    @Test
+    fun `when first getPackageInfo throws first pass requests no storage permissions and second pass queries again`() {
+        mockkStatic(androidx.core.app.ActivityCompat::class)
+        try {
+            every { activity.requestAllPermissions() } answers { callOriginal() }
+            every { activity["isPermissionDeclaredInManifest"](any<String>()) } answers { callOriginal() }
+            val packageManager = mockk<PackageManager>()
+            val packageInfo = android.content.pm.PackageInfo().apply {
+                requestedPermissions = arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
+            every { activity.packageManager } returns packageManager
+            every { activity.packageName } returns "org.ole.planet.myplanet"
+            every { packageManager.getPackageInfo(any<String>(), any<Int>()) } throws RuntimeException("Error")
+            every { ContextCompat.checkSelfPermission(any(), any()) } returns PackageManager.PERMISSION_DENIED
+
+            val slot1 = io.mockk.slot<Array<String>>()
+            val slot2 = io.mockk.slot<Array<String>>()
+            every { androidx.core.app.ActivityCompat.requestPermissions(any(), capture(slot1), any()) } returns Unit
+
+            activity.requestAllPermissions()
+
+            assertFalse(slot1.captured.contains(Manifest.permission.WRITE_EXTERNAL_STORAGE))
+            assertFalse(slot1.captured.contains(Manifest.permission.READ_EXTERNAL_STORAGE))
+
+            every { packageManager.getPackageInfo(any<String>(), any<Int>()) } returns packageInfo
+            every { androidx.core.app.ActivityCompat.requestPermissions(any(), capture(slot2), any()) } returns Unit
+
+            activity.requestAllPermissions()
+
+            assertTrue(slot2.captured.contains(Manifest.permission.WRITE_EXTERNAL_STORAGE))
+            assertTrue(slot2.captured.contains(Manifest.permission.READ_EXTERNAL_STORAGE))
+            io.mockk.verify(exactly = 3) { packageManager.getPackageInfo(any<String>(), any<Int>()) }
+        } finally {
+            unmockkStatic(androidx.core.app.ActivityCompat::class)
+        }
+    }
+
+    @Test
+    fun `permissions missing from requestedPermissions are not requested`() {
+        mockkStatic(androidx.core.app.ActivityCompat::class)
+        try {
+            every { activity.requestAllPermissions() } answers { callOriginal() }
+            every { activity["isPermissionDeclaredInManifest"](any<String>()) } answers { callOriginal() }
+            val packageManager = mockk<PackageManager>()
+            val packageInfo = android.content.pm.PackageInfo().apply {
+                requestedPermissions = arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            }
+            every { activity.packageManager } returns packageManager
+            every { activity.packageName } returns "org.ole.planet.myplanet"
+            every { packageManager.getPackageInfo(any<String>(), any<Int>()) } returns packageInfo
+            every { ContextCompat.checkSelfPermission(any(), any()) } returns PackageManager.PERMISSION_DENIED
+
+            val slot = io.mockk.slot<Array<String>>()
+            every { androidx.core.app.ActivityCompat.requestPermissions(any(), capture(slot), any()) } returns Unit
+
+            activity.requestAllPermissions()
+
+            assertTrue(slot.captured.contains(Manifest.permission.WRITE_EXTERNAL_STORAGE))
+            assertFalse(slot.captured.contains(Manifest.permission.READ_EXTERNAL_STORAGE))
+        } finally {
+            unmockkStatic(androidx.core.app.ActivityCompat::class)
+        }
+    }
 }

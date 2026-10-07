@@ -28,9 +28,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.RetryOperation
-import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -87,14 +85,11 @@ class SettingsActivity : AppCompatActivity() {
     class SettingFragment : PreferenceFragmentCompat() {
         private val viewModel: SettingsViewModel by viewModels()
         @Inject
-        lateinit var profileDbHandler: UserSessionManager
-        @Inject
         lateinit var sharedPrefManager: SharedPrefManager
         @Inject
         lateinit var timeProvider: TimeProvider
         @Inject
         lateinit var dispatcherProvider: DispatcherProvider
-        var user: UserEntity? = null
         private var libraryList: List<MyLibrary>? = null
 
 
@@ -191,8 +186,7 @@ class SettingsActivity : AppCompatActivity() {
             requireContext().setTheme(R.style.PreferencesTheme)
             setPreferencesFromResource(R.xml.pref, rootKey)
             lifecycleScope.launch {
-                user = profileDbHandler.getUserModel()
-                blockGuestSwitches()
+                if (viewModel.isGuest()) blockGuestSwitches()
             }
 
             setBetaToggleOn()
@@ -228,8 +222,6 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         private fun blockGuestSwitches() {
-            if (user?.id?.startsWith("guest") != true) return
-
             fun processPreference(pref: Preference) {
                 when (pref) {
                     is SwitchPreference -> {
@@ -255,8 +247,7 @@ class SettingsActivity : AppCompatActivity() {
             refreshStorageBreakdownSummary()
             findPreference<Preference>("storage_breakdown")?.setOnPreferenceClickListener {
                 viewLifecycleOwner.lifecycleScope.launch {
-                    val userModel = profileDbHandler.getUserModel()
-                    if (userModel?.id?.startsWith("guest") == true) {
+                    if (viewModel.isGuest()) {
                         DialogUtils.guestDialog(requireActivity())
                     } else {
                         StorageBreakdownFragment().show(parentFragmentManager, "storage_breakdown")
@@ -298,8 +289,7 @@ class SettingsActivity : AppCompatActivity() {
             if (preference != null) {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
                     viewLifecycleOwner.lifecycleScope.launch {
-                        val userModel = profileDbHandler.getUserModel()
-                        if (userModel?.id?.startsWith("guest") == true) {
+                        if (viewModel.isGuest()) {
                             DialogUtils.guestDialog(requireActivity())
                             return@launch
                         }
