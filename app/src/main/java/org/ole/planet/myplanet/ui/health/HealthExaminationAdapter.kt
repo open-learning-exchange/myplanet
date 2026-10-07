@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.health
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.TextView
@@ -23,7 +22,6 @@ import org.ole.planet.myplanet.ui.health.HealthExaminationAdapter.HealthExaminat
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils.getString
-import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
 
 class HealthExaminationAdapter(
@@ -57,30 +55,7 @@ class HealthExaminationAdapter(
 
     suspend fun submitExaminations(list: List<HealthExamination>) {
         val items = withContext(dispatcherProvider.default) {
-            val displayNameCache = mutableMapOf<String, String>()
-            list.map { item ->
-                val formattedDate = formatDate(item.date, "MMM dd, yyyy")
-                val encrypted = userModel?.let { user -> item.getEncryptedDataAsJson(user) }
-                val createdBy = getString("createdBy", encrypted)
-
-                val (resolvedName, isSelfExamination) = if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {
-                    val name = displayNameCache.getOrPut(createdBy) {
-                        val model = userMap[createdBy]
-                        model?.getFullName() ?: createdBy.substringAfter(':', "").takeIf { it.isNotBlank() } ?: createdBy
-                    }
-                    name to false
-                } else {
-                    "" to true
-                }
-
-                HealthExaminationItem(
-                    examination = item,
-                    formattedDate = formattedDate,
-                    isSelfExamination = isSelfExamination,
-                    resolvedName = resolvedName,
-                    encrypted = encrypted
-                )
-            }
+            HealthExaminationItemMapper.map(list, userModel, userMap)
         }
         withContext(dispatcherProvider.main) {
             submitList(items)
