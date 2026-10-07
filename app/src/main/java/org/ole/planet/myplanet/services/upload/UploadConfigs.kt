@@ -192,7 +192,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "exams",
         fetchPendingItems = { surveysRepository.getPendingAdoptedSurveys() },
         serializer = UploadSerializer.Async { exam ->
-            val questions = surveysRepository.getExamQuestions(exam.id ?: "")
+            val questions = surveysRepository.getExamQuestions(exam.id)
             StepExam.serializeExam(exam, questions)
         },
         idExtractor = { it.id },

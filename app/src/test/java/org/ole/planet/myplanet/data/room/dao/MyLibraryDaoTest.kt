@@ -35,6 +35,70 @@ class MyLibraryDaoTest {
     }
 
     @Test
+    fun getByIds_handles1200Ids() = runBlocking {
+        val libraries = (1..1200).map { i ->
+            MyLibrary().apply {
+                id = "pk_$i"
+                title = "Library $i"
+            }
+        }
+        myLibraryDao.upsertAll(libraries)
+
+        val queryIds = (1..1200).map { "pk_$it" } + listOf("pk_1", "pk_1200")
+        val results = myLibraryDao.getByIds(queryIds)
+
+        assertEquals(1200, results.size)
+        assertEquals(1200, results.map { it.id }.distinct().size)
+
+        val emptyResult = myLibraryDao.getByIds(emptyList())
+        assertTrue(emptyResult.isEmpty())
+    }
+
+    @Test
+    fun getByResourceIds_handles1200Ids() = runBlocking {
+        val libraries = (1..1200).map { i ->
+            MyLibrary().apply {
+                id = "pk_$i"
+                resourceId = "res_$i"
+                title = "Library $i"
+            }
+        }
+        myLibraryDao.upsertAll(libraries)
+
+        val resourceIds = (1..1200).map { "res_$it" } + listOf("res_1", "res_1200")
+        val results = myLibraryDao.getByResourceIds(resourceIds)
+
+        assertEquals(1200, results.size)
+        assertEquals(1200, results.map { it.resourceId }.distinct().size)
+
+        val emptyResult = myLibraryDao.getByResourceIds(emptyList())
+        assertTrue(emptyResult.isEmpty())
+    }
+
+    @Test
+    fun getByResourceIdsNotUserPattern_handles1200Ids_andExcludesUser() = runBlocking {
+        val userPattern = "%\"user_123\"%"
+        val libraries = (1..1200).map { i ->
+            MyLibrary().apply {
+                id = "pk_$i"
+                resourceId = "res_$i"
+                // Even indexed items belong to user_123, odd indexed items do not
+                userId = if (i % 2 == 0) listOf("user_123") else listOf("user_456")
+            }
+        }
+        myLibraryDao.upsertAll(libraries)
+
+        val resourceIds = (1..1200).map { "res_$it" } + listOf("res_1", "res_2")
+        val results = myLibraryDao.getByResourceIdsNotUserPattern(resourceIds, userPattern)
+
+        assertEquals(600, results.size)
+        assertTrue(results.all { it.userId == listOf("user_456") })
+
+        val emptyResult = myLibraryDao.getByResourceIdsNotUserPattern(emptyList(), userPattern)
+        assertTrue(emptyResult.isEmpty())
+    }
+
+    @Test
     fun getByCourseIds_handles1200Courses() = runBlocking {
         val libraries = (1..1200).map { i ->
             MyLibrary().apply {
