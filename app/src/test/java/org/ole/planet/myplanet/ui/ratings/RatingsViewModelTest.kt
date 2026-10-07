@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.ratings
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -128,6 +129,32 @@ class RatingsViewModelTest {
         val state = viewModel.ratingState.value
         assertTrue(state is RatingsViewModel.RatingUiState.Error)
         assertEquals("User not found", (state as RatingsViewModel.RatingUiState.Error).message)
+    }
+
+    @Test
+    fun `getRatingSummary falls back to _id when user id is blank`() = runTest {
+        val type = "course"
+        val itemId = "item-1"
+        val fallbackId = "u1"
+
+        val mockUser = UserEntity().apply {
+            id = ""
+            _id = fallbackId
+        }
+        val mockSummary = RatingSummary(
+            existingRating = null,
+            averageRating = 0f,
+            totalRatings = 0,
+            userRating = null
+        )
+
+        coEvery { userRepository.getUserProfile() } returns mockUser
+        coEvery { ratingsRepository.getRatingSummary(type, itemId, fallbackId) } returns mockSummary
+
+        viewModel.loadRatingData(type, itemId)
+        advanceUntilIdle()
+
+        coVerify { ratingsRepository.getRatingSummary(type, itemId, fallbackId) }
     }
 
     @Test

@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.content.edit
-import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Instant
 import java.time.ZoneId
@@ -34,7 +33,6 @@ import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyCourse.Companion.saveConcatenatedLinksToPrefs
@@ -45,16 +43,11 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.GsonUtils.getInt
-import org.ole.planet.myplanet.utils.GsonUtils.getJsonArray
-import org.ole.planet.myplanet.utils.GsonUtils.getJsonObject
-import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.NotificationUtils.cancel
 import org.ole.planet.myplanet.utils.NotificationUtils.create
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.toGson
 
 @Singleton
 class SyncManager @Inject constructor(
@@ -306,14 +299,9 @@ class SyncManager @Inject constructor(
 
             syncTimeLogger.startProcess("resource_get_total_count")
             val countApiStartTime = SystemClock.elapsedRealtime()
-            ApiClient.executeWithRetryAndWrap {
-                apiInterface.getJsonObject(header, "$url/resources/_all_docs?limit=0")
-            }?.let { response ->
-                response.body()?.toGson()?.takeIf { it.has("total_rows") }?.let { body ->
-                    totalRows = getInt("total_rows", body)
-                    countKnown = true
-                }
-            }
+            val count = syncRepository.fetchResourceTotalRows()
+            countKnown = count != null
+            totalRows = count ?: 0
             if (!countKnown) {
                 hadBatchFailure = true
                 syncTimeLogger.logDetail("resource_sync", "Resource count unavailable; paging until a short page and skipping delete-cleanup")
@@ -336,15 +324,10 @@ class SyncManager @Inject constructor(
 
                 try {
                     val batchApiStartTime = SystemClock.elapsedRealtime()
-                    var response: JsonObject? = null
-                    ApiClient.executeWithRetryAndWrap {
-                        apiInterface.getJsonObject(header, "$url/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip")
-                    }?.let {
-                        response = it.body()?.toGson()
-                    }
+                    val rows = syncRepository.fetchResourceRows(batchSize, skip)
                     val batchApiDuration = SystemClock.elapsedRealtime() - batchApiStartTime
 
-                    if (response == null) {
+                    if (rows == null) {
                         batchSizer.recordFailure()
                         hadBatchFailure = true
                         syncTimeLogger.logApiCall("$url/resources/_all_docs (batch $batchCount)", batchApiDuration, false, 0)
@@ -354,7 +337,6 @@ class SyncManager @Inject constructor(
                     }
                     batchSizer.recordSuccess(batchApiDuration)
 
-                    val rows = getJsonArray("rows", response)
                     syncTimeLogger.logApiCall("$url/resources/_all_docs (batch $batchCount)", batchApiDuration, true, rows.size())
 
                     if (rows.isEmpty) {
@@ -362,19 +344,7 @@ class SyncManager @Inject constructor(
                     }
 
                     val parseStartTime = SystemClock.elapsedRealtime()
-                    val validDocuments = mutableListOf<JsonObject>()
-
-                    for (rowElement in rows) {
-                        val rowObj = rowElement.asJsonObject
-                        if (rowObj.has("doc")) {
-                            val doc = getJsonObject("doc", rowObj)
-                            val id = getString("_id", doc)
-
-                            if (!id.startsWith("_design") && id.isNotBlank()) {
-                                validDocuments.add(doc)
-                            }
-                        }
-                    }
+                    val validDocuments = syncRepository.filterSyncableResourceDocs(rows)
                     val parseDuration = SystemClock.elapsedRealtime() - parseStartTime
                     if (parseDuration > 100) {
                         syncTimeLogger.logDetail("resource_sync", "Batch $batchCount: Parse took ${parseDuration}ms for ${rows.size()} docs")
