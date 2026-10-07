@@ -46,6 +46,7 @@ import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.RatingsRepositoryImpl
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepositoryImpl
+import org.ole.planet.myplanet.repository.ResourcesSyncWriter
 import org.ole.planet.myplanet.repository.RetryRepository
 import org.ole.planet.myplanet.repository.RetryRepositoryImpl
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -65,6 +66,7 @@ import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UploadRepositoryImpl
 import org.ole.planet.myplanet.repository.UserAchievementsRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.repository.UserSyncRepository
@@ -166,6 +168,10 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindResourcesSyncWriter(impl: ResourcesRepositoryImpl): ResourcesSyncWriter
+
+    @Binds
+    @Singleton
     abstract fun bindRetryRepository(impl: RetryRepositoryImpl): RetryRepository
 
     @Binds
@@ -211,6 +217,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindUserAchievementsRepository(impl: UserRepositoryImpl): UserAchievementsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUserReadRepository(impl: UserRepositoryImpl): UserReadRepository
 
     @Binds
     @Singleton
