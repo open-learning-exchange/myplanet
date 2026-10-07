@@ -56,7 +56,7 @@ interface TeamTaskDao {
         return titles.distinct().chunked(900).flatMap { getByTitlesInternal(it) }
     }
 
-    @Query("SELECT * FROM team_tasks WHERE assignee = :userId AND deadline BETWEEN :start AND :end")
+    @Query("SELECT * FROM team_tasks WHERE assignee = :userId AND completed = 0 AND (status IS NULL OR status != 'archived') AND deadline BETWEEN :start AND :end")
     suspend fun getTasksForUserBetween(userId: String, start: Long, end: Long): List<TeamTask>
 
     @Query("UPDATE team_tasks SET _id = :remoteId, _rev = :remoteRev, isUpdated = 0 WHERE id = :localId")
