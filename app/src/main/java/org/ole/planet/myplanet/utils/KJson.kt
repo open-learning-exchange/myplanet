@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.utils
 
-import android.util.Log
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -28,8 +27,6 @@ import org.ole.planet.myplanet.model.News
  * test); its callers are unchanged.
  */
 object KJson {
-    private const val TAG = "KJson"
-
     /** Lenient like Gson's `JsonParser`/`fromJson` (unquoted strings), though Gson also takes comments and single quotes. */
     val lenientJson: Json = Json {
         isLenient = true
@@ -39,18 +36,8 @@ object KJson {
     private inline fun <T> safeGet(default: () -> T, block: () -> T): T {
         return try {
             block()
-        } catch (e: Exception) {
-            logFallback(e)
+        } catch (_: Exception) {
             default()
-        }
-    }
-
-    private fun logFallback(e: Exception) {
-        try {
-            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG, "expected type mismatch, using fallback: ${e.message}")
-            }
-        } catch (_: Throwable) {
         }
     }
 
@@ -65,8 +52,7 @@ object KJson {
         val ar = if (!viewIn.isNullOrEmpty()) {
             try {
                 lenientJson.parseToJsonElement(viewIn) as? JsonArray
-            } catch (e: Exception) {
-                Log.w(TAG, "failed to parse viewIn", e)
+            } catch (_: Exception) {
                 null
             }
         } else null

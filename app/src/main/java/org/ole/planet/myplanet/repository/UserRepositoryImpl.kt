@@ -329,7 +329,7 @@ class UserRepositoryImpl @Inject constructor(
             applyJsonToUser(jsonDoc, user, settings)
             user
         } catch (err: Exception) {
-            err.printStackTrace()
+            Log.e("UserRepositoryImpl", "Failed to build user from JSON", err)
             null
         }
     }
@@ -399,7 +399,7 @@ class UserRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("UserRepositoryImpl", "fetchUserSecurityData failed", e)
         }
     }
 
@@ -587,7 +587,7 @@ class UserRepositoryImpl @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("UserRepositoryImpl", "becomeMember failed", e)
                 Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
             }
         } else {
@@ -608,7 +608,7 @@ class UserRepositoryImpl @Inject constructor(
             val url = UrlUtils.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString
             apiInterface.putDoc(null, "application/json", url, JsonObject().toKotlinx().jsonObject)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("UserRepositoryImpl", "uploadToShelf failed", e)
         }
     }
 
@@ -638,7 +638,7 @@ class UserRepositoryImpl @Inject constructor(
                 Result.failure(Exception("Failed to save user or user model was null"))
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("UserRepositoryImpl", "saveUserToDb failed", e)
             Result.failure(e)
         }
     }
@@ -663,7 +663,7 @@ class UserRepositoryImpl @Inject constructor(
                 apiInterface.putDoc(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", jsonObject?.toKotlinx()?.jsonObject)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("UserRepositoryImpl", "changeUserSecurity failed", e)
         }
     }
 
@@ -736,7 +736,7 @@ class UserRepositoryImpl @Inject constructor(
                 updateExistingUser(header, model)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("UserRepositoryImpl", "checkAndUploadUser failed", e)
         }
     }
 
@@ -746,7 +746,7 @@ class UserRepositoryImpl @Inject constructor(
             val exists = res.body() != null
             return exists
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("UserRepositoryImpl", "checkIfUserExists failed", e)
             return false
         }
     }
@@ -783,7 +783,7 @@ class UserRepositoryImpl @Inject constructor(
                 updateHealthFn(model.id ?: "", model._id ?: "")
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("UserRepositoryImpl", "processUserAfterCreation failed", e)
         }
     }
 
@@ -804,7 +804,7 @@ class UserRepositoryImpl @Inject constructor(
                 processUserAfterCreation(model, obj, updateHealthFn)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("UserRepositoryImpl", "uploadNewUser failed", e)
         }
     }
 
@@ -830,7 +830,7 @@ class UserRepositoryImpl @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("UserRepositoryImpl", "updateExistingUser failed", e)
         }
     }
 
@@ -894,7 +894,7 @@ class UserRepositoryImpl @Inject constructor(
                 }
             }
         } catch (err: Exception) {
-            err.printStackTrace()
+            Log.e("UserRepositoryImpl", "authenticateUser failed", err)
             return null
         }
         return null
@@ -1156,7 +1156,7 @@ class UserRepositoryImpl @Inject constructor(
                     guestUsersByName[entity.name!!] = entity
                 }
             } catch (err: Exception) {
-                err.printStackTrace()
+                Log.w("UserRepositoryImpl", "Failed to parse sync user document", err)
             }
         }
 
@@ -1177,7 +1177,7 @@ class UserRepositoryImpl @Inject constructor(
                             try {
                                 uploadShelfData(model)
                             } catch (e: Throwable) {
-                                e.printStackTrace()
+                                Log.w("UserRepositoryImpl", "Failed to upload shelf data for user", e)
                             }
                         }
                     }
@@ -1185,7 +1185,7 @@ class UserRepositoryImpl @Inject constructor(
             }
             Result.success(Unit)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("UserRepositoryImpl", "uploadAllSyncedUsersToShelf failed", e)
             Result.failure(e)
         }
     }
@@ -1204,7 +1204,7 @@ class UserRepositoryImpl @Inject constructor(
                 shelfData.toKotlinx().jsonObject
             )
         } catch (e: Throwable) {
-            e.printStackTrace()
+            Log.e("UserRepositoryImpl", "uploadShelfData failed", e)
         }
     }
 

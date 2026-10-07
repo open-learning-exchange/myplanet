@@ -7,7 +7,39 @@ import com.google.gson.JsonObject
 import java.util.Locale
 import org.ole.planet.myplanet.R
 
+internal data class RatingDisplay(
+    val averageText: String,
+    val totalRatings: Int,
+    val barRating: Float
+)
+
 object CourseRatingUtils {
+    internal fun computeRatingDisplay(
+        averageRating: Float?,
+        totalRatings: Int?,
+        userRating: Float?
+    ): RatingDisplay {
+        val averageText = String.format(Locale.getDefault(), "%.2f", averageRating ?: 0f)
+        val total = totalRatings ?: 0
+        val barRating = userRating ?: averageRating ?: 0f
+        return RatingDisplay(averageText, total, barRating)
+    }
+
+    internal fun parseRating(obj: JsonObject?): Triple<Float?, Int?, Float?> {
+        val averageRating = obj?.get("averageRating")
+            ?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }
+            ?.asFloat
+        val totalRatings = obj?.get("total")
+            ?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }
+            ?.asInt
+        val userRating = when {
+            obj?.has("ratingByUser") == true -> obj["ratingByUser"].asFloat
+            obj?.has("userRating") == true -> obj["userRating"].asFloat
+            else -> null
+        }
+        return Triple(averageRating, totalRatings, userRating)
+    }
+
     fun showRating(
         context: Context,
         ratingSummary: org.ole.planet.myplanet.repository.RatingSummary?,
@@ -29,17 +61,7 @@ object CourseRatingUtils {
         ratingCount: TextView?,
         ratingBar: AppCompatRatingBar?
     ) {
-        val averageRating = obj?.get("averageRating")
-            ?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }
-            ?.asFloat
-        val totalRatings = obj?.get("total")
-            ?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }
-            ?.asInt
-        val userRating = when {
-            obj?.has("ratingByUser") == true -> obj["ratingByUser"].asFloat
-            obj?.has("userRating") == true -> obj["userRating"].asFloat
-            else -> null
-        }
+        val (averageRating, totalRatings, userRating) = parseRating(obj)
 
         renderRating(context, averageRating, totalRatings, userRating, average, ratingCount, ratingBar)
     }
@@ -53,8 +75,9 @@ object CourseRatingUtils {
         ratingCount: TextView?,
         ratingBar: AppCompatRatingBar?
     ) {
-        average?.text = String.format(Locale.getDefault(), "%.2f", averageRating ?: 0f)
-        ratingCount?.text = context.getString(R.string.rating_count_format, totalRatings ?: 0)
-        ratingBar?.rating = userRating ?: averageRating ?: 0f
+        val display = computeRatingDisplay(averageRating, totalRatings, userRating)
+        average?.text = display.averageText
+        ratingCount?.text = context.getString(R.string.rating_count_format, display.totalRatings)
+        ratingBar?.rating = display.barRating
     }
 }

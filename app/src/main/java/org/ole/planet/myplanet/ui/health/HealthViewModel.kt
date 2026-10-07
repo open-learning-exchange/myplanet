@@ -76,7 +76,7 @@ class HealthViewModel @Inject constructor(
 
     fun loadPatients(sortBy: String = "joinDate", descending: Boolean = true) {
         viewModelScope.launch {
-            _patientList.value = healthRepository.getPatientsSortedBy(sortBy, descending)
+            _patientList.value = userRepository.getUsersSortedBy(sortBy, descending)
         }
     }
 
@@ -87,7 +87,7 @@ class HealthViewModel @Inject constructor(
                 delay(100)
                 _isListLoading.value = true
             }
-            val result = healthRepository.searchPatients(query, sortBy, descending)
+            val result = if (query.isBlank()) userRepository.getUsersSortedBy(sortBy, descending) else userRepository.searchUsers(query, sortBy, descending)
             loadingJob.cancel()
             _patientList.value = result
             _isListLoading.value = false
@@ -131,7 +131,7 @@ class HealthViewModel @Inject constructor(
         job = viewModelScope.launch {
             _isLoading.value = true
             try {
-                val user = healthRepository.getPatientById(userId)
+                val user = userRepository.getUserById(userId)
                 if (user != null) {
                     val record = healthRepository.getPatientHealthRecords(userId, user)
                     _patientDetailState.value = PatientDetailState(user, record)

@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.VoicesEditActions
+import org.ole.planet.myplanet.repository.VoicesEditor
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
@@ -65,7 +65,7 @@ class VoicesAdapter(
     private val onEditAction: (suspend () -> Unit) -> Unit,
     private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit),
     private val labelManager: VoicesLabelManager,
-    private val voicesEditActions: VoicesEditActions,
+    private val voicesEditor: VoicesEditor,
     private val leadersList: List<UserEntity>,
     private val setRepliedNewsIdFn: (String?) -> Unit
 ) : ListAdapter<News, RecyclerView.ViewHolder>(
@@ -512,7 +512,7 @@ class VoicesAdapter(
                         currentUser,
                         listener,
                         holder,
-                        voicesEditActions,
+                        voicesEditor,
                         { h, updatedNews, pos ->
                             val targetNews = updatedNews ?: news
                             preParseNews(targetNews)
@@ -779,7 +779,7 @@ class VoicesAdapter(
                         currentUser,
                         listener,
                         viewHolder,
-                        voicesEditActions,
+                        voicesEditor,
                         { _, _, _ -> },
                         onEditAction
                     )

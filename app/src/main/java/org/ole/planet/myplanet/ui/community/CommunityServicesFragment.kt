@@ -40,25 +40,9 @@ class CommunityServicesFragment : BaseTeamFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
         super.onViewCreated(view, savedInstanceState)
-
-        val description = team?.description ?: ""
-        if (description.isEmpty()) {
-            binding?.tvDescription?.visibility = View.GONE
-            binding?.tvNoDescription?.visibility = View.VISIBLE
-        } else {
-            binding?.tvDescription?.visibility = View.VISIBLE
-            binding?.tvNoDescription?.visibility = View.GONE
+        collectWhenStarted(teamFlow) { loadedTeam ->
+            if (loadedTeam != null) showDescription(loadedTeam.description.orEmpty())
         }
-        val basePath = FileUtils.getExternalFilesDir(requireContext())?.let { externalDir ->
-            "file://${externalDir.absolutePath}/ole/"
-        }.orEmpty()
-        val markdownContentWithLocalPaths = prependBaseUrlToImages(
-            description,
-            basePath,
-            600,
-            350
-        )
-        binding?.let { setMarkdownText(it.tvDescription, markdownContentWithLocalPaths) }
 
         collectWhenStarted(viewModel.teamLinks) { links ->
             if (links == null) return@collectWhenStarted
@@ -72,6 +56,27 @@ class CommunityServicesFragment : BaseTeamFragment() {
             }
             setRecyclerView(links)
         }
+    }
+
+    private fun showDescription(description: String) {
+        val currentBinding = binding ?: return
+        if (description.isEmpty()) {
+            currentBinding.tvDescription.visibility = View.GONE
+            currentBinding.tvNoDescription.visibility = View.VISIBLE
+            return
+        }
+        currentBinding.tvDescription.visibility = View.VISIBLE
+        currentBinding.tvNoDescription.visibility = View.GONE
+        val basePath = FileUtils.getExternalFilesDir(requireContext())?.let { externalDir ->
+            "file://${externalDir.absolutePath}/ole/"
+        }.orEmpty()
+        val markdownContentWithLocalPaths = prependBaseUrlToImages(
+            description,
+            basePath,
+            600,
+            350
+        )
+        setMarkdownText(currentBinding.tvDescription, markdownContentWithLocalPaths)
     }
 
     override fun onNewsItemClick(news: News?) {}

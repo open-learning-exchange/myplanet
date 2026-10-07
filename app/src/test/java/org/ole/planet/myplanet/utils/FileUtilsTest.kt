@@ -12,7 +12,7 @@ import android.net.Uri
 import android.os.Environment
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
-import android.webkit.MimeTypeMap
+import androidx.core.content.IntentCompat
 import java.io.File
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -24,7 +24,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
-import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowContentResolver
 import org.robolectric.shadows.ShadowEnvironment
@@ -453,7 +452,7 @@ class FileUtilsTest {
     fun openOleFolder_returnsCorrectIntent() {
         val intent = FileUtils.openOleFolder(context)
         assertEquals(Intent.ACTION_CHOOSER, intent.action)
-        val innerIntent = intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+        val innerIntent = IntentCompat.getParcelableExtra(intent, Intent.EXTRA_INTENT, Intent::class.java)
         assertEquals(Intent.ACTION_GET_CONTENT, innerIntent?.action)
         assertEquals("*/*", innerIntent?.type)
         assertTrue(innerIntent?.getBooleanExtra(Intent.EXTRA_ALLOW_MULTIPLE, false) == true)
@@ -490,8 +489,6 @@ class FileUtilsTest {
 
     @Test
     fun getMimeType_returnsCorrectMimeType() {
-        shadowOf(MimeTypeMap.getSingleton()).addExtensionMimeTypeMapping("png", "image/png")
-
         assertEquals("image/png", FileUtils.getMimeType("my photo.png"))
         assertEquals("image/png", FileUtils.getMimeType("photo.PNG"))
         assertNull(FileUtils.getMimeType("noext"))

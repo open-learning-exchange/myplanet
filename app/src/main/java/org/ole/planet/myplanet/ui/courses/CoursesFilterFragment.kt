@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.app.Dialog
+import android.content.Context
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,6 +12,7 @@ import android.widget.ArrayAdapter
 import android.widget.Spinner
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import java.util.Locale
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseBindingBottomSheetFragment
@@ -91,16 +94,28 @@ class CoursesFilterFragment : BaseBindingBottomSheetFragment<FragmentCoursesFilt
         adapter.setDropDownViewResource(R.layout.custom_simple_list_item_1)
         spinner.adapter = adapter
         if (initialValue.isNotEmpty()) {
-            val values = resources.getStringArray(arrayRes)
-            val index = values.indexOf(initialValue)
+            val index = englishValues(ctx, arrayRes).indexOf(initialValue)
+                .takeIf { it >= 0 } ?: resources.getStringArray(arrayRes).indexOf(initialValue)
             if (index >= 0) spinner.setSelection(index)
         }
     }
 
-    private fun selectedValue(spinner: Spinner): String =
-        if (spinner.selectedItemPosition <= 0) "" else spinner.selectedItem?.toString().orEmpty()
+    private fun selectedValue(spinner: Spinner, arrayRes: Int): String {
+        val position = spinner.selectedItemPosition
+        return if (position <= 0) "" else englishValues(requireContext(), arrayRes).getOrElse(position) { "" }
+    }
 
     private fun notifyChange() {
-        listener?.onGradeSubjectChanged(selectedValue(binding.spnGrade), selectedValue(binding.spnSubject))
+        listener?.onGradeSubjectChanged(
+            selectedValue(binding.spnGrade, R.array.grade_level),
+            selectedValue(binding.spnSubject, R.array.subject_level)
+        )
+    }
+
+    companion object {
+        fun englishValues(context: Context, arrayRes: Int): Array<String> {
+            val english = Configuration(context.resources.configuration).apply { setLocale(Locale.ENGLISH) }
+            return context.createConfigurationContext(english).resources.getStringArray(arrayRes)
+        }
     }
 }

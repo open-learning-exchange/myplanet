@@ -35,7 +35,6 @@ import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
@@ -56,6 +55,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
     private var activeDialog: AlertDialog? = null
     private var selectedImageUri: Uri? = null
     private var dialogImagePreview: ImageView? = null
+    private var isReportSaving = false
     private val fromCommunity: Boolean
         get() = arguments?.getBoolean("fromCommunity", false) == true
 
@@ -137,11 +137,13 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                     }
                     activeDialog?.dismiss()
                     activeDialog = null
+                    isReportSaving = false
                 }
                 is ReportEvent.ReportArchived -> {
                     // archived successfully
                 }
                 is ReportEvent.Error -> {
+                    isReportSaving = false
                     Snackbar.make(view, event.message, Snackbar.LENGTH_LONG).show()
                 }
             }
@@ -181,24 +183,35 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         setupDatePickers(dialogAddReportBinding, calendar, true)
 
         submit?.setOnClickListener {
+            if (isReportSaving) return@setOnClickListener
             if (isValidReportForm(dialogAddReportBinding)) {
+                isReportSaving = true
+                val description = dialogAddReportBinding.summary.text.toString()
+                val beginningBalance = dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: 0
+                val sales = dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: 0
+                val otherIncome = dialogAddReportBinding.otherIncome.text.toString().toIntOrNull() ?: 0
+                val wages = dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: 0
+                val otherExpenses = dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: 0
+                val startDate = startTimeStamp?.toLongOrNull() ?: 0L
+                val endDate = endTimeStamp?.toLongOrNull() ?: 0L
+                val capturedTeamId = teamId
+                val teamType = team?.teamType
+                val teamPlanetCode = team?.teamPlanetCode
                 val imageUri = selectedImageUri
-                val imageName = imageUri?.let { FileUtils.getDisplayName(requireContext(), it, timeProvider) }
-                val imageData = imageUri?.let { FileUtils.readBytesFromUri(requireContext(), it) }
+
                 viewModel.addReport(
-                    description = dialogAddReportBinding.summary.text.toString(),
-                    beginningBalance = dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: 0,
-                    sales = dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: 0,
-                    otherIncome = dialogAddReportBinding.otherIncome.text.toString().toIntOrNull() ?: 0,
-                    wages = dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: 0,
-                    otherExpenses = dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: 0,
-                    startDate = startTimeStamp?.toLongOrNull() ?: 0L,
-                    endDate = endTimeStamp?.toLongOrNull() ?: 0L,
-                    teamId = teamId,
-                    teamType = team?.teamType,
-                    teamPlanetCode = team?.teamPlanetCode,
-                    imageName = imageName,
-                    imageData = imageData
+                    description = description,
+                    beginningBalance = beginningBalance,
+                    sales = sales,
+                    otherIncome = otherIncome,
+                    wages = wages,
+                    otherExpenses = otherExpenses,
+                    startDate = startDate,
+                    endDate = endDate,
+                    teamId = capturedTeamId,
+                    teamType = teamType,
+                    teamPlanetCode = teamPlanetCode,
+                    imageUri = imageUri
                 )
             }
         }
@@ -209,6 +222,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
             activeDialog = null
             dialogImagePreview = null
             selectedImageUri = null
+            isReportSaving = false
         }
     }
 
@@ -254,6 +268,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         setupDatePickers(dialogAddReportBinding, calendar, false)
 
         submit?.setOnClickListener {
+            if (isReportSaving) return@setOnClickListener
             if (isValidReportForm(dialogAddReportBinding)) {
                 val reportId = currentReport._id
                 if (reportId.isBlank()) {
@@ -265,21 +280,28 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                     return@setOnClickListener
                 }
 
+                isReportSaving = true
+                val description = dialogAddReportBinding.summary.text.toString()
+                val beginningBalance = dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: currentReport.beginningBalance
+                val sales = dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: currentReport.sales
+                val otherIncome = dialogAddReportBinding.otherIncome.text.toString().toIntOrNull() ?: currentReport.otherIncome
+                val wages = dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: currentReport.wages
+                val otherExpenses = dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: currentReport.otherExpenses
+                val startDate = startTimeStamp?.toLongOrNull() ?: currentReport.startDate
+                val endDate = endTimeStamp?.toLongOrNull() ?: currentReport.endDate
                 val imageUri = selectedImageUri
-                val imageName = imageUri?.let { FileUtils.getDisplayName(requireContext(), it, timeProvider) }
-                val imageData = imageUri?.let { FileUtils.readBytesFromUri(requireContext(), it) }
+
                 viewModel.updateReport(
                     reportId = reportId,
-                    description = dialogAddReportBinding.summary.text.toString(),
-                    beginningBalance = dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: currentReport.beginningBalance,
-                    sales = dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: currentReport.sales,
-                    otherIncome = dialogAddReportBinding.otherIncome.text.toString().toIntOrNull() ?: currentReport.otherIncome,
-                    wages = dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: currentReport.wages,
-                    otherExpenses = dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: currentReport.otherExpenses,
-                    startDate = startTimeStamp?.toLongOrNull() ?: currentReport.startDate,
-                    endDate = endTimeStamp?.toLongOrNull() ?: currentReport.endDate,
-                    imageName = imageName,
-                    imageData = imageData
+                    description = description,
+                    beginningBalance = beginningBalance,
+                    sales = sales,
+                    otherIncome = otherIncome,
+                    wages = wages,
+                    otherExpenses = otherExpenses,
+                    startDate = startDate,
+                    endDate = endDate,
+                    imageUri = imageUri
                 )
             }
         }

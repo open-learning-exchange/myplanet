@@ -56,8 +56,6 @@ class FeedbackDetailActivity : AppCompatActivity() {
                 val message = it.message
                 activityFeedbackDetailBinding.tvMessage.text =
                     if (TextUtils.isEmpty(message)) "N/A" else message
-                replyAdapter = FeedbackReplyAdapter(this@FeedbackDetailActivity)
-                activityFeedbackDetailBinding.rvFeedbackReply.adapter = replyAdapter
                 replyAdapter?.submitList(it.messageList)
                 updateForClosed()
             }
@@ -91,6 +89,8 @@ class FeedbackDetailActivity : AppCompatActivity() {
     private fun setUpReplies() {
         layoutManager = LinearLayoutManager(this)
         activityFeedbackDetailBinding.rvFeedbackReply.layoutManager = layoutManager
+        replyAdapter = FeedbackReplyAdapter(this)
+        activityFeedbackDetailBinding.rvFeedbackReply.adapter = replyAdapter
     }
 
     private fun updateForClosed() {

@@ -82,6 +82,21 @@ class DictionaryRepositoryImplTest {
     }
 
     @Test
+    fun `insertDictionaryData returns Failed when insertAll throws RuntimeException`() = runTest(testDispatcher) {
+        every { dictionaryFileReader.exists() } returns true
+        coEvery { dictionaryDao.count() } returns 0L
+        val validJson = """[{"code": "1", "language": "en", "advance_code": "2", "word": "hello", "meaning": "greeting", "definition": "A greeting", "synonym": "hi", "antonoym": "bye"}]"""
+        every { dictionaryFileReader.readText() } returns validJson
+        val expectedException = RuntimeException("Database error")
+        coEvery { dictionaryDao.insertAll(any()) } throws expectedException
+
+        val result = dictionaryRepository.insertDictionaryData()
+
+        assertTrue(result is DictionaryLoad.Failed)
+        assertEquals(expectedException, (result as DictionaryLoad.Failed).cause)
+    }
+
+    @Test
     fun `insertDictionaryData returns Inserted and inserts entities on success`() = runTest(testDispatcher) {
         every { dictionaryFileReader.exists() } returns true
         coEvery { dictionaryDao.count() } returns 0L

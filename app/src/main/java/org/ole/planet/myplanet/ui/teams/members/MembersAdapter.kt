@@ -83,7 +83,7 @@ class MembersAdapter(
                         }
                     }
                     PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED -> {
-                        checkUserAndShowOverflowMenu(holder.binding, position)
+                        checkUserAndShowOverflowMenu(holder, position)
                     }
                     else -> unhandled = true
                 }
@@ -125,7 +125,7 @@ class MembersAdapter(
             binding.tvIsLeader.visibility = View.GONE
         }
 
-        checkUserAndShowOverflowMenu(binding, position)
+        checkUserAndShowOverflowMenu(holder, position)
 
         holder.itemView.setOnClickListener {
             val activity = it.context as AppCompatActivity
@@ -139,7 +139,8 @@ class MembersAdapter(
         }
     }
 
-    private fun checkUserAndShowOverflowMenu(binding: RowJoinedUserBinding, position: Int) {
+    private fun checkUserAndShowOverflowMenu(holder: MembersViewHolder, position: Int) {
+        val binding = holder.binding
         val currentMember = getItem(position)
         val isOwnCard = currentMember.user.id == currentUserId
 
@@ -163,9 +164,12 @@ class MembersAdapter(
                             0 -> actionListener.onLeaveTeam()
                         }
                     } else {
+                        val currentPosition = holder.bindingAdapterPosition
+                        if (currentPosition == RecyclerView.NO_POSITION) return@setAdapter
+                        val member = getItem(currentPosition)
                         when (i) {
-                            0 -> actionListener.onRemoveMember(getItem(position), position)
-                            1 -> actionListener.onMakeLeader(getItem(position))
+                            0 -> actionListener.onRemoveMember(member, currentPosition)
+                            1 -> actionListener.onMakeLeader(member)
                         }
                     }
                 }.setNegativeButton(R.string.dismiss, null).show()
@@ -177,8 +181,9 @@ class MembersAdapter(
 
     fun updateData(newList: List<JoinedMemberData>, isLoggedInUserTeamLeader: Boolean) {
         val leaderStatusChanged = this.isLoggedInUserTeamLeader != isLoggedInUserTeamLeader
+        val menuAvailabilityChanged = (itemCount > 1) != (newList.size > 1)
         this.isLoggedInUserTeamLeader = isLoggedInUserTeamLeader
-        if (leaderStatusChanged) {
+        if (leaderStatusChanged || menuAvailabilityChanged) {
             submitList(newList) { notifyItemRangeChanged(0, itemCount, PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED) }
         } else {
             submitList(newList)

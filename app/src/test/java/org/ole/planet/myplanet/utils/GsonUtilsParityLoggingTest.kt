@@ -16,8 +16,9 @@ import org.robolectric.shadows.ShadowLog
 
 /**
  * The fallback path both helpers share: a read that throws returns the getter's default and logs
- * one DEBUG line under the helper's own tag (`GsonUtils` / `KJson`), and only when that tag is
- * loggable at DEBUG.
+ * nothing under either helper's tag (`GsonUtils` / `KJson`), even when that tag is loggable at
+ * DEBUG. master's "less gson utils log is more" (#18057) dropped GsonUtils' fallback logging, and
+ * KJson follows so the two stay interchangeable.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
@@ -46,7 +47,7 @@ class GsonUtilsParityLoggingTest {
     }
 
     @Test
-    fun `a throwing read falls back to the default and logs once per call at DEBUG`() {
+    fun `a throwing read falls back to the default and logs nothing even at DEBUG`() {
         ShadowLog.setLoggable("GsonUtils", Log.DEBUG)
         ShadowLog.setLoggable("KJson", Log.DEBUG)
         val defaults = listOf<Any>("", 0, 0L, 0f, false, 0, 0)
@@ -54,12 +55,8 @@ class GsonUtilsParityLoggingTest {
         assertEquals(defaults, readAll(gson = true))
         assertEquals(defaults, readAll(gson = false))
 
-        val gsonLogs = ShadowLog.getLogsForTag("GsonUtils")
-        val kjsonLogs = ShadowLog.getLogsForTag("KJson")
-        assertEquals(7, gsonLogs.size)
-        assertEquals(gsonLogs.map { it.type to it.msg }, kjsonLogs.map { it.type to it.msg })
-        assertEquals(Log.DEBUG, kjsonLogs.first().type)
-        assertEquals("expected type mismatch, using fallback: boom", kjsonLogs.first().msg)
+        assertEquals(0, ShadowLog.getLogsForTag("GsonUtils").size)
+        assertEquals(0, ShadowLog.getLogsForTag("KJson").size)
     }
 
     @Test

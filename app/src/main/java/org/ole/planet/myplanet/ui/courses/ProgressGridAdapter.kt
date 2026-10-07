@@ -6,15 +6,15 @@ import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.JsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowMyProgressGridBinding
+import org.ole.planet.myplanet.model.StepProgressCell
 import org.ole.planet.myplanet.utils.DiffUtils
 
 class ProgressGridAdapter(private val context: Context) :
-    ListAdapter<JsonObject, ProgressGridAdapter.ViewHolderMyProgress>(
-        DiffUtils.itemCallback<JsonObject>(
-            areItemsTheSame = { oldItem, newItem -> oldItem["stepId"] == newItem["stepId"] },
+    ListAdapter<StepProgressCell, ProgressGridAdapter.ViewHolderMyProgress>(
+        DiffUtils.itemCallback<StepProgressCell>(
+            areItemsTheSame = { oldItem, newItem -> oldItem.stepId == newItem.stepId },
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )
     ) {
@@ -36,10 +36,11 @@ class ProgressGridAdapter(private val context: Context) :
 
     override fun onBindViewHolder(holder: ViewHolderMyProgress, position: Int) {
         val item = getItem(position)
-        if (item.has("percentage")) {
+        val pct = item.percentage
+        if (pct != null) {
             holder.tvProgress.text =
-                context.getString(R.string.percentage, item["percentage"].asString)
-            if (item["completed"].asBoolean) {
+                context.getString(R.string.percentage, pct)
+            if (item.completed) {
                 holder.itemView.setBackgroundColor(colorCompleted)
             } else {
                 holder.itemView.setBackgroundColor(colorInProgress)

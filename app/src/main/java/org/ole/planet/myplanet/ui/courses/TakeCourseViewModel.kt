@@ -11,6 +11,7 @@ import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
@@ -35,6 +36,7 @@ sealed interface TakeCourseUiState {
 @HiltViewModel
 class TakeCourseViewModel @Inject constructor(
     private val coursesRepository: CoursesRepository,
+    private val activitiesRepository: ActivitiesRepository,
     private val progressRepository: ProgressRepository,
     private val userRepository: UserRepository,
     private val ratingsRepository: RatingsRepository
@@ -53,7 +55,7 @@ class TakeCourseViewModel @Inject constructor(
     }
 
     suspend fun logCourseVisit(courseId: String, courseTitle: String, userName: String) {
-        coursesRepository.logCourseVisit(courseId, courseTitle, userName)
+        activitiesRepository.logCourseVisit(courseId, courseTitle, userName)
     }
 
     suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int {

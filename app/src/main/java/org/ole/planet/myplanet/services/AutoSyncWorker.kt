@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepository.CheckVersionCallback
 import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.services.upload.AutoSyncUploadRunner
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -39,7 +40,8 @@ class AutoSyncWorker @AssistedInject constructor(
     private val uploadToShelfService: UploadToShelfService,
     private val configurationsRepository: ConfigurationsRepository,
     private val dispatcherProvider: DispatcherProvider,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val autoSyncUploadRunner: AutoSyncUploadRunner
 ) : CoroutineWorker(context, workerParams), OnSyncListener, CheckVersionCallback, OnSuccessListener {
 
     private lateinit var workerScope: CoroutineScope
@@ -111,24 +113,14 @@ class AutoSyncWorker @AssistedInject constructor(
             }
             if (MainApplication.isSyncRunning.compareAndSet(false, true)) {
                 try {
-                    uploadManager.uploadExamResult(this@AutoSyncWorker)
-                    uploadManager.uploadFeedback()
-                    uploadManager.uploadAchievement()
-                    uploadManager.uploadResourceActivities("")
-                    uploadManager.uploadUserActivities(this@AutoSyncWorker)
-                    uploadManager.uploadCourseActivities()
-                    uploadManager.uploadSearchActivity()
-                    uploadManager.uploadRating()
-                    uploadManager.uploadResource(this@AutoSyncWorker)
-                    uploadManager.uploadNews()
-                    uploadManager.uploadTeams()
-                    uploadManager.uploadTeamTask()
-                    uploadManager.uploadMeetups()
-                    uploadManager.uploadAdoptedSurveys()
-                    uploadManager.uploadCrashLog()
-                    uploadManager.uploadSubmissions()
-                    uploadManager.uploadActivities(null)
-                    sharedPrefManager.setLastSync(timeProvider.now())
+                    val failure = autoSyncUploadRunner.runAll(this@AutoSyncWorker)
+                    if (failure == null) {
+                        sharedPrefManager.setLastSync(timeProvider.now())
+                    } else {
+                        withContext(dispatcherProvider.main) {
+                            onSyncFailed(failure.message)
+                        }
+                    }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {

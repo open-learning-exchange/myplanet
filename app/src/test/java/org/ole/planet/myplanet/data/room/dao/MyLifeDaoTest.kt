@@ -3,9 +3,11 @@ package org.ole.planet.myplanet.data.room.dao
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -109,5 +111,53 @@ class MyLifeDaoTest {
         val returnedIds = result.map { it._id }
         assertEquals(totalItems, returnedIds.distinct().size)
         assertEquals(queryIds.toSet(), returnedIds.toSet())
+    }
+
+    @Test
+    fun observeByUserId_emitsUserRowsOrderedByWeightAscending() = runBlocking {
+        val item1 = MyLife("img1", "user1", "Health").apply { _id = "1"; weight = 2 }
+        val item2 = MyLife("img2", "user1", "Calendar").apply { _id = "2"; weight = 1 }
+        val item3 = MyLife("img3", "user1", "Surveys").apply { _id = "3"; weight = 3 }
+        myLifeDao.insertAll(listOf(item1, item2, item3))
+
+        val list = myLifeDao.observeByUserId("user1").first()
+        assertEquals(3, list.size)
+        assertEquals("Calendar", list[0].title)
+        assertEquals("Health", list[1].title)
+        assertEquals("Surveys", list[2].title)
+    }
+
+    @Test
+    fun observeByUserId_emitsUpdatedRowsAfterUpdateAndUpdateVisibility() = runBlocking {
+        val item1 = MyLife("img1", "user1", "Item1").apply { _id = "1"; weight = 1; isVisible = true }
+        val item2 = MyLife("img2", "user1", "Item2").apply { _id = "2"; weight = 2; isVisible = true }
+        myLifeDao.insertAll(listOf(item1, item2))
+
+        val initialList = myLifeDao.observeByUserId("user1").first()
+        assertEquals(2, initialList.size)
+        assertTrue(initialList[0].isVisible)
+
+        myLifeDao.updateVisibility("1", false)
+        val afterVisibilityChange = myLifeDao.observeByUserId("user1").first()
+        assertEquals(false, afterVisibilityChange.find { it._id == "1" }?.isVisible)
+
+        item1.weight = 5
+        myLifeDao.update(listOf(item1))
+        val afterReorder = myLifeDao.observeByUserId("user1").first()
+        assertEquals("Item2", afterReorder[0].title)
+        assertEquals("Item1", afterReorder[1].title)
+    }
+
+    @Test
+    fun observeByUserId_withNullMatchesRowsWithNullEmptyOrPlaceholderUserId() = runBlocking {
+        val nullUserItem = MyLife("img1", null, "Null User").apply { _id = "1"; weight = 1 }
+        val emptyUserItem = MyLife("img2", "", "Empty User").apply { _id = "2"; weight = 2 }
+        val dashUserItem = MyLife("img3", "--", "Dash User").apply { _id = "3"; weight = 3 }
+        val specificUserItem = MyLife("img4", "user123", "Specific User").apply { _id = "4"; weight = 4 }
+        myLifeDao.insertAll(listOf(nullUserItem, emptyUserItem, dashUserItem, specificUserItem))
+
+        val result = myLifeDao.observeByUserId(null).first()
+        assertEquals(3, result.size)
+        assertEquals(listOf("1", "2", "3"), result.map { it._id })
     }
 }

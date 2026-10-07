@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.dictionary
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.viewModels
@@ -89,6 +90,7 @@ class DictionaryActivity : BaseActivity() {
                 DownloadUtils.openDownloadService(this@DictionaryActivity, list, false)
             }
             is DictionaryLoadState.Failed -> {
+                Log.e("DictionaryActivity", "Failed to load dictionary data", state.cause)
                 Utilities.toast(
                     this@DictionaryActivity,
                     getString(R.string.dictionary_parsing_failed)

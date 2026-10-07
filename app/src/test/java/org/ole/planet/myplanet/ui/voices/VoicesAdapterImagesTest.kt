@@ -12,7 +12,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.News
-import org.ole.planet.myplanet.repository.VoicesEditActions
+import org.ole.planet.myplanet.repository.VoicesEditor
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -47,7 +47,7 @@ class VoicesAdapterImagesTest {
             onEditAction = { },
             onAnimateTyping = { _, _, _ -> { } },
             labelManager = io.mockk.mockk(relaxed = true),
-            voicesEditActions = io.mockk.mockk<VoicesEditActions>(relaxed = true),
+            voicesEditor = io.mockk.mockk<VoicesEditor>(relaxed = true),
             leadersList = emptyList(),
             setRepliedNewsIdFn = { },
         )

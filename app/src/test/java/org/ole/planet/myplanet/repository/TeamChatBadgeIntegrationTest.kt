@@ -4,7 +4,9 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.google.gson.Gson
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -19,6 +21,7 @@ import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.robolectric.RobolectricTestRunner
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class TeamChatBadgeIntegrationTest {
 
@@ -40,7 +43,7 @@ class TeamChatBadgeIntegrationTest {
         val plainGson = Gson()
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val sharedPrefManager = SharedPrefManager(context, Gson())
-        val testDispatcher = kotlinx.coroutines.test.UnconfinedTestDispatcher()
+        val testDispatcher = UnconfinedTestDispatcher()
         voicesRepository = VoicesRepositoryImpl(
             TestDispatcherProvider(testDispatcher),
             Gson(),

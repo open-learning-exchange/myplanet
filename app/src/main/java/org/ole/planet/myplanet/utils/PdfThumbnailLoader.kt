@@ -16,16 +16,14 @@ object PdfThumbnailLoader {
 
     suspend fun firstPageBitmap(file: File, dispatcherProvider: DispatcherProvider, targetWidthPx: Int): Bitmap? {
         if (targetWidthPx <= 0) return null
-        val cacheKey = "${file.absolutePath}_${file.lastModified()}_${file.length()}_$targetWidthPx"
-        cache.get(cacheKey)?.let { return it }
         return withContext(dispatcherProvider.io) {
-            try {
+            val cacheKey = "${file.absolutePath}_${file.lastModified()}_${file.length()}_$targetWidthPx"
+            cache.get(cacheKey)?.let { return@withContext it }
+            val bitmap = try {
                 ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
                     PdfRenderer(fd).use { renderer ->
                         renderer.openPage(0).use { page ->
-                            val scale = targetWidthPx.toFloat() / page.width
-                            val width = (page.width * scale).toInt().coerceAtLeast(1)
-                            val height = (page.height * scale).toInt().coerceAtLeast(1)
+                            val (width, height) = computePdfRenderSize(page.width, page.height, targetWidthPx)
                             createBitmap(width, height).also { bitmap ->
                                 bitmap.eraseColor(Color.WHITE)
                                 page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
@@ -36,7 +34,8 @@ object PdfThumbnailLoader {
             } catch (_: Exception) {
                 null
             }
-        }?.also { cache.put(cacheKey, it) }
+            bitmap?.also { cache.put(cacheKey, it) }
+        }
     }
 
     fun evictAll() {

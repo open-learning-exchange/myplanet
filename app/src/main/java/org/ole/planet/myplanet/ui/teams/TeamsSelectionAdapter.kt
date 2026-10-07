@@ -28,6 +28,16 @@ class TeamsSelectionAdapter(
         private val teamIcon: ImageView = itemView.findViewById(R.id.teamIcon)
         private val sharedIcon: ImageView = itemView.findViewById(R.id.sharedIcon)
 
+        init {
+            itemView.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                val item = getItem(pos)
+                if (item._id in sharedIds) return@setOnClickListener
+                onClick(item)
+            }
+        }
+
         fun bind(item: TeamSummary) {
             textView.text = item.name
             val teamsLabel = cachedTeamsLabel ?: itemView.context.getString(R.string.teams).also { cachedTeamsLabel = it }
@@ -38,13 +48,7 @@ class TeamsSelectionAdapter(
             }
             val alreadyShared = item._id in sharedIds
             sharedIcon.visibility = if (alreadyShared) View.VISIBLE else View.GONE
-            if (alreadyShared) {
-                itemView.setOnClickListener(null)
-                itemView.isClickable = false
-            } else {
-                itemView.isClickable = true
-                itemView.setOnClickListener { onClick(item) }
-            }
+            itemView.isClickable = !alreadyShared
         }
     }
 

@@ -79,7 +79,7 @@ code_for() {
 # Newest release run on $BASE, on stdout: running|published|warned|unknown.
 # Only running and warned decide anything; the track decides the rest.
 release_run_state() {
-    local run job_id concl
+    local run jobs job concl
     # a page and max_by, because per_page=1 is not reliably the newest run
     run=$(gh api "repos/$REPO/actions/workflows/$RELEASE_WORKFLOW/runs?branch=$BASE&event=push&per_page=20" \
             --jq '[.workflow_runs[]?] | max_by(.id) | select(. != null) | "\(.id)\t\(.status)"' 2>/dev/null) \
@@ -93,14 +93,11 @@ release_run_state() {
         printf 'running\n'; return 0
     fi
 
-    job_id=$(gh api "repos/$REPO/actions/runs/$id/jobs?per_page=100" \
-               --jq ".jobs[] | select(.name == \"$PUBLISH_JOB\") | .id" 2>/dev/null | head -n 1) \
-        || { printf 'unknown\n'; return 0; }
-    [ -n "$job_id" ] || { note "release run $id has no '$PUBLISH_JOB' job"; printf 'unknown\n'; return 0; }
+    jobs=$(gh api "repos/$REPO/actions/runs/$id/jobs?per_page=100" 2>/dev/null) || { printf 'unknown\n'; return 0; }
+    job=$(jq -c --arg n "$PUBLISH_JOB" 'first(.jobs[] | select(.name == $n)) // empty' <<<"$jobs") || { printf 'unknown\n'; return 0; }
+    [ -n "$job" ] || { note "release run $id has no '$PUBLISH_JOB' job"; printf 'unknown\n'; return 0; }
 
-    concl=$(gh api "repos/$REPO/actions/jobs/$job_id" \
-              --jq ".steps[]? | select(.name == \"$PUBLISH_WARN_STEP\") | .conclusion" 2>/dev/null | head -n 1) \
-        || { printf 'unknown\n'; return 0; }
+    concl=$(jq -r --arg s "$PUBLISH_WARN_STEP" '.steps[]? | select(.name == $s) | .conclusion' <<<"$job" | head -n 1) || { printf 'unknown\n'; return 0; }
     case "$concl" in
         skipped) note "release run $id did not warn about its upload"; printf 'published\n' ;;
         '')      note "release run $id has no '$PUBLISH_WARN_STEP' step"; printf 'unknown\n' ;;

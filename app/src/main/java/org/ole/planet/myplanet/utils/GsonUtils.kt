@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.utils
 
-import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
@@ -81,8 +80,6 @@ private fun JsonPrimitive.toKotlinxPrimitive(): KJsonPrimitive = when {
 }
 
 object GsonUtils {
-    private const val TAG = "GsonUtils"
-
     val gson: Gson by lazy {
         Gson()
     }
@@ -90,18 +87,8 @@ object GsonUtils {
     private inline fun <T> safeGet(default: () -> T, block: () -> T): T {
         return try {
             block()
-        } catch (e: Exception) {
-            logFallback(e)
+        } catch (_: Exception) {
             default()
-        }
-    }
-
-    private fun logFallback(e: Exception) {
-        try {
-            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG, "expected type mismatch, using fallback: ${e.message}")
-            }
-        } catch (_: Throwable) {
         }
     }
 
@@ -110,8 +97,7 @@ object GsonUtils {
         val ar = news.parsedViewIn?.toGsonAsParsed() ?: if (!news.viewIn.isNullOrEmpty()) {
             try {
                 gson.fromJson(news.viewIn, JsonArray::class.java)
-            } catch (e: Exception) {
-                Log.w(TAG, "failed to parse viewIn", e)
+            } catch (_: Exception) {
                 null
             }
         } else null

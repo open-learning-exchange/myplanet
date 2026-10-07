@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.repository
 
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
@@ -16,6 +18,10 @@ class LifeRepositoryImpl @Inject constructor(
 
     private fun normalizeUserId(userId: String?): String? {
         return userId?.takeIf { it.isNotBlank() && it != "--" }
+    }
+
+    override fun observeMyLifeByUserId(userId: String?): Flow<List<MyLife>> {
+        return myLifeDao.observeByUserId(normalizeUserId(userId)).map { it.dedupedByKey() }
     }
 
     override suspend fun updateVisibility(isVisible: Boolean, myLifeId: String, userId: String?): List<MyLife> {

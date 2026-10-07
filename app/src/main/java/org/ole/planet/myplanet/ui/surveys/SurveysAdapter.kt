@@ -61,8 +61,24 @@ class SurveysAdapter(
             binding.startSurvey.visibility = View.VISIBLE
             binding.sendSurvey.visibility = View.GONE
             binding.sendSurvey.setOnClickListener {
-                val current = getItem(bindingAdapterPosition)
-                listener?.sendSurvey(current.exam)
+                val pos = bindingAdapterPosition
+                if (pos != RecyclerView.NO_POSITION) {
+                    val current = getItem(pos)
+                    listener?.sendSurvey(current.exam)
+                }
+            }
+            binding.startSurvey.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                val row = getItem(pos)
+                val exam = row.exam
+                val teamSubmission = row.formState?.teamSubmission
+                val shouldAdopt = exam.isTeamShareAllowed && teamSubmission == null
+                if (shouldAdopt) {
+                    onAdoptSurveyListener.onAdoptSurvey(exam.id.orEmpty())
+                } else {
+                    SubmissionsAdapter.openSurvey(listener, exam.id, false, isTeam, teamId)
+                }
             }
         }
 
@@ -82,15 +98,6 @@ class SurveysAdapter(
                 val bindingData = row.formState
                 val teamSubmission = bindingData?.teamSubmission
                 val questionCount = bindingData?.questionCount ?: 0
-
-                startSurvey.setOnClickListener {
-                    val shouldAdopt = exam.isTeamShareAllowed && teamSubmission == null
-                    if (shouldAdopt) {
-                        onAdoptSurveyListener.onAdoptSurvey(exam.id.orEmpty())
-                    } else {
-                        SubmissionsAdapter.openSurvey(listener, exam.id, false, isTeam, teamId)
-                    }
-                }
 
                 if (questionCount == 0) {
                     sendSurvey.visibility = View.GONE
