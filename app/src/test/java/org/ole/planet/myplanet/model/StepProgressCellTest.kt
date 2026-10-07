@@ -2,11 +2,13 @@ package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import kotlinx.serialization.json.jsonArray
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.ole.planet.myplanet.utils.toKotlinx
 
 class StepProgressCellTest {
 
@@ -17,7 +19,7 @@ class StepProgressCellTest {
                 addProperty("stepId", "s1")
             })
         }
-        val data = CourseProgressData("Course Title", 0, 10, stepsArray)
+        val data = CourseProgressData("Course Title", 0, 10, stepsArray.toKotlinx().jsonArray)
 
         val cells = data.toStepCells()
 
@@ -36,7 +38,7 @@ class StepProgressCellTest {
                 addProperty("completed", false)
             })
         }
-        val data = CourseProgressData("Course Title", 0, 10, stepsArray)
+        val data = CourseProgressData("Course Title", 0, 10, stepsArray.toKotlinx().jsonArray)
 
         val cells = data.toStepCells()
 
@@ -60,7 +62,7 @@ class StepProgressCellTest {
                 addProperty("completed", true)
             })
         }
-        val data = CourseProgressData("Course Title", 2, 10, stepsArray)
+        val data = CourseProgressData("Course Title", 2, 10, stepsArray.toKotlinx().jsonArray)
 
         val cells = data.toStepCells()
 
@@ -89,7 +91,7 @@ class StepProgressCellTest {
                 addProperty("status", "finished")
             })
         }
-        val data = CourseProgressData("Course Title", 1, 2, stepsArray)
+        val data = CourseProgressData("Course Title", 1, 2, stepsArray.toKotlinx().jsonArray)
 
         val cells = data.toStepCells()
 

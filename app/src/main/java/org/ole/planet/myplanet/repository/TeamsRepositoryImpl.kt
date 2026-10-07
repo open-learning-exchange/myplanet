@@ -7,9 +7,6 @@ import android.text.TextUtils
 import android.util.Log
 import androidx.core.net.toUri
 import androidx.room.withTransaction
-import com.google.gson.Gson
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Calendar
 import java.util.Date
@@ -23,7 +20,10 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.CourseDao
@@ -53,11 +53,10 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
-import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
-import org.ole.planet.myplanet.utils.toKotlinx
 import org.ole.planet.myplanet.utils.toSyncDocuments
 import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
@@ -66,7 +65,6 @@ class TeamsRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val userSessionManager: UserSessionManager,
     private val uploadManager: UploadManager,
-    private val gson: Gson,
     @param:AppPreferences private val preferences: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
     private val serverUrlMapper: ServerUrlMapper,
@@ -764,15 +762,15 @@ class TeamsRepositoryImpl @Inject constructor(
 
     private suspend fun upsertTask(task: TeamTask) {
         if (task.link.isNullOrBlank()) {
-            val linkObj = JsonObject().apply { addProperty("teams", task.teamId) }
-            task.link = gson.toJson(linkObj)
+            val linkObj = buildJsonObject { put("teams", task.teamId) }
+            task.link = KJson.toGsonString(linkObj, htmlSafe = true)
         }
         if (task.sync.isNullOrBlank()) {
-            val syncObj = JsonObject().apply {
-                addProperty("type", "local")
-                addProperty("planetCode", userSessionManager.getUserModel()?.planetCode)
+            val syncObj = buildJsonObject {
+                put("type", "local")
+                put("planetCode", userSessionManager.getUserModel()?.planetCode)
             }
-            task.sync = gson.toJson(syncObj)
+            task.sync = KJson.toGsonString(syncObj, htmlSafe = true)
         }
         teamTaskDao.upsert(task)
     }
@@ -1135,38 +1133,36 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     private fun teamLogFromJson(json: JsonObject): TeamLog {
-        val remoteId = GsonUtils.getString("_id", json)
+        val remoteId = KJson.getString("_id", json)
         return TeamLog().apply {
             id = remoteId
-            _rev = GsonUtils.getString("_rev", json)
+            _rev = KJson.getString("_rev", json)
             _id = remoteId
-            type = GsonUtils.getString("type", json)
-            user = GsonUtils.getString("user", json)
-            createdOn = GsonUtils.getString("createdOn", json)
-            parentCode = GsonUtils.getString("parentCode", json)
-            time = GsonUtils.getLong("time", json)
-            teamId = GsonUtils.getString("teamId", json)
-            teamType = GsonUtils.getString("teamType", json)
+            type = KJson.getString("type", json)
+            user = KJson.getString("user", json)
+            createdOn = KJson.getString("createdOn", json)
+            parentCode = KJson.getString("parentCode", json)
+            time = KJson.getLong("time", json)
+            teamId = KJson.getString("teamId", json)
+            teamType = KJson.getString("teamType", json)
         }
     }
 
-    override fun serializeTeamActivities(log: TeamLog): JsonObject {
-        val ob = JsonObject()
-        ob.addProperty("user", log.user)
-        ob.addProperty("type", log.type)
-        ob.addProperty("createdOn", log.createdOn)
-        ob.addProperty("parentCode", log.parentCode)
-        ob.addProperty("teamType", log.teamType)
-        ob.addProperty("time", log.time)
-        ob.addProperty("teamId", log.teamId)
-        ob.addDocumentOrigin()
-        ob.addProperty("deviceName", NetworkUtils.getDeviceName())
-        ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+    override fun serializeTeamActivities(log: TeamLog): JsonObject = buildJsonObject {
+        put("user", log.user)
+        put("type", log.type)
+        put("createdOn", log.createdOn)
+        put("parentCode", log.parentCode)
+        put("teamType", log.teamType)
+        put("time", log.time)
+        put("teamId", log.teamId)
+        addDocumentOrigin()
+        put("deviceName", NetworkUtils.getDeviceName())
+        put("customDeviceName", NetworkUtils.getCustomDeviceName(context))
         if (!TextUtils.isEmpty(log._rev)) {
-            ob.addProperty("_rev", log._rev)
-            ob.addProperty("_id", log._id)
+            put("_rev", log._rev)
+            put("_id", log._id)
         }
-        return ob
     }
 
     private fun processDescription(description: String?) {
@@ -1184,11 +1180,11 @@ class TeamsRepositoryImpl @Inject constructor(
         var processedCount = 0
         try {
             val validDocuments = documents.filter { doc ->
-                val id = GsonUtils.getString("_id", doc)
+                val id = KJson.getString("_id", doc)
                 id.isNotEmpty() && !id.startsWith("_design")
             }
             if (validDocuments.isEmpty()) return 0
-            val ids = validDocuments.map { GsonUtils.getString("_id", it) }
+            val ids = validDocuments.map { KJson.getString("_id", it) }
             val existingTeams = ids.chunked(500)
                 .flatMap { chunk -> teamDao.getByIds(chunk) }
                 .distinctBy { it._id }
@@ -1218,15 +1214,15 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     private suspend fun insertMyTeam(doc: JsonObject, existingTeams: MutableMap<String, MyTeam>?) {
-        val status = GsonUtils.getString("status", doc)
+        val status = KJson.getString("status", doc)
         if (status == "archived") return
 
-        val teamId = GsonUtils.getString("_id", doc)
+        val teamId = KJson.getString("_id", doc)
         if (teamId.isBlank()) return
 
-        val docType = GsonUtils.getString("docType", doc)
-        val userId = GsonUtils.getString("userId", doc)
-        val teamIdField = GsonUtils.getString("teamId", doc)
+        val docType = KJson.getString("docType", doc)
+        val userId = KJson.getString("userId", doc)
+        val teamIdField = KJson.getString("teamId", doc)
 
         if (docType == "membership" && userId.isNotBlank() && teamIdField.isNotBlank()) {
             teamDao.deleteByTeamIdUserIdAndDocType(teamIdField, userId, "request")
@@ -1237,7 +1233,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
         val existingTeam = existingTeams?.get(teamId) ?: teamDao.getById(teamId)
         val model = existingTeam ?: MyTeam().apply { _id = teamId }
-        MyTeam.populateTeamFields(doc.toKotlinx().jsonObject, model, true)
+        MyTeam.populateTeamFields(doc, model, true)
         processDescription(model.description)
         teamDao.upsert(model)
         existingTeams?.put(teamId, model)
@@ -1264,7 +1260,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertTasksFromSync(jsonArray: JsonArray) {
-        val tasks = jsonArray.toSyncDocuments().map { (_, doc) -> TeamTask.fromJson(doc.toKotlinx().jsonObject) }
+        val tasks = jsonArray.toSyncDocuments().map { (_, doc) -> TeamTask.fromJson(doc) }
         teamTaskDao.upsertAll(tasks)
     }
 

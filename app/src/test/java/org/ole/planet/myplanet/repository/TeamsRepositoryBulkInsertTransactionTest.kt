@@ -3,13 +3,13 @@ package org.ole.planet.myplanet.repository
 import android.app.Application
 import android.content.SharedPreferences
 import androidx.room.Room
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.spyk
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.jsonArray
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.toKotlinx
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
@@ -75,7 +76,6 @@ class TeamsRepositoryBulkInsertTransactionTest {
             mockk<android.content.Context>(relaxed = true),
             mockk<UserSessionManager>(relaxed = true),
             mockk<UploadManager>(relaxed = true),
-            Gson(),
             mockk<SharedPreferences>(relaxed = true),
             mockk<SharedPrefManager>(relaxed = true),
             mockk<ServerUrlMapper>(relaxed = true),
@@ -107,7 +107,7 @@ class TeamsRepositoryBulkInsertTransactionTest {
             })
         }
 
-        repository.bulkInsertFromSync(batch)
+        repository.bulkInsertFromSync(batch.toKotlinx().jsonArray)
 
         assertEquals("Team A", db.teamDao().getById("team_a")?.name)
         assertEquals("Team B", db.teamDao().getById("team_b")?.name)
@@ -127,7 +127,7 @@ class TeamsRepositoryBulkInsertTransactionTest {
         }
 
         try {
-            repository.bulkInsertFromSync(batch)
+            repository.bulkInsertFromSync(batch.toKotlinx().jsonArray)
             fail("expected the failing upsert to abort the transaction")
         } catch (_: RuntimeException) {
             // expected
@@ -142,10 +142,10 @@ class TeamsRepositoryBulkInsertTransactionTest {
 
     @Test
     fun `bulkInsertFromSync updates an existing team row in place`() = runBlocking {
-        repository.bulkInsertFromSync(JsonArray().apply { add(teamRow("team_a", "Original")) })
+        repository.bulkInsertFromSync(JsonArray().apply { add(teamRow("team_a", "Original")) }.toKotlinx().jsonArray)
         assertEquals("Original", db.teamDao().getById("team_a")?.name)
 
-        repository.bulkInsertFromSync(JsonArray().apply { add(teamRow("team_a", "Renamed")) })
+        repository.bulkInsertFromSync(JsonArray().apply { add(teamRow("team_a", "Renamed")) }.toKotlinx().jsonArray)
 
         val updated = db.teamDao().getById("team_a")
         assertNotNull(updated)

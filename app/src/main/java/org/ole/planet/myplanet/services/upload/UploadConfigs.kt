@@ -107,7 +107,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "team_activities",
         modelClassName = "TeamLog",
         fetchPendingItems = { teamsSyncRepository.get().getPendingTeamLogUploads() },
-        serializer = UploadSerializer.Simple { log -> teamsSyncRepository.get().serializeTeamActivities(log).toKotlinx().jsonObject },
+        serializer = UploadSerializer.Simple { log -> teamsSyncRepository.get().serializeTeamActivities(log) },
         idExtractor = { it.id },
         payloadNumbers = GsonNumbers.LITERAL,
         markUploaded = { results ->

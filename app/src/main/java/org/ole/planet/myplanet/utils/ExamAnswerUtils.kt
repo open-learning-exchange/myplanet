@@ -27,6 +27,13 @@ object ExamAnswerUtils {
         }
     }
 
+    /** kotlinx twin of [choiceDisplayValue]. */
+    fun choiceDisplayValue(choice: kotlinx.serialization.json.JsonObject): String? {
+        return KJson.getString("text", choice).ifBlank {
+            KJson.getString("res", choice).ifBlank { null }
+        }
+    }
+
     fun getChoiceTextById(question: ExamQuestion, id: String): String {
         val choicesString = question.choices ?: return id
 

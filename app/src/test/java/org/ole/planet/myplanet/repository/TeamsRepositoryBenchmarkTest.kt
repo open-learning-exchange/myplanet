@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -27,6 +28,7 @@ import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TeamsRepositoryBenchmarkTest {
@@ -62,7 +64,6 @@ class TeamsRepositoryBenchmarkTest {
             mockk(relaxed = true),
             userSessionManager,
             uploadManager,
-            gson,
             preferences,
             sharedPrefManager,
             serverUrlMapper,
@@ -93,7 +94,7 @@ class TeamsRepositoryBenchmarkTest {
             }
         }
 
-        teamsRepository.insertTeamLogs(logs)
+        teamsRepository.insertTeamLogs(logs.map { it.toKotlinx().jsonObject })
 
         coVerify(exactly = 1) { teamLogDao.upsertAll(match { it.size == 100 && it.first().id == "id_1" }) }
     }
@@ -105,7 +106,7 @@ class TeamsRepositoryBenchmarkTest {
             JsonObject().apply { addProperty("_id", "dup_id"); addProperty("_rev", "rev2") }
         )
 
-        teamsRepository.insertTeamLogs(logs)
+        teamsRepository.insertTeamLogs(logs.map { it.toKotlinx().jsonObject })
 
         coVerify(exactly = 1) { teamLogDao.upsertAll(match { it.size == 2 && it.all { log -> log.id == "dup_id" } }) }
     }

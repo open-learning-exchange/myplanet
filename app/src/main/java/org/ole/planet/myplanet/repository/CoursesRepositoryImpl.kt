@@ -4,8 +4,6 @@ import android.content.Context
 import android.util.Log
 import androidx.room.withTransaction
 import androidx.sqlite.db.SimpleSQLiteQuery
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Base64
 import java.util.Calendar
@@ -16,8 +14,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.CourseDao
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
@@ -48,12 +50,11 @@ import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
-import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
-import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toKotlinx
 import org.ole.planet.myplanet.utils.toSyncDocuments
+import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
 class CoursesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -341,10 +342,10 @@ class CoursesRepositoryImpl @Inject constructor(
         grade: String,
         subject: String
     ) {
-        val filter = JsonObject().apply {
-            add("tags", TagEntity.getTagsArray(tags).toGson())
-            addProperty("doc.gradeLevel", grade)
-            addProperty("doc.subjectLevel", subject)
+        val filter = buildJsonObject {
+            put("tags", TagEntity.getTagsArray(tags).withGsonBridgedNumbers())
+            put("doc.gradeLevel", grade)
+            put("doc.subjectLevel", subject)
         }
         searchActivityDao.insert(
             SearchActivity(
@@ -355,7 +356,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 parentCode = parentCode,
                 text = searchText,
                 type = "courses",
-                filter = GsonUtils.gson.toJson(filter)
+                filter = KJson.gsonToJson(filter)
             )
         )
     }
@@ -482,15 +483,13 @@ class CoursesRepositoryImpl @Inject constructor(
                 .filterKeys { it.isNotEmpty() }
         }
 
-        val array = JsonArray()
-        stepsList.forEach { step ->
-            val ob = JsonObject()
-            ob.addProperty("stepId", step.id)
+        val array = stepsList.map { step ->
+            val ob = linkedMapOf<String, JsonElement>("stepId" to JsonPrimitive(step.id))
             val exams = examsByStepId[step.id] ?: emptyList()
             getExamObject(exams, ob, questionsByExamId, submissionsByExamId, answersBySubmissionId)
-            array.add(ob)
+            JsonObject(ob)
         }
-        return CourseProgressData(courseTitle, current, max, array)
+        return CourseProgressData(courseTitle, current, max, JsonArray(array))
     }
 
     private fun getParentBaseId(parentId: String?): String? {
@@ -499,7 +498,7 @@ class CoursesRepositoryImpl @Inject constructor(
 
     private fun getExamObject(
         exams: Iterable<StepExam>,
-        ob: JsonObject,
+        ob: MutableMap<String, JsonElement>,
         questionsByExamId: Map<String, List<ExamQuestion>>,
         submissionsByExamId: Map<String, List<Submission>>,
         answersBySubmissionId: Map<String, List<Answer>>
@@ -512,14 +511,14 @@ class CoursesRepositoryImpl @Inject constructor(
                     val questions = questionsByExamId[examId] ?: emptyList()
                     val questionCount = questions.size
                     if (questionCount == 0) {
-                        if (!ob.has("completed")) ob.addProperty("completed", false)
-                        if (!ob.has("percentage")) ob.addProperty("percentage", 0)
+                        if (!ob.containsKey("completed")) ob["completed"] = JsonPrimitive(false)
+                        if (!ob.containsKey("percentage")) ob["percentage"] = JsonPrimitive(0)
                     } else {
-                        ob.addProperty("completed", answers.size == questionCount)
+                        ob["completed"] = JsonPrimitive(answers.size == questionCount)
                         val percentage = (answers.size.toDouble() / questionCount) * 100
-                        ob.addProperty("percentage", percentage)
+                        ob["percentage"] = JsonPrimitive(percentage)
                     }
-                    ob.addProperty("status", submission.status)
+                    ob["status"] = JsonPrimitive(submission.status)
                 }
             }
         }
@@ -576,9 +575,7 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getMyCourseIds(userId: String): JsonArray {
-        val ids = JsonArray()
-        getMyCourses(userId).mapNotNull { it.courseId }.forEach { ids.add(it) }
-        return ids
+        return JsonArray(getMyCourses(userId).mapNotNull { it.courseId }.map { JsonPrimitive(it) })
     }
 
     override suspend fun removeCourseFromShelf(courseId: String, userId: String) {
@@ -639,7 +636,7 @@ class CoursesRepositoryImpl @Inject constructor(
         if (documentList.isEmpty()) return 0
 
         val existingCourses = courseDao.getByCourseIds(
-            documentList.mapNotNull { GsonUtils.getString("_id", it).takeIf(String::isNotBlank) }
+            documentList.mapNotNull { KJson.getString("_id", it).takeIf(String::isNotBlank) }
         ).associateBy { it.courseId ?: it.id }
 
         val courses = ArrayList<MyCourse>(documentList.size)
@@ -680,12 +677,12 @@ class CoursesRepositoryImpl @Inject constructor(
         shelfId: String?,
         existingCourses: Map<String, MyCourse>
     ): ParsedCourseSyncPayload? {
-        val courseId = GsonUtils.getString("_id", doc)
+        val courseId = KJson.getString("_id", doc)
         if (courseId.isBlank()) return null
 
         val existingCourse = existingCourses[courseId]
-        val title = GsonUtils.getString("courseTitle", doc)
-        val description = GsonUtils.getString("description", doc)
+        val title = KJson.getString("courseTitle", doc)
+        val description = KJson.getString("description", doc)
         val baseUrl = UrlUtils.getUrl()
         extractLinks(description).forEach { link ->
             MyCourse.addConcatenatedLink("$baseUrl/$link")
@@ -695,24 +692,25 @@ class CoursesRepositoryImpl @Inject constructor(
         val parsedSteps = ArrayList<CourseStep>()
         val parsedExams = ArrayList<StepExam>()
         val parsedQuestions = ArrayList<ExamQuestion>()
-        val stepsJson = GsonUtils.getJsonArray("steps", doc)
-        for (i in 0 until stepsJson.size()) {
+        val stepsJson = KJson.getJsonArray("steps", doc)
+        for (i in 0 until stepsJson.size) {
             val stepElement = stepsJson[i]
-            val stepId = Base64.getEncoder().encodeToString(stepElement.toString().toByteArray())
-            val stepJson = stepElement.asJsonObject
-            val stepDescription = GsonUtils.getString("description", stepJson)
+            // The id is the Base64 of the text Gson's toString() gave the step, so it is written the same way.
+            val stepId = Base64.getEncoder().encodeToString(KJson.toGsonString(stepElement).toByteArray())
+            val stepJson = KJson.asJsonObject(stepElement)
+            val stepDescription = KJson.getString("description", stepJson)
             extractLinks(stepDescription).forEach { link ->
                 MyCourse.addConcatenatedLink("$baseUrl/$link")
             }
-            queueCourseResources(courseId, stepId, GsonUtils.getJsonArray("resources", stepJson))
+            queueCourseResources(courseId, stepId, KJson.getJsonArray("resources", stepJson))
             stepIds.add(stepId)
             parsedSteps.add(
                 CourseStep(
                     id = stepId,
                     courseId = courseId,
-                    stepTitle = GsonUtils.getString("stepTitle", stepJson),
+                    stepTitle = KJson.getString("stepTitle", stepJson),
                     description = stepDescription,
-                    noOfResources = GsonUtils.getJsonArray("resources", stepJson).size(),
+                    noOfResources = KJson.getJsonArray("resources", stepJson).size,
                 )
             )
             collectRoomExam(stepJson, "exam", courseId, stepId, parsedExams, parsedQuestions)
@@ -722,19 +720,19 @@ class CoursesRepositoryImpl @Inject constructor(
         val course = MyCourse(
             id = existingCourse?.id ?: courseId,
             _id = courseId,
-            courseRev = GsonUtils.getString("_rev", doc),
+            courseRev = KJson.getString("_rev", doc),
             courseId = courseId,
             courseTitle = title,
             courseTitleNormal = Utilities.normalizeText(title),
             description = description,
             userId = mergeUserIds(existingCourse?.userId, shelfId),
-            languageOfInstruction = GsonUtils.getString("languageOfInstruction", doc),
-            memberLimit = GsonUtils.getInt("memberLimit", doc),
-            method = GsonUtils.getString("method", doc),
-            gradeLevel = GsonUtils.getString("gradeLevel", doc),
-            subjectLevel = GsonUtils.getString("subjectLevel", doc),
-            createdDate = GsonUtils.getLong("createdDate", doc),
-                        coverFileName = GsonUtils.getString("coverFileName", doc).takeIf { it.isNotEmpty() },
+            languageOfInstruction = KJson.getString("languageOfInstruction", doc),
+            memberLimit = KJson.getInt("memberLimit", doc),
+            method = KJson.getString("method", doc),
+            gradeLevel = KJson.getString("gradeLevel", doc),
+            subjectLevel = KJson.getString("subjectLevel", doc),
+            createdDate = KJson.getLong("createdDate", doc),
+                        coverFileName = KJson.getString("coverFileName", doc).takeIf { it.isNotEmpty() },
                     )
 
         return ParsedCourseSyncPayload(course, parsedSteps, parsedExams, parsedQuestions)
@@ -748,50 +746,50 @@ class CoursesRepositoryImpl @Inject constructor(
         exams: MutableList<StepExam>,
         questions: MutableList<ExamQuestion>
     ) {
-        if (!stepJson.has(examKey)) return
-        val examJson = stepJson.getAsJsonObject(examKey)
-        val examId = GsonUtils.getString("_id", examJson).ifBlank { "$courseId-$stepId-$examKey" }
-        val questionArray = GsonUtils.getJsonArray("questions", examJson)
+        if (!stepJson.containsKey(examKey)) return
+        val examJson = stepJson[examKey] as JsonObject
+        val examId = KJson.getString("_id", examJson).ifBlank { "$courseId-$stepId-$examKey" }
+        val questionArray = KJson.getJsonArray("questions", examJson)
         exams.add(
             StepExam(
                 id = examId,
-                _rev = GsonUtils.getString("_rev", examJson),
-                createdDate = GsonUtils.getLong("createdDate", examJson),
-                updatedDate = GsonUtils.getLong("updatedDate", examJson),
-                adoptionDate = GsonUtils.getLong("adoptionDate", examJson),
-                createdBy = GsonUtils.getString("createdBy", examJson),
-                totalMarks = GsonUtils.getInt("totalMarks", examJson),
-                name = GsonUtils.getString("name", examJson),
-                description = GsonUtils.getString("description", examJson),
-                type = if (examJson.has("type")) GsonUtils.getString("type", examJson) else examKey,
+                _rev = KJson.getString("_rev", examJson),
+                createdDate = KJson.getLong("createdDate", examJson),
+                updatedDate = KJson.getLong("updatedDate", examJson),
+                adoptionDate = KJson.getLong("adoptionDate", examJson),
+                createdBy = KJson.getString("createdBy", examJson),
+                totalMarks = KJson.getInt("totalMarks", examJson),
+                name = KJson.getString("name", examJson),
+                description = KJson.getString("description", examJson),
+                type = if (examJson.containsKey("type")) KJson.getString("type", examJson) else examKey,
                 stepId = stepId,
                 courseId = courseId,
-                sourcePlanet = GsonUtils.getString("sourcePlanet", examJson),
-                passingPercentage = GsonUtils.getString("passingPercentage", examJson),
-                noOfQuestions = questionArray.size(),
-                teamId = GsonUtils.getString("teamId", examJson),
-                isTeamShareAllowed = GsonUtils.getBoolean("teamShareAllowed", examJson),
-                sourceSurveyId = GsonUtils.getString("sourceSurveyId", examJson),
+                sourcePlanet = KJson.getString("sourcePlanet", examJson),
+                passingPercentage = KJson.getString("passingPercentage", examJson),
+                noOfQuestions = questionArray.size,
+                teamId = KJson.getString("teamId", examJson),
+                isTeamShareAllowed = KJson.getBoolean("teamShareAllowed", examJson),
+                sourceSurveyId = KJson.getString("sourceSurveyId", examJson),
             )
         )
-        for (i in 0 until questionArray.size()) {
-            val questionJson = questionArray[i].asJsonObject
-            val questionId = GsonUtils.getString("id", questionJson).ifBlank { "$examId-$i" }
+        for (i in 0 until questionArray.size) {
+            val questionJson = KJson.asJsonObject(questionArray[i])
+            val questionId = KJson.getString("id", questionJson).ifBlank { "$examId-$i" }
             questions.add(
                 ExamQuestion(
                     id = questionId,
                     examId = examId,
-                    type = GsonUtils.getString("type", questionJson),
-                    header = GsonUtils.getString("title", questionJson),
-                    body = GsonUtils.getString("body", questionJson).ifBlank { GsonUtils.getString("title", questionJson) },
-                    choices = if (questionJson.has("choices")) {
-                        GsonUtils.gson.toJson(GsonUtils.getJsonArray("choices", questionJson))
+                    type = KJson.getString("type", questionJson),
+                    header = KJson.getString("title", questionJson),
+                    body = KJson.getString("body", questionJson).ifBlank { KJson.getString("title", questionJson) },
+                    choices = if (questionJson.containsKey("choices")) {
+                        KJson.gsonToJson(KJson.getJsonArray("choices", questionJson))
                     } else {
                         "[]"
                     },
-                                        hasOtherOption = GsonUtils.getBoolean("hasOtherOption", questionJson),
-                    scaleMax = GsonUtils.getInt("scaleMax", questionJson).let { if (it <= 0) 9 else it },
-                    marks = GsonUtils.getString("marks", questionJson),
+                                        hasOtherOption = KJson.getBoolean("hasOtherOption", questionJson),
+                    scaleMax = KJson.getInt("scaleMax", questionJson).let { if (it <= 0) 9 else it },
+                    marks = KJson.getString("marks", questionJson),
                     correctChoiceList = extractCorrectChoices(questionJson),
                 )
             )
@@ -802,8 +800,8 @@ class CoursesRepositoryImpl @Inject constructor(
         val certifications = jsonArray.toSyncDocuments().map { (id, jsonDoc) ->
             Certification().apply {
                 _id = id
-                name = GsonUtils.getString("name", jsonDoc)
-                setCourseIds(GsonUtils.getJsonArray("courseIds", jsonDoc).toKotlinx().jsonArray)
+                name = KJson.getString("name", jsonDoc)
+                setCourseIds(KJson.getJsonArray("courseIds", jsonDoc))
             }
         }
         certificationDao.upsertAll(certifications)
@@ -812,26 +810,26 @@ class CoursesRepositoryImpl @Inject constructor(
     private fun queueCourseResources(courseId: String?, stepId: String?, resources: JsonArray) {
         resources.forEach { resource ->
             pendingCourseResources.add(
-                PendingCourseResource(resource.asJsonObject, courseId, stepId)
+                PendingCourseResource(KJson.asJsonObject(resource), courseId, stepId)
             )
         }
     }
 
     private fun extractCorrectChoices(questionJson: JsonObject): List<String> {
-        val choices = GsonUtils.getJsonArray("choices", questionJson)
+        val choices = KJson.getJsonArray("choices", questionJson)
         fun resolveChoiceValue(raw: String): String {
             val matchedChoice = choices.firstOrNull {
-                it.isJsonObject && GsonUtils.getString("id", it.asJsonObject) == raw
-            }?.asJsonObject ?: return raw
+                it is JsonObject && KJson.getString("id", it) == raw
+            } as JsonObject? ?: return raw
 
             return ExamAnswerUtils.choiceDisplayValue(matchedChoice) ?: raw
         }
 
-        val correctChoiceArray = GsonUtils.getJsonArray("correctChoice", questionJson)
-        return if (!correctChoiceArray.isEmpty()) {
-            correctChoiceArray.map { resolveChoiceValue(it.asString) }
+        val correctChoiceArray = KJson.getJsonArray("correctChoice", questionJson)
+        return if (correctChoiceArray.isNotEmpty()) {
+            correctChoiceArray.map { resolveChoiceValue(KJson.gsonAsString(it)) }
         } else {
-            val correctChoice = GsonUtils.getString("correctChoice", questionJson)
+            val correctChoice = KJson.getString("correctChoice", questionJson)
             if (correctChoice.isBlank()) emptyList() else listOf(resolveChoiceValue(correctChoice))
         }
     }
@@ -844,7 +842,7 @@ class CoursesRepositoryImpl @Inject constructor(
             pendingCourseResources.clear()
         }
 
-        val resourceIds = batch.mapNotNull { pending -> GsonUtils.getString("_id", pending.doc).takeIf { it.isNotBlank() } }
+        val resourceIds = batch.mapNotNull { pending -> KJson.getString("_id", pending.doc).takeIf { it.isNotBlank() } }
         val existingMap = if (resourceIds.isNotEmpty()) {
             resourceIds.distinct()
                 .chunked(300)
@@ -855,11 +853,11 @@ class CoursesRepositoryImpl @Inject constructor(
         }
 
         val libraries = batch.mapNotNull { pending ->
-            val resourceId = GsonUtils.getString("_id", pending.doc)
+            val resourceId = KJson.getString("_id", pending.doc)
             val existing = existingMap[resourceId]
             MyLibrary.insertMyLibrary(
                 MyLibrary.Companion.InsertParams(
-                    doc = pending.doc.toKotlinx().jsonObject,
+                    doc = pending.doc,
                     spm = sharedPrefManager,
                     context = context,
                     courseId = pending.courseId,

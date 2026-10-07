@@ -98,7 +98,7 @@ class SyncWireGoldenTest {
     @Test
     fun `course rows handed to the bulk writer`() = runTest {
         val courses = mockk<CoursesRepository>(relaxed = true)
-        val received = mutableListOf<GsonJsonArray>()
+        val received = mutableListOf<JsonArray>()
         coEvery { courses.bulkInsertFromSync(any()) } answers { received.add(firstArg()) }
         manager(courses).syncDb("courses")
         assertEquals(1, received.size)

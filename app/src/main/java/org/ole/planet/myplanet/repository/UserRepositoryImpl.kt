@@ -1196,7 +1196,8 @@ class UserRepositoryImpl @Inject constructor(
         try {
             val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${user._id}").body()?.toGson()
             val myLibs = resourcesRepositoryLazy.get().getMyLibIds(user.id ?: "")
-            val myCourseIds = coursesRepositoryLazy.get().getMyCourseIds(user.id ?: "")
+            // CoursesRepository is on kotlinx; bridged back until this repository moves.
+            val myCourseIds = coursesRepositoryLazy.get().getMyCourseIds(user.id ?: "").toGson()
             val shelfData = getShelfData(user.id, jsonDoc, myLibs, myCourseIds)
             shelfData.addProperty("_rev", GsonUtils.getString("_rev", jsonDoc))
             apiInterface.putDoc(

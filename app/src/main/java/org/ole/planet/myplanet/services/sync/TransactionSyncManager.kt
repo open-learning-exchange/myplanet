@@ -112,22 +112,22 @@ class TransactionSyncManager @Inject constructor(
         "login_activities" to { arr -> activitiesRepository.insertLoginActivitiesFromSync(extractDocs(arr).toGsonList()) },
         "courses_progress" to { arr -> progressRepository.insertCourseProgressFromSync(extractDocs(arr).toGsonList()) },
         "ratings" to { arr -> ratingsRepository.insertRatingsFromSync(extractDocs(arr).toGsonList()) },
-        "certifications" to { arr -> coursesRepository.insertCertificationsFromSync(arr.toGson()) },
+        "certifications" to { arr -> coursesRepository.insertCertificationsFromSync(arr.bridged()) },
         "tags" to { arr -> tagsRepository.insert(extractDocs(arr).toGsonList()) },
-        "team_activities" to { arr -> teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(arr.toGson()) },
-        "tasks" to { arr -> teamsSyncRepository.get().bulkInsertTasksFromSync(arr.toGson()) },
+        "team_activities" to { arr -> teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(arr.bridged()) },
+        "tasks" to { arr -> teamsSyncRepository.get().bulkInsertTasksFromSync(arr.bridged()) },
         "notifications" to { arr -> notificationsRepository.bulkInsertFromSync(arr.toGson()) },
         "achievements" to { arr -> userSyncRepository.bulkInsertAchievementsFromSync(arr.toGson()) },
         "health" to { arr -> healthRepository.bulkInsertFromSync(arr.toGson()) },
         "courses" to { arr ->
             val insertStartTime = SystemClock.elapsedRealtime()
-            coursesRepository.bulkInsertFromSync(arr.toGson())
+            coursesRepository.bulkInsertFromSync(arr.bridged())
             val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
             Log.d("SyncPerf", "    courses insertDuration: ${insertDuration}ms for ${arr.size} items")
         },
         "exams" to { arr -> surveysRepository.bulkInsertExamsFromSync(arr.toGson()) },
         "submissions" to { arr -> submissionsRepository.bulkInsertFromSync(arr.bridged()) },
-        "teams" to { arr -> teamsSyncRepository.get().bulkInsertFromSync(arr.toGson()) }
+        "teams" to { arr -> teamsSyncRepository.get().bulkInsertFromSync(arr.bridged()) }
     )
 
     private fun List<JsonObject>.toGsonList() = map { it.toGson() }

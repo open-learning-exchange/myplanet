@@ -156,7 +156,7 @@ class RepositoryPayloadGoldenTest {
         val teamTaskDao = mockk<TeamTaskDao>(relaxed = true)
         val savedTask = slot<TeamTask>()
         coEvery { teamTaskDao.upsert(capture(savedTask)) } returns Unit
-        val repository = relaxedInstance<TeamsRepositoryImpl>(userSessionManager, injectedGson, teamTaskDao)
+        val repository = relaxedInstance<TeamsRepositoryImpl>(userSessionManager, teamTaskDao)
 
         val log = TeamLog().apply {
             _id = "log-1"
@@ -287,7 +287,7 @@ class RepositoryPayloadGoldenTest {
     @Test
     fun `courses sync payload step ids and question choices`() {
         val repository = relaxedInstance<CoursesRepositoryImpl>(sharedPrefManager)
-        val doc = serverDoc(
+        val doc = kServerDoc(
             """
             {"_id":"course-1","_rev":"3-c","courseTitle":"Course <1>","description":"plain text, no links","memberLimit":"12","createdDate":1.7E12,
              "steps":[

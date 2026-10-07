@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonArray
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -35,6 +36,7 @@ import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CoursesRepositoryImplTest {
@@ -381,10 +383,10 @@ class CoursesRepositoryImplTest {
             "queueCourseResources",
             String::class.java,
             String::class.java,
-            com.google.gson.JsonArray::class.java
+            kotlinx.serialization.json.JsonArray::class.java
         )
         queueMethod.isAccessible = true
-        queueMethod.invoke(repository, "courseId", "stepId", jsonArray)
+        queueMethod.invoke(repository, "courseId", "stepId", jsonArray.toKotlinx().jsonArray)
 
         val existingResource = org.ole.planet.myplanet.model.MyLibrary().apply { id = "resource1" }
         coEvery { myLibraryDao.getByIds(listOf("resource1", "resource2")) } returns listOf(existingResource)
@@ -515,7 +517,7 @@ class CoursesRepositoryImplTest {
         val capturedSteps = slot<List<CourseStep>>()
         coEvery { courseStepDao.upsertAll(capture(capturedSteps)) } returns Unit
 
-        repository.bulkInsertFromSync(syncData)
+        repository.bulkInsertFromSync(syncData.toKotlinx().jsonArray)
 
         coVerify(exactly = 1) { courseStepDao.upsertAll(any()) }
         assertEquals(1, capturedSteps.captured.size)
@@ -549,10 +551,10 @@ class CoursesRepositoryImplTest {
             "queueCourseResources",
             String::class.java,
             String::class.java,
-            com.google.gson.JsonArray::class.java
+            kotlinx.serialization.json.JsonArray::class.java
         )
         queueMethod.isAccessible = true
-        queueMethod.invoke(repository, "courseId", "stepId", jsonArray)
+        queueMethod.invoke(repository, "courseId", "stepId", jsonArray.toKotlinx().jsonArray)
 
         coEvery { myLibraryDao.getByIds(any()) } returns emptyList()
         coEvery { myLibraryDao.upsertAll(any()) } returns Unit
@@ -585,10 +587,10 @@ class CoursesRepositoryImplTest {
             "queueCourseResources",
             String::class.java,
             String::class.java,
-            com.google.gson.JsonArray::class.java
+            kotlinx.serialization.json.JsonArray::class.java
         )
         queueMethod.isAccessible = true
-        queueMethod.invoke(repository, "courseId", "stepId", jsonArray)
+        queueMethod.invoke(repository, "courseId", "stepId", jsonArray.toKotlinx().jsonArray)
 
         coEvery { myLibraryDao.getByIds(any()) } returns emptyList()
         coEvery { myLibraryDao.upsertAll(any()) } returns Unit

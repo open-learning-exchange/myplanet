@@ -109,7 +109,7 @@ class UserRepositoryImplTest {
         coursesRepository = mockk(relaxed = true)
         coursesRepositoryLazy = mockk(relaxed = true)
         every { coursesRepositoryLazy.get() } returns coursesRepository
-        coEvery { coursesRepository.getMyCourseIds(any()) } returns com.google.gson.JsonArray()
+        coEvery { coursesRepository.getMyCourseIds(any()) } returns kotlinx.serialization.json.JsonArray(emptyList())
 
         eventsRepository = mockk(relaxed = true)
         eventsRepositoryLazy = mockk(relaxed = true)

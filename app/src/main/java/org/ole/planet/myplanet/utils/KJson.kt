@@ -94,6 +94,18 @@ object KJson {
     }
 
     /**
+     * Gson's `JsonElement.getAsBoolean()`: a primitive's text read as `"true"` (any case), a
+     * one-element array as its element; throws where Gson throws, like [gsonAsString].
+     */
+    fun gsonAsBoolean(element: JsonElement?): Boolean = when (element) {
+        null -> throw NullPointerException("JsonElement is null")
+        is JsonNull -> throw UnsupportedOperationException("JsonNull")
+        is JsonPrimitive -> element.content.equals("true", ignoreCase = true)
+        is JsonObject -> throw UnsupportedOperationException("JsonObject")
+        is JsonArray -> if (element.size == 1) gsonAsBoolean(element[0]) else throw IllegalStateException("Array must have size 1, but has size ${element.size}")
+    }
+
+    /**
      * Gson's `fromJson(text, JsonElement::class.java)`, through [GsonLenientParser]: `null` for
      * null text or an empty document, Gson's lenient grammar (single quotes, unquoted tokens as
      * strings, comments, ...), and [SerializationException] on malformed text. The result keeps

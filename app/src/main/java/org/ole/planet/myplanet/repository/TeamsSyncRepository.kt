@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import org.ole.planet.myplanet.model.TeamLog
 
 interface TeamsSyncRepository {

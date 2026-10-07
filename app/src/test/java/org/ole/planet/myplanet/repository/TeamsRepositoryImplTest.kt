@@ -19,6 +19,8 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -43,6 +45,10 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.asLong
+import org.ole.planet.myplanet.utils.asString
+import org.ole.planet.myplanet.utils.has
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TeamsRepositoryImplTest {
@@ -86,7 +92,6 @@ class TeamsRepositoryImplTest {
             mockk<android.content.Context>(relaxed = true),
             userSessionManager,
             uploadManager,
-            gson,
             preferences,
             sharedPrefManager,
             serverUrlMapper,
@@ -741,7 +746,7 @@ class TeamsRepositoryImplTest {
 
         coEvery { teamDao.getByIds(listOf("team1", "team2")) } returns listOf(team1, team2)
 
-        teamsRepository.bulkInsertFromSync(jsonArray)
+        teamsRepository.bulkInsertFromSync(jsonArray.toKotlinx().jsonArray)
 
         coVerify(exactly = 1) { teamDao.getByIds(listOf("team1", "team2")) }
         coVerify(exactly = 0) { teamDao.getAll() }
@@ -770,7 +775,7 @@ class TeamsRepositoryImplTest {
     @Test
     fun `empty id input performs no DAO read at all`() = runTest(testDispatcher) {
         teamsRepository.markTeamsUploaded(emptyMap())
-        teamsRepository.bulkInsertFromSync(com.google.gson.JsonArray())
+        teamsRepository.bulkInsertFromSync(com.google.gson.JsonArray().toKotlinx().jsonArray)
         teamsRepository.batchInsertMyTeams(emptyList())
 
         coVerify(exactly = 0) { teamDao.getByIds(any()) }
@@ -792,7 +797,7 @@ class TeamsRepositoryImplTest {
         coEvery { teamDao.upsert(match { it._id == "team3" }) } returns Unit
 
         try {
-            teamsRepository.batchInsertMyTeams(docs)
+            teamsRepository.batchInsertMyTeams(docs.map { it.toKotlinx().jsonObject })
             org.junit.Assert.fail("Expected CancellationException to be thrown")
         } catch (_: CancellationException) {
             // Expected exception propagated
@@ -817,7 +822,7 @@ class TeamsRepositoryImplTest {
         coEvery { teamDao.upsert(match { it._id == "team2" }) } throws RuntimeException("ordinary error")
         coEvery { teamDao.upsert(match { it._id == "team3" }) } returns Unit
 
-        val count = teamsRepository.batchInsertMyTeams(docs)
+        val count = teamsRepository.batchInsertMyTeams(docs.map { it.toKotlinx().jsonObject })
 
         assertEquals(2, count)
         coVerify(exactly = 1) { teamDao.upsert(match { it._id == "team1" }) }
