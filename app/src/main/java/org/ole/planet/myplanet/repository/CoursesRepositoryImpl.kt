@@ -640,6 +640,7 @@ class CoursesRepositoryImpl @Inject constructor(
 
         val courses = ArrayList<MyCourse>(documentList.size)
         val steps = ArrayList<CourseStep>()
+        val stepIdsByCourse = HashMap<String, List<String>>()
         val exams = ArrayList<StepExam>()
         val questions = ArrayList<ExamQuestion>()
         var processedCount = 0
@@ -651,6 +652,7 @@ class CoursesRepositoryImpl @Inject constructor(
                     processedCount++
                     courses.add(payload.course)
                     steps.addAll(payload.steps)
+                    payload.course.courseId?.let { stepIdsByCourse[it] = payload.steps.map { step -> step.id } }
                     exams.addAll(payload.exams)
                     questions.addAll(payload.questions)
                 }
@@ -665,6 +667,7 @@ class CoursesRepositoryImpl @Inject constructor(
         appDatabase.withTransaction {
             if (courses.isNotEmpty()) courseDao.upsertAll(courses)
             if (steps.isNotEmpty()) courseStepDao.upsertAll(steps)
+            stepIdsByCourse.forEach { (courseId, stepIds) -> courseStepDao.deleteStaleSteps(courseId, stepIds) }
             if (exams.isNotEmpty()) examDao.upsertAll(exams)
             if (questions.isNotEmpty()) questionDao.upsertAll(questions)
         }
