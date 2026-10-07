@@ -659,12 +659,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
-    override fun filter(
-        subjects: MutableSet<String>,
-        languages: MutableSet<String>,
-        mediums: MutableSet<String>,
-        levels: MutableSet<String>
-    ): Int {
+    override fun filter(subjects: MutableSet<String>, languages: MutableSet<String>, mediums: MutableSet<String>, levels: MutableSet<String>): Int {
         this.subjects = subjects
         this.languages = languages
         this.mediums = mediums

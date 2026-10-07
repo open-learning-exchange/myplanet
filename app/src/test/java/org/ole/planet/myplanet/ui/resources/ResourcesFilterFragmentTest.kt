@@ -56,19 +56,18 @@ class ResourcesFilterFragmentTest {
             override fun filter(subjects: MutableSet<String>, languages: MutableSet<String>, mediums: MutableSet<String>, levels: MutableSet<String>): Int = 0
             override fun getFilteredCount(subjects: Set<String>, languages: Set<String>, mediums: Set<String>, levels: Set<String>): Int = 0
             override suspend fun getData(): Map<String, Set<String>> = mapOf(
-                "subjects" to setEmpty("Math", "Science"),
-                "languages" to setEmpty("English"),
-                "mediums" to setEmpty("pdf"),
-                "levels" to setEmpty("Primary")
+                "subjects" to setOf("Math", "Science"),
+                "languages" to setOf("English"),
+                "mediums" to setOf("pdf"),
+                "levels" to setOf("Primary")
             )
             override fun getSelectedFilter(): Map<String, Set<String>> = mapOf(
-                "subjects" to setEmpty("Math", "Science"),
-                "languages" to setEmpty("English"),
-                "mediums" to setEmpty(),
-                "levels" to setEmpty()
+                "subjects" to setOf("Math", "Science"),
+                "languages" to setOf("English"),
+                "mediums" to emptySet(),
+                "levels" to emptySet()
             )
             override fun clearAllFilters() {}
-            private fun setEmpty(vararg items: String) = items.toSet()
         })
 
         fragment.show(activity.supportFragmentManager, "filter_dialog")

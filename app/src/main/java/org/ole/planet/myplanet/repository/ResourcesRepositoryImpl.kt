@@ -910,7 +910,9 @@ class ResourcesRepositoryImpl @Inject constructor(
             .associate { (it.resourceId ?: "") to (it.title ?: "") }
 
         return@withContext grouped.map { (resourceId, accumulator) ->
-            val title = titleMap[resourceId]?.takeIf { it.isNotBlank() } ?: context.getString(R.string.storage_unknown_resource)
+            accumulator.filePaths.sort()
+            val title = titleMap[resourceId]?.takeIf { it.isNotBlank() }
+                ?: context.getString(R.string.storage_unknown_resource)
             OfflineResourceItem(resourceId, title, accumulator.filePaths, accumulator.totalSize)
         }.sortedBy { it.title }
     }

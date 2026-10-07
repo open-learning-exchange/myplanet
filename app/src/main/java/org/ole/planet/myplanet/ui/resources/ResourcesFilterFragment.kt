@@ -239,6 +239,7 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
     }
 
     private fun getHeaderText(baseTitle: String, count: Int): String {
-        return if (count > 0) getString(R.string.filter_header_with_count, baseTitle, count) else baseTitle
+        val cleanTitle = baseTitle.replace("*", "").trim()
+        return if (count > 0) getString(R.string.filter_header_with_count, cleanTitle, count) else cleanTitle
     }
 }
