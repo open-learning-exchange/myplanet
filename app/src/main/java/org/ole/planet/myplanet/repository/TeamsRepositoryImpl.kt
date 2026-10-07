@@ -1262,7 +1262,20 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun bulkInsertTasksFromSync(jsonArray: JsonArray) {
         val tasks = jsonArray.toSyncDocuments().map { (_, doc) -> TeamTask.fromJson(doc) }
-        teamTaskDao.upsertAll(tasks)
+        val localIdByRemoteId = teamTaskDao.getByRemoteIds(tasks.mapNotNull { it._id?.takeIf(String::isNotBlank) })
+            .filter { it._id != null && it.id != it._id }
+            .associate { it._id!! to it.id }
+        val duplicateIds = mutableListOf<String>()
+        tasks.forEach { task ->
+            localIdByRemoteId[task._id]?.let { localId ->
+                duplicateIds += task.id
+                task.id = localId
+            }
+        }
+        appDatabase.withTransaction {
+            teamTaskDao.deleteByIds(duplicateIds)
+            teamTaskDao.upsertAll(tasks)
+        }
     }
 
     override suspend fun bulkInsertTeamActivitiesFromSync(jsonArray: JsonArray) {
