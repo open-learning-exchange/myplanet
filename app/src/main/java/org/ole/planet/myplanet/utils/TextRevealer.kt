@@ -4,7 +4,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 
-object TypingAnimation {
+object TextRevealer {
     const val TICK_MS = 10L
     const val TARGET_UPDATES = 200
     const val MAX_CHUNK = 8

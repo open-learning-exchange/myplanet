@@ -11,16 +11,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.ceil
 
-class TypingAnimationTest {
+class TextRevealerTest {
 
     @Test
     fun testChunkSize() {
-        assertEquals(1, TypingAnimation.chunkSize(0))
-        assertEquals(1, TypingAnimation.chunkSize(1))
-        assertEquals(1, TypingAnimation.chunkSize(199))
-        assertEquals(2, TypingAnimation.chunkSize(400))
-        assertEquals(8, TypingAnimation.chunkSize(1600))
-        assertEquals(8, TypingAnimation.chunkSize(100_000))
+        assertEquals(1, TextRevealer.chunkSize(0))
+        assertEquals(1, TextRevealer.chunkSize(1))
+        assertEquals(1, TextRevealer.chunkSize(199))
+        assertEquals(2, TextRevealer.chunkSize(400))
+        assertEquals(8, TextRevealer.chunkSize(1600))
+        assertEquals(8, TextRevealer.chunkSize(100_000))
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -28,7 +28,7 @@ class TypingAnimationTest {
     fun testRevealLongString() = runTest {
         val input = "a".repeat(3000)
         val updates = mutableListOf<String>()
-        TypingAnimation.reveal(input) { updates.add(it) }
+        TextRevealer.reveal(input) { updates.add(it) }
 
         val expectedCount = ceil(3000 / 8.0).toInt()
         assertEquals(expectedCount, updates.size)
@@ -48,7 +48,7 @@ class TypingAnimationTest {
     fun testRevealShortString() = runTest {
         val input = "abcde"
         val updates = mutableListOf<String>()
-        TypingAnimation.reveal(input) { updates.add(it) }
+        TextRevealer.reveal(input) { updates.add(it) }
 
         assertEquals(listOf("a", "ab", "abc", "abcd", "abcde"), updates)
     }
@@ -57,7 +57,7 @@ class TypingAnimationTest {
     @Test
     fun testRevealEmptyString() = runTest {
         val updates = mutableListOf<String>()
-        TypingAnimation.reveal("") { updates.add(it) }
+        TextRevealer.reveal("") { updates.add(it) }
 
         assertTrue(updates.isEmpty())
     }
@@ -70,11 +70,11 @@ class TypingAnimationTest {
         var completed = false
 
         val job = launch {
-            TypingAnimation.reveal(input) { updates.add(it) }
+            TextRevealer.reveal(input) { updates.add(it) }
             completed = true
         }
 
-        advanceTimeBy(TypingAnimation.TICK_MS * TypingAnimation.MAX_CHUNK * 10)
+        advanceTimeBy(TextRevealer.TICK_MS * TextRevealer.MAX_CHUNK * 10)
         val updatesBeforeCancel = updates.size
         assertTrue(updatesBeforeCancel > 0)
 
