@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.RatingDao
+import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.di.NetworkModule
 import org.ole.planet.myplanet.model.AiProvider
@@ -34,7 +35,9 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.model.Rating
+import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
@@ -267,6 +270,18 @@ class RepositoryPayloadGoldenTest {
             upserted.joinToString("\n") { "viewIn=${it.viewIn?.replace(Regex("\"sharedDate\":\\d{13}(?=})"), "\"sharedDate\":<now>")} sharedBy=${it.sharedBy}" } +
                 "\nimages=${uploaded.captured.single().images}"
         )
+    }
+
+    @Test
+    fun `courses search activity filter column`() = runTest {
+        val searchActivityDao = mockk<SearchActivityDao>(relaxed = true)
+        val saved = mutableListOf<SearchActivity>()
+        coEvery { searchActivityDao.insert(capture(saved)) } returns Unit
+        val repository = relaxedInstance<CoursesRepositoryImpl>(sharedPrefManager, searchActivityDao)
+        val tags = listOf(TagEntity().apply { _id = "tag <1> & 'x' = y" }, TagEntity().apply { _id = TRICKY })
+        repository.saveSearchActivity(TRICKY, "learner", "planet", "parent", tags, "grade <1>", "")
+        repository.saveSearchActivity("", "learner", "planet", "parent", emptyList(), "", "")
+        raw("courses/searchActivity-filter", saved.joinToString("\n") { "filter=${it.filter}" })
     }
 
     @Test
