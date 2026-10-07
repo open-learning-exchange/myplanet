@@ -194,17 +194,19 @@ class LifeCacheTest {
     }
 
     @Test
-    fun read_returnsDefensiveCopy_mutationDoesNotAffectSubsequentRead() {
+    fun read_returnsEqualContentOnMultipleReads_andDoesNotTouchPrefsTwice() {
         val items = listOf(
             CachedMyLifeItem("img1", "Original Title", true, 1)
         )
         val jsonString = json.encodeToString(items)
         every { mockSharedPreferences.getString("myLifeCache_user1", null) } returns jsonString
 
-        val firstRead = lifeCache.read("user1")!!
-        firstRead[0].title = "Mutated Title"
+        val firstRead = lifeCache.read("user1")
+        val secondRead = lifeCache.read("user1")
 
-        val secondRead = lifeCache.read("user1")!!
-        assertEquals("Original Title", secondRead[0].title)
+        assertNotNull(firstRead)
+        assertNotNull(secondRead)
+        assertEquals(firstRead, secondRead)
+        verify(exactly = 1) { mockSharedPreferences.getString("myLifeCache_user1", null) }
     }
 }

@@ -13,10 +13,10 @@ import org.ole.planet.myplanet.model.MyLife
 
 @Serializable
 data class CachedMyLifeItem(
-    var imageId: String? = null,
-    var title: String? = null,
-    var isVisible: Boolean,
-    var weight: Int
+    val imageId: String? = null,
+    val title: String? = null,
+    val isVisible: Boolean,
+    val weight: Int
 )
 
 @Singleton
@@ -28,14 +28,14 @@ class LifeCache @Inject constructor(
 
     fun read(cacheKey: String): List<CachedMyLifeItem>? {
         memoryCache[cacheKey]?.let { cached ->
-            return cached.map { it.copy() }
+            return cached
         }
 
         val jsonString = preferences.getString("$MY_LIFE_CACHE_PREFIX$cacheKey", null) ?: return null
         return try {
             val parsed: List<CachedMyLifeItem> = json.decodeFromString(jsonString)
             memoryCache[cacheKey] = parsed
-            parsed.map { it.copy() }
+            parsed
         } catch (e: Exception) {
             null
         }
