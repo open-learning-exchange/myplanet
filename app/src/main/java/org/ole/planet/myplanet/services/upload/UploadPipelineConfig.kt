@@ -20,7 +20,7 @@ interface UploadPipelineConfig<T : Any> {
      * How the retry queue prints a failed item's payload, so the stored text is the bytes Gson
      * wrote before the migration: [GsonNumbers.BRIDGED] for documents the models build (already
      * normalised with `withGsonBridgedNumbers`), [GsonNumbers.LITERAL] for documents a repository
-     * still builds with Gson and hands over through `toKotlinx`.
+     * builds from typed values, whose number text is already what Gson printed.
      */
     val payloadNumbers: GsonNumbers
     val batchSize: Int

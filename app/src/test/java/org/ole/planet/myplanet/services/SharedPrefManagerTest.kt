@@ -43,7 +43,7 @@ class SharedPrefManagerTest {
         every { mockEditor.putLong(any(), any()) } returns mockEditor
         every { mockEditor.remove(any()) } returns mockEditor
 
-        sharedPrefManager = SharedPrefManager(mockContext, NetworkModule.provideGson())
+        sharedPrefManager = SharedPrefManager(mockContext)
     }
 
     @Test
@@ -71,10 +71,10 @@ class SharedPrefManagerTest {
 
     @Test
     fun testGetSavedUsersSuccessiveCallsCacheHit() {
-        val spyGson = io.mockk.spyk(NetworkModule.provideGson())
-        val manager = SharedPrefManager(mockContext, spyGson)
+        mockkObject(SharedPrefManager.Companion)
+        val manager = SharedPrefManager(mockContext)
         val users = listOf(User(name = "User 1"))
-        val json = spyGson.toJson(users)
+        val json = NetworkModule.provideGson().toJson(users)
         every { mockSharedPreferences.getString("savedUsers", null) } returns json
 
         val res1 = manager.getSavedUsers()
@@ -82,12 +82,13 @@ class SharedPrefManagerTest {
 
         assertEquals(res1, res2)
         assertEquals("User 1", res1[0].name)
-        verify(exactly = 1) { spyGson.fromJson<List<User>>(json, any<java.lang.reflect.Type>()) }
+        verify(exactly = 1) { SharedPrefManager.decodeSavedUsers(json) }
+        unmockkObject(SharedPrefManager.Companion)
     }
 
     @Test
     fun testGetSavedUsersRawComparisonOutOfStringWrite() {
-        val manager = SharedPrefManager(mockContext, NetworkModule.provideGson())
+        val manager = SharedPrefManager(mockContext)
         val initialUsers = listOf(User(name = "User 1"))
         val initialJson = NetworkModule.provideGson().toJson(initialUsers)
         every { mockSharedPreferences.getString("savedUsers", null) } returns initialJson
@@ -105,8 +106,8 @@ class SharedPrefManagerTest {
 
     @Test
     fun testSetSavedUsersFollowedByGetSavedUsersNoReparse() {
-        val spyGson = io.mockk.spyk(NetworkModule.provideGson())
-        val manager = SharedPrefManager(mockContext, spyGson)
+        mockkObject(SharedPrefManager.Companion)
+        val manager = SharedPrefManager(mockContext)
         val users = listOf(User(name = "User 1"))
         val json = NetworkModule.provideGson().toJson(users)
 
@@ -117,7 +118,8 @@ class SharedPrefManagerTest {
         val retrieved = manager.getSavedUsers()
         assertEquals(1, retrieved.size)
         assertEquals("User 1", retrieved[0].name)
-        verify(exactly = 0) { spyGson.fromJson<List<User>>(any<String>(), any<java.lang.reflect.Type>()) }
+        verify(exactly = 0) { SharedPrefManager.decodeSavedUsers(any()) }
+        unmockkObject(SharedPrefManager.Companion)
     }
 
     @Test
@@ -174,7 +176,7 @@ class SharedPrefManagerTest {
             sharedPrefManager.getSavedUsers()
             org.junit.Assert.fail("Expected JsonSyntaxException or similar error on malformed json")
         } catch (e: Exception) {
-            assertTrue(e is com.google.gson.JsonSyntaxException || e is com.google.gson.JsonParseException)
+            assertTrue(e is kotlinx.serialization.SerializationException)
         }
     }
 

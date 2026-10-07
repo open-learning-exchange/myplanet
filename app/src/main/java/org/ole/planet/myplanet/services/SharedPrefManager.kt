@@ -4,27 +4,32 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
 class SharedPrefManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val gson: Gson
 ) {
     private var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     val rawPreferences: SharedPreferences get() = pref
 
     companion object {
-        private val userListType = object : TypeToken<List<User>>() {}.type
         private const val SAVED_USERS = "savedUsers"
         private const val REPLIED_NEWS_ID = "repliedNewsId"
         const val MANUAL_CONFIG = "manualConfig"
@@ -68,6 +73,61 @@ class SharedPrefManager @Inject constructor(
         private const val CONCATENATED_LINKS = "concatenated_links"
         private const val LIBRARY_VIEW_MODE = "libraryViewMode"
         private const val COURSE_VIEW_MODE = "courseViewMode"
+
+        /**
+         * The saved-users text, byte for byte what the app-wide Gson (`serializeNulls`, HTML-safe)
+         * wrote: each user's fields in declaration order, `null`s kept.
+         */
+        internal fun encodeSavedUsers(users: List<User>): String = KJson.toGsonString(
+            JsonArray(
+                users.map { user ->
+                    buildJsonObject {
+                        put("fullName", user.fullName)
+                        put("name", user.name)
+                        put("password", user.password)
+                        put("image", user.image)
+                        put("source", user.source)
+                    }
+                }
+            ),
+            htmlSafe = true,
+        )
+
+        /**
+         * Reads saved users as Gson's reflective `fromJson(text, List<User>)` did: its lenient
+         * grammar, an empty list for blank or `null` text, unknown members ignored, a number or
+         * boolean read into a field as its text. Throws where that path threw: a non-array
+         * document, an object or array where a field value belongs, and a `null` entry (Gson
+         * returned it, and copying the list then failed on it).
+         */
+        internal fun decodeSavedUsers(text: String): List<User> {
+            val root = KJson.parseOrNull(text) ?: return emptyList()
+            if (root is JsonNull) return emptyList()
+            val array = root as? JsonArray ?: throw SerializationException("Expected a JSON array but was $root")
+            return array.map { element ->
+                when (element) {
+                    is JsonNull -> throw NullPointerException("saved user entry is null")
+                    is JsonObject -> User().apply {
+                        for ((key, value) in element) {
+                            when (key) {
+                                "fullName" -> fullName = savedUserField(value)
+                                "name" -> name = savedUserField(value)
+                                "password" -> password = savedUserField(value)
+                                "image" -> image = savedUserField(value)
+                                "source" -> source = savedUserField(value)
+                            }
+                        }
+                    }
+                    else -> throw SerializationException("Expected a saved user object but was $element")
+                }
+            }
+        }
+
+        private fun savedUserField(value: JsonElement): String? = when (value) {
+            is JsonNull -> null
+            is JsonPrimitive -> value.content
+            else -> throw SerializationException("Expected a string but was $value")
+        }
     }
 
     private data class SavedUsersCache(val raw: String?, val parsed: List<User>)
@@ -89,7 +149,7 @@ class SharedPrefManager @Inject constructor(
             return cache.parsed.detach()
         }
         val parsed = if (usersJson != null) {
-            gson.fromJson<List<User>>(usersJson, userListType) ?: emptyList()
+            decodeSavedUsers(usersJson)
         } else {
             emptyList()
         }
@@ -98,7 +158,7 @@ class SharedPrefManager @Inject constructor(
     }
 
     fun setSavedUsers(users: List<User>) {
-        val json = gson.toJson(users)
+        val json = encodeSavedUsers(users)
         pref.edit { putString(SAVED_USERS, json) }
         savedUsersCache = SavedUsersCache(json, users.detach())
     }

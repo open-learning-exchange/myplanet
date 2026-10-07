@@ -11,7 +11,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.di.NetworkModule
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.upload.VoicesUploader
@@ -54,7 +53,7 @@ class ServicesPayloadGoldenTest {
 
     @Test
     fun `saved users preference`() {
-        val manager = SharedPrefManager(context, NetworkModule.provideGson())
+        val manager = SharedPrefManager(context)
         manager.setSavedUsers(
             listOf(
                 User(fullName = TRICKY, name = "learner", password = "p@ss=<word>&'", image = "https://x.org/a?b=1&c=2", source = "member"),

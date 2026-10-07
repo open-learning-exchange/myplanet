@@ -1198,7 +1198,7 @@ class SubmissionsRepositoryImplTest {
         coEvery { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") } returns 1
 
         val failed = repository.markSubmissionsUploaded(
-            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", com.google.gson.JsonObject()))
+            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", kotlinx.serialization.json.JsonObject(emptyMap())))
         )
 
         assertEquals(emptyList<UploadedItemResult>(), failed)
@@ -1210,7 +1210,7 @@ class SubmissionsRepositoryImplTest {
         coEvery { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") } returns 0
 
         val failed = repository.markSubmissionsUploaded(
-            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", com.google.gson.JsonObject()))
+            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", kotlinx.serialization.json.JsonObject(emptyMap())))
         )
 
         assertEquals(1, failed.size)

@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.KJson.getString
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.toGson
 
 @Singleton
 class UploadCoordinator @Inject constructor(
@@ -248,8 +247,7 @@ class UploadCoordinator @Inject constructor(
         config: UploadPipelineConfig<T>
     ): List<UploadedItem> {
         val itemResults = succeeded.map {
-            // UploadedItemResult stays Gson-typed until the repositories that receive it move over.
-            UploadedItemResult(it.localId, it.remoteId, it.remoteRev, it.response.toGson())
+            UploadedItemResult(it.localId, it.remoteId, it.remoteRev, it.response)
         }
 
         val failedResults = config.persistUploaded(uploadRepository, itemResults)

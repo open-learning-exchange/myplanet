@@ -47,7 +47,7 @@ class ResourceViewerViewModelTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
-        sharedPrefManager = SharedPrefManager(context, mockk(relaxed = true))
+        sharedPrefManager = SharedPrefManager(context)
         viewModel = ResourceViewerViewModel(
             context = context,
             resourcesRepository = resourcesRepository,

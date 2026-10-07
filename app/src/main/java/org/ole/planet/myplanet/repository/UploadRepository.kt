@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonObject as GsonJsonObject
 import java.io.File
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -20,5 +19,5 @@ data class UploadedItemResult(
     val localId: String,
     val remoteId: String,
     val remoteRev: String,
-    val response: GsonJsonObject
+    val response: JsonObject
 )

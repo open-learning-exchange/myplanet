@@ -354,8 +354,8 @@ class SurveysRepositoryImplTest {
         val existingExam = StepExam(id = "exam-1")
         coEvery { examDao.getByIds(listOf("exam-1", "exam-missing")) } returns listOf(existingExam)
 
-        val result1 = UploadedItemResult("exam-1", "remote-1", "rev-1", com.google.gson.JsonObject())
-        val result2 = UploadedItemResult("exam-missing", "remote-2", "rev-2", com.google.gson.JsonObject())
+        val result1 = UploadedItemResult("exam-1", "remote-1", "rev-1", kotlinx.serialization.json.JsonObject(emptyMap()))
+        val result2 = UploadedItemResult("exam-missing", "remote-2", "rev-2", kotlinx.serialization.json.JsonObject(emptyMap()))
 
         val failed = repository.markExamsUploaded(listOf(result1, result2))
 

@@ -42,7 +42,7 @@ class TeamChatBadgeIntegrationTest {
 
         val plainGson = Gson()
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        val sharedPrefManager = SharedPrefManager(context, Gson())
+        val sharedPrefManager = SharedPrefManager(context)
         val testDispatcher = UnconfinedTestDispatcher()
         voicesRepository = VoicesRepositoryImpl(
             TestDispatcherProvider(testDispatcher),
