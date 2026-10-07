@@ -262,4 +262,20 @@ class NotificationDaoTest {
         assertTrue(notificationDao.getById("userA_2")!!.isRead)
         assertFalse(notificationDao.getById("userB_1")!!.isRead)
     }
+
+    @Test
+    fun markAllUnreadAsReadReturningIds_includesSystemNotificationsOnlyForAdmins() = runBlocking {
+        val own = createNotification("own").apply { userId = "admin1"; isRead = false }
+        val system = createNotification("system").apply { userId = "SYSTEM"; isRead = false }
+        notificationDao.upsertAll(listOf(own, system))
+
+        val asRegularUser = notificationDao.markAllUnreadAsReadReturningIds("admin1", java.util.Date())
+        assertEquals(listOf("own"), asRegularUser)
+        assertFalse(notificationDao.getById("system")!!.isRead)
+
+        val asAdmin = notificationDao.markAllUnreadAsReadReturningIds("admin1", java.util.Date(), isAdmin = true)
+        assertEquals(listOf("system"), asAdmin)
+        assertTrue(notificationDao.getById("system")!!.isRead)
+        assertEquals(0, notificationDao.getUnreadCount("admin1", true))
+    }
 }
