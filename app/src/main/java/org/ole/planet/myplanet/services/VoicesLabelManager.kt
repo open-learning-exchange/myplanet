@@ -79,10 +79,7 @@ class VoicesLabelManager(
                     isCloseIconVisible = canManageLabels
                     if (canManageLabels) {
                         setOnCloseIconClickListener {
-                            val voiceId = voice.id
-                            if (voiceId != null) {
-                                launchLabelWrite("removeLabel") { removeLabelFn(voiceId, label) }
-                            }
+                            launchLabelWrite("removeLabel") { removeLabelFn(voice.id, label) }
                         }
                     }
                 }

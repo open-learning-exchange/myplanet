@@ -406,4 +406,95 @@ class SyncRepositoryImplTest {
         coVerify(exactly = 0) { userSyncRepository.get().checkShelfBatchForDataOptimized(any()) }
         assertEquals(null, storedStringMap["shelves_with_data"])
     }
+
+    @Test
+    fun `fetchResourceTotalRows returns 42 for total_rows 42`() = runTest {
+        val body = buildJsonObject { put("total_rows", 42) }
+        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } returns Response.success(body)
+
+        val result = syncRepository.fetchResourceTotalRows()
+
+        assertEquals(42, result)
+    }
+
+    @Test
+    fun `fetchResourceTotalRows returns null for empty object`() = runTest {
+        val body = buildJsonObject {}
+        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } returns Response.success(body)
+
+        val result = syncRepository.fetchResourceTotalRows()
+
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun `fetchResourceTotalRows returns null for a null response`() = runTest {
+        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } throws RuntimeException("Network error")
+
+        val result = syncRepository.fetchResourceTotalRows()
+
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun `fetchResourceRows hits URL containing limit and skip and returns rows array`() = runTest {
+        val row1 = buildJsonObject { put("id", "res1") }
+        val body = buildJsonObject {
+            putJsonArray("rows") { add(row1) }
+        }
+        coEvery {
+            apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true&limit=7&skip=14") })
+        } returns Response.success(body)
+
+        val rows = syncRepository.fetchResourceRows(7, 14)
+
+        assertEquals(1, rows?.size())
+        assertEquals("res1", rows?.get(0)?.asJsonObject?.get("id")?.asString)
+    }
+
+    @Test
+    fun `fetchResourceRows returns null for a null response`() = runTest {
+        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true") }) } throws RuntimeException("Network error")
+
+        val rows = syncRepository.fetchResourceRows(7, 14)
+
+        assertEquals(null, rows)
+    }
+
+    @Test
+    fun `filterSyncableResourceDocs drops design docs, blank ids and rows without doc`() {
+        val rows = com.google.gson.JsonArray()
+
+        // _design doc
+        val rowDesign = com.google.gson.JsonObject().apply {
+            add("doc", com.google.gson.JsonObject().apply { addProperty("_id", "_design/resources") })
+        }
+        // blank id
+        val rowBlank = com.google.gson.JsonObject().apply {
+            add("doc", com.google.gson.JsonObject().apply { addProperty("_id", "   ") })
+        }
+        // no doc field
+        val rowNoDoc = com.google.gson.JsonObject().apply {
+            addProperty("key", "val")
+        }
+        // valid doc 1
+        val doc1 = com.google.gson.JsonObject().apply { addProperty("_id", "res_1") }
+        val rowValid1 = com.google.gson.JsonObject().apply { add("doc", doc1) }
+
+        // valid doc 2
+        val doc2 = com.google.gson.JsonObject().apply { addProperty("_id", "res_2") }
+        val rowValid2 = com.google.gson.JsonObject().apply { add("doc", doc2) }
+
+        rows.add(rowDesign)
+        rows.add(rowBlank)
+        rows.add(rowNoDoc)
+        rows.add(rowValid1)
+        rows.add(rowValid2)
+
+        val filtered = syncRepository.filterSyncableResourceDocs(rows)
+
+        assertEquals(2, filtered.size)
+        assertEquals("res_1", filtered[0].get("_id").asString)
+        assertEquals("res_2", filtered[1].get("_id").asString)
+    }
 }

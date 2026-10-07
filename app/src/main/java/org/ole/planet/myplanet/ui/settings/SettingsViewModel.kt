@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.RetryQueueDetails
 import org.ole.planet.myplanet.repository.RetryRepository
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
@@ -20,7 +21,8 @@ class SettingsViewModel @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository,
     private val retryRepository: RetryRepository,
     private val resourcesRepository: ResourcesRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val userSessionManager: UserSessionManager
 ) : ViewModel() {
 
     private val _clearDataEvent = Channel<Unit>(Channel.BUFFERED)
@@ -35,6 +37,8 @@ class SettingsViewModel @Inject constructor(
     private val _downloadCompleteEvent = Channel<List<MyLibrary>>(Channel.BUFFERED)
     val downloadCompleteEvent: Flow<List<MyLibrary>> = _downloadCompleteEvent.receiveAsFlow()
 
+
+    suspend fun isGuest(): Boolean = userSessionManager.getUserModel()?.id?.startsWith("guest") == true
 
     fun isCurrentlyProcessing(): Boolean {
         return retryRepository.isCurrentlyProcessing()
