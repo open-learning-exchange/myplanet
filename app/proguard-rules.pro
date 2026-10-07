@@ -20,11 +20,8 @@
 -dontwarn javax.**
 -dontwarn io.realm.**
 
-# Gson / Retrofit
+# Models / Retrofit
 -keep class org.ole.planet.myplanet.model.** { *; }
--keep class com.google.gson.** { *; }
--keep interface com.google.gson.** { *; }
--dontwarn com.google.gson.**
 -dontwarn retrofit2.**
 -keep class retrofit2.** { *; }
 

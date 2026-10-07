@@ -1,13 +1,10 @@
 package org.ole.planet.myplanet.di
 
 import android.net.TrafficStats
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import java.lang.reflect.Modifier
 import java.lang.reflect.Type
 import java.net.InetAddress
 import java.net.Socket
@@ -29,7 +26,6 @@ import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.utils.Constants.NETWORK_TRAFFIC_TAG
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 
 private class TaggedSocketFactory(private val delegate: SocketFactory) : SocketFactory() {
     private fun tag() = TrafficStats.setThreadStatsTag(NETWORK_TRAFFIC_TAG)
@@ -52,10 +48,6 @@ annotation class ReachabilityHttpClient
 @Retention(AnnotationRetention.BINARY)
 annotation class StandardRetrofit
 
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class PlainGson
-
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
@@ -63,22 +55,6 @@ object NetworkModule {
     private const val READ_TIMEOUT_SECONDS = 60L
     private const val WRITE_TIMEOUT_SECONDS = 120L
     private const val REACHABILITY_TIMEOUT_SECONDS = 5L
-
-    @Provides
-    @Singleton
-    fun provideGson(): Gson {
-        return GsonBuilder()
-            .excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC)
-            .serializeNulls()
-            .create()
-    }
-
-    @Provides
-    @Singleton
-    @PlainGson
-    fun providePlainGson(): Gson {
-        return Gson()
-    }
 
     @Provides
     @Singleton
@@ -90,7 +66,12 @@ object NetworkModule {
         }
     }
 
-    private val kotlinxHandledTypes: Set<Type> = setOf(
+    /**
+     * Every body type [ApiInterface] declares besides OkHttp's own `RequestBody`/`ResponseBody`,
+     * which Retrofit converts itself. kotlinx is the only converter, so a new endpoint type must
+     * be added here (`ApiInterfaceConvertersTest` fails otherwise).
+     */
+    internal val kotlinxHandledTypes: Set<Type> = setOf(
         MyPlanet::class.java,
         ChatResponse::class.java,
         DocumentResponse::class.java,
@@ -166,14 +147,12 @@ object NetworkModule {
     @StandardRetrofit
     fun provideStandardRetrofit(
         @StandardHttpClient okHttpClient: OkHttpClient,
-        gson: Gson,
         json: Json
     ): Retrofit {
         return Retrofit.Builder()
             .baseUrl("https://vi.media.mit.edu/")
             .client(okHttpClient)
             .addConverterFactory(AllowlistFactory(json, kotlinxHandledTypes))
-            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
     }
 

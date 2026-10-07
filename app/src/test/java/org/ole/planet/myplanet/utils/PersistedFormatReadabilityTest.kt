@@ -96,7 +96,7 @@ class PersistedFormatReadabilityTest {
     @Test
     fun `saved users written by Gson decode with the app kotlinx Json`() {
         val stored = golden("services/savedUsers.txt")
-        val viaGson: List<User> = NetworkModule.provideGson().fromJson(stored, object : TypeToken<List<User>>() {}.type)
+        val viaGson: List<User> = GsonUtils.appGson().fromJson(stored, object : TypeToken<List<User>>() {}.type)
         val viaKotlinx = appJson.decodeFromString(ListSerializer(SavedUser.serializer()), stored)
         assertEquals(viaGson.map { listOf(it.fullName, it.name, it.password, it.image, it.source) }, viaKotlinx.map { listOf(it.fullName, it.name, it.password, it.image, it.source) })
         assertTrue(viaKotlinx.first().password!!.contains("=<word>&'"))
@@ -138,7 +138,7 @@ class PersistedFormatReadabilityTest {
 
     @Test
     fun `reflective Gson fromJson versus kotlinx decoding on mistyped input`() {
-        val gson = NetworkModule.provideGson()
+        val gson = GsonUtils.appGson()
         val userListType = object : TypeToken<List<User>>() {}.type
         val users = listOf(
             "[]", "[{}]", """[{"name":"a","extra":1}]""", """[{"name":5}]""", """[{"name":true}]""", """[{"name":{"x":1}}]""",

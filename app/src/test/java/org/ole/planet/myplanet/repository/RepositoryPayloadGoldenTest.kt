@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
-import org.ole.planet.myplanet.di.NetworkModule
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.CourseStep
@@ -50,6 +49,7 @@ import org.ole.planet.myplanet.utils.GoldenFixtures
 import org.ole.planet.myplanet.utils.GoldenFixtures.BIG_LONG
 import org.ole.planet.myplanet.utils.GoldenFixtures.TRICKY
 import org.ole.planet.myplanet.utils.GoldenFixtures.TRICKY_URL
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.JsonGolden.assertMatchesGolden
 import org.ole.planet.myplanet.utils.JsonGolden.assertMatchesRawGolden
 import org.ole.planet.myplanet.utils.TestTimeProvider
@@ -71,8 +71,8 @@ class RepositoryPayloadGoldenTest {
     private val deviceNameProvider = mockk<DeviceNameProvider>()
     private val sharedPrefManager = mockk<SharedPrefManager>(relaxed = true)
 
-    /** The app-wide Gson (serializeNulls) and the @PlainGson one (drops nulls). */
-    private val injectedGson: Gson = NetworkModule.provideGson()
+    /** The app-wide Gson (serializeNulls) and the plain one (drops nulls), as NetworkModule provided them. */
+    private val injectedGson: Gson = GsonUtils.appGson()
     private val plainGson = Gson()
 
     @Before

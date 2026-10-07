@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utils
 
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
@@ -8,6 +9,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser.parseString
 import com.google.gson.JsonPrimitive
 import com.google.gson.internal.LazilyParsedNumber
+import java.lang.reflect.Modifier
 import kotlinx.serialization.json.JsonArray as KJsonArray
 import kotlinx.serialization.json.JsonElement as KJsonElement
 import kotlinx.serialization.json.JsonNull as KJsonNull
@@ -17,6 +19,12 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.longOrNull
 import org.ole.planet.myplanet.model.News
+
+/*
+ * Test-only Gson oracle. The app no longer uses Gson; these are the Gson helpers and bridges it
+ * used before the kotlinx.serialization migration, kept so parity and golden tests can compare
+ * the kotlinx code against what Gson produced.
+ */
 
 fun KJsonObject.toGson(): JsonObject = toGsonElement() as JsonObject
 
@@ -83,6 +91,12 @@ object GsonUtils {
     val gson: Gson by lazy {
         Gson()
     }
+
+    /** The app-wide Gson `NetworkModule.provideGson()` built: final, transient and static fields skipped, nulls kept. */
+    fun appGson(): Gson = GsonBuilder()
+        .excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC)
+        .serializeNulls()
+        .create()
 
     private inline fun <T> safeGet(default: () -> T, block: () -> T): T {
         return try {

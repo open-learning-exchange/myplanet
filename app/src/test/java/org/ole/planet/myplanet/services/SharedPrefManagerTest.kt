@@ -16,9 +16,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.di.NetworkModule
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.GsonUtils
 
 class SharedPrefManagerTest {
 
@@ -59,7 +59,7 @@ class SharedPrefManagerTest {
         verify { mockEditor.putString("savedUsers", capture(jsonSlot)) }
         verify { mockEditor.apply() }
 
-        val expectedJson = NetworkModule.provideGson().toJson(users)
+        val expectedJson = GsonUtils.appGson().toJson(users)
         assertEquals(expectedJson, jsonSlot.captured)
 
         // Retrieve mocked using the generated JSON
@@ -74,7 +74,7 @@ class SharedPrefManagerTest {
         mockkObject(SharedPrefManager.Companion)
         val manager = SharedPrefManager(mockContext)
         val users = listOf(User(name = "User 1"))
-        val json = NetworkModule.provideGson().toJson(users)
+        val json = GsonUtils.appGson().toJson(users)
         every { mockSharedPreferences.getString("savedUsers", null) } returns json
 
         val res1 = manager.getSavedUsers()
@@ -90,14 +90,14 @@ class SharedPrefManagerTest {
     fun testGetSavedUsersRawComparisonOutOfStringWrite() {
         val manager = SharedPrefManager(mockContext)
         val initialUsers = listOf(User(name = "User 1"))
-        val initialJson = NetworkModule.provideGson().toJson(initialUsers)
+        val initialJson = GsonUtils.appGson().toJson(initialUsers)
         every { mockSharedPreferences.getString("savedUsers", null) } returns initialJson
 
         val res1 = manager.getSavedUsers()
         assertEquals("User 1", res1[0].name)
 
         val updatedUsers = listOf(User(name = "User 2"))
-        val updatedJson = NetworkModule.provideGson().toJson(updatedUsers)
+        val updatedJson = GsonUtils.appGson().toJson(updatedUsers)
         every { mockSharedPreferences.getString("savedUsers", null) } returns updatedJson
 
         val res2 = manager.getSavedUsers()
@@ -109,7 +109,7 @@ class SharedPrefManagerTest {
         mockkObject(SharedPrefManager.Companion)
         val manager = SharedPrefManager(mockContext)
         val users = listOf(User(name = "User 1"))
-        val json = NetworkModule.provideGson().toJson(users)
+        val json = GsonUtils.appGson().toJson(users)
 
         every { mockSharedPreferences.getString("savedUsers", null) } returns json
 
@@ -125,7 +125,7 @@ class SharedPrefManagerTest {
     @Test
     @Suppress("UNCHECKED_CAST")
     fun testGetSavedUsersReturnsDefensiveCopyOfList() {
-        val json = NetworkModule.provideGson().toJson(listOf(User(name = "User 1")))
+        val json = GsonUtils.appGson().toJson(listOf(User(name = "User 1")))
         every { mockSharedPreferences.getString("savedUsers", null) } returns json
 
         val mutable = sharedPrefManager.getSavedUsers() as MutableList<User>
@@ -138,7 +138,7 @@ class SharedPrefManagerTest {
 
     @Test
     fun testGetSavedUsersReturnsDefensiveCopyOfElements() {
-        val json = NetworkModule.provideGson().toJson(listOf(User(name = "User 1")))
+        val json = GsonUtils.appGson().toJson(listOf(User(name = "User 1")))
         every { mockSharedPreferences.getString("savedUsers", null) } returns json
 
         sharedPrefManager.getSavedUsers()[0].name = "mutated"
@@ -150,7 +150,7 @@ class SharedPrefManagerTest {
     fun testSetSavedUsersDoesNotCacheCallerElements() {
         val user = User(name = "User 1")
         val users = mutableListOf(user)
-        val json = NetworkModule.provideGson().toJson(users)
+        val json = GsonUtils.appGson().toJson(users)
         every { mockSharedPreferences.getString("savedUsers", null) } returns json
 
         sharedPrefManager.setSavedUsers(users)

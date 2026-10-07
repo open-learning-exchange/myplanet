@@ -15,13 +15,13 @@ import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.model.News
 
 /**
- * kotlinx.serialization twin of [GsonUtils]: the same names and the same results, so a call
- * site can swap `GsonUtils.x(..., gsonObject)` for `KJson.x(..., kotlinxObject)` without a
- * behaviour change. Not wired in yet; `GsonUtilsParityTest` proves the parity case by case.
+ * JSON helpers that reproduce what the app's former Gson helpers (`GsonUtils`) returned, so the
+ * move to kotlinx.serialization kept every value and stored byte; `GsonUtilsParityTest` checks
+ * them against a test-only copy of the Gson code, case by case.
  *
- * "Same results" means: the same as GsonUtils reading the Gson tree the app actually holds,
- * which for server data is the kotlinx tree bridged with [toGson]. Numbers therefore follow the
- * bridge: an integral literal behaves as a `Long`, anything else as a `Double`.
+ * "Same results" means: the same as Gson reading the tree the app held. Server data reached Gson
+ * as a kotlinx tree converted to Gson, so by default numbers follow that conversion ("bridged"):
+ * an integral literal behaves as a `Long`, anything else as a `Double`.
  *
  * [JsonUtils] predates this and keeps its own, slightly different, coercions (see the parity
  * test); its callers are unchanged.
@@ -72,7 +72,7 @@ object KJson {
     private fun primitive(element: JsonElement?): JsonPrimitive? =
         if (element == null || element is JsonNull) null else element as? JsonPrimitive
 
-    /** The value [toGson] gives a non-string primitive: Boolean, Long, Double, or (unparseable) the text itself. */
+    /** A non-string primitive as the bridged Gson tree held it: Boolean, Long, Double, or (unparseable) the text itself. */
     private fun bridged(p: JsonPrimitive): Any = when {
         p.isString -> p.content
         p.booleanOrNull != null -> p.booleanOrNull!!
@@ -84,8 +84,8 @@ object KJson {
     /**
      * Gson's `JsonElement.getAsString()`, throwing where it throws (a missing element as the
      * `NullPointerException` Kotlin raised on the platform-typed `null`). [numbers] says which
-     * Gson tree this mirrors: [GsonNumbers.BRIDGED] for a kotlinx tree Gson saw through
-     * [toGson], [GsonNumbers.LITERAL] for a mirror of a tree Gson parsed itself.
+     * Gson tree this mirrors: [GsonNumbers.BRIDGED] for a kotlinx tree converted to Gson,
+     * [GsonNumbers.LITERAL] for a mirror of a tree Gson parsed itself.
      */
     fun gsonAsString(element: JsonElement?, numbers: GsonNumbers = GsonNumbers.BRIDGED): String = when (element) {
         null -> throw NullPointerException("JsonElement is null")
@@ -108,7 +108,7 @@ object KJson {
     }
 
     /**
-     * Gson's `JsonElement.getAsLong()` on a tree Gson saw through [toGson]: a number as its
+     * Gson's `JsonElement.getAsLong()` on a bridged tree: a number as its
      * bridged `Long`/`Double` value (a `Double` truncated), any other primitive parsed with
      * `Long.parseLong` (so a boolean or non-numeric string throws `NumberFormatException`), a
      * one-element array as its element; throws where Gson throws, like [gsonAsString].
@@ -246,7 +246,7 @@ object KJson {
         }
     }
 
-    /** Unlike Gson, the returned child is immutable: GsonUtils hands back the live child, so callers' edits reach the parent. */
+    /** Unlike Gson, the returned child is immutable: Gson handed back the live child, so callers' edits reached the parent. */
     fun getJsonArray(fieldName: String, jsonObject: JsonObject?): JsonArray = safeGet({ JsonArray(emptyList()) }) {
         jsonObject?.get(fieldName) as? JsonArray ?: JsonArray(emptyList())
     }
@@ -254,7 +254,7 @@ object KJson {
     /**
      * How [toGsonString] prints a number, matching what the replaced Gson tree held.
      * - [BRIDGED]: the tree came from kotlinx (built in code, or server data decoded by the API
-     *   layer) and Gson saw it through [toGson]: an integral literal prints as a `Long`, anything
+     *   layer) and Gson saw it converted to a Gson tree: an integral literal prints as a `Long`, anything
      *   else as a `Double` (`1e2` -> `100.0`, `1.50` -> `1.5`).
      * - [LITERAL]: Gson parsed the text itself (Room columns, preferences), so its
      *   `LazilyParsedNumber` prints the source text unchanged, which is what kotlinx keeps too.
@@ -353,13 +353,13 @@ object KJson {
         out.append(hex)
     }
 
-    /** Unlike Gson, the returned child is immutable: GsonUtils hands back the live child, so callers' edits reach the parent. */
+    /** Unlike Gson, the returned child is immutable: Gson handed back the live child, so callers' edits reached the parent. */
     fun getJsonObject(fieldName: String, jsonObject: JsonObject?): JsonObject = safeGet({ JsonObject(emptyMap()) }) {
         jsonObject?.get(fieldName) as? JsonObject ?: JsonObject(emptyMap())
     }
 }
 
-/** kotlinx twin of the Gson `toSyncDocuments`; throws, as it does, on a row that is not an object. */
+/** The `doc`s of a CouchDB `_all_docs` page, minus design documents; throws, as the Gson version did, on a row that is not an object. */
 fun JsonArray.toSyncDocuments(): List<Pair<String, JsonObject>> =
     mapNotNull { element ->
         val row = element as? JsonObject ?: throw IllegalStateException("Not a JSON Object: $element")
@@ -369,11 +369,10 @@ fun JsonArray.toSyncDocuments(): List<Pair<String, JsonObject>> =
     }
 
 /**
- * This tree with every number held the way Gson held it after [toGson]: an integral literal as a
- * `Long`, any other number as a `Double` (`1e2` -> `100`, `1.50` -> `1.5`), an unparseable
- * literal as a string. Exactly `toGson().toKotlinx()`, without the Gson tree: use it where a
- * model's kotlinx document used to be bridged with [toGson] before it was sent or stored, so the
- * bytes stay what they were.
+ * This tree with every number held the way Gson held a kotlinx tree converted to Gson: an
+ * integral literal as a `Long`, any other number as a `Double` (`1e2` -> `100`, `1.50` -> `1.5`),
+ * an unparseable literal as a string. Use it where a model's kotlinx document used to be
+ * converted to Gson before it was sent or stored, so the bytes stay what they were.
  */
 fun JsonElement.withGsonBridgedNumbers(): JsonElement = when (this) {
     is JsonNull -> this

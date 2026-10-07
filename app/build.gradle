@@ -195,6 +195,9 @@ dependencies {
     testImplementation(libs.test.arch)
     testImplementation(libs.test.hilt)
     testImplementation(libs.room.testing)
+    // Test-only Gson oracle: parity and golden tests compare the kotlinx code with what Gson produced.
+    testImplementation(libs.gson)
+    testImplementation(libs.converter.gson)
     kspTest(libs.hilt.android.compiler)
     androidTestImplementation(libs.test.junit)
     androidTestImplementation(libs.test.ext)
@@ -236,7 +239,6 @@ dependencies {
     implementation(libs.mpAndroidChart)
     implementation(libs.circular.progress.view)
     implementation(libs.material)
-    implementation(libs.gson)
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
@@ -246,7 +248,6 @@ dependencies {
     implementation(libs.materialdrawer) { transitive = true }
     implementation(libs.opencsv) { exclude group: 'commons-logging', module: 'commons-logging' }
     implementation(libs.retrofit)
-    implementation(libs.converter.gson)
     implementation(libs.retrofit.converter.kotlinx.serialization)
     implementation(libs.okhttp)
     implementation(libs.circleimageview)

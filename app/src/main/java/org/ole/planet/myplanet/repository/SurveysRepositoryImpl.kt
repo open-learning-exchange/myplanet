@@ -518,7 +518,7 @@ class SurveysRepositoryImpl @Inject constructor(
         return try {
             val url = "${baseUrl.trimEnd('/')}/api/public/surveys/$teamId/$surveyId"
             val response = apiInterface.getJsonObject(null, url)
-            // Numbers as the old toGson() bridge held them: the document is shown and then stored.
+            // Numbers as the old Gson conversion held them: the document is shown and then stored.
             if (response.isSuccessful) response.body()?.withGsonBridgedNumbers() else null
         } catch (e: CancellationException) {
             throw e

@@ -38,12 +38,12 @@ Always import a type and use its simple name. Never reference a class by its ful
 
 ```kotlin
 // Good
-import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KJson
 
-val title = GsonUtils.getString("title", doc)
+val title = KJson.getString("title", doc)
 
 // BAD - inline fully-qualified name
-val title = org.ole.planet.myplanet.utils.GsonUtils.getString("title", doc)
+val title = org.ole.planet.myplanet.utils.KJson.getString("title", doc)
 ```
 
 **On a name collision, use an import alias** instead of falling back to the fully-qualified name:
@@ -124,7 +124,7 @@ when (view.id) {
 
 ### Object Declarations
 
-Use `object` for singletons and utility holders. The codebase uses this extensively for utilities (`DialogUtils`, `GsonUtils`, `Constants`, `Utilities`). Don't create stateless classes where `object` would do.
+Use `object` for singletons and utility holders. The codebase uses this extensively for utilities (`DialogUtils`, `KJson`, `Constants`, `Utilities`). Don't create stateless classes where `object` would do.
 
 ```kotlin
 object DialogUtils {
@@ -424,7 +424,7 @@ open class MyCourse(
 - `@PrimaryKey` for the key; `indices = [Index(...)]` on `@Entity` for frequently queried columns.
 - `@ColumnInfo(name = "_id")` / `"_rev"` map the CouchDB field names to Kotlin-friendly property names.
 - Non-persisted, computed, or in-memory-only fields use `@Ignore` (often combined with `@Transient`).
-- Multi-valued fields (`List<String>`, nested lists, `Date`) persist via `Converters` — Gson-serialized JSON strings, using the shared `GsonUtils.gson`.
+- Multi-valued fields (`List<String>`, nested lists, `Date`) persist via `Converters` — JSON strings written with kotlinx.serialization.
 
 ### DAOs
 
@@ -518,7 +518,7 @@ If you need a dependency not in an existing entry point, add it there — don't 
 
 ### Existing Qualifiers
 
-`@StandardHttpClient` / `@ReachabilityHttpClient` / `@StandardRetrofit` / `@PlainGson` (NetworkModule), `@ApplicationScope` (ServiceModule), `@AppPreferences` / `@DefaultPreferences` / `@DownloadPreferences` (SharedPreferencesModule). There are no dispatcher qualifiers — dispatchers come from the unqualified `DispatcherProvider`.
+`@StandardHttpClient` / `@ReachabilityHttpClient` / `@StandardRetrofit` (NetworkModule), `@ApplicationScope` (ServiceModule), `@AppPreferences` / `@DefaultPreferences` / `@DownloadPreferences` (SharedPreferencesModule). There are no dispatcher qualifiers — dispatchers come from the unqualified `DispatcherProvider`.
 
 ---
 

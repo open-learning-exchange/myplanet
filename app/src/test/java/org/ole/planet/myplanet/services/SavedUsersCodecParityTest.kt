@@ -3,9 +3,9 @@ package org.ole.planet.myplanet.services
 import com.google.gson.reflect.TypeToken
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import org.ole.planet.myplanet.di.NetworkModule
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.GoldenFixtures.TRICKY
+import org.ole.planet.myplanet.utils.GsonUtils
 
 /**
  * The saved-users preference codec against the app-wide Gson it replaced: the same text for the
@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.utils.GoldenFixtures.TRICKY
  */
 class SavedUsersCodecParityTest {
 
-    private val gson = NetworkModule.provideGson()
+    private val gson = GsonUtils.appGson()
     private val userListType = object : TypeToken<List<User>>() {}.type
 
     private fun outcome(block: () -> List<User>?): String = try {

@@ -183,7 +183,6 @@ myplanet/
 | **Database** | Room (AndroidX) | 2.8.4 | Local SQLite object database |
 | **Networking** | Retrofit | 3.0.0 | REST API client |
 | **HTTP Client** | OkHttp | 5.5.0 | HTTP communication |
-| **JSON** | Gson | 2.14.0 | JSON serialization |
 | **Async** | Kotlin Coroutines | 1.11.0 | Asynchronous programming |
 | **Background Tasks** | AndroidX Work | 2.11.2 | Background job scheduling |
 | **UI Framework** | Material Design 3 | 1.14.0 | UI components |
@@ -192,7 +191,7 @@ myplanet/
 | **Markdown** | Markwon | 4.6.2 | Markdown rendering |
 | **Maps** | OSMDroid | 6.1.20 | OpenStreetMap integration |
 | **Encryption** | Tink | 1.23.0 | Cryptographic operations |
-| **Serialization** | Kotlin Serialization | 1.11.0 | Kotlin-native serialization |
+| **Serialization** | Kotlin Serialization | 1.11.0 | All JSON (Retrofit converter, Room converters, `utils/KJson`); Gson 2.14.0 is a test-only oracle |
 | **CSV** | OpenCSV | 5.12.0 | CSV file parsing |
 
 ### Build Configuration
@@ -501,7 +500,7 @@ open class MyCourse(
 - Use `@PrimaryKey` for the key; add `@Index`/`indices` for frequently queried columns.
 - `@ColumnInfo(name = "_id")` maps the CouchDB `_id`/`_rev` fields to Kotlin-friendly property names.
 - Non-persisted, computed, or in-memory-only fields use `@Ignore` (and often `@Transient`).
-- Multi-valued fields (`List<String>`, nested objects, `Date`) are persisted via `@TypeConverters(Converters::class)` — the converters serialize them to JSON strings with Gson.
+- Multi-valued fields (`List<String>`, nested objects, `Date`) are persisted via `@TypeConverters(Converters::class)` — the converters serialize them to JSON strings with kotlinx.serialization.
 
 **Database Operations — use DAOs (preferred pattern):**
 
