@@ -23,6 +23,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.repository.EnterprisesRepository
+import org.ole.planet.myplanet.utils.AttachmentReader
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -66,9 +67,7 @@ class EnterprisesViewModelTest {
         viewModel = EnterprisesViewModel(
             enterprisesRepository = enterprisesRepository,
             appScope = testScope,
-            context = context,
-            timeProvider = timeProvider,
-            dispatcherProvider = dispatcherProvider
+            attachmentReader = AttachmentReader(context, timeProvider, dispatcherProvider)
         )
     }
 

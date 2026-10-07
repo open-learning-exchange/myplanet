@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.enterprises
+package org.ole.planet.myplanet.utils
 
 import android.app.Application
 import android.content.Context
@@ -18,28 +18,24 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.TestDispatcherProvider
-import org.ole.planet.myplanet.utils.TimeProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE, application = Application::class)
-class EnterprisesAttachmentTest {
+class AttachmentReaderTest {
 
     @Test
-    fun `null uri returns null to null and never calls FileUtils`() = runTest {
+    fun `null uri returns empty attachment and never calls FileUtils`() = runTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val timeProvider = mockk<TimeProvider>()
         val dispatcherProvider = TestDispatcherProvider(StandardTestDispatcher(testScheduler))
 
         mockkObject(FileUtils)
         try {
-            val result = readEnterpriseAttachment(context, null, timeProvider, dispatcherProvider)
-            assertEquals(Pair<String?, ByteArray?>(null, null), result)
+            val result = AttachmentReader(context, timeProvider, dispatcherProvider).read(null)
+            assertEquals(UriAttachment(null, null), result)
             verify(exactly = 0) { FileUtils.getDisplayName(any(), any(), any()) }
             verify(exactly = 0) { FileUtils.readBytesFromUri(any(), any()) }
         } finally {
@@ -61,9 +57,9 @@ class EnterprisesAttachmentTest {
             every { FileUtils.getDisplayName(context, uri, timeProvider) } returns expectedName
             every { FileUtils.readBytesFromUri(context, uri) } returns expectedBytes
 
-            val result = readEnterpriseAttachment(context, uri, timeProvider, dispatcherProvider)
+            val result = AttachmentReader(context, timeProvider, dispatcherProvider).read(uri)
 
-            assertEquals(Pair(expectedName, expectedBytes), result)
+            assertEquals(UriAttachment(expectedName, expectedBytes), result)
             verify(exactly = 1) { FileUtils.getDisplayName(context, uri, timeProvider) }
             verify(exactly = 1) { FileUtils.readBytesFromUri(context, uri) }
         } finally {
@@ -102,9 +98,9 @@ class EnterprisesAttachmentTest {
             every { FileUtils.getDisplayName(context, uri, timeProvider) } returns expectedName
             every { FileUtils.readBytesFromUri(context, uri) } returns expectedBytes
 
-            val result = readEnterpriseAttachment(context, uri, timeProvider, dispatcherProvider)
+            val result = AttachmentReader(context, timeProvider, dispatcherProvider).read(uri)
 
-            assertEquals(Pair(expectedName, expectedBytes), result)
+            assertEquals(UriAttachment(expectedName, expectedBytes), result)
             assertEquals(ioDispatcher, capturedInterceptor)
         } finally {
             unmockkObject(FileUtils)

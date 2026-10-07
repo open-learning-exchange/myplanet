@@ -25,6 +25,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.utils.AttachmentReader
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
@@ -54,9 +55,7 @@ class EnterprisesFinancesViewModelTest {
         viewModel = EnterprisesFinancesViewModel(
             teamsRepository = teamsRepository,
             appScope = testScope,
-            context = context,
-            timeProvider = timeProvider,
-            dispatcherProvider = dispatcherProvider
+            attachmentReader = AttachmentReader(context, timeProvider, dispatcherProvider)
         )
     }
 

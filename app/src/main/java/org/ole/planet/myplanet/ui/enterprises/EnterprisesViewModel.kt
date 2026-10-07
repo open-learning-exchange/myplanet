@@ -1,11 +1,9 @@
 package org.ole.planet.myplanet.ui.enterprises
 
-import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -17,8 +15,8 @@ import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.repository.EnterprisesRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.AttachmentReader
+import org.ole.planet.myplanet.utils.UriAttachment
 
 sealed class ReportEvent {
     object ReportAdded : ReportEvent()
@@ -31,9 +29,7 @@ sealed class ReportEvent {
 class EnterprisesViewModel @Inject constructor(
     private val enterprisesRepository: EnterprisesRepository,
     @ApplicationScope private val appScope: CoroutineScope,
-    @ApplicationContext private val context: Context,
-    private val timeProvider: TimeProvider,
-    private val dispatcherProvider: DispatcherProvider
+    private val attachmentReader: AttachmentReader
 ) : ViewModel() {
 
     private val _reportEvent = MutableSharedFlow<ReportEvent>()
@@ -58,9 +54,9 @@ class EnterprisesViewModel @Inject constructor(
         appScope.launch {
             try {
                 val (resolvedName, resolvedData) = if (imageUri != null) {
-                    readEnterpriseAttachment(context, imageUri, timeProvider, dispatcherProvider)
+                    attachmentReader.read(imageUri)
                 } else {
-                    imageName to imageData
+                    UriAttachment(imageName, imageData)
                 }
                 val params = FinanceReportParams(
                     description, beginningBalance, sales, otherIncome, wages,
@@ -92,9 +88,9 @@ class EnterprisesViewModel @Inject constructor(
         appScope.launch {
             try {
                 val (resolvedName, resolvedData) = if (imageUri != null) {
-                    readEnterpriseAttachment(context, imageUri, timeProvider, dispatcherProvider)
+                    attachmentReader.read(imageUri)
                 } else {
-                    imageName to imageData
+                    UriAttachment(imageName, imageData)
                 }
                 val params = FinanceReportParams(
                     description, beginningBalance, sales, otherIncome, wages,

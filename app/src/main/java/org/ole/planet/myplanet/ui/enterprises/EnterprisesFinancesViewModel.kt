@@ -1,11 +1,9 @@
 package org.ole.planet.myplanet.ui.enterprises
 
-import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -23,8 +21,8 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.repository.TeamsFinancesRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.AttachmentReader
+import org.ole.planet.myplanet.utils.UriAttachment
 
 data class FinanceSummaryUiState(
     val debit: Int = 0,
@@ -58,9 +56,7 @@ data class FinanceSummaryUiState(
 class EnterprisesFinancesViewModel @Inject constructor(
     private val teamsRepository: TeamsFinancesRepository,
     @ApplicationScope private val appScope: CoroutineScope,
-    @ApplicationContext private val context: Context,
-    private val timeProvider: TimeProvider,
-    private val dispatcherProvider: DispatcherProvider
+    private val attachmentReader: AttachmentReader
 ) : ViewModel() {
 
     private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
@@ -126,9 +122,9 @@ class EnterprisesFinancesViewModel @Inject constructor(
         appScope.launch {
             try {
                 val (resolvedName, resolvedData) = if (imageUri != null) {
-                    readEnterpriseAttachment(context, imageUri, timeProvider, dispatcherProvider)
+                    attachmentReader.read(imageUri)
                 } else {
-                    imageName to imageData
+                    UriAttachment(imageName, imageData)
                 }
                 val result = teamsRepository.createTransaction(
                     teamId = teamId,
