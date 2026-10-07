@@ -1262,25 +1262,26 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun bulkInsertTasksFromSync(jsonArray: JsonArray) {
         val tasks = jsonArray.toSyncDocuments().map { (_, doc) -> TeamTask.fromJson(doc) }
-        val localIdByRemoteId = teamTaskDao.getByRemoteIds(tasks.mapNotNull { it._id?.takeIf(String::isNotBlank) })
-            .filter { it._id != null && it.id != it._id }
-            .associate { it._id!! to it.id }
-        val duplicateIds = mutableListOf<String>()
-        tasks.forEach { task ->
-            localIdByRemoteId[task._id]?.let { localId ->
-                duplicateIds += task.id
-                task.id = localId
-            }
-        }
-       
-        val existingById = teamTaskDao.getByIds(tasks.map { it.id }).associateBy { it.id }
-        val toSave = tasks.filter { task ->
-            val existing = existingById[task.id] ?: return@filter true
-            if (existing.isUpdated) return@filter false
-            task.isNotified = existing.isNotified && existing.deadline == task.deadline
-            true
-        }
         appDatabase.withTransaction {
+            val localIdByRemoteId = teamTaskDao.getByRemoteIds(tasks.mapNotNull { it._id?.takeIf(String::isNotBlank) })
+                .filter { it._id != null && it.id != it._id }
+                .associate { it._id!! to it.id }
+            val duplicateIds = mutableListOf<String>()
+            tasks.forEach { task ->
+                localIdByRemoteId[task._id]?.let { localId ->
+                    duplicateIds += task.id
+                    task.id = localId
+                }
+            }
+            val existingById = teamTaskDao.getByIds(tasks.map { it.id }).associateBy { it.id }
+            val toSave = tasks.map { task ->
+                val existing = existingById[task.id] ?: return@map task
+                if (existing.isUpdated) {
+                    existing.apply { _rev = task._rev }
+                } else {
+                    task.apply { isNotified = existing.isNotified && existing.deadline == deadline }
+                }
+            }
             teamTaskDao.deleteByIds(duplicateIds)
             teamTaskDao.upsertAll(toSave)
         }

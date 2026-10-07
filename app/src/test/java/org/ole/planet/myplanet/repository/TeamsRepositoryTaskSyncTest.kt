@@ -123,6 +123,18 @@ class TeamsRepositoryTaskSyncTest {
     }
 
     @Test
+    fun `an uploaded local task keeps the notified flag after the pull remaps it`() = runBlocking {
+        taskDao.upsert(TeamTask().apply { id = "local-due"; teamId = "team1"; title = "Due"; deadline = 1000L; isNotified = true })
+        taskDao.markUploaded("local-due", "server-6", "1-abc")
+
+        repository.bulkInsertTasksFromSync(JsonArray().apply { add(pulledTask("server-6", "Due", deadline = 1000L)) })
+
+        assertEquals(listOf("local-due"), taskDao.getTasksByTeamId("team1").first().map { it.id })
+        assertEquals(true, taskDao.getById("local-due")?.isNotified)
+    }
+
+    // Guards against carrying the flag over unconditionally, not against the original bug
+    @Test
     fun `a moved deadline resets the notified flag`() = runBlocking {
         taskDao.upsert(TeamTask().apply { id = "server-4"; _id = "server-4"; teamId = "team1"; title = "Due"; deadline = 1000L; isNotified = true })
 
@@ -140,5 +152,6 @@ class TeamsRepositoryTaskSyncTest {
         val task = taskDao.getById("server-5")
         assertEquals("Edited offline", task?.title)
         assertEquals(true, task?.isUpdated)
+        assertEquals("2-abc", task?._rev)
     }
 }
