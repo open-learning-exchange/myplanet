@@ -1,0 +1,68 @@
+[
+  {
+    "method": "POST",
+    "header": "Basic golden",
+    "url": "https://admin:secret@planet.example/db/health",
+    "body": {
+      "_id": "u1",
+      "_rev": "1-e",
+      "data": "cipher",
+      "temperature": 36.6,
+      "pulse": 70,
+      "bp": "120/80",
+      "height": 170.5,
+      "weight": 60.0,
+      "vision": "<20/20>",
+      "hearing": "ok & fine",
+      "date": 9007199254740993,
+      "selfExamination": true,
+      "planetCode": "planet",
+      "hasInfo": true,
+      "profileId": "p1",
+      "creatorId": "p1",
+      "gender": "f",
+      "age": 30,
+      "conditions": {
+        "Cold": true,
+        "n": 1.5,
+        "e": 100
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "header": "Basic golden",
+    "url": "https://admin:secret@planet.example/db/health",
+    "body": {
+      "_id": "u2",
+      "data": null,
+      "selfExamination": false,
+      "hasInfo": false,
+      "age": 0
+    }
+  },
+  {
+    "method": "POST",
+    "header": "Basic golden",
+    "url": "https://admin:secret@planet.example/db/health",
+    "body": {
+      "_id": "u3",
+      "data": null,
+      "selfExamination": false,
+      "hasInfo": false,
+      "age": 0
+    }
+  },
+  {
+    "method": "POST",
+    "header": "Basic golden",
+    "url": "https://admin:secret@planet.example/db/health",
+    "body": {
+      "_id": "u4",
+      "data": null,
+      "selfExamination": false,
+      "hasInfo": false,
+      "age": 0
+    }
+  }
+]

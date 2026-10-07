@@ -1,0 +1,86 @@
+[
+  {
+    "method": "PUT",
+    "header": null,
+    "url": "https://learner:p%40ss@planet.example/db/_users/org.couchdb.user:learner",
+    "body": {
+      "name": "learner",
+      "roles": [
+        "learner",
+        "<x>"
+      ],
+      "password": "p@ss<word>&'",
+      "androidId": "golden-android-id",
+      "app": "myplanet",
+      "uniqueAndroidId": "golden-android-id",
+      "customDeviceName": "golden <custom> & 'device'",
+      "isUserAdmin": null,
+      "joinDate": 9007199254740993,
+      "firstName": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+      "lastName": null,
+      "middleName": null,
+      "email": null,
+      "language": null,
+      "level": null,
+      "type": "user",
+      "gender": null,
+      "phoneNumber": null,
+      "birthDate": null,
+      "age": null,
+      "iterations": 10,
+      "parentCode": null,
+      "planetCode": "planet",
+      "birthPlace": null,
+      "isArchived": false
+    }
+  },
+  {
+    "method": "PUT",
+    "header": "Basic bGVhcm5lcjpwQHNzPHdvcmQ+Jic=",
+    "url": "https://admin:secret@planet.example/db/userdb-706c616e6574-6c6561726e6572",
+    "body": {}
+  },
+  {
+    "method": "POST",
+    "header": "Basic bGVhcm5lcjpwQHNzPHdvcmQ+Jic=",
+    "url": "https://admin:secret@planet.example/db/userdb-706c616e6574-6c6561726e6572",
+    "body": {
+      "key": "generated-key",
+      "iv": "generated-iv",
+      "createdOn": "<now>"
+    }
+  },
+  {
+    "method": "PUT",
+    "header": "Basic bGVhcm5lcjpwQHNzPHdvcmQ+Jic=",
+    "url": "https://admin:secret@planet.example/db/userdb-706c616e6574-6c6561726e6572/_security",
+    "body": {
+      "_id": "org.couchdb.user:learner",
+      "_rev": "7-l",
+      "password_scheme": "pbkdf2",
+      "derived_key": 1.5,
+      "salt": "s",
+      "iterations": 10,
+      "members": null
+    }
+  },
+  {
+    "method": "PUT",
+    "header": "Basic golden",
+    "url": "https://learner:p%40ss@planet.example/db/_users/org.couchdb.user:learner",
+    "body": {
+      "_id": "org.couchdb.user:learner",
+      "_rev": "7-l",
+      "name": "learner",
+      "roles": [
+        "learner"
+      ],
+      "joinDate": 1,
+      "lastName": "<l>",
+      "type": "user",
+      "iterations": 10,
+      "planetCode": "planet",
+      "isArchived": false
+    }
+  }
+]

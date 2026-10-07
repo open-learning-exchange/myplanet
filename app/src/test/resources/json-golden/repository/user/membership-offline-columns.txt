@@ -1,0 +1,2 @@
+id=<uuid> _id= _rev= name=newbie roles=[learner] admin=false joinDate=<now> first=Tricky <b>&amp;</b> 'q' = "dq" \ / — ünïcødé 漢字 🌍
+	line sep last=Ñandú middle= email=a&b@example.org phone=+1 (555) level=<1> language=Español gender=female dob=2000-01-01 birthPlace= age= planet=planet parent=parent password=p@ss=<word>&' scheme= iterations= derived= salt= archived=false image=null key=generated-key iv=generated-iv

@@ -1,0 +1,43 @@
+[
+  {
+    "method": "PUT",
+    "header": "Basic golden",
+    "url": "https://admin:secret@planet.example/db/shelf/org.couchdb.user:learner",
+    "body": {
+      "_id": "org.couchdb.user:learner",
+      "meetupIds": [
+        "m1",
+        "m9"
+      ],
+      "resourceIds": [
+        "r1",
+        "r2",
+        "r3"
+      ],
+      "courseIds": [
+        "c1",
+        "c3"
+      ],
+      "_rev": "5-s"
+    }
+  },
+  {
+    "method": "POST",
+    "header": "Basic golden",
+    "url": "https://admin:secret@planet.example/db/shelf/_all_docs?include_docs=true",
+    "body": {
+      "keys": [
+        "a",
+        "b <2>",
+        "c",
+        "d"
+      ]
+    }
+  },
+  {
+    "shelvesWithData": [
+      "a",
+      "c"
+    ]
+  }
+]

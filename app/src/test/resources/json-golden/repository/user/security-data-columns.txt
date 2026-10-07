@@ -1,0 +1,1 @@
+id=learner _id=org.couchdb.user:learner _rev=3-t name=learner roles=null admin=null joinDate=0 first=null last=null middle=null email=null phone=null level=null language=null gender=null dob=null birthPlace=null age=null planet=null parent=null password=null scheme=true iterations=10 derived=dk salt=1.5 archived=false image=null key=null iv=null

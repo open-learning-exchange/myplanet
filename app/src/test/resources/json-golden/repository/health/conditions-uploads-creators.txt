@@ -1,0 +1,3 @@
+conditions={a=true, b=true, c=false, d=false, e=false, f=false, g=false, h=false}
+uploaded={e1=2-h, e2=5, e3=null}
+creators=[<a>, 1.50, true]

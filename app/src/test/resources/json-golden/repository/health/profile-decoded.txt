@@ -1,0 +1,9 @@
+0: userKey=k & <1> lastExamination=1717 profile=<n> & 'x'|1.50|true|needs|old
+1: userKey=5 lastExamination=1000 profile=||||
+2: userKey=null lastExamination=17 profile=||||unquoted
+3: null
+4: null
+5: null
+6: null
+7: null
+8: userKey=false lastExamination=-2 profile=null

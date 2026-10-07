@@ -1,0 +1,79 @@
+[
+  {
+    "method": "PUT",
+    "header": null,
+    "url": "https://admin:secret@planet.example/db/_users/org.couchdb.user:newbie",
+    "body": {
+      "name": "newbie",
+      "firstName": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+      "lastName": "Ñandú",
+      "middleName": "",
+      "password": "p@ss=<word>&'",
+      "isUserAdmin": false,
+      "joinDate": "<now>",
+      "email": "a&b@example.org",
+      "planetCode": "planet",
+      "parentCode": "parent",
+      "language": "Español",
+      "level": "<1>",
+      "phoneNumber": "+1 (555)",
+      "birthDate": "2000-01-01",
+      "gender": "female",
+      "type": "user",
+      "betaEnabled": false,
+      "androidId": "golden-android-id",
+      "app": "myplanet",
+      "uniqueAndroidId": "golden-android-id",
+      "customDeviceName": "golden <custom> & 'device'",
+      "roles": [
+        "learner"
+      ]
+    }
+  },
+  {
+    "method": "PUT",
+    "header": null,
+    "url": "https://admin:secret@planet.example/db/shelf/org.couchdb.user:newbie",
+    "body": {}
+  },
+  {
+    "method": "PUT",
+    "header": "Basic bmV3YmllOnBAc3M9PHdvcmQ+Jic=",
+    "url": "https://admin:secret@planet.example/db/userdb-706c616e6574-6e6577626965",
+    "body": {}
+  },
+  {
+    "method": "POST",
+    "header": "Basic bmV3YmllOnBAc3M9PHdvcmQ+Jic=",
+    "url": "https://admin:secret@planet.example/db/userdb-706c616e6574-6e6577626965",
+    "body": {
+      "key": "generated-key",
+      "iv": "generated-iv",
+      "createdOn": "<now>"
+    }
+  },
+  {
+    "method": "PUT",
+    "header": "Basic bmV3YmllOnBAc3M9PHdvcmQ+Jic=",
+    "url": "https://admin:secret@planet.example/db/userdb-706c616e6574-6e6577626965/_security",
+    "body": {
+      "admins": {
+        "names": [],
+        "roles": [
+          "_admin"
+        ]
+      },
+      "members": {
+        "names": [
+          "newbie"
+        ],
+        "roles": [
+          "learner",
+          1.5,
+          null,
+          "health"
+        ]
+      }
+    }
+  }
+]
