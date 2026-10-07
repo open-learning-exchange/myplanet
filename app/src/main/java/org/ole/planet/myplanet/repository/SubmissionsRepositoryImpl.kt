@@ -1,9 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.Gson
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import java.io.File
 import java.util.Date
 import java.util.UUID
@@ -13,14 +9,18 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.serialization.json.JsonObject as KJsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao.UploadedPhoto
-import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
@@ -37,7 +37,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
-import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.toSyncDocuments
 import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
@@ -52,7 +52,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     private val answerDao: AnswerDao,
     private val examDao: ExamDao,
     private val questionDao: QuestionDao,
-    @PlainGson private val gson: Gson,
     private val deviceNameProvider: DeviceNameProvider
 ) : SubmissionsRepository {
 
@@ -272,7 +271,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun markSubmissionComplete(id: String, payload: JsonObject) {
-        submissionDao.markComplete(id, payload.toString())
+        // The column keeps the text Gson's JsonObject.toString() wrote for the same tree.
+        submissionDao.markComplete(id, KJson.toGsonString(payload))
     }
 
     override suspend fun getSubmissionByRemoteIdOrParentId(submissionId: String): Submission? {
@@ -306,18 +306,18 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                     if (!choices.isNullOrEmpty()) {
                         if (question.type?.startsWith("select") == true && !question.choices.isNullOrEmpty()) {
                                 val choicesArray = try {
-                                    JsonParser.parseString(question.choices).asJsonArray
+                                    KJson.parseOrNull(question.choices) as? JsonArray
+                                        ?: throw IllegalStateException("Not a JSON Array")
                                 } catch (_: Exception) {
                                     null
                                 }
                             formattedAnswer = choices.joinToString(", ") { choiceId ->
                                 try {
                                         val choiceObject = choicesArray?.find {
-                                            it.isJsonObject && it.asJsonObject.has("id") && it.asJsonObject.get(
-                                                "id"
-                                            ).asString == choiceId
-                                        }?.asJsonObject
-                                    choiceObject?.get("text")?.asString ?: choiceId
+                                            it is JsonObject && it.containsKey("id") &&
+                                                KJson.gsonAsString(it["id"], KJson.GsonNumbers.LITERAL) == choiceId
+                                        } as JsonObject?
+                                    choiceObject?.get("text")?.let { KJson.gsonAsString(it, KJson.GsonNumbers.LITERAL) } ?: choiceId
                                 } catch (_: Exception) {
                                     choiceId
                                 }
@@ -352,8 +352,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     override fun getNormalizedSubmitterName(submission: Submission): String? {
         return runCatching {
             submission.user?.takeIf { it.isNotBlank() }?.let { userJson ->
-                val jsonObject = JsonParser.parseString(userJson).asJsonObject
-                GsonUtils.getString("name", jsonObject).takeIf { it.isNotBlank() }
+                val jsonObject = KJson.asJsonObject(KJson.parseOrNull(userJson))
+                KJson.getString("name", jsonObject).takeIf { it.isNotBlank() }
             }
         }.getOrNull()
     }
@@ -489,15 +489,17 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 }
                 else -> null
             }
-            parent = JsonObject().apply {
-                addProperty("_id", exam.id)
-                addProperty("name", exam.name ?: "")
-                addProperty("courseId", exam.courseId ?: "")
-                addProperty("sourcePlanet", exam.sourcePlanet ?: "")
-                addProperty("teamShareAllowed", exam.isTeamShareAllowed)
-                addProperty("noOfQuestions", exam.noOfQuestions)
-                addProperty("isFromNation", exam.isFromNation)
-            }.toString()
+            parent = KJson.toGsonString(
+                buildJsonObject {
+                    put("_id", exam.id)
+                    put("name", exam.name ?: "")
+                    put("courseId", exam.courseId ?: "")
+                    put("sourcePlanet", exam.sourcePlanet ?: "")
+                    put("teamShareAllowed", exam.isTeamShareAllowed)
+                    put("noOfQuestions", exam.noOfQuestions)
+                    put("isFromNation", exam.isFromNation)
+                }
+            )
             this.userId = userId
             status = "pending"
             this.type = type
@@ -513,11 +515,13 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                     this.type = team?.type
                 }
                 membershipDoc = MembershipDoc().apply { this.teamId = persistedTeamId }
-                user = JsonObject().apply {
-                    addProperty("age", userDob ?: "")
-                    addProperty("gender", userGender ?: "")
-                    add("membershipDoc", JsonObject().apply { addProperty("teamId", persistedTeamId) })
-                }.toString()
+                user = KJson.toGsonString(
+                    buildJsonObject {
+                        put("age", userDob ?: "")
+                        put("gender", userGender ?: "")
+                        put("membershipDoc", buildJsonObject { put("teamId", persistedTeamId) })
+                    }
+                )
             }
         }
         saveSubmission(submission)
@@ -627,7 +631,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return examDao.getById(id)
     }
 
-    override suspend fun getUnuploadedPhotos(): List<Pair<String?, KJsonObject>> {
+    override suspend fun getUnuploadedPhotos(): List<Pair<String?, JsonObject>> {
         return submitPhotosDao.getUnuploaded().map { photo ->
             Pair(photo.id, SubmitPhotos.serialize(photo).withGsonBridgedNumbers())
         }
@@ -684,55 +688,65 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun insertSubmission(submission: JsonObject) {
-        if (submission.has("_attachments")) return
+        if (submission.containsKey("_attachments")) return
         upsertRoomSubmissionsFromSync(listOf(submission))
+    }
+
+    /**
+     * The document as the Gson writer left it: it removed `_attachments` from the live `user` child,
+     * so the caller's tree lost it too. Every column below is read from this copy.
+     */
+    private fun withoutUserAttachments(submission: JsonObject): JsonObject {
+        val user = submission["user"] as? JsonObject ?: return submission
+        if (!user.containsKey("_attachments")) return submission
+        return JsonObject(submission + ("user" to JsonObject(user - "_attachments")))
     }
 
     private fun upsertRoomSubmissionsFromSync(documentList: List<JsonObject>) {
         val submissions = ArrayList<Submission>(documentList.size)
         val answers = ArrayList<Answer>()
 
-        documentList.filterNot { it.has("_attachments") }.forEach { submission ->
-            val id = GsonUtils.getString("_id", submission)
+        documentList.filterNot { it.containsKey("_attachments") }.forEach { source ->
+            val id = KJson.getString("_id", source)
             if (id.isBlank()) return@forEach
-            val serverStatus = GsonUtils.getString("status", submission)
-            val rev = GsonUtils.getString("_rev", submission)
-            val parentId = GsonUtils.getString("parentId", submission)
-            val userJson = GsonUtils.getJsonObject("user", submission)
-            val membershipJson = GsonUtils.getJsonObject("membershipDoc", userJson)
-            userJson.remove("_attachments")
-            val teamJson = GsonUtils.getJsonObject("team", submission)
-            val userId = normalizeSubmissionUserId(GsonUtils.getString("_id", userJson))
+            val submission = withoutUserAttachments(source)
+            val serverStatus = KJson.getString("status", submission)
+            val rev = KJson.getString("_rev", submission)
+            val parentId = KJson.getString("parentId", submission)
+            val userJson = KJson.getJsonObject("user", submission)
+            val membershipJson = KJson.getJsonObject("membershipDoc", userJson)
+            val teamJson = KJson.getJsonObject("team", submission)
+            val userId = normalizeSubmissionUserId(KJson.getString("_id", userJson))
             submissions.add(
                 Submission(
                     id = id,
                     _id = id,
                     _rev = rev,
                     parentId = parentId,
-                    type = GsonUtils.getString("type", submission),
+                    type = KJson.getString("type", submission),
                     userId = userId,
-                    user = gson.toJson(userJson),
-                    startTime = GsonUtils.getLong("startTime", submission),
-                    lastUpdateTime = GsonUtils.getLong("lastUpdateTime", submission),
-                    grade = GsonUtils.getLong("grade", submission),
+                    user = KJson.gsonToJson(userJson),
+                    startTime = KJson.getLong("startTime", submission),
+                    lastUpdateTime = KJson.getLong("lastUpdateTime", submission),
+                    grade = KJson.getLong("grade", submission),
                     status = serverStatus,
                     uploaded = rev.isNotEmpty(),
-                    sender = GsonUtils.getString("sender", submission),
-                    source = GsonUtils.getString("source", submission),
-                    parentCode = GsonUtils.getString("parentCode", submission),
-                    parent = gson.toJson(GsonUtils.getJsonObject("parent", submission)),
-                    teamId = GsonUtils.getString("_id", teamJson).ifBlank { GsonUtils.getString("teamId", membershipJson) },
+                    sender = KJson.getString("sender", submission),
+                    source = KJson.getString("source", submission),
+                    parentCode = KJson.getString("parentCode", submission),
+                    parent = KJson.gsonToJson(KJson.getJsonObject("parent", submission)),
+                    teamId = KJson.getString("_id", teamJson).ifBlank { KJson.getString("teamId", membershipJson) },
                     isUpdated = false,
                 )
             )
 
-            val answersArray = GsonUtils.getJsonArray("answers", submission)
+            val answersArray = KJson.getJsonArray("answers", submission)
             val examIdPart = parentId.split("@").firstOrNull() ?: parentId
-            for (i in 0 until answersArray.size()) {
-                val answerJson = answersArray[i].asJsonObject
-                val valueElement = answerJson.get("value")
-                val valueChoices = if (valueElement != null && valueElement.isJsonArray) {
-                    valueElement.asJsonArray.map { it.toString() }
+            for (i in 0 until answersArray.size) {
+                val answerJson = KJson.asJsonObject(answersArray[i])
+                val valueElement = answerJson["value"]
+                val valueChoices = if (valueElement is JsonArray) {
+                    valueElement.map { KJson.toGsonString(it) }
                 } else {
                     null
                 }
@@ -740,17 +754,17 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                     Answer(
                         id = "$id-$i",
                         value = valueElement?.let {
-                            when {
-                                it.isJsonNull || it.isJsonArray -> null
-                                it.isJsonPrimitive -> it.asString
-                                else -> it.toString()
+                            when (it) {
+                                is JsonNull, is JsonArray -> null
+                                is JsonPrimitive -> KJson.gsonAsString(it)
+                                else -> KJson.toGsonString(it)
                             }
                         },
                         valueChoices = valueChoices,
-                        mistakes = GsonUtils.getInt("mistakes", answerJson),
-                        isPassed = GsonUtils.getBoolean("passed", answerJson),
+                        mistakes = KJson.getInt("mistakes", answerJson),
+                        isPassed = KJson.getBoolean("passed", answerJson),
                         examId = parentId,
-                        questionId = GsonUtils.getString("questionId", answerJson).ifBlank { "$examIdPart-$i" },
+                        questionId = KJson.getString("questionId", answerJson).ifBlank { "$examIdPart-$i" },
                         submissionId = id,
                     )
                 )
@@ -777,7 +791,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         sharedPrefManager,
         examDao,
         questionDao,
-        gson,
         deviceNameProvider
     )
 

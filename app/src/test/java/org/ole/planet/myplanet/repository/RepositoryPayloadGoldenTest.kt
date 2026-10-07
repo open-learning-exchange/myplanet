@@ -53,6 +53,7 @@ import org.ole.planet.myplanet.utils.callPrivate
 import org.ole.planet.myplanet.utils.callPrivateSuspend
 import org.ole.planet.myplanet.utils.relaxedInstance
 import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
 /**
  * Goldens for documents the repositories assemble themselves (outside the model serializers),
@@ -91,6 +92,9 @@ class RepositoryPayloadGoldenTest {
 
     /** Server documents reach the repositories as kotlinx trees bridged with toGson(), so build fixtures the same way. */
     private fun serverDoc(text: String): JsonObject = (Json.parseToJsonElement(text) as KJsonObject).toGson()
+
+    /** The same fixture for the repositories already on kotlinx: the tree the sync manager hands them, numbers as Gson held them. */
+    private fun kServerDoc(text: String): KJsonObject = (Json.parseToJsonElement(text) as KJsonObject).withGsonBridgedNumbers()
 
     private fun user(planetCode: String? = "planet") = UserEntity(
         id = "org.couchdb.user:learner",
@@ -179,7 +183,7 @@ class RepositoryPayloadGoldenTest {
         val storedLinks = slot<String>()
         every { sharedPrefManager.getConcatenatedLinks() } returns """["https://old.example/a?b=1&c=<2>"]"""
         every { sharedPrefManager.setConcatenatedLinks(capture(storedLinks)) } returns Unit
-        val repository = relaxedInstance<VoicesRepositoryImpl>(injectedGson, plainGson, sharedPrefManager, newsDao)
+        val repository = relaxedInstance<VoicesRepositoryImpl>(sharedPrefManager, newsDao)
 
         val news = News().apply {
             _id = "news-1"
@@ -215,7 +219,7 @@ class RepositoryPayloadGoldenTest {
 
         repository.insertNewsList(
             listOf(
-                serverDoc(
+                kServerDoc(
                     """
                     {"_id":"n1","_rev":"2-n","message":"see resources/abc and <b>bold</b> & 'x'","time":1717171717171,"updatedDate":1.0,
                      "user":{"_id":"u1","name":"<learner>","age":30,"ratio":0.1,"none":null,"big":9007199254740993},
@@ -224,7 +228,7 @@ class RepositoryPayloadGoldenTest {
                      "chat":"true","news":{"_id":"c1","title":"t","conversations":[{"query":"=","response":"<r>"}],"createdDate":"5"}}
                     """.trimIndent()
                 ),
-                serverDoc("""{"_id":"n2"}"""),
+                kServerDoc("""{"_id":"n2"}"""),
             )
         )
         raw(
@@ -249,13 +253,13 @@ class RepositoryPayloadGoldenTest {
         coEvery { newsDao.getById("shared") } returns News().apply { id = "shared"; this.viewIn = """[{"_id":"team_1","section":"teams","n":1.50,"e":1e2}]""" }
         coEvery { newsDao.getById("unshared") } returns News().apply { id = "unshared"; this.viewIn = viewIn }
         coEvery { newsDao.getByIds(listOf("up")) } returns listOf(News().apply { id = "up" })
-        val repository = relaxedInstance<VoicesRepositoryImpl>(injectedGson, plainGson, sharedPrefManager, newsDao)
+        val repository = relaxedInstance<VoicesRepositoryImpl>(sharedPrefManager, newsDao)
 
         repository.shareNewsToCommunity("shared", "learner", "", "", "Team <1> & 'x'")
         repository.deletePost("unshared", "")
         val images = (Json.parseToJsonElement(
             """[{"resourceId":"r=1","filename":"a&b <c>.jpg","markdown":"![](resources/r=1/a&b <c>.jpg)"}]"""
-        ) as kotlinx.serialization.json.JsonArray).toGson()
+        ) as kotlinx.serialization.json.JsonArray)
         repository.markNewsUploaded(listOf(NewsUpdateData("up", "up-id", "1-up", images)))
 
         raw(

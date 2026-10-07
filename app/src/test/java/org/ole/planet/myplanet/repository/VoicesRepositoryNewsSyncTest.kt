@@ -2,13 +2,15 @@ package org.ole.planet.myplanet.repository
 
 import android.app.Application
 import androidx.room.Room
-import com.google.gson.Gson
-import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -40,20 +42,20 @@ class VoicesRepositoryNewsSyncTest {
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
 
     private fun messageDoc(id: String, message: String, userName: String = "Alice"): JsonObject =
-        JsonObject().apply {
-            addProperty("_id", id)
-            addProperty("_rev", "1-$id")
-            addProperty("docType", "message")
-            addProperty("message", message)
-            addProperty("time", 1000L)
-            add("user", JsonObject().apply {
-                addProperty("_id", "org.couchdb.user:$userName")
-                addProperty("name", userName)
+        buildJsonObject {
+            put("_id", id)
+            put("_rev", "1-$id")
+            put("docType", "message")
+            put("message", message)
+            put("time", 1000L)
+            put("user", buildJsonObject {
+                put("_id", "org.couchdb.user:$userName")
+                put("name", userName)
             })
         }
 
     private fun replyDoc(id: String, replyTo: String, message: String): JsonObject =
-        messageDoc(id, message).apply { addProperty("replyTo", replyTo) }
+        JsonObject(messageDoc(id, message) + ("replyTo" to JsonPrimitive(replyTo)))
 
     @Before
     fun setUp() {
@@ -71,8 +73,6 @@ class VoicesRepositoryNewsSyncTest {
 
         repository = VoicesRepositoryImpl(
             mockk<DispatcherProvider>(relaxed = true),
-            Gson(),
-            Gson(),
             sharedPrefManager,
             newsDao,
             mockk<org.ole.planet.myplanet.data.room.dao.NewsLogDao>(relaxed = true)

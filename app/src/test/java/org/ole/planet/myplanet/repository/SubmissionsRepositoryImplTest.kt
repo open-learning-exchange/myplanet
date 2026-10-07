@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
@@ -21,6 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -48,6 +48,8 @@ import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.asString
+import org.ole.planet.myplanet.utils.getAsJsonObject
 import org.ole.planet.myplanet.utils.toKotlinx
 
 @ExperimentalCoroutinesApi
@@ -87,7 +89,6 @@ class SubmissionsRepositoryImplTest {
             answerDao,
             examDao,
             questionDao,
-            Gson(),
             deviceNameProvider
         ), recordPrivateCalls = true)
     }
@@ -391,7 +392,7 @@ class SubmissionsRepositoryImplTest {
             })
         }
 
-        repository.bulkInsertFromSync(jsonArray)
+        repository.bulkInsertFromSync(jsonArray.toKotlinx().jsonArray)
 
         verify { submissionDao.upsertAllBlocking(match { it.single().id == "test_id" }) }
     }
@@ -415,7 +416,7 @@ class SubmissionsRepositoryImplTest {
 
         // Regression: previously getAsString() on a JsonObject value threw
         // UnsupportedOperationException and failed the entire submissions sync.
-        repository.bulkInsertFromSync(jsonArray)
+        repository.bulkInsertFromSync(jsonArray.toKotlinx().jsonArray)
 
         verify {
             answerDao.upsertAllBlocking(
@@ -441,7 +442,7 @@ class SubmissionsRepositoryImplTest {
             })
         }
 
-        repository.bulkInsertFromSync(jsonArray)
+        repository.bulkInsertFromSync(jsonArray.toKotlinx().jsonArray)
 
         verify {
             answerDao.upsertAllBlocking(
@@ -456,7 +457,7 @@ class SubmissionsRepositoryImplTest {
     @Test
     fun `insertSubmission skips if _attachments present`() = runTest {
         val submission = JsonObject().apply { addProperty("_attachments", "test") }
-        repository.insertSubmission(submission)
+        repository.insertSubmission(submission.toKotlinx().jsonObject)
         verify(exactly = 0) { submissionDao.upsertAllBlocking(any()) }
     }
 
@@ -467,7 +468,7 @@ class SubmissionsRepositoryImplTest {
             addProperty("status", "pending")
         }
 
-        repository.insertSubmission(submission)
+        repository.insertSubmission(submission.toKotlinx().jsonObject)
 
         verify { submissionDao.upsertAllBlocking(match { it.single().id == "test_id" }) }
     }
@@ -951,7 +952,7 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `markSubmissionComplete updates submission through Room`() = runTest {
-        val payload = JsonObject().apply { addProperty("name", "Learner") }
+        val payload = JsonObject().apply { addProperty("name", "Learner") }.toKotlinx().jsonObject
 
         repository.markSubmissionComplete("test_id", payload)
 

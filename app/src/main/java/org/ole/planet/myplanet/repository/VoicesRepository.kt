@@ -1,9 +1,9 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import java.util.HashMap
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.exam
 
-import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -8,6 +7,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -66,7 +66,7 @@ class UserInformationViewModelTest {
 
     @Test
     fun `markSubmissionComplete with null or empty submissionId emits MarkSubmissionError`() = runTest {
-        val jsonUser = JsonObject()
+        val jsonUser = JsonObject(emptyMap())
 
         viewModel.markSubmissionComplete(null, jsonUser)
 
@@ -79,7 +79,7 @@ class UserInformationViewModelTest {
     @Test
     fun `markSubmissionComplete success emits MarkSubmissionSuccess`() = runTest {
         val submissionId = "sub123"
-        val jsonUser = JsonObject()
+        val jsonUser = JsonObject(emptyMap())
         coEvery { submissionsRepository.markSubmissionComplete(submissionId, jsonUser) } returns Unit
 
         viewModel.markSubmissionComplete(submissionId, jsonUser)
@@ -92,7 +92,7 @@ class UserInformationViewModelTest {
     @Test
     fun `markSubmissionComplete exception emits MarkSubmissionError`() = runTest {
         val submissionId = "sub123"
-        val jsonUser = JsonObject()
+        val jsonUser = JsonObject(emptyMap())
         val errorMessage = "Failed to mark complete"
         coEvery { submissionsRepository.markSubmissionComplete(submissionId, jsonUser) } throws Exception(errorMessage)
 

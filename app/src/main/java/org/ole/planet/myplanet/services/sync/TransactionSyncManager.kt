@@ -60,6 +60,7 @@ import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
 @Singleton
 class TransactionSyncManager @Inject constructor(
@@ -97,12 +98,13 @@ class TransactionSyncManager @Inject constructor(
     }
     
     /**
-     * The sync writers still take Gson trees (they move with their repositories), so each
-     * handler bridges the page it is given with [toGson]: the same trees the writers got when
-     * the whole response was bridged on arrival.
+     * Each handler hands its writer the trees the writers have always seen: the page as it looked
+     * after the response was bridged to Gson on arrival. Writers on kotlinx get it through
+     * [bridged] (numbers held as Gson held them, see [withGsonBridgedNumbers]); the writers still
+     * on Gson get the page bridged with [toGson].
      */
     private val tableSyncHandlers: Map<String, suspend (JsonArray) -> Unit> = mapOf(
-        "news" to { arr -> voicesRepository.insertNewsList(extractDocs(arr).toGsonList()) },
+        "news" to { arr -> voicesRepository.insertNewsList(extractDocs(arr).bridged()) },
         "feedback" to { arr -> feedbackRepository.insertFeedbackList(extractDocs(arr).toGsonList()) },
         "chat_history" to { arr -> chatRepository.insertChatHistoryFromSync(rowObjects(arr).toGsonList()) },
         "tablet_users" to { arr -> userSyncRepository.insertUsersFromSync(rowObjects(arr).toGsonList()) },
@@ -124,11 +126,15 @@ class TransactionSyncManager @Inject constructor(
             Log.d("SyncPerf", "    courses insertDuration: ${insertDuration}ms for ${arr.size} items")
         },
         "exams" to { arr -> surveysRepository.bulkInsertExamsFromSync(arr.toGson()) },
-        "submissions" to { arr -> submissionsRepository.bulkInsertFromSync(arr.toGson()) },
+        "submissions" to { arr -> submissionsRepository.bulkInsertFromSync(arr.bridged()) },
         "teams" to { arr -> teamsSyncRepository.get().bulkInsertFromSync(arr.toGson()) }
     )
 
     private fun List<JsonObject>.toGsonList() = map { it.toGson() }
+
+    private fun List<JsonObject>.bridged() = map { it.withGsonBridgedNumbers() }
+
+    private fun JsonArray.bridged() = withGsonBridgedNumbers()
 
     /** Each row as an object, throwing as Gson's `asJsonObject` did for anything else. */
     private fun rowObjects(arr: JsonArray): List<JsonObject> = arr.map { KJson.asJsonObject(it) }

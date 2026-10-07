@@ -333,7 +333,7 @@ fun JsonArray.toSyncDocuments(): List<Pair<String, JsonObject>> =
 fun JsonElement.withGsonBridgedNumbers(): JsonElement = when (this) {
     is JsonNull -> this
     is JsonObject -> withGsonBridgedNumbers()
-    is JsonArray -> JsonArray(map { it.withGsonBridgedNumbers() })
+    is JsonArray -> withGsonBridgedNumbers()
     is JsonPrimitive -> when {
         isString -> this
         booleanOrNull != null -> JsonPrimitive(booleanOrNull!!)
@@ -344,3 +344,5 @@ fun JsonElement.withGsonBridgedNumbers(): JsonElement = when (this) {
 }
 
 fun JsonObject.withGsonBridgedNumbers(): JsonObject = JsonObject(mapValues { (_, value) -> value.withGsonBridgedNumbers() })
+
+fun JsonArray.withGsonBridgedNumbers(): JsonArray = JsonArray(map { it.withGsonBridgedNumbers() })

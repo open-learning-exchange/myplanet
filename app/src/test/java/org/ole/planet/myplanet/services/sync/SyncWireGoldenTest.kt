@@ -13,6 +13,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -77,11 +78,11 @@ class SyncWireGoldenTest {
     @Test
     fun `news docs handed to the sync writer`() = runTest {
         val voices = mockk<VoicesRepository>()
-        val received = mutableListOf<List<GsonJsonObject>>()
+        val received = mutableListOf<List<JsonObject>>()
         coEvery { voices.insertNewsList(any()) } answers { received.add(firstArg()) }
         manager(voices).syncDb("news")
         assertEquals(1, received.size)
-        assertMatchesGolden("services/sync/news-docs", received.single().asArray())
+        assertMatchesGolden("services/sync/news-docs", JsonArray(received.single()))
     }
 
     @Test

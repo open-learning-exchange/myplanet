@@ -36,8 +36,7 @@ import org.ole.planet.myplanet.utils.JsonGolden.assertMatchesGolden
 import org.ole.planet.myplanet.utils.JsonGolden.assertMatchesRawGolden
 import org.ole.planet.myplanet.utils.callPrivate
 import org.ole.planet.myplanet.utils.relaxedInstance
-import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toKotlinx
+import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
 /** Goldens for submission/exam-result upload documents and the JSON columns synced submissions persist. */
 class SubmissionsPayloadGoldenTest {
@@ -73,7 +72,7 @@ class SubmissionsPayloadGoldenTest {
         )
         val provider = mockk<Provider<TeamsRepository>>()
         every { provider.get() } returns teamsRepository
-        repository = relaxedInstance(provider, sharedPrefManager, examDao, questionDao, submissionDao, answerDao, Gson(), deviceNameProvider)
+        repository = relaxedInstance(provider, sharedPrefManager, examDao, questionDao, submissionDao, answerDao, deviceNameProvider)
     }
 
     @After
@@ -156,10 +155,10 @@ class SubmissionsPayloadGoldenTest {
 
     @Test
     fun `completed submission user column`() = runTest {
-        // The caller passes UserSurveyProfile.toJson() bridged with toGson(): numbers as the bridge holds them.
+        // The caller passes UserSurveyProfile.toJson(); the column prints its numbers as the old toGson() bridge held them.
         val profile = Json.parseToJsonElement(
             """{"name":${Json.encodeToString(String.serializer(), TRICKY)},"age":1.50,"n":1e2,"big":$BIG_LONG,"none":null,"list":[1,"<x>"]}"""
-        ).jsonObject.toGson()
+        ).jsonObject
         val text = slot<String>()
         coEvery { submissionDao.markComplete("sub-1", capture(text)) } returns 1
         repository.markSubmissionComplete("sub-1", profile)
@@ -176,7 +175,7 @@ class SubmissionsPayloadGoldenTest {
              "parent":{"_id":"exam-1","name":"Exam & 'quiz'","n":1.0,"e":1e3},
              "answers":[{"value":"<v>","mistakes":"2","passed":"true","questionId":""},{"value":["a",{"id":"b"}]},{"value":{"x":1}},{"value":null},{"value":5}]}
             """.trimIndent()
-        ).jsonObject.toGson()
+        ).jsonObject.withGsonBridgedNumbers()
         val submissions = slot<List<Submission>>()
         val answers = slot<List<Answer>>()
         every { submissionDao.upsertAllBlocking(capture(submissions)) } returns Unit
@@ -198,7 +197,8 @@ class SubmissionsPayloadGoldenTest {
                 "answer ${it.id} value=${it.value} valueChoices=${it.valueChoices} mistakes=${it.mistakes} passed=${it.isPassed} questionId=${it.questionId}"
             }
         )
-        // GsonUtils.getJsonObject hands back the live child, so the remove("_attachments") above also edits the source doc.
-        golden("synced-source-after-upsert", doc.toKotlinx())
+        // Gson removed "_attachments" from the live user child, so the source doc lost it too; the
+        // kotlinx writer reads every column from that same stripped copy.
+        golden("synced-source-after-upsert", repository.callPrivate("withoutUserAttachments", doc))
     }
 }

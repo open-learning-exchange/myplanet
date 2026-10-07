@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.repository
 
 import android.app.Application
 import androidx.room.Room
-import com.google.gson.Gson
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -55,8 +54,6 @@ class VoicesRepositoryNewsWithRepliesTest {
 
         repository = VoicesRepositoryImpl(
             TestDispatcherProvider(mainDispatcherRule.testDispatcher),
-            Gson(),
-            Gson(),
             mockk<SharedPrefManager>(relaxed = true),
             newsDao,
             mockk<NewsLogDao>(relaxed = true)

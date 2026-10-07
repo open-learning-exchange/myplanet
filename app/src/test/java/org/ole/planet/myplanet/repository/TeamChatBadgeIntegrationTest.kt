@@ -46,8 +46,6 @@ class TeamChatBadgeIntegrationTest {
         val testDispatcher = UnconfinedTestDispatcher()
         voicesRepository = VoicesRepositoryImpl(
             TestDispatcherProvider(testDispatcher),
-            Gson(),
-            plainGson,
             sharedPrefManager,
             newsDao,
             database.newsLogDao(),

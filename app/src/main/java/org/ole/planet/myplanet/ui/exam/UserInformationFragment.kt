@@ -15,12 +15,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDialogFragment
 import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding
@@ -32,7 +32,6 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
-import org.ole.planet.myplanet.utils.toGson
 
 @AndroidEntryPoint
 class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
@@ -187,12 +186,12 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         val teamId = arguments?.getString("teamId")
 
         if (!teamId.isNullOrEmpty()) {
-            saveSubmission(profile.toJson().toGson())
+            saveSubmission(profile.toJson())
         } else if (TextUtils.isEmpty(id)) {
             val userId = userModel?.id
             viewModel.updateProfile(userId, profile.toProfileFieldsUpdate())
         } else {
-            saveSubmission(profile.toJson().toGson())
+            saveSubmission(profile.toJson())
         }
     }
 

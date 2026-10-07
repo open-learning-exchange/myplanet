@@ -27,7 +27,10 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
-import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.asString
+import org.ole.planet.myplanet.utils.getAsJsonObject
+import org.ole.planet.myplanet.utils.has
+import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SubmissionsPayloadBuilderTest {
@@ -62,7 +65,6 @@ class SubmissionsPayloadBuilderTest {
             sharedPrefManager,
             examDao,
             questionDao,
-            gson,
             deviceNameProvider
         )
     }
@@ -153,7 +155,7 @@ class SubmissionsPayloadBuilderTest {
         val examResult = payloadBuilder.examUploadPayload(submission, null)
         val submissionResult = payloadBuilder.submissionPayload(submission, "src", "pCode", null)
 
-        val expectedParent = StepExam.serializeExam(exam, listOf(question)).toGson()
+        val expectedParent = StepExam.serializeExam(exam, listOf(question)).withGsonBridgedNumbers()
         assertEquals(expectedParent, examResult.getAsJsonObject("parent"))
         assertEquals(expectedParent, submissionResult.getAsJsonObject("parent"))
     }

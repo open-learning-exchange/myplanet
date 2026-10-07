@@ -3,9 +3,6 @@ package org.ole.planet.myplanet.services.upload
 import android.content.Context
 import android.text.TextUtils
 import android.util.Log
-import com.google.gson.Gson
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -18,7 +15,11 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -33,14 +34,12 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.toKotlinx
 import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class VoicesUploaderTest {
 
     private val context: Context = mockk(relaxed = true)
-    private val gson: Gson = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val voicesRepository: VoicesRepository = mockk(relaxed = true)
     private val uploadRepository: UploadRepository = mockk(relaxed = true)
@@ -71,7 +70,6 @@ class VoicesUploaderTest {
         every { UrlUtils.getUrl() } returns "http://mock.url"
 
         voicesUploader = VoicesUploader(
-            gson = gson,
             userRepository = userRepository,
             voicesRepository = voicesRepository,
             uploadRepository = uploadRepository,
@@ -93,15 +91,14 @@ class VoicesUploaderTest {
         every { FileUtils.getFileNameFromUrl("http://example.com/test_image.png") } returns "test_image.png"
         every { FileUtils.getMimeType("test_image.png") } returns "image/png"
 
-        val imgObj = JsonObject().apply {
-            addProperty("fileName", "test_image.png")
-            addProperty("imageUrl", "http://example.com/test_image.png")
+        val imgObj = buildJsonObject {
+            put("fileName", "test_image.png")
+            put("imageUrl", "http://example.com/test_image.png")
         }
         val imgJsonString = imgObj.toString()
-        every { gson.fromJson(imgJsonString, JsonObject::class.java) } returns imgObj
 
-        val newsJson = JsonObject().apply {
-            addProperty("message", "Hello World")
+        val newsJson = buildJsonObject {
+            put("message", "Hello World")
         }
         val newsItem = NewsUploadData(
             id = "news1",
@@ -114,26 +111,26 @@ class VoicesUploaderTest {
         coEvery { voicesRepository.getNewsForUpload() } returns listOf(newsItem)
         coEvery { userRepository.getUserModel() } returns null
 
-        val imageResponseJson = JsonObject().apply {
-            addProperty("id", "res123")
-            addProperty("rev", "rev123")
+        val imageResponseJson = buildJsonObject {
+            put("id", "res123")
+            put("rev", "rev123")
         }
-        coEvery { uploadRepository.postUpload("http://mock.url/resources", any()) } returns Response.success(imageResponseJson)
-        coEvery { uploadRepository.uploadResource(any(), any(), any()) } returns Response.success(JsonObject())
+        coEvery { uploadRepository.postJson("http://mock.url/resources", any()) } returns Response.success(imageResponseJson)
+        coEvery { uploadRepository.uploadResourceJson(any(), any(), any()) } returns Response.success(JsonObject(emptyMap()))
 
-        val bulkResponse = JsonArray().apply {
-            add(JsonObject().apply {
-                addProperty("id", "news1_id")
-                addProperty("rev", "rev2")
+        val bulkResponse = buildJsonArray {
+            add(buildJsonObject {
+                put("id", "news1_id")
+                put("rev", "rev2")
             })
         }
-        coEvery { uploadRepository.postJsonArray("http://mock.url/news/_bulk_docs", any()) } returns Response.success(bulkResponse.toKotlinx().jsonArray)
+        coEvery { uploadRepository.postJsonArray("http://mock.url/news/_bulk_docs", any()) } returns Response.success(bulkResponse)
 
         voicesUploader.uploadNews()
         advanceUntilIdle()
 
         coVerify(exactly = 1) {
-            uploadRepository.uploadResource(
+            uploadRepository.uploadResourceJson(
                 match { headers -> headers["Content-Type"] == "image/png" && headers["If-Match"] == "rev123" },
                 "http://mock.url/resources/res123/test_image.png",
                 any()

@@ -3,8 +3,9 @@ package org.ole.planet.myplanet.services
 import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import com.google.gson.JsonObject
 import io.mockk.unmockkAll
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -68,7 +69,7 @@ class ServicesPayloadGoldenTest {
     fun `news image resource document`() {
         val uploader = relaxedInstance<VoicesUploader>(TestTimeProvider(1_717_171_717_171L))
         val user = UserEntity(id = "org.couchdb.user:learner", parentCode = "parent", planetCode = "planet")
-        val image = JsonObject().apply { addProperty("fileName", "photo <1> & 'x'.jpg") }
+        val image = buildJsonObject { put("fileName", "photo <1> & 'x'.jpg") }
         assertMatchesGolden("services/voicesUploader-image-full", uploader.callPrivate("createImage", user, image))
         assertMatchesGolden("services/voicesUploader-image-sparse", uploader.callPrivate("createImage", null, null))
     }

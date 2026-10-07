@@ -255,7 +255,7 @@ class UploadConfigs @Inject constructor(
         fetchPendingItems = { submissionsRepository.getPendingExamResults() },
         serializer = UploadSerializer.Async { submission ->
             val user = submission.userId?.let { userRepository.getUserById(it) }
-            submissionsRepository.getExamUploadPayload(submission, user).toKotlinx().jsonObject
+            submissionsRepository.getExamUploadPayload(submission, user)
         },
         idExtractor = { it.id },
         payloadNumbers = GsonNumbers.LITERAL,
@@ -272,7 +272,6 @@ class UploadConfigs @Inject constructor(
         serializer = UploadSerializer.Async { submission ->
             val user = submission.userId?.let { userRepository.getUserById(it) }
             submissionsRepository.serializeSubmission(submission, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode(), user)
-                .toKotlinx().jsonObject
         },
         idExtractor = { it.id },
         payloadNumbers = GsonNumbers.LITERAL,

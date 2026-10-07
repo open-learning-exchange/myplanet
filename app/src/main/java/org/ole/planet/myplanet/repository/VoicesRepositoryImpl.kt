@@ -1,9 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Log
-import com.google.gson.Gson
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import java.util.Calendar
 import java.util.HashMap
 import javax.inject.Inject
@@ -12,26 +9,27 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonObjectBuilder
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.NewsLogDao
-import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
-import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
-import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toGsonAsParsed
-import org.ole.planet.myplanet.utils.toKotlinx
+import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
 class VoicesRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
-    private val gson: Gson,
-    @PlainGson private val plainGson: Gson,
     private val sharedPrefManager: SharedPrefManager,
     private val newsDao: NewsDao,
     private val newsLogDao: NewsLogDao
@@ -63,7 +61,7 @@ class VoicesRepositoryImpl @Inject constructor(
                     news.imageUrls = emptyList()
                     news._id = update._id
                     news._rev = update._rev
-                    news.images = gson.toJson(update.imagesArray)
+                    news.images = KJson.toGsonString(update.imagesArray, htmlSafe = true)
                     toUpdate.add(news)
                 }
             }
@@ -126,13 +124,12 @@ class VoicesRepositoryImpl @Inject constructor(
         }
 
         return try {
-            val array = news.parsedViewIn?.toGsonAsParsed() ?: gson.fromJson(viewIn, JsonArray::class.java)
+            val array = news.parsedViewIn ?: KJson.parseArrayOrNull(viewIn)
             array?.any { element ->
-                if (element == null || !element.isJsonObject) return@any false
-                val obj = element.asJsonObject
-                val section = GsonUtils.getString("section", obj)
+                val obj = element as? JsonObject ?: return@any false
+                val section = KJson.getString("section", obj)
                 if (section.equals("community", ignoreCase = true)) {
-                    val id = GsonUtils.getString("_id", obj)
+                    val id = KJson.getString("_id", obj)
                     id.isEmpty() || id == "@" || userIdentifier.isEmpty() || userIdentifier == "@" || id.equals(userIdentifier, ignoreCase = true)
                 } else {
                     false
@@ -163,7 +160,7 @@ class VoicesRepositoryImpl @Inject constructor(
             .map { allNews ->
                 allNews.mapNotNull { news ->
                     news.viewIn?.takeIf { it.isNotEmpty() }?.let { s ->
-                        news.parsedViewIn = try { gson.fromJson(s, JsonArray::class.java)?.toKotlinx()?.jsonArray } catch (e: Exception) { null }
+                        news.parsedViewIn = try { KJson.parseArrayOrNull(s) } catch (e: Exception) { null }
                     }
 
                     if (isVisibleToUser(news, userIdentifier)) {
@@ -202,19 +199,14 @@ class VoicesRepositoryImpl @Inject constructor(
             if (news != null) {
                 val viewInStr = news.viewIn
                 val array = try {
-                    if (viewInStr.isNullOrEmpty()) JsonArray() else gson.fromJson(viewInStr, JsonArray::class.java)
+                    if (viewInStr.isNullOrEmpty()) null else KJson.parseArrayOrNull(viewInStr)
                 } catch (e: Exception) {
                     null
-                } ?: JsonArray()
+                }.orEmpty().toMutableList()
 
-                if (!array.isEmpty()) {
-                    val firstElement = array.get(0)
-                    if (firstElement.isJsonObject) {
-                        val obj = firstElement.asJsonObject
-                        if (!obj.has("name") && teamName.isNotEmpty()) {
-                            obj.addProperty("name", teamName)
-                        }
-                    }
+                val first = array.firstOrNull() as? JsonObject
+                if (first != null && !first.containsKey("name") && teamName.isNotEmpty()) {
+                    array[0] = JsonObject(first + ("name" to JsonPrimitive(teamName)))
                 }
 
                 val effectivePlanetCode = planetCode.ifEmpty { sharedPrefManager.getPlanetCode() }
@@ -225,14 +217,17 @@ class VoicesRepositoryImpl @Inject constructor(
                     ""
                 }
 
-                val ob = JsonObject()
-                ob.addProperty("section", "community")
-                ob.addProperty("_id", communityId)
-                ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
-                array.add(ob)
+                array.add(
+                    buildJsonObject {
+                        put("section", "community")
+                        put("_id", communityId)
+                        put("sharedDate", Calendar.getInstance().timeInMillis)
+                    }
+                )
 
                 news.sharedBy = userId
-                news.viewIn = gson.toJson(array)
+                // viewIn is matched with SQL LIKE, so it keeps the exact text Gson wrote.
+                news.viewIn = KJson.toGsonString(JsonArray(array), htmlSafe = true, numbers = KJson.GsonNumbers.LITERAL)
                 newsDao.upsert(news)
             }
             Result.success(Unit)
@@ -248,32 +243,26 @@ class VoicesRepositoryImpl @Inject constructor(
         val news = newsDao.getById(newsId) ?: return
         val viewInStr = news.viewIn
         val ar = try {
-            if (viewInStr.isNullOrEmpty()) null else gson.fromJson(viewInStr, JsonArray::class.java)
+            if (viewInStr.isNullOrEmpty()) null else KJson.parseArrayOrNull(viewInStr)
         } catch (e: Exception) {
             null
         }
 
-        if (teamName.isNotEmpty() || ar == null || ar.size() < 2) {
+        if (teamName.isNotEmpty() || ar == null || ar.size < 2) {
             val idsToDelete = collectNewsAndReplies(newsId)
             newsDao.deleteByIds(idsToDelete)
         } else {
-            val filtered = JsonArray().apply {
-                ar.forEach { elem ->
-                    if (elem.isJsonObject) {
-                        val obj = elem.asJsonObject
-                        val isCommunity = GsonUtils.getString("section", obj).equals("community", ignoreCase = true)
-                        val hasSharedDate = obj.has("sharedDate")
-                        if (!isCommunity && !hasSharedDate) {
-                            add(elem)
-                        }
-                    }
-                }
+            val filtered = ar.filter { elem ->
+                val obj = elem as? JsonObject ?: return@filter false
+                val isCommunity = KJson.getString("section", obj).equals("community", ignoreCase = true)
+                val hasSharedDate = obj.containsKey("sharedDate")
+                !isCommunity && !hasSharedDate
             }
             if (filtered.isEmpty()) {
                 val idsToDelete = collectNewsAndReplies(newsId)
                 newsDao.deleteByIds(idsToDelete)
             } else {
-                news.viewIn = gson.toJson(filtered)
+                news.viewIn = KJson.toGsonString(JsonArray(filtered), htmlSafe = true, numbers = KJson.GsonNumbers.LITERAL)
                 news.sharedBy = ""
                 newsDao.upsert(news)
             }
@@ -342,8 +331,8 @@ class VoicesRepositoryImpl @Inject constructor(
         if (imagesToRemove.isNotEmpty()) {
             val updatedUrls = urls.filter { imageUrlJson ->
                 try {
-                    val imgObject = plainGson.fromJson(imageUrlJson, JsonObject::class.java)
-                    val path = GsonUtils.getString("imageUrl", imgObject)
+                    val imgObject = KJson.parseObjectOrNull(imageUrlJson)
+                    val path = KJson.getString("imageUrl", imgObject)
                     !imagesToRemove.contains(path)
                 } catch (_: Exception) {
                     true
@@ -369,7 +358,7 @@ class VoicesRepositoryImpl @Inject constructor(
     override suspend fun insertNewsList(docs: List<JsonObject>) {
         val underscoreIds = ArrayList<String>(docs.size)
         val mappedDocs = docs.map { doc ->
-            val id = GsonUtils.getString("_id", doc)
+            val id = KJson.getString("_id", doc)
             if (id.isNotEmpty()) {
                 underscoreIds.add(id)
             }
@@ -384,25 +373,25 @@ class VoicesRepositoryImpl @Inject constructor(
     private suspend fun buildNewsFromJson(doc: JsonObject, underscoreId: String, existing: Map<String?, News>? = null): News {
         val news = (existing?.get(underscoreId) ?: newsDao.getByUnderscoreId(underscoreId))
             ?: News().apply { id = underscoreId }
-        news._rev = GsonUtils.getString("_rev", doc)
+        news._rev = KJson.getString("_rev", doc)
         news._id = underscoreId
-        news.viewableBy = GsonUtils.getString("viewableBy", doc)
-        news.docType = GsonUtils.getString("docType", doc)
-        news.avatar = GsonUtils.getString("avatar", doc)
-        news.updatedDate = GsonUtils.getLong("updatedDate", doc)
-        news.viewableId = GsonUtils.getString("viewableId", doc)
-        news.createdOn = GsonUtils.getString("createdOn", doc)
-        news.messageType = GsonUtils.getString("messageType", doc)
-        news.messagePlanetCode = GsonUtils.getString("messagePlanetCode", doc)
-        news.replyTo = GsonUtils.getString("replyTo", doc)
-        news.parentCode = GsonUtils.getString("parentCode", doc)
-        val user = GsonUtils.getJsonObject("user", doc)
-        news.user = plainGson.toJson(user)
-        news.userId = GsonUtils.getString("_id", user)
-        news.userName = GsonUtils.getString("name", user)
-        news.time = GsonUtils.getLong("time", doc)
-        val images = GsonUtils.getJsonArray("images", doc)
-        val message = GsonUtils.getString("message", doc)
+        news.viewableBy = KJson.getString("viewableBy", doc)
+        news.docType = KJson.getString("docType", doc)
+        news.avatar = KJson.getString("avatar", doc)
+        news.updatedDate = KJson.getLong("updatedDate", doc)
+        news.viewableId = KJson.getString("viewableId", doc)
+        news.createdOn = KJson.getString("createdOn", doc)
+        news.messageType = KJson.getString("messageType", doc)
+        news.messagePlanetCode = KJson.getString("messagePlanetCode", doc)
+        news.replyTo = KJson.getString("replyTo", doc)
+        news.parentCode = KJson.getString("parentCode", doc)
+        val user = KJson.getJsonObject("user", doc)
+        news.user = KJson.gsonToJson(user)
+        news.userId = KJson.getString("_id", user)
+        news.userName = KJson.getString("name", user)
+        news.time = KJson.getLong("time", doc)
+        val images = KJson.getJsonArray("images", doc)
+        val message = KJson.getString("message", doc)
         news.message = message
         val links = extractLinks(message)
         val baseUrl = UrlUtils.getUrl()
@@ -412,75 +401,88 @@ class VoicesRepositoryImpl @Inject constructor(
                 concatenatedLinks.add(concatenatedLink)
             }
         }
-        news.images = plainGson.toJson(images)
-        val labels = GsonUtils.getJsonArray("labels", doc)
-        news.viewIn = plainGson.toJson(GsonUtils.getJsonArray("viewIn", doc))
-        news.setLabels(labels.toKotlinx().jsonArray)
-        news.chat = GsonUtils.getBoolean("chat", doc)
+        news.images = KJson.gsonToJson(images)
+        val labels = KJson.getJsonArray("labels", doc)
+        news.viewIn = KJson.gsonToJson(KJson.getJsonArray("viewIn", doc))
+        news.setLabels(labels.withGsonBridgedNumbers())
+        news.chat = KJson.getBoolean("chat", doc)
 
-        val newsObj = GsonUtils.getJsonObject("news", doc)
-        news.newsId = GsonUtils.getString("_id", newsObj)
-        news.newsRev = GsonUtils.getString("_rev", newsObj)
-        news.newsUser = GsonUtils.getString("user", newsObj)
-        news.aiProvider = GsonUtils.getString("aiProvider", newsObj)
-        news.newsTitle = GsonUtils.getString("title", newsObj)
-        news.conversations = plainGson.toJson(GsonUtils.getJsonArray("conversations", newsObj))
-        news.newsCreatedDate = GsonUtils.getLong("createdDate", newsObj)
-        news.newsUpdatedDate = GsonUtils.getLong("updatedDate", newsObj)
-        news.sharedBy = GsonUtils.getString("sharedBy", newsObj)
+        val newsObj = KJson.getJsonObject("news", doc)
+        news.newsId = KJson.getString("_id", newsObj)
+        news.newsRev = KJson.getString("_rev", newsObj)
+        news.newsUser = KJson.getString("user", newsObj)
+        news.aiProvider = KJson.getString("aiProvider", newsObj)
+        news.newsTitle = KJson.getString("title", newsObj)
+        news.conversations = KJson.gsonToJson(KJson.getJsonArray("conversations", newsObj))
+        news.newsCreatedDate = KJson.getLong("createdDate", newsObj)
+        news.newsUpdatedDate = KJson.getLong("updatedDate", newsObj)
+        news.sharedBy = KJson.getString("sharedBy", newsObj)
         return news
     }
 
-    private fun serializeNews(news: News): JsonObject {
-        val `object` = JsonObject()
-        `object`.addProperty("chat", news.chat)
-        `object`.addProperty("message", news.message)
-        if (news._id != null) `object`.addProperty("_id", news._id)
-        if (news._rev != null) `object`.addProperty("_rev", news._rev)
-        `object`.addProperty("time", news.time)
-        `object`.addProperty("createdOn", news.createdOn)
-        `object`.addProperty("docType", news.docType)
-        addViewIn(`object`, news)
-        `object`.addProperty("avatar", news.avatar)
-        `object`.addProperty("messageType", news.messageType)
-        `object`.addProperty("messagePlanetCode", news.messagePlanetCode)
-        `object`.addProperty("createdOn", news.createdOn)
-        `object`.addProperty("replyTo", news.replyTo)
-        `object`.addProperty("parentCode", news.parentCode)
-        `object`.add("images", news.imagesArray.toGsonAsParsed())
-        `object`.add("labels", news.labelsArray.toGson())
-        `object`.add("user", plainGson.fromJson(news.user, JsonObject::class.java))
-        val newsObject = JsonObject()
-        newsObject.addProperty("_id", news.newsId)
-        newsObject.addProperty("_rev", news.newsRev)
-        newsObject.addProperty("user", news.newsUser)
-        newsObject.addProperty("aiProvider", news.aiProvider)
-        newsObject.addProperty("title", news.newsTitle)
-        newsObject.add("conversations", plainGson.fromJson(news.conversations, JsonArray::class.java))
-        newsObject.addProperty("createdDate", news.newsCreatedDate)
-        newsObject.addProperty("updatedDate", news.newsUpdatedDate)
-        newsObject.addProperty("sharedBy", news.sharedBy)
-        `object`.add("news", newsObject)
-        `object`.addDocumentOrigin()
-        return `object`
+    private fun serializeNews(news: News): JsonObject = buildJsonObject {
+        put("chat", news.chat)
+        put("message", news.message)
+        if (news._id != null) put("_id", news._id)
+        if (news._rev != null) put("_rev", news._rev)
+        put("time", news.time)
+        put("createdOn", news.createdOn)
+        put("docType", news.docType)
+        addViewIn(this, news)
+        put("avatar", news.avatar)
+        put("messageType", news.messageType)
+        put("messagePlanetCode", news.messagePlanetCode)
+        put("createdOn", news.createdOn)
+        put("replyTo", news.replyTo)
+        put("parentCode", news.parentCode)
+        put("images", news.imagesArray)
+        put("labels", news.labelsArray.withGsonBridgedNumbers())
+        put("user", KJson.parseObjectOrNull(news.user) ?: JsonNull)
+        put(
+            "news",
+            buildJsonObject {
+                put("_id", news.newsId)
+                put("_rev", news.newsRev)
+                put("user", news.newsUser)
+                put("aiProvider", news.aiProvider)
+                put("title", news.newsTitle)
+                put("conversations", KJson.parseArrayOrNull(news.conversations) ?: JsonNull)
+                put("createdDate", news.newsCreatedDate)
+                put("updatedDate", news.newsUpdatedDate)
+                put("sharedBy", news.sharedBy)
+            }
+        )
+        addDocumentOrigin()
     }
 
-    private fun addViewIn(`object`: JsonObject, news: News) {
+    private fun addViewIn(builder: JsonObjectBuilder, news: News) {
         if (!news.viewableId.isNullOrEmpty()) {
-            `object`.addProperty("viewableId", news.viewableId)
-            `object`.addProperty("viewableBy", news.viewableBy)
+            builder.put("viewableId", news.viewableId)
+            builder.put("viewableBy", news.viewableBy)
         }
         val viewInStr = news.viewIn
         if (!viewInStr.isNullOrEmpty()) {
-            val ar = plainGson.fromJson(viewInStr, JsonArray::class.java)
-            if (!ar.isEmpty()) `object`.add("viewIn", ar)
+            val ar = KJson.parseArrayOrNull(viewInStr) ?: throw NullPointerException("blank viewIn")
+            if (ar.isNotEmpty()) builder.put("viewIn", ar)
+        }
+    }
+
+    /** The stored link list as Gson read it into an `Array<String>`: primitives by their text, `null` kept. */
+    private fun storedLinks(text: String): List<String?> {
+        val array = KJson.parseArrayOrNull(text) ?: throw NullPointerException("blank concatenated links")
+        return array.map { element ->
+            when (element) {
+                is JsonNull -> null
+                is JsonPrimitive -> element.content
+                else -> throw IllegalStateException("Expected a string but was $element")
+            }
         }
     }
 
     private fun saveConcatenatedLinksToPrefs() {
         val existingJsonLinks = sharedPrefManager.getConcatenatedLinks()
         val existingConcatenatedLinks = if (existingJsonLinks != null) {
-            LinkedHashSet(plainGson.fromJson(existingJsonLinks, Array<String>::class.java).toList())
+            LinkedHashSet(storedLinks(existingJsonLinks))
         } else {
             LinkedHashSet()
         }
@@ -489,7 +491,7 @@ class VoicesRepositoryImpl @Inject constructor(
             linksToProcess = concatenatedLinks.toList()
         }
         existingConcatenatedLinks.addAll(linksToProcess)
-        val jsonConcatenatedLinks = plainGson.toJson(existingConcatenatedLinks)
+        val jsonConcatenatedLinks = KJson.gsonToJson(JsonArray(existingConcatenatedLinks.map { JsonPrimitive(it) }))
         sharedPrefManager.setConcatenatedLinks(jsonConcatenatedLinks)
     }
 

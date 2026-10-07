@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.text.TextUtils
-import com.google.gson.Gson
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -32,6 +31,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.asString
 
 @ExperimentalCoroutinesApi
 class VoicesRepositoryImplTest {
@@ -40,18 +40,15 @@ class VoicesRepositoryImplTest {
     private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
-    private val gson: Gson = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val newsDao: NewsDao = mockk(relaxed = true)
     private val newsLogDao: org.ole.planet.myplanet.data.room.dao.NewsLogDao = mockk(relaxed = true)
 
-    private fun newRepository(gsonInstance: Gson): VoicesRepositoryImpl {
+    private fun newRepository(): VoicesRepositoryImpl {
         return spyk(
             VoicesRepositoryImpl(
                 dispatcherProvider,
-                gsonInstance,
-                Gson(),
                 sharedPrefManager,
                 newsDao,
                 newsLogDao
@@ -63,7 +60,7 @@ class VoicesRepositoryImplTest {
     @Before
     fun setUp() {
         every { dispatcherProvider.default } returns testDispatcher
-        repository = newRepository(gson)
+        repository = newRepository()
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
     }
@@ -111,7 +108,7 @@ class VoicesRepositoryImplTest {
         mockkStatic(TextUtils::class)
         every { TextUtils.isEmpty(any()) } answers { firstArg<CharSequence?>().isNullOrEmpty() }
 
-        val repoWithRealGson = newRepository(Gson())
+        val repoWithRealGson = newRepository()
 
         val guestNews = News().apply {
             id = "guest_news_id"
@@ -200,7 +197,7 @@ class VoicesRepositoryImplTest {
 
     @Test
     fun `postReply sets replyTo to the parent's local id, not its server _id`() = testScope.runTest {
-        val repoWithRealGson = newRepository(Gson())
+        val repoWithRealGson = newRepository()
         val parentNews = News().apply {
             id = "local-uuid-1234"
             _id = "server-doc-id-5678"
@@ -216,7 +213,7 @@ class VoicesRepositoryImplTest {
 
     @Test
     fun `deletePost from community unshares shared enterprise post without deleting row`() = testScope.runTest {
-        val repoWithRealGson = newRepository(Gson())
+        val repoWithRealGson = newRepository()
         val sharedNews = News().apply {
             id = "shared_news_123"
             sharedBy = "user_1"
@@ -237,7 +234,7 @@ class VoicesRepositoryImplTest {
 
     @Test
     fun `deletePost from team deletes post and replies completely`() = testScope.runTest {
-        val repoWithRealGson = newRepository(Gson())
+        val repoWithRealGson = newRepository()
         val teamNews = News().apply {
             id = "team_news_123"
             viewIn = "[{\"_id\":\"team_123\",\"section\":\"teams\",\"name\":\"Enterprise A\"},{\"section\":\"community\",\"_id\":\"planet@parent\",\"sharedDate\":123456789}]"
@@ -255,7 +252,7 @@ class VoicesRepositoryImplTest {
 
     @Test
     fun `deletePost from community deletes direct community post`() = testScope.runTest {
-        val repoWithRealGson = newRepository(Gson())
+        val repoWithRealGson = newRepository()
         val communityNews = News().apply {
             id = "comm_news_123"
             viewIn = "[{\"_id\":\"planet@parent\",\"section\":\"community\",\"name\":\"\"}]"

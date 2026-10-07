@@ -3,8 +3,6 @@ package org.ole.planet.myplanet.services
 import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import com.google.gson.Gson
-import com.google.gson.JsonParser
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.every
@@ -34,7 +32,6 @@ import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.RetryDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
-import org.ole.planet.myplanet.di.NetworkModule
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.MyTeam
@@ -69,6 +66,7 @@ import org.ole.planet.myplanet.utils.GoldenFixtures.TRICKY
 import org.ole.planet.myplanet.utils.GoldenFixtures.TRICKY_URL
 import org.ole.planet.myplanet.utils.JsonGolden.assertMatchesGolden
 import org.ole.planet.myplanet.utils.JsonGolden.assertMatchesRawGolden
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -196,10 +194,10 @@ class UploadWireGoldenTest {
     fun `exam result put through the coordinator`() = runTest {
         val submissions = mockk<SubmissionsRepository>(relaxed = true)
         coEvery { submissions.getPendingExamResults() } returns listOf(Submission(id = "s-1", _id = "sub-1", userId = "org.couchdb.user:learner"))
-        // The repository builds this with Gson, embedding a stored parent parsed by Gson (number literals kept).
-        coEvery { submissions.getExamUploadPayload(any(), any()) } returns JsonParser.parseString(
-            """{"_id":"sub-1","parent":$numbersText,"title":"$TRICKY_URL","answers":[]}"""
-        ).asJsonObject
+        // The repository embeds a stored parent parsed with Gson's grammar (number literals kept).
+        coEvery { submissions.getExamUploadPayload(any(), any()) } returns KJson.asJsonObject(
+            KJson.parseOrNull("""{"_id":"sub-1","parent":$numbersText,"title":"$TRICKY_URL","answers":[]}""")
+        )
         val (coordinator, configs) = coordinatorFixture(submissions = submissions)
         coordinator.upload(configs.ExamResults)
         assertWire("examResult")
@@ -215,7 +213,7 @@ class UploadWireGoldenTest {
             images = """[{"resourceId":"r1","markdown":"![]($TRICKY_URL)","n":1.50}]"""; labels = listOf("<help>")
             conversations = "[$numbersText]"; newsId = "c-1"; newsCreatedDate = BIG_LONG
         })
-        val voices = relaxedInstance<VoicesRepositoryImpl>(NetworkModule.provideGson(), Gson(), newsDao)
+        val voices = relaxedInstance<VoicesRepositoryImpl>(newsDao)
         val dispatcher = StandardTestDispatcher(testScheduler)
         val uploader = relaxedInstance<VoicesUploader>(voices, uploadRepository(testScheduler), RetryQueue(retryRepository), TestDispatcherProvider(dispatcher))
         uploader.uploadNews()
