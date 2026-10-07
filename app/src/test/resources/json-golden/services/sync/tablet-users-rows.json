@@ -1,0 +1,44 @@
+[
+  {
+    "id": "_design/x",
+    "doc": {
+      "_id": "_design/x",
+      "views": {}
+    }
+  },
+  {
+    "id": "a",
+    "doc": {
+      "_id": "a",
+      "_rev": "1-a",
+      "message": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+      "n": 100,
+      "f": 1.5,
+      "big": 9007199254740993,
+      "neg": -0.0,
+      "none": null,
+      "list": [
+        1,
+        2.5,
+        true,
+        null
+      ]
+    }
+  },
+  {
+    "id": "b",
+    "value": {
+      "rev": "2-b"
+    },
+    "doc": {
+      "_id": "b",
+      "nested": {
+        "k": [
+          {
+            "x": 0.1
+          }
+        ]
+      }
+    }
+  }
+]
