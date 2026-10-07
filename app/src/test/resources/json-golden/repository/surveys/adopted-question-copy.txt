@@ -1,0 +1,2 @@
+header= body=B & 'b' type=select choices=[{"id":"a","text":"A & <b>","n":1.5,"e":100}] correct=[a]
+header= body= type=input choices=[] correct=null

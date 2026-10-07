@@ -17,6 +17,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ChatApiService
+import org.ole.planet.myplanet.data.room.dao.ChatDao
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.data.room.dao.NewsDao
@@ -25,6 +26,7 @@ import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.di.NetworkModule
 import org.ole.planet.myplanet.model.AiProvider
+import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.Feedback
@@ -372,6 +374,30 @@ class RepositoryPayloadGoldenTest {
             MeetupCreationParams(TRICKY, TRICKY_URL, "d", "loc", "09:00", "10:00", null, null, "learner", BIG_LONG, 1L, "team <1>")
         )
         raw("events/createMeetup-columns", "sync=${saved.captured.sync}\nlink=${saved.captured.link}")
+    }
+
+    @Test
+    fun `chat history synced columns`() = runTest {
+        val chatDao = mockk<ChatDao>(relaxed = true)
+        val saved = slot<List<ChatHistory>>()
+        coEvery { chatDao.upsertAll(capture(saved)) } returns Unit
+        val repository = relaxedInstance<ChatRepositoryImpl>(chatDao, plainGson)
+        repository.insertChatHistoryFromSync(
+            listOf(
+                serverDoc(
+                    """{"doc":{"_id":"chat-1","_rev":"2-c","title":"<t> & 'x'","createdDate":1.7E12,"updatedDate":"5","user":"learner","aiProvider":"openai",
+                       "conversations":[{"query":"q & <1>","response":1e2},{"query":true,"extra":1},{"response":null},{"query":1.50}]}}"""
+                ),
+                serverDoc("""{"doc":{"_id":"_design/x"}}"""),
+            )
+        )
+        raw(
+            "chat/synced-columns",
+            saved.captured.joinToString("\n") {
+                "id=${it.id} rev=${it._rev} title=${it.title} created=${it.createdDate} updated=${it.updatedDate} user=${it.user} ai=${it.aiProvider} " +
+                    "conversations=${it.conversations?.joinToString(";") { c -> "${c.query}|${c.response}" }}"
+            }
+        )
     }
 
     @Test

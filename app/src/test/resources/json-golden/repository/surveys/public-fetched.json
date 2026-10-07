@@ -1,0 +1,23 @@
+{
+  "_id": "survey-9",
+  "_rev": "1-s",
+  "name": "<S> & 'x'",
+  "type": "surveys",
+  "createdDate": 1.7E12,
+  "n": 100,
+  "questions": [
+    {
+      "id": "q1",
+      "type": "select",
+      "body": "B & <c>",
+      "choices": [
+        {
+          "id": "a",
+          "text": "A",
+          "n": 1.5
+        }
+      ],
+      "correctChoice": "a"
+    }
+  ]
+}

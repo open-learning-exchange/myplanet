@@ -1,0 +1,60 @@
+[
+  {
+    "answers": [
+      [
+        {
+          "id": "a",
+          "text": "<A>",
+          "n": 1.5
+        }
+      ],
+      {
+        "id": "x",
+        "text": "X & 'y'"
+      },
+      "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep"
+    ],
+    "user": {
+      "name": "<n> & 'x'",
+      "age": 42,
+      "n": 1e2,
+      "f": 1.50,
+      "none": null
+    }
+  },
+  {
+    "answers": [
+      [
+        {
+          "id": "a",
+          "text": "<A>",
+          "n": 1.5
+        }
+      ],
+      {
+        "id": "x",
+        "text": "X & 'y'"
+      },
+      "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep"
+    ],
+    "user": {
+      "gender": "f"
+    }
+  },
+  {
+    "answers": [
+      [
+        {
+          "id": "a",
+          "text": "<A>",
+          "n": 1.5
+        }
+      ],
+      {
+        "id": "x",
+        "text": "X & 'y'"
+      },
+      "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep"
+    ]
+  }
+]

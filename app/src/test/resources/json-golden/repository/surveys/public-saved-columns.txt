@@ -1,0 +1,2 @@
+exam id=survey-9 name=<S> & 'x' type=surveys createdDate=0 questions=1
+question id=q1 examId=survey-9 choices=[{"id":"a","text":"A","n":1.5}] correct=[]
