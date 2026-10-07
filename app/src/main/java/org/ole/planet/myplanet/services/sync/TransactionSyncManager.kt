@@ -107,7 +107,7 @@ class TransactionSyncManager @Inject constructor(
         "news" to { arr -> voicesRepository.insertNewsList(extractDocs(arr).bridged()) },
         "feedback" to { arr -> feedbackRepository.insertFeedbackList(extractDocs(arr).bridged()) },
         "chat_history" to { arr -> chatRepository.insertChatHistoryFromSync(rowObjects(arr).bridged()) },
-        "tablet_users" to { arr -> userSyncRepository.insertUsersFromSync(rowObjects(arr).toGsonList()) },
+        "tablet_users" to { arr -> userSyncRepository.insertUsersFromSync(rowObjects(arr).bridged()) },
         "meetups" to { arr -> eventsSyncWriter.insertMeetupsFromSync(extractDocs(arr).bridged()) },
         "login_activities" to { arr -> activitiesRepository.insertLoginActivitiesFromSync(extractDocs(arr).toGsonList()) },
         "courses_progress" to { arr -> progressRepository.insertCourseProgressFromSync(extractDocs(arr).toGsonList()) },
@@ -117,8 +117,8 @@ class TransactionSyncManager @Inject constructor(
         "team_activities" to { arr -> teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(arr.bridged()) },
         "tasks" to { arr -> teamsSyncRepository.get().bulkInsertTasksFromSync(arr.bridged()) },
         "notifications" to { arr -> notificationsRepository.bulkInsertFromSync(arr.toGson()) },
-        "achievements" to { arr -> userSyncRepository.bulkInsertAchievementsFromSync(arr.toGson()) },
-        "health" to { arr -> healthRepository.bulkInsertFromSync(arr.toGson()) },
+        "achievements" to { arr -> userSyncRepository.bulkInsertAchievementsFromSync(arr.bridged()) },
+        "health" to { arr -> healthRepository.bulkInsertFromSync(arr.bridged()) },
         "courses" to { arr ->
             val insertStartTime = SystemClock.elapsedRealtime()
             coursesRepository.bulkInsertFromSync(arr.bridged())

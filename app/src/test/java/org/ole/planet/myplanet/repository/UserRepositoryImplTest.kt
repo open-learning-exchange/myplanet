@@ -27,6 +27,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject as KJsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -48,6 +49,8 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
+import org.ole.planet.myplanet.utils.asString
+import org.ole.planet.myplanet.utils.toKotlinx
 import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -231,7 +234,7 @@ class UserRepositoryImplTest {
         val response = Response.success(existsResponseBody)
         coEvery { apiInterface.getJsonObject("Basic auth", userUrl) } returns response
 
-        val result = repository.becomeMember(userObj)
+        val result = repository.becomeMember(userObj.toKotlinx().jsonObject)
         advanceUntilIdle()
 
         assertFalse(result.first)
@@ -274,7 +277,7 @@ class UserRepositoryImplTest {
         val mockRealmUser = mockk<UserEntity>(relaxed = true)
         coEvery { spyRepository.saveUser(any(), any(), any()) } returns mockRealmUser
 
-        val result = spyRepository.becomeMember(userObj)
+        val result = spyRepository.becomeMember(userObj.toKotlinx().jsonObject)
         advanceUntilIdle()
 
         assertEquals(true, result.first)
@@ -437,7 +440,7 @@ class UserRepositoryImplTest {
         every { deviceNameProvider.getCustomDeviceName() } returns "mock_device_name"
 
         val spyRepository = spyk(repository)
-        val jsonSlot = slot<JsonObject>()
+        val jsonSlot = slot<KJsonObject>()
         coEvery { spyRepository.becomeMember(capture(jsonSlot)) } returns Pair(true, "success")
 
         val memberInfo = LearnerRegistrationInfo(

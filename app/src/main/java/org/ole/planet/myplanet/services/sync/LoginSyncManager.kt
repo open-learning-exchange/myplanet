@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
 @Singleton
 class LoginSyncManager @Inject constructor(
@@ -138,8 +138,7 @@ class LoginSyncManager @Inject constructor(
             return
         }
 
-        // UserSyncRepository.saveUser still takes the Gson tree (it moves with the user repository).
-        userSyncRepository.saveUser(jsonDoc?.toGson())
+        userSyncRepository.saveUser(jsonDoc?.withGsonBridgedNumbers())
         listener.onSyncComplete()
     }
 

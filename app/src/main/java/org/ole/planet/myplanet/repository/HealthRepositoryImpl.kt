@@ -1,9 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Log
-import com.google.gson.Gson
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import dagger.Lazy
 import java.util.Date
 import javax.inject.Inject
@@ -14,10 +11,11 @@ import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
-import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.HealthExamination.Companion.serialize
 import org.ole.planet.myplanet.model.HealthRecord
@@ -25,19 +23,17 @@ import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toGsonAsParsed
-import org.ole.planet.myplanet.utils.toKotlinx
 import org.ole.planet.myplanet.utils.toSyncDocuments
+import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
 class HealthRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     private val dispatcherProvider: DispatcherProvider,
     private val healthExaminationDao: HealthExaminationDao,
     private val userRepository: Lazy<UserRepository>,
-    @PlainGson private val gson: Gson
 ) : HealthRepository {
     override suspend fun getExaminationById(id: String): HealthExamination? {
         return healthExaminationDao.getById(id)
@@ -89,7 +85,7 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
-        val examinations = jsonArray.toSyncDocuments().map { (_, doc) -> HealthExamination.fromJson(doc.toKotlinx().jsonObject) }
+        val examinations = jsonArray.toSyncDocuments().map { (_, doc) -> HealthExamination.fromJson(doc) }
         healthExaminationDao.upsertAll(examinations)
     }
 
@@ -98,9 +94,11 @@ class HealthRepositoryImpl @Inject constructor(
             val result = mutableMapOf<String, Boolean>()
             if (examination != null && !examination.conditions.isNullOrEmpty()) {
                 try {
-                    val conditions = gson.fromJson(examination.conditions, JsonObject::class.java)
-                    for ((key, value) in conditions.entrySet()) {
-                        result[key] = value != null && !value.isJsonNull && value.isJsonPrimitive && value.asBoolean
+                    // A blank document is Gson's null result, which threw here as well.
+                    val conditions = KJson.parseObjectOrNull(examination.conditions)
+                        ?: throw NullPointerException("conditions is not a JSON object")
+                    for ((key, value) in conditions) {
+                        result[key] = value is JsonPrimitive && value !is JsonNull && KJson.gsonAsBoolean(value)
                     }
                 } catch (e: Exception) {
                     Log.e("HealthRepository", "Failed to parse examination conditions", e)
@@ -122,12 +120,12 @@ class HealthRepositoryImpl @Inject constructor(
                                 UrlUtils.header,
                                 "application/json",
                                 "${UrlUtils.getUrl()}/health",
-                                serialize(pojo).toGson().toKotlinx().jsonObject
+                                serialize(pojo).withGsonBridgedNumbers()
                             )
-                            val resBody = res.body()?.toGson()
+                            val resBody = res.body()
 
-                            if (resBody != null && resBody.has("id") == true) {
-                                val rev = resBody.get("rev")?.asString
+                            if (resBody != null && resBody.containsKey("id")) {
+                                val rev = resBody["rev"]?.let { KJson.gsonAsString(it) }
                                 return@async pojo._id to rev
                             }
                         } catch (e: CancellationException) {
@@ -163,7 +161,7 @@ class HealthRepositoryImpl @Inject constructor(
         if (data.isNullOrEmpty()) return null
         return try {
             val decrypted = AndroidDecrypter.decrypt(data, userModel?.key, userModel?.iv)
-            gson.fromJson(decrypted, MyHealth::class.java)
+            MyHealth.fromJsonText(decrypted)
         } catch (e: Exception) {
             Log.e("HealthRepository", "Failed to decode health data", e)
             null
@@ -228,7 +226,7 @@ class HealthRepositoryImpl @Inject constructor(
         try {
             val key = userModel?.key ?: AndroidDecrypter.generateKey().also { newKey -> userModel?.key = newKey }
             val iv = userModel?.iv ?: AndroidDecrypter.generateIv().also { newIv -> userModel?.iv = newIv }
-            healthPojo.data = AndroidDecrypter.encrypt(gson.toJson(myHealth), key, iv)
+            healthPojo.data = AndroidDecrypter.encrypt(myHealth.toJsonText(), key, iv)
             userModel?.let { userRepository.get().saveUser(it) }
         } catch (e: CancellationException) {
             throw e
@@ -245,7 +243,7 @@ class HealthRepositoryImpl @Inject constructor(
             null
         } else {
             try {
-                gson.fromJson(json, MyHealth::class.java)
+                MyHealth.fromJsonText(json)
             } catch (e: Exception) {
                 Log.e("HealthRepository", "Failed to parse health record JSON", e)
                 null
@@ -258,8 +256,8 @@ class HealthRepositoryImpl @Inject constructor(
         }
 
         val userIds = list.mapNotNull {
-            it.getEncryptedDataAsJson(currentUser).toGsonAsParsed().let { jsonData ->
-                jsonData.get("createdBy")?.asString
+            it.getEncryptedDataAsJson(currentUser)["createdBy"]?.let { createdBy ->
+                KJson.gsonAsString(createdBy, KJson.GsonNumbers.LITERAL)
             }
         }.distinct()
 

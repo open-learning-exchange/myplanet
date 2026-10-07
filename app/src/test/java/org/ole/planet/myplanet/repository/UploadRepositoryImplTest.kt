@@ -8,6 +8,7 @@ import io.mockk.mockkStatic
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -15,6 +16,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UploadRepositoryImplTest {
@@ -57,7 +59,7 @@ class UploadRepositoryImplTest {
         val expectedResponse = retrofit2.Response.success(kotlinxData)
         coEvery { apiInterface.postDoc(any(), eq("application/json"), eq(url), eq(kotlinxData)) } returns expectedResponse
 
-        val result = repository.postUpload(url, data)
+        val result = repository.postJson(url, data.toKotlinx().jsonObject)
 
         assertEquals(true, result.isSuccessful)
         coVerify(exactly = 1) { apiInterface.postDoc(any(), eq("application/json"), eq(url), eq(kotlinxData)) }
@@ -71,7 +73,7 @@ class UploadRepositoryImplTest {
         val expectedResponse = retrofit2.Response.success(kotlinx.serialization.json.JsonArray(emptyList()))
         coEvery { apiInterface.postDocArray(any(), eq("application/json"), eq(url), eq(kotlinxData)) } returns expectedResponse
 
-        val result = repository.postUploadArray(url, data)
+        val result = repository.postJsonArray(url, data.toKotlinx().jsonObject)
 
         assertEquals(true, result.isSuccessful)
         coVerify(exactly = 1) { apiInterface.postDocArray(any(), eq("application/json"), eq(url), eq(kotlinxData)) }
@@ -85,7 +87,7 @@ class UploadRepositoryImplTest {
         val expectedResponse = retrofit2.Response.success(kotlinxData)
         coEvery { apiInterface.putDoc(any(), eq("application/json"), eq(url), eq(kotlinxData)) } returns expectedResponse
 
-        val result = repository.putUpload(url, data)
+        val result = repository.putJson(url, data.toKotlinx().jsonObject)
 
         assertEquals(true, result.isSuccessful)
         coVerify(exactly = 1) { apiInterface.putDoc(any(), eq("application/json"), eq(url), eq(kotlinxData)) }
@@ -97,7 +99,7 @@ class UploadRepositoryImplTest {
         val expectedResponse = retrofit2.Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
         coEvery { apiInterface.getJsonObject(any(), eq(url)) } returns expectedResponse
 
-        val result = repository.fetchExistingDoc(url)
+        val result = repository.fetchJson(url)
 
         assertEquals(true, result.isSuccessful)
         coVerify(exactly = 1) { apiInterface.getJsonObject(any(), eq(url)) }
@@ -112,7 +114,7 @@ class UploadRepositoryImplTest {
         val expectedResponse = retrofit2.Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
         coEvery { apiInterface.uploadResource(any(), any(), any()) } returns expectedResponse
 
-        val result = repository.uploadAttachment(
+        val result = repository.uploadAttachmentJson(
             file = file,
             destinationFormat = "%s/%s/%s",
             id = "doc-1",
@@ -142,7 +144,7 @@ class UploadRepositoryImplTest {
             val slot = io.mockk.slot<Map<String, String>>()
             coEvery { apiInterface.uploadResource(capture(slot), any(), any()) } returns retrofit2.Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
 
-            repository.uploadAttachment(
+            repository.uploadAttachmentJson(
                 file = file,
                 destinationFormat = "%s/%s/%s",
                 id = "doc-1",
@@ -161,7 +163,7 @@ class UploadRepositoryImplTest {
         val slot = io.mockk.slot<Map<String, String>>()
         coEvery { apiInterface.uploadResource(capture(slot), any(), any()) } returns retrofit2.Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
 
-        repository.uploadAttachment(
+        repository.uploadAttachmentJson(
             file = extensionlessFile,
             destinationFormat = "%s/%s/%s",
             id = "doc-1",

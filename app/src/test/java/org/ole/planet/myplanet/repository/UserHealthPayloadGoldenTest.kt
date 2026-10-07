@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.repository
 import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
-import com.google.gson.JsonObject as GsonJsonObject
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.every
@@ -30,7 +29,6 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.UserDao
-import org.ole.planet.myplanet.di.NetworkModule
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.LearnerRegistrationInfo
 import org.ole.planet.myplanet.model.Meetup
@@ -47,7 +45,6 @@ import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.relaxedInstance
-import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 import retrofit2.Response
 
@@ -160,7 +157,7 @@ class UserHealthPayloadGoldenTest {
     private fun parse(text: String): JsonObject = Json.parseToJsonElement(text) as JsonObject
 
     /** A document as the user repository receives it: the API's kotlinx tree, numbers as the Gson bridge held them. */
-    private fun userDoc(text: String): GsonJsonObject = parse(text).withGsonBridgedNumbers().toGson()
+    private fun userDoc(text: String): JsonObject = parse(text).withGsonBridgedNumbers()
 
     private fun record(method: String, header: String?, url: String?, body: JsonObject?) {
         calls.add(buildJsonObject {
@@ -347,7 +344,6 @@ class UserHealthPayloadGoldenTest {
             TestDispatcherProvider(UnconfinedTestDispatcher(scope.testScheduler)),
             healthDao,
             lazyOf(userRepository) as Lazy<UserRepository>,
-            NetworkModule.providePlainGson(),
         )
     }
 

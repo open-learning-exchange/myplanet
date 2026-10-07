@@ -1,17 +1,20 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Log
-import com.google.gson.JsonObject
 import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.GsonUtils.getString
+import org.ole.planet.myplanet.utils.KJson.getString
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
@@ -72,7 +75,7 @@ class PersonalsRepositoryImpl @Inject constructor(
     }
 
     internal suspend fun uploadPersonalDocument(personal: Personal): Pair<String, String>? {
-        val response = uploadRepository.postUpload(
+        val response = uploadRepository.postJson(
             "${UrlUtils.getUrl()}/resources",
             serialize(personal)
         )
@@ -87,24 +90,20 @@ class PersonalsRepositoryImpl @Inject constructor(
         return null
     }
 
-    private fun serialize(personal: Personal): JsonObject {
-        val `object` = JsonObject()
-        `object`.addProperty("title", personal.title)
-        `object`.addProperty("uploadDate", timeProvider.now())
-        `object`.addProperty("createdDate", personal.date)
-        `object`.addProperty("filename", FileUtils.getFileNameFromUrl(personal.path))
-        `object`.addProperty("author", personal.userName)
-        `object`.addProperty("addedBy", personal.userName)
-        `object`.addProperty("description", personal.description)
-        `object`.addProperty("resourceType", "Activities")
-        `object`.addProperty("private", true)
-        val object1 = JsonObject()
-        `object`.addDocumentOrigin()
-        `object`.addProperty("deviceName", deviceNameProvider.getDeviceName())
-        `object`.addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
-        object1.addProperty("users", personal.userId)
-        `object`.add("privateFor", object1)
-        return `object`
+    private fun serialize(personal: Personal): JsonObject = buildJsonObject {
+        put("title", personal.title)
+        put("uploadDate", timeProvider.now())
+        put("createdDate", personal.date)
+        put("filename", FileUtils.getFileNameFromUrl(personal.path))
+        put("author", personal.userName)
+        put("addedBy", personal.userName)
+        put("description", personal.description)
+        put("resourceType", "Activities")
+        put("private", true)
+        addDocumentOrigin()
+        put("deviceName", deviceNameProvider.getDeviceName())
+        put("customDeviceName", deviceNameProvider.getCustomDeviceName())
+        putJsonObject("privateFor") { put("users", personal.userId) }
     }
 
     override suspend fun uploadPersonal(personal: Personal): PersonalUploadResult {
@@ -130,7 +129,7 @@ class PersonalsRepositoryImpl @Inject constructor(
                 val name = FileUtils.getFileNameFromUrl(path)
 
                 val response = try {
-                    uploadRepository.uploadAttachment(
+                    uploadRepository.uploadAttachmentJson(
                         file = file,
                         destinationFormat = "%s/resources/%s/%s",
                         id = id,

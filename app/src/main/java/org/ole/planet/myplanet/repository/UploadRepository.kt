@@ -14,14 +14,6 @@ interface UploadRepository {
     suspend fun fetchJson(url: String): Response<JsonObject>
     suspend fun uploadAttachmentJson(file: File, destinationFormat: String, id: String, rev: String, name: String): Response<JsonObject>
     suspend fun uploadResourceJson(headerMap: Map<String, String>, url: String, body: RequestBody): Response<JsonObject>
-
-    // Gson twins, kept for the callers still on Gson (PersonalsRepositoryImpl, VoicesUploader).
-    suspend fun postUpload(url: String, serializedData: GsonJsonObject): Response<GsonJsonObject>
-    suspend fun postUploadArray(url: String, serializedData: GsonJsonObject): Response<com.google.gson.JsonArray>
-    suspend fun putUpload(url: String, serializedData: GsonJsonObject): Response<GsonJsonObject>
-    suspend fun fetchExistingDoc(url: String): Response<GsonJsonObject>
-    suspend fun uploadAttachment(file: File, destinationFormat: String, id: String, rev: String, name: String): Response<GsonJsonObject>
-    suspend fun uploadResource(headerMap: Map<String, String>, url: String, body: RequestBody): Response<GsonJsonObject>
 }
 
 data class UploadedItemResult(

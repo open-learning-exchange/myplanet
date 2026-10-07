@@ -16,6 +16,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -31,6 +32,7 @@ import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @ExperimentalCoroutinesApi
 class HealthRepositoryImplTest {
@@ -51,8 +53,7 @@ class HealthRepositoryImplTest {
             mockApiInterface,
             dispatcherProvider,
             healthExaminationDao,
-            lazyUserRepository,
-            Gson()
+            lazyUserRepository
         )
     }
 
@@ -221,7 +222,7 @@ class HealthRepositoryImplTest {
             })
         }
 
-        repository.bulkInsertFromSync(jsonArray)
+        repository.bulkInsertFromSync(jsonArray.toKotlinx().jsonArray)
         advanceUntilIdle()
 
         coVerify(exactly = 1) {

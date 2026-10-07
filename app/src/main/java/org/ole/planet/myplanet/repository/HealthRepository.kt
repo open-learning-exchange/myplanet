@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonArray
+import kotlinx.serialization.json.JsonArray
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MyHealth

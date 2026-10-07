@@ -6,8 +6,10 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonObject
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.UserDao
+import org.ole.planet.myplanet.utils.toKotlinx
 
 class UserRepositoryBulkInsertTest {
     @Test
@@ -51,7 +53,7 @@ class UserRepositoryBulkInsertTest {
         for (j in jsonArray) {
             list.add(j.asJsonObject)
         }
-        userRepository.insertUsersFromSync(list)
+        userRepository.insertUsersFromSync(list.map { it.toKotlinx().jsonObject })
 
         coVerify(exactly = 1) { userDao.upsertAll(match { it.size == 10 }) }
     }
@@ -96,7 +98,7 @@ class UserRepositoryBulkInsertTest {
         jObj.add("doc", doc)
         list.add(jObj)
 
-        userRepository.insertUsersFromSync(list)
+        userRepository.insertUsersFromSync(list.map { it.toKotlinx().jsonObject })
 
         coVerify(exactly = 1) { userDao.deleteByIds(listOf("guest_123")) }
         coVerify(exactly = 1) { userDao.upsertAll(match { it.size == 1 && it[0]._id == "org.couchdb.user:Guest User" }) }
@@ -138,7 +140,7 @@ class UserRepositoryBulkInsertTest {
             list.add(jObj)
         }
 
-        userRepository.insertUsersFromSync(list)
+        userRepository.insertUsersFromSync(list.map { it.toKotlinx().jsonObject })
 
         coVerify(exactly = 1) { userDao.upsertAll(match { it.size == 1 && it[0].name == "User 1 (version 2)" }) }
     }

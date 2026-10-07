@@ -15,6 +15,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.serialization.json.jsonArray
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -29,6 +30,7 @@ import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserAchievementsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AchievementViewModelTest {
@@ -132,8 +134,8 @@ class AchievementViewModelTest {
                 goals = "goals",
                 purpose = "purpose",
                 sendToNation = "true",
-                achievements = achievements,
-                references = references,
+                achievements = achievements.toKotlinx().jsonArray,
+                references = references.toKotlinx().jsonArray,
                 createdOn = "planet1",
                 username = "user1",
                 parentCode = "parent",
@@ -276,8 +278,8 @@ class AchievementViewModelTest {
                 goals = "goals",
                 purpose = "purpose",
                 sendToNation = "true",
-                achievements = achievements,
-                references = references,
+                achievements = achievements.toKotlinx().jsonArray,
+                references = references.toKotlinx().jsonArray,
                 createdOn = "planet1",
                 username = "user1",
                 parentCode = "parent",

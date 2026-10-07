@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonObject
+import kotlinx.serialization.json.JsonObject
 import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.model.LearnerRegistrationInfo
 import org.ole.planet.myplanet.model.User

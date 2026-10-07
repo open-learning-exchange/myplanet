@@ -5,8 +5,6 @@ import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Log
 import androidx.core.content.edit
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
@@ -32,9 +30,16 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import kotlinx.serialization.json.JsonObject as KJsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.AchievementDao
@@ -56,15 +61,14 @@ import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.RetryUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
-import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 import org.ole.planet.myplanet.utils.toSyncDocuments
 import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
@@ -155,13 +159,14 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     private suspend fun buildGuestUserJson(username: String): JsonObject {
-        return JsonObject().apply {
-            addProperty("_id", "guest_$username")
-            addProperty("name", username)
-            addProperty("firstName", username)
-            addProperty("planetCode", getConnectedCommunityCode())
-            addProperty("parentCode", sharedPrefManager.getParentCode())
-            add("roles", JsonArray().apply { add("guest") })
+        val planetCode = getConnectedCommunityCode()
+        return buildJsonObject {
+            put("_id", "guest_$username")
+            put("name", username)
+            put("firstName", username)
+            put("planetCode", planetCode)
+            put("parentCode", sharedPrefManager.getParentCode())
+            putJsonArray("roles") { add("guest") }
         }
     }
 
@@ -201,94 +206,94 @@ class UserRepositoryImpl @Inject constructor(
     private fun applyJsonToUser(jsonDoc: JsonObject?, user: UserEntity, settings: SharedPreferences) {
         if (jsonDoc == null) return
 
-        val planetCodes = GsonUtils.getString("planetCode", jsonDoc)
-        val rolesArray = GsonUtils.getJsonArray("roles", jsonDoc)
-        val newId = GsonUtils.getString("_id", jsonDoc)
+        val planetCodes = KJson.getString("planetCode", jsonDoc)
+        val rolesArray = KJson.getJsonArray("roles", jsonDoc)
+        val newId = KJson.getString("_id", jsonDoc)
 
         user.apply {
             if (id.isNullOrBlank()) {
                 id = if (newId.isEmpty()) { UUID.randomUUID().toString() } else { newId }
             }
-            _rev = GsonUtils.getString("_rev", jsonDoc)
+            _rev = KJson.getString("_rev", jsonDoc)
             _id = newId
-            name = GsonUtils.getString("name", jsonDoc)
+            name = KJson.getString("name", jsonDoc)
             setRoles(mutableListOf<String>().apply {
-                for (i in 0 until rolesArray.size()) {
-                    add(GsonUtils.getString(rolesArray, i))
+                for (i in 0 until rolesArray.size) {
+                    add(KJson.getString(rolesArray, i))
                 }
             })
-            userAdmin = GsonUtils.getBoolean("isUserAdmin", jsonDoc)
-            val newJoinDate = GsonUtils.getLong("joinDate", jsonDoc)
+            userAdmin = KJson.getBoolean("isUserAdmin", jsonDoc)
+            val newJoinDate = KJson.getLong("joinDate", jsonDoc)
             if (newJoinDate != 0L || joinDate == 0L) {
                 joinDate = newJoinDate
             }
 
-            val newFirstName = GsonUtils.getString("firstName", jsonDoc)
+            val newFirstName = KJson.getString("firstName", jsonDoc)
             if (newFirstName.isNotEmpty() || firstName.isNullOrEmpty()) {
                 firstName = newFirstName
             }
 
-            val newLastName = GsonUtils.getString("lastName", jsonDoc)
+            val newLastName = KJson.getString("lastName", jsonDoc)
             if (newLastName.isNotEmpty() || lastName.isNullOrEmpty()) {
                 lastName = newLastName
             }
 
-            val newMiddleName = GsonUtils.getString("middleName", jsonDoc)
+            val newMiddleName = KJson.getString("middleName", jsonDoc)
             if (newMiddleName.isNotEmpty() || middleName.isNullOrEmpty()) {
                 middleName = newMiddleName
             }
 
-            val newEmail = GsonUtils.getString("email", jsonDoc)
+            val newEmail = KJson.getString("email", jsonDoc)
             if (newEmail.isNotEmpty() || email.isNullOrEmpty()) {
                 email = newEmail
             }
 
-            val newPhoneNumber = GsonUtils.getString("phoneNumber", jsonDoc)
+            val newPhoneNumber = KJson.getString("phoneNumber", jsonDoc)
             if (newPhoneNumber.isNotEmpty() || phoneNumber.isNullOrEmpty()) {
                 phoneNumber = newPhoneNumber
             }
 
-            val newLevel = GsonUtils.getString("level", jsonDoc)
+            val newLevel = KJson.getString("level", jsonDoc)
             if (newLevel.isNotEmpty() || level.isNullOrEmpty()) {
                 level = newLevel
             }
 
-            val newLanguage = GsonUtils.getString("language", jsonDoc)
+            val newLanguage = KJson.getString("language", jsonDoc)
             if (newLanguage.isNotEmpty() || language.isNullOrEmpty()) {
                 language = newLanguage
             }
 
-            val newGender = GsonUtils.getString("gender", jsonDoc)
+            val newGender = KJson.getString("gender", jsonDoc)
             if (newGender.isNotEmpty() || gender.isNullOrEmpty()) {
                 gender = newGender
             }
 
-            val newDob = GsonUtils.getString("birthDate", jsonDoc)
+            val newDob = KJson.getString("birthDate", jsonDoc)
             if (newDob.isNotEmpty() || dob.isNullOrEmpty()) {
                 dob = newDob
             }
 
-            val newBirthPlace = GsonUtils.getString("birthPlace", jsonDoc)
+            val newBirthPlace = KJson.getString("birthPlace", jsonDoc)
             if (newBirthPlace.isNotEmpty() || birthPlace.isNullOrEmpty()) {
                 birthPlace = newBirthPlace
             }
 
-            val newAge = GsonUtils.getString("age", jsonDoc)
+            val newAge = KJson.getString("age", jsonDoc)
             if (newAge.isNotEmpty() || age.isNullOrEmpty()) {
                 age = newAge
             }
             planetCode = planetCodes
-            parentCode = GsonUtils.getString("parentCode", jsonDoc)
+            parentCode = KJson.getString("parentCode", jsonDoc)
             if (_id?.isEmpty() == true) {
-                password = GsonUtils.getString("password", jsonDoc)
+                password = KJson.getString("password", jsonDoc)
             }
-            password_scheme = GsonUtils.getString("password_scheme", jsonDoc)
-            iterations = GsonUtils.getString("iterations", jsonDoc)
-            derived_key = GsonUtils.getString("derived_key", jsonDoc)
-            salt = GsonUtils.getString("salt", jsonDoc)
+            password_scheme = KJson.getString("password_scheme", jsonDoc)
+            iterations = KJson.getString("iterations", jsonDoc)
+            derived_key = KJson.getString("derived_key", jsonDoc)
+            salt = KJson.getString("salt", jsonDoc)
             isShowTopbar = true
-            isArchived = GsonUtils.getBoolean("isArchived", jsonDoc)
-            addImageUrl(jsonDoc.toKotlinx().jsonObject)
+            isArchived = KJson.getBoolean("isArchived", jsonDoc)
+            addImageUrl(jsonDoc)
         }
 
         if (planetCodes.isNotEmpty()) {
@@ -313,8 +318,8 @@ class UserRepositoryImpl @Inject constructor(
     private suspend fun buildUserFromJson(jsonDoc: JsonObject?, users: List<UserEntity>? = null): UserEntity? {
         if (jsonDoc == null) return null
         return try {
-            val id = GsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()
-            val userName = GsonUtils.getString("name", jsonDoc)
+            val id = KJson.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()
+            val userName = KJson.getString("name", jsonDoc)
             val existingUser = if (users != null) {
                 users.firstOrNull { it.id == id || it._id == id }
             } else {
@@ -389,13 +394,13 @@ class UserRepositoryImpl @Inject constructor(
             }
 
             if (response.isSuccessful && response.body() != null) {
-                val userDoc = response.body()?.toGson()
-                val derivedKey = userDoc?.get("derived_key")?.asString
-                val salt = userDoc?.get("salt")?.asString
-                val passwordScheme = userDoc?.get("password_scheme")?.asString
-                val iterations = userDoc?.get("iterations")?.asString
-                val userId = userDoc?.get("_id")?.asString
-                val rev = userDoc?.get("_rev")?.asString
+                val userDoc = response.body()
+                val derivedKey = userDoc?.get("derived_key")?.let { KJson.gsonAsString(it) }
+                val salt = userDoc?.get("salt")?.let { KJson.gsonAsString(it) }
+                val passwordScheme = userDoc?.get("password_scheme")?.let { KJson.gsonAsString(it) }
+                val iterations = userDoc?.get("iterations")?.let { KJson.gsonAsString(it) }
+                val userId = userDoc?.get("_id")?.let { KJson.gsonAsString(it) }
+                val rev = userDoc?.get("_rev")?.let { KJson.gsonAsString(it) }
                 updateSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations)
             }
         } catch (e: CancellationException) {
@@ -522,35 +527,34 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun createMember(user: LearnerRegistrationInfo): Pair<Boolean, String> {
-        val obj = JsonObject().apply {
-            addProperty("name", user.username)
-            addProperty("firstName", user.fName)
-            addProperty("lastName", user.lName)
-            addProperty("middleName", user.mName)
-            addProperty("password", user.password)
-            addProperty("isUserAdmin", false)
-            addProperty("joinDate", Calendar.getInstance().timeInMillis)
-            addProperty("email", user.email)
-            addProperty("planetCode", sharedPrefManager.getPlanetCode())
-            addProperty("parentCode", sharedPrefManager.getParentCode())
-            addProperty("language", user.language)
-            addProperty("level", user.level)
-            addProperty("phoneNumber", user.phoneNumber)
-            addProperty("birthDate", user.birthDate)
-            addProperty("gender", user.gender)
-            addProperty("type", "user")
-            addProperty("betaEnabled", false)
+        val obj = buildJsonObject {
+            put("name", user.username)
+            put("firstName", user.fName)
+            put("lastName", user.lName)
+            put("middleName", user.mName)
+            put("password", user.password)
+            put("isUserAdmin", false)
+            put("joinDate", Calendar.getInstance().timeInMillis)
+            put("email", user.email)
+            put("planetCode", sharedPrefManager.getPlanetCode())
+            put("parentCode", sharedPrefManager.getParentCode())
+            put("language", user.language)
+            put("level", user.level)
+            put("phoneNumber", user.phoneNumber)
+            put("birthDate", user.birthDate)
+            put("gender", user.gender)
+            put("type", "user")
+            put("betaEnabled", false)
             addDocumentOrigin()
-            addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context))
-            addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
-            val roles = JsonArray().apply { add("learner") }
-            add("roles", roles)
+            put("uniqueAndroidId", VersionUtils.getAndroidId(context))
+            put("customDeviceName", deviceNameProvider.getCustomDeviceName())
+            putJsonArray("roles") { add("learner") }
         }
         return becomeMember(obj)
     }
 
     override suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String> {
-        val userName = obj["name"]?.asString ?: "unknown"
+        val userName = obj["name"]?.let { KJson.gsonAsString(it) } ?: "unknown"
 
         val isAvailable = configurationsRepository.checkServerAvailability()
 
@@ -563,16 +567,16 @@ class UserRepositoryImpl @Inject constructor(
                     apiInterface.getJsonObject(header, userUrl)
                 }
 
-                if (existsResponse.isSuccessful && existsResponse.body()?.toGson()?.has("_id") == true) {
+                if (existsResponse.isSuccessful && existsResponse.body()?.containsKey("_id") == true) {
                     Pair(false, context.getString(R.string.unable_to_create_user_user_already_exists))
                 } else {
                     val createResponse = withContext(dispatcherProvider.io) {
-                        apiInterface.putDoc(null, "application/json", userUrl, obj.toKotlinx().jsonObject)
+                        apiInterface.putDoc(null, "application/json", userUrl, obj)
                     }
-                    val createBody = createResponse.body()?.toGson()
+                    val createBody = createResponse.body()
 
-                    if (createResponse.isSuccessful && createBody?.has("id") == true) {
-                        val id = createBody.get("id")?.asString ?: ""
+                    if (createResponse.isSuccessful && createBody?.containsKey("id") == true) {
+                        val id = createBody["id"]?.let { KJson.gsonAsString(it) } ?: ""
 
                         appScope.launch {
                             uploadToShelf(obj)
@@ -607,8 +611,8 @@ class UserRepositoryImpl @Inject constructor(
 
     private suspend fun uploadToShelf(obj: JsonObject) {
         try {
-            val url = UrlUtils.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString
-            apiInterface.putDoc(null, "application/json", url, JsonObject().toKotlinx().jsonObject)
+            val url = UrlUtils.getUrl() + "/shelf/org.couchdb.user:" + KJson.gsonAsString(obj["name"])
+            apiInterface.putDoc(null, "application/json", url, JsonObject(emptyMap()))
         } catch (e: Exception) {
             Log.e("UserRepositoryImpl", "uploadToShelf failed", e)
         }
@@ -625,7 +629,7 @@ class UserRepositoryImpl @Inject constructor(
                 ensureActive()
 
                 if (response.isSuccessful) {
-                    response.body()?.toGson()?.let { saveUser(it, null, null) }
+                    response.body()?.withGsonBridgedNumbers()?.let { saveUser(it, null, null) }
                 } else {
                     null
                 }
@@ -648,21 +652,21 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun changeUserSecurity(model: UserEntity, obj: JsonObject) {
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
-        val header = UrlUtils.basicAuthHeader(obj["name"].asString, obj["password"].asString)
+        val header = UrlUtils.basicAuthHeader(KJson.gsonAsString(obj["name"]), KJson.gsonAsString(obj["password"]))
         try {
             val response = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")
-            if (response.body() != null) {
-                val jsonObject = response.body()?.toGson()
-                val members = jsonObject?.getAsJsonObject("members")
-                val rolesArray: JsonArray = if (members?.has("roles") == true) {
-                    members.getAsJsonArray("roles")
+            val jsonObject = response.body()?.withGsonBridgedNumbers()
+            if (jsonObject != null) {
+                val members = jsonObject["members"]?.let { it as? JsonObject ?: throw ClassCastException("Not a JSON Object: $it") }
+                val rolesArray = if (members?.containsKey("roles") == true) {
+                    members["roles"] as? JsonArray ?: throw ClassCastException("Not a JSON Array: ${members["roles"]}")
                 } else {
-                    JsonArray()
+                    JsonArray(emptyList())
                 }
-                rolesArray.add("health")
-                members?.add("roles", rolesArray)
-                jsonObject?.add("members", members)
-                apiInterface.putDoc(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", jsonObject?.toKotlinx()?.jsonObject)
+                val roles = JsonArray(rolesArray + JsonPrimitive("health"))
+                val updatedMembers = members?.let { JsonObject(it + ("roles" to roles)) } ?: JsonNull
+                val security = JsonObject(jsonObject + ("members" to updatedMembers))
+                apiInterface.putDoc(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", security)
             }
         } catch (e: Exception) {
             Log.e("UserRepositoryImpl", "changeUserSecurity failed", e)
@@ -671,8 +675,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun saveKeyIv(model: UserEntity, obj: JsonObject) {
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
-        val header = UrlUtils.basicAuthHeader(obj["name"].asString, obj["password"].asString)
-        val ob = JsonObject()
+        val header = UrlUtils.basicAuthHeader(KJson.gsonAsString(obj["name"]), KJson.gsonAsString(obj["password"]))
         var keyString = AndroidDecrypter.generateKey()
         var iv: String? = AndroidDecrypter.generateIv()
 
@@ -683,9 +686,11 @@ class UserRepositoryImpl @Inject constructor(
             keyString = model.key
         }
 
-        ob.addProperty("key", keyString)
-        ob.addProperty("iv", iv)
-        ob.addProperty("createdOn", Date().time)
+        val ob = buildJsonObject {
+            put("key", keyString)
+            put("iv", iv)
+            put("createdOn", Date().time)
+        }
 
         val maxAttempts = 3
         val retryDelayMs = 2000L
@@ -693,7 +698,7 @@ class UserRepositoryImpl @Inject constructor(
 
         withContext(dispatcherProvider.io) {
             try {
-                apiInterface.putDoc(header, "application/json", dbUrl, JsonObject().toKotlinx().jsonObject)
+                apiInterface.putDoc(header, "application/json", dbUrl, JsonObject(emptyMap()))
             } catch (e: Exception) {
                 null
             }
@@ -705,7 +710,7 @@ class UserRepositoryImpl @Inject constructor(
                 delayMs = retryDelayMs,
                 shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
             ) {
-                apiInterface.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob.toKotlinx().jsonObject)
+                apiInterface.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)
             }
         }
 
@@ -791,8 +796,8 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun uploadNewUser(model: UserEntity, updateHealthFn: suspend (String, String) -> Unit) {
         try {
-            val obj = model.serialize().toGson()
-            val createResponse = apiInterface.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj.toKotlinx().jsonObject)
+            val obj = model.serialize().withGsonBridgedNumbers()
+            val createResponse = apiInterface.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)
 
             if (createResponse.isSuccessful) {
                 val id = JsonUtils.getString("id", createResponse.body()).takeIf { it.isNotEmpty() }
@@ -816,15 +821,14 @@ class UserRepositoryImpl @Inject constructor(
 
             if (latestDocResponse.isSuccessful) {
                 val latestRev = JsonUtils.getString("_rev", latestDocResponse.body()).takeIf { it.isNotEmpty() }
-                val obj = model.serialize().toGson()
-                val objMap = obj.entrySet().associate { (key, value) -> key to value }
-                val mutableObj = mutableMapOf<String, Any>().apply { putAll(objMap) }
-                latestRev?.let { rev -> mutableObj["_rev"] = rev as Any }
+                val obj = model.serialize().withGsonBridgedNumbers()
+                val mutableObj = LinkedHashMap<String, JsonElement>(obj)
+                latestRev?.let { rev -> mutableObj["_rev"] = JsonPrimitive(rev) }
 
-                val jsonElement = GsonUtils.gson.toJsonTree(mutableObj)
-                val jsonObject = jsonElement.asJsonObject
+                // Gson's toJsonTree of this map dropped every null member.
+                val jsonObject = JsonObject(mutableObj).withoutNullMembers() as JsonObject
 
-                val updateResponse = apiInterface.putDoc(header, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", jsonObject.toKotlinx().jsonObject)
+                val updateResponse = apiInterface.putDoc(header, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", jsonObject)
 
                 if (updateResponse.isSuccessful) {
                     val updatedRev = JsonUtils.getString("rev", updateResponse.body()).takeIf { it.isNotEmpty() }
@@ -945,8 +949,8 @@ class UserRepositoryImpl @Inject constructor(
         achievement.createdOn = createdOn
         achievement.username = username
         achievement.parentCode = parentCode
-        achievement.setAchievements(achievements.toKotlinx().jsonArray)
-        achievement.setReferences(references.toKotlinx().jsonArray)
+        achievement.setAchievements(achievements)
+        achievement.setReferences(references)
         achievement.resumeFileName = resumeFileName
         achievement.isUpdated = true
         achievementDao.upsert(achievement)
@@ -984,9 +988,10 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun getAchievementData(userId: String, planetCode: String): AchievementData {
         val achievement = achievementDao.getById("$userId@$planetCode") ?: return AchievementData()
         val resourceIds = achievement.achievements?.mapNotNull { json ->
-            GsonUtils.gson.fromJson(json, JsonObject::class.java)
-                ?.getAsJsonArray("resources")
-                ?.mapNotNull { it.asJsonObject?.get("_id")?.asString }
+            KJson.parseObjectOrNull(json)
+                ?.get("resources")
+                ?.let { it as? JsonArray ?: throw ClassCastException("Not a JSON Array: $it") }
+                ?.mapNotNull { KJson.asJsonObject(it)["_id"]?.let { id -> KJson.gsonAsString(id, KJson.GsonNumbers.LITERAL) } }
         }?.flatten()?.distinct()?.toTypedArray() ?: emptyArray()
 
         val resources = if (resourceIds.isNotEmpty()) {
@@ -1006,7 +1011,7 @@ class UserRepositoryImpl @Inject constructor(
         )
     }
 
-    override suspend fun getAchievementsForUpload(): List<KJsonObject> {
+    override suspend fun getAchievementsForUpload(): List<JsonObject> {
         return achievementDao.getPendingUploads().map { Achievement.serialize(it).withGsonBridgedNumbers() }
     }
 
@@ -1073,7 +1078,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertAchievementsFromSync(jsonArray: JsonArray) {
-        val achievements = jsonArray.toSyncDocuments().map { (_, doc) -> Achievement.fromJson(doc.toKotlinx().jsonObject) }
+        val achievements = jsonArray.toSyncDocuments().map { (_, doc) -> Achievement.fromJson(doc) }
         achievementDao.upsertAll(achievements)
     }
 
@@ -1081,8 +1086,8 @@ class UserRepositoryImpl @Inject constructor(
         val documentList = ArrayList<JsonObject>(docs.size)
         for (j in docs) {
             var jsonDoc = j
-            jsonDoc = GsonUtils.getJsonObject("doc", jsonDoc)
-            val id = GsonUtils.getString("_id", jsonDoc)
+            jsonDoc = KJson.getJsonObject("doc", jsonDoc)
+            val id = KJson.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }
@@ -1091,9 +1096,9 @@ class UserRepositoryImpl @Inject constructor(
         val idsToFetch = mutableSetOf<String>()
         val namesToFetch = mutableSetOf<String>()
         for (jsonDoc in documentList) {
-            val id = GsonUtils.getString("_id", jsonDoc)
+            val id = KJson.getString("_id", jsonDoc)
             if (id.isNotEmpty()) idsToFetch.add(id)
-            val userName = GsonUtils.getString("name", jsonDoc)
+            val userName = KJson.getString("name", jsonDoc)
             if (userName.isNotEmpty()) namesToFetch.add(userName)
         }
 
@@ -1126,8 +1131,8 @@ class UserRepositoryImpl @Inject constructor(
 
         for (jsonDoc in documentList) {
             try {
-                val id = GsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()
-                val userName = GsonUtils.getString("name", jsonDoc)
+                val id = KJson.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()
+                val userName = KJson.getString("name", jsonDoc)
 
                 val existingUser = usersById[id]
                 val guestUser = if (existingUser == null && id.startsWith("org.couchdb.user:") && userName.isNotEmpty()) {
@@ -1194,17 +1199,16 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun uploadShelfData(user: UserEntity) {
         try {
-            val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${user._id}").body()?.toGson()
-            val myLibs = resourcesRepositoryLazy.get().getMyLibIds(user.id ?: "")
-            // CoursesRepository is on kotlinx; bridged back until this repository moves.
-            val myCourseIds = coursesRepositoryLazy.get().getMyCourseIds(user.id ?: "").toGson()
+            val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${user._id}").body()?.withGsonBridgedNumbers()
+            // ResourcesRepository is still on Gson; bridged until it moves.
+            val myLibs = resourcesRepositoryLazy.get().getMyLibIds(user.id ?: "").toKotlinx().jsonArray
+            val myCourseIds = coursesRepositoryLazy.get().getMyCourseIds(user.id ?: "").withGsonBridgedNumbers()
             val shelfData = getShelfData(user.id, jsonDoc, myLibs, myCourseIds)
-            shelfData.addProperty("_rev", GsonUtils.getString("_rev", jsonDoc))
             apiInterface.putDoc(
                 UrlUtils.header,
                 "application/json",
                 "${UrlUtils.getUrl()}/shelf/${user._id}",
-                shelfData.toKotlinx().jsonObject
+                JsonObject(shelfData + ("_rev" to JsonPrimitive(KJson.getString("_rev", jsonDoc))))
             )
         } catch (e: Throwable) {
             Log.e("UserRepositoryImpl", "uploadShelfData failed", e)
@@ -1213,10 +1217,8 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun checkShelfBatchForDataOptimized(shelfIds: List<String>): List<String> {
         val shelvesWithData = mutableListOf<String>()
-        val keysObject = JsonObject().apply {
-            val jsonArray = JsonArray()
-            shelfIds.forEach { jsonArray.add(it) }
-            add("keys", jsonArray)
+        val keysObject = buildJsonObject {
+            putJsonArray("keys") { shelfIds.forEach { add(it) } }
         }
 
         val response = org.ole.planet.myplanet.data.api.ApiClient.executeWithRetryAndWrap {
@@ -1224,17 +1226,17 @@ class UserRepositoryImpl @Inject constructor(
                 org.ole.planet.myplanet.utils.UrlUtils.header,
                 "application/json",
                 "${org.ole.planet.myplanet.utils.UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true",
-                keysObject.toKotlinx().jsonObject
+                keysObject
             )
-        }?.body()?.toGson()
+        }?.body()?.withGsonBridgedNumbers()
 
         response?.let { responseBody ->
-            val rows = org.ole.planet.myplanet.utils.GsonUtils.getJsonArray("rows", responseBody)
-            for (i in 0 until rows.size()) {
-                val row = rows[i].asJsonObject
-                if (row.has("doc")) {
-                    val doc = org.ole.planet.myplanet.utils.GsonUtils.getJsonObject("doc", row)
-                    val shelfId = org.ole.planet.myplanet.utils.GsonUtils.getString("_id", doc)
+            val rows = KJson.getJsonArray("rows", responseBody)
+            for (i in 0 until rows.size) {
+                val row = KJson.asJsonObject(rows[i])
+                if (row.containsKey("doc")) {
+                    val doc = KJson.getJsonObject("doc", row)
+                    val shelfId = KJson.getString("_id", doc)
 
                     if (hasShelfDataUltraFast(doc)) {
                         shelvesWithData.add(shelfId)
@@ -1247,9 +1249,7 @@ class UserRepositoryImpl @Inject constructor(
 
     private fun hasShelfDataUltraFast(shelfDoc: JsonObject): Boolean {
         return listOf("resourceIds", "courseIds", "meetupIds", "teamIds").any { key ->
-            shelfDoc.has(key) && shelfDoc.get(key).let { element ->
-                element.isJsonArray && !element.asJsonArray.isEmpty()
-            }
+            (shelfDoc[key] as? JsonArray)?.isNotEmpty() == true
         }
     }
 
@@ -1259,35 +1259,41 @@ class UserRepositoryImpl @Inject constructor(
         } else {
             eventsRepositoryLazy.get().getMeetupsForUser(userId)
         }
-        val myMeetups = Meetup.getMyMeetUpIds(userMeetups).toGson()
+        val myMeetups = Meetup.getMyMeetUpIds(userMeetups).withGsonBridgedNumbers()
         val removedResources = removedLogDao.getRemovedDocIds("resources", userId)
         val removedCourses = removedLogDao.getRemovedDocIds("courses", userId)
-        val mergedResourceIds = mergeJsonArray(myLibs, GsonUtils.getJsonArray("resourceIds", jsonDoc), removedResources)
-        val mergedCourseIds = mergeJsonArray(myCourseIds, GsonUtils.getJsonArray("courseIds", jsonDoc), removedCourses)
-        val `object` = JsonObject()
-        `object`.addProperty("_id", sharedPrefManager.getUserId())
-        `object`.add("meetupIds", mergeJsonArray(myMeetups, GsonUtils.getJsonArray("meetupIds", jsonDoc), removedResources))
-        `object`.add("resourceIds", mergedResourceIds)
-        `object`.add("courseIds", mergedCourseIds)
-        return `object`
+        val mergedResourceIds = mergeJsonArray(myLibs, KJson.getJsonArray("resourceIds", jsonDoc), removedResources)
+        val mergedCourseIds = mergeJsonArray(myCourseIds, KJson.getJsonArray("courseIds", jsonDoc), removedCourses)
+        val mergedMeetupIds = mergeJsonArray(myMeetups, KJson.getJsonArray("meetupIds", jsonDoc), removedResources)
+        return buildJsonObject {
+            put("_id", sharedPrefManager.getUserId())
+            put("meetupIds", mergedMeetupIds)
+            put("resourceIds", mergedResourceIds)
+            put("courseIds", mergedCourseIds)
+        }
     }
 
-    private fun mergeJsonArray(array1: JsonArray?, array2: JsonArray, removedIds: List<String>): JsonArray {
-        val array = JsonArray()
-        array.addAll(array1)
+    /**
+     * Both arrays hold numbers as the Gson bridge held them, so element equality here is the
+     * equality Gson's `JsonElement` set used (an integral `1` and a `1.0` stay distinct).
+     */
+    private fun mergeJsonArray(array1: JsonArray, array2: JsonArray, removedIds: List<String>): JsonArray {
+        val array = array1.toMutableList()
         val removedIdsSet = removedIds.toSet()
-        val existingElements = mutableSetOf<com.google.gson.JsonElement>()
-        if (array1 != null) {
-            for (e in array1) {
-                existingElements.add(e)
-            }
-        }
+        val existingElements = array1.toMutableSet()
         for (e in array2) {
-            if (!existingElements.contains(e) && !removedIdsSet.contains(e.asString)) {
+            if (!existingElements.contains(e) && !removedIdsSet.contains(KJson.gsonAsString(e))) {
                 array.add(e)
                 existingElements.add(e)
             }
         }
-        return array
+        return JsonArray(array)
+    }
+
+    /** What Gson's tree writer kept when `toJsonTree` wrote a tree without `serializeNulls`: no `null` object members. */
+    private fun JsonElement.withoutNullMembers(): JsonElement = when (this) {
+        is JsonObject -> JsonObject(filterValues { it !is JsonNull }.mapValues { (_, value) -> value.withoutNullMembers() })
+        is JsonArray -> JsonArray(map { it.withoutNullMembers() })
+        else -> this
     }
 }

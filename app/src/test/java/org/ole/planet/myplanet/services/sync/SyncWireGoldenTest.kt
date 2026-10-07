@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.services.sync
 
 import android.app.Application
-import com.google.gson.JsonArray as GsonJsonArray
-import com.google.gson.JsonObject as GsonJsonObject
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -73,8 +71,6 @@ class SyncWireGoldenTest {
     private fun manager(vararg overrides: Any): TransactionSyncManager =
         relaxedInstance<TransactionSyncManager>(api, TestDispatcherProvider(UnconfinedTestDispatcher()), *overrides)
 
-    private fun List<GsonJsonObject>.asArray() = GsonJsonArray().also { array -> forEach { array.add(it) } }
-
     @Test
     fun `news docs handed to the sync writer`() = runTest {
         val voices = mockk<VoicesRepository>()
@@ -88,11 +84,11 @@ class SyncWireGoldenTest {
     @Test
     fun `tablet users rows handed to the sync writer`() = runTest {
         val users = mockk<UserSyncRepository>(relaxed = true)
-        val received = mutableListOf<List<GsonJsonObject>>()
+        val received = mutableListOf<List<JsonObject>>()
         coEvery { users.insertUsersFromSync(any()) } answers { received.add(firstArg()) }
         manager(users).syncDb("tablet_users")
         assertEquals(1, received.size)
-        assertMatchesGolden("services/sync/tablet-users-rows", received.single().asArray())
+        assertMatchesGolden("services/sync/tablet-users-rows", JsonArray(received.single()))
     }
 
     @Test

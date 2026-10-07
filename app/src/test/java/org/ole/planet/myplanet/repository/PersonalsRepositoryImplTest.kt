@@ -17,6 +17,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject as KJsonObject
+import kotlinx.serialization.json.jsonObject
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
@@ -33,6 +35,13 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.asBoolean
+import org.ole.planet.myplanet.utils.asLong
+import org.ole.planet.myplanet.utils.asString
+import org.ole.planet.myplanet.utils.getAsJsonObject
+import org.ole.planet.myplanet.utils.has
+import org.ole.planet.myplanet.utils.isJsonNull
+import org.ole.planet.myplanet.utils.toKotlinx
 import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -142,8 +151,8 @@ class PersonalsRepositoryImplTest {
     @Test
     fun `uploadPersonalDocument serializes uploadDate from timeProvider`() = runTest {
         val personal = Personal().apply { id = "test-id" }
-        val bodySlot = slot<JsonObject>()
-        coEvery { uploadRepository.postUpload(any(), capture(bodySlot)) } returns Response.success(JsonObject())
+        val bodySlot = slot<KJsonObject>()
+        coEvery { uploadRepository.postJson(any(), capture(bodySlot)) } returns Response.success(KJsonObject(emptyMap()))
 
         repository.uploadPersonalDocument(personal)
 
@@ -194,7 +203,7 @@ class PersonalsRepositoryImplTest {
             addProperty("id", "new-id")
             addProperty("rev", "rev-1")
         }
-        coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success(responseJson)
+        coEvery { uploadRepository.postJson(any(), any()) } returns Response.success(responseJson.toKotlinx().jsonObject)
 
         val result = repository.uploadPersonalDocument(personal)
 
@@ -213,8 +222,8 @@ class PersonalsRepositoryImplTest {
             addProperty("id", "new-id")
             addProperty("rev", "rev-1")
         }
-        val bodySlot = slot<JsonObject>()
-        coEvery { uploadRepository.postUpload(any(), capture(bodySlot)) } returns Response.success(responseJson)
+        val bodySlot = slot<KJsonObject>()
+        coEvery { uploadRepository.postJson(any(), capture(bodySlot)) } returns Response.success(responseJson.toKotlinx().jsonObject)
 
         repository.uploadPersonalDocument(personal)
 
@@ -239,8 +248,8 @@ class PersonalsRepositoryImplTest {
         every { deviceNameProvider.getDeviceName() } returns "device_name"
         every { deviceNameProvider.getCustomDeviceName() } returns "custom_device_name"
 
-        val bodySlot = slot<JsonObject>()
-        coEvery { uploadRepository.postUpload(any(), capture(bodySlot)) } returns Response.success(JsonObject())
+        val bodySlot = slot<KJsonObject>()
+        coEvery { uploadRepository.postJson(any(), capture(bodySlot)) } returns Response.success(KJsonObject(emptyMap()))
 
         repository.uploadPersonalDocument(personal)
 
@@ -272,8 +281,8 @@ class PersonalsRepositoryImplTest {
         every { deviceNameProvider.getDeviceName() } returns "device_name"
         every { deviceNameProvider.getCustomDeviceName() } returns "custom_device_name"
 
-        val bodySlot = slot<JsonObject>()
-        coEvery { uploadRepository.postUpload(any(), capture(bodySlot)) } returns Response.success(JsonObject())
+        val bodySlot = slot<KJsonObject>()
+        coEvery { uploadRepository.postJson(any(), capture(bodySlot)) } returns Response.success(KJsonObject(emptyMap()))
 
         repository.uploadPersonalDocument(personal)
 
@@ -306,8 +315,8 @@ class PersonalsRepositoryImplTest {
             addProperty("id", "new-id")
             addProperty("rev", "rev-1")
         }
-        val bodySlot = slot<JsonObject>()
-        coEvery { uploadRepository.postUpload(any(), capture(bodySlot)) } returns Response.success(responseJson)
+        val bodySlot = slot<KJsonObject>()
+        coEvery { uploadRepository.postJson(any(), capture(bodySlot)) } returns Response.success(responseJson.toKotlinx().jsonObject)
 
         repository.uploadPersonalDocument(personal)
 
@@ -320,7 +329,7 @@ class PersonalsRepositoryImplTest {
     @Test
     fun `uploadPersonalDocument returns null when response body is null`() = runTest {
         val personal = Personal().apply { id = "test-id" }
-        coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success<JsonObject>(null)
+        coEvery { uploadRepository.postJson(any(), any()) } returns Response.success<KJsonObject>(null)
 
         val result = repository.uploadPersonalDocument(personal)
 
@@ -347,14 +356,14 @@ class PersonalsRepositoryImplTest {
             addProperty("rev", "new-rev")
             addProperty("id", "new-id")
         }
-        val mockResponse = Response.success(mockResponseObject)
-        coEvery { uploadRepository.postUpload(any(), any()) } returns mockResponse
+        val mockResponse = Response.success(mockResponseObject.toKotlinx().jsonObject)
+        coEvery { uploadRepository.postJson(any(), any()) } returns mockResponse
 
         val result = repository.uploadPersonal(personal)
 
         assertEquals(PersonalUploadResult.Success("Personal resource uploaded successfully"), result)
-        coVerify { uploadRepository.postUpload(any(), any()) }
-        coVerify(exactly = 0) { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) }
+        coVerify { uploadRepository.postJson(any(), any()) }
+        coVerify(exactly = 0) { uploadRepository.uploadAttachmentJson(any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -368,16 +377,16 @@ class PersonalsRepositoryImplTest {
             addProperty("rev", "new-rev")
             addProperty("id", "new-id")
         }
-        val mockResponse = Response.success(mockResponseObject)
-        coEvery { uploadRepository.postUpload(any(), any()) } returns mockResponse
-        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns Response.success(JsonObject())
+        val mockResponse = Response.success(mockResponseObject.toKotlinx().jsonObject)
+        coEvery { uploadRepository.postJson(any(), any()) } returns mockResponse
+        coEvery { uploadRepository.uploadAttachmentJson(any(), any(), any(), any(), any()) } returns Response.success(KJsonObject(emptyMap()))
 
         val result = repository.uploadPersonal(personal)
 
         assertEquals(PersonalUploadResult.Success("Personal resource uploaded successfully"), result)
-        coVerify { uploadRepository.postUpload(any(), any()) }
+        coVerify { uploadRepository.postJson(any(), any()) }
         coVerify(exactly = 1) {
-            uploadRepository.uploadAttachment(
+            uploadRepository.uploadAttachmentJson(
                 file = any(),
                 destinationFormat = "%s/resources/%s/%s",
                 id = "new-id",
@@ -399,10 +408,10 @@ class PersonalsRepositoryImplTest {
             addProperty("rev", "new-rev")
             addProperty("id", "new-id")
         }
-        coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success(mockResponseObject)
+        coEvery { uploadRepository.postJson(any(), any()) } returns Response.success(mockResponseObject.toKotlinx().jsonObject)
         val causeException = RuntimeException("network dropped")
         coEvery {
-            uploadRepository.uploadAttachment(any(), any(), any(), any(), any())
+            uploadRepository.uploadAttachmentJson(any(), any(), any(), any(), any())
         } throws causeException
 
         val result = repository.uploadPersonal(personal)
@@ -428,7 +437,7 @@ class PersonalsRepositoryImplTest {
             _rev = "stale-rev"
         }
         coEvery {
-            uploadRepository.uploadAttachment(any(), any(), any(), any(), any())
+            uploadRepository.uploadAttachmentJson(any(), any(), any(), any(), any())
         } returns Response.error(409, "{\"error\":\"conflict\"}".toResponseBody("application/json".toMediaType()))
 
         val result = repository.uploadPersonal(personal)
@@ -455,8 +464,8 @@ class PersonalsRepositoryImplTest {
             addProperty("rev", "2-attachment")
         }
         coEvery {
-            uploadRepository.uploadAttachment(any(), any(), any(), any(), any())
-        } returns Response.success(attachmentResponse)
+            uploadRepository.uploadAttachmentJson(any(), any(), any(), any(), any())
+        } returns Response.success(attachmentResponse.toKotlinx().jsonObject)
 
         val result = repository.uploadPersonal(personal)
 
@@ -473,14 +482,14 @@ class PersonalsRepositoryImplTest {
             _id = "new-id"
             _rev = "new-rev"
         }
-        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns Response.success(JsonObject())
+        coEvery { uploadRepository.uploadAttachmentJson(any(), any(), any(), any(), any()) } returns Response.success(KJsonObject(emptyMap()))
 
         val result = repository.uploadPersonal(personal)
 
         assertEquals(PersonalUploadResult.Success("Personal resource uploaded successfully"), result)
-        coVerify(exactly = 0) { uploadRepository.postUpload(any(), any()) }
+        coVerify(exactly = 0) { uploadRepository.postJson(any(), any()) }
         coVerify(exactly = 1) {
-            uploadRepository.uploadAttachment(
+            uploadRepository.uploadAttachmentJson(
                 file = any(),
                 destinationFormat = "%s/resources/%s/%s",
                 id = "new-id",
@@ -497,8 +506,8 @@ class PersonalsRepositoryImplTest {
             id = "test-id"
             isUploaded = false
         }
-        val mockResponse = Response.success<JsonObject>(null)
-        coEvery { uploadRepository.postUpload(any(), any()) } returns mockResponse
+        val mockResponse = Response.success<KJsonObject>(null)
+        coEvery { uploadRepository.postJson(any(), any()) } returns mockResponse
 
         val result = repository.uploadPersonal(personal)
 
@@ -515,7 +524,7 @@ class PersonalsRepositoryImplTest {
             isUploaded = false
         }
         val exception = RuntimeException("Connection failed")
-        coEvery { uploadRepository.postUpload(any(), any()) } throws exception
+        coEvery { uploadRepository.postJson(any(), any()) } throws exception
 
         val result = repository.uploadPersonal(personal)
 
