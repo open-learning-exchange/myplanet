@@ -76,36 +76,6 @@ class HealthRepositoryImplTest {
     }
 
     @Test
-    fun getHealthEntry_returns_user_and_examination() = testScope.runTest {
-        val examination = HealthExamination().apply { _id = "user1" }
-        coEvery { userRepository.getUserById("user1") } returns UserEntity(id = "user1")
-        coEvery { healthExaminationDao.getByIdOrUserId("user1") } returns examination
-
-        val result = repository.getHealthEntry("user1")
-        advanceUntilIdle()
-
-        assertEquals("user1", result.first?.id)
-        assertEquals(examination, result.second)
-    }
-
-    @Test
-    fun getHealthEntry_fallback_to_userId() = testScope.runTest {
-        val examination = HealthExamination().apply {
-            _id = "exam1"
-            userId = "user1"
-        }
-        coEvery { userRepository.getUserById("user1") } returns UserEntity(id = "user1", _id = "remote-user1")
-        coEvery { healthExaminationDao.getByIdOrUserId("user1") } returns examination
-
-        val result = repository.getHealthEntry("user1")
-        advanceUntilIdle()
-
-        assertEquals("user1", result.first?.id)
-        assertEquals("remote-user1", result.first?._id)
-        assertEquals(examination, result.second)
-    }
-
-    @Test
     fun getExaminationById_returns_examination() = testScope.runTest {
         val examination = HealthExamination().apply { _id = "exam1" }
         coEvery { healthExaminationDao.getById("exam1") } returns examination

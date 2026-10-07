@@ -7,6 +7,7 @@ import java.net.UnknownHostException
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -19,9 +20,7 @@ class DownloadRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider
 ) : DownloadRepository {
 
-    companion object {
-        private val URL_REGEX = Regex("url=([^}]*)")
-    }
+    private fun diagnosticUrl(u: HttpUrl): String = u.newBuilder().username("").password("").query(null).fragment(null).build().toString()
 
     override suspend fun downloadFileResponse(url: String, authHeader: String, resumeOffset: Long, ifRange: String?): DownloadResult = withContext(dispatcherProvider.io) {
         try {
@@ -50,18 +49,7 @@ class DownloadRepositoryImpl @Inject constructor(
                     else -> "Connection failed (${response.code()})"
                 }
 
-                if (response.code() == 404) {
-                    try {
-                        val responseString = response.toString()
-                        val matchResult = URL_REGEX.find(responseString)
-                        val extractedUrl = matchResult?.groupValues?.get(1)
-                        diagnosticsRepository.saveLogToRoom("File Not Found", "$extractedUrl", "${timeProvider.now()}")
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        diagnosticsRepository.saveLogToRoom("File Not Found", url, "${timeProvider.now()}")
-                    }
-                }
+                if (response.code() == 404) diagnosticsRepository.saveLogToRoom("File Not Found", diagnosticUrl(response.raw().request.url), "${timeProvider.now()}")
 
                 return@withContext DownloadResult.Error(errorMessage, response.code())
             }

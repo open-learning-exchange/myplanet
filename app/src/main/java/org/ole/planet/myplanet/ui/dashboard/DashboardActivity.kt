@@ -45,6 +45,7 @@ import com.mikepenz.materialdrawer.holder.DimenHolder
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
+import dagger.Lazy
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.math.ceil
@@ -122,6 +123,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     @Inject
     override lateinit var resourcesRepository: ResourcesRepository
+    @Inject
+    lateinit var notificationManagerProvider: Lazy<NotificationUtils.NotificationManager>
     private val challengeManager: ChallengePrompter by lazy {
         ChallengePrompter(this, prefData)
     }
@@ -179,7 +182,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             isReady = true
             binding.root.invalidate()
             notificationManager = withContext(dispatcherProvider.io) {
-                NotificationUtils.getInstance(this@DashboardActivity)
+                notificationManagerProvider.get()
             }
         }
     }
