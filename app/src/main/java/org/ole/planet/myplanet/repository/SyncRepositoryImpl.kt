@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.utils.toKotlinx
 class SyncRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     private val dispatcherProvider: DispatcherProvider,
-    private val resourcesRepository: ResourcesSyncRepository,
+    private val resourcesRepository: ResourcesSyncWriter,
     private val coursesRepository: CoursesRepository,
     private val eventsRepository: EventsSyncWriter,
     private val teamsSyncRepository: TeamsSyncRepository,

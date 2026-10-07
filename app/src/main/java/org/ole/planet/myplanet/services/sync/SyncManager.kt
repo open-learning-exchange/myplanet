@@ -39,7 +39,7 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.ResourcesSyncRepository
+import org.ole.planet.myplanet.repository.ResourcesSyncWriter
 import org.ole.planet.myplanet.repository.SyncRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
@@ -62,7 +62,7 @@ class SyncManager @Inject constructor(
     private val sharedPrefManager: SharedPrefManager,
     private val apiInterface: ApiInterface,
     private val transactionSyncManager: TransactionSyncManager,
-    private val resourcesRepository: ResourcesSyncRepository,
+    private val resourcesRepository: ResourcesSyncWriter,
     private val loginSyncManager: LoginSyncManager,
     @param:ApplicationScope private val syncScope: CoroutineScope,
     private val activitiesRepository: ActivitiesRepository,

@@ -64,7 +64,7 @@ data class LocalResourceRequest(
     val teamId: String?
 )
 
-interface ResourcesRepository : ResourcesSyncRepository {
+interface ResourcesRepository : ResourcesSyncWriter {
     suspend fun getLibraryTitles(): List<LibraryTitle>
     suspend fun getLibraryItemById(id: String): MyLibrary?
     suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<MyLibrary>

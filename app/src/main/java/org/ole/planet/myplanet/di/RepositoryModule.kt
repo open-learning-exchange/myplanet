@@ -46,7 +46,7 @@ import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.RatingsRepositoryImpl
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepositoryImpl
-import org.ole.planet.myplanet.repository.ResourcesSyncRepository
+import org.ole.planet.myplanet.repository.ResourcesSyncWriter
 import org.ole.planet.myplanet.repository.RetryRepository
 import org.ole.planet.myplanet.repository.RetryRepositoryImpl
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -166,7 +166,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindResourcesSyncRepository(impl: ResourcesRepositoryImpl): ResourcesSyncRepository
+    abstract fun bindResourcesSyncWriter(impl: ResourcesRepositoryImpl): ResourcesSyncWriter
 
     @Binds
     @Singleton
