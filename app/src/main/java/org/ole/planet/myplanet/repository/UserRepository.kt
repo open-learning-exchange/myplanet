@@ -20,14 +20,12 @@ data class ProfileFieldsUpdate(
     val age: String? = null
 )
 
-interface UserRepository : UserAchievementsRepository {
+interface UserRepository : UserAchievementsRepository, UserReadRepository {
     suspend fun getSavedUsers(): List<User>
     suspend fun upsertSavedUser(name: String?, encryptedPassword: String?, source: String, userProfile: String?, userName: String?)
     suspend fun resetGuestAsMember(username: String?)
 
-    suspend fun getUserById(userId: String): UserEntity?
     suspend fun getDashboardProfile(userId: String): DashboardProfile
-    suspend fun getUsersByIds(userIds: List<String>): List<UserEntity>
     suspend fun getUserByAnyId(id: String): UserEntity?
     suspend fun getUserByName(name: String): UserEntity?
     suspend fun findUserByName(name: String): UserEntity?
@@ -81,7 +79,6 @@ interface UserRepository : UserAchievementsRepository {
 
     suspend fun getCurrentUserId(): String?
     suspend fun getConnectedCommunityCode(): String
-    suspend fun getUserModel(): UserEntity?
     suspend fun getUserProfile(): UserEntity?
     suspend fun getUserImageUrl(): String?
     suspend fun getActiveUserIdSuspending(): String

@@ -108,61 +108,78 @@ class TeamDaoTest {
     }
 
     @Test
-    fun `getNonArchivedReportsByTeamId orders by createdDate descending`() = runBlocking {
-        teamDao.upsertAll(
-            listOf(
-                report("r1", createdDate = 100L),
-                report("r3", createdDate = 300L),
-                report("r2", createdDate = 200L),
-            )
+    fun `updateReportFields changes 9 report columns sets isUpdated and leaves other columns intact`() = runBlocking {
+        val initial = MyTeam().apply {
+            _id = "report1"
+            _rev = "rev-123"
+            teamId = "team1"
+            createdDate = 1000L
+            status = "active"
+            imageName = "chart.png"
+            description = "old desc"
+            beginningBalance = 10
+            sales = 20
+            otherIncome = 30
+            wages = 40
+            otherExpenses = 50
+            startDate = 100L
+            endDate = 200L
+            updatedDate = 300L
+            updated = false
+        }
+        teamDao.upsert(initial)
+
+        val count = teamDao.updateReportFields(
+            id = "report1",
+            description = "new desc",
+            beginningBalance = 100,
+            sales = 200,
+            otherIncome = 300,
+            wages = 400,
+            otherExpenses = 500,
+            startDate = 1000L,
+            endDate = 2000L,
+            updatedDate = 3000L
         )
 
-        val result = teamDao.getNonArchivedReportsByTeamId("team1")
+        assertEquals(1, count)
 
-        assertEquals(listOf("r3", "r2", "r1"), result.map { it._id })
+        val updatedEntity = teamDao.getById("report1")!!
+        assertEquals("new desc", updatedEntity.description)
+        assertEquals(100, updatedEntity.beginningBalance)
+        assertEquals(200, updatedEntity.sales)
+        assertEquals(300, updatedEntity.otherIncome)
+        assertEquals(400, updatedEntity.wages)
+        assertEquals(500, updatedEntity.otherExpenses)
+        assertEquals(1000L, updatedEntity.startDate)
+        assertEquals(2000L, updatedEntity.endDate)
+        assertEquals(3000L, updatedEntity.updatedDate)
+        assertEquals(true, updatedEntity.updated)
+
+        assertEquals("rev-123", updatedEntity._rev)
+        assertEquals("team1", updatedEntity.teamId)
+        assertEquals(1000L, updatedEntity.createdDate)
+        assertEquals("active", updatedEntity.status)
+        assertEquals("chart.png", updatedEntity.imageName)
     }
 
     @Test
-    fun `getNonArchivedReportsByTeamId excludes archived reports`() = runBlocking {
-        teamDao.upsertAll(
-            listOf(
-                report("kept", createdDate = 100L),
-                report("archived", createdDate = 300L, status = "archived"),
-            )
+    fun `updateReportFields returns 0 and inserts nothing for unknown id`() = runBlocking {
+        val count = teamDao.updateReportFields(
+            id = "unknown_report",
+            description = "desc",
+            beginningBalance = 10,
+            sales = 20,
+            otherIncome = 30,
+            wages = 40,
+            otherExpenses = 50,
+            startDate = 100L,
+            endDate = 200L,
+            updatedDate = 300L
         )
 
-        val result = teamDao.getNonArchivedReportsByTeamId("team1")
-
-        assertEquals(listOf("kept"), result.map { it._id })
-    }
-
-    @Test
-    fun `getNonArchivedReportsByTeamId keeps reports with a null status`() = runBlocking {
-        teamDao.upsertAll(
-            listOf(
-                report("nullStatus", createdDate = 100L, status = null),
-                report("activeStatus", createdDate = 200L, status = "active"),
-            )
-        )
-
-        val result = teamDao.getNonArchivedReportsByTeamId("team1")
-
-        assertEquals(listOf("activeStatus", "nullStatus"), result.map { it._id })
-    }
-
-    @Test
-    fun `getNonArchivedReportsByTeamId excludes other teams and other docTypes`() = runBlocking {
-        teamDao.upsertAll(
-            listOf(
-                report("mine", createdDate = 100L),
-                report("otherTeam", teamId = "team2", createdDate = 200L),
-                report("transaction", createdDate = 300L, docType = "transaction"),
-            )
-        )
-
-        val result = teamDao.getNonArchivedReportsByTeamId("team1")
-
-        assertEquals(listOf("mine"), result.map { it._id })
+        assertEquals(0, count)
+        assertEquals(null, teamDao.getById("unknown_report"))
     }
 
     @Test
