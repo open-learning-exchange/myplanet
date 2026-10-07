@@ -40,9 +40,9 @@ class RetryRepositoryImpl @Inject constructor(
         userId: String?
     ) {
         mutex.withLock {
-            val existing = retryDao.findExisting(failure.itemId, uploadType)
-            if (existing != null) {
-                markFailed(existing.id, failure.message, failure.httpCode)
+            val existingId = retryDao.findExistingId(failure.itemId, uploadType)
+            if (existingId != null) {
+                markFailed(existingId, failure.message, failure.httpCode)
             } else {
                 val operation = RetryOperation.createFromRetryFailure(
                     uploadType, failure, payload, endpoint,
@@ -73,7 +73,6 @@ class RetryRepositoryImpl @Inject constructor(
                 Json.parseToJsonElement(operation.serializedPayload).jsonObject
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
-                Log.e(TAG, "Invalid payload for ${operation.id}, abandoning")
                 markFailed(operation.id, "Invalid payload", null)
                 return RetryOperationResult.TerminalFailure("Invalid payload", null)
             }
@@ -104,23 +103,19 @@ class RetryRepositoryImpl @Inject constructor(
 
             if (response.isSuccessful) {
                 markCompleted(operation.id)
-                Log.d(TAG, "Successfully retried operation ${operation.id}")
                 RetryOperationResult.Success
             } else if (response.code() == 409) {
                 // 409 Conflict means document already exists - data is already synced
                 markCompleted(operation.id)
-                Log.d(TAG, "Operation ${operation.id} already synced (409 conflict)")
                 RetryOperationResult.Success
             } else {
                 val code = response.code()
                 val isRetryable = code >= 500
                 if (isRetryable) {
                     markFailed(operation.id, "HTTP $code", code)
-                    Log.w(TAG, "Retry failed for ${operation.id}: HTTP $code")
                     RetryOperationResult.RetryableFailure("HTTP $code", code)
                 } else {
                     markFailed(operation.id, "Non-retryable HTTP $code", code)
-                    Log.w(TAG, "Retry failed for ${operation.id}: HTTP $code")
                     RetryOperationResult.TerminalFailure("Non-retryable HTTP $code", code)
                 }
             }
@@ -141,7 +136,7 @@ class RetryRepositoryImpl @Inject constructor(
         return retryDao.getPending(timeProvider.now())
     }
 
-    override suspend fun getPendingCount(): Long {
+    private suspend fun getPendingCount(): Long {
         return retryDao.getActiveCount()
     }
 
@@ -150,7 +145,7 @@ class RetryRepositoryImpl @Inject constructor(
         retryDao.deleteOldCompleted(cutoffTime)
     }
 
-    override suspend fun deletePendingAndAbandonedOperations() {
+    private suspend fun deletePendingAndAbandonedOperations() {
         retryDao.deletePendingAndAbandoned()
     }
 
