@@ -70,6 +70,7 @@ import org.ole.planet.myplanet.repository.UserReadRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.repository.UserSyncRepository
+import org.ole.planet.myplanet.repository.VoicesEditor
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.VoicesRepositoryImpl
 
@@ -228,6 +229,9 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindUserSyncRepository(impl: UserRepositoryImpl): UserSyncRepository
+
+    @Binds
+    abstract fun bindVoicesEditor(repository: VoicesRepository): VoicesEditor
 
     @Binds
     @Singleton
