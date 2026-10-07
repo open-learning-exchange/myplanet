@@ -770,7 +770,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
-    private val uploadSerializer = SubmissionsUploadSerializer(
+    private val payloadBuilder = SubmissionsPayloadBuilder(
         teamsRepositoryProvider,
         sharedPrefManager,
         examDao,
@@ -779,14 +779,14 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         deviceNameProvider
     )
 
-    private suspend fun getTeamByIdOrNull(teamId: String) = uploadSerializer.getTeamByIdOrNull(teamId)
+    private suspend fun getTeamByIdOrNull(teamId: String) = payloadBuilder.getTeamByIdOrNull(teamId)
 
     override suspend fun getExamUploadPayload(submission: Submission, user: UserEntity?): JsonObject {
-        return uploadSerializer.examUploadPayload(submission, user)
+        return payloadBuilder.examUploadPayload(submission, user)
     }
 
     override suspend fun serializeSubmission(submission: Submission, source: String, parentCode: String, user: UserEntity?): JsonObject {
-        return uploadSerializer.submissionPayload(submission, source, parentCode, user)
+        return payloadBuilder.submissionPayload(submission, source, parentCode, user)
     }
 
     override suspend fun getPendingExamResults(): List<Submission> {

@@ -23,7 +23,7 @@ internal fun Submission.examIdFromParentId(): String? {
     return parentId?.substringBefore("@")
 }
 
-internal class SubmissionsUploadSerializer @Inject constructor(
+internal class SubmissionsPayloadBuilder @Inject constructor(
     private val teamsRepositoryProvider: Provider<TeamsRepository>,
     private val sharedPrefManager: SharedPrefManager,
     private val examDao: ExamDao,

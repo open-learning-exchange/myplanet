@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class SubmissionsUploadSerializerTest {
+class SubmissionsPayloadBuilderTest {
 
     private lateinit var teamsRepositoryProvider: Provider<TeamsRepository>
     private lateinit var teamsRepository: TeamsRepository
@@ -39,7 +39,7 @@ class SubmissionsUploadSerializerTest {
     private lateinit var deviceNameProvider: DeviceNameProvider
     private val gson = Gson()
 
-    private lateinit var serializer: SubmissionsUploadSerializer
+    private lateinit var payloadBuilder: SubmissionsPayloadBuilder
 
     @Before
     fun setUp() {
@@ -56,7 +56,7 @@ class SubmissionsUploadSerializerTest {
         every { NetworkUtils.getDeviceName() } returns "TestDevice"
         every { deviceNameProvider.getCustomDeviceName() } returns "CustomDevice"
 
-        serializer = SubmissionsUploadSerializer(
+        payloadBuilder = SubmissionsPayloadBuilder(
             teamsRepositoryProvider,
             sharedPrefManager,
             examDao,
@@ -81,7 +81,7 @@ class SubmissionsUploadSerializerTest {
             id = "s1"; parentId = "exam1@course1"; type = "exam"
         }
 
-        val result = serializer.examUploadPayload(submission, null)
+        val result = payloadBuilder.examUploadPayload(submission, null)
 
         assertEquals("pref_planet", result.get("source").asString)
         assertEquals("pref_parent", result.get("parentCode").asString)
@@ -97,7 +97,7 @@ class SubmissionsUploadSerializerTest {
             status = null
         }
 
-        val result = serializer.submissionPayload(submission, "src", "pCode", null)
+        val result = payloadBuilder.submissionPayload(submission, "src", "pCode", null)
 
         assertEquals("", result.get("parentId").asString)
         assertEquals("survey", result.get("type").asString)
@@ -117,8 +117,8 @@ class SubmissionsUploadSerializerTest {
             membershipDoc = MembershipDoc().apply { teamId = "team123" }
         }
 
-        val submissionResult = serializer.submissionPayload(submission, "src", "pCode", user)
-        val examResult = serializer.examUploadPayload(submission, user)
+        val submissionResult = payloadBuilder.submissionPayload(submission, "src", "pCode", user)
+        val examResult = payloadBuilder.examUploadPayload(submission, user)
 
         val submissionUserJson = submissionResult.getAsJsonObject("user")
         assertTrue(submissionUserJson.has("membershipDoc"))
@@ -149,8 +149,8 @@ class SubmissionsUploadSerializerTest {
             parent = "{\"fallback\":\"parent\"}"
         }
 
-        val examResult = serializer.examUploadPayload(submission, null)
-        val submissionResult = serializer.submissionPayload(submission, "src", "pCode", null)
+        val examResult = payloadBuilder.examUploadPayload(submission, null)
+        val submissionResult = payloadBuilder.submissionPayload(submission, "src", "pCode", null)
 
         val expectedParent = StepExam.serializeExam(exam, listOf(question))
         assertEquals(expectedParent, examResult.getAsJsonObject("parent"))
@@ -177,12 +177,12 @@ class SubmissionsUploadSerializerTest {
             user = "{\"name\":\"Test User\"}"
         }
 
-        val examPayload = serializer.examUploadPayload(submission, null)
+        val examPayload = payloadBuilder.examUploadPayload(submission, null)
         val expectedExamJson = "{\"_id\":\"doc123\",\"_rev\":\"1-abc\",\"parentId\":\"p1\",\"type\":\"exam\",\"grade\":100,\"startTime\":1000,\"lastUpdateTime\":2000,\"status\":\"complete\",\"androidId\":\"androidId\",\"app\":\"myplanet\",\"deviceName\":\"TestDevice\",\"customDeviceName\":\"CustomDevice\",\"sender\":\"sender1\",\"source\":\"planet1\",\"parentCode\":\"parent1\",\"answers\":[],\"parent\":{\"name\":\"Parent Exam\"},\"user\":{\"name\":\"Test User\"}}"
 
         assertEquals(expectedExamJson, examPayload.toString())
 
-        val submissionPayload = serializer.submissionPayload(submission, "argSource", "argParentCode", null)
+        val submissionPayload = payloadBuilder.submissionPayload(submission, "argSource", "argParentCode", null)
         val expectedSubmissionJson = "{\"_id\":\"doc123\",\"_rev\":\"1-abc\",\"parentId\":\"p1\",\"type\":\"exam\",\"grade\":100,\"startTime\":1000,\"lastUpdateTime\":2000,\"status\":\"complete\",\"androidId\":\"androidId\",\"app\":\"myplanet\",\"deviceName\":\"TestDevice\",\"customDeviceName\":\"CustomDevice\",\"sender\":\"sender1\",\"source\":\"argSource\",\"parentCode\":\"argParentCode\",\"answers\":[],\"parent\":{\"name\":\"Parent Exam\"},\"user\":{\"name\":\"Test User\"}}"
 
         assertEquals(expectedSubmissionJson, submissionPayload.toString())
@@ -195,13 +195,13 @@ class SubmissionsUploadSerializerTest {
 
         var threwCancellation = false
         try {
-            serializer.getTeamByIdOrNull("cancel_team")
+            payloadBuilder.getTeamByIdOrNull("cancel_team")
         } catch (e: CancellationException) {
             threwCancellation = true
         }
         assertTrue(threwCancellation)
 
-        val nullResult = serializer.getTeamByIdOrNull("error_team")
+        val nullResult = payloadBuilder.getTeamByIdOrNull("error_team")
         assertNull(nullResult)
     }
 }
