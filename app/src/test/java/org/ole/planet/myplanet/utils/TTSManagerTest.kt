@@ -77,6 +77,17 @@ class TTSManagerTest {
     }
 
     @Test
+    fun testFormatCsvTextForSpeech_parsesQuotedFields() {
+        val csv = "Name,City\nJohn,\"New York, NY\"\n"
+        assertEquals("Row 1. Name: John, City: New York, NY", TTSManager.formatCsvTextForSpeech(csv))
+    }
+
+    @Test
+    fun testFormatCsvTextForSpeech_empty() {
+        assertEquals("", TTSManager.formatCsvTextForSpeech(""))
+    }
+
+    @Test
     fun testStripMarkdown_plainTextTrimmed() {
         val input = "   hello world   "
         val expected = "hello world"

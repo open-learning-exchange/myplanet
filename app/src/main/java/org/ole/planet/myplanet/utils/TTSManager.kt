@@ -3,7 +3,10 @@ package org.ole.planet.myplanet.utils
 import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import com.opencsv.CSVParserBuilder
+import com.opencsv.CSVReaderBuilder
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.StringReader
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -123,6 +126,14 @@ class TTSManager @Inject constructor(
                 }.joinToString(", ")
                 "Row ${index + 1}. $cells"
             }.joinToString(". ")
+        }
+
+        fun formatCsvTextForSpeech(csv: String): String {
+            val rows = CSVReaderBuilder(StringReader(csv))
+                .withCSVParser(CSVParserBuilder().withSeparator(',').withQuoteChar('"').build())
+                .build()
+                .use { it.readAll() }
+            return formatCsvForSpeech(rows)
         }
     }
 }
