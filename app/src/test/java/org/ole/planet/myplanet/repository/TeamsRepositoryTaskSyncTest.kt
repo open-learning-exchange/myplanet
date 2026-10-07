@@ -39,11 +39,12 @@ class TeamsRepositoryTaskSyncTest {
     private lateinit var taskDao: TeamTaskDao
     private lateinit var repository: TeamsRepositoryImpl
 
-    private fun pulledTask(remoteId: String, title: String): JsonObject = JsonObject().apply {
+    private fun pulledTask(remoteId: String, title: String, deadline: Long = 0L): JsonObject = JsonObject().apply {
         add("doc", JsonObject().apply {
             addProperty("_id", remoteId)
             addProperty("_rev", "2-abc")
             addProperty("title", title)
+            addProperty("deadline", deadline)
             add("link", JsonObject().apply { addProperty("teams", "team1") })
             add("sync", JsonObject())
         })
@@ -110,5 +111,34 @@ class TeamsRepositoryTaskSyncTest {
         repository.bulkInsertTasksFromSync(JsonArray().apply { add(pulledTask("server-2", "From Planet")) })
 
         assertEquals(listOf("server-2"), taskDao.getTasksByTeamId("team1").first().map { it.id })
+    }
+
+    @Test
+    fun `pulling keeps the notified flag so a due task isn't announced again`() = runBlocking {
+        taskDao.upsert(TeamTask().apply { id = "server-3"; _id = "server-3"; teamId = "team1"; title = "Due"; deadline = 1000L; isNotified = true })
+
+        repository.bulkInsertTasksFromSync(JsonArray().apply { add(pulledTask("server-3", "Due", deadline = 1000L)) })
+
+        assertEquals(true, taskDao.getById("server-3")?.isNotified)
+    }
+
+    @Test
+    fun `a moved deadline resets the notified flag`() = runBlocking {
+        taskDao.upsert(TeamTask().apply { id = "server-4"; _id = "server-4"; teamId = "team1"; title = "Due"; deadline = 1000L; isNotified = true })
+
+        repository.bulkInsertTasksFromSync(JsonArray().apply { add(pulledTask("server-4", "Due", deadline = 2000L)) })
+
+        assertEquals(false, taskDao.getById("server-4")?.isNotified)
+    }
+
+    @Test
+    fun `pulling doesn't overwrite a task with unsynced local edits`() = runBlocking {
+        taskDao.upsert(TeamTask().apply { id = "server-5"; _id = "server-5"; teamId = "team1"; title = "Edited offline"; isUpdated = true })
+
+        repository.bulkInsertTasksFromSync(JsonArray().apply { add(pulledTask("server-5", "Server title")) })
+
+        val task = taskDao.getById("server-5")
+        assertEquals("Edited offline", task?.title)
+        assertEquals(true, task?.isUpdated)
     }
 }

@@ -1272,9 +1272,17 @@ class TeamsRepositoryImpl @Inject constructor(
                 task.id = localId
             }
         }
+       
+        val existingById = teamTaskDao.getByIds(tasks.map { it.id }).associateBy { it.id }
+        val toSave = tasks.filter { task ->
+            val existing = existingById[task.id] ?: return@filter true
+            if (existing.isUpdated) return@filter false
+            task.isNotified = existing.isNotified && existing.deadline == task.deadline
+            true
+        }
         appDatabase.withTransaction {
             teamTaskDao.deleteByIds(duplicateIds)
-            teamTaskDao.upsertAll(tasks)
+            teamTaskDao.upsertAll(toSave)
         }
     }
 
