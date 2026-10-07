@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.ui.viewer
 
 import androidx.lifecycle.ViewModel
-import com.tom_roush.pdfbox.pdmodel.PDDocument
-import com.tom_roush.pdfbox.text.PDFTextStripper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import javax.inject.Inject
@@ -17,8 +15,11 @@ import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.PdfTextExtractor
+import org.ole.planet.myplanet.utils.StoragePathResolver
 
 @HiltViewModel
 class ResourceViewerViewModel @Inject constructor(
@@ -28,6 +29,9 @@ class ResourceViewerViewModel @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository,
     private val userRepository: UserRepository,
     private val sharedPrefManager: SharedPrefManager,
+    private val storagePathResolver: StoragePathResolver,
+    private val resourceDownloadCoordinator: ResourceDownloadCoordinator,
+    private val pdfTextExtractor: PdfTextExtractor,
     private val dispatcherProvider: DispatcherProvider,
     @ApplicationScope private val appScope: CoroutineScope
 ) : ViewModel() {
@@ -111,11 +115,13 @@ class ResourceViewerViewModel @Inject constructor(
         appScope.launch { updateLibraryItemTranslationAudioPath(id, outputFile) }
     }
 
-    suspend fun extractPdfText(file: File): String = withContext(dispatcherProvider.io) {
-        try {
-            PDDocument.load(file).use {
-                PDFTextStripper().getText(it).trim()
-            }
-        } catch (e: Exception) { "" }
+    suspend fun getExternalFilesDir(): File? = withContext(dispatcherProvider.io) {
+        storagePathResolver.resolveExternalFilesDir()
     }
+
+    suspend fun downloadResource(url: String) {
+        resourceDownloadCoordinator.downloadIfMissing(url)
+    }
+
+    suspend fun extractPdfText(file: File): String = pdfTextExtractor.extractText(file)
 }

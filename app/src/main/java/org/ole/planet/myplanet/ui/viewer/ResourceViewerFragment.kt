@@ -55,7 +55,6 @@ import androidx.media3.ui.PlayerView
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.util.regex.Pattern
@@ -72,7 +71,6 @@ import org.ole.planet.myplanet.databinding.FragmentResourceViewerBinding
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.AudioRecorder
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.IntentUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils
@@ -176,10 +174,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val appContext = requireContext().applicationContext
-            externalFilesDir = withContext(dispatcherProvider.io) {
-                appContext.getExternalFilesDir(null)
-            }
+            externalFilesDir = viewModel.getExternalFilesDir()
             resourceId?.let {
                 library = viewModel.getLibraryItemById(it) ?: return@launch
             }
@@ -555,7 +550,6 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
             pdfText = ""
             return ""
         }
-        PDFBoxResourceLoader.init(requireContext().applicationContext)
         val extracted = viewModel.extractPdfText(file)
         pdfText = extracted
         return extracted
@@ -661,16 +655,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
                 streamingHttpDataSourceFactory?.setDefaultRequestProperties(hashMapOf("Cookie" to auth))
             }
             if (isOnline) {
-                downloadResourceIfMissing(url)
-            }
-        }
-    }
-
-    private suspend fun downloadResourceIfMissing(url: String) {
-        val appContext = requireContext().applicationContext
-        withContext(dispatcherProvider.io) {
-            if (!FileUtils.checkFileExist(appContext, url)) {
-                DownloadUtils.openDownloadService(appContext, arrayListOf(url), false)
+                viewModel.downloadResource(url)
             }
         }
     }
