@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.services
+package org.ole.planet.myplanet.services.upload
 
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -17,6 +17,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.callback.OnSuccessListener
+import org.ole.planet.myplanet.services.UploadManager
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AutoSyncUploadRunnerTest {

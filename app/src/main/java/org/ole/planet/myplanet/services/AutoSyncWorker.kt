@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepository.CheckVersionCallback
 import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.services.upload.AutoSyncUploadRunner
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utils.DispatcherProvider

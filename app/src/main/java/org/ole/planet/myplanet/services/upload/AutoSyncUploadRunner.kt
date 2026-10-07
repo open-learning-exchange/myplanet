@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.services
+package org.ole.planet.myplanet.services.upload
 
 import android.util.Log
 import java.util.concurrent.atomic.AtomicReference
@@ -10,6 +10,7 @@ import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.callback.OnSuccessListener
+import org.ole.planet.myplanet.services.UploadManager
 
 class AutoSyncUploadRunner @Inject constructor(
     private val uploadManager: UploadManager
