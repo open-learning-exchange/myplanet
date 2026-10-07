@@ -13,7 +13,6 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.android.material.textfield.TextInputLayout
-import com.google.gson.JsonObject
 import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
@@ -23,7 +22,6 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.VoicesEditor
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailInfo
-import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 object VoicesActions {
@@ -55,8 +53,7 @@ object VoicesActions {
         if (!imageUrls.isNullOrEmpty()) {
             imageUrls.forEach { imageUrl ->
                 try {
-                    val imgObject = GsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
-                    val path = GsonUtils.getString("imageUrl", imgObject)
+                    val path = VoicesImages.imageUrl(imageUrl)
                     if (path.isNotEmpty()) {
                         addImageWithRemoveIcon(context, path, imageLayout, imagesToRemove)
                     }

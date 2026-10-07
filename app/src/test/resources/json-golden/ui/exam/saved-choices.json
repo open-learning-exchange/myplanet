@@ -1,0 +1,81 @@
+[
+  {
+    "choice": "{\"text\":\"A\",\"id\":\"a\"}",
+    "saved": [
+      {
+        "text": "A",
+        "id": "a"
+      }
+    ]
+  },
+  {
+    "choice": "{\"id\":\"other\",\"text\":\"typed <b>\"}",
+    "saved": [
+      {
+        "text": "typed <b>",
+        "id": "other"
+      }
+    ]
+  },
+  {
+    "choice": "{\"id\":1.50,\"text\":true}",
+    "saved": [
+      {
+        "text": "",
+        "id": ""
+      }
+    ]
+  },
+  {
+    "choice": "{\"text\":null}",
+    "saved": [
+      {
+        "text": "",
+        "id": ""
+      }
+    ]
+  },
+  {
+    "choice": "{'id':'single'}",
+    "saved": [
+      {
+        "text": "",
+        "id": "single"
+      }
+    ]
+  },
+  {
+    "choice": "{}",
+    "saved": [
+      {
+        "text": "",
+        "id": ""
+      }
+    ]
+  },
+  {
+    "choice": "",
+    "saved": [
+      {
+        "text": "",
+        "id": ""
+      }
+    ]
+  },
+  {
+    "choice": "null",
+    "saved": "<throws>"
+  },
+  {
+    "choice": "x",
+    "saved": "<throws>"
+  },
+  {
+    "choice": "[1]",
+    "saved": "<throws>"
+  },
+  {
+    "choice": "{",
+    "saved": "<throws>"
+  }
+]

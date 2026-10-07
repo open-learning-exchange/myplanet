@@ -1,0 +1,82 @@
+[
+  {
+    "title": "Old",
+    "description": "<d>",
+    "date": "2020-01-01",
+    "link": "",
+    "resources": [
+      {
+        "_id": "r1",
+        "size": 1.50,
+        "exp": 1e2,
+        "big": 9007199254740993,
+        "neg": -0
+      }
+    ]
+  },
+  {
+    "title": "Lenient",
+    "description": "single",
+    "link": "unquoted",
+    "resources": []
+  },
+  "plain",
+  42.0,
+  null,
+  {
+    "description": "Desc Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+    "title": "Title",
+    "date": "2024-01-02",
+    "link": "https://planet.example/a?b=1&c=<2>#'x'",
+    "resources": [
+      {
+        "_id": "lib1",
+        "_rev": "1-a",
+        "need_optimization": false,
+        "resourceFor": [],
+        "publisher": null,
+        "linkToLicense": null,
+        "addedBy": null,
+        "uploadDate": null,
+        "openWith": null,
+        "subject": [
+          "math",
+          "<sci>"
+        ],
+        "kind": null,
+        "medium": null,
+        "language": null,
+        "author": null,
+        "sum": 12,
+        "createdDate": null,
+        "level": [],
+        "languages": [],
+        "tag": [],
+        "timesRated": 3,
+        "year": null,
+        "title": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+        "averageRating": "4.5",
+        "filename": null,
+        "mediaType": null,
+        "description": null,
+        "_attachments": {
+          "file.pdf": {}
+        }
+      }
+    ]
+  },
+  {
+    "description": "",
+    "title": "No resources",
+    "date": "",
+    "link": "",
+    "resources": []
+  },
+  {
+    "description": "",
+    "title": "Null resources",
+    "date": "",
+    "link": "",
+    "resources": null
+  }
+]

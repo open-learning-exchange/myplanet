@@ -1,0 +1,139 @@
+[
+  {
+    "choices": null,
+    "parsed": []
+  },
+  {
+    "choices": "",
+    "parsed": []
+  },
+  {
+    "choices": "   ",
+    "parsed": []
+  },
+  {
+    "choices": "[]",
+    "parsed": []
+  },
+  {
+    "choices": "{}",
+    "parsed": []
+  },
+  {
+    "choices": "null",
+    "parsed": []
+  },
+  {
+    "choices": "\"text\"",
+    "parsed": []
+  },
+  {
+    "choices": "[{\"text\":\"A\",\"id\":\"a\"},{\"text\":\"B <b>&\",\"id\":\"b\"}]",
+    "parsed": [
+      {
+        "text": "A",
+        "id": "a"
+      },
+      {
+        "text": "B <b>&",
+        "id": "b"
+      }
+    ]
+  },
+  {
+    "choices": "[\"x\", 1.50, 1e2, -0, true, null, {\"text\":1,\"id\":2}, [\"n\"], [\"one\", \"two\"], {\"id\":\"only\"}, {\"text\":\"only\"}]",
+    "parsed": [
+      {
+        "text": "x",
+        "id": null
+      },
+      {
+        "text": "1.50",
+        "id": null
+      },
+      {
+        "text": "1e2",
+        "id": null
+      },
+      {
+        "text": "-0",
+        "id": null
+      },
+      {
+        "text": "true",
+        "id": null
+      },
+      {
+        "text": "",
+        "id": null
+      },
+      {
+        "text": "",
+        "id": ""
+      },
+      {
+        "text": "",
+        "id": null
+      },
+      {
+        "text": "",
+        "id": null
+      },
+      {
+        "text": "",
+        "id": "only"
+      },
+      {
+        "text": "only",
+        "id": ""
+      }
+    ]
+  },
+  {
+    "choices": "[a, b c]",
+    "parsed": "<throws>"
+  },
+  {
+    "choices": "['single', {'text':'q','id':'w'}]",
+    "parsed": [
+      {
+        "text": "single",
+        "id": null
+      },
+      {
+        "text": "q",
+        "id": "w"
+      }
+    ]
+  },
+  {
+    "choices": "// note\n[\"commented\"]",
+    "parsed": [
+      {
+        "text": "commented",
+        "id": null
+      }
+    ]
+  },
+  {
+    "choices": ")]}'\n[\"prefixed\"]",
+    "parsed": [
+      {
+        "text": "prefixed",
+        "id": null
+      }
+    ]
+  },
+  {
+    "choices": "not json",
+    "parsed": "<throws>"
+  },
+  {
+    "choices": "[1,",
+    "parsed": "<throws>"
+  },
+  {
+    "choices": "[1] [2]",
+    "parsed": "<throws>"
+  }
+]

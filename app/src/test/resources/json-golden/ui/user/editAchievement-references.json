@@ -1,0 +1,15 @@
+[
+  {
+    "name": "Ref",
+    "phone": 5551234,
+    "relationship": "r",
+    "email": null,
+    "rating": 4.50
+  },
+  {
+    "name": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+    "phone": "+1 555",
+    "relationship": "friend",
+    "email": "a@b.c"
+  }
+]

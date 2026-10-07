@@ -1,0 +1,3 @@
+{"notes":"notes Tricky \u003cb\u003e\u0026amp;\u003c/b\u003e \u0027q\u0027 \u003d \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep","diagnosis":"diagnosis \u003cb\u003e","treatments":"treatments \u0026 more","medications":"medications \u0027x\u0027","immunizations":"immunizations \u003d y","allergies":"allergies","xrays":"xrays","tests":"tests","referrals":"referrals","createdBy":"org.couchdb.user:someone"}
+{"allergies":"","createdBy":"creator"}
+{}

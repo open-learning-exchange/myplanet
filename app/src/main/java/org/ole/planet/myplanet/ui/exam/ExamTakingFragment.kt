@@ -22,7 +22,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.coroutines.resume
@@ -45,9 +44,6 @@ import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.GsonUtils
-import org.ole.planet.myplanet.utils.GsonUtils.getString
-import org.ole.planet.myplanet.utils.GsonUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utils.KeyboardUtils.hideSoftKeyboard
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.Utilities
@@ -538,36 +534,33 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     }
 
     private fun showCheckBoxes(question: ExamQuestion?, oldAnswer: String) {
-        val choices = getStringAsJsonArray(question?.choices)
+        val choices = ExamChoices.parse(question?.choices)
 
-        for (i in 0 until choices.size()) {
-            addCompoundButton(choices[i].asJsonObject, false, oldAnswer)
+        for (choice in choices) {
+            if (choice.id == null) throw IllegalStateException("Not a JSON Object: ${choice.text}")
+            addCompoundButton(choice, false, oldAnswer)
         }
 
         if (question?.hasOtherOption == true) {
-            val otherChoice = GsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
-
-            addCompoundButton(otherChoice, false, oldAnswer)
+            addCompoundButton(ExamChoices.OTHER, false, oldAnswer)
         }
     }
 
     private fun selectQuestion(question: ExamQuestion?, oldAnswer: String) {
-        val choices = getStringAsJsonArray(question?.choices)
+        val choices = ExamChoices.parse(question?.choices)
         val isRadio = question?.type != "multiple"
 
-        for (i in 0 until choices.size()) {
-            if (choices[i].isJsonObject) {
-                addCompoundButton(choices[i].asJsonObject, isRadio, oldAnswer)
+        for (choice in choices) {
+            if (choice.id != null) {
+                addCompoundButton(choice, isRadio, oldAnswer)
             } else {
-                addRadioButton(getString(choices, i), oldAnswer)
+                addRadioButton(choice.text, oldAnswer)
             }
         }
 
         if (question?.hasOtherOption == true) {
-            if (!choices.isEmpty() && choices[0].isJsonObject) {
-                val otherChoice = GsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
-
-                addCompoundButton(otherChoice, isRadio, oldAnswer)
+            if (choices.firstOrNull()?.id != null) {
+                addCompoundButton(ExamChoices.OTHER, isRadio, oldAnswer)
             } else {
                 addRadioButton("Other", oldAnswer)
             }
@@ -588,7 +581,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
     }
 
-    private fun addCompoundButton(choice: JsonObject?, isRadio: Boolean, oldAnswer: String) {
+    private fun addCompoundButton(choice: ExamChoice, isRadio: Boolean, oldAnswer: String) {
         val rdBtn = if (isRadio) {
             LayoutInflater.from(activity)
                 .inflate(
@@ -599,8 +592,8 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             LayoutInflater.from(activity)
                 .inflate(R.layout.item_checkbox, null) as CompoundButton
         }
-        val choiceText = getString("text", choice)
-        val choiceId = getString("id", choice)
+        val choiceText = choice.text
+        val choiceId = choice.id.orEmpty()
 
         rdBtn.text = choiceText
         rdBtn.tag = choiceId
@@ -782,8 +775,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                     val choices = answer.valueChoices
                     if (!choices.isNullOrEmpty()) {
                         try {
-                            val choiceJson = GsonUtils.gson.fromJson(choices[0], JsonObject::class.java)
-                            val choiceId = getString("id", choiceJson)
+                            val choiceId = ExamChoices.saved(choices[0]).id.orEmpty()
                             if (choiceId == "other") {
                                 answerData.singleAnswer = "other"
                                 answerData.otherText = answer.value ?: ""
@@ -798,9 +790,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 "selectMultiple" -> {
                     answer.valueChoices?.forEach { choiceStr ->
                         try {
-                            val choiceJson = GsonUtils.gson.fromJson(choiceStr, JsonObject::class.java)
-                            val choiceId = getString("id", choiceJson)
-                            val choiceText = getString("text", choiceJson)
+                            val choice = ExamChoices.saved(choiceStr)
+                            val choiceId = choice.id.orEmpty()
+                            val choiceText = choice.text
                             if (choiceId == "other") {
                                 answerData.multipleAnswers["Other"] = "other"
                                 answerData.otherText = choiceText

@@ -28,12 +28,10 @@ import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DimenUtils.dpToPx
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils.getAge
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.parseVitalReading
-import org.ole.planet.myplanet.utils.toGsonAsParsed
 
 @AndroidEntryPoint
 class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
@@ -123,8 +121,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             binding.etWeight.setText(getString(R.string.float_placeholder, examination?.weight))
             binding.etVision.setText(examination?.vision)
             binding.etHearing.setText(examination?.hearing)
-            val encrypted = user?.let { examination?.getEncryptedDataAsJson(it)?.toGsonAsParsed() }
-            val saved = encrypted?.let { runCatching { GsonUtils.gson.fromJson(it, Examination::class.java) }.getOrNull() }
+            val saved = HealthExaminationJson.savedSign(user?.let { examination?.getEncryptedDataAsJson(it) })
             binding.etObservation.setText(saved?.notes.orEmpty())
             binding.etDiag.setText(saved?.diagnosis.orEmpty())
             binding.etTreatments.setText(saved?.treatments.orEmpty())
@@ -263,7 +260,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             examination?.setWeight(parseVitalReading("${binding.etWeight.text}".trim { it <= ' ' }))
             examination?.height = parseVitalReading("${binding.etHeight.text}".trim { it <= ' ' })
             otherConditions
-            examination?.conditions = GsonUtils.gson.toJson(mapConditions)
+            examination?.conditions = HealthExaminationJson.conditions(mapConditions)
             examination?.hearing = "${binding.etHearing.text}".trim { it <= ' ' }
             sign.immunizations = "${binding.etImmunization.text}".trim { it <= ' ' }
             sign.tests = "${binding.etLabtest.text}".trim { it <= ' ' }
@@ -367,7 +364,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             val userKey = user?.key
             val userIv = user?.iv
             if (userKey != null && userIv != null) {
-                pojo?.data = encrypt(GsonUtils.gson.toJson(health), userKey, userIv)
+                pojo?.data = encrypt(HealthExaminationJson.health(health), userKey, userIv)
             }
         } catch (e: Exception) {
             Log.w(TAG, "Creating health examination pojo failed", e)

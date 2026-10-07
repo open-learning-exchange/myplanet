@@ -1,0 +1,74 @@
+[
+  {
+    "decrypted": "{\"notes\":\"n\",\"diagnosis\":\"d <b>\",\"treatments\":\"t\",\"medications\":\"m\",\"immunizations\":\"i\",\"allergies\":\"a\",\"xrays\":\"x\",\"tests\":\"t2\",\"referrals\":\"r\",\"createdBy\":\"c\"}",
+    "sign": {
+      "notes": "n",
+      "diagnosis": "d <b>",
+      "treatments": "t",
+      "medications": "m",
+      "immunizations": "i",
+      "allergies": "a",
+      "xrays": "x",
+      "tests": "t2",
+      "referrals": "r",
+      "createdBy": "c"
+    }
+  },
+  {
+    "decrypted": "{\"notes\":1.50,\"diagnosis\":1e2,\"treatments\":true,\"medications\":null,\"unknown\":{\"x\":1}}",
+    "sign": {
+      "notes": "1.50",
+      "diagnosis": "1e2",
+      "treatments": "true",
+      "medications": null,
+      "immunizations": null,
+      "allergies": null,
+      "xrays": null,
+      "tests": null,
+      "referrals": null,
+      "createdBy": null
+    }
+  },
+  {
+    "decrypted": "{\"notes\":{\"a\":1}}",
+    "sign": null
+  },
+  {
+    "decrypted": "{\"diagnosis\":[\"a\"]}",
+    "sign": null
+  },
+  {
+    "decrypted": "{\"notes\":unquoted}",
+    "sign": {
+      "notes": "unquoted",
+      "diagnosis": null,
+      "treatments": null,
+      "medications": null,
+      "immunizations": null,
+      "allergies": null,
+      "xrays": null,
+      "tests": null,
+      "referrals": null,
+      "createdBy": null
+    }
+  },
+  {
+    "decrypted": "{}",
+    "sign": {
+      "notes": null,
+      "diagnosis": null,
+      "treatments": null,
+      "medications": null,
+      "immunizations": null,
+      "allergies": null,
+      "xrays": null,
+      "tests": null,
+      "referrals": null,
+      "createdBy": null
+    }
+  },
+  {
+    "decrypted": null,
+    "sign": null
+  }
+]

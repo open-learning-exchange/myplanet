@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.GsonUtils
 
 data class HealthExaminationState(
     val isLoading: Boolean = true,
@@ -129,7 +128,7 @@ class HealthExaminationViewModel @Inject constructor(
         try {
             val key = user?.key ?: generateKey().also { user?.key = it }
             val iv = user?.iv ?: generateIv().also { user?.iv = it }
-            examination?.data = AndroidDecrypter.encrypt(GsonUtils.gson.toJson(sign), key, iv)
+            examination?.data = AndroidDecrypter.encrypt(HealthExaminationJson.sign(sign), key, iv)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

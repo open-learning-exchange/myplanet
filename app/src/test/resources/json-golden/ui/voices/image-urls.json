@@ -1,0 +1,70 @@
+[
+  {
+    "entry": "{\"imageUrl\":\"/storage/emulated/0/DCIM/a.jpg\",\"fileName\":\"a.jpg\"}",
+    "imageUrl": "/storage/emulated/0/DCIM/a.jpg"
+  },
+  {
+    "entry": "{\"imageUrl\":\"/p/it\\u0027s\\u003d\\u003cx\\u003e\\u0026.png\",\"fileName\":\"it\\u0027s\\u003d\\u003cx\\u003e\\u0026.png\"}",
+    "imageUrl": "/p/it's=<x>&.png"
+  },
+  {
+    "entry": "{\"imageUrl\":\"Tricky \\u003cb\\u003e\\u0026amp;\\u003c/b\\u003e \\u0027q\\u0027 \\u003d \\\"dq\\\" \\\\ / — ünïcødé 漢字 🌍\\n\\tline\\u2028sep\",\"fileName\":\"Tricky \\u003cb\\u003e\\u0026amp;\\u003c/b\\u003e \\u0027q\\u0027 \\u003d \\\"dq\\\" \\\\ / — ünïcødé 漢字 🌍\\n\\tline\\u2028sep\"}",
+    "imageUrl": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep"
+  },
+  {
+    "entry": "{\"imageUrl\":\"\",\"fileName\":\"\"}",
+    "imageUrl": ""
+  },
+  {
+    "entry": "{\"imageUrl\":1.50}",
+    "imageUrl": ""
+  },
+  {
+    "entry": "{\"imageUrl\":true}",
+    "imageUrl": ""
+  },
+  {
+    "entry": "{\"imageUrl\":null}",
+    "imageUrl": ""
+  },
+  {
+    "entry": "{\"imageUrl\":[\"/a.png\"]}",
+    "imageUrl": ""
+  },
+  {
+    "entry": "{\"fileName\":\"a.png\"}",
+    "imageUrl": ""
+  },
+  {
+    "entry": "{'imageUrl':'/single.png'}",
+    "imageUrl": "/single.png"
+  },
+  {
+    "entry": "{imageUrl:/unquoted.png}",
+    "imageUrl": "<throws>"
+  },
+  {
+    "entry": "",
+    "imageUrl": ""
+  },
+  {
+    "entry": "   ",
+    "imageUrl": ""
+  },
+  {
+    "entry": "null",
+    "imageUrl": "<throws>"
+  },
+  {
+    "entry": "[1]",
+    "imageUrl": "<throws>"
+  },
+  {
+    "entry": "x",
+    "imageUrl": "<throws>"
+  },
+  {
+    "entry": "{",
+    "imageUrl": "<throws>"
+  }
+]

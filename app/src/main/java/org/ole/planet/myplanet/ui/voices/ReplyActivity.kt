@@ -19,7 +19,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import javax.inject.Inject
@@ -38,8 +37,6 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utils.FileUtils.resolveUriToPath
-import org.ole.planet.myplanet.utils.GsonUtils
-import org.ole.planet.myplanet.utils.GsonUtils.getString
 
 @AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
@@ -223,10 +220,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
             return
         }
 
-        val jsonObject = JsonObject()
-        jsonObject.addProperty("imageUrl", path)
-        jsonObject.addProperty("fileName", getFileNameFromUrl(path))
-        imageList.add(GsonUtils.gson.toJson(jsonObject))
+        imageList.add(VoicesImages.entry(path, getFileNameFromUrl(path)))
 
         try {
             showSelectedImages()
@@ -238,8 +232,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private fun isImageAlreadyAdded(path: String): Boolean {
         return imageList.any { imageJson ->
             try {
-                val imgObject = GsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
-                getString("imageUrl", imgObject) == path
+                VoicesImages.imageUrl(imageJson) == path
             } catch (e: Exception) {
                 false
             }
@@ -250,11 +243,11 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         llImage?.removeAllViews()
         llImage?.visibility = View.VISIBLE
         for (img in imageList) {
-            val ob = GsonUtils.gson.fromJson(img, JsonObject::class.java)
+            val imageUrl = VoicesImages.imageUrl(img)
             val inflater = LayoutInflater.from(this).inflate(R.layout.image_thumb, llImage, false)
             val imgView = inflater.findViewById<ImageView>(R.id.thumb)
             Glide.with(this)
-                .load(File(getString("imageUrl", ob)))
+                .load(File(imageUrl))
                 .placeholder(R.drawable.ic_loading)
                 .error(R.drawable.ic_loading)
                 .into(imgView)

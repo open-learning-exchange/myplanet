@@ -48,7 +48,6 @@ import org.ole.planet.myplanet.databinding.EditOtherInfoBinding
 import org.ole.planet.myplanet.databinding.FragmentEditAchievementBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.Achievement
-import org.ole.planet.myplanet.model.Achievement.Companion.createReference
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.LibraryTitle
 import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
@@ -60,8 +59,6 @@ import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utils.Utilities
-import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toGsonAsParsed
 
 @AndroidEntryPoint
 class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDateSetListener {
@@ -325,7 +322,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             }
             if (`object` != null) referenceArray?.remove(`object`)
             if (referenceArray == null) referenceArray = JsonArray()
-            referenceArray?.add(createReference(name, alertReferenceBinding.etRelationship.text.toString(), alertReferenceBinding.etPhone.text.toString(), alertReferenceBinding.etEmail.text.toString()).toGson())
+            referenceArray?.add(AchievementEntries.reference(name, alertReferenceBinding.etRelationship.text.toString(), alertReferenceBinding.etPhone.text.toString(), alertReferenceBinding.etEmail.text.toString()))
             showReference()
             referenceDialog?.dismiss()
         }
@@ -405,13 +402,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun saveAchievement(desc: String, title: String) {
         val link = alertAddAttachmentBinding.etLink.text.toString().trim()
-        val `object` = JsonObject()
-        `object`.addProperty("description", desc)
-        `object`.addProperty("title", title)
-        `object`.addProperty("date", date)
-        `object`.addProperty("link", link)
-        `object`.add("resources", resourceArray)
-        achievementArray?.add(`object`)
+        achievementArray?.add(AchievementEntries.entry(desc, title, date, link, resourceArray))
         showAchievementAndInfo()
     }
 
@@ -433,12 +424,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                     fetchResourcesJob = viewLifecycleOwner.lifecycleScope.launch {
                         val fullLibraries = viewModel.getLibraryItemsByIds(selectedIds)
                         val libMap = fullLibraries.associateBy { it.id }
-                        resourceArray = JsonArray()
-                        for (id in selectedIds) {
-                            libMap[id]?.let { lib ->
-                                resourceArray?.add(lib.serializeResource().toGson())
-                            }
-                        }
+                        resourceArray = AchievementEntries.resources(selectedIds.mapNotNull { libMap[it] })
                     }
                 }.setNegativeButton("Cancel", null).show()
             }
@@ -452,8 +438,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     }
 
     private fun populateAchievementData() {
-        achievementArray = achievement?.achievementsArray?.toGsonAsParsed() ?: achievementArray
-        referenceArray = achievement?.getReferencesArray()?.toGsonAsParsed() ?: referenceArray
+        achievementArray = AchievementEntries.loaded(achievement?.achievementsArray) ?: achievementArray
+        referenceArray = AchievementEntries.loaded(achievement?.getReferencesArray()) ?: referenceArray
         binding.etAchievement.setText(achievement?.achievementsHeader)
         binding.etPurpose.setText(achievement?.purpose)
         binding.etGoals.setText(achievement?.goals)
