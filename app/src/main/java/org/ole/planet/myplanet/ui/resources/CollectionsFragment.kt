@@ -10,8 +10,6 @@ import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
 import kotlin.collections.ArrayList
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.ole.planet.myplanet.R
@@ -23,6 +21,7 @@ import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.utils.KeyboardUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.debounceDistinct
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
@@ -94,8 +93,7 @@ class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding
             dismiss()
         }
         binding.etFilter.textChanges()
-            .debounce(300L)
-            .distinctUntilChanged()
+            .debounceDistinct(300L)
             .onEach { charSequence ->
                 if (!::adapter.isInitialized) return@onEach
                 charSequence?.let { filterTags(it.toString()) }
