@@ -55,13 +55,13 @@ class ChatViewModel @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository
 ) : ViewModel() {
     companion object {
-        const val PAGE_SIZE = ChatConversationPager.PAGE_SIZE
+        const val PAGE_SIZE = ChatConversationPaginator.PAGE_SIZE
     }
-    private val pager = ChatConversationPager(dispatcherProvider)
+    private val paginator = ChatConversationPaginator(dispatcherProvider)
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    internal val allConversations: List<Conversation> get() = pager.allConversations
+    internal val allConversations: List<Conversation> get() = paginator.allConversations
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    internal val loadedCount: Int get() = pager.loadedCount
+    internal val loadedCount: Int get() = paginator.loadedCount
     private var allChats: List<ChatHistory> = emptyList()
     private val _refreshChatSignal = MutableSharedFlow<Unit>(replay = 1)
     val refreshChatSignal: SharedFlow<Unit> = _refreshChatSignal.asSharedFlow()
@@ -193,10 +193,10 @@ class ChatViewModel @Inject constructor(
         }
         return ChatShareTargets(community, teams, enterprises)
     }
-    suspend fun parseAndBuildInitialPage(newsConversations: String?): List<ChatMessage> = pager.parseAndBuildInitialPage(newsConversations)
-    fun processChatHistory(conversations: List<Conversation>): List<ChatMessage> = pager.processChatHistory(conversations)
-    fun loadMoreConversations(): Pair<List<ChatMessage>, Boolean> = pager.loadMoreConversations()
-    fun clearPaginationState() = pager.clearPaginationState()
+    suspend fun parseAndBuildInitialPage(newsConversations: String?): List<ChatMessage> = paginator.parseAndBuildInitialPage(newsConversations)
+    fun processChatHistory(conversations: List<Conversation>): List<ChatMessage> = paginator.processChatHistory(conversations)
+    fun loadMoreConversations(): Pair<List<ChatMessage>, Boolean> = paginator.loadMoreConversations()
+    fun clearPaginationState() = paginator.clearPaginationState()
     fun setSelectedChatHistory(conversations: List<Conversation>) {
         _selectedChatHistory.value = conversations
     }

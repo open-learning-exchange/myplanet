@@ -6,7 +6,7 @@ import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
 
-class ChatConversationPager(private val dispatcherProvider: DispatcherProvider) {
+class ChatConversationPaginator(private val dispatcherProvider: DispatcherProvider) {
     companion object {
         const val PAGE_SIZE = 20
     }

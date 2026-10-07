@@ -17,11 +17,11 @@ import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class ChatConversationPagerTest {
+class ChatConversationPaginatorTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
-    private val pager = ChatConversationPager(dispatcherProvider)
+    private val paginator = ChatConversationPaginator(dispatcherProvider)
 
     @Before
     fun setup() {
@@ -35,37 +35,37 @@ class ChatConversationPagerTest {
 
     @Test
     fun `parseAndBuildInitialPage with null blank and malformed JSON returns empty list and loadedCount 0`() = runTest {
-        val nullResult = pager.parseAndBuildInitialPage(null)
+        val nullResult = paginator.parseAndBuildInitialPage(null)
         assertTrue(nullResult.isEmpty())
-        assertEquals(0, pager.loadedCount)
-        assertTrue(pager.allConversations.isEmpty())
+        assertEquals(0, paginator.loadedCount)
+        assertTrue(paginator.allConversations.isEmpty())
 
-        val blankResult = pager.parseAndBuildInitialPage("   ")
+        val blankResult = paginator.parseAndBuildInitialPage("   ")
         assertTrue(blankResult.isEmpty())
-        assertEquals(0, pager.loadedCount)
-        assertTrue(pager.allConversations.isEmpty())
+        assertEquals(0, paginator.loadedCount)
+        assertTrue(paginator.allConversations.isEmpty())
 
-        val malformedResult = pager.parseAndBuildInitialPage("invalid json payload")
+        val malformedResult = paginator.parseAndBuildInitialPage("invalid json payload")
         assertTrue(malformedResult.isEmpty())
-        assertEquals(0, pager.loadedCount)
-        assertTrue(pager.allConversations.isEmpty())
+        assertEquals(0, paginator.loadedCount)
+        assertTrue(paginator.allConversations.isEmpty())
     }
 
     @Test
     fun `25 conversations initial page starts with LOAD_MORE and loadMoreConversations returns remaining 5 and false`() {
         val conversations = List(25) { Conversation().apply { query = "q$it"; response = "r$it" } }
-        val initialMessages = pager.processChatHistory(conversations)
+        val initialMessages = paginator.processChatHistory(conversations)
 
-        assertEquals(20, pager.loadedCount)
-        assertEquals(25, pager.allConversations.size)
+        assertEquals(20, paginator.loadedCount)
+        assertEquals(25, paginator.allConversations.size)
         assertEquals(41, initialMessages.size)
         assertEquals("", initialMessages[0].message)
         assertEquals(ChatMessage.LOAD_MORE, initialMessages[0].viewType)
         assertEquals("q5", initialMessages[1].message)
         assertEquals("r24", initialMessages[40].message)
 
-        val (moreMessages, hasMore) = pager.loadMoreConversations()
-        assertEquals(25, pager.loadedCount)
+        val (moreMessages, hasMore) = paginator.loadMoreConversations()
+        assertEquals(25, paginator.loadedCount)
         assertFalse(hasMore)
         assertEquals(10, moreMessages.size)
         assertEquals("q0", moreMessages[0].message)
@@ -75,16 +75,16 @@ class ChatConversationPagerTest {
     @Test
     fun `45 conversations first loadMoreConversations returns true second returns false`() {
         val conversations = List(45) { Conversation().apply { query = "q$it"; response = "r$it" } }
-        pager.processChatHistory(conversations)
-        assertEquals(20, pager.loadedCount)
+        paginator.processChatHistory(conversations)
+        assertEquals(20, paginator.loadedCount)
 
-        val (firstMoreMessages, firstHasMore) = pager.loadMoreConversations()
-        assertEquals(40, pager.loadedCount)
+        val (firstMoreMessages, firstHasMore) = paginator.loadMoreConversations()
+        assertEquals(40, paginator.loadedCount)
         assertTrue(firstHasMore)
         assertEquals(40, firstMoreMessages.size)
 
-        val (secondMoreMessages, secondHasMore) = pager.loadMoreConversations()
-        assertEquals(45, pager.loadedCount)
+        val (secondMoreMessages, secondHasMore) = paginator.loadMoreConversations()
+        assertEquals(45, paginator.loadedCount)
         assertFalse(secondHasMore)
         assertEquals(10, secondMoreMessages.size)
     }
@@ -92,7 +92,7 @@ class ChatConversationPagerTest {
     @Test
     fun `conversation with response null yields only QUERY message`() {
         val conversation = Conversation().apply { query = "query only"; response = null }
-        val messages = pager.processChatHistory(listOf(conversation))
+        val messages = paginator.processChatHistory(listOf(conversation))
 
         assertEquals(1, messages.size)
         assertEquals("query only", messages[0].message)
@@ -102,13 +102,13 @@ class ChatConversationPagerTest {
     @Test
     fun `clearPaginationState resets allConversations and loadedCount`() {
         val conversations = listOf(Conversation().apply { query = "q1"; response = "r1" })
-        pager.processChatHistory(conversations)
-        assertEquals(1, pager.allConversations.size)
-        assertEquals(1, pager.loadedCount)
+        paginator.processChatHistory(conversations)
+        assertEquals(1, paginator.allConversations.size)
+        assertEquals(1, paginator.loadedCount)
 
-        pager.clearPaginationState()
+        paginator.clearPaginationState()
 
-        assertTrue(pager.allConversations.isEmpty())
-        assertEquals(0, pager.loadedCount)
+        assertTrue(paginator.allConversations.isEmpty())
+        assertEquals(0, paginator.loadedCount)
     }
 }
