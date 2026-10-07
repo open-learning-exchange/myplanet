@@ -185,7 +185,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
         val result = withContext(dispatcherProvider.io) {
             val primaryReachable = checkServerAvailability(mapping.primaryUrl)
-            val alternativeReachable = mapping.alternativeUrl?.let {
+            val alternativeReachable = !primaryReachable && mapping.alternativeUrl?.let {
                 checkServerAvailability(it)
             } == true
 
