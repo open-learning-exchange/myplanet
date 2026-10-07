@@ -1,0 +1,2 @@
+id=36 desc=Tricky <b>&amp;</b> 'q' = "dq" \ / — ünïcødé 漢字 🌍
+	line sep begin=1 sales=-2 income=2147483647 wages=0 expenses=5 start=9007199254740993 end=1 created=1717171717171 updated=1717171717171 teamId=team <1> teamType= planet=planet docType=report flagged=true

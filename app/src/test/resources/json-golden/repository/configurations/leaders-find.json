@@ -1,0 +1,11 @@
+[
+  {
+    "method": "POST",
+    "url": "https://planet.example/db/_users/_find",
+    "body": {
+      "selector": {
+        "isUserAdmin": true
+      }
+    }
+  }
+]

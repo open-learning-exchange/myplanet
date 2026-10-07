@@ -1,0 +1,28 @@
+[
+  {
+    "courseName": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+    "courseId": "c1",
+    "progress": {
+      "max": 2,
+      "current": 1
+    },
+    "stepMistake": {
+      "0": 3,
+      "1": 1
+    },
+    "mistakes": 6
+  },
+  {
+    "courseName": "No steps",
+    "courseId": "c2",
+    "progress": {
+      "max": 0,
+      "current": 0
+    }
+  },
+  {
+    "courseName": null,
+    "courseId": null,
+    "progress": null
+  }
+]

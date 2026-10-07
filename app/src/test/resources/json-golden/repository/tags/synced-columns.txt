@@ -1,0 +1,5 @@
+id=t1 _id=t1 rev=1-t name=Tricky <b>&amp;</b> 'q' = "dq" \ / — ünïcødé 漢字 🌍
+	line sep db=resources docType=tag tagId=x linkId=y attachedTo=[p1, 1.5, , , true, 100] attached=true
+id=t2 _id=t2 rev= name= db= docType= tagId= linkId= attachedTo=[single] attached=true
+id=t3 _id=t3 rev= name= db= docType= tagId= linkId= attachedTo=[] attached=true
+id=t4 _id=t4 rev= name= db= docType= tagId= linkId= attachedTo=[] attached=true

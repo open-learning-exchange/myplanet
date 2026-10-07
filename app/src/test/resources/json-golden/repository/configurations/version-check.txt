@@ -1,0 +1,14 @@
+versionDetail={"planetVersion":"0.20 \u003cx\u003e \u0026 \u0027y\u0027","minapkcode":90,"latestapkcode":200,"apkpath":"/a?b\u003d1\u0026c\u003d\u003c2\u003e","localapkpath":"Tricky \u003cb\u003e\u0026amp;\u003c/b\u003e \u0027q\u0027 \u003d \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep"}
+update planet=0.20 <x> & 'y' min=90 latest=200 apk=/a?b=1&c=<2> app=null local=Tricky <b>&amp;</b> 'q' = "dq" \ / — ünïcødé 漢字 🌍
+	line sep cancelable=true
+versionDetail={"planetVersion":"0.20 \u003cx\u003e \u0026 \u0027y\u0027","minapkcode":90,"latestapkcode":200,"apkpath":"/a?b\u003d1\u0026c\u003d\u003c2\u003e","localapkpath":"Tricky \u003cb\u003e\u0026amp;\u003c/b\u003e \u0027q\u0027 \u003d \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep"}
+update planet=0.20 <x> & 'y' min=90 latest=200 apk=/a?b=1&c=<2> app=null local=Tricky <b>&amp;</b> 'q' = "dq" \ / — ünïcødé 漢字 🌍
+	line sep cancelable=true
+versionDetail={"planetVersion":"0.20 \u003cx\u003e \u0026 \u0027y\u0027","minapkcode":90,"latestapkcode":200,"apkpath":"/a?b\u003d1\u0026c\u003d\u003c2\u003e","localapkpath":"Tricky \u003cb\u003e\u0026amp;\u003c/b\u003e \u0027q\u0027 \u003d \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep"}
+error block=false
+versionDetail={"planetVersion":"0.20 \u003cx\u003e \u0026 \u0027y\u0027","minapkcode":90,"latestapkcode":200,"apkpath":"/a?b\u003d1\u0026c\u003d\u003c2\u003e","localapkpath":"Tricky \u003cb\u003e\u0026amp;\u003c/b\u003e \u0027q\u0027 \u003d \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep"}
+error block=true
+versionDetail={"planetVersion":"0.20 \u003cx\u003e \u0026 \u0027y\u0027","minapkcode":90,"latestapkcode":200,"apkpath":"/a?b\u003d1\u0026c\u003d\u003c2\u003e","localapkpath":"Tricky \u003cb\u003e\u0026amp;\u003c/b\u003e \u0027q\u0027 \u003d \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep"}
+error block=false
+update planet=0.20 <x> & 'y' min=90 latest=200 apk=/a?b=1&c=<2> app=null local=Tricky <b>&amp;</b> 'q' = "dq" \ / — ünïcødé 漢字 🌍
+	line sep cancelable=true

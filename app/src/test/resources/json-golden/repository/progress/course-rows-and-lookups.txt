@@ -1,0 +1,6 @@
+CoursesProgressRow(courseId=c1, courseName=Tricky <b>&amp;</b> 'q' = "dq" \ / — ünïcødé 漢字 🌍
+	line sep, progressCurrent=1, progressMax=2, mistakes=6, stepMistake={0=3, 1=1})
+CoursesProgressRow(courseId=c2, courseName=No steps, progressCurrent=0, progressMax=0, mistakes=null, stepMistake=null)
+{"max":2,"current":1}
+{"max":0,"current":0}
+null

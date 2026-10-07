@@ -1,0 +1,5 @@
+parentCode=parent & 'p'
+pref ai_models={"openai":"gpt \u003c4\u003e \u0026 \u0027o\u0027 \u003d x","n":"1.5","e":"100","b":"true"}
+pref planetType=community
+result=Success(id=config-1, code=planet <code>, url=https://satellite:pin@planet.example, defaultUrl=https://satellite:pin@planet.example, isAlternativeUrl=false)
+leaders={"docs":[{"_id":"org.couchdb.user:admin","name":"Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep","isUserAdmin":true,"n":100,"f":1.5,"none":null,"url":"a/b?c=<d>&e='f'"}],"bookmark":"x"}

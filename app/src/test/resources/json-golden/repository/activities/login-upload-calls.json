@@ -1,0 +1,36 @@
+[
+  {
+    "method": "POST",
+    "url": "https://planet.example/db/login_activities",
+    "body": {
+      "user": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+      "type": "login",
+      "loginTime": 9007199254740993,
+      "logoutTime": null,
+      "createdOn": "planet",
+      "parentCode": "parent",
+      "androidId": "golden-android-id",
+      "app": "myplanet",
+      "deviceName": "golden-device",
+      "customDeviceName": "golden <custom> & 'device'"
+    }
+  },
+  {
+    "method": "POST",
+    "url": "https://planet.example/db/login_activities",
+    "body": {
+      "user": null,
+      "type": null,
+      "loginTime": 1,
+      "logoutTime": 2,
+      "createdOn": null,
+      "parentCode": null,
+      "androidId": "golden-android-id",
+      "app": "myplanet",
+      "deviceName": "golden-device",
+      "customDeviceName": "golden <custom> & 'device'",
+      "_id": "srv-2",
+      "_rev": "1-b"
+    }
+  }
+]

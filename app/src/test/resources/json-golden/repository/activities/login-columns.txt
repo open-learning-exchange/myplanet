@@ -1,0 +1,4 @@
+uploaded id=a1 _id=srv-id rev=
+uploaded id=a2 _id=srv-id rev=
+synced id=local-1 _id=s1 rev=3-s user=amy type=login login=1700000000000 logout=5 parent=p createdOn=c androidId=x
+synced id=local-2 _id=s2 rev= user=bob type= login=1717171717171 logout=0 parent= createdOn= androidId=

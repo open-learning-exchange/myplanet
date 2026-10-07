@@ -1,0 +1,6 @@
+courses shelf-1 [{"_id":"a","n":100,"f":1.5,"big":9007199254740993,"t":"Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline sep","none":null},{"_id":"c"}]
+resources shelf-1 [{"_id":"a","n":100,"f":1.5,"big":9007199254740993,"t":"Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline sep","none":null},{"_id":"c"}]
+teams [{"_id":"a","n":100,"f":1.5,"big":9007199254740993,"t":"Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline sep","none":null},{"_id":"c"}]
+processed=3 total=15
+rows=[{"id":"_design/r","doc":{"_id":"_design/r"}},{"id":"r1","doc":{"_id":"r1","title":"Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline sep","n":100,"f":1.5,"big":9007199254740993}},{"id":"r2","value":{}},{"id":"r3","doc":{"_id":""}},{"id":"r4","doc":{"_id":"r4","none":null}}]
+syncable=[{"_id":"r1","title":"Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline sep","n":100,"f":1.5,"big":9007199254740993},{"_id":"r4","none":null}]

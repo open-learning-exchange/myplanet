@@ -1,0 +1,66 @@
+[
+  {
+    "method": "POST",
+    "url": "https://planet.example/db/myplanet_activities",
+    "body": {
+      "type": "sync",
+      "n": 1.50
+    }
+  },
+  {
+    "method": "POST",
+    "url": "https://planet.example/db/myplanet_activities",
+    "body": {
+      "_id": "existing",
+      "_rev": "4-m",
+      "usages": [
+        {
+          "time": 1,
+          "f": 1.5,
+          "none": null
+        },
+        {
+          "time": 1717171717171,
+          "f": 100,
+          "t": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep"
+        }
+      ],
+      "n": 100
+    }
+  },
+  {
+    "method": "POST",
+    "url": "https://planet.example/db/myplanet_activities",
+    "body": {
+      "type": "sync",
+      "n": 1.50
+    }
+  },
+  {
+    "method": "POST",
+    "url": "https://planet.example/db/myplanet_activities",
+    "body": {
+      "_id": "fresh",
+      "usages": [
+        {
+          "a": 1.5
+        }
+      ]
+    }
+  },
+  {
+    "method": "POST",
+    "url": "https://planet.example/db/myplanet_activities",
+    "body": {
+      "type": "sync",
+      "n": 1.50
+    }
+  },
+  {
+    "outcomes": [
+      "ok",
+      "ok",
+      "NullPointerException"
+    ]
+  }
+]

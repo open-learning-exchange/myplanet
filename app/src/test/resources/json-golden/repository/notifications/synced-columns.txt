@@ -1,0 +1,6 @@
+counts=[6, 0]
+id=n1 user=org.couchdb.user:a message=Tricky <b>&amp;</b> 'q' = "dq" \ / — ünïcødé 漢字 🌍
+	line sep read=false created=1717171717171 type=team sub=join_request related=team-1 link=/teams/view/t1 priority=2 server=true rev=1-n
+id=n2 user= message=m read=true created=1717 type=replyMessage sub=null related=news-1 link=null priority=3 server=true rev=null
+id=n3 user=5 message=m read=true created=1700000000000 type=newTask sub=null related=task-1 link=/myTeams/view/task-1/x priority=2 server=true rev=null
+id=n4 user= message=m read=true created=1717171717171 type=team sub=null related=7 link=null priority=0 server=true rev=null

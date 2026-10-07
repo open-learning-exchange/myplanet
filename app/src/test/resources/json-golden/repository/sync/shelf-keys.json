@@ -1,0 +1,32 @@
+[
+  {
+    "method": "POST",
+    "url": "https://planet.example/db/courses/_all_docs?include_docs=true",
+    "body": {
+      "keys": [
+        "c1"
+      ]
+    }
+  },
+  {
+    "method": "POST",
+    "url": "https://planet.example/db/resources/_all_docs?include_docs=true",
+    "body": {
+      "keys": [
+        "r1",
+        "2",
+        "1.5",
+        "r <2>"
+      ]
+    }
+  },
+  {
+    "method": "POST",
+    "url": "https://planet.example/db/teams/_all_docs?include_docs=true",
+    "body": {
+      "keys": [
+        "t1"
+      ]
+    }
+  }
+]
