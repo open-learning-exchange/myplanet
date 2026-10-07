@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.services
 import android.content.Context
 import android.os.SystemClock
 import android.util.Log
-import com.google.gson.JsonObject
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -16,6 +15,9 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.AfterClass
 import org.junit.Before
@@ -258,18 +260,18 @@ class UploadManagerTest {
     @Test
     fun `uploadSubmitPhotos uploads photos successfully`() = testScope.runTest {
         val photoId = "photo123"
-        val mockSerialized = JsonObject().apply {
-            addProperty("test", "data")
+        val mockSerialized = buildJsonObject {
+            put("test", "data")
         }
         val mockPhotosList = listOf(Pair(photoId, mockSerialized))
 
-        val mockResponseObject = JsonObject().apply {
-            addProperty("id", "uploaded123")
-            addProperty("rev", "rev123")
+        val mockResponseObject = buildJsonObject {
+            put("id", "uploaded123")
+            put("rev", "rev123")
         }
 
         coEvery { submissionsRepository.getUnuploadedPhotos() } returns mockPhotosList
-        coEvery { uploadRepository.postUpload(any(), mockSerialized) } returns retrofit2.Response.success(mockResponseObject)
+        coEvery { uploadRepository.postJson(any(), mockSerialized) } returns retrofit2.Response.success(mockResponseObject)
         coEvery { submissionsRepository.getPhotosByIds(arrayOf(photoId)) } returns emptyList()
 
         val listener: OnSuccessListener = mockk(relaxed = true)
@@ -293,16 +295,16 @@ class UploadManagerTest {
     @Test
     fun `uploadSubmitPhotos batches photo mark calls once per batch instead of per photo`() = testScope.runTest {
         val photoIds = listOf("photo1", "photo2", "photo3")
-        val mockSerialized = JsonObject().apply { addProperty("test", "data") }
+        val mockSerialized = buildJsonObject { put("test", "data") }
         val mockPhotosList = photoIds.map { Pair(it as String?, mockSerialized) }
 
-        val mockResponseObject = JsonObject().apply {
-            addProperty("id", "uploaded123")
-            addProperty("rev", "rev123")
+        val mockResponseObject = buildJsonObject {
+            put("id", "uploaded123")
+            put("rev", "rev123")
         }
 
         coEvery { submissionsRepository.getUnuploadedPhotos() } returns mockPhotosList
-        coEvery { uploadRepository.postUpload(any(), mockSerialized) } returns retrofit2.Response.success(mockResponseObject)
+        coEvery { uploadRepository.postJson(any(), mockSerialized) } returns retrofit2.Response.success(mockResponseObject)
         coEvery { submissionsRepository.getPhotosByIds(any()) } returns emptyList()
 
         val listener: OnSuccessListener = mockk(relaxed = true)
@@ -355,7 +357,7 @@ class UploadManagerTest {
             localId = "lib1",
             remoteId = "remote1",
             remoteRev = "rev1",
-            response = JsonObject()
+            response = JsonObject(emptyMap())
         )
         val library = MyLibrary().apply { id = "lib1" }
         coEvery { uploadCoordinator.uploadRoom<MyLibrary>(any()) } returns UploadResult.Success(1, listOf(uploadedItem))
@@ -375,7 +377,7 @@ class UploadManagerTest {
             localId = "lib1",
             remoteId = "remote1",
             remoteRev = "rev1",
-            response = JsonObject()
+            response = JsonObject(emptyMap())
         )
         val mockError = UploadError("lib2", Exception("Failed"), false)
         val library = MyLibrary().apply { id = "lib1" }
@@ -399,7 +401,7 @@ class UploadManagerTest {
             localId = "lib1",
             remoteId = "remote1",
             remoteRev = "rev1",
-            response = JsonObject()
+            response = JsonObject(emptyMap())
         )
         val library = MyLibrary().apply {
             id = "lib1"
@@ -407,13 +409,13 @@ class UploadManagerTest {
         }
         coEvery { uploadCoordinator.uploadRoom<MyLibrary>(any()) } returns UploadResult.Success(1, listOf(uploadedItem))
         coEvery { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) } returns listOf(library)
-        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns retrofit2.Response.success(JsonObject())
+        coEvery { uploadRepository.uploadAttachmentJson(any(), any(), any(), any(), any()) } returns retrofit2.Response.success(JsonObject(emptyMap()))
 
         uploadManager.uploadResource(null)
         advanceUntilIdle()
 
         coVerify { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) }
-        coVerify { uploadRepository.uploadAttachment(any(), any(), "remote1", "rev1", any()) }
+        coVerify { uploadRepository.uploadAttachmentJson(any(), any(), "remote1", "rev1", any()) }
     }
 
     @Test

@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.services.upload
 
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UploadedItemResult
+import org.ole.planet.myplanet.utils.KJson.GsonNumbers
 
 interface UploadPipelineConfig<T : Any> {
     val endpoint: String
@@ -14,6 +15,14 @@ interface UploadPipelineConfig<T : Any> {
     val dbIdExtractor: ((T) -> String?)?
 
     val responseHandler: ResponseHandler
+
+    /**
+     * How the retry queue prints a failed item's payload, so the stored text is the bytes Gson
+     * wrote before the migration: [GsonNumbers.BRIDGED] for documents the models build (already
+     * normalised with `withGsonBridgedNumbers`), [GsonNumbers.LITERAL] for documents a repository
+     * still builds with Gson and hands over through `toKotlinx`.
+     */
+    val payloadNumbers: GsonNumbers
     val batchSize: Int
 
     val beforeUpload: (suspend (T) -> Unit)?

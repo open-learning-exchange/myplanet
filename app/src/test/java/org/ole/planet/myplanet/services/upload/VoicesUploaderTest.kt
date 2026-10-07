@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonArray
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -32,6 +33,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.toKotlinx
 import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -125,7 +127,7 @@ class VoicesUploaderTest {
                 addProperty("rev", "rev2")
             })
         }
-        coEvery { uploadRepository.postUploadArray("http://mock.url/news/_bulk_docs", any()) } returns Response.success(bulkResponse)
+        coEvery { uploadRepository.postJsonArray("http://mock.url/news/_bulk_docs", any()) } returns Response.success(bulkResponse.toKotlinx().jsonArray)
 
         voicesUploader.uploadNews()
         advanceUntilIdle()

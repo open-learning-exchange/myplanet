@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.services.retry
 
 import android.util.Log
-import com.google.gson.JsonObject
+import kotlinx.serialization.json.JsonObject
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -87,7 +87,7 @@ class RetryQueueTest {
     fun queueFailedOperation_nonRetryableError_returnsEarly() = runTest {
         val error = UploadError("item1", Exception("fail"), retryable = false)
 
-        retryQueue.queueFailedOperation("type", error, JsonObject(), "endpoint", modelClassName = "Model")
+        retryQueue.queueFailedOperation("type", error, JsonObject(emptyMap()), "endpoint", modelClassName = "Model")
 
         coVerify(exactly = 0) { retryRepository.recordFailure(any(), any(), any(), any(), any(), any(), any(), any()) }
     }
@@ -95,7 +95,7 @@ class RetryQueueTest {
     @Test
     fun queueFailedOperation_retryableError_recordsFailure() = runTest {
         val error = UploadError("item1", Exception("fail"), retryable = true)
-        val payload = JsonObject()
+        val payload = JsonObject(emptyMap())
         coEvery { retryRepository.recordFailure(any(), any(), any(), any(), any(), any(), any(), any()) } returns Unit
 
         retryQueue.queueFailedOperation("type", error, payload, "endpoint", modelClassName = "Model")

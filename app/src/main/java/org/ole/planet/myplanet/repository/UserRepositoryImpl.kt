@@ -32,6 +32,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.JsonObject as KJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.R
@@ -66,6 +67,7 @@ import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 import org.ole.planet.myplanet.utils.toSyncDocuments
+import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
 @Singleton
 class UserRepositoryImpl @Inject constructor(
@@ -1004,8 +1006,8 @@ class UserRepositoryImpl @Inject constructor(
         )
     }
 
-    override suspend fun getAchievementsForUpload(): List<JsonObject> {
-        return achievementDao.getPendingUploads().map { Achievement.serialize(it).toGson() }
+    override suspend fun getAchievementsForUpload(): List<KJsonObject> {
+        return achievementDao.getPendingUploads().map { Achievement.serialize(it).withGsonBridgedNumbers() }
     }
 
     override suspend fun getSavedUsers(): List<User> = sharedPrefManager.getSavedUsers()

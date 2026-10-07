@@ -1,10 +1,12 @@
 package org.ole.planet.myplanet.services.upload
 
 import android.util.Log
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
 import org.ole.planet.myplanet.repository.UploadRepository
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.UrlUtils
 
 object BulkDocsUploader {
@@ -24,22 +26,20 @@ object BulkDocsUploader {
     ) {
         if (items.isEmpty()) return
 
-        val bulkDocs = JsonArray()
-        items.forEach { (_, doc) -> bulkDocs.add(doc) }
-        val payload = JsonObject().apply { add("docs", bulkDocs) }
+        val payload = buildJsonObject { put("docs", JsonArray(items.map { (_, doc) -> doc })) }
 
         try {
-            val response = uploadRepository.postUploadArray(url, payload)
+            val response = uploadRepository.postJsonArray(url, payload)
             val responseBody = response.body()
 
             if (response.isSuccessful && responseBody != null) {
-                if (responseBody.size() < items.size) {
-                    Log.w(TAG, "Bulk upload to ${UrlUtils.redactForLog(url)} returned ${responseBody.size()} result(s) for a batch of ${items.size}; ${items.size - responseBody.size()} item(s) were not processed and will retry next sync")
+                if (responseBody.size < items.size) {
+                    Log.w(TAG, "Bulk upload to ${UrlUtils.redactForLog(url)} returned ${responseBody.size} result(s) for a batch of ${items.size}; ${items.size - responseBody.size} item(s) were not processed and will retry next sync")
                 }
-                for (i in 0 until responseBody.size()) {
-                    val element = responseBody.get(i).asJsonObject
+                for (i in 0 until responseBody.size) {
+                    val element = KJson.asJsonObject(responseBody[i])
                     val (item, _) = items.getOrNull(i) ?: continue
-                    val outcome = if (element.has("error")) {
+                    val outcome = if (element.containsKey("error")) {
                         Outcome.Rejected(element, response.code())
                     } else {
                         Outcome.Accepted(element)

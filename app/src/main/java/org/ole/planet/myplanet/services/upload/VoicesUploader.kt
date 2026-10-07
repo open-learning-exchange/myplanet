@@ -8,6 +8,7 @@ import com.google.gson.JsonObject
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.jsonObject
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.asRequestBody
 import org.ole.planet.myplanet.MainApplication
@@ -23,10 +24,12 @@ import org.ole.planet.myplanet.services.upload.UploadConstants.BATCH_SIZE
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.GsonUtils.getString
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toKotlinx
 
 private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
     chunked(BATCH_SIZE).forEach(action)
@@ -125,7 +128,7 @@ class VoicesUploader @Inject constructor(
                 BulkDocsUploader.upload(
                     uploadRepository,
                     "${UrlUtils.getUrl()}/news/_bulk_docs",
-                    processedNews.map { (news, imagesArray) -> (news to imagesArray) to news.newsJson }
+                    processedNews.map { (news, imagesArray) -> (news to imagesArray) to news.newsJson.toKotlinx().jsonObject }
                 ) { (news, imagesArray), outcome ->
                     val isCreate = TextUtils.isEmpty(news._id)
                     when (outcome) {
@@ -133,14 +136,14 @@ class VoicesUploader @Inject constructor(
                             successfulUpdates.add(
                                 NewsUpdateData(
                                     id = news.id,
-                                    _id = getString("id", outcome.element),
-                                    _rev = getString("rev", outcome.element),
+                                    _id = KJson.getString("id", outcome.element),
+                                    _rev = KJson.getString("rev", outcome.element),
                                     imagesArray = imagesArray
                                 )
                             )
                         }
                         is BulkDocsUploader.Outcome.Rejected -> {
-                            val errorReason = outcome.element.get("error").asString
+                            val errorReason = KJson.gsonAsString(outcome.element["error"])
                             queueNewsRetry(news, news.newsJson, null, if (isCreate) "POST" else "PUT", Exception("Bulk upload error: $errorReason"))
                         }
                         is BulkDocsUploader.Outcome.RequestFailed -> {
@@ -173,11 +176,13 @@ class VoicesUploader @Inject constructor(
                 retryable = true,
                 httpCode = httpCode
             ),
-            payload = payload,
+            // newsJson is a Gson tree VoicesRepository built; mirror it and keep its numbers as Gson wrote them.
+            payload = payload.toKotlinx().jsonObject,
             endpoint = "news",
             httpMethod = httpMethod,
             dbId = news._id,
-            modelClassName = "News"
+            modelClassName = "News",
+            numbers = KJson.GsonNumbers.LITERAL
         )
     }
 

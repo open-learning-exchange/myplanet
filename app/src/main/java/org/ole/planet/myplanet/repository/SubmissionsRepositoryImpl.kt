@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.JsonObject as KJsonObject
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
@@ -38,8 +39,8 @@ import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
-import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toSyncDocuments
+import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
     private val teamsRepositoryProvider: Provider<TeamsRepository>,
@@ -626,9 +627,9 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return examDao.getById(id)
     }
 
-    override suspend fun getUnuploadedPhotos(): List<Pair<String?, JsonObject>> {
+    override suspend fun getUnuploadedPhotos(): List<Pair<String?, KJsonObject>> {
         return submitPhotosDao.getUnuploaded().map { photo ->
-            Pair(photo.id, SubmitPhotos.serialize(photo).toGson())
+            Pair(photo.id, SubmitPhotos.serialize(photo).withGsonBridgedNumbers())
         }
     }
 

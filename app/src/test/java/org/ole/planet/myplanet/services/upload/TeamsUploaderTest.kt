@@ -3,8 +3,6 @@ package org.ole.planet.myplanet.services.upload
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -21,6 +19,11 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -79,19 +82,19 @@ class TeamsUploaderTest {
 
     @Test
     fun `uploadTeams handles bulk success`() = runTest(testDispatcher) {
-        val mockTeam1 = TeamUploadData("team1", JsonObject(), false, null)
-        val mockTeam2 = TeamUploadData("team2", JsonObject(), false, null)
-        val mockTeam3 = TeamUploadData("team3", JsonObject(), true, null)
+        val mockTeam1 = TeamUploadData("team1", JsonObject(emptyMap()), false, null)
+        val mockTeam2 = TeamUploadData("team2", JsonObject(emptyMap()), false, null)
+        val mockTeam3 = TeamUploadData("team3", JsonObject(emptyMap()), true, null)
         val mockRepo = mockk<TeamsSyncRepository>(relaxed = true)
         every { teamsSyncRepository.get() } returns mockRepo
         coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam1, mockTeam2, mockTeam3)
 
-        val bulkResponse = JsonArray().apply {
-            add(JsonObject().apply { addProperty("id", "team1"); addProperty("rev", "rev1") })
-            add(JsonObject().apply { addProperty("id", "team2"); addProperty("error", "conflict") })
-            add(JsonObject().apply { addProperty("id", "team3"); addProperty("rev", "rev3") })
+        val bulkResponse = buildJsonArray {
+            add(buildJsonObject { put("id", "team1"); put("rev", "rev1") })
+            add(buildJsonObject { put("id", "team2"); put("error", "conflict") })
+            add(buildJsonObject { put("id", "team3"); put("rev", "rev3") })
         }
-        coEvery { uploadRepository.postUploadArray(any(), any()) } returns Response.success(bulkResponse)
+        coEvery { uploadRepository.postJsonArray(any(), any()) } returns Response.success(bulkResponse)
 
         coEvery { retryQueue.queueFailedOperation(any(), any(), any(), any(), any(), any(), any()) } returns Unit
         coEvery { mockRepo.markTeamsUploaded(any()) } returns Unit
@@ -100,7 +103,7 @@ class TeamsUploaderTest {
         teamsUploader.uploadTeams()
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { uploadRepository.postUploadArray("http://mock.url/teams/_bulk_docs", any()) }
+        coVerify(exactly = 1) { uploadRepository.postJsonArray("http://mock.url/teams/_bulk_docs", any()) }
         coVerify(exactly = 1) { mockRepo.markTeamsUploaded(mapOf("team1" to "rev1")) }
         coVerify(exactly = 1) { mockRepo.deleteLocalTeamRecords(listOf("team3")) }
         coVerify(exactly = 0) { retryQueue.queueFailedOperation(uploadType = "MyTeam", error = any(), payload = any(), endpoint = "teams", httpMethod = "POST", dbId = "team2", modelClassName = "MyTeam") }
@@ -108,15 +111,15 @@ class TeamsUploaderTest {
 
     @Test
     fun `uploadTeams keys uploadedTeams by local team id when response id differs`() = runTest(testDispatcher) {
-        val mockTeam = TeamUploadData("localTeam1", JsonObject(), false, null)
+        val mockTeam = TeamUploadData("localTeam1", JsonObject(emptyMap()), false, null)
         val mockRepo = mockk<TeamsSyncRepository>(relaxed = true)
         every { teamsSyncRepository.get() } returns mockRepo
         coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
 
-        val bulkResponse = JsonArray().apply {
-            add(JsonObject().apply { addProperty("id", "serverGeneratedId1"); addProperty("rev", "rev1") })
+        val bulkResponse = buildJsonArray {
+            add(buildJsonObject { put("id", "serverGeneratedId1"); put("rev", "rev1") })
         }
-        coEvery { uploadRepository.postUploadArray(any(), any()) } returns Response.success(bulkResponse)
+        coEvery { uploadRepository.postJsonArray(any(), any()) } returns Response.success(bulkResponse)
         coEvery { mockRepo.markTeamsUploaded(any()) } returns Unit
 
         teamsUploader.uploadTeams()
@@ -130,17 +133,17 @@ class TeamsUploaderTest {
         val mockRepo = mockk<TeamsSyncRepository>(relaxed = true)
         every { teamsSyncRepository.get() } returns mockRepo
 
-        val mockTeam = TeamUploadData("team1", JsonObject(), false, null)
+        val mockTeam = TeamUploadData("team1", JsonObject(emptyMap()), false, null)
         coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
 
         val errorBody = okhttp3.ResponseBody.create(null, "Error")
-        coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.error(500, errorBody)
+        coEvery { uploadRepository.postJsonArray(any(), any()) } returns retrofit2.Response.error(500, errorBody)
         coEvery { retryQueue.queueFailedOperation(any(), any(), any(), any(), any(), any(), any()) } returns Unit
 
         teamsUploader.uploadTeams()
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { uploadRepository.postUploadArray("http://mock.url/teams/_bulk_docs", any()) }
+        coVerify(exactly = 1) { uploadRepository.postJsonArray("http://mock.url/teams/_bulk_docs", any()) }
         coVerify(exactly = 1) { retryQueue.queueFailedOperation(uploadType = "MyTeam", error = any(), payload = any(), endpoint = "teams", httpMethod = "POST", dbId = "team1", modelClassName = "MyTeam") }
     }
 
@@ -149,30 +152,30 @@ class TeamsUploaderTest {
         val mockRepo = mockk<TeamsSyncRepository>(relaxed = true)
         every { teamsSyncRepository.get() } returns mockRepo
 
-        val mockTeam = TeamUploadData("team1", JsonObject(), false, null)
+        val mockTeam = TeamUploadData("team1", JsonObject(emptyMap()), false, null)
         coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
 
-        coEvery { uploadRepository.postUploadArray(any(), any()) } throws java.io.IOException("Network down")
+        coEvery { uploadRepository.postJsonArray(any(), any()) } throws java.io.IOException("Network down")
         coEvery { retryQueue.queueFailedOperation(any(), any(), any(), any(), any(), any(), any()) } returns Unit
 
         teamsUploader.uploadTeams()
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { uploadRepository.postUploadArray("http://mock.url/teams/_bulk_docs", any()) }
+        coVerify(exactly = 1) { uploadRepository.postJsonArray("http://mock.url/teams/_bulk_docs", any()) }
         coVerify(exactly = 1) { retryQueue.queueFailedOperation(uploadType = "MyTeam", error = any(), payload = any(), endpoint = "teams", httpMethod = "POST", dbId = "team1", modelClassName = "MyTeam") }
     }
 
     @Test
     fun `uploadTeamImageAttachment propagates CancellationException`() = runTest(testDispatcher) {
-        val mockTeam = TeamUploadData("team1", JsonObject(), false, "image.png")
+        val mockTeam = TeamUploadData("team1", JsonObject(emptyMap()), false, "image.png")
         val mockRepo = mockk<TeamsSyncRepository>(relaxed = true)
         every { teamsSyncRepository.get() } returns mockRepo
         coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
 
-        val bulkResponse = JsonArray().apply {
-            add(JsonObject().apply { addProperty("id", "team1"); addProperty("rev", "rev1") })
+        val bulkResponse = buildJsonArray {
+            add(buildJsonObject { put("id", "team1"); put("rev", "rev1") })
         }
-        coEvery { uploadRepository.postUploadArray(any(), any()) } returns Response.success(bulkResponse)
+        coEvery { uploadRepository.postJsonArray(any(), any()) } returns Response.success(bulkResponse)
 
         mockkObject(MyTeam)
         val mockFile = mockk<File>()
@@ -180,7 +183,7 @@ class TeamsUploaderTest {
         every { mockFile.exists() } returns true
 
         val cancelExc = CancellationException("Upload cancelled")
-        coEvery { uploadRepository.uploadResource(any(), any(), any()) } throws cancelExc
+        coEvery { uploadRepository.uploadResourceJson(any(), any(), any()) } throws cancelExc
 
         var caught: Exception? = null
         try {
@@ -197,22 +200,22 @@ class TeamsUploaderTest {
 
     @Test
     fun `uploadTeamImageAttachment falls back to old rev on ordinary exception`() = runTest(testDispatcher) {
-        val mockTeam = TeamUploadData("team1", JsonObject(), false, "image.png")
+        val mockTeam = TeamUploadData("team1", JsonObject(emptyMap()), false, "image.png")
         val mockRepo = mockk<TeamsSyncRepository>(relaxed = true)
         every { teamsSyncRepository.get() } returns mockRepo
         coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
 
-        val bulkResponse = JsonArray().apply {
-            add(JsonObject().apply { addProperty("id", "team1"); addProperty("rev", "rev1") })
+        val bulkResponse = buildJsonArray {
+            add(buildJsonObject { put("id", "team1"); put("rev", "rev1") })
         }
-        coEvery { uploadRepository.postUploadArray(any(), any()) } returns Response.success(bulkResponse)
+        coEvery { uploadRepository.postJsonArray(any(), any()) } returns Response.success(bulkResponse)
 
         mockkObject(MyTeam)
         val mockFile = mockk<File>()
         every { MyTeam.getAttachmentFile(context, "team1", "image.png") } returns mockFile
         every { mockFile.exists() } returns true
 
-        coEvery { uploadRepository.uploadResource(any(), any(), any()) } throws IOException("Attachment upload failed")
+        coEvery { uploadRepository.uploadResourceJson(any(), any(), any()) } throws IOException("Attachment upload failed")
         coEvery { mockRepo.markTeamsUploaded(any()) } returns Unit
 
         teamsUploader.uploadTeams()

@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.repository.UserAchievementsRepository
 import org.ole.planet.myplanet.services.FileUploader
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class AchievementUploader @Inject constructor(
@@ -28,14 +29,14 @@ class AchievementUploader @Inject constructor(
         if (list.isEmpty()) return
         withContext(dispatcherProvider.io) {
             list.forEach { achievement ->
-                val id = achievement.get("_id")?.asString ?: return@forEach
+                val id = achievement["_id"]?.let { KJson.gsonAsString(it) } ?: return@forEach
                 val url = "${UrlUtils.getUrl()}/achievements/$id"
                 try {
-                    val response = uploadRepository.putUpload(url, achievement)
+                    val response = uploadRepository.putJson(url, achievement)
                     if (response.isSuccessful) {
-                        val rev = response.body()?.get("rev")?.asString
+                        val rev = response.body()?.get("rev")?.let { KJson.gsonAsString(it) }
                         userAchievementsRepository.markAchievementUploaded(id, rev)
-                        val resumeFileName = achievement.get("resumeFileName")?.asString ?: ""
+                        val resumeFileName = achievement["resumeFileName"]?.let { KJson.gsonAsString(it) } ?: ""
                         if (resumeFileName.isNotEmpty() && !rev.isNullOrEmpty()) {
                             uploadCvAttachment(id, rev, resumeFileName)
                         }
@@ -56,7 +57,7 @@ class AchievementUploader @Inject constructor(
             val body = cvFile.asRequestBody("application/pdf".toMediaTypeOrNull())
             // CouchDB attachment key is always "resume.pdf"
             val url = "${UrlUtils.getUrl()}/achievements/$docId/resume.pdf"
-            uploadRepository.uploadResource(FileUploader.getHeaderMap("application/pdf", rev), url, body)
+            uploadRepository.uploadResourceJson(FileUploader.getHeaderMap("application/pdf", rev), url, body)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

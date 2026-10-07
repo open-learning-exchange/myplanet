@@ -322,3 +322,25 @@ fun JsonArray.toSyncDocuments(): List<Pair<String, JsonObject>> =
         val id = KJson.getString("_id", doc)
         if (id.startsWith("_design")) null else id to doc
     }
+
+/**
+ * This tree with every number held the way Gson held it after [toGson]: an integral literal as a
+ * `Long`, any other number as a `Double` (`1e2` -> `100`, `1.50` -> `1.5`), an unparseable
+ * literal as a string. Exactly `toGson().toKotlinx()`, without the Gson tree: use it where a
+ * model's kotlinx document used to be bridged with [toGson] before it was sent or stored, so the
+ * bytes stay what they were.
+ */
+fun JsonElement.withGsonBridgedNumbers(): JsonElement = when (this) {
+    is JsonNull -> this
+    is JsonObject -> withGsonBridgedNumbers()
+    is JsonArray -> JsonArray(map { it.withGsonBridgedNumbers() })
+    is JsonPrimitive -> when {
+        isString -> this
+        booleanOrNull != null -> JsonPrimitive(booleanOrNull!!)
+        longOrNull != null -> JsonPrimitive(longOrNull!!)
+        doubleOrNull != null -> JsonPrimitive(doubleOrNull!!)
+        else -> JsonPrimitive(content)
+    }
+}
+
+fun JsonObject.withGsonBridgedNumbers(): JsonObject = JsonObject(mapValues { (_, value) -> value.withGsonBridgedNumbers() })

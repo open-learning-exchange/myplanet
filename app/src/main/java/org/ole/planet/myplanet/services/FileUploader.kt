@@ -1,15 +1,15 @@
 package org.ole.planet.myplanet.services
 
-import com.google.gson.JsonObject
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonObject
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.UrlUtils
 
 data class UploadDocParams(
@@ -52,7 +52,7 @@ open class FileUploader(
     private fun uploadDoc(params: UploadDocParams) {
         scope.launch {
             try {
-                val response = uploadRepository.uploadAttachment(
+                val response = uploadRepository.uploadAttachmentJson(
                     file = params.f,
                     destinationFormat = params.format,
                     id = params.id,
@@ -69,7 +69,7 @@ open class FileUploader(
 
     private fun onDataReceived(`object`: JsonObject?, listener: OnSuccessListener) {
         if (`object` != null) {
-            if (GsonUtils.getBoolean("ok", `object`)) {
+            if (KJson.getBoolean("ok", `object`)) {
                 listener.onSuccess("Uploaded successfully")
                 return
             }

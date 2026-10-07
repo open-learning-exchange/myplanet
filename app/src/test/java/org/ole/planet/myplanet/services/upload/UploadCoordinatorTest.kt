@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.services.upload
 
 import android.util.Log
-import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -19,6 +18,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -75,7 +79,7 @@ class UploadCoordinatorTest {
         val activeRequests = AtomicInteger(0)
         var maxConcurrentRequests = 0
 
-        coEvery { uploadRepository.putUpload(any(), any()) } coAnswers {
+        coEvery { uploadRepository.putJson(any(), any()) } coAnswers {
             val current = activeRequests.incrementAndGet()
             if (current > maxConcurrentRequests) {
                 maxConcurrentRequests = current
@@ -85,9 +89,9 @@ class UploadCoordinatorTest {
 
             val url = invocation.args[0] as String
             val id = url.substringAfterLast("db-")
-            val resp = JsonObject().apply {
-                addProperty("id", "remote-$id")
-                addProperty("rev", "1-rev")
+            val resp = buildJsonObject {
+                put("id", "remote-$id")
+                put("rev", "1-rev")
             }
             Response.success(resp)
         }
@@ -96,7 +100,7 @@ class UploadCoordinatorTest {
             modelClass = Submission::class,
             endpoint = "test_endpoint",
             fetchPendingItems = { items },
-            serializer = UploadSerializer.Simple { JsonObject() },
+            serializer = UploadSerializer.Simple { JsonObject(emptyMap()) },
             idExtractor = { it.id },
             dbIdExtractor = { it._id },
             batchSize = 10,
@@ -132,19 +136,19 @@ class UploadCoordinatorTest {
         val item = Submission(id = "local-1", _id = "db-1")
 
         val conflictResponse = Response.error<JsonObject>(409, "".toResponseBody(null))
-        coEvery { uploadRepository.putUpload(any(), any()) } returns conflictResponse
+        coEvery { uploadRepository.putJson(any(), any()) } returns conflictResponse
 
-        val existingDoc = JsonObject().apply {
-            addProperty("_id", "db-1")
-            addProperty("_rev", "2-existing-rev")
+        val existingDoc = buildJsonObject {
+            put("_id", "db-1")
+            put("_rev", "2-existing-rev")
         }
-        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/test_endpoint/db-1") } returns Response.success(existingDoc)
+        coEvery { uploadRepository.fetchJson("http://mock.url/test_endpoint/db-1") } returns Response.success(existingDoc)
 
         val config = UploadConfig(
             modelClass = Submission::class,
             endpoint = "test_endpoint",
             fetchPendingItems = { listOf(item) },
-            serializer = UploadSerializer.Simple { JsonObject() },
+            serializer = UploadSerializer.Simple { JsonObject(emptyMap()) },
             idExtractor = { it.id },
             dbIdExtractor = { it._id },
             markUploaded = { emptyList() }
@@ -172,14 +176,14 @@ class UploadCoordinatorTest {
         val item = Submission(id = "local-1", _id = "db-1")
 
         val conflictResponse = Response.error<JsonObject>(409, "".toResponseBody(null))
-        coEvery { uploadRepository.putUpload(any(), any()) } returns conflictResponse
-        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/test_endpoint/db-1") } throws IOException("Network down during 409 recovery")
+        coEvery { uploadRepository.putJson(any(), any()) } returns conflictResponse
+        coEvery { uploadRepository.fetchJson("http://mock.url/test_endpoint/db-1") } throws IOException("Network down during 409 recovery")
 
         val config = UploadConfig(
             modelClass = Submission::class,
             endpoint = "test_endpoint",
             fetchPendingItems = { listOf(item) },
-            serializer = UploadSerializer.Simple { JsonObject() },
+            serializer = UploadSerializer.Simple { JsonObject(emptyMap()) },
             idExtractor = { it.id },
             dbIdExtractor = { it._id },
             markUploaded = { emptyList() }
@@ -208,7 +212,7 @@ class UploadCoordinatorTest {
         val activeRequests = AtomicInteger(0)
         var maxConcurrentRequests = 0
 
-        coEvery { uploadRepository.postUpload(any(), any()) } coAnswers {
+        coEvery { uploadRepository.postJson(any(), any()) } coAnswers {
             val current = activeRequests.incrementAndGet()
             if (current > maxConcurrentRequests) {
                 maxConcurrentRequests = current
@@ -217,10 +221,10 @@ class UploadCoordinatorTest {
             activeRequests.decrementAndGet()
 
             val reqBody = invocation.args[1] as JsonObject
-            val idx = reqBody.get("idx").asInt
-            val resp = JsonObject().apply {
-                addProperty("id", "room-remote-$idx")
-                addProperty("rev", "1-room-rev")
+            val idx = reqBody.getValue("idx").jsonPrimitive.int
+            val resp = buildJsonObject {
+                put("id", "room-remote-$idx")
+                put("rev", "1-room-rev")
             }
             Response.success(resp)
         }
@@ -230,8 +234,8 @@ class UploadCoordinatorTest {
             modelClassName = "TestRoomItem",
             fetchPendingItems = { items },
             serializer = UploadSerializer.Simple { item ->
-                JsonObject().apply {
-                    addProperty("idx", item.id.substringAfterLast("room-local-").toInt())
+                buildJsonObject {
+                    put("idx", item.id.substringAfterLast("room-local-").toInt())
                 }
             },
             idExtractor = { it.id },
@@ -266,19 +270,19 @@ class UploadCoordinatorTest {
         val item = TestRoomItem("room-local-1", null)
 
         val conflictResponse = Response.error<JsonObject>(409, "".toResponseBody(null))
-        coEvery { uploadRepository.postUpload(any(), any()) } returns conflictResponse
+        coEvery { uploadRepository.postJson(any(), any()) } returns conflictResponse
 
-        val existingDoc = JsonObject().apply {
-            addProperty("_id", "room-remote-1")
-            addProperty("_rev", "3-room-rev")
+        val existingDoc = buildJsonObject {
+            put("_id", "room-remote-1")
+            put("_rev", "3-room-rev")
         }
-        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/test_room_endpoint/room-local-1") } returns Response.success(existingDoc)
+        coEvery { uploadRepository.fetchJson("http://mock.url/test_room_endpoint/room-local-1") } returns Response.success(existingDoc)
 
         val config = RoomUploadConfig(
             endpoint = "test_room_endpoint",
             modelClassName = "TestRoomItem",
             fetchPendingItems = { listOf(item) },
-            serializer = UploadSerializer.Simple { JsonObject() },
+            serializer = UploadSerializer.Simple { JsonObject(emptyMap()) },
             idExtractor = { it.id },
             markUploaded = { emptyList() }
         )
@@ -305,14 +309,14 @@ class UploadCoordinatorTest {
         val item = TestRoomItem("room-local-1", null)
 
         val conflictResponse = Response.error<JsonObject>(409, "".toResponseBody(null))
-        coEvery { uploadRepository.postUpload(any(), any()) } returns conflictResponse
-        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/test_room_endpoint/room-local-1") } throws IOException("Network down during 409 recovery")
+        coEvery { uploadRepository.postJson(any(), any()) } returns conflictResponse
+        coEvery { uploadRepository.fetchJson("http://mock.url/test_room_endpoint/room-local-1") } throws IOException("Network down during 409 recovery")
 
         val config = RoomUploadConfig(
             endpoint = "test_room_endpoint",
             modelClassName = "TestRoomItem",
             fetchPendingItems = { listOf(item) },
-            serializer = UploadSerializer.Simple { JsonObject() },
+            serializer = UploadSerializer.Simple { JsonObject(emptyMap()) },
             idExtractor = { it.id },
             markUploaded = { emptyList() }
         )
@@ -337,16 +341,16 @@ class UploadCoordinatorTest {
 
         val item = Submission(id = "local-1")
 
-        coEvery { uploadRepository.postUpload(any(), any()) } coAnswers {
+        coEvery { uploadRepository.postJson(any(), any()) } coAnswers {
             delay(100)
-            Response.success(JsonObject())
+            Response.success(JsonObject(emptyMap()))
         }
 
         val config = UploadConfig(
             modelClass = Submission::class,
             endpoint = "test_endpoint",
             fetchPendingItems = { listOf(item) },
-            serializer = UploadSerializer.Simple { JsonObject() },
+            serializer = UploadSerializer.Simple { JsonObject(emptyMap()) },
             idExtractor = { it.id },
             markUploaded = { emptyList() }
         )
@@ -378,7 +382,7 @@ class UploadCoordinatorTest {
         )
 
         val items = listOf(sampleItem("local-1"), sampleItem("local-2"))
-        coEvery { uploadRepository.postUpload(any(), any()) } returns successResponse("remote-1", "rev-1") andThen successResponse("remote-2", "rev-2")
+        coEvery { uploadRepository.postJson(any(), any()) } returns successResponse("remote-1", "rev-1") andThen successResponse("remote-2", "rev-2")
 
         val config = roomConfig(items)
         uploadCoordinator.uploadRoom(config)
@@ -399,7 +403,7 @@ class UploadCoordinatorTest {
         )
 
         val items = listOf(sampleItem("local-1"), sampleItem("local-2"))
-        coEvery { uploadRepository.postUpload(any(), any()) } returns errorResponse(404)
+        coEvery { uploadRepository.postJson(any(), any()) } returns errorResponse(404)
 
         val config = roomConfig(items)
         uploadCoordinator.uploadRoom(config)
@@ -420,7 +424,7 @@ class UploadCoordinatorTest {
         )
 
         val items = listOf(sampleItem("local-1"), sampleItem("local-2"))
-        coEvery { uploadRepository.postUpload(any(), any()) } returns errorResponse(500)
+        coEvery { uploadRepository.postJson(any(), any()) } returns errorResponse(500)
 
         val config = roomConfig(items)
         uploadCoordinator.uploadRoom(config)
@@ -455,9 +459,9 @@ class UploadCoordinatorTest {
             Submission(id = "local-4")
         )
 
-        coEvery { uploadRepository.postUpload(any(), match { it.get("localId")?.asString in listOf("local-1", "local-2") }) } returns errorResponse(500)
-        coEvery { uploadRepository.postUpload(any(), match { it.get("localId")?.asString == "local-3" }) } returns successResponse("remote-3", "rev-3")
-        coEvery { uploadRepository.postUpload(any(), match { it.get("localId")?.asString == "local-4" }) } returns successResponse("remote-4", "rev-4")
+        coEvery { uploadRepository.postJson(any(), match { it["localId"]?.jsonPrimitive?.content in listOf("local-1", "local-2") }) } returns errorResponse(500)
+        coEvery { uploadRepository.postJson(any(), match { it["localId"]?.jsonPrimitive?.content == "local-3" }) } returns successResponse("remote-3", "rev-3")
+        coEvery { uploadRepository.postJson(any(), match { it["localId"]?.jsonPrimitive?.content == "local-4" }) } returns successResponse("remote-4", "rev-4")
 
         val config = submissionConfig(items).copy(batchSize = 2)
         val result = uploadCoordinator.upload(config)
@@ -472,7 +476,7 @@ class UploadCoordinatorTest {
             retryQueue.queueFailedOperation(
                 uploadType = "Submission",
                 error = match { it.itemId == "local-1" },
-                payload = match { it.get("localId")?.asString == "local-1" },
+                payload = match { it["localId"]?.jsonPrimitive?.content == "local-1" },
                 endpoint = "submissions",
                 httpMethod = "POST",
                 dbId = null,
@@ -483,7 +487,7 @@ class UploadCoordinatorTest {
             retryQueue.queueFailedOperation(
                 uploadType = "Submission",
                 error = match { it.itemId == "local-2" },
-                payload = match { it.get("localId")?.asString == "local-2" },
+                payload = match { it["localId"]?.jsonPrimitive?.content == "local-2" },
                 endpoint = "submissions",
                 httpMethod = "POST",
                 dbId = null,
@@ -513,7 +517,7 @@ class UploadCoordinatorTest {
         )
 
         val items = listOf(Submission(id = "local-1"), Submission(id = "local-2"))
-        coEvery { uploadRepository.postUpload(any(), any()) } returns errorResponse(404)
+        coEvery { uploadRepository.postJson(any(), any()) } returns errorResponse(404)
 
         val config = submissionConfig(items)
         uploadCoordinator.upload(config)
@@ -534,7 +538,7 @@ class UploadCoordinatorTest {
         )
 
         val items = listOf(Submission(id = "local-1"), Submission(id = "local-2"))
-        coEvery { uploadRepository.postUpload(any(), any()) } returns errorResponse(500)
+        coEvery { uploadRepository.postJson(any(), any()) } returns errorResponse(500)
 
         val config = submissionConfig(items)
         uploadCoordinator.upload(config)
@@ -556,12 +560,12 @@ class UploadCoordinatorTest {
     private data class SampleItem(val id: String, val payload: JsonObject)
 
     private fun sampleItem(localId: String): SampleItem =
-        SampleItem(localId, JsonObject().apply { addProperty("localId", localId) })
+        SampleItem(localId, buildJsonObject { put("localId", localId) })
 
     private fun successResponse(id: String, rev: String): Response<JsonObject> =
-        Response.success(JsonObject().apply {
-            addProperty("id", id)
-            addProperty("rev", rev)
+        Response.success(buildJsonObject {
+            put("id", id)
+            put("rev", rev)
         })
 
     private fun errorResponse(code: Int): Response<JsonObject> =
@@ -581,7 +585,7 @@ class UploadCoordinatorTest {
         modelClass = Submission::class,
         endpoint = "submissions",
         fetchPendingItems = { items },
-        serializer = UploadSerializer.Simple { JsonObject().apply { addProperty("localId", it.id) } },
+        serializer = UploadSerializer.Simple { buildJsonObject { put("localId", it.id) } },
         idExtractor = { it.id },
         dbIdExtractor = null,
         markUploaded = { emptyList() }

@@ -1,13 +1,15 @@
 package org.ole.planet.myplanet.services.retry
 
 import android.util.Log
-import com.google.gson.JsonObject
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.serialization.json.JsonObject
 import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.repository.RetryRepository
 import org.ole.planet.myplanet.services.upload.UploadError
+import org.ole.planet.myplanet.utils.KJson
+import org.ole.planet.myplanet.utils.KJson.GsonNumbers
 
 @Singleton
 class RetryQueue @Inject constructor(
@@ -25,6 +27,11 @@ class RetryQueue @Inject constructor(
         retryRepository.finishProcessing()
     }
 
+    /**
+     * Persists [payload] as the text Gson's `JsonElement.toString()` wrote before the migration
+     * (no HTML escaping, `null` members kept), so stored rows and new rows read the same.
+     * [numbers] says which Gson tree the payload mirrors; see `UploadPipelineConfig.payloadNumbers`.
+     */
     suspend fun queueFailedOperation(
         uploadType: String,
         error: UploadError,
@@ -33,7 +40,8 @@ class RetryQueue @Inject constructor(
         httpMethod: String = "POST",
         dbId: String? = null,
         modelClassName: String,
-        userId: String? = null
+        userId: String? = null,
+        numbers: GsonNumbers = GsonNumbers.BRIDGED
     ) {
         if (!error.retryable) {
             Log.d(TAG, "Skipping non-retryable error for item ${error.itemId}: ${error.message}")
@@ -42,7 +50,7 @@ class RetryQueue @Inject constructor(
 
         val failure = RetryFailure(error.itemId, error.message, error.httpCode)
         retryRepository.recordFailure(
-            uploadType, failure, payload.toString(), endpoint,
+            uploadType, failure, KJson.toGsonString(payload, numbers = numbers), endpoint,
             httpMethod, dbId, modelClassName, userId
         )
         Log.i(TAG, "RETRY_QUEUE: Recorded failure - type=$uploadType, itemId=${error.itemId}, error=${error.message}")

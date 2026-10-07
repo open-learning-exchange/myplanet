@@ -5,8 +5,6 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.os.SystemClock
 import android.util.Log
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
@@ -24,7 +22,10 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyTeam
@@ -49,16 +50,16 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.GsonUtils.getJsonArray
-import org.ole.planet.myplanet.utils.GsonUtils.getJsonObject
-import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.KJson
+import org.ole.planet.myplanet.utils.KJson.getJsonArray
+import org.ole.planet.myplanet.utils.KJson.getJsonObject
+import org.ole.planet.myplanet.utils.KJson.getString
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toKotlinx
 
 @Singleton
 class TransactionSyncManager @Inject constructor(
@@ -95,32 +96,42 @@ class TransactionSyncManager @Inject constructor(
         private const val MAX_CONCURRENT_ATTACHMENT_DOWNLOADS = 6
     }
     
+    /**
+     * The sync writers still take Gson trees (they move with their repositories), so each
+     * handler bridges the page it is given with [toGson]: the same trees the writers got when
+     * the whole response was bridged on arrival.
+     */
     private val tableSyncHandlers: Map<String, suspend (JsonArray) -> Unit> = mapOf(
-        "news" to { arr -> voicesRepository.insertNewsList(extractDocs(arr)) },
-        "feedback" to { arr -> feedbackRepository.insertFeedbackList(extractDocs(arr)) },
-        "chat_history" to { arr -> chatRepository.insertChatHistoryFromSync(arr.map { it.asJsonObject }) },
-        "tablet_users" to { arr -> userSyncRepository.insertUsersFromSync(arr.map { it.asJsonObject }) },
-        "meetups" to { arr -> eventsSyncWriter.insertMeetupsFromSync(extractDocs(arr)) },
-        "login_activities" to { arr -> activitiesRepository.insertLoginActivitiesFromSync(extractDocs(arr)) },
-        "courses_progress" to { arr -> progressRepository.insertCourseProgressFromSync(extractDocs(arr)) },
-        "ratings" to { arr -> ratingsRepository.insertRatingsFromSync(extractDocs(arr)) },
-        "certifications" to { arr -> coursesRepository.insertCertificationsFromSync(arr) },
-        "tags" to { arr -> tagsRepository.insert(extractDocs(arr)) },
-        "team_activities" to { arr -> teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(arr) },
-        "tasks" to { arr -> teamsSyncRepository.get().bulkInsertTasksFromSync(arr) },
-        "notifications" to { arr -> notificationsRepository.bulkInsertFromSync(arr) },
-        "achievements" to { arr -> userSyncRepository.bulkInsertAchievementsFromSync(arr) },
-        "health" to { arr -> healthRepository.bulkInsertFromSync(arr) },
+        "news" to { arr -> voicesRepository.insertNewsList(extractDocs(arr).toGsonList()) },
+        "feedback" to { arr -> feedbackRepository.insertFeedbackList(extractDocs(arr).toGsonList()) },
+        "chat_history" to { arr -> chatRepository.insertChatHistoryFromSync(rowObjects(arr).toGsonList()) },
+        "tablet_users" to { arr -> userSyncRepository.insertUsersFromSync(rowObjects(arr).toGsonList()) },
+        "meetups" to { arr -> eventsSyncWriter.insertMeetupsFromSync(extractDocs(arr).toGsonList()) },
+        "login_activities" to { arr -> activitiesRepository.insertLoginActivitiesFromSync(extractDocs(arr).toGsonList()) },
+        "courses_progress" to { arr -> progressRepository.insertCourseProgressFromSync(extractDocs(arr).toGsonList()) },
+        "ratings" to { arr -> ratingsRepository.insertRatingsFromSync(extractDocs(arr).toGsonList()) },
+        "certifications" to { arr -> coursesRepository.insertCertificationsFromSync(arr.toGson()) },
+        "tags" to { arr -> tagsRepository.insert(extractDocs(arr).toGsonList()) },
+        "team_activities" to { arr -> teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(arr.toGson()) },
+        "tasks" to { arr -> teamsSyncRepository.get().bulkInsertTasksFromSync(arr.toGson()) },
+        "notifications" to { arr -> notificationsRepository.bulkInsertFromSync(arr.toGson()) },
+        "achievements" to { arr -> userSyncRepository.bulkInsertAchievementsFromSync(arr.toGson()) },
+        "health" to { arr -> healthRepository.bulkInsertFromSync(arr.toGson()) },
         "courses" to { arr ->
             val insertStartTime = SystemClock.elapsedRealtime()
-            coursesRepository.bulkInsertFromSync(arr)
+            coursesRepository.bulkInsertFromSync(arr.toGson())
             val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
-            Log.d("SyncPerf", "    courses insertDuration: ${insertDuration}ms for ${arr.size()} items")
+            Log.d("SyncPerf", "    courses insertDuration: ${insertDuration}ms for ${arr.size} items")
         },
-        "exams" to { arr -> surveysRepository.bulkInsertExamsFromSync(arr) },
-        "submissions" to { arr -> submissionsRepository.bulkInsertFromSync(arr) },
-        "teams" to { arr -> teamsSyncRepository.get().bulkInsertFromSync(arr) }
+        "exams" to { arr -> surveysRepository.bulkInsertExamsFromSync(arr.toGson()) },
+        "submissions" to { arr -> submissionsRepository.bulkInsertFromSync(arr.toGson()) },
+        "teams" to { arr -> teamsSyncRepository.get().bulkInsertFromSync(arr.toGson()) }
     )
+
+    private fun List<JsonObject>.toGsonList() = map { it.toGson() }
+
+    /** Each row as an object, throwing as Gson's `asJsonObject` did for anything else. */
+    private fun rowObjects(arr: JsonArray): List<JsonObject> = arr.map { KJson.asJsonObject(it) }
 
     suspend fun authenticate(): Boolean {
         try {
@@ -166,7 +177,7 @@ class TransactionSyncManager @Inject constructor(
             if (ob != null && ob.rows?.isNotEmpty() == true) {
                 val r = ob.rows?.firstOrNull()
                 r?.id?.let { id ->
-                    val jsonDoc = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/$table/$id").body()?.toGson()
+                    val jsonDoc = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/$table/$id").body()
                     val key = getString("key", jsonDoc)
                     val iv = getString("iv", jsonDoc)
 
@@ -238,14 +249,14 @@ class TransactionSyncManager @Inject constructor(
                     authHeader,
                     "application/json",
                     "$url/$table/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",
-                    JsonObject().toKotlinx().jsonObject // Empty body for GET-style query
+                    JsonObject(emptyMap()) // Empty body for GET-style query
                 )
                 val batchApiDuration = SystemClock.elapsedRealtime() - batchApiStartTime
                 if (response.body() == null || !response.isSuccessful) {
                     Log.d("SyncPerf", "  ✗ Failed $table batch $batchNumber: HTTP ${response.code()}")
                     break
                 }
-                val arr = getJsonArray("rows", response.body()?.toGson())
+                val arr = getJsonArray("rows", response.body())
                 if (arr.isEmpty()) {
                     syncCompletedFully = true
                     break
@@ -254,11 +265,11 @@ class TransactionSyncManager @Inject constructor(
                     "$url/$table/_all_docs (batch $batchNumber)",
                     batchApiDuration,
                     response.isSuccessful,
-                    arr.size()
+                    arr.size
                 )
                 val handler = tableSyncHandlers[table]
                 if (handler != null) {
-                    timedBatchInsert(table, arr.size()) { handler(arr) }
+                    timedBatchInsert(table, arr.size) { handler(arr) }
                 } else {
                     Log.e("SyncPerf", "Unknown table: $table")
                 }
@@ -275,21 +286,21 @@ class TransactionSyncManager @Inject constructor(
                     // persist them to the Room library table now.
                     coursesRepository.flushPendingCourseResources()
                 }
-                totalDocs += arr.size()
-                skip += arr.size()
+                totalDocs += arr.size
+                skip += arr.size
                 // Persist progress immediately after a batch is committed so an interruption
                 // resumes past it rather than re-processing the just-inserted page.
                 if (useCheckpoint) {
                     sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).apply()
                 }
                 val batchDuration = SystemClock.elapsedRealtime() - batchStartTime
-                Log.d("SyncPerf", "    $table batch $batchNumber: ${arr.size()} docs in ${batchDuration}ms (total: $totalDocs)")
+                Log.d("SyncPerf", "    $table batch $batchNumber: ${arr.size} docs in ${batchDuration}ms (total: $totalDocs)")
                 // Show progress for slow syncs
                 if (table in listOf("ratings", "submissions")) {
                     syncTimeLogger.logDetail(table, "Progress: $totalDocs documents synced so far...")
                 }
                 // If we got less than pageSize, we're done
-                if (arr.size() < pageSize) {
+                if (arr.size < pageSize) {
                     syncCompletedFully = true
                     break
                 }
@@ -327,9 +338,9 @@ class TransactionSyncManager @Inject constructor(
     }
 
     private fun extractDocs(arr: JsonArray): List<JsonObject> {
-        val docs = ArrayList<JsonObject>(arr.size())
+        val docs = ArrayList<JsonObject>(arr.size)
         for (j in arr) {
-            val jsonDoc = getJsonObject("doc", j.asJsonObject)
+            val jsonDoc = getJsonObject("doc", KJson.asJsonObject(j))
             if (!getString("_id", jsonDoc).startsWith("_design")) {
                 docs.add(jsonDoc)
             }
@@ -337,15 +348,18 @@ class TransactionSyncManager @Inject constructor(
         return docs
     }
 
+    /** Gson's `getAsJsonObject("_attachments")`: null when absent, a `ClassCastException` for a non-object. */
+    private fun attachments(doc: JsonObject): JsonObject? = doc["_attachments"]?.let { it as JsonObject }
+
     private suspend fun downloadCvAttachmentsFromBatch(arr: JsonArray) = coroutineScope {
         val inProgress = mutableSetOf<String>()
         val semaphore = Semaphore(MAX_CONCURRENT_ATTACHMENT_DOWNLOADS)
         for (j in arr) {
-            val jsonDoc = getJsonObject("doc", j.asJsonObject)
+            val jsonDoc = getJsonObject("doc", KJson.asJsonObject(j))
             val docId = getString("_id", jsonDoc)
             if (docId.startsWith("_design")) continue
             val resumeFileName = getString("resumeFileName", jsonDoc)
-            val hasAttachment = jsonDoc.getAsJsonObject("_attachments")?.has("resume.pdf") == true
+            val hasAttachment = attachments(jsonDoc)?.containsKey("resume.pdf") == true
             if (resumeFileName.isNotEmpty() && hasAttachment) {
                 val destFile = File(
                     FileUtils.getOlePath(context) + "cv/$resumeFileName"
@@ -360,11 +374,11 @@ class TransactionSyncManager @Inject constructor(
     private suspend fun downloadTeamAttachmentsFromBatch(arr: JsonArray) = coroutineScope {
         val semaphore = Semaphore(MAX_CONCURRENT_ATTACHMENT_DOWNLOADS)
         for (j in arr) {
-            val jsonDoc = getJsonObject("doc", j.asJsonObject)
+            val jsonDoc = getJsonObject("doc", KJson.asJsonObject(j))
             val docId = getString("_id", jsonDoc)
             if (docId.startsWith("_design")) continue
             val attachmentName = MyTeam
-                .getFirstAttachmentName(jsonDoc.toKotlinx().jsonObject) ?: continue
+                .getFirstAttachmentName(jsonDoc) ?: continue
             val destFile = MyTeam
                 .getAttachmentFile(context, docId, attachmentName) ?: continue
             if (!destFile.exists()) {
@@ -376,11 +390,11 @@ class TransactionSyncManager @Inject constructor(
     private suspend fun downloadCourseCoversFromBatch(arr: JsonArray) = coroutineScope {
         val semaphore = Semaphore(MAX_CONCURRENT_ATTACHMENT_DOWNLOADS)
         for (j in arr) {
-            val jsonDoc = getJsonObject("doc", j.asJsonObject)
+            val jsonDoc = getJsonObject("doc", KJson.asJsonObject(j))
             val docId = getString("_id", jsonDoc)
             if (docId.startsWith("_design")) continue
             val coverFileName = getString("coverFileName", jsonDoc)
-            val hasAttachment = jsonDoc.getAsJsonObject("_attachments")?.has(coverFileName) == true
+            val hasAttachment = attachments(jsonDoc)?.containsKey(coverFileName) == true
             if (coverFileName.isNotEmpty() && hasAttachment) {
                 val destFile = MyCourse
                     .getCoverImageFile(context, docId, coverFileName) ?: continue
@@ -445,23 +459,23 @@ class TransactionSyncManager @Inject constructor(
         val successfulSyncs = pending.map { notification ->
             async {
                 val rev = notification.rev ?: return@async null
-                val body = JsonObject().apply {
-                    addProperty("_id", notification.id)
-                    addProperty("_rev", rev)
-                    addProperty("status", "read")
-                    addProperty("user", notification.userId)
-                    addProperty("message", notification.message)
-                    addProperty("type", notification.type)
-                    notification.link?.let { addProperty("link", it) }
-                    addProperty("priority", notification.priority)
-                    addProperty("time", notification.createdAt.time)
+                val body = buildJsonObject {
+                    put("_id", notification.id)
+                    put("_rev", rev)
+                    put("status", "read")
+                    put("user", notification.userId)
+                    put("message", notification.message)
+                    put("type", notification.type)
+                    notification.link?.let { put("link", it) }
+                    put("priority", notification.priority)
+                    put("time", notification.createdAt.time)
                 }
                 try {
                     val response = apiInterface.putDoc(
                         UrlUtils.header,
                         "application/json",
                         "${UrlUtils.getUrl()}/notifications/${notification.id}",
-                        body.toKotlinx().jsonObject
+                        body
                     )
                     if (response.isSuccessful) {
                         val newRev = JsonUtils.getString("rev", response.body()).takeIf { it.isNotEmpty() }

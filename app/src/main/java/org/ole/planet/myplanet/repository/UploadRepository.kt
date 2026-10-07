@@ -1,20 +1,32 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonObject
+import com.google.gson.JsonObject as GsonJsonObject
+import java.io.File
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import okhttp3.RequestBody
 import retrofit2.Response
 
 interface UploadRepository {
-    suspend fun postUpload(url: String, serializedData: JsonObject): Response<JsonObject>
-    suspend fun postUploadArray(url: String, serializedData: JsonObject): Response<com.google.gson.JsonArray>
-    suspend fun putUpload(url: String, serializedData: JsonObject): Response<JsonObject>
-    suspend fun fetchExistingDoc(url: String): Response<JsonObject>
-    suspend fun uploadAttachment(file: java.io.File, destinationFormat: String, id: String, rev: String, name: String): Response<JsonObject>
-    suspend fun uploadResource(headerMap: Map<String, String>, url: String, body: okhttp3.RequestBody): Response<JsonObject>
+    suspend fun postJson(url: String, serializedData: JsonObject): Response<JsonObject>
+    suspend fun postJsonArray(url: String, serializedData: JsonObject): Response<JsonArray>
+    suspend fun putJson(url: String, serializedData: JsonObject): Response<JsonObject>
+    suspend fun fetchJson(url: String): Response<JsonObject>
+    suspend fun uploadAttachmentJson(file: File, destinationFormat: String, id: String, rev: String, name: String): Response<JsonObject>
+    suspend fun uploadResourceJson(headerMap: Map<String, String>, url: String, body: RequestBody): Response<JsonObject>
+
+    // Gson twins, kept for the callers still on Gson (PersonalsRepositoryImpl, VoicesUploader).
+    suspend fun postUpload(url: String, serializedData: GsonJsonObject): Response<GsonJsonObject>
+    suspend fun postUploadArray(url: String, serializedData: GsonJsonObject): Response<com.google.gson.JsonArray>
+    suspend fun putUpload(url: String, serializedData: GsonJsonObject): Response<GsonJsonObject>
+    suspend fun fetchExistingDoc(url: String): Response<GsonJsonObject>
+    suspend fun uploadAttachment(file: File, destinationFormat: String, id: String, rev: String, name: String): Response<GsonJsonObject>
+    suspend fun uploadResource(headerMap: Map<String, String>, url: String, body: RequestBody): Response<GsonJsonObject>
 }
 
 data class UploadedItemResult(
     val localId: String,
     val remoteId: String,
     val remoteRev: String,
-    val response: JsonObject
+    val response: GsonJsonObject
 )

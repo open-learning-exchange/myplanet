@@ -1,9 +1,10 @@
 package org.ole.planet.myplanet.services.upload
 
-import com.google.gson.JsonObject
 import kotlin.reflect.KClass
+import kotlinx.serialization.json.JsonObject
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UploadedItemResult
+import org.ole.planet.myplanet.utils.KJson.GsonNumbers
 
 data class UploadConfig<T : Any>(
     val modelClass: KClass<T>,
@@ -18,6 +19,8 @@ data class UploadConfig<T : Any>(
     override val dbIdExtractor: ((T) -> String?)? = null,
 
     override val responseHandler: ResponseHandler = ResponseHandler.Standard,
+
+    override val payloadNumbers: GsonNumbers = GsonNumbers.BRIDGED,
 
     val filterGuests: Boolean = false,
     val guestUserIdExtractor: ((T) -> String?)? = null,

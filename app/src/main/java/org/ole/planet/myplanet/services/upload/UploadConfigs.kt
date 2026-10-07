@@ -5,6 +5,7 @@ import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.CourseProgress
@@ -35,8 +36,10 @@ import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.KJson.GsonNumbers
 import org.ole.planet.myplanet.utils.VersionUtils
-import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
+import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
 @Singleton
 class UploadConfigs @Inject constructor(
@@ -62,7 +65,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "myplanet_activities",
         modelClassName = "NewsLog",
         fetchPendingItems = { voicesRepository.getPendingNewsLogUploads() },
-        serializer = UploadSerializer.Simple { log -> NewsLog.serialize(log, customDeviceName).toGson() },
+        serializer = UploadSerializer.Simple { log -> NewsLog.serialize(log, customDeviceName).withGsonBridgedNumbers() },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -75,7 +78,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "courses_progress",
         modelClassName = "CourseProgress",
         fetchPendingItems = { progressRepository.getPendingCourseProgressUploads() },
-        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.model.CourseProgress.serializeProgress(it).toGson() },
+        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.model.CourseProgress.serializeProgress(it).withGsonBridgedNumbers() },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -90,7 +93,7 @@ class UploadConfigs @Inject constructor(
         fetchPendingItems = { teamsSyncRepository.get().getPendingTaskUploads() },
         serializer = UploadSerializer.Async { task ->
             val user = userRepository.getUserById(task.assignee ?: "")
-            org.ole.planet.myplanet.model.TeamTask.serialize(task, user).toGson()
+            org.ole.planet.myplanet.model.TeamTask.serialize(task, user).withGsonBridgedNumbers()
         },
         idExtractor = { it.id },
         markUploaded = { results ->
@@ -104,8 +107,9 @@ class UploadConfigs @Inject constructor(
         endpoint = "team_activities",
         modelClassName = "TeamLog",
         fetchPendingItems = { teamsSyncRepository.get().getPendingTeamLogUploads() },
-        serializer = UploadSerializer.Simple { log -> teamsSyncRepository.get().serializeTeamActivities(log) },
+        serializer = UploadSerializer.Simple { log -> teamsSyncRepository.get().serializeTeamActivities(log).toKotlinx().jsonObject },
         idExtractor = { it.id },
+        payloadNumbers = GsonNumbers.LITERAL,
         markUploaded = { results ->
             results.filter { result ->
                 !teamsSyncRepository.get().markTeamLogUploaded(result.localId, result.remoteId, result.remoteRev)
@@ -117,7 +121,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "search_activities",
         modelClassName = "SearchActivity",
         fetchPendingItems = { activitiesRepository.getPendingSearchActivityUploads() },
-        serializer = UploadSerializer.Simple { it.serialize(androidId, customDeviceName).toGson() },
+        serializer = UploadSerializer.Simple { it.serialize(androidId, customDeviceName).withGsonBridgedNumbers() },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -134,8 +138,9 @@ class UploadConfigs @Inject constructor(
         endpoint = "resource_activities",
         modelClassName = "ResourceActivity",
         fetchPendingItems = { activitiesRepository.getPendingResourceActivityUploads() },
-        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
+        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it).toKotlinx().jsonObject },
         idExtractor = { it.id },
+        payloadNumbers = GsonNumbers.LITERAL,
         markUploaded = { results ->
             results.filter { result ->
                 !activitiesRepository.markResourceActivityUploaded(result.localId, result.remoteId, result.remoteRev)
@@ -147,8 +152,9 @@ class UploadConfigs @Inject constructor(
         endpoint = "admin_activities",
         modelClassName = "ResourceActivity",
         fetchPendingItems = { activitiesRepository.getPendingResourceActivitySyncUploads() },
-        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
+        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it).toKotlinx().jsonObject },
         idExtractor = { it.id },
+        payloadNumbers = GsonNumbers.LITERAL,
         markUploaded = { results ->
             results.filter { result ->
                 !activitiesRepository.markResourceActivityUploaded(result.localId, result.remoteId, result.remoteRev)
@@ -160,7 +166,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "course_activities",
         modelClassName = "CourseActivity",
         fetchPendingItems = { activitiesRepository.getPendingCourseActivityUploads() },
-        serializer = UploadSerializer.Simple { CourseActivity.serialize(it).toGson() },
+        serializer = UploadSerializer.Simple { CourseActivity.serialize(it).withGsonBridgedNumbers() },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -178,7 +184,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "meetups",
         modelClassName = "Meetup",
         fetchPendingItems = { eventsRepository.getPendingMeetupUploads() },
-        serializer = UploadSerializer.Simple { Meetup.serialize(it).toGson() },
+        serializer = UploadSerializer.Simple { Meetup.serialize(it).withGsonBridgedNumbers() },
         idExtractor = { it.id },
         responseHandler = ResponseHandler.Custom("id", "rev"),
         markUploaded = { results ->
@@ -194,7 +200,7 @@ class UploadConfigs @Inject constructor(
         fetchPendingItems = { surveysRepository.getPendingAdoptedSurveys() },
         serializer = UploadSerializer.Async { exam ->
             val questions = surveysRepository.getExamQuestions(exam.id)
-            StepExam.serializeExam(exam, questions).toGson()
+            StepExam.serializeExam(exam, questions).withGsonBridgedNumbers()
         },
         idExtractor = { it.id },
         markUploaded = { surveysRepository.markExamsUploaded(it) }
@@ -205,7 +211,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "feedback",
         modelClassName = "Feedback",
         fetchPendingItems = { feedbackRepository.getPendingFeedback() },
-        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.model.Feedback.serializeFeedback(it).toGson() },
+        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.model.Feedback.serializeFeedback(it).withGsonBridgedNumbers() },
         idExtractor = { it.id },
         markUploaded = { results ->
             // Mark each uploaded feedback; rows that no longer exist are reported as failures.
@@ -218,7 +224,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "apk_logs",
         modelClassName = "ApkLog",
         fetchPendingItems = { diagnosticsRepository.getPendingApkLogs() },
-        serializer = UploadSerializer.Simple { log -> ApkLog.serialize(log, customDeviceName).toGson() },
+        serializer = UploadSerializer.Simple { log -> ApkLog.serialize(log, customDeviceName).withGsonBridgedNumbers() },
         idExtractor = { it.id },
         markUploaded = { results ->
             if (results.isEmpty()) return@RoomUploadConfig emptyList()
@@ -232,7 +238,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "submissions",
         modelClassName = "SubmitPhotos",
         fetchPendingItems = { submissionsRepository.getPendingSubmitPhotosUploads() },
-        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.model.SubmitPhotos.serialize(it).toGson() },
+        serializer = UploadSerializer.Simple { org.ole.planet.myplanet.model.SubmitPhotos.serialize(it).withGsonBridgedNumbers() },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -249,9 +255,10 @@ class UploadConfigs @Inject constructor(
         fetchPendingItems = { submissionsRepository.getPendingExamResults() },
         serializer = UploadSerializer.Async { submission ->
             val user = submission.userId?.let { userRepository.getUserById(it) }
-            submissionsRepository.getExamUploadPayload(submission, user)
+            submissionsRepository.getExamUploadPayload(submission, user).toKotlinx().jsonObject
         },
         idExtractor = { it.id },
+        payloadNumbers = GsonNumbers.LITERAL,
         dbIdExtractor = { it._id },
         filterGuests = true,
         guestUserIdExtractor = { it.userId },
@@ -265,8 +272,10 @@ class UploadConfigs @Inject constructor(
         serializer = UploadSerializer.Async { submission ->
             val user = submission.userId?.let { userRepository.getUserById(it) }
             submissionsRepository.serializeSubmission(submission, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode(), user)
+                .toKotlinx().jsonObject
         },
         idExtractor = { it.id },
+        payloadNumbers = GsonNumbers.LITERAL,
         dbIdExtractor = { it._id },
         markUploaded = { submissionsRepository.markSubmissionsUploaded(it) }
     )
@@ -279,9 +288,10 @@ class UploadConfigs @Inject constructor(
             modelClassName = "MyLibrary",
             fetchPendingItems = { resourcesRepository.getPendingResourceUploads() },
             serializer = UploadSerializer.Simple { library ->
-                resourcesRepository.serializeForUpload(library, user)
+                resourcesRepository.serializeForUpload(library, user).toKotlinx().jsonObject
             },
             idExtractor = { it.id },
+            payloadNumbers = GsonNumbers.LITERAL,
             markUploaded = { results ->
                 results.filter { result ->
                     !resourcesRepository.markResourceUploaded(
@@ -301,7 +311,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "ratings",
         modelClassName = "Rating",
         fetchPendingItems = { ratingsRepository.getPendingRatingUploads() },
-        serializer = UploadSerializer.Simple { rating -> org.ole.planet.myplanet.model.Rating.serializeRating(rating, customDeviceName).toGson() },
+        serializer = UploadSerializer.Simple { rating -> org.ole.planet.myplanet.model.Rating.serializeRating(rating, customDeviceName).withGsonBridgedNumbers() },
         idExtractor = { it.id },
         dbIdExtractor = { it._id }, // Enables POST/PUT logic
         markUploaded = { results ->

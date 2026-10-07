@@ -57,9 +57,9 @@ import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
-import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 import org.ole.planet.myplanet.utils.toSyncDocuments
+import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
 @Singleton
 class TeamsRepositoryImpl @Inject constructor(
@@ -100,7 +100,7 @@ class TeamsRepositoryImpl @Inject constructor(
         return teams.map { team ->
             TeamUploadData(
                 teamId = team._id,
-                serialized = MyTeam.serialize(team, courses, coursesResourcesMap).toGson(),
+                serialized = MyTeam.serialize(team, courses, coursesResourcesMap).withGsonBridgedNumbers(),
                 isDeletePending = team.isDeletePending,
                 imageName = team.imageName
             )

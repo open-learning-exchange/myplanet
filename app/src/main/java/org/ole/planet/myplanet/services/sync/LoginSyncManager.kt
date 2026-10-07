@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
 import android.util.Log
-import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -12,6 +11,10 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -21,6 +24,7 @@ import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.toGson
 
@@ -80,11 +84,11 @@ class LoginSyncManager @Inject constructor(
                     }
                 }
 
-                val jsonDoc = response.body()?.toGson()
-                if (jsonDoc?.has("derived_key") == true && jsonDoc.has("salt")) {
+                val jsonDoc = response.body()
+                if (jsonDoc?.containsKey("derived_key") == true && jsonDoc.containsKey("salt")) {
                     try {
-                        val derivedKey = jsonDoc["derived_key"].asString
-                        val salt = jsonDoc["salt"].asString
+                        val derivedKey = KJson.gsonAsString(jsonDoc["derived_key"])
+                        val salt = KJson.gsonAsString(jsonDoc["salt"])
                         val isAuthenticated = withContext(dispatcherProvider.default) {
                             androidDecrypter(userName, password, derivedKey, salt)
                         }
@@ -134,13 +138,15 @@ class LoginSyncManager @Inject constructor(
             return
         }
 
-        userSyncRepository.saveUser(jsonDoc)
+        // UserSyncRepository.saveUser still takes the Gson tree (it moves with the user repository).
+        userSyncRepository.saveUser(jsonDoc?.toGson())
         listener.onSyncComplete()
     }
 
+    /** Reads `roles`/`isUserAdmin` as Gson's `asJsonArray`/`asBoolean` did, throwing where they threw. */
     private fun isManager(jsonDoc: JsonObject?): Boolean {
-        val roles = jsonDoc?.get("roles")?.asJsonArray
-        val isUserAdmin = jsonDoc?.get("isUserAdmin")?.asBoolean == true
-        return isUserAdmin || roles?.any { it.isJsonPrimitive && it.asString.equals("manager", ignoreCase = true) } == true
+        val roles = jsonDoc?.get("roles")?.let { it as? JsonArray ?: throw IllegalStateException("Not a JSON Array: $it") }
+        val isUserAdmin = jsonDoc?.get("isUserAdmin")?.let { KJson.gsonAsString(it).equals("true", ignoreCase = true) } == true
+        return isUserAdmin || roles?.any { it is JsonPrimitive && it !is JsonNull && KJson.gsonAsString(it).equals("manager", ignoreCase = true) } == true
     }
 }

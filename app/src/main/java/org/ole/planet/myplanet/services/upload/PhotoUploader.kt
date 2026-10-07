@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.services.FileUploader
 import org.ole.planet.myplanet.services.upload.UploadConstants.BATCH_SIZE
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.GsonUtils.getString
+import org.ole.planet.myplanet.utils.KJson.getString
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class PhotoUploader @Inject constructor(
@@ -49,7 +49,7 @@ class PhotoUploader @Inject constructor(
                             if (photoId == null) return@async null
                             try {
                                 val response = semaphore.withPermit {
-                                    uploadRepository.postUpload(
+                                    uploadRepository.postJson(
                                         "$baseUrl/submissions", serialized
                                     )
                                 }

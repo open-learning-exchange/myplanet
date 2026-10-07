@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.services.upload
 
 import android.util.Log
-import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -17,6 +16,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -80,7 +84,7 @@ class PhotoUploaderTest {
         val result = photoUploader.uploadSubmitPhotos(null)
 
         assertEquals("No photos to upload", result)
-        coVerify(exactly = 0) { uploadRepository.postUpload(any(), any()) }
+        coVerify(exactly = 0) { uploadRepository.postJson(any(), any()) }
         coVerify(exactly = 0) { submissionsRepository.markPhotosUploadedBatch(any()) }
     }
 
@@ -95,14 +99,14 @@ class PhotoUploaderTest {
         )
 
         val photos = (1..10).map { i ->
-            "photo-$i" to JsonObject().apply { addProperty("index", i) }
+            "photo-$i" to buildJsonObject { put("index", i) }
         }
         coEvery { submissionsRepository.getUnuploadedPhotos() } returns photos
 
         val activeRequests = AtomicInteger(0)
         var maxConcurrentRequests = 0
 
-        coEvery { uploadRepository.postUpload(any(), any()) } coAnswers {
+        coEvery { uploadRepository.postJson(any(), any()) } coAnswers {
             val current = activeRequests.incrementAndGet()
             if (current > maxConcurrentRequests) {
                 maxConcurrentRequests = current
@@ -111,10 +115,10 @@ class PhotoUploaderTest {
             activeRequests.decrementAndGet()
 
             val reqJson = invocation.args[1] as JsonObject
-            val idx = reqJson.get("index").asInt
-            val resp = JsonObject().apply {
-                addProperty("id", "doc-$idx")
-                addProperty("rev", "1-rev")
+            val idx = reqJson.getValue("index").jsonPrimitive.int
+            val resp = buildJsonObject {
+                put("id", "doc-$idx")
+                put("rev", "1-rev")
             }
             Response.success(resp)
         }
@@ -139,15 +143,15 @@ class PhotoUploaderTest {
         )
 
         val photos = listOf(
-            "local-photo-1" to JsonObject()
+            "local-photo-1" to JsonObject(emptyMap())
         )
         coEvery { submissionsRepository.getUnuploadedPhotos() } returns photos
 
-        val responseObj = JsonObject().apply {
-            addProperty("id", "remote-1")
-            addProperty("rev", "2-abc")
+        val responseObj = buildJsonObject {
+            put("id", "remote-1")
+            put("rev", "2-abc")
         }
-        coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success(responseObj)
+        coEvery { uploadRepository.postJson(any(), any()) } returns Response.success(responseObj)
 
         val slot = slot<List<PhotoUpload>>()
         coEvery { submissionsRepository.markPhotosUploadedBatch(capture(slot)) } returns Unit
@@ -174,21 +178,21 @@ class PhotoUploaderTest {
         )
 
         val photos = listOf(
-            "photo-1" to JsonObject().apply { addProperty("index", 1) },
-            "photo-2" to JsonObject().apply { addProperty("index", 2) },
-            "photo-3" to JsonObject().apply { addProperty("index", 3) }
+            "photo-1" to buildJsonObject { put("index", 1) },
+            "photo-2" to buildJsonObject { put("index", 2) },
+            "photo-3" to buildJsonObject { put("index", 3) }
         )
         coEvery { submissionsRepository.getUnuploadedPhotos() } returns photos
 
-        coEvery { uploadRepository.postUpload(any(), any()) } coAnswers {
+        coEvery { uploadRepository.postJson(any(), any()) } coAnswers {
             val reqJson = invocation.args[1] as JsonObject
-            val idx = reqJson.get("index").asInt
+            val idx = reqJson.getValue("index").jsonPrimitive.int
             if (idx == 2) {
                 throw IOException("Network error for photo-2")
             }
-            val resp = JsonObject().apply {
-                addProperty("id", "doc-$idx")
-                addProperty("rev", "1-rev")
+            val resp = buildJsonObject {
+                put("id", "doc-$idx")
+                put("rev", "1-rev")
             }
             Response.success(resp)
         }
@@ -215,15 +219,15 @@ class PhotoUploaderTest {
         )
 
         val photos = listOf(
-            "photo-1" to JsonObject().apply { addProperty("index", 1) }
+            "photo-1" to buildJsonObject { put("index", 1) }
         )
         coEvery { submissionsRepository.getUnuploadedPhotos() } returns photos
 
-        val responseObj = JsonObject().apply {
-            addProperty("id", "doc-1")
-            addProperty("rev", "1-rev")
+        val responseObj = buildJsonObject {
+            put("id", "doc-1")
+            put("rev", "1-rev")
         }
-        coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success(responseObj)
+        coEvery { uploadRepository.postJson(any(), any()) } returns Response.success(responseObj)
 
         val submitPhoto = SubmitPhotos().apply {
             id = "photo-1"
@@ -231,8 +235,8 @@ class PhotoUploaderTest {
         }
         coEvery { submissionsRepository.getPhotosByIds(arrayOf("photo-1")) } returns listOf(submitPhoto)
 
-        val mockAttachmentResp = JsonObject().apply { addProperty("ok", true) }
-        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns Response.success(mockAttachmentResp)
+        val mockAttachmentResp = buildJsonObject { put("ok", true) }
+        coEvery { uploadRepository.uploadAttachmentJson(any(), any(), any(), any(), any()) } returns Response.success(mockAttachmentResp)
 
         val listener: OnSuccessListener = mockk(relaxed = true)
 
@@ -245,7 +249,7 @@ class PhotoUploaderTest {
         testScheduler.advanceUntilIdle()
 
         coVerify {
-            uploadRepository.uploadAttachment(
+            uploadRepository.uploadAttachmentJson(
                 file = match { it.path == "/sdcard/photo1.jpg" },
                 destinationFormat = "%s/submissions/%s/%s",
                 id = "doc-1",

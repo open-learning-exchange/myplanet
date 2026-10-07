@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.services.upload
 
 import android.util.Log
-import com.google.gson.JsonObject
 import java.io.IOException
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
@@ -14,12 +13,14 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonObject
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.GsonUtils.getString
+import org.ole.planet.myplanet.utils.KJson.getString
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.toGson
 
 @Singleton
 class UploadCoordinator @Inject constructor(
@@ -147,9 +148,9 @@ class UploadCoordinator @Inject constructor(
 
                         val response = semaphore.withPermit {
                             if (preparedItem.dbId.isNullOrEmpty()) {
-                                uploadRepository.postUpload(requestUrl, preparedItem.serialized)
+                                uploadRepository.postJson(requestUrl, preparedItem.serialized)
                             } else {
-                                uploadRepository.putUpload(requestUrl, preparedItem.serialized)
+                                uploadRepository.putJson(requestUrl, preparedItem.serialized)
                             }
                         }
 
@@ -174,7 +175,7 @@ class UploadCoordinator @Inject constructor(
                             try {
                                 val docId = preparedItem.dbId ?: preparedItem.localId
                                 val getResponse = semaphore.withPermit {
-                                    uploadRepository.fetchExistingDoc("$baseUrl/${config.endpoint}/$docId")
+                                    uploadRepository.fetchJson("$baseUrl/${config.endpoint}/$docId")
                                 }
                                 val existingDoc = getResponse.body()
                                 if (getResponse.isSuccessful && existingDoc != null) {
@@ -247,7 +248,8 @@ class UploadCoordinator @Inject constructor(
         config: UploadPipelineConfig<T>
     ): List<UploadedItem> {
         val itemResults = succeeded.map {
-            UploadedItemResult(it.localId, it.remoteId, it.remoteRev, it.response)
+            // UploadedItemResult stays Gson-typed until the repositories that receive it move over.
+            UploadedItemResult(it.localId, it.remoteId, it.remoteRev, it.response.toGson())
         }
 
         val failedResults = config.persistUploaded(uploadRepository, itemResults)
@@ -279,7 +281,8 @@ class UploadCoordinator @Inject constructor(
                 endpoint = config.endpoint,
                 httpMethod = if (preparedUpload.dbId.isNullOrEmpty()) "POST" else "PUT",
                 dbId = preparedUpload.dbId,
-                modelClassName = config.modelLabel
+                modelClassName = config.modelLabel,
+                numbers = config.payloadNumbers
             )
         }
     }

@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.services.upload
 
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UploadedItemResult
+import org.ole.planet.myplanet.utils.KJson.GsonNumbers
 
 /**
  * Database-agnostic upload configuration for models that have been migrated to Room.
@@ -22,6 +23,8 @@ data class RoomUploadConfig<T : Any>(
     override val dbIdExtractor: ((T) -> String?)? = null,
 
     override val responseHandler: ResponseHandler = ResponseHandler.Standard,
+
+    override val payloadNumbers: GsonNumbers = GsonNumbers.BRIDGED,
 
     override val batchSize: Int = 50,
 

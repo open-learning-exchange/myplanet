@@ -8,6 +8,8 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -195,8 +197,8 @@ class UploadConfigsTest {
         val serializer = uploadConfigs.NewsActivities.serializer as UploadSerializer.Simple
         val json = serializer.serialize(newsLog)
 
-        assertEquals("user1", json.get("user").asString)
-        assertEquals("test-custom-device", json.get("customDeviceName").asString)
+        assertEquals("user1", json.getValue("user").jsonPrimitive.content)
+        assertEquals("test-custom-device", json.getValue("customDeviceName").jsonPrimitive.content)
     }
 
     @Test
@@ -205,9 +207,9 @@ class UploadConfigsTest {
         val serializer = uploadConfigs.SearchActivity.serializer as UploadSerializer.Simple
         val json = serializer.serialize(search)
 
-        assertEquals("query", json.get("text").asString)
-        assertEquals("test-android-id", json.get("androidId").asString)
-        assertEquals("test-custom-device", json.get("customDeviceName").asString)
+        assertEquals("query", json.getValue("text").jsonPrimitive.content)
+        assertEquals("test-android-id", json.getValue("androidId").jsonPrimitive.content)
+        assertEquals("test-custom-device", json.getValue("customDeviceName").jsonPrimitive.content)
     }
 
     @Test
@@ -216,8 +218,8 @@ class UploadConfigsTest {
         val serializer = uploadConfigs.Rating.serializer as UploadSerializer.Simple
         val json = serializer.serialize(rating)
 
-        assertEquals(5, json.get("rate").asInt)
-        assertEquals("test-custom-device", json.get("customDeviceName").asString)
+        assertEquals(5, json.getValue("rate").jsonPrimitive.int)
+        assertEquals("test-custom-device", json.getValue("customDeviceName").jsonPrimitive.content)
     }
 
     @Test
@@ -226,12 +228,12 @@ class UploadConfigsTest {
         val serializer = uploadConfigs.NewsActivities.serializer as UploadSerializer.Simple
 
         val json1 = serializer.serialize(newsLog)
-        assertEquals("test-custom-device", json1.get("customDeviceName").asString)
+        assertEquals("test-custom-device", json1.getValue("customDeviceName").jsonPrimitive.content)
 
         every { sharedPrefManager.getCustomDeviceName() } returns "updated-custom-device"
 
         val json2 = serializer.serialize(newsLog)
-        assertEquals("updated-custom-device", json2.get("customDeviceName").asString)
+        assertEquals("updated-custom-device", json2.getValue("customDeviceName").jsonPrimitive.content)
     }
 
     @Test

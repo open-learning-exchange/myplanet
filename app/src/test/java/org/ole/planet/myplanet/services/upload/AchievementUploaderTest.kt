@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.services.upload
 
 import android.content.Context
 import android.util.Log
-import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -16,6 +15,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -70,11 +72,11 @@ class AchievementUploaderTest {
 
     @Test
     fun `uploadAchievement propagates CancellationException and halts further uploads`() = runTest(testDispatcher) {
-        val achievement1 = JsonObject().apply { addProperty("_id", "ach1") }
-        val achievement2 = JsonObject().apply { addProperty("_id", "ach2") }
+        val achievement1 = buildJsonObject { put("_id", "ach1") }
+        val achievement2 = buildJsonObject { put("_id", "ach2") }
         coEvery { userAchievementsRepository.getAchievementsForUpload() } returns listOf(achievement1, achievement2)
 
-        coEvery { uploadRepository.putUpload("http://mock.url/achievements/ach1", achievement1) } throws CancellationException("Sync cancelled")
+        coEvery { uploadRepository.putJson("http://mock.url/achievements/ach1", achievement1) } throws CancellationException("Sync cancelled")
 
         var caughtCancellation = false
         try {
@@ -84,37 +86,37 @@ class AchievementUploaderTest {
         }
 
         assertTrue("Expected CancellationException to be caught", caughtCancellation)
-        coVerify(exactly = 1) { uploadRepository.putUpload("http://mock.url/achievements/ach1", achievement1) }
-        coVerify(exactly = 0) { uploadRepository.putUpload("http://mock.url/achievements/ach2", achievement2) }
+        coVerify(exactly = 1) { uploadRepository.putJson("http://mock.url/achievements/ach1", achievement1) }
+        coVerify(exactly = 0) { uploadRepository.putJson("http://mock.url/achievements/ach2", achievement2) }
     }
 
     @Test
     fun `uploadAchievement catches ordinary exception and continues loop`() = runTest(testDispatcher) {
-        val achievement1 = JsonObject().apply { addProperty("_id", "ach1") }
-        val achievement2 = JsonObject().apply { addProperty("_id", "ach2") }
+        val achievement1 = buildJsonObject { put("_id", "ach1") }
+        val achievement2 = buildJsonObject { put("_id", "ach2") }
         coEvery { userAchievementsRepository.getAchievementsForUpload() } returns listOf(achievement1, achievement2)
 
-        coEvery { uploadRepository.putUpload("http://mock.url/achievements/ach1", achievement1) } throws IOException("Network error")
-        val successResponse = Response.success(JsonObject().apply { addProperty("rev", "rev2") })
-        coEvery { uploadRepository.putUpload("http://mock.url/achievements/ach2", achievement2) } returns successResponse
+        coEvery { uploadRepository.putJson("http://mock.url/achievements/ach1", achievement1) } throws IOException("Network error")
+        val successResponse = Response.success(buildJsonObject { put("rev", "rev2") })
+        coEvery { uploadRepository.putJson("http://mock.url/achievements/ach2", achievement2) } returns successResponse
 
         achievementUploader.uploadAchievement()
 
-        coVerify(exactly = 1) { uploadRepository.putUpload("http://mock.url/achievements/ach1", achievement1) }
-        coVerify(exactly = 1) { uploadRepository.putUpload("http://mock.url/achievements/ach2", achievement2) }
+        coVerify(exactly = 1) { uploadRepository.putJson("http://mock.url/achievements/ach1", achievement1) }
+        coVerify(exactly = 1) { uploadRepository.putJson("http://mock.url/achievements/ach2", achievement2) }
         coVerify(exactly = 1) { userAchievementsRepository.markAchievementUploaded("ach2", "rev2") }
     }
 
     @Test
     fun `uploadCvAttachment propagates CancellationException`() = runTest(testDispatcher) {
-        val achievement = JsonObject().apply {
-            addProperty("_id", "ach1")
-            addProperty("resumeFileName", "resume.pdf")
+        val achievement = buildJsonObject {
+            put("_id", "ach1")
+            put("resumeFileName", "resume.pdf")
         }
         coEvery { userAchievementsRepository.getAchievementsForUpload() } returns listOf(achievement)
 
-        val successResponse = Response.success(JsonObject().apply { addProperty("rev", "rev1") })
-        coEvery { uploadRepository.putUpload("http://mock.url/achievements/ach1", achievement) } returns successResponse
+        val successResponse = Response.success(buildJsonObject { put("rev", "rev1") })
+        coEvery { uploadRepository.putJson("http://mock.url/achievements/ach1", achievement) } returns successResponse
 
         val cvFolder = temporaryFolder.newFolder("cv")
         val resumeFile = File(cvFolder, "resume.pdf")
@@ -122,7 +124,7 @@ class AchievementUploaderTest {
 
         every { FileUtils.getOlePath(context) } returns temporaryFolder.root.absolutePath + "/"
 
-        coEvery { uploadRepository.uploadResource(any(), any(), any()) } throws CancellationException("Cancelled")
+        coEvery { uploadRepository.uploadResourceJson(any(), any(), any()) } throws CancellationException("Cancelled")
 
         var caughtCancellation = false
         try {

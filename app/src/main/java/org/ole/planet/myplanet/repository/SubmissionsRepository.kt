@@ -4,6 +4,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.json.JsonObject as KJsonObject
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
@@ -60,7 +61,7 @@ interface SubmissionsRepository {
     suspend fun updateSubmissionStatus(submissionId: String?, status: String)
     suspend fun getExamByStepId(stepId: String): StepExam?
     suspend fun getExamById(id: String): StepExam?
-    suspend fun getUnuploadedPhotos(): List<Pair<String?, JsonObject>>
+    suspend fun getUnuploadedPhotos(): List<Pair<String?, KJsonObject>>
     suspend fun markPhotoUploaded(photoId: String?, rev: String, id: String)
     suspend fun markPhotosUploadedBatch(uploads: List<PhotoUpload>)
     suspend fun getOrCreateSubmission(userId: String?, parentId: String): Submission

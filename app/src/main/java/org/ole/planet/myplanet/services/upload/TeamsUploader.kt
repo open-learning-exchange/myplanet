@@ -19,7 +19,8 @@ import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.services.upload.UploadConstants.BATCH_SIZE
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.GsonUtils.getString
+import org.ole.planet.myplanet.utils.KJson
+import org.ole.planet.myplanet.utils.KJson.getString
 import org.ole.planet.myplanet.utils.UrlUtils
 
 private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
@@ -110,8 +111,8 @@ class TeamsUploader @Inject constructor(
             val body = imageFile.asRequestBody(mimeType.toMediaTypeOrNull())
             val encodedName = Uri.encode(imageName)
             val url = "${UrlUtils.getUrl()}/teams/$teamId/$encodedName"
-            val response = uploadRepository.uploadResource(FileUploader.getHeaderMap(mimeType, rev), url, body)
-            val newRev = response.body()?.get("rev")?.asString
+            val response = uploadRepository.uploadResourceJson(FileUploader.getHeaderMap(mimeType, rev), url, body)
+            val newRev = response.body()?.get("rev")?.let { KJson.gsonAsString(it) }
             if (!newRev.isNullOrEmpty()) {
                 newRev
             } else {

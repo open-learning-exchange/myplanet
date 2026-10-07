@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.json.JsonObject
 import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam

@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.services.upload
 
-import com.google.gson.JsonObject
+import kotlinx.serialization.json.JsonObject
 
 sealed class UploadResult<out T> {
     data class Success<T>(
