@@ -1,0 +1,35 @@
+{
+  "docs": [
+    {
+      "_id": "team-1",
+      "_rev": "1-t",
+      "name": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+      "userId": "learner",
+      "limit": 12,
+      "amount": 0,
+      "date": 0,
+      "public": true,
+      "isLeader": false,
+      "createdDate": 9007199254740993,
+      "description": "https://planet.example/a?b=1&c=<2>#'x'",
+      "beginningBalance": 0,
+      "sales": 0,
+      "otherIncome": 0,
+      "wages": 0,
+      "otherExpenses": 0,
+      "startDate": 0,
+      "endDate": 0,
+      "updatedDate": 0,
+      "teamType": "local",
+      "teamPlanetCode": "planet",
+      "docType": "team",
+      "parentCode": "parent",
+      "type": "team"
+    },
+    {
+      "_id": "team-2",
+      "_rev": "2-t",
+      "_deleted": true
+    }
+  ]
+}

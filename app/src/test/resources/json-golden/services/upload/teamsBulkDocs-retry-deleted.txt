@@ -1,0 +1,1 @@
+{"_id":"team-2","_rev":"2-t","_deleted":true}

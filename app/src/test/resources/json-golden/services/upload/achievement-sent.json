@@ -1,0 +1,39 @@
+{
+  "_id": "ach-1",
+  "_rev": "1-a",
+  "goals": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+  "purpose": "https://planet.example/a?b=1&c=<2>#'x'",
+  "achievementsHeader": "h",
+  "sendToNation": true,
+  "dateSortOrder": "none",
+  "createdOn": "planet",
+  "username": "learner",
+  "parentCode": "parent",
+  "references": [
+    {
+      "name": "Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep",
+      "phone": "1"
+    }
+  ],
+  "achievements": [
+    {
+      "n": 100,
+      "f": 1.5,
+      "i": 7,
+      "big": 9007199254740993,
+      "neg": -0.0
+    },
+    "plain Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep"
+  ],
+  "links": [
+    {
+      "url": "https://planet.example/a?b=1&c=<2>#'x'"
+    }
+  ],
+  "otherInfo": [
+    {
+      "k": 1.0
+    }
+  ],
+  "resumeFileName": ""
+}
