@@ -20,7 +20,7 @@ data class ProfileFieldsUpdate(
     val age: String? = null
 )
 
-interface UserRepository : UserAchievementsRepository, UserLookupRepository {
+interface UserRepository : UserAchievementsRepository, UserReadRepository {
     suspend fun getSavedUsers(): List<User>
     suspend fun upsertSavedUser(name: String?, encryptedPassword: String?, source: String, userProfile: String?, userName: String?)
     suspend fun resetGuestAsMember(username: String?)

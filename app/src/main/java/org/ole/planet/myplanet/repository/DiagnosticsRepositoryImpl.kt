@@ -13,7 +13,7 @@ import org.ole.planet.myplanet.utils.CrashLogStore
 
 class DiagnosticsRepositoryImpl @Inject constructor(
     private val apkLogDao: ApkLogDao,
-    private val userRepository: UserLookupRepository,
+    private val userRepository: UserReadRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val appVersionProvider: AppVersionProvider
 ) : DiagnosticsRepository {

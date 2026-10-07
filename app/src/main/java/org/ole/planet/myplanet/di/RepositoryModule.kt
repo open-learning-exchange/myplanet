@@ -65,7 +65,7 @@ import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UploadRepositoryImpl
 import org.ole.planet.myplanet.repository.UserAchievementsRepository
-import org.ole.planet.myplanet.repository.UserLookupRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.repository.UserSyncRepository
@@ -214,7 +214,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindUserLookupRepository(impl: UserRepositoryImpl): UserLookupRepository
+    abstract fun bindUserReadRepository(impl: UserRepositoryImpl): UserReadRepository
 
     @Binds
     @Singleton
