@@ -338,12 +338,12 @@ class RepositoryPayloadGoldenTest {
             messages = """[{"message":"first","time":"1","user":"u"}]"""
         }
         coEvery { feedbackDao.findById("fb-sync") } returns null
-        val repository = relaxedInstance<FeedbackRepositoryImpl>(feedbackDao, injectedGson, time)
+        val repository = relaxedInstance<FeedbackRepositoryImpl>(feedbackDao, time)
 
         raw("feedback/createFeedback-messages", repository.createFeedback(null, "true", "Question", TRICKY, "item", "state <x>").messages!!)
         repository.addReply("fb-1", "reply <b> & 'c' =", null)
         raw("feedback/addReply-messages", updated.captured.messages!!)
-        repository.insertFromJson(serverDoc("""{"_id":"fb-sync","openTime":"5","messages":[{"message":"<m>","time":1717171717171,"user":null,"n":1.0}]}"""))
+        repository.insertFromJson(kServerDoc("""{"_id":"fb-sync","openTime":"5","messages":[{"message":"<m>","time":1717171717171,"user":null,"n":1.0}]}"""))
         raw("feedback/synced-messages", "messages=${upserted.captured.messages} openTime=${upserted.captured.openTime}")
     }
 
@@ -352,14 +352,14 @@ class RepositoryPayloadGoldenTest {
         val ratingDao = mockk<RatingDao>(relaxed = true)
         val upserted = slot<List<Rating>>()
         coEvery { ratingDao.upsertAll(capture(upserted)) } returns Unit
-        val repository = relaxedInstance<RatingsRepositoryImpl>(injectedGson, ratingDao)
+        val repository = relaxedInstance<RatingsRepositoryImpl>(ratingDao)
 
         val rating = Rating()
         repository.callPrivate("setRatingData", rating, user(planetCode = null), "resource", "item-1", TRICKY, 3.7f, "nice <3>")
         raw("ratings/local-user-column", "user=${rating.user} rate=${rating.rate}")
 
         repository.insertRatingsFromSync(
-            listOf(serverDoc("""{"_id":"r1","rate":4.0,"time":"17","user":{"_id":"u1","name":"<u>","none":null,"_attachments":{"a":1}}}"""))
+            listOf(kServerDoc("""{"_id":"r1","rate":4.0,"time":"17","user":{"_id":"u1","name":"<u>","none":null,"_attachments":{"a":1}}}"""))
         )
         raw("ratings/synced-user-column", upserted.captured.joinToString("\n") { "user=${it.user} rate=${it.rate} time=${it.time}" })
     }
@@ -369,7 +369,7 @@ class RepositoryPayloadGoldenTest {
         val meetupDao = mockk<MeetupDao>(relaxed = true)
         val saved = slot<Meetup>()
         coEvery { meetupDao.upsert(capture(saved)) } returns Unit
-        val repository = relaxedInstance<EventsRepositoryImpl>(time, meetupDao, injectedGson)
+        val repository = relaxedInstance<EventsRepositoryImpl>(time, meetupDao)
         repository.createMeetup(
             MeetupCreationParams(TRICKY, TRICKY_URL, "d", "loc", "09:00", "10:00", null, null, "learner", BIG_LONG, 1L, "team <1>")
         )
@@ -381,14 +381,14 @@ class RepositoryPayloadGoldenTest {
         val chatDao = mockk<ChatDao>(relaxed = true)
         val saved = slot<List<ChatHistory>>()
         coEvery { chatDao.upsertAll(capture(saved)) } returns Unit
-        val repository = relaxedInstance<ChatRepositoryImpl>(chatDao, plainGson)
+        val repository = relaxedInstance<ChatRepositoryImpl>(chatDao)
         repository.insertChatHistoryFromSync(
             listOf(
-                serverDoc(
+                kServerDoc(
                     """{"doc":{"_id":"chat-1","_rev":"2-c","title":"<t> & 'x'","createdDate":1.7E12,"updatedDate":"5","user":"learner","aiProvider":"openai",
                        "conversations":[{"query":"q & <1>","response":1e2},{"query":true,"extra":1},{"response":null},{"query":1.50}]}}"""
                 ),
-                serverDoc("""{"doc":{"_id":"_design/x"}}"""),
+                kServerDoc("""{"doc":{"_id":"_design/x"}}"""),
             )
         )
         raw(
@@ -405,7 +405,7 @@ class RepositoryPayloadGoldenTest {
         val chatApiService = mockk<ChatApiService>()
         val bodies = mutableListOf<RequestBody>()
         coEvery { chatApiService.sendChatRequest(capture(bodies)) } throws IllegalStateException("offline")
-        val repository = relaxedInstance<ChatRepositoryImpl>(chatApiService, plainGson)
+        val repository = relaxedInstance<ChatRepositoryImpl>(chatApiService)
         val provider = AiProvider("openai", "gpt <4> & 'o'")
         repository.sendNewChatRequest(TRICKY, null, provider)
         repository.sendContinueChatRequest("again = <x>", "learner", provider, "chat-1", "2-c")

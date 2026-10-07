@@ -56,9 +56,9 @@ class SyncRepositoryImpl @Inject constructor(
     private val shelfDispatchMap: Map<String, suspend (String?, List<JsonObject>) -> Int> by lazy {
         mapOf(
             "resources" to { shelfId, docs -> resourcesRepository.batchInsertMyLibrary(shelfId, docs) },
-            // Courses and teams already read kotlinx; their documents are bridged back until this repository moves.
+            // Courses, meetups and teams already read kotlinx; their documents are bridged back until this repository moves.
             "courses" to { shelfId, docs -> coursesRepository.batchInsertMyCourses(shelfId, docs.map { it.toKotlinx().jsonObject }) },
-            "meetups" to { _, docs -> eventsRepository.batchInsertMeetups(docs) },
+            "meetups" to { _, docs -> eventsRepository.batchInsertMeetups(docs.map { it.toKotlinx().jsonObject }) },
             "teams" to { _, docs -> teamsSyncRepository.batchInsertMyTeams(docs.map { it.toKotlinx().jsonObject }) }
         )
     }

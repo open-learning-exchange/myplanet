@@ -1,20 +1,17 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.Gson
-import com.google.gson.JsonObject
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.roundToInt
+import kotlinx.serialization.json.JsonObject
 import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.RatingPromptLog
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.utils.GsonUtils
-import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.KJson
 
 class RatingsRepositoryImpl @Inject constructor(
-    private val gson: Gson,
     private val ratingDao: RatingDao,
 ) : RatingsRepository {
 
@@ -84,23 +81,23 @@ class RatingsRepositoryImpl @Inject constructor(
             // that bloat the stored blob past SQLite's ~2MB CursorWindow limit, crashing later
             // `SELECT *` reads with SQLiteBlobTooBigException. Attachments aren't needed to
             // round-trip a rating on upload, so drop them before persisting.
-            val userObject = GsonUtils.getJsonObject("user", act).apply { remove("_attachments") }
+            val userObject = JsonObject(KJson.getJsonObject("user", act) - "_attachments")
             Rating().apply {
-                _rev = GsonUtils.getString("_rev", act)
-                _id = GsonUtils.getString("_id", act)
-                id = GsonUtils.getString("_id", act)
-                time = GsonUtils.getLong("time", act)
-                title = GsonUtils.getString("title", act)
-                type = GsonUtils.getString("type", act)
-                item = GsonUtils.getString("item", act)
-                rate = GsonUtils.getInt("rate", act)
+                _rev = KJson.getString("_rev", act)
+                _id = KJson.getString("_id", act)
+                id = KJson.getString("_id", act)
+                time = KJson.getLong("time", act)
+                title = KJson.getString("title", act)
+                type = KJson.getString("type", act)
+                item = KJson.getString("item", act)
+                rate = KJson.getInt("rate", act)
                 isUpdated = false
-                comment = GsonUtils.getString("comment", act)
-                user = GsonUtils.gson.toJson(userObject)
-                userId = GsonUtils.getString("_id", userObject)
-                parentCode = GsonUtils.getString("parentCode", act)
-                planetCode = GsonUtils.getString("planetCode", act)
-                createdOn = GsonUtils.getString("createdOn", act)
+                comment = KJson.getString("comment", act)
+                user = KJson.gsonToJson(userObject)
+                userId = KJson.getString("_id", userObject)
+                parentCode = KJson.getString("parentCode", act)
+                planetCode = KJson.getString("planetCode", act)
+                createdOn = KJson.getString("createdOn", act)
             }
         }
         ratingDao.upsertAll(entities)
@@ -144,7 +141,7 @@ class RatingsRepositoryImpl @Inject constructor(
             createdOn = resolvedUser.parentCode
             parentCode = resolvedUser.parentCode
             planetCode = resolvedUser.planetCode
-            user = gson.toJson(resolvedUser.serialize().toGson())
+            user = KJson.toGsonString(resolvedUser.serialize(), htmlSafe = true)
             this.type = type
             item = itemId
             this.title = title

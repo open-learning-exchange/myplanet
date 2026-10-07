@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.Gson
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
@@ -34,8 +33,7 @@ class ChatRepositoryTest {
             serverUrlMapper,
             sharedPrefManager,
             dispatcherProvider,
-            serverReachabilityProvider,
-            Gson()
+            serverReachabilityProvider
         )
     }
 

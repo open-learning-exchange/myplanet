@@ -5,6 +5,7 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -15,6 +16,18 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.utils.asInt
+import org.ole.planet.myplanet.utils.asJsonArray
+import org.ole.planet.myplanet.utils.asJsonObject
+import org.ole.planet.myplanet.utils.asJsonPrimitive
+import org.ole.planet.myplanet.utils.asString
+import org.ole.planet.myplanet.utils.has
+import org.ole.planet.myplanet.utils.isJsonArray
+import org.ole.planet.myplanet.utils.isJsonObject
+import org.ole.planet.myplanet.utils.isJsonPrimitive
+import org.ole.planet.myplanet.utils.isNumber
+import org.ole.planet.myplanet.utils.size
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SurveysPublicMapperTest {
@@ -108,12 +121,10 @@ class SurveysPublicMapperTest {
 
     @Test
     fun `sanitizeRespondent trims valid age string to integer`() {
-        val user = JsonObject().apply {
+        val user = publicMapper.sanitizeRespondent(JsonObject().apply {
             addProperty("name", "John")
             addProperty("age", " 25 ")
-        }
-
-        publicMapper.sanitizeRespondent(user)
+        }.toKotlinx().jsonObject)
 
         assertTrue(user.has("age"))
         assertTrue(user.get("age").asJsonPrimitive.isNumber)
@@ -122,12 +133,10 @@ class SurveysPublicMapperTest {
 
     @Test
     fun `sanitizeRespondent removes non-numeric age property`() {
-        val user = JsonObject().apply {
+        val user = publicMapper.sanitizeRespondent(JsonObject().apply {
             addProperty("name", "John")
             addProperty("age", "twenty")
-        }
-
-        publicMapper.sanitizeRespondent(user)
+        }.toKotlinx().jsonObject)
 
         assertFalse(user.has("age"))
     }

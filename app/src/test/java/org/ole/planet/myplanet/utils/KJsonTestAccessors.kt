@@ -47,3 +47,19 @@ fun JsonArray.size(): Int = size
 
 private fun JsonElement?.asPrimitive(): JsonPrimitive =
     this as? JsonPrimitive ?: throw IllegalStateException("Not a JSON Primitive: $this")
+
+val JsonElement?.isJsonObject: Boolean
+    get() = this is JsonObject
+
+val JsonElement?.isJsonArray: Boolean
+    get() = this is JsonArray
+
+val JsonElement?.isJsonPrimitive: Boolean
+    get() = this is JsonPrimitive && this !is kotlinx.serialization.json.JsonNull
+
+val JsonElement?.asJsonPrimitive: JsonPrimitive
+    get() = asPrimitive()
+
+/** Gson's `JsonPrimitive.isNumber`: a non-string literal that is not `true`/`false`. */
+val JsonPrimitive.isNumber: Boolean
+    get() = !isString && this !is kotlinx.serialization.json.JsonNull && booleanOrNull == null

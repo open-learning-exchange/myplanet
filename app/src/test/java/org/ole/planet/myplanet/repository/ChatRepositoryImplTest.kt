@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
@@ -13,6 +12,7 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.ServerReachabilityProvider
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatRepositoryImplTest {
@@ -45,7 +46,7 @@ class ChatRepositoryImplTest {
     @Before
     fun setup() {
         every { sharedPrefManager.rawPreferences } returns mockk(relaxed = true)
-        chatRepository = ChatRepositoryImpl(chatDao, chatApiService, serverUrlMapper, sharedPrefManager, dispatcherProvider, serverReachabilityProvider, Gson())
+        chatRepository = ChatRepositoryImpl(chatDao, chatApiService, serverUrlMapper, sharedPrefManager, dispatcherProvider, serverReachabilityProvider)
     }
 
     @After
@@ -137,7 +138,7 @@ class ChatRepositoryImplTest {
         val slot = slot<List<ChatHistory>>()
         coEvery { chatDao.upsertAll(capture(slot)) } returns Unit
 
-        chatRepository.insertChatHistoryList(listOf(chatObj1, chatObj2))
+        chatRepository.insertChatHistoryList(listOf(chatObj1, chatObj2).map { it.toKotlinx().jsonObject })
 
         coVerify(exactly = 1) { chatDao.upsertAll(any()) }
         assertEquals(2, slot.captured.size)
@@ -155,7 +156,7 @@ class ChatRepositoryImplTest {
         val slot = slot<List<ChatHistory>>()
         coEvery { chatDao.upsertAll(capture(slot)) } returns Unit
 
-        chatRepository.insertChatHistoryFromSync(listOf(wrapper))
+        chatRepository.insertChatHistoryFromSync(listOf(wrapper).map { it.toKotlinx().jsonObject })
 
         coVerify(exactly = 1) { chatDao.upsertAll(any()) }
         val inserted = slot.captured.first()

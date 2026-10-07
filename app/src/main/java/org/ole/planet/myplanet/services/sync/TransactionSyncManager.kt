@@ -105,13 +105,13 @@ class TransactionSyncManager @Inject constructor(
      */
     private val tableSyncHandlers: Map<String, suspend (JsonArray) -> Unit> = mapOf(
         "news" to { arr -> voicesRepository.insertNewsList(extractDocs(arr).bridged()) },
-        "feedback" to { arr -> feedbackRepository.insertFeedbackList(extractDocs(arr).toGsonList()) },
-        "chat_history" to { arr -> chatRepository.insertChatHistoryFromSync(rowObjects(arr).toGsonList()) },
+        "feedback" to { arr -> feedbackRepository.insertFeedbackList(extractDocs(arr).bridged()) },
+        "chat_history" to { arr -> chatRepository.insertChatHistoryFromSync(rowObjects(arr).bridged()) },
         "tablet_users" to { arr -> userSyncRepository.insertUsersFromSync(rowObjects(arr).toGsonList()) },
-        "meetups" to { arr -> eventsSyncWriter.insertMeetupsFromSync(extractDocs(arr).toGsonList()) },
+        "meetups" to { arr -> eventsSyncWriter.insertMeetupsFromSync(extractDocs(arr).bridged()) },
         "login_activities" to { arr -> activitiesRepository.insertLoginActivitiesFromSync(extractDocs(arr).toGsonList()) },
         "courses_progress" to { arr -> progressRepository.insertCourseProgressFromSync(extractDocs(arr).toGsonList()) },
-        "ratings" to { arr -> ratingsRepository.insertRatingsFromSync(extractDocs(arr).toGsonList()) },
+        "ratings" to { arr -> ratingsRepository.insertRatingsFromSync(extractDocs(arr).bridged()) },
         "certifications" to { arr -> coursesRepository.insertCertificationsFromSync(arr.bridged()) },
         "tags" to { arr -> tagsRepository.insert(extractDocs(arr).toGsonList()) },
         "team_activities" to { arr -> teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(arr.bridged()) },
@@ -125,7 +125,7 @@ class TransactionSyncManager @Inject constructor(
             val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
             Log.d("SyncPerf", "    courses insertDuration: ${insertDuration}ms for ${arr.size} items")
         },
-        "exams" to { arr -> surveysRepository.bulkInsertExamsFromSync(arr.toGson()) },
+        "exams" to { arr -> surveysRepository.bulkInsertExamsFromSync(arr.bridged()) },
         "submissions" to { arr -> submissionsRepository.bulkInsertFromSync(arr.bridged()) },
         "teams" to { arr -> teamsSyncRepository.get().bulkInsertFromSync(arr.bridged()) }
     )

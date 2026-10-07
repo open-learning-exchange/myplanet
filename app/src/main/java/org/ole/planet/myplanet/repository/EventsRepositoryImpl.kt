@@ -1,26 +1,24 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Log
-import com.google.gson.Gson
-import com.google.gson.JsonObject
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.TimeProvider
-import org.ole.planet.myplanet.utils.toKotlinx
 
 @Singleton
 class EventsRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider,
-    private val meetupDao: MeetupDao,
-    private val gson: Gson
+    private val meetupDao: MeetupDao
 ) : EventsRepository, EventsSyncWriter {
 
     override suspend fun getMeetupsForUser(userId: String): List<Meetup> {
@@ -106,16 +104,16 @@ class EventsRepositoryImpl @Inject constructor(
 
     override suspend fun insertMeetupsFromSync(docs: List<JsonObject>) {
         if (docs.isEmpty()) return
-        val ids = docs.map { GsonUtils.getString("_id", it) }
+        val ids = docs.map { KJson.getString("_id", it) }
         val existingByMeetupId = meetupDao.getByMeetupIds(ids).associateBy { it.meetupId }
 
         val meetupsToInsert = docs.mapNotNull { meetupDoc ->
-            val id = GsonUtils.getString("_id", meetupDoc)
+            val id = KJson.getString("_id", meetupDoc)
             val existing = existingByMeetupId[id]
             if (existing?.updated == true) {
                 null
             } else {
-                Meetup.fromJson(meetupDoc.toKotlinx().jsonObject, "", existing)
+                Meetup.fromJson(meetupDoc, "", existing)
             }
         }
         if (meetupsToInsert.isNotEmpty()) {
@@ -150,16 +148,17 @@ class EventsRepositoryImpl @Inject constructor(
             endTime = params.endTime
             createdDate = timeProvider.now()
             sourcePlanet = params.teamPlanetCode
-            val jo = JsonObject()
-            jo.addProperty("type", "local")
-            jo.addProperty("planetCode", params.teamPlanetCode)
-            sync = gson.toJson(jo)
+            sync = KJson.toGsonString(
+                buildJsonObject {
+                    put("type", "local")
+                    put("planetCode", params.teamPlanetCode)
+                },
+                htmlSafe = true
+            )
             if (params.recurringText != null) {
                 recurring = params.recurringText
             }
-            val ob = JsonObject()
-            ob.addProperty("teams", params.teamId)
-            link = gson.toJson(ob)
+            link = KJson.toGsonString(buildJsonObject { put("teams", params.teamId) }, htmlSafe = true)
             teamId = params.teamId
         }
         return try {

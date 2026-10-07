@@ -12,6 +12,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
@@ -21,6 +22,7 @@ import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RatingsRepositoryImplTest {
@@ -43,7 +45,7 @@ class RatingsRepositoryImplTest {
         }
         gson = Gson()
 
-        repository = RatingsRepositoryImpl(gson, ratingDao)
+        repository = RatingsRepositoryImpl(ratingDao)
     }
 
     @Test
@@ -159,7 +161,7 @@ class RatingsRepositoryImplTest {
                 add("user", JsonObject().apply { addProperty("_id", "user1") })
             }
         )
-        repository.insertRatingsFromSync(docs)
+        repository.insertRatingsFromSync(docs.map { it.toKotlinx().jsonObject })
 
         coVerify(exactly = 1) { ratingDao.upsertAll(any()) }
         assertEquals(1, savedSlot.captured.size)
@@ -183,7 +185,7 @@ class RatingsRepositoryImplTest {
                 })
             }
         )
-        repository.insertRatingsFromSync(docs)
+        repository.insertRatingsFromSync(docs.map { it.toKotlinx().jsonObject })
 
         val storedUser = savedSlot.captured[0].user
         assertNotNull(storedUser)

@@ -4,8 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import androidx.core.content.edit
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -16,8 +14,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
@@ -35,13 +35,11 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
-import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toKotlinx
+import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
 class SurveysRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -95,9 +93,9 @@ class SurveysRepositoryImpl @Inject constructor(
                     val mappedSurvey = createMappedSurvey(newSurveyId, examId, exam, userModel, teamName, teamId)
                     examDao.upsert(mappedSurvey ?: return)
 
-                    // The Gson round trip normalised number literals in the copied choices; keep it until this moves to kotlinx.
+                    // The copied choices keep the numbers the old Gson round trip normalised them to.
                     val questionEntities = ExamQuestion.insertExamQuestions(
-                        ExamQuestion.serializeQuestions(getExamQuestions(examId)).toGson().toKotlinx().jsonArray,
+                        ExamQuestion.serializeQuestions(getExamQuestions(examId)).withGsonBridgedNumbers(),
                         newSurveyId
                     ).mapNotNull { it }
                     if (questionEntities.isNotEmpty()) {
@@ -387,12 +385,10 @@ class SurveysRepositoryImpl @Inject constructor(
         val questions = mutableListOf<ExamQuestion>()
 
         for (row in jsonArray) {
-            var jsonDoc = row.asJsonObject
-            jsonDoc = GsonUtils.getJsonObject("doc", jsonDoc)
-            val id = GsonUtils.getString("_id", jsonDoc)
+            val kDoc = KJson.getJsonObject("doc", KJson.asJsonObject(row))
+            val id = KJson.getString("_id", kDoc)
             if (id.startsWith("_design")) continue
 
-            val kDoc = jsonDoc.toKotlinx().jsonObject
             val exam = StepExam.insertCourseStepsExams("", "", kDoc, "")
             exams += exam
             questions += ExamQuestion.insertExamQuestions(
@@ -510,8 +506,7 @@ class SurveysRepositoryImpl @Inject constructor(
 
     override suspend fun saveSurveyFromPublicApi(surveyDoc: JsonObject) {
         // The Room bulk-insert consumes _all_docs-shaped rows ({ "doc": <exam> }).
-        val syncRow = JsonObject().apply { add("doc", surveyDoc) }
-        bulkInsertExamsFromSync(JsonArray().apply { add(syncRow) })
+        bulkInsertExamsFromSync(JsonArray(listOf(JsonObject(mapOf("doc" to surveyDoc)))))
     }
 
     // e.g. http://192.168.1.73 (LAN primary) falls back to https://uriur.planet.gt (clone)
@@ -523,7 +518,8 @@ class SurveysRepositoryImpl @Inject constructor(
         return try {
             val url = "${baseUrl.trimEnd('/')}/api/public/surveys/$teamId/$surveyId"
             val response = apiInterface.getJsonObject(null, url)
-            if (response.isSuccessful) response.body()?.toGson() else null
+            // Numbers as the old toGson() bridge held them: the document is shown and then stored.
+            if (response.isSuccessful) response.body()?.withGsonBridgedNumbers() else null
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -535,11 +531,11 @@ class SurveysRepositoryImpl @Inject constructor(
     private suspend fun submitPublicSurveyTo(baseUrl: String, teamId: String, surveyId: String, answers: JsonArray, respondent: JsonObject?): Boolean {
         return try {
             val url = "${baseUrl.trimEnd('/')}/api/public/surveys/$teamId/$surveyId/submissions"
-            val body = JsonObject().apply {
-                add("answers", answers)
-                respondent?.let { add("user", it) }
+            val body = buildJsonObject {
+                put("answers", answers)
+                respondent?.let { put("user", it) }
             }
-            apiInterface.postDoc(null, "application/json", url, body.toKotlinx().jsonObject).isSuccessful
+            apiInterface.postDoc(null, "application/json", url, body).isSuccessful
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

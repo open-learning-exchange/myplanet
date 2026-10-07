@@ -11,6 +11,7 @@ import io.mockk.slot
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -20,6 +21,7 @@ import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FeedbackRepositoryImplTest {
@@ -32,7 +34,7 @@ class FeedbackRepositoryImplTest {
     fun setup() {
         feedbackDao = mockk(relaxed = true)
         timeProvider = mockk(relaxed = true)
-        repository = FeedbackRepositoryImpl(feedbackDao, Gson(), timeProvider)
+        repository = FeedbackRepositoryImpl(feedbackDao, timeProvider)
     }
 
     @Test
@@ -98,7 +100,7 @@ class FeedbackRepositoryImplTest {
         val saved = slot<Feedback>()
         coEvery { feedbackDao.upsert(capture(saved)) } returns Unit
 
-        repository.insertFromJson(serverDoc)
+        repository.insertFromJson(serverDoc.toKotlinx().jsonObject)
 
         assertEquals("Closed", saved.captured.status)
         assertFalse(saved.captured.isUploaded)
@@ -124,7 +126,7 @@ class FeedbackRepositoryImplTest {
         val saved = slot<Feedback>()
         coEvery { feedbackDao.upsert(capture(saved)) } returns Unit
 
-        repository.insertFromJson(serverDoc)
+        repository.insertFromJson(serverDoc.toKotlinx().jsonObject)
 
         assertEquals("Closed", saved.captured.status)
         assertFalse(saved.captured.isUploaded)
@@ -143,7 +145,7 @@ class FeedbackRepositoryImplTest {
         val saved = slot<Feedback>()
         coEvery { feedbackDao.upsert(capture(saved)) } returns Unit
 
-        repository.insertFromJson(serverDoc)
+        repository.insertFromJson(serverDoc.toKotlinx().jsonObject)
 
         assertTrue(saved.captured.isUploaded)
         val messages = Gson().fromJson(saved.captured.messages, JsonArray::class.java)

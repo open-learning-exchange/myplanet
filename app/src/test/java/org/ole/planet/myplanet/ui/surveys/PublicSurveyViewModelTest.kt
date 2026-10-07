@@ -14,6 +14,8 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -23,6 +25,7 @@ import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysPublicMapper
 import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PublicSurveyViewModelTest {
@@ -56,7 +59,7 @@ class PublicSurveyViewModelTest {
     fun `loadSurvey success saves survey and emits SurveyLoaded`() = runTest {
         val response = JsonObject().apply {
             add("survey", JsonObject().apply { addProperty("_id", "survey123") })
-        }
+        }.toKotlinx().jsonObject
         coEvery { surveysRepository.fetchPublicSurvey("url", "team1", "survey123") } returns response
         coEvery { surveysRepository.saveSurveyFromPublicApi(any()) } returns Unit
 
@@ -89,7 +92,7 @@ class PublicSurveyViewModelTest {
 
     @Test
     fun `uploadCompletedSubmission uploads payload and emits UploadFinished`() = runTest {
-        val response = JsonObject().apply { addProperty("_id", "survey123") }
+        val response = JsonObject().apply { addProperty("_id", "survey123") }.toKotlinx().jsonObject
         coEvery { surveysRepository.fetchPublicSurvey("url", "team1", "survey123") } returns response
         coEvery { surveysRepository.saveSurveyFromPublicApi(any()) } returns Unit
 
@@ -105,9 +108,9 @@ class PublicSurveyViewModelTest {
             user = "{\"name\":\"John\",\"age\":\" 25 \"}"
         }
         coEvery { submissionsRepository.getLatestSubmissionByParentId("survey123", "complete") } returns submission
-        val mockAnswers = JsonArray()
+        val mockAnswers = JsonArray().toKotlinx().jsonArray
         coEvery { publicMapper.buildPublicAnswers("survey123", submission) } returns mockAnswers
-        every { publicMapper.parseRespondent(submission.user) } returns JsonObject().apply { addProperty("name", "John"); addProperty("age", 25) }
+        every { publicMapper.parseRespondent(submission.user) } returns JsonObject().apply { addProperty("name", "John"); addProperty("age", 25) }.toKotlinx().jsonObject
         coEvery { surveysRepository.submitPublicSurvey("url", "team1", "survey123", mockAnswers, any()) } returns true
 
         val uploadEventDeferred = async { viewModel.events.first() }

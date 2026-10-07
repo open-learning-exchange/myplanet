@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonObject
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysPublicMapper
 import org.ole.planet.myplanet.repository.SurveysRepository
@@ -50,7 +51,7 @@ class PublicSurveyViewModel @Inject constructor(
             val response = surveysRepository.fetchPublicSurvey(baseUrl, teamId, surveyId)
             val surveyDoc = when {
                 response == null -> null
-                response.has("survey") && response.get("survey").isJsonObject -> response.getAsJsonObject("survey")
+                response["survey"] is JsonObject -> response["survey"] as JsonObject
                 else -> response
             }
             _isLoading.value = false

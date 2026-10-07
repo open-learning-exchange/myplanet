@@ -1,23 +1,22 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.Gson
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
-import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.model.Feedback
-import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.distinctByContent
-import org.ole.planet.myplanet.utils.toKotlinx
 
 @Singleton
 class FeedbackRepositoryImpl @Inject constructor(
-    private val feedbackDao: FeedbackDao, private val gson: Gson, private val timeProvider: TimeProvider
+    private val feedbackDao: FeedbackDao, private val timeProvider: TimeProvider
 ) : FeedbackRepository, FeedbackSyncWriter {
 
     override suspend fun createAndSaveFeedback(
@@ -50,13 +49,12 @@ class FeedbackRepositoryImpl @Inject constructor(
         feedback.priority = urgent
         feedback.type = type
         feedback.parentCode = "dev"
-        val obj = JsonObject().apply {
-            addProperty("message", message)
-            addProperty("time", timestamp.toString())
-            addProperty("user", user.orEmpty())
+        val obj = buildJsonObject {
+            put("message", message)
+            put("time", timestamp.toString())
+            put("user", user.orEmpty())
         }
-        val msgArray = JsonArray().apply { add(obj) }
-        feedback.setMessages(msgArray.toKotlinx().jsonArray)
+        feedback.setMessages(JsonArray(listOf(obj)))
         return feedback
     }
 
@@ -88,15 +86,18 @@ class FeedbackRepositoryImpl @Inject constructor(
     override suspend fun addReply(id: String?, message: String, user: String?) {
         id?.let {
             val feedback = feedbackDao.findById(it) ?: return
-            val obj = JsonObject().apply {
-                addProperty("message", message)
-                addProperty("time", timeProvider.now().toString())
-                addProperty("user", user ?: "")
+            val obj = buildJsonObject {
+                put("message", message)
+                put("time", timeProvider.now().toString())
+                put("user", user ?: "")
             }
             val messages = feedback.messages
-            val msgArray = if (messages.isNullOrEmpty()) JsonArray() else gson.fromJson(messages, JsonArray::class.java)
-            msgArray.add(obj)
-            feedback.setMessages(msgArray.toKotlinx().jsonArray)
+            val msgArray = if (messages.isNullOrEmpty()) {
+                JsonArray(emptyList())
+            } else {
+                KJson.parseArrayOrNull(messages) ?: throw NullPointerException("blank feedback messages")
+            }
+            feedback.setMessages(JsonArray(msgArray + obj))
             feedback.isUploaded = false
             feedbackDao.update(feedback)
         }
@@ -107,13 +108,13 @@ class FeedbackRepositoryImpl @Inject constructor(
     }
 
     suspend fun insertFromJson(jsonObject: JsonObject) {
-        val id = GsonUtils.getString("_id", jsonObject)
+        val id = KJson.getString("_id", jsonObject)
         val existing = feedbackDao.findById(id)
         feedbackDao.upsert(mapToFeedback(jsonObject, existing, id))
     }
 
     override suspend fun insertFeedbackList(jsonObjects: List<JsonObject>) {
-        val ids = jsonObjects.map { GsonUtils.getString("_id", it) }
+        val ids = jsonObjects.map { KJson.getString("_id", it) }
         val existingById = feedbackDao.getByIds(ids).associateBy { it.id }
         feedbackDao.upsertAll(
             jsonObjects.zip(ids) { json, id -> mapToFeedback(json, existingById[id], id) }
@@ -129,23 +130,23 @@ class FeedbackRepositoryImpl @Inject constructor(
         return Feedback().apply {
             id = idStr
             _id = idStr
-            title = GsonUtils.getString("title", act)
-            source = GsonUtils.getString("source", act)
-            status = if (hasPendingLocalChange && existing.status == "Closed") existing.status else GsonUtils.getString("status", act)
-            priority = GsonUtils.getString("priority", act)
-            owner = GsonUtils.getString("owner", act)
-            openTime = GsonUtils.getLong("openTime", act)
-            type = GsonUtils.getString("type", act)
-            url = GsonUtils.getString("url", act)
-            parentCode = GsonUtils.getString("parentCode", act)
-            item = GsonUtils.getString("item", act)
-            state = GsonUtils.getString("state", act)
-            _rev = GsonUtils.getString("_rev", act)
+            title = KJson.getString("title", act)
+            source = KJson.getString("source", act)
+            status = if (hasPendingLocalChange && existing.status == "Closed") existing.status else KJson.getString("status", act)
+            priority = KJson.getString("priority", act)
+            owner = KJson.getString("owner", act)
+            openTime = KJson.getLong("openTime", act)
+            type = KJson.getString("type", act)
+            url = KJson.getString("url", act)
+            parentCode = KJson.getString("parentCode", act)
+            item = KJson.getString("item", act)
+            state = KJson.getString("state", act)
+            _rev = KJson.getString("_rev", act)
             if (hasPendingLocalChange) {
                 messages = existing.messages
                 isUploaded = false
             } else {
-                messages = GsonUtils.gson.toJson(GsonUtils.getJsonArray("messages", act))
+                messages = KJson.gsonToJson(KJson.getJsonArray("messages", act))
                 isUploaded = true
             }
         }

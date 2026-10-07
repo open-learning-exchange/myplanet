@@ -1,18 +1,21 @@
 package org.ole.planet.myplanet.repository
 
 import androidx.annotation.VisibleForTesting
-import com.google.gson.Gson
-import com.google.gson.JsonArray
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
 import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.data.room.dao.ChatDao
-import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatRequest
@@ -24,7 +27,7 @@ import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.ServerReachabilityProvider
 
 @Singleton
@@ -34,8 +37,7 @@ class ChatRepositoryImpl @Inject constructor(
     private val serverUrlMapper: ServerUrlMapper,
     private val sharedPrefManager: SharedPrefManager,
     private val dispatcherProvider: DispatcherProvider,
-    private val serverReachabilityProvider: ServerReachabilityProvider,
-    @PlainGson private val gson: Gson
+    private val serverReachabilityProvider: ServerReachabilityProvider
 ) : ChatRepository, ChatSyncWriter {
 
     @VisibleForTesting
@@ -50,7 +52,8 @@ class ChatRepositoryImpl @Inject constructor(
     ): ChatResult {
         return try {
             val chatData = ChatRequest(data = ContentData(user ?: "", query, aiProvider), save = true)
-            val jsonContent = gson.toJson(chatData)
+            // The AI chat body keeps the exact bytes Gson().toJson wrote (HTML-safe escapes).
+            val jsonContent = KJson.gsonToJson(Json.encodeToJsonElement(ChatRequest.serializer(), chatData))
             val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
             val response = chatApiService.sendChatRequest(requestBody)
             val responseBody = response.body()
@@ -58,21 +61,19 @@ class ChatRepositoryImpl @Inject constructor(
                 val chatResponse = responseBody.chat ?: ""
                 val id = responseBody.couchDBResponse?.id ?: ""
                 val rev = responseBody.couchDBResponse?.rev ?: ""
-                val jsonObject = JsonObject().apply {
-                    addProperty("_rev", rev)
-                    addProperty("_id", id)
-                    addProperty("aiProvider", aiProvider.name)
-                    addProperty("user", user)
-                    addProperty("title", query)
-                    addProperty("createdDate", Date().time)
-                    addProperty("updatedDate", Date().time)
-                    val conversationsArray = JsonArray()
-                    val conversationObject = JsonObject().apply {
-                        addProperty("query", query)
-                        addProperty("response", chatResponse)
+                val jsonObject = buildJsonObject {
+                    put("_rev", rev)
+                    put("_id", id)
+                    put("aiProvider", aiProvider.name)
+                    put("user", user)
+                    put("title", query)
+                    put("createdDate", Date().time)
+                    put("updatedDate", Date().time)
+                    val conversationObject = buildJsonObject {
+                        put("query", query)
+                        put("response", chatResponse)
                     }
-                    conversationsArray.add(conversationObject)
-                    add("conversations", conversationsArray)
+                    put("conversations", JsonArray(listOf(conversationObject)))
                 }
                 saveNewChat(jsonObject)
                 ChatResult.Success(chatResponse, id, rev)
@@ -93,7 +94,7 @@ class ChatRepositoryImpl @Inject constructor(
     ): ChatResult {
         return try {
             val continueChatData = ContinueChatRequest(data = Data(user ?: "", message, aiProvider, id, rev), save = true)
-            val jsonContent = gson.toJson(continueChatData)
+            val jsonContent = KJson.gsonToJson(Json.encodeToJsonElement(ContinueChatRequest.serializer(), continueChatData))
             val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
             val response = chatApiService.sendChatRequest(requestBody)
             val responseBody = response.body()
@@ -154,8 +155,8 @@ class ChatRepositoryImpl @Inject constructor(
     override suspend fun insertChatHistoryFromSync(docs: List<JsonObject>) {
         val unwrappedDocs = mutableListOf<JsonObject>()
         for (j in docs) {
-            val jsonDoc = GsonUtils.getJsonObject("doc", j)
-            val id = GsonUtils.getString("_id", jsonDoc)
+            val jsonDoc = KJson.getJsonObject("doc", j)
+            val id = KJson.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 unwrappedDocs.add(jsonDoc)
             }
@@ -168,24 +169,42 @@ class ChatRepositoryImpl @Inject constructor(
         // @Insert(REPLACE) upserts by primary key, replacing the whole row (including the embedded
         // conversations JSON), which subsumes the old "delete orphaned conversations" step.
         val entities = chats.map { json ->
-            val chatHistoryId = GsonUtils.getString("_id", json)
+            val chatHistoryId = KJson.getString("_id", json)
             ChatHistory().apply {
                 id = chatHistoryId
                 _id = chatHistoryId
-                _rev = GsonUtils.getString("_rev", json)
-                title = GsonUtils.getString("title", json)
-                createdDate = "${GsonUtils.getLong("createdDate", json)}"
-                updatedDate = "${GsonUtils.getLong("updatedDate", json)}"
-                user = GsonUtils.getString("user", json)
-                aiProvider = GsonUtils.getString("aiProvider", json)
-                val conversationsArray = GsonUtils.getJsonArray("conversations", json)
-                conversations = conversationsArray.map {
-                    gson.fromJson(it, Conversation::class.java)
-                }
+                _rev = KJson.getString("_rev", json)
+                title = KJson.getString("title", json)
+                createdDate = "${KJson.getLong("createdDate", json)}"
+                updatedDate = "${KJson.getLong("updatedDate", json)}"
+                user = KJson.getString("user", json)
+                aiProvider = KJson.getString("aiProvider", json)
+                val conversationsArray = KJson.getJsonArray("conversations", json)
+                conversations = conversationsArray.mapNotNull(::conversationFrom)
                 lastUsed = Date().time
             }
         }
         chatDao.upsertAll(entities)
+    }
+
+    /**
+     * What Gson's reflective read made of one conversation element: `null` for JSON null (now
+     * dropped from the list), `query`/`response` from any primitive's text, unknown keys ignored,
+     * and an exception for anything that is not an object or a string field holding a container.
+     */
+    private fun conversationFrom(element: JsonElement): Conversation? {
+        if (element is JsonNull) return null
+        val obj = element as? JsonObject ?: throw IllegalStateException("Expected BEGIN_OBJECT but was $element")
+        return Conversation().apply {
+            query = conversationText(obj["query"])
+            response = conversationText(obj["response"])
+        }
+    }
+
+    private fun conversationText(element: JsonElement?): String? = when (element) {
+        null, is JsonNull -> null
+        is JsonPrimitive -> KJson.gsonAsString(element)
+        else -> throw IllegalStateException("Expected a string but was $element")
     }
 
     private suspend fun addConversation(chatHistoryId: String?, query: String?, response: String?, newRev: String?) {
@@ -213,12 +232,11 @@ class ChatRepositoryImpl @Inject constructor(
                 else {
                     val ids = newsEntries.flatMap { news ->
                         try {
-                            val array = gson.fromJson(news.viewIn, JsonArray::class.java)
+                            val array = KJson.parseArrayOrNull(news.viewIn) ?: throw NullPointerException("blank viewIn")
                             val list = mutableListOf<String>()
-                            for (i in 0 until array.size()) {
-                                val elem = array.get(i) as JsonElement
-                                if (elem.isJsonObject) {
-                                    val id = elem.asJsonObject.get("_id")?.asString
+                            for (elem in array) {
+                                if (elem is JsonObject) {
+                                    val id = elem["_id"]?.let { KJson.gsonAsString(it, KJson.GsonNumbers.LITERAL) }
                                     if (id != null) list.add(id)
                                 }
                             }

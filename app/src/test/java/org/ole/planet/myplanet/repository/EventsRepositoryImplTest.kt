@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -9,6 +8,7 @@ import io.mockk.slot
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.SystemTimeProvider
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EventsRepositoryImplTest {
@@ -35,7 +36,7 @@ class EventsRepositoryImplTest {
     @Before
     fun setup() {
         meetupDao = mockk(relaxed = true)
-        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, Gson())
+        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao)
     }
 
     @Test
@@ -154,7 +155,7 @@ class EventsRepositoryImplTest {
         )
         coEvery { meetupDao.getByMeetupIds(any()) } returns emptyList()
 
-        val count = repository.batchInsertMeetups(docs)
+        val count = repository.batchInsertMeetups(docs.map { it.toKotlinx().jsonObject })
         assertEquals(2, count)
 
         val slot = slot<List<Meetup>>()
@@ -169,7 +170,7 @@ class EventsRepositoryImplTest {
             Meetup().apply { meetupId = "m1"; updated = true }
         )
 
-        val count = repository.batchInsertMeetups(docs)
+        val count = repository.batchInsertMeetups(docs.map { it.toKotlinx().jsonObject })
         assertEquals(1, count)
 
         coVerify(exactly = 0) { meetupDao.upsertAll(any()) }
@@ -181,7 +182,7 @@ class EventsRepositoryImplTest {
         coEvery { meetupDao.getByMeetupIds(any()) } throws SilentException("boom")
 
         try {
-            repository.insertMeetupsFromSync(docs)
+            repository.insertMeetupsFromSync(docs.map { it.toKotlinx().jsonObject })
             org.junit.Assert.fail("Expected SilentException to be thrown")
         } catch (_: SilentException) {
             // Expected exception propagated
@@ -193,7 +194,7 @@ class EventsRepositoryImplTest {
         val docs = listOf(JsonObject().apply { addProperty("_id", "m1") })
         coEvery { meetupDao.getByMeetupIds(any()) } throws SilentException("boom")
 
-        val count = repository.batchInsertMeetups(docs)
+        val count = repository.batchInsertMeetups(docs.map { it.toKotlinx().jsonObject })
         assertEquals(0, count)
     }
 
@@ -203,7 +204,7 @@ class EventsRepositoryImplTest {
         coEvery { meetupDao.getByMeetupIds(any()) } throws CancellationException("cancelled")
 
         try {
-            repository.batchInsertMeetups(docs)
+            repository.batchInsertMeetups(docs.map { it.toKotlinx().jsonObject })
             org.junit.Assert.fail("Expected CancellationException to be thrown")
         } catch (_: CancellationException) {
             // Expected exception propagated
