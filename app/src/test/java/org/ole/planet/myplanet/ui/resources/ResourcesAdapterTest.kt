@@ -12,9 +12,11 @@ import org.mockito.Mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.MockitoAnnotations
+import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
+import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.robolectric.RobolectricTestRunner
@@ -184,11 +186,11 @@ class ResourcesAdapterTest {
         adapter.setLibraryList(listOf(model1, model2))
 
         var selectedList: List<ResourceItem>? = null
-        val listener = object : org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener {
+        val listener = object : OnLibraryItemSelectedListener {
             override fun onSelectedListChange(list: List<ResourceItem>) {
                 selectedList = list
             }
-            override fun onTagClicked(tag: org.ole.planet.myplanet.model.TagItem) {}
+            override fun onTagClicked(tag: TagItem) {}
             override fun onResourceClicked(item: ResourceItem) {}
         }
         adapter.setListener(listener)
