@@ -44,7 +44,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.sync.LoginSyncManager
-import org.ole.planet.myplanet.ui.components.showThemeModeDialog
+import org.ole.planet.myplanet.ui.components.showThemeModePicker
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.user.LearnerRegistrationActivity
@@ -208,7 +208,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         }
         val selectDarkModeButton = binding.themeToggleButton
         selectDarkModeButton.setOnClickListener {
-            showThemeModeDialog(this, themeManager)
+            showThemeModePicker(this, themeManager)
         }
     }
 

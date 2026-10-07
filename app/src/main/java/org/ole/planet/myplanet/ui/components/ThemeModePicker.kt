@@ -8,7 +8,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.utils.ThemeMode
 
-fun showThemeModeDialog(context: Context, themeManager: ThemeManager) {
+fun showThemeModePicker(context: Context, themeManager: ThemeManager) {
     val options = arrayOf(
         context.getString(R.string.theme_mode_light),
         context.getString(R.string.theme_mode_dark),

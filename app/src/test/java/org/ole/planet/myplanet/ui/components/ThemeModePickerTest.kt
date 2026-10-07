@@ -30,7 +30,7 @@ import org.robolectric.shadows.ShadowDialog
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE, application = Application::class)
 @LooperMode(LooperMode.Mode.PAUSED)
-class ThemeModeDialogTest {
+class ThemeModePickerTest {
     private lateinit var mockSpm: SharedPrefManager
     private lateinit var themeManager: ThemeManager
 
@@ -47,13 +47,13 @@ class ThemeModeDialogTest {
     }
 
     @Test
-    fun testShowThemeModeDialog() {
+    fun testShowThemeModePicker() {
         val controller = Robolectric.buildActivity(AppCompatActivity::class.java).setup()
         try {
             val activity = controller.get()
             every { mockSpm.getRawString("theme_mode", ThemeMode.FOLLOW_SYSTEM) } returns ThemeMode.LIGHT
 
-            showThemeModeDialog(activity, themeManager)
+            showThemeModePicker(activity, themeManager)
 
             Shadows.shadowOf(Looper.getMainLooper()).idle()
 
@@ -76,13 +76,13 @@ class ThemeModeDialogTest {
     }
 
     @Test
-    fun testShowThemeModeDialogCancel() {
+    fun testShowThemeModePickerCancel() {
         val controller = Robolectric.buildActivity(AppCompatActivity::class.java).setup()
         try {
             val activity = controller.get()
             every { mockSpm.getRawString("theme_mode", ThemeMode.FOLLOW_SYSTEM) } returns ThemeMode.LIGHT
 
-            showThemeModeDialog(activity, themeManager)
+            showThemeModePicker(activity, themeManager)
 
             Shadows.shadowOf(Looper.getMainLooper()).idle()
 
