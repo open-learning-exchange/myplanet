@@ -5,10 +5,14 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.MyLife
 
 @Dao
 interface MyLifeDao {
+    @Query("SELECT * FROM my_life WHERE (:userId IS NULL AND (userId IS NULL OR userId = '' OR userId = '--')) OR (:userId IS NOT NULL AND userId = :userId) ORDER BY weight ASC")
+    fun observeByUserId(userId: String?): Flow<List<MyLife>>
+
     @Query("SELECT * FROM my_life WHERE (:userId IS NULL AND (userId IS NULL OR userId = '' OR userId = '--')) OR (:userId IS NOT NULL AND userId = :userId) ORDER BY weight ASC")
     suspend fun getByUserId(userId: String?): List<MyLife>
 
