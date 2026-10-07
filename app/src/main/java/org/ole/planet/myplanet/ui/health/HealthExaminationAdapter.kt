@@ -11,8 +11,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.JsonObject
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertExaminationBinding
 import org.ole.planet.myplanet.databinding.RowExaminationBinding
@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.health.HealthExaminationAdapter.HealthExaminationViewHolder
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.GsonUtils.getString
+import org.ole.planet.myplanet.utils.KJson.getString
 import org.ole.planet.myplanet.utils.Utilities
 
 class HealthExaminationAdapter(

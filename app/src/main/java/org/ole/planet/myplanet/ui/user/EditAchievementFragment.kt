@@ -24,8 +24,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.chip.Chip
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.util.Calendar
@@ -39,6 +37,9 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.AlertAddAttachmentBinding
@@ -57,6 +58,7 @@ import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -72,8 +74,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     var user: UserEntity? = null
     private var achievement: Achievement? = null
-    private var referenceArray: JsonArray? = null
-    private var achievementArray: JsonArray? = null
+    private var referenceArray: MutableList<JsonElement>? = null
+    private var achievementArray: MutableList<JsonElement>? = null
     private var resourceArray: JsonArray? = null
     private var referenceDialog: AlertDialog? = null
     private var fetchResourcesJob: Job? = null
@@ -114,7 +116,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setListeners()
-        achievementArray = JsonArray()
+        achievementArray = mutableListOf()
         viewModel.loadUserAndAchievement()
         viewLifecycleOwner.lifecycleScope.launch {
             val userModel = viewModel.user.filterNotNull().first()
@@ -193,8 +195,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                         goals = goals,
                         purpose = purpose,
                         sendToNation = sendToNation,
-                        achievements = achievementArray ?: JsonArray(),
-                        references = referenceArray ?: JsonArray(),
+                        achievements = JsonArray(achievementArray.orEmpty()),
+                        references = JsonArray(referenceArray.orEmpty()),
                         createdOn = user?.planetCode ?: "",
                         username = user?.name ?: "",
                         parentCode = user?.parentCode ?: "",
@@ -266,13 +268,13 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         val inflater = LayoutInflater.from(activity)
         for (e in achievementArray ?: return) {
             editAttachmentBinding = EditAttachementBinding.inflate(inflater, binding.llAttachment, false)
-            editAttachmentBinding.tvTitle.text = e.asJsonObject["title"].asString
+            editAttachmentBinding.tvTitle.text = KJson.asJsonObject(e)["title"].asText()
             val flexboxLayout = editAttachmentBinding.flexbox
             val chipContext = ContextThemeWrapper(context, R.style.Theme_App_Chip)
-            val resources = e.asJsonObject.getAsJsonArray("resources") ?: JsonArray()
+            val resources = KJson.asJsonObject(e).resourcesOrEmpty()
             for (element in resources) {
                 val chip = Chip(chipContext).apply {
-                    text = element.asJsonObject["title"].asString
+                    text = KJson.asJsonObject(element)["title"].asText()
                 }
                 flexboxLayout.addView(chip)
             }
@@ -280,7 +282,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                 achievementArray?.remove(e)
                 showAchievementAndInfo()
             }
-            editAttachmentBinding.edit.setOnClickListener { showAddAchievementAlert(e.asJsonObject) }
+            editAttachmentBinding.edit.setOnClickListener { showAddAchievementAlert(KJson.asJsonObject(e)) }
             val editAttachmentView: View = editAttachmentBinding.root
             binding.llAttachment.addView(editAttachmentView)
         }
@@ -291,12 +293,12 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         val inflater = LayoutInflater.from(activity)
         for (e in referenceArray ?: return) {
             editOtherInfoBinding = EditOtherInfoBinding.inflate(inflater, binding.llOtherInfo, false)
-            editOtherInfoBinding.tvTitle.text = e.asJsonObject["name"].asString
+            editOtherInfoBinding.tvTitle.text = KJson.asJsonObject(e)["name"].asText()
             editOtherInfoBinding.ivDelete.setOnClickListener {
                 referenceArray?.remove(e)
                 showReference()
             }
-            editOtherInfoBinding.edit.setOnClickListener { showReferenceDialog(e.asJsonObject) }
+            editOtherInfoBinding.edit.setOnClickListener { showReferenceDialog(KJson.asJsonObject(e)) }
             val editOtherInfoView: View = editOtherInfoBinding.root
             binding.llOtherInfo.addView(editOtherInfoView)
         }
@@ -321,7 +323,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                 return@setOnClickListener
             }
             if (`object` != null) referenceArray?.remove(`object`)
-            if (referenceArray == null) referenceArray = JsonArray()
+            if (referenceArray == null) referenceArray = mutableListOf()
             referenceArray?.add(AchievementEntries.reference(name, alertReferenceBinding.etRelationship.text.toString(), alertReferenceBinding.etPhone.text.toString(), alertReferenceBinding.etEmail.text.toString()))
             showReference()
             referenceDialog?.dismiss()
@@ -330,10 +332,10 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun setPrevReference(ar: Array<EditText>, `object`: JsonObject?) {
         if (`object` != null) {
-            ar[0].setText(`object`["name"].asString)
-            ar[1].setText(`object`["phone"].asString)
-            ar[2].setText(`object`["email"].asString)
-            ar[3].setText(`object`["relationship"].asString)
+            ar[0].setText(`object`["name"].asText())
+            ar[1].setText(`object`["phone"].asText())
+            ar[2].setText(`object`["email"].asText())
+            ar[3].setText(`object`["relationship"].asText())
         }
     }
 
@@ -349,7 +351,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             dpd.datePicker.maxDate = now.timeInMillis
             dpd.show()
         }
-        resourceArray = JsonArray()
+        resourceArray = JsonArray(emptyList())
         val prevList = setUpOldAchievement(
             `object`,
             alertAddAttachmentBinding.etDesc,
@@ -386,14 +388,14 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private fun setUpOldAchievement(`object`: JsonObject?, etDescription: EditText, etTitle: EditText, tvDate: AppCompatTextView): Set<String?> {
         val prevSet: MutableSet<String?> = HashSet()
         if (`object` != null) {
-            etTitle.setText(`object`["title"].asString)
-            etDescription.setText(`object`["description"].asString)
-            tvDate.text = `object`["date"].asString
-            alertAddAttachmentBinding.etLink.setText(`object`["link"]?.asString ?: "")
-            val array = `object`.getAsJsonArray("resources") ?: JsonArray()
-            date = `object`["date"].asString
+            etTitle.setText(`object`["title"].asText())
+            etDescription.setText(`object`["description"].asText())
+            tvDate.text = `object`["date"].asText()
+            alertAddAttachmentBinding.etLink.setText(`object`["link"]?.asText() ?: "")
+            val array = `object`.resourcesOrEmpty()
+            date = `object`["date"].asText()
             for (o in array) {
-                prevSet.add(o.asJsonObject["title"].asString)
+                prevSet.add(KJson.asJsonObject(o)["title"].asText())
             }
             resourceArray = array
         }
@@ -431,6 +433,12 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         }
     }
 
+    /** Gson's `getAsString()` on an entry's member: throws for a missing one, numbers as written. */
+    private fun JsonElement?.asText(): String = KJson.gsonAsString(this, KJson.GsonNumbers.LITERAL)
+
+    /** Gson's `getAsJsonArray("resources")`: throws `ClassCastException` for a member that is not an array. */
+    private fun JsonObject.resourcesOrEmpty(): JsonArray = this["resources"] as JsonArray? ?: JsonArray(emptyList())
+
     override fun onDateSet(datePicker: DatePicker, i: Int, i1: Int, i2: Int) {
         val iso = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
         binding.txtDob.text = iso
@@ -445,7 +453,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         binding.etGoals.setText(achievement?.goals)
         binding.cbSendToNation.isChecked = achievement?.sendToNation.toBoolean()
         binding.txtDob.text = if (TextUtils.isEmpty(user?.dob)) getString(R.string.birth_date) else getFormattedDate(user?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-        resourceArray = JsonArray()
+        resourceArray = JsonArray(emptyList())
         binding.etFname.setText(user?.firstName)
         binding.etMname.setText(user?.middleName)
         binding.etLname.setText(user?.lastName)

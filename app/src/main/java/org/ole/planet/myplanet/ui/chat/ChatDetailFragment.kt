@@ -23,12 +23,15 @@ import androidx.core.view.isNotEmpty
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isPrimaryServerReachable
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -45,7 +48,7 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.TextRevealer
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -71,7 +74,7 @@ class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(Fragme
     private var lastAiProviders: Map<String, Boolean>? = null
 
     private var cachedRawModelsString: String? = null
-    private var cachedModelsMap: Map<String, String>? = null
+    private var cachedModelsMap: Map<String, String?>? = null
 
     private var isUserLoaded = false
     private var isAiUnavailable = false
@@ -604,13 +607,13 @@ class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(Fragme
         }
     }
 
-    private fun getModelsMap(): Map<String, String> {
+    private fun getModelsMap(): Map<String, String?> {
         val modelsString = sharedPrefManager.getRawString("ai_models")
         if (modelsString == cachedRawModelsString && cachedModelsMap != null) {
             return cachedModelsMap!!
         }
-        val parsedMap: Map<String, String> = if (modelsString.isNotEmpty()) {
-            GsonUtils.gson.fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type) ?: emptyMap()
+        val parsedMap: Map<String, String?> = if (modelsString.isNotEmpty()) {
+            parseModelsMap(modelsString) ?: emptyMap()
         } else {
             emptyMap()
         }
@@ -753,6 +756,25 @@ class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(Fragme
     }
 
     companion object {
+        /**
+         * Reads the stored `ai_models` text as Gson's `fromJson(text, Map<String, String>)` did:
+         * `null` for an empty document or `null`, a number or boolean value as its text (numbers
+         * as written), a JSON `null` value kept as `null`. Throws where Gson threw: malformed
+         * text, a document that is not an object, or an object or array value.
+         */
+        internal fun parseModelsMap(text: String): Map<String, String?>? {
+            val root = KJson.parseOrNull(text) ?: return null
+            if (root is JsonNull) return null
+            val models = root as? JsonObject ?: throw SerializationException("Expected an object but was $root")
+            return models.mapValues { (_, model) ->
+                when (model) {
+                    is JsonNull -> null
+                    is JsonPrimitive -> model.content
+                    else -> throw SerializationException("Expected a string but was $model")
+                }
+            }
+        }
+
         const val ARG_COURSE_TITLE = "course_title"
         const val ARG_STEP_TITLE = "step_title"
         const val ARG_STEP_DESCRIPTION = "step_description"

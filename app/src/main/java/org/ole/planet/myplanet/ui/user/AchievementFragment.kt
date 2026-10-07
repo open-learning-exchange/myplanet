@@ -11,13 +11,13 @@ import androidx.core.view.isGone
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.gson.JsonElement
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.time.Instant
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -30,8 +30,8 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.GsonUtils
-import org.ole.planet.myplanet.utils.GsonUtils.getString
+import org.ole.planet.myplanet.utils.KJson
+import org.ole.planet.myplanet.utils.KJson.getString
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -138,7 +138,7 @@ class AchievementFragment : BaseContainerFragment() {
             resource.id?.let { id -> id to resource }
         }.toMap()
         data.achievements.forEach { json ->
-            val element = GsonUtils.gson.fromJson(json, JsonElement::class.java)
+            val element = KJson.parseOrNull(json)
             val view = if (element is JsonObject) createAchievementView(element, resourcesMap) else null
             view?.let {
                 if (it.parent != null) {
@@ -166,8 +166,8 @@ class AchievementFragment : BaseContainerFragment() {
             binding.tvLink.text = link
         }
 
-        val resourceIds = ob.getAsJsonArray("resources")?.mapNotNull {
-            it.asJsonObject?.get("_id")?.asString
+        val resourceIds = (ob["resources"] as JsonArray?)?.mapNotNull {
+            KJson.asJsonObject(it)["_id"]?.let { id -> KJson.gsonAsString(id, KJson.GsonNumbers.LITERAL) }
         } ?: emptyList()
 
         val libraries = resourceIds.mapNotNull { resourcesMap[it] }

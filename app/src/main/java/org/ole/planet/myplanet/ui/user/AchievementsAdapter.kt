@@ -4,12 +4,12 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.JsonObject
+import kotlinx.serialization.json.JsonObject
 import org.ole.planet.myplanet.databinding.RowOtherInfoBinding
 import org.ole.planet.myplanet.ui.user.AchievementsAdapter.AchievementsViewHolder
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.utils.GsonUtils
-import org.ole.planet.myplanet.utils.GsonUtils.getString
+import org.ole.planet.myplanet.utils.KJson
+import org.ole.planet.myplanet.utils.KJson.getString
 
 class AchievementsAdapter(list: List<String>) : ListAdapter<ReferenceRow, AchievementsViewHolder>(DIFF_CALLBACK) {
     init {
@@ -20,11 +20,11 @@ class AchievementsAdapter(list: List<String>) : ListAdapter<ReferenceRow, Achiev
         val rows = list.map { jsonString ->
             var obj: JsonObject? = null
             try {
-                obj = GsonUtils.gson.fromJson(jsonString, JsonObject::class.java)
+                obj = KJson.parseObjectOrNull(jsonString)
             } catch (e: Exception) {
             }
             if (obj == null) {
-                obj = JsonObject()
+                obj = JsonObject(emptyMap())
             }
             ReferenceRow(
                 name = getString("name", obj).ifBlank { "—" },

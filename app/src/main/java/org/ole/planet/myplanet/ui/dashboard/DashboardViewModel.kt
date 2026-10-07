@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.dashboard
 import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.gson.JsonObject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
 import javax.inject.Inject
@@ -25,6 +24,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
@@ -44,10 +44,9 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.NotificationConfig
 import org.ole.planet.myplanet.utils.RetryUtils
-import org.ole.planet.myplanet.utils.toGson
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
@@ -322,8 +321,7 @@ class DashboardViewModel @Inject constructor(
                     val courseName = courseNameDeferred.await()
                     val hasUnfinishedSurvey = hasUnfinishedSurveyDeferred.await()
 
-                    // The challenge status still reads Gson; bridged until the UI moves.
-                    val progress = progressRepository.findProgressForCourse(courseData, courseId)?.toGson()
+                    val progress = progressRepository.findProgressForCourse(courseData, courseId)
 
                     val today = LocalDate.now()
                     val endDate = LocalDate.of(2025, 1, 16)
@@ -362,8 +360,8 @@ class DashboardViewModel @Inject constructor(
 
     private fun getCourseStatusString(progress: JsonObject?, courseName: String?): String {
         return if (progress != null) {
-            val max = GsonUtils.getInt("max", progress)
-            val current = GsonUtils.getInt("current", progress)
+            val max = KJson.getInt("max", progress)
+            val current = KJson.getInt("current", progress)
             if (current == max) {
                 application.getString(org.ole.planet.myplanet.R.string.course_completed, courseName)
             } else {

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.user
 
-import com.google.gson.JsonArray
 import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.slot
@@ -12,6 +11,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.serialization.json.JsonArray as KJsonArray
+import kotlinx.serialization.json.JsonElement
 import org.junit.After
 import org.junit.Assert.assertNull
 import org.junit.Before
@@ -94,14 +94,14 @@ class AchievementEntriesGoldenTest {
         assertNull(AchievementEntries.loaded(null))
     }
 
-    private fun request(achievements: JsonArray, references: JsonArray) = AchievementSaveRequest(
+    private fun request(achievements: List<JsonElement>, references: List<JsonElement>) = AchievementSaveRequest(
         achievementId = "user1@planet1",
         header = "header",
         goals = "goals",
         purpose = "purpose",
         sendToNation = "true",
-        achievements = achievements,
-        references = references,
+        achievements = KJsonArray(achievements),
+        references = KJsonArray(references),
         createdOn = "planet1",
         username = "user1",
         parentCode = "parent",

@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.user
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.gson.JsonArray
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,7 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.JsonArray
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.MyLibrary
@@ -22,7 +21,6 @@ import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserAchievementsRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.utils.toKotlinx
 
 data class AchievementSaveRequest(
     val achievementId: String,
@@ -78,9 +76,8 @@ class AchievementViewModel @Inject constructor(
             goals = request.goals,
             purpose = request.purpose,
             sendToNation = request.sendToNation,
-            // The UI still builds Gson trees; the repository takes kotlinx.
-            achievements = request.achievements.toKotlinx().jsonArray,
-            references = request.references.toKotlinx().jsonArray,
+            achievements = request.achievements,
+            references = request.references,
             createdOn = request.createdOn,
             username = request.username,
             parentCode = request.parentCode,

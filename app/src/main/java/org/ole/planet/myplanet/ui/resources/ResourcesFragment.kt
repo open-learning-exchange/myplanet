@@ -21,7 +21,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.chip.Chip
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Job
@@ -82,7 +81,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     internal var searchTags: MutableList<TagEntity> = ArrayList()
     private lateinit var adapterLibrary: ResourcesAdapter
     var userModel: UserEntity ?= null
-    var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
     private var allResourceModels: List<ResourceListModel> = emptyList()
 

@@ -1,34 +1,36 @@
 package org.ole.planet.myplanet.ui.user
 
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import kotlinx.serialization.json.JsonArray as KJsonArray
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.model.Achievement.Companion.createReference
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.utils.toGson
-import org.ole.planet.myplanet.utils.toGsonAsParsed
+import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
-/** The achievement and reference entries [EditAchievementFragment] edits before they are saved. */
+/**
+ * The achievement and reference entries [EditAchievementFragment] edits before they are saved.
+ * Stored entries keep their numbers as written; entries built here hold numbers the way the
+ * Gson tree they replace held them ([withGsonBridgedNumbers]), so the saved documents are
+ * unchanged.
+ */
 internal object AchievementEntries {
     /** The stored entries being edited, or `null` when there are none to load. */
-    fun loaded(stored: KJsonArray?): JsonArray? = stored?.toGsonAsParsed()
+    fun loaded(stored: JsonArray?): MutableList<JsonElement>? = stored?.toMutableList()
 
-    fun entry(description: String, title: String, date: String, link: String, resources: JsonArray?): JsonObject {
-        val entry = JsonObject()
-        entry.addProperty("description", description)
-        entry.addProperty("title", title)
-        entry.addProperty("date", date)
-        entry.addProperty("link", link)
-        entry.add("resources", resources)
-        return entry
+    fun entry(description: String, title: String, date: String, link: String, resources: JsonArray?): JsonObject = buildJsonObject {
+        put("description", description)
+        put("title", title)
+        put("date", date)
+        put("link", link)
+        put("resources", resources ?: JsonNull)
     }
 
-    fun resources(libraries: List<MyLibrary>): JsonArray {
-        val resources = JsonArray()
-        for (library in libraries) resources.add(library.serializeResource().toGson())
-        return resources
-    }
+    fun resources(libraries: List<MyLibrary>): JsonArray =
+        JsonArray(libraries.map { it.serializeResource().withGsonBridgedNumbers() })
 
     fun reference(name: String, relationship: String, phone: String, email: String): JsonObject =
-        createReference(name, relationship, phone, email).toGson()
+        createReference(name, relationship, phone, email).withGsonBridgedNumbers()
 }

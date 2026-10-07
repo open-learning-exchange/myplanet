@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.user
 
-import com.google.gson.JsonArray
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
@@ -15,7 +14,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.JsonArray
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -30,7 +29,6 @@ import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserAchievementsRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.utils.toKotlinx
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AchievementViewModelTest {
@@ -106,8 +104,8 @@ class AchievementViewModelTest {
         viewModel.loadUserAndAchievement()
         advanceUntilIdle()
 
-        val achievements = JsonArray()
-        val references = JsonArray()
+        val achievements = JsonArray(emptyList())
+        val references = JsonArray(emptyList())
         val profileFields = ProfileFieldsUpdate(firstName = "John")
 
         viewModel.saveAchievement(
@@ -134,8 +132,8 @@ class AchievementViewModelTest {
                 goals = "goals",
                 purpose = "purpose",
                 sendToNation = "true",
-                achievements = achievements.toKotlinx().jsonArray,
-                references = references.toKotlinx().jsonArray,
+                achievements = achievements,
+                references = references,
                 createdOn = "planet1",
                 username = "user1",
                 parentCode = "parent",
@@ -251,8 +249,8 @@ class AchievementViewModelTest {
         vm.loadUserAndAchievement()
         advanceUntilIdle()
 
-        val achievements = JsonArray()
-        val references = JsonArray()
+        val achievements = JsonArray(emptyList())
+        val references = JsonArray(emptyList())
         val profileFields = ProfileFieldsUpdate(firstName = "John")
         val request = AchievementSaveRequest(
             achievementId = "user1@planet1",
@@ -278,8 +276,8 @@ class AchievementViewModelTest {
                 goals = "goals",
                 purpose = "purpose",
                 sendToNation = "true",
-                achievements = achievements.toKotlinx().jsonArray,
-                references = references.toKotlinx().jsonArray,
+                achievements = achievements,
+                references = references,
                 createdOn = "planet1",
                 username = "user1",
                 parentCode = "parent",

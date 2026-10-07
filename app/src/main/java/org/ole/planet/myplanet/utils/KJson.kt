@@ -42,26 +42,28 @@ object KJson {
     }
 
     /**
-     * Reads `news.viewIn` (not the Gson `parsedViewIn` cache, which mirrors it). Throws where
-     * GsonUtils throws: a first entry that is not an object, or a `name` that is an object or a
-     * multi-element array.
+     * The team a post was shared to: the `name` of the first `viewIn` entry when there are at
+     * least two. Reads the `parsedViewIn` cache when it is set, else `news.viewIn` in Gson's
+     * lenient grammar (unreadable text has no name); a number `name` reads as written. Throws
+     * where Gson's `getAsJsonObject`/`getAsString` threw: a first entry that is not an object,
+     * or a `name` that is an object or a multi-element array.
      */
     fun extractSharedTeamName(news: News?): String {
         if (news == null) return ""
         val viewIn = news.viewIn
-        val ar = if (!viewIn.isNullOrEmpty()) {
+        val ar = news.parsedViewIn ?: if (!viewIn.isNullOrEmpty()) {
             try {
-                lenientJson.parseToJsonElement(viewIn) as? JsonArray
+                parseArrayOrNull(viewIn)
             } catch (_: Exception) {
                 null
             }
         } else null
 
         if (ar != null && ar.size > 1) {
-            val ob = ar[0] as? JsonObject ?: throw IllegalStateException("Not a JSON Object: ${ar[0]}")
+            val ob = asJsonObject(ar[0])
             val name = ob["name"]
             if (name != null && name !is JsonNull) {
-                return gsonAsString(name)
+                return gsonAsString(name, GsonNumbers.LITERAL)
             }
         }
         return ""

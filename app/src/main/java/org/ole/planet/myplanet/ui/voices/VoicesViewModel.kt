@@ -28,8 +28,7 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.GsonUtils
-import org.ole.planet.myplanet.utils.toGsonAsParsed
+import org.ole.planet.myplanet.utils.KJson
 
 @HiltViewModel
 class VoicesViewModel @Inject constructor(
@@ -132,7 +131,7 @@ class VoicesViewModel @Inject constructor(
                         news?.labels?.contains(resolvedLabelValue) == true
                     }
                     else -> {
-                        (news?.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)) == selectedLabel
+                        (news?.parsedSharedTeamName ?: KJson.extractSharedTeamName(news)) == selectedLabel
                     }
                 }
             }
@@ -206,7 +205,7 @@ class VoicesViewModel @Inject constructor(
         allLabels.add("Shared Chat")
 
         newsList.forEach { news ->
-            val sharedTeamName = news?.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)
+            val sharedTeamName = news?.parsedSharedTeamName ?: KJson.extractSharedTeamName(news)
             if (sharedTeamName.isNotEmpty()) {
                 allLabels.add(sharedTeamName)
             }
@@ -224,10 +223,9 @@ class VoicesViewModel @Inject constructor(
     fun downloadReferencedResources(list: List<News?>) {
         val resourceIds = mutableSetOf<String>()
         list.forEach { news ->
-            val images = news?.imagesArray?.toGsonAsParsed()
+            val images = news?.imagesArray
             if (images?.isEmpty() == false) {
-                val ob = images[0]?.asJsonObject
-                val resourceId = GsonUtils.getString("resourceId", ob?.asJsonObject)
+                val resourceId = KJson.getString("resourceId", KJson.asJsonObject(images[0]))
                 if (!resourceId.isNullOrBlank()) {
                     resourceIds.add(resourceId)
                 }

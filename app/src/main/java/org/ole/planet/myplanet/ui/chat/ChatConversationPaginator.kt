@@ -4,7 +4,6 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.GsonUtils
 
 class ChatConversationPaginator(private val dispatcherProvider: DispatcherProvider) {
     companion object {
@@ -20,7 +19,7 @@ class ChatConversationPaginator(private val dispatcherProvider: DispatcherProvid
         val parsedConversations = withContext(dispatcherProvider.io) {
             if (newsConversations.isNullOrBlank()) return@withContext emptyList()
             try {
-                GsonUtils.gson.fromJson(newsConversations, Array<Conversation>::class.java).toList()
+                Conversation.listFromJsonText(newsConversations) ?: emptyList()
             } catch (e: Exception) {
                 emptyList()
             }

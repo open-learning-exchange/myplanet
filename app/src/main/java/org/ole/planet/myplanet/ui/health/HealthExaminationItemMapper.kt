@@ -3,9 +3,8 @@ package org.ole.planet.myplanet.ui.health
 import android.text.TextUtils
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.utils.GsonUtils.getString
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
-import org.ole.planet.myplanet.utils.toGsonAsParsed
 
 internal object HealthExaminationItemMapper {
     fun map(
@@ -16,8 +15,8 @@ internal object HealthExaminationItemMapper {
         val displayNameCache = mutableMapOf<String, String>()
         return list.map { item ->
             val formattedDate = formatDate(item.date, "MMM dd, yyyy")
-            val encrypted = userModel?.let { user -> item.getEncryptedDataAsJson(user).toGsonAsParsed() }
-            val createdBy = getString("createdBy", encrypted)
+            val encrypted = userModel?.let { user -> item.getEncryptedDataAsJson(user) }
+            val createdBy = KJson.getString("createdBy", encrypted)
 
             val (resolvedName, isSelfExamination) = if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {
                 val name = displayNameCache.getOrPut(createdBy) {

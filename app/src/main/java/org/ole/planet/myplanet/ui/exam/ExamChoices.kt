@@ -1,7 +1,11 @@
 package org.ole.planet.myplanet.ui.exam
 
-import com.google.gson.JsonObject
-import org.ole.planet.myplanet.utils.GsonUtils
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import org.ole.planet.myplanet.utils.KJson
 
 /** A question's choice: an object choice's `text` and `id`, or a plain choice's label with no [id]. */
 internal data class ExamChoice(val text: String, val id: String?)
@@ -10,23 +14,29 @@ internal data class ExamChoice(val text: String, val id: String?)
 internal object ExamChoices {
     val OTHER = ExamChoice("Other", "other")
 
-    /** Throws, as the question screen always has, on choices text that is not valid JSON. */
+    /**
+     * Throws, as the question screen always has, on choices text that is not valid JSON in
+     * Gson's lenient grammar; text that is valid but not an array has no choices.
+     */
     fun parse(choices: String?): List<ExamChoice> {
-        val array = GsonUtils.getStringAsJsonArray(choices)
-        return (0 until array.size()).map { i ->
-            val element = array[i]
-            if (element.isJsonObject) {
-                val choice = element.asJsonObject
-                ExamChoice(GsonUtils.getString("text", choice), GsonUtils.getString("id", choice))
+        if (choices.isNullOrBlank()) return emptyList()
+        val array = KJson.parseOrNull(choices) as? JsonArray ?: return emptyList()
+        return array.map { element ->
+            if (element is JsonObject) {
+                ExamChoice(KJson.getString("text", element), KJson.getString("id", element))
             } else {
-                ExamChoice(GsonUtils.getString(array, i), null)
+                ExamChoice(label(element), null)
             }
         }
     }
 
+    /** A plain choice's label: a primitive's text (numbers as written), anything else `""`. */
+    private fun label(element: JsonElement): String =
+        if (element is JsonPrimitive && element !is JsonNull) element.content else ""
+
     /** A saved answer's choice; throws on text that is not a JSON object. */
     fun saved(choice: String): ExamChoice {
-        val choiceJson = GsonUtils.gson.fromJson(choice, JsonObject::class.java)
-        return ExamChoice(GsonUtils.getString("text", choiceJson), GsonUtils.getString("id", choiceJson))
+        val choiceJson = KJson.parseObjectOrNull(choice)
+        return ExamChoice(KJson.getString("text", choiceJson), KJson.getString("id", choiceJson))
     }
 }

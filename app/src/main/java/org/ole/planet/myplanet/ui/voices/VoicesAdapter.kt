@@ -20,11 +20,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.github.chrisbanes.photoview.PhotoView
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import java.io.File
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
@@ -40,15 +38,13 @@ import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.ImageUtils
+import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.StableIdGenerator
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.makeExpandable
-import org.ole.planet.myplanet.utils.toGsonAsParsed
-import org.ole.planet.myplanet.utils.toKotlinx
 
 class VoicesAdapter(
     var context: Context,
@@ -318,7 +314,7 @@ class VoicesAdapter(
                         configureEditDeleteButtons(holder, news)
                     }
                     PAYLOAD_EDIT_ACTION -> {
-                        val sharedTeamName = news.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)
+                        val sharedTeamName = news.parsedSharedTeamName ?: KJson.extractSharedTeamName(news)
                         setMessageAndDate(holder, news, sharedTeamName)
                         configureEditDeleteButtons(holder, news)
                         showReplyButton(holder, news, position)
@@ -326,7 +322,7 @@ class VoicesAdapter(
                     }
                     PAYLOAD_VIEW_IN_CHANGED -> {
                         showShareButton(holder, news)
-                        val sharedTeamName = news.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)
+                        val sharedTeamName = news.parsedSharedTeamName ?: KJson.extractSharedTeamName(news)
                         setMessageAndDate(holder, news, sharedTeamName)
                     }
                 }
@@ -342,7 +338,7 @@ class VoicesAdapter(
             val news = getNews(holder, position)
 
             run {
-                val sharedTeamName = news.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)
+                val sharedTeamName = news.parsedSharedTeamName ?: KJson.extractSharedTeamName(news)
                 resetViews(holder)
                 updateReplyCount(holder, news, position)
                 val userModel = configureUser(holder, news)
@@ -595,7 +591,7 @@ class VoicesAdapter(
     private fun parseViewIn(viewIn: String?): JsonArray? {
         if (TextUtils.isEmpty(viewIn)) return null
         return try {
-            GsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
+            KJson.parseArrayOrNull(viewIn)
         } catch (e: Exception) {
             Log.w(TAG, "parseViewIn failed", e)
             null
@@ -605,17 +601,17 @@ class VoicesAdapter(
     private fun parseConversations(conversations: String?): List<Conversation>? {
         if (conversations.isNullOrEmpty()) return null
         return try {
-            GsonUtils.gson.fromJson(conversations, Array<Conversation>::class.java).toList()
+            Conversation.listFromJsonText(conversations)
         } catch (e: Exception) {
             Log.w(TAG, "parseConversations failed", e)
             null
         }
     }
 
-    private fun parseImageUrls(imageUrls: List<String>?): List<JsonObject>? {
+    private fun parseImageUrls(imageUrls: List<String>?): List<JsonObject?>? {
         if (imageUrls.isNullOrEmpty()) return null
         return try {
-            imageUrls.map { GsonUtils.gson.fromJson(it, JsonObject::class.java) }
+            imageUrls.map { KJson.parseObjectOrNull(it) }
         } catch (e: Exception) {
             Log.w(TAG, "parseImageUrls failed", e)
             null
@@ -628,7 +624,7 @@ class VoicesAdapter(
                 if ((it.parsedViewIn == null || it.rawViewIn != it.viewIn) && !TextUtils.isEmpty(it.viewIn)) {
                     val parsed = parseViewIn(it.viewIn)
                     if (parsed != null) {
-                        it.parsedViewIn = parsed.toKotlinx().jsonArray
+                        it.parsedViewIn = parsed
                         it.rawViewIn = it.viewIn
                     }
                 }
@@ -645,7 +641,7 @@ class VoicesAdapter(
                     if (!currentImageUrls.isNullOrEmpty()) {
                         val parsed = parseImageUrls(currentImageUrls)
                         if (parsed != null) {
-                            it.parsedImageUrls = parsed.map { url -> url?.toKotlinx()?.jsonObject }
+                            it.parsedImageUrls = parsed
                             it.rawImageUrls = currentImageUrls
                         }
                     } else {
@@ -653,7 +649,7 @@ class VoicesAdapter(
                         it.rawImageUrls = null
                     }
                 }
-                it.parsedSharedTeamName = GsonUtils.extractSharedTeamName(it)
+                it.parsedSharedTeamName = KJson.extractSharedTeamName(it)
             } catch (e: Exception) {
                 // Catch any parsing exceptions so one bad row doesn't break submitList
                 Log.w(TAG, "preParseNews failed", e)
@@ -856,7 +852,7 @@ class VoicesAdapter(
     }
 
     private fun getParsedImageUrls(news: News?): List<JsonObject?>? {
-        return news?.parsedImageUrls?.map { it?.toGsonAsParsed() }
+        return news?.parsedImageUrls
     }
 
     private fun loadImage(binding: RowNewsBinding, news: News?) {
@@ -869,12 +865,12 @@ class VoicesAdapter(
         if (!parsedImageUrls.isNullOrEmpty()) {
             try {
                 if (parsedImageUrls.size == 1) {
-                    val path = GsonUtils.getString("imageUrl", parsedImageUrls[0])
+                    val path = KJson.getString("imageUrl", parsedImageUrls[0])
                     loadSingleImage(binding, path)
                 } else {
                     binding.llNewsImages.visibility = View.VISIBLE
                     for (imgObject in parsedImageUrls) {
-                        val path = GsonUtils.getString("imageUrl", imgObject)
+                        val path = KJson.getString("imageUrl", imgObject)
                         addImageToContainer(binding, path)
                     }
                 }
@@ -883,19 +879,19 @@ class VoicesAdapter(
             }
         }
 
-        val imagesToLoad = news?.imagesArray?.toGsonAsParsed()
+        val imagesToLoad = news?.imagesArray
         imagesToLoad?.let { imagesArray ->
-            val size = imagesArray.size()
+            val size = imagesArray.size
             if (!imagesArray.isEmpty()) {
                 if (size == 1) {
-                    val ob = imagesArray[0]?.asJsonObject
-                    val resourceId = GsonUtils.getString("resourceId", ob)
+                    val ob = KJson.asJsonObject(imagesArray[0])
+                    val resourceId = KJson.getString("resourceId", ob)
                     loadLibraryImage(binding, resourceId)
                 } else {
                     binding.llNewsImages.visibility = View.VISIBLE
                     for (i in 0 until size) {
-                        val ob = imagesArray[i]?.asJsonObject
-                        val resourceId = GsonUtils.getString("resourceId", ob)
+                        val ob = KJson.asJsonObject(imagesArray[i])
+                        val resourceId = KJson.getString("resourceId", ob)
                         addLibraryImageToContainer(binding, resourceId)
                     }
                 }
