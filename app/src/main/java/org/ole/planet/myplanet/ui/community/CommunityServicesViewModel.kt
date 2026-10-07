@@ -8,15 +8,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class CommunityServicesViewModel @Inject constructor(
-    private val teamsRepository: TeamsRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val teamsRepository: TeamsRepository
 ) : ViewModel() {
 
     private val _teamLinks = MutableStateFlow<List<MyTeam>?>(null)
@@ -27,12 +24,10 @@ class CommunityServicesViewModel @Inject constructor(
     }
 
     fun loadTeamLinks() {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             _teamLinks.value = teamsRepository.getTeamLinks()
         }
     }
 
-    suspend fun isMember(userId: String?, teamId: String): Boolean = withContext(dispatcherProvider.io) {
-        teamsRepository.isMember(userId, teamId)
-    }
+    suspend fun isMember(userId: String?, teamId: String): Boolean = teamsRepository.isMember(userId, teamId)
 }

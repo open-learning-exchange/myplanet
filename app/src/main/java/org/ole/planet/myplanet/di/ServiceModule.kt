@@ -36,7 +36,9 @@ import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.SyncTimeLogger
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
@@ -47,6 +49,13 @@ private const val APPLICATION_SCOPE_LOG_TAG = "ApplicationScope"
 @Module
 @InstallIn(SingletonComponent::class)
 object ServiceModule {
+
+    @Provides
+    @Singleton
+    fun provideNotificationManager(
+        @ApplicationContext context: Context,
+        timeProvider: TimeProvider
+    ): NotificationUtils.NotificationManager = NotificationUtils.NotificationManager(context, timeProvider)
 
     @Provides
     @Singleton
