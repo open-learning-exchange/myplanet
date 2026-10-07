@@ -92,19 +92,11 @@ object NotificationUtils {
         }
     }
 
-    @Volatile
-    private var notificationManagerInstance: NotificationManager? = null
-
     fun getInstance(context: Context): NotificationManager {
-        return notificationManagerInstance ?: synchronized(this) {
-            notificationManagerInstance ?: run {
-                val appCtx = context.applicationContext
-                val entryPoint = EntryPointAccessors.fromApplication(appCtx, CoreDependenciesEntryPoint::class.java)
-                NotificationManager(appCtx, entryPoint.timeProvider()).also {
-                    notificationManagerInstance = it
-                }
-            }
-        }
+        return EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            CoreDependenciesEntryPoint::class.java
+        ).notificationManager()
     }
 
     fun createSurveyNotification(surveyId: String, surveyTitle: String): NotificationConfig {

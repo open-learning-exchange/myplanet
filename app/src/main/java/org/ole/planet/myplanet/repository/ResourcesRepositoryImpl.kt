@@ -666,7 +666,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                     processedCount++
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w("ResourcesRepository", "batchInsertMyLibrary document insertion failed", e)
             }
         }
         if (librariesToUpsert.isNotEmpty()) {
@@ -714,7 +714,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                     savedIds.add(_id)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w("ResourcesRepository", "batchInsertResources document insertion failed", e)
             }
         }
         if (librariesToUpsert.isNotEmpty()) {
@@ -896,6 +896,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             if (matchesCategory) {
                 val relative = file.relativeTo(oleDir).invariantSeparatorsPath
                 if (!relative.contains('/')) return@forEach
+
                 val resourceId = relative.substringBefore('/')
                 val accumulator = grouped.getOrPut(resourceId) { ResourceAccumulator() }
                 accumulator.filePaths.add(file.absolutePath)
@@ -910,7 +911,8 @@ class ResourcesRepositoryImpl @Inject constructor(
 
         return@withContext grouped.map { (resourceId, accumulator) ->
             accumulator.filePaths.sort()
-            val title = titleMap[resourceId]?.takeIf { it.isNotBlank() } ?: context.getString(R.string.storage_unknown_resource)
+            val title = titleMap[resourceId]?.takeIf { it.isNotBlank() }
+                ?: context.getString(R.string.storage_unknown_resource)
             OfflineResourceItem(resourceId, title, accumulator.filePaths, accumulator.totalSize)
         }.sortedBy { it.title }
     }
