@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.services
 import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.google.gson.Gson
 import com.google.gson.JsonParser
 import dagger.Lazy
 import io.mockk.coEvery
@@ -29,12 +30,15 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.AchievementDao
+import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.RetryDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
+import org.ole.planet.myplanet.di.NetworkModule
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.NewsLog
 import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.RetryOperation
@@ -51,12 +55,14 @@ import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadRepositoryImpl
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.repository.VoicesRepositoryImpl
 import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.services.upload.AchievementUploader
 import org.ole.planet.myplanet.services.upload.PhotoUploader
 import org.ole.planet.myplanet.services.upload.TeamsUploader
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
+import org.ole.planet.myplanet.services.upload.VoicesUploader
 import org.ole.planet.myplanet.utils.GoldenFixtures
 import org.ole.planet.myplanet.utils.GoldenFixtures.BIG_LONG
 import org.ole.planet.myplanet.utils.GoldenFixtures.TRICKY
@@ -197,6 +203,24 @@ class UploadWireGoldenTest {
         val (coordinator, configs) = coordinatorFixture(submissions = submissions)
         coordinator.upload(configs.ExamResults)
         assertWire("examResult")
+    }
+
+    @Test
+    fun `news bulk docs`() = runTest {
+        val newsDao = mockk<NewsDao>(relaxed = true)
+        // Every column is text Gson parsed, so number literals reach the document as written.
+        coEvery { newsDao.getAll() } returns listOf(News().apply {
+            id = "news-1"; _id = "n-1"; _rev = "1-n"; message = TRICKY; time = BIG_LONG; createdOn = "planet"; docType = "message"
+            viewableBy = "teams"; viewableId = "team-1"; viewIn = "[$numbersText]"; user = numbersText
+            images = """[{"resourceId":"r1","markdown":"![]($TRICKY_URL)","n":1.50}]"""; labels = listOf("<help>")
+            conversations = "[$numbersText]"; newsId = "c-1"; newsCreatedDate = BIG_LONG
+        })
+        val voices = relaxedInstance<VoicesRepositoryImpl>(NetworkModule.provideGson(), Gson(), newsDao)
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val uploader = relaxedInstance<VoicesUploader>(voices, uploadRepository(testScheduler), RetryQueue(retryRepository), TestDispatcherProvider(dispatcher))
+        uploader.uploadNews()
+        advanceUntilIdle()
+        assertWire("newsBulkDocs")
     }
 
     @Test

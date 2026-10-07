@@ -237,6 +237,35 @@ class RepositoryPayloadGoldenTest {
     }
 
     @Test
+    fun `voices viewIn edits and uploaded images columns`() = runTest {
+        val newsDao = mockk<NewsDao>(relaxed = true)
+        val upserted = mutableListOf<News>()
+        coEvery { newsDao.upsert(capture(upserted)) } returns Unit
+        val uploaded = slot<List<News>>()
+        coEvery { newsDao.upsertAll(capture(uploaded)) } returns Unit
+        // viewIn is text Gson parsed: its number literals are kept as written.
+        val viewIn = """[{"_id":"team_1","section":"teams","name":"T & 'eam' <1>","n":1.50,"e":1e2},""" +
+            """{"section":"community","_id":"planet@parent"},{"_id":"x","section":"teams","sharedDate":1717171717171}]"""
+        coEvery { newsDao.getById("shared") } returns News().apply { id = "shared"; this.viewIn = """[{"_id":"team_1","section":"teams","n":1.50,"e":1e2}]""" }
+        coEvery { newsDao.getById("unshared") } returns News().apply { id = "unshared"; this.viewIn = viewIn }
+        coEvery { newsDao.getByIds(listOf("up")) } returns listOf(News().apply { id = "up" })
+        val repository = relaxedInstance<VoicesRepositoryImpl>(injectedGson, plainGson, sharedPrefManager, newsDao)
+
+        repository.shareNewsToCommunity("shared", "learner", "", "", "Team <1> & 'x'")
+        repository.deletePost("unshared", "")
+        val images = (Json.parseToJsonElement(
+            """[{"resourceId":"r=1","filename":"a&b <c>.jpg","markdown":"![](resources/r=1/a&b <c>.jpg)"}]"""
+        ) as kotlinx.serialization.json.JsonArray).toGson()
+        repository.markNewsUploaded(listOf(NewsUpdateData("up", "up-id", "1-up", images)))
+
+        raw(
+            "voices/viewIn-and-images-columns",
+            upserted.joinToString("\n") { "viewIn=${it.viewIn?.replace(Regex("\"sharedDate\":\\d{13}(?=})"), "\"sharedDate\":<now>")} sharedBy=${it.sharedBy}" } +
+                "\nimages=${uploaded.captured.single().images}"
+        )
+    }
+
+    @Test
     fun `courses sync payload step ids and question choices`() {
         val repository = relaxedInstance<CoursesRepositoryImpl>(sharedPrefManager)
         val doc = serverDoc(

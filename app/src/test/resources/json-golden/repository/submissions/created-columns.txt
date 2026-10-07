@@ -1,0 +1,4 @@
+parent={"_id":"exam-1","name":"Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep","courseId":"course <1>","sourcePlanet":"planet & 'p'","teamShareAllowed":true,"noOfQuestions":3,"isFromNation":true}
+user={"age":"2000-01-01 <dob>","gender":"Tricky <b>&amp;</b> 'q' = \"dq\" \\ / — ünïcødé 漢字 🌍\n\tline\u2028sep","membershipDoc":{"teamId":"local-team"}}
+parent={"_id":"","name":"","courseId":"","sourcePlanet":"","teamShareAllowed":false,"noOfQuestions":0,"isFromNation":false}
+user=null

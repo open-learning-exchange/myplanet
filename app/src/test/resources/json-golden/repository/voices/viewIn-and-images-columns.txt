@@ -1,0 +1,3 @@
+viewIn=[{"_id":"team_1","section":"teams","n":1.50,"e":1e2,"name":"Team \u003c1\u003e \u0026 \u0027x\u0027"},{"section":"community","_id":"planet@parent","sharedDate":<now>}] sharedBy=learner
+viewIn=[{"_id":"team_1","section":"teams","name":"T \u0026 \u0027eam\u0027 \u003c1\u003e","n":1.50,"e":1e2}] sharedBy=
+images=[{"resourceId":"r\u003d1","filename":"a\u0026b \u003cc\u003e.jpg","markdown":"![](resources/r\u003d1/a\u0026b \u003cc\u003e.jpg)"}]

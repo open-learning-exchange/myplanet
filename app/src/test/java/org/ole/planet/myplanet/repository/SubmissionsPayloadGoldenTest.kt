@@ -8,6 +8,7 @@ import io.mockk.slot
 import io.mockk.unmockkAll
 import javax.inject.Provider
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import org.junit.After
@@ -18,6 +19,7 @@ import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.Answer
+import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.MembershipDoc
 import org.ole.planet.myplanet.model.MyTeam
@@ -139,6 +141,29 @@ class SubmissionsPayloadGoldenTest {
         golden("examUpload-exam", repository.getExamUploadPayload(examSubmission(), user()))
         golden("examUpload-survey-stored-user", repository.getExamUploadPayload(surveySubmission(), null))
         golden("examUpload-empty", repository.getExamUploadPayload(Submission(), null))
+    }
+
+    @Test
+    fun `created exam submission parent and user columns`() = runTest {
+        val exam = StepExam(id = "exam-1", name = TRICKY, courseId = "course <1>", sourcePlanet = "planet & 'p'", noOfQuestions = 3, isFromNation = true, isTeamShareAllowed = true)
+        val withTeam = repository.createExamSubmission(CreateExamSubmissionRequest("org.couchdb.user:learner", "2000-01-01 <dob>", TRICKY, exam, "survey", "local-team"))
+        val noTeam = repository.createExamSubmission(CreateExamSubmissionRequest(null, null, null, StepExam(), "exam", null))
+        assertMatchesRawGolden(
+            "repository/submissions/created-columns",
+            "parent=${withTeam.parent}\nuser=${withTeam.user}\nparent=${noTeam.parent}\nuser=${noTeam.user}"
+        )
+    }
+
+    @Test
+    fun `completed submission user column`() = runTest {
+        // The caller passes UserSurveyProfile.toJson() bridged with toGson(): numbers as the bridge holds them.
+        val profile = Json.parseToJsonElement(
+            """{"name":${Json.encodeToString(String.serializer(), TRICKY)},"age":1.50,"n":1e2,"big":$BIG_LONG,"none":null,"list":[1,"<x>"]}"""
+        ).jsonObject.toGson()
+        val text = slot<String>()
+        coEvery { submissionDao.markComplete("sub-1", capture(text)) } returns 1
+        repository.markSubmissionComplete("sub-1", profile)
+        assertMatchesRawGolden("repository/submissions/markComplete-user-column", text.captured)
     }
 
     @Test
