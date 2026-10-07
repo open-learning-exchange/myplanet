@@ -34,7 +34,6 @@ import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
 import org.ole.planet.myplanet.databinding.HeaderFinanceBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.Transaction
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
@@ -301,20 +300,22 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                         Utilities.toast(activity, getString(R.string.amount_is_required))
                         return@setPositiveButton
                     }
-                    val imageUri = selectedImageUri
-                    val imageName = imageUri?.let { FileUtils.getDisplayName(requireContext(), it, timeProvider) }
-                    val imageData = imageUri?.let { FileUtils.readBytesFromUri(requireContext(), it) }
                     val capturedDate = date ?: return@setPositiveButton
+                    val dateInMillis = capturedDate.timeInMillis
+                    val capturedTeamId = teamId
+                    val parentCode = user?.parentCode
+                    val planetCode = user?.planetCode
+                    val imageUri = selectedImageUri
+
                     viewModel.createTransaction(
-                        teamId = teamId,
+                        teamId = capturedTeamId,
                         type = type,
                         note = note,
                         amount = amountValue,
-                        date = capturedDate.timeInMillis,
-                        parentCode = user?.parentCode,
-                        planetCode = user?.planetCode,
-                        imageName = imageName,
-                        imageData = imageData,
+                        date = dateInMillis,
+                        parentCode = parentCode,
+                        planetCode = planetCode,
+                        imageUri = imageUri,
                     )
                 }
             }.setNegativeButton("Cancel", null).show()

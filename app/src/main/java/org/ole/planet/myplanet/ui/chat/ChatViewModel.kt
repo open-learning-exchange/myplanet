@@ -63,6 +63,7 @@ class ChatViewModel @Inject constructor(
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val loadedCount: Int get() = paginator.loadedCount
     private var allChats: List<ChatHistory> = emptyList()
+    private var searchIndex: ChatSearch.Index? = null
     private val _refreshChatSignal = MutableSharedFlow<Unit>(replay = 1)
     val refreshChatSignal: SharedFlow<Unit> = _refreshChatSignal.asSharedFlow()
     init {
@@ -136,6 +137,7 @@ class ChatViewModel @Inject constructor(
                 val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
                 val targets = cachedShareTargets ?: loadShareTargets(config.parentCode, config.communityName, currentUser?._id).also { cachedShareTargets = it }
                 allChats = chatHistory
+                searchIndex = null
                 ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets, chatRepository.extractSharedViewInIds(newsMessages))
             }
             result?.let { data ->
@@ -158,7 +160,8 @@ class ChatViewModel @Inject constructor(
             } else {
                 ChatSearchMode.RESPONSE
             }
-            val results = ChatSearch.search(query, mode, allChats, dispatcherProvider.default)
+            val index = searchIndex ?: ChatSearch.Index(allChats).also { searchIndex = it }
+            val results = ChatSearch.search(query, mode, index, dispatcherProvider.default)
             _filteredChats.value = results
         }
     }
