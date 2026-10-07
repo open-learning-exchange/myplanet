@@ -2,10 +2,12 @@ package org.ole.planet.myplanet.base
 
 import android.content.Context
 import android.widget.TextView
-import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.Before
 import org.junit.Test
 
@@ -33,8 +35,9 @@ class BaseContainerFragmentTest {
 
     @Test
     fun `setRatings should call CourseRatingUtils and set average rating when json is provided`() {
-        val jsonObject = JsonObject()
-        jsonObject.addProperty("averageRating", 4.5)
+        val jsonObject = buildJsonObject {
+            put("averageRating", 4.5)
+        }
 
         // Setup mock variables
         val ratingTextView = mockk<TextView>(relaxed = true)

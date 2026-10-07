@@ -1,9 +1,10 @@
 package org.ole.planet.myplanet.utils
 
-import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -23,17 +24,17 @@ class DocumentOriginTest {
 
     @Test
     fun addDocumentOriginStampsDeviceAndApp() {
-        val json = JsonObject().addDocumentOrigin()
+        val json = buildJsonObject { addDocumentOrigin() }
 
-        assertEquals("uniqueIdentifier", json.get("androidId").asString)
-        assertEquals("myplanet", json.get("app").asString)
+        assertEquals("uniqueIdentifier", json.getValue("androidId").jsonPrimitive.content)
+        assertEquals("myplanet", json.getValue("app").jsonPrimitive.content)
     }
 
     @Test
     fun addDocumentOriginUsesProvidedAndroidId() {
-        val json = JsonObject().addDocumentOrigin("explicitAndroidId")
+        val json = buildJsonObject { addDocumentOrigin("explicitAndroidId") }
 
-        assertEquals("explicitAndroidId", json.get("androidId").asString)
-        assertEquals(DOCUMENT_ORIGIN, json.get("app").asString)
+        assertEquals("explicitAndroidId", json.getValue("androidId").jsonPrimitive.content)
+        assertEquals(DOCUMENT_ORIGIN, json.getValue("app").jsonPrimitive.content)
     }
 }

@@ -1,11 +1,11 @@
 package org.ole.planet.myplanet.utils
 
 import androidx.annotation.VisibleForTesting
-import com.google.gson.JsonObject
 import java.util.Collections
 import java.util.Locale
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import org.ole.planet.myplanet.model.ExamQuestion
-import org.ole.planet.myplanet.utils.GsonUtils.getStringAsJsonArray
 
 object ExamAnswerUtils {
     // Process-lifetime cache mapping a stringified choices JSON to a Map of id -> text.
@@ -22,13 +22,6 @@ object ExamAnswerUtils {
     internal fun cacheSize(): Int = choicesCache.size
 
     fun choiceDisplayValue(choice: JsonObject): String? {
-        return GsonUtils.getString("text", choice).ifBlank {
-            GsonUtils.getString("res", choice).ifBlank { null }
-        }
-    }
-
-    /** kotlinx twin of [choiceDisplayValue]. */
-    fun choiceDisplayValue(choice: kotlinx.serialization.json.JsonObject): String? {
         return KJson.getString("text", choice).ifBlank {
             KJson.getString("res", choice).ifBlank { null }
         }
@@ -40,11 +33,9 @@ object ExamAnswerUtils {
         var map = choicesCache.get(choicesString)
         if (map == null) {
             val mutableMap = mutableMapOf<String, String>()
-            val choices = getStringAsJsonArray(choicesString)
-            for (i in 0 until choices.size()) {
-                if (choices[i].isJsonObject) {
-                    val obj = choices[i].asJsonObject
-                    val choiceId = GsonUtils.getString("id", obj)
+            for (obj in parseChoices(choicesString)) {
+                if (obj is JsonObject) {
+                    val choiceId = KJson.getString("id", obj)
                     val displayValue = choiceDisplayValue(obj)
                     if (choiceId.isNotEmpty() && displayValue != null) {
                         mutableMap[choiceId] = displayValue
@@ -57,6 +48,10 @@ object ExamAnswerUtils {
 
         return map[id] ?: id
     }
+
+    /** A question's choices in Gson's lenient grammar; throws on malformed text, none for any other document. */
+    private fun parseChoices(choices: String): JsonArray =
+        if (choices.isBlank()) JsonArray(emptyList()) else KJson.parseOrNull(choices) as? JsonArray ?: JsonArray(emptyList())
 
     fun checkCorrectAnswer(
         ans: String,

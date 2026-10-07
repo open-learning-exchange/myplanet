@@ -3,8 +3,13 @@ package org.ole.planet.myplanet.utils
 import android.content.Context
 import android.widget.TextView
 import androidx.appcompat.widget.AppCompatRatingBar
-import com.google.gson.JsonObject
 import java.util.Locale
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import org.ole.planet.myplanet.R
 
 internal data class RatingDisplay(
@@ -27,17 +32,34 @@ object CourseRatingUtils {
 
     internal fun parseRating(obj: JsonObject?): Triple<Float?, Int?, Float?> {
         val averageRating = obj?.get("averageRating")
-            ?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }
-            ?.asFloat
+            ?.takeIf { isNumber(it) }
+            ?.let { gsonAsFloat(it) }
         val totalRatings = obj?.get("total")
-            ?.takeIf { it.isJsonPrimitive && it.asJsonPrimitive.isNumber }
-            ?.asInt
+            ?.takeIf { isNumber(it) }
+            ?.let { KJson.gsonAsInt(it) }
         val userRating = when {
-            obj?.has("ratingByUser") == true -> obj["ratingByUser"].asFloat
-            obj?.has("userRating") == true -> obj["userRating"].asFloat
+            obj?.containsKey("ratingByUser") == true -> gsonAsFloat(obj["ratingByUser"])
+            obj?.containsKey("userRating") == true -> gsonAsFloat(obj["userRating"])
             else -> null
         }
         return Triple(averageRating, totalRatings, userRating)
+    }
+
+    /** Gson's `isJsonPrimitive && isNumber`: a primitive that is neither a string, a boolean nor `null`. */
+    private fun isNumber(element: JsonElement): Boolean =
+        element is JsonPrimitive && element !is JsonNull && !element.isString && element.booleanOrNull == null
+
+    /**
+     * Gson's `JsonElement.getAsFloat()`: a primitive's text parsed like `Float.parseFloat` (so a
+     * boolean or non-numeric string throws `NumberFormatException`), a one-element array as its
+     * element; throws for `null`, an object or any other array.
+     */
+    private fun gsonAsFloat(element: JsonElement?): Float = when (element) {
+        null -> throw NullPointerException("JsonElement is null")
+        is JsonNull -> throw UnsupportedOperationException("JsonNull")
+        is JsonPrimitive -> element.content.toFloat()
+        is JsonObject -> throw UnsupportedOperationException("JsonObject")
+        is JsonArray -> if (element.size == 1) gsonAsFloat(element[0]) else throw IllegalStateException("Array must have size 1, but has size ${element.size}")
     }
 
     fun showRating(

@@ -3,11 +3,12 @@ package org.ole.planet.myplanet.utils
 import android.content.Context
 import android.widget.TextView
 import androidx.appcompat.widget.AppCompatRatingBar
-import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import java.util.Locale
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -65,9 +66,9 @@ class CourseRatingUtilsTest {
 
     @Test
     fun parseRating_withInvalidNumberTypes_returnsNullsForAverageAndTotal() {
-        val obj = JsonObject().apply {
-            addProperty("averageRating", "four")
-            addProperty("total", "hundred")
+        val obj = buildJsonObject {
+            put("averageRating", "four")
+            put("total", "hundred")
         }
         val (avg, total, user) = CourseRatingUtils.parseRating(obj)
         assertNull(avg)
@@ -77,9 +78,9 @@ class CourseRatingUtilsTest {
 
     @Test
     fun parseRating_ratingByUser_takesPrecedenceOverUserRating() {
-        val obj = JsonObject().apply {
-            addProperty("ratingByUser", 2.0f)
-            addProperty("userRating", 3.0f)
+        val obj = buildJsonObject {
+            put("ratingByUser", 2.0f)
+            put("userRating", 3.0f)
         }
         val (_, _, user) = CourseRatingUtils.parseRating(obj)
         assertEquals(2.0f, user)
@@ -87,8 +88,8 @@ class CourseRatingUtilsTest {
 
     @Test
     fun parseRating_withUserRatingOnly_returnsUserRating() {
-        val obj = JsonObject().apply {
-            addProperty("userRating", 3.0f)
+        val obj = buildJsonObject {
+            put("userRating", 3.0f)
         }
         val (_, _, user) = CourseRatingUtils.parseRating(obj)
         assertEquals(3.0f, user)
@@ -120,9 +121,9 @@ class CourseRatingUtilsTest {
         val ratingBar: AppCompatRatingBar = mockk(relaxed = true)
         every { context.getString(R.string.rating_count_format, 100) } returns "100 ratings"
 
-        val obj = JsonObject().apply {
-            addProperty("averageRating", 4.5f)
-            addProperty("total", 100)
+        val obj = buildJsonObject {
+            put("averageRating", 4.5f)
+            put("total", 100)
         }
 
         CourseRatingUtils.showRating(context, obj, average, ratingCount, ratingBar)
