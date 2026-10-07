@@ -7,6 +7,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -128,5 +130,39 @@ class SurveysPublicMapperTest {
         publicMapper.sanitizeRespondent(user)
 
         assertFalse(user.has("age"))
+    }
+
+    @Test
+    fun `parseRespondent returns null for null, blank, or empty object json`() {
+        assertNull(publicMapper.parseRespondent(null))
+        assertNull(publicMapper.parseRespondent(""))
+        assertNull(publicMapper.parseRespondent("   "))
+        assertNull(publicMapper.parseRespondent("{}"))
+    }
+
+    @Test
+    fun `parseRespondent returns null for malformed json or non-object json`() {
+        assertNull(publicMapper.parseRespondent("{not json"))
+        assertNull(publicMapper.parseRespondent("[1]"))
+    }
+
+    @Test
+    fun `parseRespondent parses valid respondent and sanitizes age`() {
+        val result = publicMapper.parseRespondent("{\"name\":\"John\",\"age\":\" 25 \"}")
+        assertNotNull(result)
+        assertEquals("John", result!!.get("name").asString)
+        assertEquals(25, result.get("age").asInt)
+    }
+
+    @Test
+    fun `parseRespondent removes non-numeric age property`() {
+        val result = publicMapper.parseRespondent("{\"age\":\"abc\"}")
+        assertNotNull(result)
+        assertFalse(result!!.has("age"))
+    }
+
+    @Test
+    fun `parseRespondent catches sanitize throw and returns null for non-primitive age`() {
+        assertNull(publicMapper.parseRespondent("{\"age\":{\"x\":1}}"))
     }
 }

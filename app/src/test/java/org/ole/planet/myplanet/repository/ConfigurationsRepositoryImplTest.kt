@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import com.google.gson.Gson
+import io.mockk.clearStaticMockk
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
@@ -32,10 +33,12 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -46,7 +49,9 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.AppVersionProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.Sha256Utils
 import org.ole.planet.myplanet.utils.StoragePathResolver
@@ -67,6 +72,7 @@ class ConfigurationsRepositoryImplTest {
     private val appDatabase: AppDatabase = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
     private val storagePathResolver: StoragePathResolver = mockk(relaxed = true)
+    private val appVersionProvider: AppVersionProvider = mockk { every { versionName } returns "1.0.0" }
     // Handed to the repository under test; cancelled in @After so nothing escapes the fork.
     private val serviceScope = CoroutineScope(SupervisorJob() + testDispatcher)
 
@@ -78,19 +84,32 @@ class ConfigurationsRepositoryImplTest {
         override val unconfined = testDispatcher
     }
 
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkStatic(Log::class)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkStatic(Log::class)
+        }
+    }
+
     @get:Rule
     val temporaryFolder = TemporaryFolder()
 
     @After
     fun tearDown() {
-        unmockkStatic(Log::class)
+        clearStaticMockk(Log::class)
         serviceScope.cancel()
     }
 
     @Before
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
-        mockkStatic(Log::class)
         every { Log.e(any<String>(), any<String>()) } returns 0
         every { Log.e(any<String>(), any<String>(), any<Throwable>()) } returns 0
         repository = ConfigurationsRepositoryImpl(
@@ -103,7 +122,8 @@ class ConfigurationsRepositoryImplTest {
             dispatcherProvider,
             TestTimeProvider(),
             storagePathResolver,
-            Gson()
+            Gson(),
+            appVersionProvider
         )
     }
 
@@ -481,6 +501,25 @@ class ConfigurationsRepositoryImplTest {
     }
 
     @Test
+    fun `checkServerAvailability does not probe alternative url when primary succeeds`() = runTest(testDispatcher) {
+        val updateUrl = "http://test.url"
+        every { sharedPrefManager.getServerUrl() } returns updateUrl
+
+        val mapping = ServerUrlMapper.UrlMapping("http://primary.url", "http://alt.url")
+        every { serverUrlMapper.processUrl(updateUrl) } returns mapping
+
+        val mockBody = "1,2,3,4,5,6,7,8".toResponseBody("text/plain".toMediaTypeOrNull())
+        val response = Response.success(200, mockBody)
+        coEvery { apiInterface.isPlanetAvailable("http://primary.url") } returns response
+
+        val result = repository.checkServerAvailability()
+
+        assertTrue(result)
+        coVerify(exactly = 0) { apiInterface.isPlanetAvailable("http://alt.url") }
+        verify(exactly = 0) { serverUrlMapper.updateUrlPreferences(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `checkServerAvailability falls back to alternative url when primary fails`() = runTest(testDispatcher) {
         val updateUrl = "http://test.url"
         every { sharedPrefManager.getServerUrl() } returns updateUrl
@@ -590,7 +629,6 @@ class ConfigurationsRepositoryImplTest {
         val response = Response.success(200, mockBody)
         coEvery { apiInterface.getChecksum(any()) } returns response
 
-        io.mockk.mockkStatic(android.util.Log::class)
         every { android.util.Log.w(any(), any<String>()) } returns 0
 
         val mockFile = mockk<java.io.File>()
@@ -604,7 +642,6 @@ class ConfigurationsRepositoryImplTest {
 
         assertFalse(result)
 
-        io.mockk.unmockkStatic(android.util.Log::class)
         io.mockk.unmockkConstructor(Sha256Utils::class)
     }
 
@@ -656,8 +693,6 @@ class ConfigurationsRepositoryImplTest {
         val url = "http://test.url"
         val pin = "1234"
 
-        every { context.getString(R.string.app_version) } returns "1.0.0"
-
         val mapping = ServerUrlMapper.UrlMapping(url, null)
         every { serverUrlMapper.processUrl(url) } returns mapping
 
@@ -701,7 +736,6 @@ class ConfigurationsRepositoryImplTest {
 
         every { sharedPrefManager.setParentCode("parent_code") } returns Unit
 
-        every { context.getString(R.string.http_protocol) } returns "http"
         every { context.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
 
         io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
@@ -731,8 +765,6 @@ class ConfigurationsRepositoryImplTest {
         val url = "http://test.url"
         val pin = "1234"
 
-        every { context.getString(R.string.app_version) } returns "1.0.0"
-
         val mapping = ServerUrlMapper.UrlMapping(url, null)
         every { serverUrlMapper.processUrl(url) } returns mapping
 
@@ -748,7 +780,6 @@ class ConfigurationsRepositoryImplTest {
         io.mockk.mockkObject(VersionUtils)
         every { VersionUtils.isVersionAllowed(any(), any()) } returns false
 
-        every { context.getString(R.string.http_protocol) } returns "http"
         every { context.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
 
         io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
@@ -776,7 +807,6 @@ class ConfigurationsRepositoryImplTest {
         val versionsUrl = "$url/versions"
         coEvery { apiInterface.getConfiguration(versionsUrl) } returns Response.error(500, "".toResponseBody("text/plain".toMediaTypeOrNull()))
 
-        every { context.getString(R.string.http_protocol) } returns "http"
         every { context.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
 
         io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
@@ -787,6 +817,117 @@ class ConfigurationsRepositoryImplTest {
         assertTrue(result is ConfigurationsRepository.ConfigurationResult.Failure)
 
         io.mockk.unmockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
+    }
+
+    @Test
+    fun `getMinApk returns nation server error message when extractProtocol returns https protocol`() = runTest(testDispatcher) {
+        val url = "https://test.url"
+        val pin = "1234"
+
+        val mapping = ServerUrlMapper.UrlMapping(url, null)
+        every { serverUrlMapper.processUrl(url) } returns mapping
+
+        val versionsUrl = "$url/versions"
+        coEvery { apiInterface.getConfiguration(versionsUrl) } returns Response.error(500, "".toResponseBody("text/plain".toMediaTypeOrNull()))
+
+        every { context.getString(R.string.device_couldn_t_reach_nation_server) } returns "Nation server error"
+
+        io.mockk.mockkObject(NetworkUtils)
+        every { NetworkUtils.extractProtocol(url) } returns "https://"
+
+        val result = repository.getMinApk(url, pin)
+
+        assertTrue(result is ConfigurationsRepository.ConfigurationResult.Failure)
+        val failureResult = result as ConfigurationsRepository.ConfigurationResult.Failure
+        assertEquals("Nation server error", failureResult.errorMessage)
+        assertEquals(url, failureResult.url)
+
+        io.mockk.unmockkObject(NetworkUtils)
+    }
+
+    @Test
+    fun `getMinApk returns local server error message when extractProtocol returns http protocol`() = runTest(testDispatcher) {
+        val url = "http://test.url"
+        val pin = "1234"
+
+        val mapping = ServerUrlMapper.UrlMapping(url, null)
+        every { serverUrlMapper.processUrl(url) } returns mapping
+
+        val versionsUrl = "$url/versions"
+        coEvery { apiInterface.getConfiguration(versionsUrl) } returns Response.error(500, "".toResponseBody("text/plain".toMediaTypeOrNull()))
+
+        every { context.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
+
+        io.mockk.mockkObject(NetworkUtils)
+        every { NetworkUtils.extractProtocol(url) } returns "http://"
+
+        val result = repository.getMinApk(url, pin)
+
+        assertTrue(result is ConfigurationsRepository.ConfigurationResult.Failure)
+        val failureResult = result as ConfigurationsRepository.ConfigurationResult.Failure
+        assertEquals("Local server error", failureResult.errorMessage)
+        assertEquals(url, failureResult.url)
+
+        io.mockk.unmockkObject(NetworkUtils)
+    }
+
+    @Test
+    fun `getMinApk returns local server error message when extractProtocol returns uppercase HTTPS scheme`() = runTest(testDispatcher) {
+        val url = "HTTPS://test.url"
+        val pin = "1234"
+
+        val mapping = ServerUrlMapper.UrlMapping(url, null)
+        every { serverUrlMapper.processUrl(url) } returns mapping
+
+        val versionsUrl = "$url/versions"
+        coEvery { apiInterface.getConfiguration(versionsUrl) } returns Response.error(500, "".toResponseBody("text/plain".toMediaTypeOrNull()))
+
+        every { context.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
+
+        io.mockk.mockkObject(NetworkUtils)
+        every { NetworkUtils.extractProtocol(url) } returns "HTTPS://"
+
+        val result = repository.getMinApk(url, pin)
+
+        assertTrue(result is ConfigurationsRepository.ConfigurationResult.Failure)
+        val failureResult = result as ConfigurationsRepository.ConfigurationResult.Failure
+        assertEquals("Local server error", failureResult.errorMessage)
+        assertEquals(url, failureResult.url)
+
+        io.mockk.unmockkObject(NetworkUtils)
+    }
+
+    @Test
+    fun `getMinApk uses appVersionProvider versionName and does not call context getString for app version`() = runTest(testDispatcher) {
+        val url = "http://test.url"
+        val pin = "1234"
+
+        val mapping = ServerUrlMapper.UrlMapping(url, null)
+        every { serverUrlMapper.processUrl(url) } returns mapping
+
+        val versionsUrl = "$url/versions"
+        val versionsJson = kotlinx.serialization.json.buildJsonObject {
+            put("minapk", "1.0.0")
+        }
+        val versionsResponse = Response.success(200, versionsJson)
+
+        coEvery { apiInterface.getConfiguration(versionsUrl) } returns versionsResponse
+
+        io.mockk.mockkObject(VersionUtils)
+        every { VersionUtils.isVersionAllowed(any(), any()) } returns false
+
+        every { context.getString(R.string.device_couldn_t_reach_local_server) } returns "Local server error"
+
+        io.mockk.mockkObject(NetworkUtils)
+        every { NetworkUtils.extractProtocol(url) } returns "http://"
+
+        repository.getMinApk(url, pin)
+
+        verify { VersionUtils.isVersionAllowed("1.0.0", any()) }
+        verify(exactly = 0) { context.getString(R.string.app_version) }
+
+        io.mockk.unmockkObject(VersionUtils)
+        io.mockk.unmockkObject(NetworkUtils)
     }
 
     @Test

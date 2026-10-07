@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Log
+import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import javax.inject.Inject
@@ -25,8 +26,10 @@ import org.ole.planet.myplanet.services.sync.AdaptiveBatchProcessor
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.GsonUtils.getInt
 import org.ole.planet.myplanet.utils.GsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.GsonUtils.getJsonObject
+import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.GsonUtils.gson
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -38,7 +41,7 @@ import org.ole.planet.myplanet.utils.toKotlinx
 class SyncRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     private val dispatcherProvider: DispatcherProvider,
-    private val resourcesRepository: ResourcesRepository,
+    private val resourcesRepository: ResourcesSyncWriter,
     private val coursesRepository: CoursesRepository,
     private val eventsRepository: EventsSyncWriter,
     private val teamsSyncRepository: TeamsSyncRepository,
@@ -190,6 +193,46 @@ class SyncRepositoryImpl @Inject constructor(
             logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} failed: ${e.message}")
         }
         return processedCount
+    }
+
+    override suspend fun fetchResourceTotalRows(): Int? {
+        val url = UrlUtils.getUrl()
+        val header = UrlUtils.header
+        val response = ApiClient.executeWithRetryAndWrap {
+            apiInterface.getJsonObject(header, "$url/resources/_all_docs?limit=0")
+        }
+        val body = response?.body()?.toGson()
+        return if (body != null && body.has("total_rows")) {
+            getInt("total_rows", body)
+        } else {
+            null
+        }
+    }
+
+    override suspend fun fetchResourceRows(limit: Int, skip: Int): JsonArray? {
+        val url = UrlUtils.getUrl()
+        val header = UrlUtils.header
+        val response = ApiClient.executeWithRetryAndWrap {
+            apiInterface.getJsonObject(header, "$url/resources/_all_docs?include_docs=true&limit=$limit&skip=$skip")
+        }
+        val body = response?.body()?.toGson() ?: return null
+        return getJsonArray("rows", body)
+    }
+
+    override fun filterSyncableResourceDocs(rows: JsonArray): List<JsonObject> {
+        val validDocuments = mutableListOf<JsonObject>()
+        for (rowElement in rows) {
+            val rowObj = rowElement.asJsonObject
+            if (rowObj.has("doc")) {
+                val doc = getJsonObject("doc", rowObj)
+                val id = getString("_id", doc)
+
+                if (!id.startsWith("_design") && id.isNotBlank()) {
+                    validDocuments.add(doc)
+                }
+            }
+        }
+        return validDocuments
     }
 
     override suspend fun syncDashboardKeyId(role: String?): SyncUiState {

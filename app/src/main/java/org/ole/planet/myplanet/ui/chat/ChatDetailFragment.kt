@@ -28,7 +28,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isPrimaryServerReachable
@@ -47,6 +46,7 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.TextRevealer
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.hasPermission
@@ -269,13 +269,7 @@ class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(Fragme
         }
         mAdapter = ChatAdapter(requireContext(), binding.recyclerGchat) { response, onUpdate, onComplete ->
             val job = viewLifecycleOwner.lifecycleScope.launch {
-                var currentIndex = 0
-                while (currentIndex < response.length) {
-                    if (!kotlin.coroutines.coroutineContext.isActive) return@launch
-                    onUpdate(response.substring(0, currentIndex + 1))
-                    currentIndex++
-                    kotlinx.coroutines.delay(10L)
-                }
+                TextRevealer.reveal(response, onUpdate)
                 onComplete()
             }
             return@ChatAdapter { job.cancel() }
