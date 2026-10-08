@@ -79,7 +79,7 @@ class MembersFragment : BaseTeamFragment() {
         requestsViewModel.fetchMembers(teamId)
 
         collectWhenStarted(requestsViewModel.uiState) { state ->
-            requestsAdapter?.setData(state.members, state.isLeader, state.memberCount)
+            requestsAdapter?.setData(state.members, state.isLeader, state.memberCount, state.memberLimit)
             val hasRequests = state.members.isNotEmpty()
             binding.llRequestsSection.visibility = if (hasRequests) View.VISIBLE else View.GONE
             if (hasRequests) {

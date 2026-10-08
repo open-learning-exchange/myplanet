@@ -1,10 +1,8 @@
 package org.ole.planet.myplanet.ui.courses
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +17,7 @@ import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.utils.MarkdownUtils
+import org.ole.planet.myplanet.utils.StoragePathResolver
 
 sealed interface CourseDetailUiState {
     object Loading : CourseDetailUiState
@@ -36,7 +35,7 @@ sealed interface CourseDetailUiState {
 
 @HiltViewModel
 class CourseDetailViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+    private val storagePathResolver: StoragePathResolver,
     private val coursesRepository: CoursesRepository,
     private val ratingsRepository: RatingsRepository
 ) : ViewModel() {
@@ -68,7 +67,7 @@ class CourseDetailViewModel @Inject constructor(
 
                     val markdownDescription = MarkdownUtils.prependBaseUrlToImages(
                         courseDetail.course.description,
-                        "file://${context.getExternalFilesDir(null)}/ole/",
+                        "file://${storagePathResolver.resolveExternalFilesDir()}/ole/",
                         600, 350
                     )
 
