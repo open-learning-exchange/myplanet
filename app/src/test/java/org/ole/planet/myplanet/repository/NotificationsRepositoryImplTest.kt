@@ -789,20 +789,38 @@ class NotificationsRepositoryImplTest {
         val mockUserRepo = mockk<UserRepository>(relaxed = true)
         io.mockk.every { userRepository.get() } returns mockUserRepo
 
-        val joinNotif1 = AppNotification().apply {
-            id = "j1"
-            userId = "user1"
-            type = "join_request"
-            message = "Join 1"
-            relatedId = "rel1"
-        }
-        val joinNotif2 = AppNotification().apply {
-            id = "j2"
-            userId = "user1"
-            type = "join_request"
-            message = "Join 2"
-            relatedId = "rel2"
-        }
+        val joinNotif1 = NotificationPayload(
+            id = "j1",
+            userId = "user1",
+            message = "Join 1",
+            isRead = false,
+            createdAt = 0L,
+            type = "join_request",
+            relatedId = "rel1",
+            title = null,
+            link = null,
+            priority = 0,
+            isFromServer = false,
+            rev = null,
+            needsSync = false,
+            subType = null
+        )
+        val joinNotif2 = NotificationPayload(
+            id = "j2",
+            userId = "user1",
+            message = "Join 2",
+            isRead = false,
+            createdAt = 0L,
+            type = "join_request",
+            relatedId = "rel2",
+            title = null,
+            link = null,
+            priority = 0,
+            isFromServer = false,
+            rev = null,
+            needsSync = false,
+            subType = null
+        )
 
         coEvery { notificationDao.getNotifications("user1", "", false) } returns listOf(joinNotif1, joinNotif2)
         coEvery { notificationDao.getUnreadCount("user1", false) } returns 2
@@ -827,13 +845,22 @@ class NotificationsRepositoryImplTest {
         val mockUserRepo = mockk<UserRepository>(relaxed = true)
         io.mockk.every { userRepository.get() } returns mockUserRepo
 
-        val joinNotif1 = AppNotification().apply {
-            id = "j1"
-            userId = "user1"
-            type = "join_request"
-            message = "Join 1"
-            relatedId = "rel1"
-        }
+        val joinNotif1 = NotificationPayload(
+            id = "j1",
+            userId = "user1",
+            message = "Join 1",
+            isRead = false,
+            createdAt = 0L,
+            type = "join_request",
+            relatedId = "rel1",
+            title = null,
+            link = null,
+            priority = 0,
+            isFromServer = false,
+            rev = null,
+            needsSync = false,
+            subType = null
+        )
 
         coEvery { notificationDao.getNotifications("user1", "", false) } returns listOf(joinNotif1)
         coEvery { notificationDao.getUnreadCount("user1", false) } returns 1
