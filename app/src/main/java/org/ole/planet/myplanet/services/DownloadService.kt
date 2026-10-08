@@ -179,8 +179,7 @@ class DownloadService : Service() {
     private fun getRemainingCount(priorityUrls: Set<String>? = null): Int {
         val priority = priorityUrls ?: preferences.getStringSet(PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
         val pendingUrls = preferences.getStringSet(PENDING_DOWNLOADS_KEY, emptySet()) ?: emptySet()
-        val allUrls = priority + pendingUrls
-        return allUrls.count { it !in processedUrls }
+        return countRemaining(priority, pendingUrls, processedUrls)
     }
 
     private fun persistProcessedUrls() {
@@ -641,6 +640,10 @@ class DownloadService : Service() {
         private const val NOTIFICATION_UPDATE_INTERVAL_MS = 500L
         const val PENDING_DOWNLOADS_KEY = "pending_downloads_queue"
         const val PRIORITY_DOWNLOADS_KEY = "priority_downloads_queue"
+
+        @VisibleForTesting
+        internal fun countRemaining(priority: Set<String>, pending: Set<String>, processed: Set<String>): Int =
+            priority.count { it !in processed } + pending.count { it !in processed && it !in priority }
 
         internal fun getNextPriorityUrl(downloadQueue: List<QueuedUrl>): QueuedUrl? {
             if (downloadQueue.isEmpty()) return null

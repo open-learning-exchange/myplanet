@@ -220,6 +220,75 @@ class SyncTimeLoggerTest {
     }
 
     @Test
+    fun testGenerateSummaryGolden() {
+        mockkStatic(Log::class)
+        every { Log.isLoggable(any(), any()) } returns true
+        every { Log.d(any(), any()) } returns 0
+
+        var currentTime = 0L
+        val timeProvider = mockk<TimeProvider> {
+            every { now() } answers { currentTime }
+        }
+
+        val testDispatcher = UnconfinedTestDispatcher()
+        val logger = SyncTimeLogger(
+            timeProvider = timeProvider,
+            appScope = CoroutineScope(testDispatcher),
+            dispatcherProvider = TestDispatcherProvider(testDispatcher),
+            sharedPrefManager = mockk(relaxed = true),
+            serverUrlMapper = mockk(relaxed = true),
+            diagnosticsRepository = mockk(relaxed = true),
+            serverReachabilityProvider = mockk(relaxed = true)
+        )
+
+        logger.startLogging()
+
+        currentTime = 100L
+        logger.logApiCall("http://server/api/v1/courses", duration = 200L, success = true, itemsReturned = 5)
+        logger.logApiCall("http://server/api/v1/courses", duration = 100L, success = false, itemsReturned = 0)
+        logger.logApiCall("http://server/api/v1/users", duration = 150L, success = true, itemsReturned = 2)
+        logger.logApiCall("http://server/api/v1/users", duration = 150L, success = true, itemsReturned = 8)
+
+        currentTime = 500L
+        logger.logDbOperation("INSERT", "CourseModel", duration = 250L, itemCount = 5)
+        logger.logDbOperation("UPDATE", "CourseModel", duration = 150L, itemCount = 3)
+        logger.logDbOperation("INSERT", "UserModel", duration = 200L, itemCount = 2)
+        logger.logDbOperation("UPDATE", "UserModel", duration = 200L, itemCount = 8)
+
+        currentTime = 2000L
+        logger.stopLogging()
+
+        val expectedSummary = """
+            === SYNC TIME SUMMARY ===
+            Total sync time: 0 min 2 sec (2.00s)
+
+            PROCESS BREAKDOWN:
+
+            API CALL STATISTICS:
+              Total API calls: 4 (Success: 3, Failed: 1)
+              Total API time: 600ms (30.0% of total sync)
+                Courses                  : 2 calls,      300ms total,    150ms avg, 5 items
+                Users                    : 2 calls,      300ms total,    150ms avg, 10 items
+
+            DB OPERATION STATISTICS:
+              Total Db operations: 4
+              Total Db time: 800ms (40.0% of total sync)
+              Total items processed: 18
+                UserModel                : 2 ops,      400ms total,    200ms avg, 10 items
+                CourseModel              : 2 ops,      400ms total,    200ms avg, 8 items
+
+            PERFORMANCE INSIGHTS:
+              Network time: 30.0%
+              Database time: 40.0%
+              Other processing: 30.0%
+            =========================
+        """.trimIndent()
+
+        val summary = logger.generateSummary()
+        assertEquals(expectedSummary, summary)
+    }
+
+    @Test
     fun testStopLoggingWhenUploadCrashLogThrows() {
         mockkStatic(Log::class)
         every { Log.isLoggable(any(), any()) } returns false
