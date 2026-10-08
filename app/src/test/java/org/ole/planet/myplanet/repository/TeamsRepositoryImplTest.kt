@@ -7,6 +7,8 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkAll
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -22,6 +24,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -32,6 +35,7 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
+import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamTask
@@ -819,5 +823,125 @@ class TeamsRepositoryImplTest {
         coVerify(exactly = 1) { teamDao.upsert(match { it._id == "team1" }) }
         coVerify(exactly = 1) { teamDao.upsert(match { it._id == "team2" }) }
         coVerify(exactly = 1) { teamDao.upsert(match { it._id == "team3" }) }
+    }
+
+    @Test
+    fun `requestToJoin takes planet code and type from the team`() = runTest(testDispatcher) {
+        val team = MyTeam().apply { _id = "team1"; teamPlanetCode = "teamPlanet"; teamType = "sync" }
+        coEvery { teamDao.getByTeamIdUserIdAndDocType("team1", "user1", any()) } returns null
+        coEvery { teamDao.getByTeamIdAndDocType("team1", "request") } returns emptyList()
+        coEvery { teamDao.getById("team1") } returns team
+        val saved = slot<MyTeam>()
+        coEvery { teamDao.upsert(capture(saved)) } returns Unit
+
+        teamsRepository.requestToJoin("team1", "user1", "userPlanet", "local")
+
+        assertEquals("request", saved.captured.docType)
+        assertEquals("teamPlanet", saved.captured.teamPlanetCode)
+        assertEquals("sync", saved.captured.teamType)
+        assertEquals("userPlanet", saved.captured.userPlanetCode)
+    }
+
+    @Test
+    fun `requestToJoin does not add a second pending request`() = runTest(testDispatcher) {
+        coEvery { teamDao.getByTeamIdUserIdAndDocType("team1", "user1", "membership") } returns null
+        coEvery { teamDao.getByTeamIdAndDocType("team1", "request") } returns listOf(MyTeam().apply { userId = "user1" })
+
+        teamsRepository.requestToJoin("team1", "user1", "userPlanet", "local")
+
+        coVerify(exactly = 0) { teamDao.upsert(any()) }
+    }
+
+    @Test
+    fun `createTeamAndAddMember sets the default member limit`() = runTest(testDispatcher) {
+        val saved = slot<List<MyTeam>>()
+        coEvery { teamDao.upsertAll(capture(saved)) } returns Unit
+        val request = CreateTeamRequest(
+            name = "Team", description = "", services = "", rules = "",
+            teamType = "local", isPublic = false, category = "team"
+        )
+
+        teamsRepository.createTeamAndAddMember(request, UserEntity().apply { _id = "user1" })
+
+        assertEquals(MyTeam.DEFAULT_MEMBER_LIMIT, saved.captured.first().limit)
+    }
+
+    @Test
+    fun `getTeamsForUpload refiles requests made under the requester's planet code`() = runTest(testDispatcher) {
+        val team = MyTeam().apply { _id = "team1"; teamPlanetCode = "teamPlanet"; teamType = "sync" }
+        val misfiled = MyTeam().apply { _id = "r1"; _rev = "1-a"; docType = "request"; teamId = "team1"; teamPlanetCode = "userPlanet" }
+        coEvery { teamDao.getMisfiledRequests() } returns listOf(misfiled)
+        coEvery { teamDao.getByIds(listOf("team1")) } returns listOf(team)
+        coEvery { teamDao.getUpdatedTeams() } returns emptyList()
+        val saved = slot<List<MyTeam>>()
+        coEvery { teamDao.upsertAll(capture(saved)) } returns Unit
+
+        teamsRepository.getTeamsForUpload()
+
+        assertEquals(listOf("r1"), saved.captured.map { it._id })
+        assertEquals("teamPlanet", saved.captured.single().teamPlanetCode)
+        assertEquals("sync", saved.captured.single().teamType)
+        assertTrue(saved.captured.single().updated)
+        assertEquals("1-a", saved.captured.single()._rev)
+    }
+
+    @Test
+    fun `rejecting a synced request uploads its deletion`() = runTest(testDispatcher) {
+        runTransactionsInline()
+        val request = MyTeam().apply { _id = "r1"; _rev = "1-a"; docType = "request"; teamId = "team1"; userId = "user1" }
+        coEvery { teamDao.getByTeamIdAndDocType("team1", "request") } returns listOf(request)
+
+        val result = teamsRepository.respondToMemberRequest("team1", "user1", accept = false)
+
+        assertTrue(result.isSuccess)
+        coVerify { teamDao.upsert(match { it._id == "r1" && it.isDeletePending && it.updated }) }
+        coVerify(exactly = 0) { teamDao.deleteById(any()) }
+    }
+
+    @Test
+    fun `rejecting an unsynced request deletes it locally`() = runTest(testDispatcher) {
+        runTransactionsInline()
+        val request = MyTeam().apply { _id = "r1"; docType = "request"; teamId = "team1"; userId = "user1" }
+        coEvery { teamDao.getByTeamIdAndDocType("team1", "request") } returns listOf(request)
+
+        teamsRepository.respondToMemberRequest("team1", "user1", accept = false)
+
+        coVerify { teamDao.deleteById("r1") }
+    }
+
+    @Test
+    fun `accepting a request fails once the team is full`() = runTest(testDispatcher) {
+        runTransactionsInline()
+        val request = MyTeam().apply { _id = "r1"; docType = "request"; teamId = "team1"; userId = "user1" }
+        coEvery { teamDao.getByTeamIdAndDocType("team1", "request") } returns listOf(request)
+        coEvery { teamDao.getById("team1") } returns MyTeam().apply { _id = "team1"; limit = 12 }
+        coEvery { teamDao.countActiveMembershipsByTeamId("team1") } returns 12
+
+        val result = teamsRepository.respondToMemberRequest("team1", "user1", accept = true)
+
+        assertTrue(result.isFailure)
+        coVerify(exactly = 0) { teamDao.upsert(any()) }
+    }
+
+    @Test
+    fun `accepting a request succeeds below the limit`() = runTest(testDispatcher) {
+        runTransactionsInline()
+        val request = MyTeam().apply { _id = "r1"; docType = "request"; teamId = "team1"; userId = "user1" }
+        coEvery { teamDao.getByTeamIdAndDocType("team1", "request") } returns listOf(request)
+        coEvery { teamDao.getById("team1") } returns MyTeam().apply { _id = "team1"; limit = 12 }
+        coEvery { teamDao.countActiveMembershipsByTeamId("team1") } returns 11
+
+        val result = teamsRepository.respondToMemberRequest("team1", "user1", accept = true)
+
+        assertTrue(result.isSuccess)
+        coVerify { teamDao.upsert(match { it._id == "r1" && it.docType == "membership" && it.updated }) }
+    }
+
+    private fun runTransactionsInline() {
+        mockkStatic("androidx.room.RoomDatabaseKt")
+        val blockSlot = slot<suspend () -> Unit>()
+        coEvery { appDatabase.withTransaction(capture(blockSlot)) } coAnswers {
+            blockSlot.captured.invoke()
+        }
     }
 }

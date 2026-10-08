@@ -95,9 +95,9 @@ class ProgressRepositoryImpl @Inject constructor(
             val submissions = submissionsByCourseId[course.courseId].orEmpty()
 
             val exams = examsByCourseId[course.courseId] ?: emptyList()
-            val examIds: List<String> = exams.mapNotNull { it.id }
+            val examIds: List<String> = exams.map { it.id }
 
-            if (!submissions.isNullOrEmpty()) {
+            if (submissions.isNotEmpty()) {
                 submissionMap(submissions, examIds, obj)
             }
             arr.add(obj)
@@ -179,7 +179,7 @@ class ProgressRepositoryImpl @Inject constructor(
             }
         }
 
-        val submissionIds = submissions.mapNotNull { it.id }
+        val submissionIds = submissions.map { it.id }
         val allAnswers = if (submissionIds.isEmpty()) emptyList() else submissionsRepositoryLazy.get().getAnswersBySubmissionIds(submissionIds)
 
         val questionIds = allAnswers.mapNotNull { it.questionId }.distinct()
@@ -189,9 +189,9 @@ class ProgressRepositoryImpl @Inject constructor(
         val answersBySubmissionId = allAnswers.groupBy { it.submissionId }
 
         var totalMistakes = 0
+        val mistakesMap = HashMap<String, Int>()
         submissions.forEach { submission ->
             val answers = answersBySubmissionId[submission.id] ?: emptyList()
-            val mistakesMap = HashMap<String, Int>()
             answers.forEach { r ->
                 r.questionId?.let { questionId ->
                     val question = questionsMap[questionId]
@@ -204,6 +204,8 @@ class ProgressRepositoryImpl @Inject constructor(
                     }
                 }
             }
+        }
+        if (submissions.isNotEmpty()) {
             obj.add("stepMistake", GsonUtils.gson.toJsonTree(mistakesMap).asJsonObject)
             obj.addProperty("mistakes", totalMistakes)
         }
@@ -288,7 +290,7 @@ class ProgressRepositoryImpl @Inject constructor(
         courseProgress.id = docId
         courseProgress._id = docId
         courseProgress._rev = GsonUtils.getString("_rev", act)
-        if (courseProgress.passed != true) {
+        if (!courseProgress.passed) {
             courseProgress.passed = GsonUtils.getBoolean("passed", act) || localPassed
         }
         courseProgress.stepNum = GsonUtils.getInt("stepNum", act)
