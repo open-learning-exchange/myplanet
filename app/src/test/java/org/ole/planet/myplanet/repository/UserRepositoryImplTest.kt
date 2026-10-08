@@ -579,4 +579,32 @@ class UserRepositoryImplTest {
             assertEquals("Cancelled", e.message)
         }
     }
+
+    @Test
+    fun `fetchUserSecurityData logs error on Exception without leaking credentials`() = runTest(testDispatcher) {
+        every { UrlUtils.getUrl() } returns "http://satellite:1234@test.host"
+        coEvery { apiInterface.getJsonObject(any(), any()) } throws java.io.IOException("Network error")
+
+        repository.fetchUserSecurityData("bob")
+
+        val tagSlot = slot<String>()
+        val msgSlot = slot<String>()
+        val errSlot = slot<Throwable>()
+        verify { Log.e(capture(tagSlot), capture(msgSlot), capture(errSlot)) }
+
+        assertEquals("UserRepositoryImpl", tagSlot.captured)
+
+        val capturedMessages = mutableListOf<String>()
+        val msgSlot2 = slot<String>()
+
+        verify { Log.e(any(), capture(msgSlot2), any()) }
+        capturedMessages.add(msgSlot2.captured)
+
+        // Assert no logged message contains credentials or sensitive URL tokens
+        capturedMessages.forEach { msg ->
+            assertFalse("Log message contains sensitive credential '1234': $msg", msg.contains("1234"))
+            assertFalse("Log message contains sensitive credential 'satellite': $msg", msg.contains("satellite"))
+            assertFalse("Log message contains host 'test.host': $msg", msg.contains("test.host"))
+        }
+    }
 }

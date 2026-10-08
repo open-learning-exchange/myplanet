@@ -10,7 +10,6 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.spyk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -52,14 +51,6 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UploadManagerTest {
-
-    @Test
-    fun `uploadTeams delegates to teamsUploader`() = testScope.runTest {
-        coEvery { teamsUploader.uploadTeams() } returns Unit
-        uploadManager.uploadTeams()
-        advanceUntilIdle()
-        coVerify(exactly = 1) { teamsUploader.uploadTeams() }
-    }
 
     private lateinit var uploadManager: UploadManager
     private val teamsUploader: TeamsUploader = mockk(relaxed = true)
@@ -113,21 +104,19 @@ class UploadManagerTest {
 
         photoUploader = PhotoUploader(submissionsRepository, TestDispatcherProvider(testDispatcher), testScope, uploadRepository)
 
-        uploadManager = spyk(
-            UploadManager(
-                uploadCoordinator,
-                uploadRepository,
-                userRepository,
-                uploadConfigs,
-                resourcesRepository,
-                teamsUploader,
-                activitiesRepository,
-                TestDispatcherProvider(testDispatcher),
-                testScope,
-                photoUploader,
-                achievementUploader,
-                voicesUploader
-            )
+        uploadManager = UploadManager(
+            uploadCoordinator,
+            uploadRepository,
+            userRepository,
+            uploadConfigs,
+            resourcesRepository,
+            teamsUploader,
+            activitiesRepository,
+            TestDispatcherProvider(testDispatcher),
+            testScope,
+            photoUploader,
+            achievementUploader,
+            voicesUploader
         )
     }
 
@@ -135,6 +124,14 @@ class UploadManagerTest {
     fun tearDown() {
         org.ole.planet.myplanet.MainApplication.testContext = null
         clearAllMocks(answers = false, childMocks = false)
+    }
+
+    @Test
+    fun `uploadTeams delegates to teamsUploader`() = testScope.runTest {
+        coEvery { teamsUploader.uploadTeams() } returns Unit
+        uploadManager.uploadTeams()
+        advanceUntilIdle()
+        coVerify(exactly = 1) { teamsUploader.uploadTeams() }
     }
 
     @Test
@@ -416,7 +413,7 @@ class UploadManagerTest {
         advanceUntilIdle()
 
         coVerify { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) }
-        coVerify(timeout = 1000) { uploadRepository.uploadAttachment(any(), any(), "remote1", "rev1", any()) }
+        coVerify { uploadRepository.uploadAttachment(any(), any(), "remote1", "rev1", any()) }
     }
 
     @Test

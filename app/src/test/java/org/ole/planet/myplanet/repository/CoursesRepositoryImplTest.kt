@@ -40,7 +40,6 @@ import org.ole.planet.myplanet.utils.Utilities
 class CoursesRepositoryImplTest {
 
     private val progressRepository: ProgressRepository = mockk(relaxed = true)
-    private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)
     private val tagsRepository: TagsRepository = mockk(relaxed = true)
     private val ratingsRepository: RatingsRepository = mockk(relaxed = true)
@@ -70,7 +69,6 @@ class CoursesRepositoryImplTest {
         repository = CoursesRepositoryImpl(
             mockk(relaxed = true),
             progressRepository,
-            activitiesRepository,
             submissionsRepository,
             tagsRepository,
             ratingsRepository,
@@ -309,6 +307,22 @@ class CoursesRepositoryImplTest {
         assertEquals(1, emissions.size)
         assertEquals(1, emissions[0].size)
         assertEquals("1", emissions[0][0].id)
+    }
+
+    @Test
+    fun `getMyCoursesFlow does not evaluate map until flow is collected`() = runTest {
+        val course = MyCourse(id = "1", courseId = "1", userId = listOf("user1"))
+        coEvery { courseDao.observeForUserPattern(any()) } returns flowOf(listOf(course))
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
+
+        val flow = repository.getMyCoursesFlow("user1")
+
+        coVerify(exactly = 0) { courseStepDao.getByCourseIds(any()) }
+
+        val emissions = flow.toList()
+
+        assertEquals(1, emissions.size)
+        coVerify(atLeast = 1) { courseStepDao.getByCourseIds(any()) }
     }
 
     @Test
