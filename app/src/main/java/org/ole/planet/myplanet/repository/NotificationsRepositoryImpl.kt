@@ -123,9 +123,9 @@ class NotificationsRepositoryImpl @Inject constructor(
         return notificationDao.markExistingAsRead(notificationIds.toList(), Date(timeProvider.now())).toSet()
     }
 
-    override suspend fun markAllUnreadAsRead(userId: String?): Set<String> {
+    override suspend fun markAllUnreadAsRead(userId: String?, isAdmin: Boolean): Set<String> {
         val actualUserId = userId ?: return emptySet()
-        return notificationDao.markAllUnreadAsReadReturningIds(actualUserId, Date(timeProvider.now())).toSet()
+        return notificationDao.markAllUnreadAsReadReturningIds(actualUserId, Date(timeProvider.now()), isAdmin).toSet()
     }
 
     suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean = false): List<NotificationPayload> {

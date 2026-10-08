@@ -23,7 +23,7 @@ interface NotificationsRepository {
     suspend fun updateResourceNotification(userId: String?, resourceCount: Int)
     suspend fun updateStorageNotification(userId: String?, availablePercent: Int)
     suspend fun markNotificationsAsRead(notificationIds: Set<String>): Set<String>
-    suspend fun markAllUnreadAsRead(userId: String?): Set<String>
+    suspend fun markAllUnreadAsRead(userId: String?, isAdmin: Boolean = false): Set<String>
     suspend fun getTaskDetails(relatedId: String?): TaskNotificationResult?
     suspend fun getJoinRequestTeamId(relatedId: String?): String?
     suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo>
