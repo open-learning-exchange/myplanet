@@ -15,6 +15,7 @@ interface TeamsMembersRepository {
     suspend fun refreshJoinedMembersForLogin(teamId: String): List<UserEntity>
     suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData>
     suspend fun getJoinedMemberCount(teamId: String): Int
+    suspend fun getTeamMemberLimit(teamId: String): Int
     suspend fun getRequestedMembers(teamId: String): List<UserEntity>
     suspend fun updateTeamLeader(teamId: String, newLeaderId: String): Boolean
     suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): UserEntity?

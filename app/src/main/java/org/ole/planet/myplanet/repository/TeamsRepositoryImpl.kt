@@ -83,6 +83,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getTeamsForUpload(): List<TeamUploadData> {
+        refileMisfiledRequests()
         val teams = teamDao.getUpdatedTeams()
         val courseIds = teams.flatMap { it.courses.orEmpty() }.filter { it.isNotBlank() }.distinct()
         val courses = getCoursesForSerialization(courseIds)
@@ -102,6 +103,23 @@ class TeamsRepositoryImpl @Inject constructor(
                 imageName = team.imageName
             )
         }
+    }
+    
+    private suspend fun refileMisfiledRequests() {
+        val requests = teamDao.getByDocType("request")
+        val teamIds = requests.mapNotNull { it.teamId }.filter { it.isNotBlank() }.distinct()
+        if (teamIds.isEmpty()) return
+        val teams = teamIds.chunked(500).flatMap { teamDao.getByIds(it) }.associateBy { it._id }
+        val refiled = requests.mapNotNull { request ->
+            val team = teams[request.teamId] ?: return@mapNotNull null
+            if (team.teamPlanetCode.isNullOrBlank() || request.teamPlanetCode == team.teamPlanetCode) return@mapNotNull null
+            request.apply {
+                teamPlanetCode = team.teamPlanetCode
+                teamType = team.teamType
+                updated = true
+            }
+        }
+        if (refiled.isNotEmpty()) teamDao.upsertAll(refiled)
     }
 
     override suspend fun deleteLocalTeamRecord(teamId: String?) {
@@ -135,7 +153,7 @@ class TeamsRepositoryImpl @Inject constructor(
                     _rev = uploadedTeams[_id]
                     updated = false
                 }
-            }
+            }.toList()
         if (teamsToUpdate.isNotEmpty()) {
             teamDao.upsertAll(teamsToUpdate)
         }
@@ -164,6 +182,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 userId = user._id
                 parentCode = user.parentCode
                 teamPlanetCode = user.planetCode
+                limit = MyTeam.DEFAULT_MEMBER_LIMIT
                 updated = true
             }
             val membership = MyTeam().apply {
@@ -554,7 +573,12 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun hasPendingRequest(teamId: String, userId: String?): Boolean {
         if (teamId.isBlank() || userId.isNullOrBlank()) return false
-        return teamDao.getByTeamIdUserIdAndDocType(teamId, userId, "request") != null
+        return findPendingRequest(teamId, userId) != null
+    }
+
+    private suspend fun findPendingRequest(teamId: String, userId: String): MyTeam? {
+        return teamDao.getByTeamIdAndDocType(teamId, "request")
+            .firstOrNull { it.userId == userId && !it.isDeletePending }
     }
 
     private suspend fun getTeamMemberStatuses(
@@ -584,7 +608,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 if (entry.isLeader) {
                     leaderSet.add(teamId)
                 }
-            } else if (entry.docType == "request") {
+            } else if (entry.docType == "request" && !entry.isDeletePending) {
                 pendingRequestSet.add(teamId)
             }
         }
@@ -624,16 +648,18 @@ class TeamsRepositoryImpl @Inject constructor(
             teamDao.upsert(updatedMembership)
             return
         }
+        if (hasPendingRequest(teamId, userId)) return
 
+        val team = teamDao.getById(teamId)
         val request = MyTeam().apply {
             _id = AndroidDecrypter.generateIv()
             docType = "request"
             createdDate = Date().time
-            this.teamType = teamType
+            this.teamType = team?.teamType ?: teamType
             this.userId = userId
             this.teamId = teamId
             updated = true
-            teamPlanetCode = userPlanetCode
+            teamPlanetCode = team?.teamPlanetCode ?: userPlanetCode
             this.userPlanetCode = userPlanetCode
         }
         teamDao.upsert(request)
@@ -649,7 +675,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
 
         return runCatching {
-            val request = teamDao.getByTeamIdUserIdAndDocType(teamId, userId, "request")
+            val request = findPendingRequest(teamId, userId)
                 ?: throw IllegalStateException("Request not found for user $userId")
 
             if (accept) {
@@ -658,8 +684,13 @@ class TeamsRepositoryImpl @Inject constructor(
                     updated = true
                 }
                 teamDao.upsert(accepted)
-            } else {
+            } else if (request._rev.isNullOrBlank()) {
                 teamDao.deleteById(request._id)
+            } else {
+                teamDao.upsert(request.apply {
+                    isDeletePending = true
+                    updated = true
+                })
             }
         }
     }
@@ -682,6 +713,7 @@ class TeamsRepositoryImpl @Inject constructor(
         if (teamId.isBlank() || resources.isEmpty() || userId.isNullOrBlank()) return
 
         val user = userRepository.getUserById(userId) ?: return
+        val team = teamDao.getById(teamId)
         val teamResources = resources.map { resource ->
             MyTeam().apply {
                 _id = UUID.randomUUID().toString()
@@ -691,8 +723,8 @@ class TeamsRepositoryImpl @Inject constructor(
                 resourceId = resource.resourceId
                 docType = "resourceLink"
                 updated = true
-                teamType = "local"
-                teamPlanetCode = user.planetCode
+                teamType = team?.teamType ?: "local"
+                teamPlanetCode = team?.teamPlanetCode ?: user.planetCode
                 userPlanetCode = user.planetCode
             }
         }
@@ -1046,12 +1078,18 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getTeamMemberLimit(teamId: String): Int {
+        if (teamId.isBlank()) return 0
+        return teamDao.getById(teamId)?.limit ?: 0
+    }
+
     override suspend fun getJoinedMemberCount(teamId: String): Int {
         return teamDao.countByTeamIdAndDocType(teamId, "membership")
     }
 
     override suspend fun getRequestedMembers(teamId: String): List<UserEntity> {
         val requestedMemberIds = teamDao.getByTeamIdAndDocType(teamId, "request")
+            .filterNot { it.isDeletePending }
             .mapNotNull { it.userId }
             .distinct()
         return mapUsersByAnyId(requestedMemberIds)
@@ -1234,7 +1272,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
         val existingTeam = existingTeams?.get(teamId) ?: teamDao.getById(teamId)
         val model = existingTeam ?: MyTeam().apply { _id = teamId }
-        MyTeam.populateTeamFields(doc, model, true)
+        MyTeam.populateTeamFields(doc, model)
         processDescription(model.description)
         teamDao.upsert(model)
         existingTeams?.put(teamId, model)

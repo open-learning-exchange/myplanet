@@ -27,14 +27,16 @@ class RequestsAdapter(
     private var teamId: String? = null
     private var teamLeader = false
     private var joinedTeamMembers = 0
+    private var memberLimit = 0
 
     fun setTeamId(teamId: String?) {
         this.teamId = teamId
     }
 
-    fun setData(members: List<UserEntity>, isLeader: Boolean, memberCount: Int) {
+    fun setData(members: List<UserEntity>, isLeader: Boolean, memberCount: Int, limit: Int = 0) {
         teamLeader = isLeader
         joinedTeamMembers = memberCount
+        memberLimit = limit
         submitList(members)
     }
 
@@ -55,7 +57,7 @@ class RequestsAdapter(
         with(binding) {
             val userCanModerateRequests = teamLeader
             val isRequester = currentItem.id == currentUser.id
-            btnAccept.isEnabled = joinedTeamMembers < 12
+            btnAccept.isEnabled = memberLimit <= 0 || joinedTeamMembers < memberLimit
             btnReject.isEnabled = true
             btnAccept.setOnClickListener(null)
             btnReject.setOnClickListener(null)

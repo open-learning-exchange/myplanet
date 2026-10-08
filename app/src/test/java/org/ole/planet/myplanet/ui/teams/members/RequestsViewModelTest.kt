@@ -54,6 +54,7 @@ class RequestsViewModelTest {
 
         coEvery { teamsRepository.getRequestedMembers(teamId) } returns members
         coEvery { teamsRepository.getJoinedMemberCount(teamId) } returns 1
+        coEvery { teamsRepository.getTeamMemberLimit(teamId) } returns 0
 
         val currentUser = UserEntity().apply { id = "currentUser" }
         coEvery { userRepository.getUserModel() } returns currentUser
@@ -76,6 +77,7 @@ class RequestsViewModelTest {
         val teamId = "team1"
         coEvery { teamsRepository.getRequestedMembers(teamId) } returns emptyList()
         coEvery { teamsRepository.getJoinedMemberCount(teamId) } returns 0
+        coEvery { teamsRepository.getTeamMemberLimit(teamId) } returns 0
         coEvery { userRepository.getUserModel() } returns null
         coEvery { teamsRepository.isTeamLeader(teamId, null) } returns false
 
@@ -95,6 +97,7 @@ class RequestsViewModelTest {
 
         coEvery { teamsRepository.getRequestedMembers(teamId) } returns members
         coEvery { teamsRepository.getJoinedMemberCount(teamId) } returns 0
+        coEvery { teamsRepository.getTeamMemberLimit(teamId) } returns 0
         coEvery { userRepository.getUserModel() } returns null
         coEvery { teamsRepository.isTeamLeader(teamId, null) } returns false
 
@@ -131,6 +134,7 @@ class RequestsViewModelTest {
 
         coEvery { teamsRepository.getRequestedMembers(teamId) } returns members
         coEvery { teamsRepository.getJoinedMemberCount(teamId) } returns 0
+        coEvery { teamsRepository.getTeamMemberLimit(teamId) } returns 0
         coEvery { userRepository.getUserModel() } returns null
         coEvery { teamsRepository.isTeamLeader(teamId, null) } returns false
 
@@ -162,6 +166,7 @@ class RequestsViewModelTest {
 
         coEvery { teamsRepository.getRequestedMembers(teamId) } returns members
         coEvery { teamsRepository.getJoinedMemberCount(teamId) } returns 1
+        coEvery { teamsRepository.getTeamMemberLimit(teamId) } returns 0
 
         val currentUser = UserEntity().apply { id = "currentUser" }
         coEvery { userRepository.getUserModel() } coAnswers {
