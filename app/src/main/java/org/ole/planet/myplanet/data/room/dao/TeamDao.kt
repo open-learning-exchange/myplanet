@@ -5,6 +5,7 @@ import androidx.room.Query
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.EnterpriseReportCsvProjection
+import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.MyTeam
 
 @Dao
@@ -14,14 +15,13 @@ interface TeamDao {
     @Query("SELECT * FROM teams WHERE _id = :teamId OR teamId = :teamId LIMIT 1") suspend fun getByTeamId(teamId: String): MyTeam?
     @Query("SELECT * FROM teams WHERE _id = :id LIMIT 1") suspend fun getById(id: String): MyTeam?
     @Query("SELECT * FROM teams WHERE userId = :userId") suspend fun getByUserId(userId: String): List<MyTeam>
-    @Query("SELECT * FROM teams") suspend fun getAll(): List<MyTeam>
     @Query("SELECT * FROM teams WHERE teamId = :teamId") suspend fun getAllByTeamId(teamId: String): List<MyTeam>
     @Query("SELECT * FROM teams") fun observeAll(): Flow<List<MyTeam>>
     @Query("SELECT * FROM teams WHERE docType = :docType") suspend fun getByDocType(docType: String): List<MyTeam>
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND docType = :docType") suspend fun getByTeamIdAndDocType(teamId: String, docType: String): List<MyTeam>
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND docType = 'membership' AND isLeader = 0 AND (status IS NULL OR status != 'archived') AND (:excludeUserId IS NULL OR userId != :excludeUserId)") suspend fun getEligibleNextLeaderCandidates(teamId: String, excludeUserId: String?): List<MyTeam>
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND docType = :docType") fun observeByTeamIdAndDocType(teamId: String, docType: String): Flow<List<MyTeam>>
-    @Query("SELECT * FROM teams WHERE teamId = :teamId AND docType = 'report' AND IFNULL(status, '') != 'archived' ORDER BY createdDate DESC") fun observeNonArchivedReportsByTeamId(teamId: String): Flow<List<MyTeam>>
+    @Query("SELECT _id, _rev, status, description, beginningBalance, sales, otherIncome, wages, otherExpenses, startDate, endDate, createdDate, updatedDate, isUpdated AS updated, imageName FROM teams WHERE teamId = :teamId AND docType = 'report' AND IFNULL(status, '') != 'archived' ORDER BY createdDate DESC") fun observeNonArchivedFinanceReportsByTeamId(teamId: String): Flow<List<FinanceReport>>
     @Query("SELECT startDate, endDate, createdDate, updatedDate, beginningBalance, sales, otherIncome, wages, otherExpenses FROM teams WHERE teamId = :teamId AND docType = 'report' AND IFNULL(status, '') != 'archived' ORDER BY createdDate DESC") suspend fun getNonArchivedReportCsvProjectionsByTeamId(teamId: String): List<EnterpriseReportCsvProjection>
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType LIMIT 1") suspend fun getByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): MyTeam?
     @Query("SELECT COUNT(*) FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType") suspend fun countByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): Int
