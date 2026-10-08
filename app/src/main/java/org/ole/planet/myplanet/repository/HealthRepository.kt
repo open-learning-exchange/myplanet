@@ -7,7 +7,6 @@ import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
 
 interface HealthRepository {
-    suspend fun getHealthEntry(userId: String): Pair<UserEntity?, HealthExamination?>
     suspend fun getExaminationById(id: String): HealthExamination?
     suspend fun initHealth(): MyHealth
     suspend fun saveExamination(examination: HealthExamination?, pojo: HealthExamination?, user: UserEntity?)

@@ -310,6 +310,22 @@ class CoursesRepositoryImplTest {
     }
 
     @Test
+    fun `getMyCoursesFlow does not evaluate map until flow is collected`() = runTest {
+        val course = MyCourse(id = "1", courseId = "1", userId = listOf("user1"))
+        coEvery { courseDao.observeForUserPattern(any()) } returns flowOf(listOf(course))
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
+
+        val flow = repository.getMyCoursesFlow("user1")
+
+        coVerify(exactly = 0) { courseStepDao.getByCourseIds(any()) }
+
+        val emissions = flow.toList()
+
+        assertEquals(1, emissions.size)
+        coVerify(atLeast = 1) { courseStepDao.getByCourseIds(any()) }
+    }
+
+    @Test
     fun `getCourseByCourseIdFlow returns mapped course with steps`() = runTest {
         val courseId = "course-123"
         val myCourse = MyCourse(id = courseId, courseId = courseId, courseTitle = "Test Course")
@@ -508,6 +524,7 @@ class CoursesRepositoryImplTest {
         val expectedStepId = java.util.Base64.getEncoder().encodeToString(stepElement.toString().toByteArray())
         assertEquals("eyJzdGVwVGl0bGUiOiJTdGVwIDEiLCJkZXNjcmlwdGlvbiI6IkRlc2MgMSJ9", expectedStepId)
         assertEquals(expectedStepId, capturedSteps.captured.first().id)
+        coVerify(exactly = 1) { courseStepDao.deleteStaleSteps("course_101", listOf(expectedStepId)) }
 
         io.mockk.unmockkStatic("androidx.room.RoomDatabaseKt")
     }

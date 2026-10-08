@@ -38,13 +38,6 @@ class HealthRepositoryImpl @Inject constructor(
     private val userRepository: Lazy<UserRepository>,
     @PlainGson private val gson: Gson
 ) : HealthRepository {
-    override suspend fun getHealthEntry(userId: String): Pair<UserEntity?, HealthExamination?> {
-        val userCopy = userRepository.get().getUserById(userId)
-        val pojoCopy = healthExaminationDao.getByIdOrUserId(userId)
-
-        return Pair(userCopy, pojoCopy)
-    }
-
     override suspend fun getExaminationById(id: String): HealthExamination? {
         return healthExaminationDao.getById(id)
     }

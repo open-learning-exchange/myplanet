@@ -177,7 +177,7 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
                 binding.txtEmergencyContact.text = getString(
                     R.string.emergency_contact_details,
                     Utilities.checkNA(myHealths?.emergencyContactName),
-                    Utilities.checkNA(myHealths?.emergencyContactType),
+                    Utilities.checkNA(AddHealthActivity.contactTypeLabel(requireContext(), myHealths?.emergencyContactType)),
                     Utilities.checkNA(contact)
                 ).trimIndent()
 

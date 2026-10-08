@@ -52,7 +52,6 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.DefaultTimeBar
 import androidx.media3.ui.PlayerView
-import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import dagger.hilt.android.AndroidEntryPoint
@@ -123,7 +122,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
             Utilities.toast(requireContext(), getString(R.string.recording_stopped))
             NotificationUtils.cancel(requireContext(), NotificationUtils.RECORDING_NOTIFICATION_ID)
             if (::library.isInitialized) {
-                library.id?.let { viewModel.saveTranslationAudioPath(it, outputFile) }
+                viewModel.saveTranslationAudioPath(library.id, outputFile)
             }
             binding.fabRecord.setImageResource(R.drawable.ic_mic)
         }
@@ -237,17 +236,18 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         var selectedIndex = speedValues.indexOfFirst { abs(it - currentSpeed) < 0.05f }
         if (selectedIndex == -1) selectedIndex = 1
 
-        MaterialDialog.Builder(requireContext())
-            .title(R.string.playback_speed)
-            .items(*speedOptions)
-            .itemsCallbackSingleChoice(selectedIndex) { _, _, which, _ ->
-                val chosenSpeed = speedValues[which]
+        var pending = selectedIndex
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.playback_speed)
+            .setSingleChoiceItems(speedOptions, selectedIndex) { _, which ->
+                pending = which
+            }
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val chosenSpeed = speedValues[pending]
                 viewModel.savePlaybackSpeed(chosenSpeed)
                 exoPlayer?.setPlaybackSpeed(chosenSpeed)
                 requireActivity().invalidateOptionsMenu()
-                true
             }
-            .positiveText(android.R.string.ok)
             .show()
     }
 
@@ -636,6 +636,33 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         }
         if (truncated) {
             Utilities.toast(requireContext(), getString(R.string.text_content_truncated))
+        }
+        setupTextReadAloud(text)
+    }
+
+    private fun setupTextReadAloud(text: String) {
+        binding.fabRecord.visibility = View.GONE
+        binding.fabPlay.visibility = View.GONE
+        binding.fabMenu.visibility = View.VISIBLE
+        binding.fabReadAloud.setOnClickListener {
+            if (ttsManager.isSpeaking) {
+                ttsManager.stop()
+                return@setOnClickListener
+            }
+            viewLifecycleOwner.lifecycleScope.launch {
+                val speech = withContext(dispatcherProvider.default) {
+                    when (type) {
+                        ResourceType.MARKDOWN -> TTSManager.stripMarkdown(text)
+                        ResourceType.CSV -> runCatching { TTSManager.formatCsvTextForSpeech(text) }.getOrDefault("")
+                        else -> text
+                    }
+                }
+                if (speech.isBlank()) {
+                    Utilities.toast(requireContext(), getString(R.string.tts_not_available))
+                } else {
+                    ttsManager.speak(speech)
+                }
+            }
         }
     }
 
