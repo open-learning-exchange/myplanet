@@ -497,4 +497,55 @@ class SyncRepositoryImplTest {
         assertEquals("res_1", filtered[0].get("_id").asString)
         assertEquals("res_2", filtered[1].get("_id").asString)
     }
+
+    @Test
+    fun `processShelfParallel logs per-type failure when batch insert throws`() = runTest {
+        val shelfId = "shelfErrorInner"
+        val shelfDoc = buildJsonObject {
+            put("_id", shelfId)
+            putJsonArray("resourceIds") { add("res1") }
+        }
+
+        coEvery {
+            apiInterface.getJsonObject(any(), match { it.contains("/shelf/$shelfId") })
+        } returns Response.success(shelfDoc)
+
+        val doc1 = buildJsonObject { put("_id", "res1") }
+        val row1 = buildJsonObject { put("doc", doc1) }
+        val rows = buildJsonArray { add(row1) }
+        val body = buildJsonObject { put("rows", rows) }
+        coEvery {
+            apiInterface.postDoc(any(), any(), any(), any())
+        } returns Response.success(body)
+
+        coEvery {
+            resourcesRepository.batchInsertMyLibrary(shelfId, any())
+        } throws IllegalStateException("db insertion failed")
+
+        val result = syncRepository.processShelfParallel(shelfId)
+
+        assertEquals(0, result)
+        verify(exactly = 1) {
+            syncTimeLogger.logDetail("shelf_sync", match { it.contains("failed") })
+        }
+    }
+
+    @Test
+    fun `processShelfParallel logs top-level failure to syncTimeLogger when outer processing throws`() = runTest {
+        val shelfId = "shelfErrorOuter"
+
+        io.mockk.mockkObject(org.ole.planet.myplanet.data.api.ApiClient)
+        coEvery {
+            org.ole.planet.myplanet.data.api.ApiClient.executeWithRetryAndWrap<Any>(any())
+        } throws IllegalStateException("boom")
+
+        val result = syncRepository.processShelfParallel(shelfId)
+
+        assertEquals(0, result)
+        val capturedMessages = mutableListOf<String>()
+        verify(exactly = 1) {
+            syncTimeLogger.logDetail("shelf_sync", capture(capturedMessages))
+        }
+        assertEquals("Shelf $shelfId processing failed: IllegalStateException", capturedMessages.first())
+    }
 }
