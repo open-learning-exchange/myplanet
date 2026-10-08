@@ -54,7 +54,6 @@ import org.ole.planet.myplanet.utils.toSyncDocuments
 class CoursesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val progressRepository: ProgressRepository,
-    private val activitiesRepository: ActivitiesRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val tagsRepository: TagsRepository,
     private val ratingsRepository: RatingsRepository,
@@ -114,7 +113,7 @@ class CoursesRepositoryImpl @Inject constructor(
         return mapCourses(courseDao.getForUserPattern(userIdPattern(userId)))
     }
 
-    override suspend fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>> {
+    override fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>> {
         return courseDao.observeForUserPattern(userIdPattern(userId)).map { courses ->
             mapCourses(courses)
         }.distinctUntilChanged { old, new ->
@@ -586,10 +585,6 @@ class CoursesRepositoryImpl @Inject constructor(
         leaveCourses(courseIds, userId).getOrThrow()
     }
 
-    override suspend fun logCourseVisit(courseId: String, title: String, userId: String) {
-        activitiesRepository.logCourseVisit(courseId, title, userId)
-    }
-
     override suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int {
         return progressRepository.getCurrentProgress(steps, userId, courseId)
     }
@@ -645,6 +640,7 @@ class CoursesRepositoryImpl @Inject constructor(
 
         val courses = ArrayList<MyCourse>(documentList.size)
         val steps = ArrayList<CourseStep>()
+        val stepIdsByCourse = HashMap<String, List<String>>()
         val exams = ArrayList<StepExam>()
         val questions = ArrayList<ExamQuestion>()
         var processedCount = 0
@@ -656,12 +652,13 @@ class CoursesRepositoryImpl @Inject constructor(
                     processedCount++
                     courses.add(payload.course)
                     steps.addAll(payload.steps)
+                    payload.course.courseId?.let { stepIdsByCourse[it] = payload.steps.map { step -> step.id } }
                     exams.addAll(payload.exams)
                     questions.addAll(payload.questions)
                 }
             } catch (e: Exception) {
                 if (!continueOnError) throw e
-                e.printStackTrace()
+                Log.w("CoursesRepository", "Failed to insert course from sync document", e)
             }
         }
 
@@ -670,6 +667,7 @@ class CoursesRepositoryImpl @Inject constructor(
         appDatabase.withTransaction {
             if (courses.isNotEmpty()) courseDao.upsertAll(courses)
             if (steps.isNotEmpty()) courseStepDao.upsertAll(steps)
+            stepIdsByCourse.forEach { (courseId, stepIds) -> courseStepDao.deleteStaleSteps(courseId, stepIds) }
             if (exams.isNotEmpty()) examDao.upsertAll(exams)
             if (questions.isNotEmpty()) questionDao.upsertAll(questions)
         }

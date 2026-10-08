@@ -31,7 +31,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Date
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.FlowPreview
@@ -614,7 +613,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     private fun checkForceSync(maxDays: Int): Boolean {
         val daysDiff = ForceSyncPolicy.overdueDays(
-            prefData.getLastSync(), System.currentTimeMillis(), maxDays
+            prefData.getLastSync(), timeProvider.now(), maxDays
         ) ?: return false
         val alertDialogBuilder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
         alertDialogBuilder.setMessage("${getString(R.string.it_has_been_more_than)}${(daysDiff - 1)}${getString(R.string.days_since_you_last_synced_this_device)}${getString(R.string.connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet)}")
@@ -646,7 +645,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                             val state = syncRepository.uploadLoginData()
                                 .first { it is SyncUiState.Success || it is SyncUiState.Error }
                             if (state is SyncUiState.Success) {
-                                prefData.setLastUsageUploaded(Date().time)
+                                prefData.setLastUsageUploaded(timeProvider.now())
                             }
                             transactionSyncManager.syncDb("login_activities")
                         }
@@ -732,9 +731,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         if (::btnSignIn.isInitialized) {
             showSnack(btnSignIn, success)
         }
-        prefData.setLastUsageUploaded(Date().time)
+        prefData.setLastUsageUploaded(timeProvider.now())
         if (::lblLastSyncDate.isInitialized) {
-            lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, TimeUtils.getRelativeTime(Date().time, timeProvider))} >>")
+            lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, TimeUtils.getRelativeTime(timeProvider.now(), timeProvider))} >>")
         }
         syncFailed = false
     }
