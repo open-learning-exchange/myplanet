@@ -16,6 +16,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.model.AppNotification
+import org.ole.planet.myplanet.model.NotificationPayload
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
@@ -310,5 +311,77 @@ class NotificationDaoTest {
         assertEquals(listOf("system"), asAdmin)
         assertTrue(notificationDao.getById("system")!!.isRead)
         assertEquals(0, notificationDao.getUnreadCount("admin1", true))
+    }
+
+    @Test
+    fun getNotifications_emptyFilter_returnsReadAndUnread_unreadFirst_thenCreatedAtDesc() = runBlocking {
+        val n1 = AppNotification().apply { id = "n1"; userId = "u1"; message = "m1"; isRead = true; createdAt = java.util.Date(1000L) }
+        val n2 = AppNotification().apply { id = "n2"; userId = "u1"; message = "m2"; isRead = true; createdAt = java.util.Date(2000L) }
+        val n3 = AppNotification().apply { id = "n3"; userId = "u1"; message = "m3"; isRead = false; createdAt = java.util.Date(1000L) }
+        val n4 = AppNotification().apply { id = "n4"; userId = "u1"; message = "m4"; isRead = false; createdAt = java.util.Date(2000L) }
+        notificationDao.upsertAll(listOf(n1, n2, n3, n4))
+
+        val result = notificationDao.getNotifications("u1", "", false)
+
+        assertEquals(4, result.size)
+        assertEquals(listOf("n4", "n3", "n2", "n1"), result.map { it.id })
+    }
+
+    @Test
+    fun getNotifications_readAndUnreadFilters_returnOnlyMatchingRows() = runBlocking {
+        val readNotif = AppNotification().apply { id = "n_read"; userId = "u1"; message = "m1"; isRead = true; createdAt = java.util.Date(1000L) }
+        val unreadNotif = AppNotification().apply { id = "n_unread"; userId = "u1"; message = "m2"; isRead = false; createdAt = java.util.Date(2000L) }
+        notificationDao.upsertAll(listOf(readNotif, unreadNotif))
+
+        val readResults = notificationDao.getNotifications("u1", "read", false)
+        assertEquals(1, readResults.size)
+        assertEquals("n_read", readResults[0].id)
+
+        val unreadResults = notificationDao.getNotifications("u1", "unread", false)
+        assertEquals(1, unreadResults.size)
+        assertEquals("n_unread", unreadResults[0].id)
+    }
+
+    @Test
+    fun getNotifications_excludesInvalidAndEmptyMessages() = runBlocking {
+        val valid = AppNotification().apply { id = "n_valid"; userId = "u1"; message = "Valid message" }
+        val invalid = AppNotification().apply { id = "n_invalid"; userId = "u1"; message = "INVALID" }
+        val emptyMsg = AppNotification().apply { id = "n_empty"; userId = "u1"; message = "" }
+        notificationDao.upsertAll(listOf(valid, invalid, emptyMsg))
+
+        val result = notificationDao.getNotifications("u1", "", false)
+
+        assertEquals(1, result.size)
+        assertEquals("n_valid", result[0].id)
+    }
+
+    @Test
+    fun getNotifications_systemRowReturnedOnlyWhenIsAdminIsTrue() = runBlocking {
+        val userNotif = AppNotification().apply { id = "n_user"; userId = "u1"; message = "User Message" }
+        val systemNotif = AppNotification().apply { id = "n_sys"; userId = "SYSTEM"; message = "System Message" }
+        notificationDao.upsertAll(listOf(userNotif, systemNotif))
+
+        val nonAdminResult = notificationDao.getNotifications("u1", "", isAdmin = false)
+        assertEquals(listOf("n_user"), nonAdminResult.map { it.id })
+
+        val adminResult = notificationDao.getNotifications("u1", "", isAdmin = true)
+        assertEquals(setOf("n_user", "n_sys"), adminResult.map { it.id }.toSet())
+    }
+
+    @Test
+    fun getNotifications_createdAtMillisRoundTripExactly() = runBlocking {
+        val expectedMillis = 1700000000123L
+        val notif = AppNotification().apply {
+            id = "n_time"
+            userId = "u1"
+            message = "Time Test"
+            createdAt = java.util.Date(expectedMillis)
+        }
+        notificationDao.upsert(notif)
+
+        val result = notificationDao.getNotifications("u1", "", false)
+
+        assertEquals(1, result.size)
+        assertEquals(expectedMillis, result[0].createdAt)
     }
 }
