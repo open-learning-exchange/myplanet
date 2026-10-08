@@ -48,7 +48,7 @@ class TeamDaoTest {
     }
 
     @Test
-    fun `observeNonArchivedReportsByTeamId orders by createdDate descending`() = runBlocking {
+    fun `observeNonArchivedFinanceReportsByTeamId orders by createdDate descending`() = runBlocking {
         teamDao.upsertAll(
             listOf(
                 report("r1", createdDate = 100L),
@@ -57,13 +57,13 @@ class TeamDaoTest {
             )
         )
 
-        val result = teamDao.observeNonArchivedReportsByTeamId("team1").first()
+        val result = teamDao.observeNonArchivedFinanceReportsByTeamId("team1").first()
 
         assertEquals(listOf("r3", "r2", "r1"), result.map { it._id })
     }
 
     @Test
-    fun `observeNonArchivedReportsByTeamId excludes archived reports`() = runBlocking {
+    fun `observeNonArchivedFinanceReportsByTeamId excludes archived reports`() = runBlocking {
         teamDao.upsertAll(
             listOf(
                 report("kept", createdDate = 100L),
@@ -71,7 +71,7 @@ class TeamDaoTest {
             )
         )
 
-        val result = teamDao.observeNonArchivedReportsByTeamId("team1").first()
+        val result = teamDao.observeNonArchivedFinanceReportsByTeamId("team1").first()
 
         assertEquals(listOf("kept"), result.map { it._id })
     }
@@ -79,7 +79,7 @@ class TeamDaoTest {
     // The query uses IFNULL(status, '') so that rows with a NULL status still match:
     // a bare `status != 'archived'` never matches NULL in SQL and would drop them.
     @Test
-    fun `observeNonArchivedReportsByTeamId keeps reports with a null status`() = runBlocking {
+    fun `observeNonArchivedFinanceReportsByTeamId keeps reports with a null status`() = runBlocking {
         teamDao.upsertAll(
             listOf(
                 report("nullStatus", createdDate = 100L, status = null),
@@ -87,13 +87,13 @@ class TeamDaoTest {
             )
         )
 
-        val result = teamDao.observeNonArchivedReportsByTeamId("team1").first()
+        val result = teamDao.observeNonArchivedFinanceReportsByTeamId("team1").first()
 
         assertEquals(listOf("activeStatus", "nullStatus"), result.map { it._id })
     }
 
     @Test
-    fun `observeNonArchivedReportsByTeamId excludes other teams and other docTypes`() = runBlocking {
+    fun `observeNonArchivedFinanceReportsByTeamId excludes other teams and other docTypes`() = runBlocking {
         teamDao.upsertAll(
             listOf(
                 report("mine", createdDate = 100L),
@@ -102,9 +102,53 @@ class TeamDaoTest {
             )
         )
 
-        val result = teamDao.observeNonArchivedReportsByTeamId("team1").first()
+        val result = teamDao.observeNonArchivedFinanceReportsByTeamId("team1").first()
 
         assertEquals(listOf("mine"), result.map { it._id })
+    }
+
+    @Test
+    fun `observeNonArchivedFinanceReportsByTeamId projects all 15 fields including updated and imageName`() = runBlocking {
+        val fullReport = MyTeam().apply {
+            _id = "r1"
+            _rev = "rev1"
+            teamId = "team1"
+            docType = "report"
+            status = "active"
+            description = "test description"
+            beginningBalance = 100
+            sales = 200
+            otherIncome = 50
+            wages = 30
+            otherExpenses = 20
+            startDate = 1000L
+            endDate = 2000L
+            createdDate = 3000L
+            updatedDate = 4000L
+            updated = true
+            imageName = "report.png"
+        }
+        teamDao.upsert(fullReport)
+
+        val result = teamDao.observeNonArchivedFinanceReportsByTeamId("team1").first()
+
+        assertEquals(1, result.size)
+        val financeReport = result[0]
+        assertEquals("r1", financeReport._id)
+        assertEquals("rev1", financeReport._rev)
+        assertEquals("active", financeReport.status)
+        assertEquals("test description", financeReport.description)
+        assertEquals(100, financeReport.beginningBalance)
+        assertEquals(200, financeReport.sales)
+        assertEquals(50, financeReport.otherIncome)
+        assertEquals(30, financeReport.wages)
+        assertEquals(20, financeReport.otherExpenses)
+        assertEquals(1000L, financeReport.startDate)
+        assertEquals(2000L, financeReport.endDate)
+        assertEquals(3000L, financeReport.createdDate)
+        assertEquals(4000L, financeReport.updatedDate)
+        assertEquals(true, financeReport.updated)
+        assertEquals("report.png", financeReport.imageName)
     }
 
     @Test
@@ -183,7 +227,7 @@ class TeamDaoTest {
     }
 
     @Test
-    fun `archiveById hides row from observeNonArchivedReportsByTeamId and sets isUpdated`() = runBlocking {
+    fun `archiveById hides row from observeNonArchivedFinanceReportsByTeamId and sets isUpdated`() = runBlocking {
         val initial = report("r1", teamId = "team1", createdDate = 100L).apply {
             updated = false
         }
@@ -192,7 +236,7 @@ class TeamDaoTest {
         val updatedRows = teamDao.archiveById("r1")
         assertEquals(1, updatedRows)
 
-        val reports = teamDao.observeNonArchivedReportsByTeamId("team1").first()
+        val reports = teamDao.observeNonArchivedFinanceReportsByTeamId("team1").first()
         assertEquals(0, reports.size)
 
         val updatedTeams = teamDao.getUpdatedTeams()

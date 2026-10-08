@@ -22,6 +22,7 @@ data class RequestsUiState(
     val members: List<UserEntity> = emptyList(),
     val isLeader: Boolean = false,
     val memberCount: Int = 0,
+    val memberLimit: Int = 0,
     val currentUser: UserEntity = UserEntity()
 )
 
@@ -129,7 +130,8 @@ class RequestsViewModel @Inject constructor(
         viewModelScope.launch {
             coroutineScope {
                 val membersDeferred = async { teamsRepository.getRequestedMembers(teamId) }
-                val memberCountDeferred = async { teamsRepository.getJoinedMemberCount(teamId) }
+                val memberCountDeferred = async { teamsRepository.getMemberCountTowardLimit(teamId) }
+                val memberLimitDeferred = async { teamsRepository.getTeamMemberLimit(teamId) }
                 val userDeferred = async { userRepository.getUserModel() }
                 val user = userDeferred.await()
                 val isLeader = teamsRepository.isTeamLeader(teamId, user?.id)
@@ -137,6 +139,7 @@ class RequestsViewModel @Inject constructor(
                     members = membersDeferred.await(),
                     isLeader = isLeader,
                     memberCount = memberCountDeferred.await(),
+                    memberLimit = memberLimitDeferred.await(),
                     currentUser = user ?: UserEntity()
                 )
             }

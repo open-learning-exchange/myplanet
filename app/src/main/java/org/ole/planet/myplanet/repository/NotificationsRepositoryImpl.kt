@@ -123,9 +123,9 @@ class NotificationsRepositoryImpl @Inject constructor(
         return notificationDao.markExistingAsRead(notificationIds.toList(), Date(timeProvider.now())).toSet()
     }
 
-    override suspend fun markAllUnreadAsRead(userId: String?): Set<String> {
+    override suspend fun markAllUnreadAsRead(userId: String?, isAdmin: Boolean): Set<String> {
         val actualUserId = userId ?: return emptySet()
-        return notificationDao.markAllUnreadAsReadReturningIds(actualUserId, Date(timeProvider.now())).toSet()
+        return notificationDao.markAllUnreadAsReadReturningIds(actualUserId, Date(timeProvider.now()), isAdmin).toSet()
     }
 
     suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean = false): List<NotificationPayload> {
@@ -296,22 +296,19 @@ class NotificationsRepositoryImpl @Inject constructor(
         val joinRequests = teamsRepository.get().getJoinRequestsInfo(relatedIds)
 
         val teamIds = LinkedHashSet<String>()
-        joinRequests.forEach { jr -> jr.teamId.takeIf { it.isNotEmpty() }?.let { teamIds.add(it) } }
+        val userIds = LinkedHashSet<String>()
 
-        val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds.toList())
-
-        val intermediateList = ArrayList<Triple<String, String, String>>(joinRequests.size)
-        joinRequests.forEach { jr ->
-            val id = jr.id
-            if (id.isNotEmpty()) {
-                val tName = teamMap[jr.teamId] ?: "Unknown Team"
-                intermediateList.add(Triple(id, jr.userId, tName))
+        for (jr in joinRequests) {
+            if (jr.teamId.isNotEmpty()) {
+                teamIds.add(jr.teamId)
+            }
+            if (jr.id.isNotEmpty() && jr.userId.isNotEmpty()) {
+                userIds.add(jr.userId)
             }
         }
 
-        val map = mutableMapOf<String, Pair<String, String>>()
-        val userIds = LinkedHashSet<String>()
-        intermediateList.forEach { triple -> triple.second.takeIf { it.isNotEmpty() }?.let { userIds.add(it) } }
+        val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds.toList())
+
         val userMap = mutableMapOf<String, String>()
         if (userIds.isNotEmpty()) {
             val users = userRepository.get().getUsersByIds(userIds.toList())
@@ -320,9 +317,13 @@ class NotificationsRepositoryImpl @Inject constructor(
             }
         }
 
-        for (triple in intermediateList) {
-            val uName = if (triple.second.isNotEmpty()) userMap[triple.second] ?: "Unknown User" else "Unknown User"
-            map[triple.first] = Pair(uName, triple.third)
+        val map = mutableMapOf<String, Pair<String, String>>()
+        for (jr in joinRequests) {
+            val id = jr.id
+            if (id.isEmpty()) continue
+            val teamName = teamMap[jr.teamId] ?: "Unknown Team"
+            val userName = if (jr.userId.isNotEmpty()) userMap[jr.userId] ?: "Unknown User" else "Unknown User"
+            map[id] = Pair(userName, teamName)
         }
 
         return map
