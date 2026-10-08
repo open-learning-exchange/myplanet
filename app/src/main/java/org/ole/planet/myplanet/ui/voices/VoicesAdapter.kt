@@ -804,8 +804,14 @@ class VoicesAdapter(
         }
     }
 
+    private fun reactorId(): String? {
+        val user = currentUser ?: return null
+        if (isGuestUser()) return null
+        return user._id?.takeIf { it.isNotEmpty() } ?: user.name?.let { "org.couchdb.user:$it" }
+    }
+
     private fun showReactions(holder: VoicesViewHolder, news: News) {
-        val userId = currentUser?._id ?: return
+        val userId = reactorId()
         val binding = holder.binding
         val reactionsMap = news.reactionsMap
         binding.flReactions.removeAllViews()
@@ -829,14 +835,19 @@ class VoicesAdapter(
                     )
                     params.setMargins(4, 4, 4, 4)
                     layoutParams = params
-                    setOnClickListener {
-                        react(news, emoji, userId)
+                    if (userId != null) {
+                        setOnClickListener { react(news, emoji, userId) }
                     }
                 }
                 binding.flReactions.addView(chip)
             }
         }
 
+        if (userId == null) {
+            binding.btnReact.visibility = View.GONE
+            return
+        }
+        binding.btnReact.visibility = View.VISIBLE
         binding.btnReact.setOnClickListener {
             showEmojiPicker(news, userId, binding.btnReact)
         }
@@ -845,7 +856,8 @@ class VoicesAdapter(
     private fun react(news: News, emoji: String, userId: String) {
         news.updateReaction(emoji, userId)
         safeNotifyItemChanged(currentList.indexOfFirst { it.id == news.id }, PAYLOAD_REACTIONS_CHANGED)
-        onEditAction { voicesEditor.updateReaction(news.id, emoji, userId) }
+        val reactions = news.reactions
+        onEditAction { voicesEditor.saveReactions(news.id, reactions) }
     }
 
     private fun showEmojiPicker(news: News, userId: String, anchorView: View) {

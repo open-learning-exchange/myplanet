@@ -102,7 +102,7 @@ open class News {
             } else {
                 try {
                     GsonUtils.gson.fromJson(currentImages, JsonArray::class.java) ?: JsonArray()
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     JsonArray()
                 }
             }
@@ -119,15 +119,25 @@ open class News {
         }.toGson()
 
     @get:Ignore
+    val reactionsJson: JsonObject
+        get() = try {
+            reactions?.let { GsonUtils.gson.fromJson(it, JsonObject::class.java) } ?: JsonObject()
+        } catch (_: Exception) {
+            JsonObject()
+        }
+
+    @get:Ignore
     val reactionsMap: Map<String, List<String>>
         get() {
-            if (reactions.isNullOrEmpty()) return emptyMap()
-            return try {
-                val obj = GsonUtils.gson.fromJson(reactions, JsonObject::class.java)
-                obj.keySet().associateWith { emoji -> obj.get(emoji).asJsonArray.map { it.asString } }
-            } catch (e: Exception) {
-                emptyMap()
-            }
+            val obj = reactionsJson
+            return obj.keySet().mapNotNull { emoji ->
+                val users = obj.get(emoji)
+                    ?.takeIf { it.isJsonArray }
+                    ?.asJsonArray
+                    ?.mapNotNull { if (it.isJsonPrimitive) it.asString else null }
+                    .orEmpty()
+                if (users.isEmpty()) null else emoji to users
+            }.toMap()
         }
 
     fun updateReaction(emoji: String, userId: String) {
@@ -261,7 +271,7 @@ open class News {
                             val conversationsString = conversationsElement.asString
                             try {
                                 val conversationsArray = GsonUtils.gson.fromJson(conversationsString, JsonArray::class.java)
-                                if (!conversationsArray.isEmpty()) {
+                                if (!conversationsArray.isEmpty) {
                                     val conversationsList = ArrayList<HashMap<String, String>>()
                                     conversationsArray.forEach { conversationElement ->
                                         val conversationObj = conversationElement.asJsonObject

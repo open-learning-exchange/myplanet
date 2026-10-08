@@ -297,10 +297,8 @@ class VoicesRepositoryImpl @Inject constructor(
         newsDao.upsert(news)
     }
 
-    override suspend fun updateReaction(newsId: String, emoji: String, userId: String) {
-        val news = newsDao.getById(newsId) ?: return
-        news.updateReaction(emoji, userId)
-        newsDao.upsert(news)
+    override suspend fun saveReactions(newsId: String, reactions: String?) {
+        newsDao.updateReactions(newsId, reactions)
     }
 
     override suspend fun removeLabel(newsId: String, label: String) {
@@ -419,6 +417,8 @@ class VoicesRepositoryImpl @Inject constructor(
         news.viewIn = plainGson.toJson(GsonUtils.getJsonArray("viewIn", doc))
         news.setLabels(labels)
         news.chat = GsonUtils.getBoolean("chat", doc)
+        val reactions = doc.get("reactions")
+        news.reactions = if (reactions != null && reactions.isJsonObject) plainGson.toJson(reactions) else null
 
         val newsObj = GsonUtils.getJsonObject("news", doc)
         news.newsId = GsonUtils.getString("_id", newsObj)
@@ -451,6 +451,7 @@ class VoicesRepositoryImpl @Inject constructor(
         `object`.addProperty("parentCode", news.parentCode)
         `object`.add("images", news.imagesArray)
         `object`.add("labels", news.labelsArray)
+        news.reactions?.let { `object`.add("reactions", news.reactionsJson) }
         `object`.add("user", plainGson.fromJson(news.user, JsonObject::class.java))
         val newsObject = JsonObject()
         newsObject.addProperty("_id", news.newsId)

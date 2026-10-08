@@ -99,6 +99,9 @@ interface NewsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(news: News)
 
+    @Query("UPDATE news SET reactions = :reactions WHERE id = :id")
+    suspend fun updateReactions(id: String, reactions: String?)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(news: List<News>)
 
