@@ -67,7 +67,17 @@ jobs:
         run: |
           FLAVOR=${{ matrix.build }}
           SHARD=${{ matrix.shard }}
-          ./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=${{ strategy.job-total }} -PtestShardIndex=$((SHARD - 1)) -ProbolectricOffline=true --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
+          args=(test${FLAVOR^}DebugUnitTest -PtestShardTotal=${{ strategy.job-total }} -PtestShardIndex=$((SHARD - 1)) -ProbolectricOffline=true --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4)
+          log="$RUNNER_TEMP/gradle-test.log"
+          if ! ./gradlew "${args[@]}" 2>&1 | tee "$log"; then
+            # A build dir restored from an older commit can carry Kotlin incremental
+            # state the new sources no longer match; only actions/cache saves on success,
+            # so that stale entry keeps being restored. Drop it and compile from scratch once.
+            grep -q "Incremental compilation failed" "$log" || exit 1
+            echo "::warning::stale Kotlin incremental caches in the restored build dir; retrying without them"
+            rm -rf app/build/kotlin
+            ./gradlew "${args[@]}"
+          fi
 
       - name: check the offline robolectric runtime took effect
         if: always()
