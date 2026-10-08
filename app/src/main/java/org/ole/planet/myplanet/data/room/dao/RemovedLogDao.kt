@@ -17,7 +17,8 @@ interface RemovedLogDao {
 
     @Transaction
     suspend fun deleteByTypeUserAndDocsChunked(type: String, userId: String?, docIds: List<String>) {
-        docIds.chunked(900).forEach { chunk ->
+        if (docIds.isEmpty()) return
+        docIds.distinct().chunked(900).forEach { chunk ->
             deleteByTypeUserAndDocs(type, userId, chunk)
         }
     }

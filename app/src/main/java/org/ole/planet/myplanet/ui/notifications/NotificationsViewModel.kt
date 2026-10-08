@@ -181,9 +181,9 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    fun markAllAsRead(userId: String) {
+    fun markAllAsRead(userId: String, isAdmin: Boolean = false) {
         viewModelScope.launch {
-            val markedIds = notificationsRepository.markAllUnreadAsRead(userId)
+            val markedIds = notificationsRepository.markAllUnreadAsRead(userId, isAdmin)
             if (markedIds.isNotEmpty()) {
                 _notifications.update { currentList ->
                     if (currentFilter == "unread") {

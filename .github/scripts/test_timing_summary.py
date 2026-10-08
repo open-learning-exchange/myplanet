@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Summarise Gradle unit-test timings as a GitHub Actions step summary.
 
-Usage: test_timing_summary.py <test-results-dir> [--shard N/M] [--warn-over SECONDS]
+Usage: test_timing_summary.py <test-results-dir> [--shard N/M] [--warn-over SECONDS] [--warn-class-over SECONDS]
 
 Reads the JUnit XML that Gradle writes to app/build/test-results/<task>/ and
 prints a markdown report of:
@@ -24,7 +24,9 @@ that boot as excess and the classes after it do not.
 --shard labels the report with which CI shard produced it, for the optional
 sharded run (-PtestShardTotal/-PtestShardIndex). --warn-over prints a loud
 warning when the summed test time exceeds the given seconds, so a suite that
-has grown past what one CI job should carry gets noticed.
+has grown past what one CI job should carry gets noticed. --warn-class-over
+prints a warning for each test class whose runtime excluding first-test
+excess exceeds the given threshold (default: 15s).
 """
 import argparse
 import glob
@@ -61,6 +63,8 @@ def main() -> int:
     parser.add_argument("--shard", default=None, help="shard label, e.g. 1/2")
     parser.add_argument("--warn-over", type=float, default=None,
                         help="warn when summed test seconds exceed this")
+    parser.add_argument("--warn-class-over", type=float, default=15.0,
+                        help="warn for each class whose seconds excluding first-test excess exceed this; <= 0 disables")
     args = parser.parse_args()
 
     results_dir = args.results_dir
@@ -147,6 +151,14 @@ def main() -> int:
               f"(-PtestShardTotal/-PtestShardIndex, see test.yml) — then update "
               f"--warn-over in test.yml.")
         print()
+    if args.warn_class_over > 0:
+        slow = [row for row in classes_by_excl if row[5] > args.warn_class_over]
+        if slow:
+            print(f"> ⚠️ **Slow test classes**: {len(slow)} classes over "
+                  f"{args.warn_class_over:.0f}s excluding first-test excess")
+            for elapsed, name, count, median_val, warmup, excl in slow[:TOP_N]:
+                print(f"> - `{name}` {excl:.1f}s ({count} tests)")
+            print()
     print(f"### {TOP_N} slowest test classes")
     print()
     print("| Class | Seconds | First-test excess s | % of total | Tests | Median s/test |")

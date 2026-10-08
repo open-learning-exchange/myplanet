@@ -223,6 +223,80 @@ class RetryDaoTest {
     }
 
     @Test
+    fun getPendingPreviewAndGetPendingDueCount_returnExpectedSubsetAndCount() = runBlocking {
+        val now = 3000L
+
+        val dueOp1 = RetryOperation().apply {
+            id = "op_due1"
+            status = RetryOperation.STATUS_PENDING
+            nextRetryTime = 1000L
+            maxAttempts = 5
+            attemptCount = 0
+        }
+        val dueOp2 = RetryOperation().apply {
+            id = "op_due2"
+            status = RetryOperation.STATUS_PENDING
+            nextRetryTime = 1500L
+            maxAttempts = 5
+            attemptCount = 0
+        }
+        val dueOp3 = RetryOperation().apply {
+            id = "op_due3"
+            status = RetryOperation.STATUS_PENDING
+            nextRetryTime = 2000L
+            maxAttempts = 5
+            attemptCount = 0
+        }
+        val futureOp = RetryOperation().apply {
+            id = "op_future"
+            status = RetryOperation.STATUS_PENDING
+            nextRetryTime = 5000L
+            maxAttempts = 5
+            attemptCount = 0
+        }
+        val maxAttemptsOp = RetryOperation().apply {
+            id = "op_max_attempts"
+            status = RetryOperation.STATUS_PENDING
+            nextRetryTime = 1000L
+            maxAttempts = 5
+            attemptCount = 5
+        }
+        val inProgressOp = RetryOperation().apply {
+            id = "op_in_progress"
+            status = RetryOperation.STATUS_IN_PROGRESS
+            nextRetryTime = 1000L
+            maxAttempts = 5
+            attemptCount = 0
+        }
+        val completedOp = RetryOperation().apply {
+            id = "op_completed"
+            status = RetryOperation.STATUS_COMPLETED
+            nextRetryTime = 1000L
+            maxAttempts = 5
+            attemptCount = 0
+        }
+
+        retryDao.insert(dueOp1)
+        retryDao.insert(dueOp2)
+        retryDao.insert(dueOp3)
+        retryDao.insert(futureOp)
+        retryDao.insert(maxAttemptsOp)
+        retryDao.insert(inProgressOp)
+        retryDao.insert(completedOp)
+
+        val fullPending = retryDao.getPending(now)
+        assertEquals(3, fullPending.size)
+
+        val preview = retryDao.getPendingPreview(now, limit = 2)
+        assertEquals(2, preview.size)
+        assertEquals(fullPending[0].id, preview[0].id)
+        assertEquals(fullPending[1].id, preview[1].id)
+
+        val dueCount = retryDao.getPendingDueCount(now)
+        assertEquals(fullPending.size.toLong(), dueCount)
+    }
+
+    @Test
     fun findExistingId_returnsNull_whenUploadTypeDoesNotMatch() = runBlocking {
         val op = RetryOperation().apply {
             id = "op1"

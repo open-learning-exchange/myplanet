@@ -54,14 +54,14 @@ class HealthExamination {
     }
 
     companion object {
-        fun formatConditions(conditions: String?): String {
+        fun formatConditions(conditions: String?, labelFor: (String) -> String = { it }): String {
             if (conditions.isNullOrBlank()) return ""
             return try {
                 val conditionsMap = GsonUtils.gson.fromJson(conditions, JsonObject::class.java)
                 if (conditionsMap != null) {
                     conditionsMap.keySet()
                         .filter { GsonUtils.getBoolean(it, conditionsMap) }
-                        .joinToString(", ")
+                        .joinToString(", ") { labelFor(it) }
                 } else {
                     ""
                 }

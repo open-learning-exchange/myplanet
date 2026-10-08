@@ -114,7 +114,10 @@ class HealthExaminationAdapter(
             checkEmptyInt(realmExamination.pulse), realmExamination.bp, checkEmpty(realmExamination.height),
             checkEmpty(realmExamination.weight), realmExamination.vision, realmExamination.hearing).trimIndent()
 
-        alertExaminationBinding.tvCondition.text = HealthExamination.formatConditions(realmExamination.conditions)
+        val conditionLabels = HealthExaminationActivity.diagnosisKeys(context)
+            .zip(context.resources.getStringArray(R.array.diagnosis_list)).toMap()
+        alertExaminationBinding.tvCondition.text =
+            HealthExamination.formatConditions(realmExamination.conditions) { conditionLabels[it] ?: it }
         showEncryptedData(alertExaminationBinding.tvOtherNotes, encrypted)
 
         val dialog = AlertDialog.Builder(context, R.style.CustomAlertDialog)
