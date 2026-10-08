@@ -17,7 +17,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.VoicesEditActions
+import org.ole.planet.myplanet.repository.VoicesEditor
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -61,7 +61,7 @@ class VoicesActionsTest {
 
     @Test
     fun `showEditAlert sets reply title and edit icon via binding`() = runTest {
-        val repository: VoicesEditActions = mockk()
+        val repository: VoicesEditor = mockk()
         coEvery { repository.getNewsById(any()) } returns null
         val listener: OnNewsItemClickListener = mockk(relaxed = true)
 

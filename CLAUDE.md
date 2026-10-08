@@ -96,7 +96,7 @@ myplanet/
 | `data/` | Data access, Room persistence, and API | 46 | NetworkResult.kt; `room/` (AppDatabase, Converters, 37 DAO interfaces one-per-file in `room/dao/`), `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
 | `di/` | Hilt dependency injection | 9 | 7 modules (NetworkModule, RoomModule, RepositoryModule, ServiceModule, SharedPreferencesModule, DispatcherModule, TimeModule) + 2 entry points (CoreDependenciesEntryPoint, ServiceDependenciesEntryPoint) |
 | `model/` | Room `@Entity` models and DTOs | 98 | 38 `@Entity` classes (MyCourse, MyLibrary, News, Submission, TeamTask, UserEntity, …) + DTOs (ChatMessage, ChatRequest, ChatResponse, CourseProgressData, Download, ServerAddress, User) |
-| `repository/` | Repository pattern implementations | 64 | 27 domain Interface + Impl pairs + 9 interfaces with no Impl of their own (sync views, sync writers, the three `TeamsRepository` parents, VoicesEditActions) + the SubmissionsRepositoryExporter class |
+| `repository/` | Repository pattern implementations | 64 | 27 domain Interface + Impl pairs + 9 interfaces with no Impl of their own (sync views, sync writers, the three `TeamsRepository` parents, VoicesEditor) + the SubmissionsRepositoryExporter class |
 | `services/` | Background services and workers | 42 | 22 root-level + `sync/` (7), `upload/` (11), `retry/` (2) |
 | `ui/` | User interface components | 202 | 28 feature packages (courses, resources, teams, chat, etc.); 49 `*ViewModel.kt` across the app |
 | `utils/` | Helper functions | 56 | NetworkUtils, ImageUtils, DialogUtils, FileUploader, AuthUtils, SecurePrefs, ANRWatchdog, and more |
@@ -256,7 +256,7 @@ Activities, Chat, Community, Configurations, Courses, Diagnostics, Dictionary, D
 - `TeamsSyncRepository`, `UserSyncRepository` — narrow sync views on `TeamsRepositoryImpl` / `UserRepositoryImpl`
 - `ChatSyncWriter`, `EventsSyncWriter`, `FeedbackSyncWriter` — write-side seams the sync managers depend on, implemented by the matching `*RepositoryImpl`
 - `TeamsFinancesRepository`, `TeamsMembersRepository`, `TeamsNotificationsRepository` — `TeamsRepository` extends all three, splitting that large surface by concern
-- `VoicesEditActions` (in `VoicesEditor.kt`) — the edit/reply slice `VoicesRepository` extends, so `VoicesAdapter` depends on three methods instead of the whole repository
+- `VoicesEditor` (in `VoicesEditor.kt`) — the edit/reply slice `VoicesRepository` extends, so `VoicesAdapter` depends on three methods instead of the whole repository
 
 `SubmissionsRepositoryExporter` is the exception in this package: a concrete `@Inject` class (PDF export off the submission DAOs), injected into `SubmissionsRepositoryImpl` rather than bound to anything.
 
