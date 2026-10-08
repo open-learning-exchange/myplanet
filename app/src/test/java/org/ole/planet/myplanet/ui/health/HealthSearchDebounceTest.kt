@@ -51,7 +51,7 @@ class HealthSearchDebounceTest {
         userRepository = mockk()
         healthRepository = mockk()
         viewModel = HealthViewModel(userRepository, healthRepository, RealtimeSyncManager())
-        coEvery { healthRepository.searchPatients(any(), any(), any()) } returns emptyList()
+        coEvery { userRepository.searchUsers(any(), any(), any()) } returns emptyList()
     }
 
     @Test
@@ -59,7 +59,7 @@ class HealthSearchDebounceTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val etSearch = EditText(context)
         val patients = listOf(UserEntity().apply { id = "1"; name = "John Doe" })
-        coEvery { healthRepository.searchPatients("John", "joinDate", true) } returns patients
+        coEvery { userRepository.searchUsers("John", "joinDate", true) } returns patients
 
         val searchJob = etSearch.textChanges()
             .drop(1)
@@ -73,13 +73,13 @@ class HealthSearchDebounceTest {
             runCurrent()
         }
 
-        coVerify(exactly = 0) { healthRepository.searchPatients(any(), any(), any()) }
+        coVerify(exactly = 0) { userRepository.searchUsers(any(), any(), any()) }
 
         advanceTimeBy(300)
         runCurrent()
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { healthRepository.searchPatients("John", "joinDate", true) }
+        coVerify(exactly = 1) { userRepository.searchUsers("John", "joinDate", true) }
         assertEquals(patients, viewModel.patientList.value)
 
         searchJob.cancel()

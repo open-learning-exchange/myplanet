@@ -5,9 +5,9 @@ import androidx.core.net.toUri
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Collections
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
@@ -34,8 +34,8 @@ class SyncTimeLogger @Inject constructor(
 
     private val processTimes = ConcurrentHashMap<String, Long>()
     private val processItemCounts = ConcurrentHashMap<String, Int>()
-    private val apiCallTimes = ConcurrentHashMap<String, MutableList<ApiCallLog>>()
-    private val dbOperationTimes = ConcurrentHashMap<String, MutableList<DbOperationLog>>()
+    private val apiCallTimes = ConcurrentHashMap<String, ConcurrentLinkedQueue<ApiCallLog>>()
+    private val dbOperationTimes = ConcurrentHashMap<String, ConcurrentLinkedQueue<DbOperationLog>>()
     @Volatile
     private var startTime: Long = 0
     @Volatile
@@ -63,6 +63,13 @@ class SyncTimeLogger @Inject constructor(
         val duration: Long,
         val itemCount: Int,
         val timestamp: Long
+    )
+
+    private data class Agg(
+        val count: Int,
+        val success: Int,
+        val totalTime: Long,
+        val totalItems: Int
     )
 
     fun startLogging() {
@@ -167,7 +174,7 @@ class SyncTimeLogger @Inject constructor(
         val processName = extractProcessName(endpoint)
 
         val log = ApiCallLog(endpoint, duration, timestamp, success, itemsReturned)
-        apiCallTimes.computeIfAbsent(processName) { Collections.synchronizedList(mutableListOf()) }.add(log)
+        apiCallTimes.computeIfAbsent(processName) { ConcurrentLinkedQueue() }.add(log)
 
         if (isVerbose) {
             val elapsed = timestamp - startTime
@@ -184,7 +191,7 @@ class SyncTimeLogger @Inject constructor(
         val opNum = dbOpCounter.incrementAndGet()
 
         val log = DbOperationLog(operation, model, duration, itemCount, timestamp)
-        dbOperationTimes.computeIfAbsent(model) { Collections.synchronizedList(mutableListOf()) }.add(log)
+        dbOperationTimes.computeIfAbsent(model) { ConcurrentLinkedQueue() }.add(log)
 
         if (isVerbose) {
             val elapsed = timestamp - startTime
@@ -224,6 +231,28 @@ class SyncTimeLogger @Inject constructor(
     }
 
     internal fun generateSummary(): String {
+        val apiAggs = apiCallTimes.entries.map { (endpoint, logs) ->
+            endpoint to logs.toList().let { snapshot ->
+                Agg(
+                    count = snapshot.size,
+                    success = snapshot.count { it.success },
+                    totalTime = snapshot.sumOf { it.duration },
+                    totalItems = snapshot.sumOf { it.itemsReturned }
+                )
+            }
+        }
+
+        val dbAggs = dbOperationTimes.entries.map { (model, logs) ->
+            model to logs.toList().let { snapshot ->
+                Agg(
+                    count = snapshot.size,
+                    success = 0,
+                    totalTime = snapshot.sumOf { it.duration },
+                    totalItems = snapshot.sumOf { it.itemCount }
+                )
+            }
+        }
+
         val totalDuration = endTime - startTime
         val totalMinutes = TimeUnit.MILLISECONDS.toMinutes(totalDuration)
         val totalSeconds = TimeUnit.MILLISECONDS.toSeconds(totalDuration) % 60
@@ -232,8 +261,8 @@ class SyncTimeLogger @Inject constructor(
         summaryBuilder.append("=== SYNC TIME SUMMARY ===\n")
         summaryBuilder.append("Total sync time: $totalMinutes min $totalSeconds sec (${formatTime(totalDuration)})\n\n")
 
-        val totalApiTime = apiCallTimes.values.sumOf { logs -> synchronized(logs) { logs.sumOf { it.duration } } }
-        val totalDbTime = dbOperationTimes.values.sumOf { logs -> synchronized(logs) { logs.sumOf { it.duration } } }
+        val totalApiTime = apiAggs.sumOf { it.second.totalTime }
+        val totalDbTime = dbAggs.sumOf { it.second.totalTime }
 
         // Process times
         summaryBuilder.append("PROCESS BREAKDOWN:\n")
@@ -256,54 +285,42 @@ class SyncTimeLogger @Inject constructor(
             }
 
         // API call statistics
-        if (apiCallTimes.isNotEmpty()) {
+        if (apiAggs.isNotEmpty()) {
             summaryBuilder.append("\nAPI CALL STATISTICS:\n")
-            val totalApiCalls = apiCallTimes.values.sumOf { logs -> synchronized(logs) { logs.size } }
-            val successfulCalls = apiCallTimes.values.sumOf { logs -> synchronized(logs) { logs.count { it.success } } }
+            val totalApiCalls = apiAggs.sumOf { it.second.count }
+            val successfulCalls = apiAggs.sumOf { it.second.success }
 
             summaryBuilder.append(String.format(Locale.US, "  Total API calls: %d (Success: %d, Failed: %d)\n",
                 totalApiCalls, successfulCalls, totalApiCalls - successfulCalls))
             summaryBuilder.append(String.format(Locale.US, "  Total API time: %s (%.1f%% of total sync)\n",
                 formatTime(totalApiTime), (totalApiTime.toDouble() / totalDuration * 100)))
 
-            apiCallTimes.entries.sortedByDescending { entry -> synchronized(entry.value) { entry.value.sumOf { log -> log.duration } } }.forEach { (endpoint, logs) ->
-                val totalTime: Long
-                val avgTime: Long
-                val totalItems: Int
-                val logCount: Int
-                synchronized(logs) {
-                    totalTime = logs.sumOf { it.duration }
-                    avgTime = if (logs.isNotEmpty()) totalTime / logs.size else 0
-                    totalItems = logs.sumOf { it.itemsReturned }
-                    logCount = logs.size
-                }
+            apiAggs.sortedByDescending { it.second.totalTime }.forEach { (endpoint, agg) ->
+                val totalTime = agg.totalTime
+                val avgTime = if (agg.count > 0) totalTime / agg.count else 0
+                val totalItems = agg.totalItems
+                val logCount = agg.count
                 summaryBuilder.append(String.format(Locale.US, "    %-25s: %d calls, %10s total, %8s avg, %d items\n",
                     endpoint.take(25), logCount, formatTime(totalTime), formatTime(avgTime), totalItems))
             }
         }
 
         // Realm operation statistics
-        if (dbOperationTimes.isNotEmpty()) {
+        if (dbAggs.isNotEmpty()) {
             summaryBuilder.append("\nDB OPERATION STATISTICS:\n")
-            val totalDbOps = dbOperationTimes.values.sumOf { logs -> synchronized(logs) { logs.size } }
-            val totalDbItems = dbOperationTimes.values.sumOf { logs -> synchronized(logs) { logs.sumOf { it.itemCount } } }
+            val totalDbOps = dbAggs.sumOf { it.second.count }
+            val totalDbItems = dbAggs.sumOf { it.second.totalItems }
 
             summaryBuilder.append(String.format(Locale.US, "  Total Db operations: %d\n", totalDbOps))
             summaryBuilder.append(String.format(Locale.US, "  Total Db time: %s (%.1f%% of total sync)\n",
                 formatTime(totalDbTime), (totalDbTime.toDouble() / totalDuration * 100)))
             summaryBuilder.append(String.format(Locale.US, "  Total items processed: %d\n", totalDbItems))
 
-            dbOperationTimes.entries.sortedByDescending { entry -> synchronized(entry.value) { entry.value.sumOf { log -> log.duration } } }.forEach { (model, logs) ->
-                val totalTime: Long
-                val avgTime: Long
-                val totalItems: Int
-                val logCount: Int
-                synchronized(logs) {
-                    totalTime = logs.sumOf { it.duration }
-                    avgTime = if (logs.isNotEmpty()) totalTime / logs.size else 0
-                    totalItems = logs.sumOf { it.itemCount }
-                    logCount = logs.size
-                }
+            dbAggs.sortedByDescending { it.second.totalTime }.forEach { (model, agg) ->
+                val totalTime = agg.totalTime
+                val avgTime = if (agg.count > 0) totalTime / agg.count else 0
+                val totalItems = agg.totalItems
+                val logCount = agg.count
                 summaryBuilder.append(String.format(Locale.US, "    %-25s: %d ops, %10s total, %8s avg, %d items\n",
                     model.take(25), logCount, formatTime(totalTime), formatTime(avgTime), totalItems))
             }
@@ -311,10 +328,10 @@ class SyncTimeLogger @Inject constructor(
 
         // Performance insights
         summaryBuilder.append("\nPERFORMANCE INSIGHTS:\n")
-        val apiPercentage = if (apiCallTimes.isNotEmpty()) {
+        val apiPercentage = if (apiAggs.isNotEmpty()) {
             (totalApiTime.toDouble() / totalDuration * 100)
         } else 0.0
-        val dbPercentage = if (dbOperationTimes.isNotEmpty()) {
+        val dbPercentage = if (dbAggs.isNotEmpty()) {
             (totalDbTime.toDouble() / totalDuration * 100)
         } else 0.0
 
