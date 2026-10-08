@@ -347,7 +347,8 @@ class RetryRepositoryImplTest {
     fun `getRetryQueueSnapshot returns snapshot with active count and pending ops`() = runTest {
         val op1 = RetryOperation().apply { id = "op1"; attemptCount = 1; maxAttempts = 5 }
         coEvery { retryDao.getActiveCount() } returns 10L
-        coEvery { retryDao.getPending(timeProvider.now()) } returns listOf(op1)
+        coEvery { retryDao.getPendingPreview(timeProvider.now(), 10) } returns listOf(op1)
+        coEvery { retryDao.getPendingDueCount(timeProvider.now()) } returns 15L
 
         val snapshot = repository.getRetryQueueSnapshot()
 
@@ -355,6 +356,9 @@ class RetryRepositoryImplTest {
         assertEquals(1, snapshot.pendingOps.size)
         assertEquals(op1, snapshot.pendingOps[0])
         assertEquals(false, snapshot.isProcessing)
+        assertEquals(15L, snapshot.pendingDueCount)
+
+        coVerify(exactly = 0) { retryDao.getPending(any()) }
     }
 
     @Test
