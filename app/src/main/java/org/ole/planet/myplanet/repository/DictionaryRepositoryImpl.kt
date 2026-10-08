@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
@@ -58,7 +57,6 @@ class DictionaryRepositoryImpl @Inject constructor(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    Log.e("DictionaryRepositoryImpl", "Failed to insert dictionary data", e)
                     DictionaryLoad.Failed(e)
                 }
             }
