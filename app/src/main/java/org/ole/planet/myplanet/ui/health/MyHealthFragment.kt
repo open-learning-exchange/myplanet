@@ -40,7 +40,7 @@ import org.ole.planet.myplanet.model.effectiveId
 import org.ole.planet.myplanet.ui.user.LearnerRegistrationActivity
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.ImageUtils
-import org.ole.planet.myplanet.utils.TextNormalizeUtils
+import org.ole.planet.myplanet.utils.StringUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
@@ -163,22 +163,22 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
             binding.txtFullName.text = getDisplayName(currentUser)
             val userImageSize = binding.userImage.context.resources.getDimensionPixelSize(R.dimen.user_image_size)
             ImageUtils.loadPlaceholderImage(currentUser.userImage, binding.userImage, userImageSize)
-            binding.txtEmail.text = TextNormalizeUtils.checkNA(currentUser.email)
-            binding.txtLanguage.text = TextNormalizeUtils.checkNA(currentUser.language)
+            binding.txtEmail.text = StringUtils.checkNA(currentUser.email)
+            binding.txtLanguage.text = StringUtils.checkNA(currentUser.language)
             binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { "dd-MM-yyyy" }
 
             if (healthRecord != null) {
                 val (mh, mm, list, userMap) = healthRecord
                 val myHealths = mm.profile
-                binding.txtOtherNeed.text = TextNormalizeUtils.checkNA(myHealths?.notes)
-                binding.txtSpecialNeeds.text = TextNormalizeUtils.checkNA(myHealths?.specialNeeds)
-                binding.txtBirthPlace.text = TextNormalizeUtils.checkNA(currentUser.birthPlace)
+                binding.txtOtherNeed.text = StringUtils.checkNA(myHealths?.notes)
+                binding.txtSpecialNeeds.text = StringUtils.checkNA(myHealths?.specialNeeds)
+                binding.txtBirthPlace.text = StringUtils.checkNA(currentUser.birthPlace)
                 val contact = myHealths?.emergencyContact?.takeIf { it.isNotBlank() }
                 binding.txtEmergencyContact.text = getString(
                     R.string.emergency_contact_details,
-                    TextNormalizeUtils.checkNA(myHealths?.emergencyContactName),
-                    TextNormalizeUtils.checkNA(AddHealthActivity.contactTypeLabel(requireContext(), myHealths?.emergencyContactType)),
-                    TextNormalizeUtils.checkNA(contact)
+                    StringUtils.checkNA(myHealths?.emergencyContactName),
+                    StringUtils.checkNA(AddHealthActivity.contactTypeLabel(requireContext(), myHealths?.emergencyContactType)),
+                    StringUtils.checkNA(contact)
                 ).trimIndent()
 
                 if (list.isNotEmpty()) {

@@ -46,7 +46,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.TextNormalizeUtils
+import org.ole.planet.myplanet.utils.StringUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.distinctByContent
 
@@ -101,8 +101,8 @@ class ResourcesRepositoryImpl @Inject constructor(
         if (isMyCourseLib && userId == null) return emptyList()
 
         val queryParts = query.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { TextNormalizeUtils.normalizeText(it) }
-        val normalizedQuery = TextNormalizeUtils.normalizeText(query)
+        val normalizedQueryParts = queryParts.map { StringUtils.normalizeText(it) }
+        val normalizedQuery = StringUtils.normalizeText(query)
 
         val queryBuilder = StringBuilder("SELECT * FROM my_library WHERE isPrivate = 0")
         val bindArgs = mutableListOf<Any>()
@@ -160,7 +160,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         return runCatching {
             val resource = myLibraryDao.getById(resourceId) ?: return@runCatching
             resource.title = title
-            resource.titleNormal = TextNormalizeUtils.normalizeText(title)
+            resource.titleNormal = StringUtils.normalizeText(title)
             resource.author = author
             resource.year = year
             resource.description = description
@@ -281,7 +281,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val resource = MyLibrary().apply {
             this.id = id
             this.title = title
-            this.titleNormal = TextNormalizeUtils.normalizeText(title)
+            this.titleNormal = StringUtils.normalizeText(title)
             this.addedBy = request.addedBy
             this.author = request.author
             this.resourceId = id

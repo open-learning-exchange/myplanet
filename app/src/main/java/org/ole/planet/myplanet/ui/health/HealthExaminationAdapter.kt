@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.ui.health.HealthExaminationAdapter.HealthExaminat
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils.getString
-import org.ole.planet.myplanet.utils.TextNormalizeUtils
+import org.ole.planet.myplanet.utils.StringUtils
 
 class HealthExaminationAdapter(
     private val context: Context,
@@ -141,11 +141,11 @@ class HealthExaminationAdapter(
     }
 
     private fun showEncryptedData(tvOtherNotes: TextView, encrypted: JsonObject) {
-        tvOtherNotes.text = context.getString(R.string.observations_notes_colon, TextNormalizeUtils.checkNA(getString("notes", encrypted)),
-            TextNormalizeUtils.checkNA(getString("diagnosis", encrypted)), TextNormalizeUtils.checkNA(getString("treatments", encrypted)),
-            TextNormalizeUtils.checkNA(getString("medications", encrypted)), TextNormalizeUtils.checkNA(getString("immunizations", encrypted)),
-            TextNormalizeUtils.checkNA(getString("allergies", encrypted)), TextNormalizeUtils.checkNA(getString("xrays", encrypted)),
-            TextNormalizeUtils.checkNA(getString("tests", encrypted)), TextNormalizeUtils.checkNA(getString("referrals", encrypted)))
+        tvOtherNotes.text = context.getString(R.string.observations_notes_colon, StringUtils.checkNA(getString("notes", encrypted)),
+            StringUtils.checkNA(getString("diagnosis", encrypted)), StringUtils.checkNA(getString("treatments", encrypted)),
+            StringUtils.checkNA(getString("medications", encrypted)), StringUtils.checkNA(getString("immunizations", encrypted)),
+            StringUtils.checkNA(getString("allergies", encrypted)), StringUtils.checkNA(getString("xrays", encrypted)),
+            StringUtils.checkNA(getString("tests", encrypted)), StringUtils.checkNA(getString("referrals", encrypted)))
     }
 
     class HealthExaminationViewHolder(val binding: RowExaminationBinding) : RecyclerView.ViewHolder(binding.root)

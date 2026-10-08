@@ -4,7 +4,7 @@ import java.math.BigInteger
 import java.text.Normalizer
 import java.util.Locale
 
-object TextNormalizeUtils {
+object StringUtils {
     private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
 
     fun checkNA(s: String?): String {
