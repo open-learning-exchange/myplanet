@@ -22,7 +22,7 @@ data class NewsUpdateData(
     val imagesArray: JsonArray
 )
 
-interface VoicesRepository : VoicesEditActions, VoicesShareRepository {
+interface VoicesRepository : VoicesEditor, VoicesShareRepository {
     suspend fun getNewsForUpload(): List<NewsUploadData>
     suspend fun markNewsUploaded(updates: List<NewsUpdateData>)
     suspend fun getCommunityNews(userIdentifier: String): Flow<List<News>>

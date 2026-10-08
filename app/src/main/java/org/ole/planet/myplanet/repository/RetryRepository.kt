@@ -9,7 +9,12 @@ sealed class RetryOperationResult {
     data class TerminalFailure(val message: String?, val httpCode: Int? = null) : RetryOperationResult()
 }
 
-data class RetryQueueDetails(val pendingCount: Long = 0, val pendingOps: List<RetryOperation> = emptyList(), val isProcessing: Boolean = false)
+data class RetryQueueDetails(
+    val pendingCount: Long = 0,
+    val pendingOps: List<RetryOperation> = emptyList(),
+    val isProcessing: Boolean = false,
+    val pendingDueCount: Long = 0
+)
 
 interface RetryRepository {
     suspend fun recordFailure(
@@ -27,9 +32,7 @@ interface RetryRepository {
     suspend fun markFailed(operationId: String, errorMessage: String?, httpCode: Int?)
     suspend fun executeOperation(operation: RetryOperation): RetryOperationResult
     suspend fun getPending(): List<RetryOperation>
-    suspend fun getPendingCount(): Long
     suspend fun cleanup()
-    suspend fun deletePendingAndAbandonedOperations()
     suspend fun recoverStuckOperations()
     fun isCurrentlyProcessing(): Boolean
     fun tryStartProcessing(): Boolean

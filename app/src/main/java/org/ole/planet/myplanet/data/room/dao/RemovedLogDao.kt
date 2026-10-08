@@ -17,13 +17,14 @@ interface RemovedLogDao {
 
     @Transaction
     suspend fun deleteByTypeUserAndDocsChunked(type: String, userId: String?, docIds: List<String>) {
-        docIds.chunked(900).forEach { chunk ->
+        if (docIds.isEmpty()) return
+        docIds.distinct().chunked(900).forEach { chunk ->
             deleteByTypeUserAndDocs(type, userId, chunk)
         }
     }
 
-    @Query("SELECT docId FROM removed_log WHERE type = :type AND userId IS :userId")
-    suspend fun getRemovedDocIds(type: String, userId: String?): List<String?>
+    @Query("SELECT docId FROM removed_log WHERE type = :type AND userId IS :userId AND docId IS NOT NULL")
+    suspend fun getRemovedDocIds(type: String, userId: String?): List<String>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(log: RemovedLog)

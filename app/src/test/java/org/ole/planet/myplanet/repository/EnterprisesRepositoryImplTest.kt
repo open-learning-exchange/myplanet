@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.EnterpriseReportCsvProjection
 import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.FinanceReportParams
-import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
@@ -40,29 +39,19 @@ class EnterprisesRepositoryImplTest {
     )
 
     @Test
-    fun `getReportsFlow delegates to observeNonArchivedReportsByTeamId`() = runTest {
+    fun `getReportsFlow delegates to observeNonArchivedFinanceReportsByTeamId`() = runTest {
         val teamId = "team123"
-        val rawReports = listOf(
-            MyTeam().apply {
-                _id = "report1"
-                createdDate = 2000L
-            },
-            MyTeam().apply {
-                _id = "report2"
-                createdDate = 1000L
-            }
-        )
         val expectedReports = listOf(
             FinanceReport(_id="report1", _rev=null, status=null, description=null, beginningBalance=0, sales=0, otherIncome=0, wages=0, otherExpenses=0, startDate=0L, endDate=0L, createdDate=2000L, updatedDate=0L, updated=false, imageName=null),
             FinanceReport(_id="report2", _rev=null, status=null, description=null, beginningBalance=0, sales=0, otherIncome=0, wages=0, otherExpenses=0, startDate=0L, endDate=0L, createdDate=1000L, updatedDate=0L, updated=false, imageName=null)
         )
 
-        every { teamDao.observeNonArchivedReportsByTeamId(teamId) } returns flowOf(rawReports)
+        every { teamDao.observeNonArchivedFinanceReportsByTeamId(teamId) } returns flowOf(expectedReports)
 
         val result = repository.getReportsFlow(teamId).first()
 
         assertEquals(expectedReports, result)
-        verify(exactly = 1) { teamDao.observeNonArchivedReportsByTeamId(teamId) }
+        verify(exactly = 1) { teamDao.observeNonArchivedFinanceReportsByTeamId(teamId) }
     }
 
     @Test
@@ -163,6 +152,129 @@ class EnterprisesRepositoryImplTest {
     }
 
     @Test
+    fun `updateReport calls updateReportFields with payload values and timeProvider now and never getById or upsert`() = runTest {
+        every { timeProvider.now() } returns 99999L
+        coEvery {
+            teamDao.updateReportFields(
+                id = any(),
+                description = any(),
+                beginningBalance = any(),
+                sales = any(),
+                otherIncome = any(),
+                wages = any(),
+                otherExpenses = any(),
+                startDate = any(),
+                endDate = any(),
+                updatedDate = any()
+            )
+        } returns 1
+
+        val payload = FinanceReportParams(
+            description = "updated description",
+            beginningBalance = 10,
+            sales = 20,
+            otherIncome = 30,
+            wages = 40,
+            otherExpenses = 50,
+            startDate = 100L,
+            endDate = 200L,
+            teamId = "team1",
+            teamType = "enterprise",
+            teamPlanetCode = "planet1",
+            imageName = null,
+            imageData = null
+        )
+
+        repository.updateReport("r1", payload)
+
+        coVerify(exactly = 1) {
+            teamDao.updateReportFields(
+                id = "r1",
+                description = "updated description",
+                beginningBalance = 10,
+                sales = 20,
+                otherIncome = 30,
+                wages = 40,
+                otherExpenses = 50,
+                startDate = 100L,
+                endDate = 200L,
+                updatedDate = 99999L
+            )
+        }
+        coVerify(exactly = 0) { teamDao.getById(any()) }
+        coVerify(exactly = 0) { teamDao.upsert(any()) }
+    }
+
+    @Test
+    fun `updateReport with blank reportId calls nothing`() = runTest {
+        val payload = FinanceReportParams(
+            description = "desc",
+            beginningBalance = 0,
+            sales = 0,
+            otherIncome = 0,
+            wages = 0,
+            otherExpenses = 0,
+            startDate = 0L,
+            endDate = 0L,
+            teamId = "team1",
+            teamType = "enterprise",
+            teamPlanetCode = "planet1",
+            imageName = "image.png",
+            imageData = byteArrayOf(1, 2, 3)
+        )
+
+        repository.updateReport("", payload)
+        repository.updateReport("   ", payload)
+
+        coVerify(exactly = 0) {
+            teamDao.updateReportFields(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+            )
+        }
+        coVerify(exactly = 0) { teamDao.getById(any()) }
+        coVerify(exactly = 0) { teamDao.upsert(any()) }
+        coVerify(exactly = 0) { teamDao.setImageNameById(any(), any()) }
+    }
+
+    @Test
+    fun `updateReport attaches image when updateReportFields returns 0 and image data is present`() = runTest {
+        val tempDir = Files.createTempDirectory("enterprises_test_update").toFile()
+        val destFile = File(tempDir, "team_attachments/r1/photo.png")
+        every { storagePathResolver.resolveTeamAttachment("r1", "photo.png") } returns destFile
+        every { timeProvider.now() } returns 88888L
+
+        coEvery {
+            teamDao.updateReportFields(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+            )
+        } returns 0
+
+        val imageBytes = byteArrayOf(5, 6, 7)
+        val payload = FinanceReportParams(
+            description = "desc",
+            beginningBalance = 0,
+            sales = 0,
+            otherIncome = 0,
+            wages = 0,
+            otherExpenses = 0,
+            startDate = 0L,
+            endDate = 0L,
+            teamId = "team1",
+            teamType = "enterprise",
+            teamPlanetCode = "planet1",
+            imageName = "photo.png",
+            imageData = imageBytes
+        )
+
+        repository.updateReport("r1", payload)
+
+        assertTrue("attachment file should be written", destFile.exists())
+        assertArrayEquals(imageBytes, destFile.readBytes())
+
+        coVerify(exactly = 1) { teamDao.setImageNameById("r1", "photo.png") }
+    }
+
+    @Test
     fun `addReport short-circuits image attachment update when resolveTeamAttachment returns null`() = runTest {
         every { storagePathResolver.resolveTeamAttachment(any(), any()) } returns null
         every { timeProvider.now() } returns 12345L
@@ -193,7 +305,7 @@ class EnterprisesRepositoryImplTest {
     fun `getReportsFlow deduplicates byte-identical emissions`() = runTest {
         val r1 = report("r1", "rev1", sales = 10)
         val r2 = report("r1", "rev1", sales = 10)
-        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
+        every { teamDao.observeNonArchivedFinanceReportsByTeamId("team1") } returns
             flowOf(listOf(r1), listOf(r2))
 
         val emissions = mutableListOf<List<FinanceReport>>()
@@ -206,7 +318,7 @@ class EnterprisesRepositoryImplTest {
     fun `getReportsFlow emits when a locally-edited financial field changes with rev unchanged`() = runTest {
         val before = report("r1", "rev1", sales = 10)
         val after = report("r1", "rev1", sales = 25)
-        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
+        every { teamDao.observeNonArchivedFinanceReportsByTeamId("team1") } returns
             flowOf(listOf(before), listOf(after))
 
         val emissions = mutableListOf<List<FinanceReport>>()
@@ -221,7 +333,7 @@ class EnterprisesRepositoryImplTest {
     fun `getReportsFlow emits when description changes with id and rev unchanged`() = runTest {
         val before = report("r1", "rev1", description = "old")
         val after = report("r1", "rev1", description = "new")
-        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
+        every { teamDao.observeNonArchivedFinanceReportsByTeamId("team1") } returns
             flowOf(listOf(before), listOf(after))
 
         val emissions = mutableListOf<List<FinanceReport>>()
@@ -236,7 +348,7 @@ class EnterprisesRepositoryImplTest {
     fun `getReportsFlow emits when a report is added`() = runTest {
         val r1 = report("r1", "rev1", createdDate = 100L)
         val r2 = report("r2", "rev2", createdDate = 200L)
-        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
+        every { teamDao.observeNonArchivedFinanceReportsByTeamId("team1") } returns
             flowOf(listOf(r1), listOf(r1, r2))
 
         val emissions = mutableListOf<List<FinanceReport>>()
@@ -251,7 +363,7 @@ class EnterprisesRepositoryImplTest {
     fun `getReportsFlow preserves the order returned by the dao`() = runTest {
         val r2 = report("r2", "rev2", createdDate = 200L)
         val r1 = report("r1", "rev1", createdDate = 100L)
-        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
+        every { teamDao.observeNonArchivedFinanceReportsByTeamId("team1") } returns
             flowOf(listOf(r2, r1))
 
         val emissions = mutableListOf<List<FinanceReport>>()
@@ -265,7 +377,7 @@ class EnterprisesRepositoryImplTest {
     fun `getReportsFlow emits when createdDate changes`() = runTest {
         val before = report("r1", "rev1", createdDate = 100L)
         val after = report("r1", "rev1", createdDate = 200L)
-        every { teamDao.observeNonArchivedReportsByTeamId("team1") } returns
+        every { teamDao.observeNonArchivedFinanceReportsByTeamId("team1") } returns
             flowOf(listOf(before), listOf(after))
 
         val emissions = mutableListOf<List<FinanceReport>>()
@@ -283,13 +395,21 @@ class EnterprisesRepositoryImplTest {
         sales: Int = 0,
         createdDate: Long = 0L,
         status: String? = null,
-    ) = MyTeam().apply {
-        _id = id
-        _rev = rev
-        docType = "report"
-        this.description = description
-        this.sales = sales
-        this.createdDate = createdDate
-        this.status = status
-    }
+    ) = FinanceReport(
+        _id = id,
+        _rev = rev,
+        status = status,
+        description = description,
+        beginningBalance = 0,
+        sales = sales,
+        otherIncome = 0,
+        wages = 0,
+        otherExpenses = 0,
+        startDate = 0L,
+        endDate = 0L,
+        createdDate = createdDate,
+        updatedDate = 0L,
+        updated = false,
+        imageName = null,
+    )
 }

@@ -8,6 +8,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -150,6 +151,39 @@ class NotificationDaoTest {
     }
 
     @Test
+    fun chunkedListOperations_deduplicateRepeatedIdsAcrossChunkBoundary() = runBlocking {
+        val notifications = (1..1000).map { i ->
+            createNotification("notif_$i", rev = "rev_$i", needsSync = true).apply {
+                isRead = false
+            }
+        }
+        notificationDao.upsertAll(notifications)
+
+        val idsWithDuplicate = notifications.map { it.id } + "notif_1"
+        assertEquals(1001, idsWithDuplicate.size)
+
+        // Test getByIds
+        val fetchedNotifications = notificationDao.getByIds(idsWithDuplicate)
+        assertEquals(1000, fetchedNotifications.size)
+
+        // Test getIdsByIds
+        val fetchedIds = notificationDao.getIdsByIds(idsWithDuplicate)
+        assertEquals(1000, fetchedIds.size)
+
+        // Test markAsRead(ids, date) returns distinct count
+        val markDate = java.util.Date()
+        val markResult = notificationDao.markAsRead(idsWithDuplicate, markDate)
+        assertEquals(1000, markResult)
+
+        // Test deleteByIds returns distinct count
+        val deleteResult = notificationDao.deleteByIds(idsWithDuplicate)
+        assertEquals(1000, deleteResult)
+
+        val remainingNotifications = notificationDao.getByIds(idsWithDuplicate)
+        assertTrue(remainingNotifications.isEmpty())
+    }
+
+    @Test
     fun chunkedListOperations_handleMoreThan900Items() = runBlocking {
         val notifications = (1..1200).map { i ->
             createNotification("notif_$i", rev = "rev_$i", needsSync = true).apply {
@@ -190,5 +224,91 @@ class NotificationDaoTest {
         assertTrue(notificationDao.getIdsByIds(emptyList()).isEmpty())
         assertEquals(0, notificationDao.markAsRead(emptyList(), java.util.Date()))
         assertEquals(0, notificationDao.deleteByIds(emptyList()))
+    }
+
+    @Test
+    fun upsertAllPreservingPendingRead_rowWithNeedsSyncPreservesIsReadAndNeedsSync() = runBlocking {
+        val existing = createNotification("n1", needsSync = true).apply { isRead = true }
+        notificationDao.upsert(existing)
+
+        val serverCopy = createNotification("n1", needsSync = false).apply { isRead = false }
+        notificationDao.upsertAllPreservingPendingRead(listOf(serverCopy))
+
+        val result = notificationDao.getById("n1")
+        assertNotNull(result)
+        assertTrue(result!!.isRead)
+        assertTrue(result.needsSync)
+    }
+
+    @Test
+    fun upsertAllPreservingPendingRead_rowWithoutNeedsSyncTakesServerIsRead() = runBlocking {
+        val existing = createNotification("n2", needsSync = false).apply { isRead = true }
+        notificationDao.upsert(existing)
+
+        val serverCopy = createNotification("n2", needsSync = false).apply { isRead = false }
+        notificationDao.upsertAllPreservingPendingRead(listOf(serverCopy))
+
+        val result = notificationDao.getById("n2")
+        assertNotNull(result)
+        assertFalse(result!!.isRead)
+        assertFalse(result.needsSync)
+    }
+
+    @Test
+    fun markExistingAsRead_returnsOnlyExistingIdsAndChangesOnlyThoseRows() = runBlocking {
+        val n1 = createNotification("n1").apply { isRead = false }
+        val n2 = createNotification("n2").apply { isRead = false }
+        notificationDao.upsertAll(listOf(n1, n2))
+
+        val result = notificationDao.markExistingAsRead(listOf("n1", "n3"), java.util.Date())
+
+        assertEquals(listOf("n1"), result)
+        assertTrue(notificationDao.getById("n1")!!.isRead)
+        assertFalse(notificationDao.getById("n2")!!.isRead)
+        assertNull(notificationDao.getById("n3"))
+    }
+
+    @Test
+    fun deleteExisting_returnsOnlyExistingIdsAndDeletesOnlyThoseRows() = runBlocking {
+        val n1 = createNotification("n1")
+        val n2 = createNotification("n2")
+        notificationDao.upsertAll(listOf(n1, n2))
+
+        val result = notificationDao.deleteExisting(listOf("n1", "n3"))
+
+        assertEquals(listOf("n1"), result)
+        assertNull(notificationDao.getById("n1"))
+        assertNotNull(notificationDao.getById("n2"))
+    }
+
+    @Test
+    fun markAllUnreadAsReadReturningIds_returnsExactlyFlippedIdsScopedToUserId() = runBlocking {
+        val userA1 = createNotification("userA_1").apply { userId = "userA"; isRead = false }
+        val userA2 = createNotification("userA_2").apply { userId = "userA"; isRead = true }
+        val userB1 = createNotification("userB_1").apply { userId = "userB"; isRead = false }
+        notificationDao.upsertAll(listOf(userA1, userA2, userB1))
+
+        val result = notificationDao.markAllUnreadAsReadReturningIds("userA", java.util.Date())
+
+        assertEquals(listOf("userA_1"), result)
+        assertTrue(notificationDao.getById("userA_1")!!.isRead)
+        assertTrue(notificationDao.getById("userA_2")!!.isRead)
+        assertFalse(notificationDao.getById("userB_1")!!.isRead)
+    }
+
+    @Test
+    fun markAllUnreadAsReadReturningIds_includesSystemNotificationsOnlyForAdmins() = runBlocking {
+        val own = createNotification("own").apply { userId = "admin1"; isRead = false }
+        val system = createNotification("system").apply { userId = "SYSTEM"; isRead = false }
+        notificationDao.upsertAll(listOf(own, system))
+
+        val asRegularUser = notificationDao.markAllUnreadAsReadReturningIds("admin1", java.util.Date())
+        assertEquals(listOf("own"), asRegularUser)
+        assertFalse(notificationDao.getById("system")!!.isRead)
+
+        val asAdmin = notificationDao.markAllUnreadAsReadReturningIds("admin1", java.util.Date(), isAdmin = true)
+        assertEquals(listOf("system"), asAdmin)
+        assertTrue(notificationDao.getById("system")!!.isRead)
+        assertEquals(0, notificationDao.getUnreadCount("admin1", true))
     }
 }

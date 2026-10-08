@@ -52,7 +52,6 @@ import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.DefaultTimeBar
 import androidx.media3.ui.PlayerView
-import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import dagger.hilt.android.AndroidEntryPoint
@@ -60,6 +59,7 @@ import java.io.File
 import java.util.regex.Pattern
 import javax.inject.Inject
 import kotlin.math.abs
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -101,7 +101,8 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
     private var noisyReceiverRegistered = false
     private lateinit var audioRecorder: AudioRecorder
     private lateinit var library: MyLibrary
-    private var pdfText: String = ""
+    private var pdfText: String? = null
+    private var pdfTextJob: Job? = null
     private var externalFilesDir: File? = null
     private val viewModel: ResourceViewerViewModel by viewModels()
     @Inject lateinit var dispatcherProvider: DispatcherProvider
@@ -121,13 +122,15 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
             Utilities.toast(requireContext(), getString(R.string.recording_stopped))
             NotificationUtils.cancel(requireContext(), NotificationUtils.RECORDING_NOTIFICATION_ID)
             if (::library.isInitialized) {
-                library.id?.let { viewModel.saveTranslationAudioPath(it, outputFile) }
+                viewModel.saveTranslationAudioPath(library.id, outputFile)
             }
             binding.fabRecord.setImageResource(R.drawable.ic_mic)
         }
 
         override fun onError(error: String?) {
             Utilities.toast(requireContext(), "Recording error: ${error.orEmpty()}")
+            NotificationUtils.cancel(requireContext(), NotificationUtils.RECORDING_NOTIFICATION_ID)
+            binding.fabRecord.setImageResource(R.drawable.ic_mic)
         }
     }
 
@@ -233,17 +236,18 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         var selectedIndex = speedValues.indexOfFirst { abs(it - currentSpeed) < 0.05f }
         if (selectedIndex == -1) selectedIndex = 1
 
-        MaterialDialog.Builder(requireContext())
-            .title(R.string.playback_speed)
-            .items(*speedOptions)
-            .itemsCallbackSingleChoice(selectedIndex) { _, _, which, _ ->
-                val chosenSpeed = speedValues[which]
+        var pending = selectedIndex
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.playback_speed)
+            .setSingleChoiceItems(speedOptions, selectedIndex) { _, which ->
+                pending = which
+            }
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val chosenSpeed = speedValues[pending]
                 viewModel.savePlaybackSpeed(chosenSpeed)
                 exoPlayer?.setPlaybackSpeed(chosenSpeed)
                 requireActivity().invalidateOptionsMenu()
-                true
             }
-            .positiveText(android.R.string.ok)
             .show()
     }
 
@@ -463,19 +467,6 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
             playerView.player = player
             player.setPlaybackSpeed(viewModel.getPlaybackSpeed())
             player.setMediaItem(MediaItem.fromUri(fullPath))
-            player.addListener(object : Player.Listener {
-                override fun onIsPlayingChanged(isPlaying: Boolean) {
-                    if (!isPlaying && player.playbackState != Player.STATE_BUFFERING) {
-                        saveCurrentPlaybackProgress()
-                    }
-                }
-                override fun onPlaybackStateChanged(playbackState: Int) {
-                    if (playbackState == Player.STATE_ENDED) {
-                        lastSavedPositionMs = 0L
-                        viewModel.savePlaybackProgress(getMediaKey(), 0L)
-                    }
-                }
-            })
             player.prepare()
             val savedProgress = viewModel.getPlaybackProgress(getMediaKey())
             if (savedProgress > 0L) {
@@ -509,7 +500,6 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         isResourceFinished = true
 
         renderPdf()
-        extractPdfText()
         setupPdfFabActions()
     }
 
@@ -553,12 +543,16 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         }
     }
 
-    private fun extractPdfText() {
+    private suspend fun loadPdfText(): String {
+        pdfText?.let { return it }
         val file = File(externalFilesDir, "ole/$filePath")
-        if (!file.exists()) return
-        viewLifecycleOwner.lifecycleScope.launch {
-            pdfText = viewModel.extractPdfText(file)
+        if (!file.exists()) {
+            pdfText = ""
+            return ""
         }
+        val extracted = viewModel.extractPdfText(file)
+        pdfText = extracted
+        return extracted
     }
 
     private fun setupPdfFabActions() {
@@ -569,7 +563,20 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
             }
         }
         binding.fabReadAloud.setOnClickListener {
-            if (ttsManager.isSpeaking) ttsManager.stop() else ttsManager.speak(pdfText)
+            if (ttsManager.isSpeaking) {
+                ttsManager.stop()
+            } else if (pdfTextJob?.isActive == true) {
+                return@setOnClickListener
+            } else {
+                if (pdfText == null) {
+                    Utilities.toast(requireContext(), getString(R.string.pdf_extracting_text))
+                }
+                pdfTextJob = viewLifecycleOwner.lifecycleScope.launch {
+                    val text = loadPdfText()
+                    if (!viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return@launch
+                    ttsManager.speak(text)
+                }
+            }
         }
     }
 
@@ -629,6 +636,33 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         }
         if (truncated) {
             Utilities.toast(requireContext(), getString(R.string.text_content_truncated))
+        }
+        setupTextReadAloud(text)
+    }
+
+    private fun setupTextReadAloud(text: String) {
+        binding.fabRecord.visibility = View.GONE
+        binding.fabPlay.visibility = View.GONE
+        binding.fabMenu.visibility = View.VISIBLE
+        binding.fabReadAloud.setOnClickListener {
+            if (ttsManager.isSpeaking) {
+                ttsManager.stop()
+                return@setOnClickListener
+            }
+            viewLifecycleOwner.lifecycleScope.launch {
+                val speech = withContext(dispatcherProvider.default) {
+                    when (type) {
+                        ResourceType.MARKDOWN -> TTSManager.stripMarkdown(text)
+                        ResourceType.CSV -> runCatching { TTSManager.formatCsvTextForSpeech(text) }.getOrDefault("")
+                        else -> text
+                    }
+                }
+                if (speech.isBlank()) {
+                    Utilities.toast(requireContext(), getString(R.string.tts_not_available))
+                } else {
+                    ttsManager.speak(speech)
+                }
+            }
         }
     }
 
@@ -713,6 +747,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         if (activity?.isInPictureInPictureMode != true) {
             exoPlayer?.pause()
         }
+        pdfTextJob?.cancel()
         ttsManager.stop()
     }
 

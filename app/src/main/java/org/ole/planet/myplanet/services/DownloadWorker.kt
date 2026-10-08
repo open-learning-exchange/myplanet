@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utils.UrlUtils
+import androidx.core.content.edit
 
 @HiltWorker
 class DownloadWorker @AssistedInject constructor(
@@ -93,13 +94,21 @@ class DownloadWorker @AssistedInject constructor(
             }
 
             showCompletionNotification(completedCount, urls.size, results.any { !it })
-            Result.success()
+            removeCompletedUrls(urlsKey, urls.filterIndexed { i, _ -> results[i] }.toSet())
+            resultFor(succeeded = results.count { it }, attempted = results.size, runAttemptCount = runAttemptCount)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
             Log.e(TAG, "Download worker failed", e)
             Result.failure()
         }
+    }
+
+    private fun removeCompletedUrls(urlsKey: String, completed: Set<String>) {
+        if (completed.isEmpty()) return
+        val remaining = preferences.getStringSet(urlsKey, emptySet())?.toMutableSet() ?: return
+        remaining.removeAll(completed)
+        preferences.edit { putStringSet(urlsKey, remaining) }
     }
 
     private suspend fun downloadFile(url: String, authHeader: String, index: Int, total: Int): Boolean {
@@ -114,8 +123,7 @@ class DownloadWorker @AssistedInject constructor(
             return true
         }
         return try {
-            val response = downloadRepository.downloadFileResponse(url, authHeader)
-            when (response) {
+            when (val response = downloadRepository.downloadFileResponse(url, authHeader)) {
                 is DownloadResult.Success -> {
                     downloadFileBody(response.body, url, index, total)
                     true
@@ -224,6 +232,13 @@ class DownloadWorker @AssistedInject constructor(
 
     companion object {
         private const val TAG = "DownloadWorker"
+        internal const val MAX_RETRY_ATTEMPTS = 3
+
+        internal fun resultFor(succeeded: Int, attempted: Int, runAttemptCount: Int): Result = when {
+            attempted == 0 || succeeded > 0 -> Result.success()
+            runAttemptCount < MAX_RETRY_ATTEMPTS -> Result.retry()
+            else -> Result.failure()
+        }
         const val WORKER_NOTIFICATION_ID = 3
         const val COMPLETION_NOTIFICATION_ID = 4
         private const val NOTIFICATION_UPDATE_INTERVAL_MS = 500L

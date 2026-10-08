@@ -14,6 +14,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -103,9 +105,15 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
 
     private fun observeData() {
 
-        collectWhenStarted(viewModel.healthSyncUpdates) {
-            viewModel.refreshSelectedPatient()
-        }
+        viewLifecycleOwner.lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onStart(owner: LifecycleOwner) {
+                viewModel.setSyncActive(true)
+            }
+
+            override fun onStop(owner: LifecycleOwner) {
+                viewModel.setSyncActive(false)
+            }
+        })
 
         collectWhenStarted(viewModel.loggedInUser) { user ->
             loggedInUser = user
@@ -169,7 +177,7 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
                 binding.txtEmergencyContact.text = getString(
                     R.string.emergency_contact_details,
                     Utilities.checkNA(myHealths?.emergencyContactName),
-                    Utilities.checkNA(myHealths?.emergencyContactType),
+                    Utilities.checkNA(AddHealthActivity.contactTypeLabel(requireContext(), myHealths?.emergencyContactType)),
                     Utilities.checkNA(contact)
                 ).trimIndent()
 

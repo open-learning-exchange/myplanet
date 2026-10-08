@@ -5,12 +5,12 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -18,8 +18,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MyHealth
@@ -68,15 +69,32 @@ class HealthViewModel @Inject constructor(
     private var selectPatientJob: Job? = null
     private var currentPatientId: String? = null
 
-    @OptIn(FlowPreview::class)
-    val healthSyncUpdates: Flow<Unit> = realtimeSyncManager.updatesFor(HEALTH_TABLE)
-        .filter { it.shouldRefreshUI }
-        .debounce(SYNC_REFRESH_DEBOUNCE_MS)
-        .map { }
+    private val syncActive = MutableStateFlow(false)
+
+    fun setSyncActive(active: Boolean) {
+        syncActive.value = active
+    }
+
+    init {
+        @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
+        viewModelScope.launch {
+            syncActive.flatMapLatest { active ->
+                if (active) {
+                    realtimeSyncManager.updatesFor(HEALTH_TABLE)
+                        .filter { it.shouldRefreshUI }
+                        .debounce(SYNC_REFRESH_DEBOUNCE_MS)
+                } else {
+                    emptyFlow()
+                }
+            }.collect {
+                refreshSelectedPatient()
+            }
+        }
+    }
 
     fun loadPatients(sortBy: String = "joinDate", descending: Boolean = true) {
         viewModelScope.launch {
-            _patientList.value = healthRepository.getPatientsSortedBy(sortBy, descending)
+            _patientList.value = userRepository.getUsersSortedBy(sortBy, descending)
         }
     }
 
@@ -87,7 +105,7 @@ class HealthViewModel @Inject constructor(
                 delay(100)
                 _isListLoading.value = true
             }
-            val result = healthRepository.searchPatients(query, sortBy, descending)
+            val result = if (query.isBlank()) userRepository.getUsersSortedBy(sortBy, descending) else userRepository.searchUsers(query, sortBy, descending)
             loadingJob.cancel()
             _patientList.value = result
             _isListLoading.value = false
@@ -131,7 +149,7 @@ class HealthViewModel @Inject constructor(
         job = viewModelScope.launch {
             _isLoading.value = true
             try {
-                val user = healthRepository.getPatientById(userId)
+                val user = userRepository.getUserById(userId)
                 if (user != null) {
                     val record = healthRepository.getPatientHealthRecords(userId, user)
                     _patientDetailState.value = PatientDetailState(user, record)

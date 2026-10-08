@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Update
 import org.ole.planet.myplanet.model.RetryOperation
 
 /**
@@ -16,9 +15,6 @@ interface RetryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(operation: RetryOperation)
 
-    @Update
-    suspend fun update(operation: RetryOperation)
-
     @Query("SELECT * FROM retry_operation WHERE id = :id LIMIT 1")
     suspend fun findById(id: String): RetryOperation?
 
@@ -29,6 +25,19 @@ interface RetryDao {
     )
     suspend fun getPending(now: Long): List<RetryOperation>
 
+    @Query(
+        "SELECT * FROM retry_operation WHERE status = 'pending' " +
+            "AND nextRetryTime <= :now AND attemptCount < maxAttempts " +
+            "ORDER BY nextRetryTime ASC, id ASC LIMIT :limit"
+    )
+    suspend fun getPendingPreview(now: Long, limit: Int): List<RetryOperation>
+
+    @Query(
+        "SELECT COUNT(*) FROM retry_operation WHERE status = 'pending' " +
+            "AND nextRetryTime <= :now AND attemptCount < maxAttempts"
+    )
+    suspend fun getPendingDueCount(now: Long): Long
+
     @Query("SELECT COUNT(*) FROM retry_operation WHERE status = 'pending' OR status = 'in_progress'")
     suspend fun getActiveCount(): Long
 
@@ -36,10 +45,10 @@ interface RetryDao {
     suspend fun deleteOldCompleted(cutoff: Long)
 
     @Query(
-        "SELECT * FROM retry_operation WHERE itemId = :itemId AND uploadType = :uploadType " +
+        "SELECT id FROM retry_operation WHERE itemId = :itemId AND uploadType = :uploadType " +
             "AND status != 'completed' AND status != 'abandoned' LIMIT 1"
     )
-    suspend fun findExisting(itemId: String, uploadType: String): RetryOperation?
+    suspend fun findExistingId(itemId: String, uploadType: String): String?
 
     @Query("DELETE FROM retry_operation WHERE status = 'pending' OR status = 'abandoned'")
     suspend fun deletePendingAndAbandoned()

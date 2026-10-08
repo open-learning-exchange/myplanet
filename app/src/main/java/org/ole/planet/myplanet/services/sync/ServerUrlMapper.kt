@@ -100,7 +100,7 @@ class ServerUrlMapper @Inject constructor(
         isServerReachable: suspend (String) -> Boolean
     ) {
         val primaryAvailable = isServerReachable(mapping.primaryUrl)
-        val alternativeAvailable = mapping.alternativeUrl?.let { altUrl ->
+        val alternativeAvailable = !primaryAvailable && mapping.alternativeUrl?.let { altUrl ->
             isServerReachable(altUrl)
         } == true
 
@@ -115,14 +115,18 @@ class ServerUrlMapper @Inject constructor(
     suspend fun isUrlDirectlyReachable(url: String): Boolean {
         return try {
             withContext(dispatcherProvider.io) {
-                val cleanUrl = if (!url.startsWith("http://") && !url.startsWith("https://")) "http://$url" else url
-                val connection = URL(cleanUrl).openConnection() as HttpURLConnection
-                connection.connectTimeout = 5000
-                connection.readTimeout = 5000
-                connection.requestMethod = "GET"
-                val code = connection.responseCode
-                connection.disconnect()
-                code in 200..599
+                var connection: HttpURLConnection? = null
+                try {
+                    val cleanUrl = if (!url.startsWith("http://") && !url.startsWith("https://")) "http://$url" else url
+                    connection = URL(cleanUrl).openConnection() as HttpURLConnection
+                    connection.connectTimeout = 5000
+                    connection.readTimeout = 5000
+                    connection.requestMethod = "HEAD"
+                    val code = connection.responseCode
+                    code in 200..599
+                } finally {
+                    connection?.disconnect()
+                }
             }
         } catch (e: Exception) {
             false

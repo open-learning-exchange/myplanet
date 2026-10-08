@@ -104,6 +104,25 @@ class RemovedLogDaoTest {
     }
 
     @Test
+    fun deleteByTypeUserAndDocsChunked_emptyInputAndDeduplicationAcrossChunkBoundary() = runBlocking {
+        removedLogDao.deleteByTypeUserAndDocsChunked("courses", "user1", emptyList())
+
+        val docIds = (1..1000).map { "doc_$it" }
+        val logsToDelete = docIds.map { docId ->
+            createLog(id = "del_$docId", type = "courses", userId = "user1", docId = docId)
+        }
+        removedLogDao.insertAll(logsToDelete)
+
+        val docIdsWithDuplicate = docIds + "doc_1"
+        assertEquals(1001, docIdsWithDuplicate.size)
+
+        removedLogDao.deleteByTypeUserAndDocsChunked("courses", "user1", docIdsWithDuplicate)
+
+        val user1CourseDocs = removedLogDao.getRemovedDocIds("courses", "user1")
+        assertTrue(user1CourseDocs.isEmpty())
+    }
+
+    @Test
     fun deleteByTypeUserAndDocsChunked_nullUserId_1200Docs_deletesAllMatchingAndLeavesNonNullUser() = runBlocking {
         val docIds = (1..1200).map { "doc_$it" }
         val logsToDelete = docIds.map { docId ->
@@ -139,5 +158,18 @@ class RemovedLogDaoTest {
 
         assertEquals(listOf("doc1", "doc2"), user1CourseDocs)
         assertEquals(listOf("doc3"), nullUserCourseDocs)
+    }
+
+    @Test
+    fun getRemovedDocIds_excludesNullDocIds() = runBlocking {
+        val nonNullDocLog = createLog(id = "1", type = "courses", userId = "user1", docId = "doc1")
+        val nullDocLog = createLog(id = "2", type = "courses", userId = "user1", docId = null)
+        val nullUserNonNullDocLog = createLog(id = "3", type = "courses", userId = null, docId = "doc2")
+        val nullUserNullDocLog = createLog(id = "4", type = "courses", userId = null, docId = null)
+
+        removedLogDao.insertAll(listOf(nonNullDocLog, nullDocLog, nullUserNonNullDocLog, nullUserNullDocLog))
+
+        assertEquals(listOf("doc1"), removedLogDao.getRemovedDocIds("courses", "user1"))
+        assertEquals(listOf("doc2"), removedLogDao.getRemovedDocIds("courses", null))
     }
 }

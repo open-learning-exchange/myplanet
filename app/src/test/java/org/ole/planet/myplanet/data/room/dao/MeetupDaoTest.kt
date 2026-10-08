@@ -132,6 +132,24 @@ class MeetupDaoTest {
     }
 
     @Test
+    fun getByTeamIds_handlesEmptyInputAndDeduplicatesAcrossChunkBoundary() = runBlocking {
+        val emptyResult = meetupDao.getByTeamIds(emptyList())
+        assertTrue(emptyResult.isEmpty())
+
+        val items = (1..1000).map { i ->
+            createTeamMeetup("m_$i", "team_$i")
+        }
+        meetupDao.upsertAll(items)
+
+        val teamIdsWithDuplicate = items.map { it.teamId!! } + "team_1"
+        assertEquals(1001, teamIdsWithDuplicate.size)
+
+        val result = meetupDao.getByTeamIds(teamIdsWithDuplicate)
+        assertEquals(1000, result.size)
+        assertEquals(items.map { it.id }.toSet(), result.map { it.id }.toSet())
+    }
+
+    @Test
     fun getByMeetupIds_handlesEmptyInputAndLargeChunkedList() = runBlocking {
         val emptyResult = meetupDao.getByMeetupIds(emptyList())
         assertTrue(emptyResult.isEmpty())
