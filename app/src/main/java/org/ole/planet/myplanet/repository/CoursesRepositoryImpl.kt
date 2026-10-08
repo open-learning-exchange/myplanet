@@ -113,7 +113,7 @@ class CoursesRepositoryImpl @Inject constructor(
         return mapCourses(courseDao.getForUserPattern(userIdPattern(userId)))
     }
 
-    override suspend fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>> {
+    override fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>> {
         return courseDao.observeForUserPattern(userIdPattern(userId)).map { courses ->
             mapCourses(courses)
         }.distinctUntilChanged { old, new ->
@@ -656,7 +656,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 }
             } catch (e: Exception) {
                 if (!continueOnError) throw e
-                e.printStackTrace()
+                Log.w("CoursesRepository", "Failed to insert course from sync document", e)
             }
         }
 

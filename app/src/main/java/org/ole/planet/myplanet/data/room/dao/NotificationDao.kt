@@ -41,7 +41,7 @@ interface NotificationDao {
 
     suspend fun getByIds(ids: List<String>): List<AppNotification> {
         if (ids.isEmpty()) return emptyList()
-        return ids.chunked(900).flatMap { chunk -> getByIdsInternal(chunk) }
+        return ids.distinct().chunked(900).flatMap { chunk -> getByIdsInternal(chunk) }
     }
 
     @Query("SELECT id FROM notifications WHERE id IN (:ids)")
@@ -49,7 +49,7 @@ interface NotificationDao {
 
     suspend fun getIdsByIds(ids: List<String>): List<String> {
         if (ids.isEmpty()) return emptyList()
-        return ids.chunked(900).flatMap { chunk -> getIdsByIdsInternal(chunk) }
+        return ids.distinct().chunked(900).flatMap { chunk -> getIdsByIdsInternal(chunk) }
     }
 
     @Query("SELECT id FROM notifications WHERE userId = :userId AND isRead = 0")
@@ -61,7 +61,7 @@ interface NotificationDao {
     @Transaction
     suspend fun markAsRead(ids: List<String>, createdAt: Date): Int {
         if (ids.isEmpty()) return 0
-        return ids.chunked(900).sumOf { chunk -> markAsReadInternal(chunk, createdAt) }
+        return ids.distinct().chunked(900).sumOf { chunk -> markAsReadInternal(chunk, createdAt) }
     }
 
     @Query("UPDATE notifications SET isRead = 1, createdAt = :createdAt, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE userId = :userId AND isRead = 0")
@@ -121,7 +121,7 @@ interface NotificationDao {
     @Transaction
     suspend fun deleteByIds(ids: List<String>): Int {
         if (ids.isEmpty()) return 0
-        return ids.chunked(900).sumOf { chunk -> deleteByIdsInternal(chunk) }
+        return ids.distinct().chunked(900).sumOf { chunk -> deleteByIdsInternal(chunk) }
     }
 
     @Transaction
