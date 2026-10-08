@@ -58,6 +58,7 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.StringUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.hasPermission
@@ -210,18 +211,18 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
         }
         binding.txtSecondary.text = getString(
             R.string.profile_secondary_line,
-            Utilities.checkNA(model?.email),
-            Utilities.checkNA(communityCode())
+            StringUtils.checkNA(model?.email),
+            StringUtils.checkNA(communityCode())
         )
 
-        binding.rowEmail.tvValue.text = Utilities.checkNA(model?.email)
+        binding.rowEmail.tvValue.text = StringUtils.checkNA(model?.email)
 
         val dob = if (TextUtils.isEmpty(model?.dob)) getString(R.string.n_a) else TimeUtils.getFormattedDate(model?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         binding.rowDob.tvValue.text = dob
 
-        binding.rowGender.tvValue.text = Utilities.checkNA(model?.gender)
-        binding.rowLanguage.tvValue.text = Utilities.checkNA(model?.language)
-        binding.rowLevel.tvValue.text = Utilities.checkNA(model?.level)
+        binding.rowGender.tvValue.text = StringUtils.checkNA(model?.gender)
+        binding.rowLanguage.tvValue.text = StringUtils.checkNA(model?.language)
+        binding.rowLevel.tvValue.text = StringUtils.checkNA(model?.level)
     }
 
     private fun loadProfileImage() {
@@ -336,7 +337,7 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
     private fun setupLevelSpinner(binding: EditProfileDialogBinding) {
         val levels = resources.getStringArray(subject_level).toMutableList().apply { remove("All") }
         levels.add(0, getString(R.string.select_level))
-        selectedLevel = Utilities.checkNA(model?.level)
+        selectedLevel = StringUtils.checkNA(model?.level)
         val levelAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item_profile, levels)
         levelAdapter.setDropDownViewResource(R.layout.spinner_item_profile)
         binding.level.adapter = levelAdapter
@@ -469,11 +470,11 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
 
     private fun createStatsMap(): LinkedHashMap<String, String?> {
         return linkedMapOf(
-            getString(R.string.community_name) to Utilities.checkNA(communityCode()),
+            getString(R.string.community_name) to StringUtils.checkNA(communityCode()),
             getString(R.string.last_login) to viewModel.lastVisit.value?.let { TimeUtils.getRelativeTime(it, timeProvider) },
             getString(R.string.total_visits_overall) to viewModel.offlineVisits.value.toString(),
-            getString(R.string.most_opened_resource) to Utilities.checkNA(viewModel.maxOpenedResource.value),
-            getString(R.string.number_of_resources_opened) to Utilities.checkNA(viewModel.numberOfResourceOpen.value)
+            getString(R.string.most_opened_resource) to StringUtils.checkNA(viewModel.maxOpenedResource.value),
+            getString(R.string.number_of_resources_opened) to StringUtils.checkNA(viewModel.numberOfResourceOpen.value)
         )
     }
 
