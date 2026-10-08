@@ -16,8 +16,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RatingAggregate
 import org.ole.planet.myplanet.data.room.dao.RatingDao
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -26,6 +28,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 class RatingsRepositoryImplTest {
 
     private lateinit var ratingDao: RatingDao
+    private lateinit var myLibraryDao: MyLibraryDao
     private lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var gson: Gson
     private lateinit var repository: RatingsRepositoryImpl
@@ -34,6 +37,7 @@ class RatingsRepositoryImplTest {
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
         ratingDao = mockk(relaxed = true)
+        myLibraryDao = mockk(relaxed = true)
         val testDispatcher = StandardTestDispatcher()
         dispatcherProvider = object : DispatcherProvider {
             override val main: CoroutineDispatcher = testDispatcher
@@ -43,7 +47,7 @@ class RatingsRepositoryImplTest {
         }
         gson = Gson()
 
-        repository = RatingsRepositoryImpl(gson, ratingDao)
+        repository = RatingsRepositoryImpl(gson, ratingDao, myLibraryDao)
     }
 
     @Test
@@ -119,6 +123,31 @@ class RatingsRepositoryImplTest {
         assertEquals(1, summary.totalRatings)
         assertEquals(4.0f, summary.averageRating)
         assertEquals(4, summary.userRating)
+    }
+
+    @Test
+    fun `submitRating updates myLibrary denormalized fields when type is resource`() = runTest {
+        val testUser = UserEntity(id = "user1", _id = "user1", parentCode = "parent", planetCode = "planet")
+        val library = MyLibrary().apply {
+            id = "res1"
+            resourceId = "res1"
+            timesRated = 0
+            averageRating = "0.00"
+        }
+        coEvery { ratingDao.findByTypeUserItem("resource", "user1", "res1") } returns null
+        coEvery { myLibraryDao.getByResourceId("res1") } returns library
+        coEvery { ratingDao.getAggregate("resource", "res1") } returns RatingAggregate(1, 4.0)
+
+        val librarySlot = slot<MyLibrary>()
+        coEvery { myLibraryDao.upsert(capture(librarySlot)) } returns Unit
+
+        val summary = repository.submitRating("resource", "res1", "Good Resource", testUser, 4f, "Great resource")
+
+        assertEquals(1, summary.totalRatings)
+        assertEquals(4.0f, summary.averageRating)
+        coVerify { myLibraryDao.upsert(any()) }
+        assertEquals(1, librarySlot.captured.timesRated)
+        assertEquals("4.00", librarySlot.captured.averageRating)
     }
 
     @Test

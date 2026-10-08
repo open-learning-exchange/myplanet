@@ -6,6 +6,8 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.roundToInt
+import java.util.Locale
+import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.RatingPromptLog
@@ -15,6 +17,7 @@ import org.ole.planet.myplanet.utils.GsonUtils
 class RatingsRepositoryImpl @Inject constructor(
     private val gson: Gson,
     private val ratingDao: RatingDao,
+    private val myLibraryDao: MyLibraryDao,
 ) : RatingsRepository {
 
     override suspend fun isRatingPrompted(userId: String, resourceId: String): Boolean {
@@ -73,7 +76,18 @@ class RatingsRepositoryImpl @Inject constructor(
             }
         }
 
-        return getRatingSummary(type, itemId, resolvedUserId)
+        val summary = getRatingSummary(type, itemId, resolvedUserId)
+
+        if (type == "resource") {
+            val library = myLibraryDao.getByResourceId(itemId) ?: myLibraryDao.getById(itemId)
+            if (library != null) {
+                library.timesRated = summary.totalRatings
+                library.averageRating = String.format(Locale.getDefault(), "%.2f", summary.averageRating)
+                myLibraryDao.upsert(library)
+            }
+        }
+
+        return summary
     }
 
     override suspend fun insertRatingsFromSync(documentList: List<JsonObject>) {
