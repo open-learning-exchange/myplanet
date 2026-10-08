@@ -289,6 +289,55 @@ class SyncTimeLoggerTest {
     }
 
     @Test
+    fun testThreeApiCallsOneEndpointTwoAnotherTwoDbOps() {
+        mockkStatic(Log::class)
+        every { Log.isLoggable(any(), any()) } returns true
+        every { Log.d(any(), any()) } returns 0
+
+        var currentTime = 1000L
+        val timeProvider = mockk<TimeProvider> {
+            every { now() } answers { currentTime }
+        }
+
+        val testDispatcher = UnconfinedTestDispatcher()
+        val logger = SyncTimeLogger(
+            timeProvider = timeProvider,
+            appScope = CoroutineScope(testDispatcher),
+            dispatcherProvider = TestDispatcherProvider(testDispatcher),
+            sharedPrefManager = mockk(relaxed = true),
+            serverUrlMapper = mockk(relaxed = true),
+            diagnosticsRepository = mockk(relaxed = true),
+            serverReachabilityProvider = mockk(relaxed = true)
+        )
+
+        logger.startLogging()
+
+        currentTime = 1100L
+        logger.logApiCall("http://server/api/v1/courses", duration = 100L, success = true, itemsReturned = 5)
+        logger.logApiCall("http://server/api/v1/courses", duration = 200L, success = false, itemsReturned = 0)
+        logger.logApiCall("http://server/api/v1/courses", duration = 150L, success = true, itemsReturned = 3)
+
+        logger.logApiCall("http://server/api/v1/users", duration = 120L, success = true, itemsReturned = 2)
+        logger.logApiCall("http://server/api/v1/users", duration = 180L, success = false, itemsReturned = 0)
+
+        currentTime = 1500L
+        logger.logDbOperation("INSERT", "CourseModel", duration = 100L, itemCount = 8)
+        logger.logDbOperation("UPDATE", "UserModel", duration = 150L, itemCount = 2)
+
+        currentTime = 2000L
+        logger.stopLogging()
+
+        val summary = logger.generateSummary()
+
+        assertTrue(summary.contains("Total API calls: 5 (Success: 3, Failed: 2)"))
+        assertTrue(summary.contains("Courses                  : 3 calls"))
+        assertTrue(summary.contains("Users                    : 2 calls"))
+        assertTrue(summary.contains("Total Db operations: 2"))
+        assertTrue(summary.contains("CourseModel              : 1 ops"))
+        assertTrue(summary.contains("UserModel                : 1 ops"))
+    }
+
+    @Test
     fun testStopLoggingWhenUploadCrashLogThrows() {
         mockkStatic(Log::class)
         every { Log.isLoggable(any(), any()) } returns false

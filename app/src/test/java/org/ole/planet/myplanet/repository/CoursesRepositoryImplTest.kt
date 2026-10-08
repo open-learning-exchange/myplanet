@@ -524,6 +524,7 @@ class CoursesRepositoryImplTest {
         val expectedStepId = java.util.Base64.getEncoder().encodeToString(stepElement.toString().toByteArray())
         assertEquals("eyJzdGVwVGl0bGUiOiJTdGVwIDEiLCJkZXNjcmlwdGlvbiI6IkRlc2MgMSJ9", expectedStepId)
         assertEquals(expectedStepId, capturedSteps.captured.first().id)
+        coVerify(exactly = 1) { courseStepDao.deleteStaleSteps("course_101", listOf(expectedStepId)) }
 
         io.mockk.unmockkStatic("androidx.room.RoomDatabaseKt")
     }
