@@ -16,7 +16,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.model.AppNotification
-import org.ole.planet.myplanet.model.NotificationPayload
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)

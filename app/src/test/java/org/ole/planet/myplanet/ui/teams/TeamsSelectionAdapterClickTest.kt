@@ -3,8 +3,8 @@ package org.ole.planet.myplanet.ui.teams
 import android.app.Application
 import android.content.Context
 import android.view.ContextThemeWrapper
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ApplicationProvider
 import io.mockk.mockk

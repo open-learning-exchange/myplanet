@@ -47,8 +47,8 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.GsonUtils
-import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.StringUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class CoursesRepositoryImpl @Inject constructor(
