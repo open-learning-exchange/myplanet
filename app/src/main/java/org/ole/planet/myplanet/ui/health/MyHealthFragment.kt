@@ -40,8 +40,8 @@ import org.ole.planet.myplanet.model.effectiveId
 import org.ole.planet.myplanet.ui.user.LearnerRegistrationActivity
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.ImageUtils
-import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.TextNormalizeUtils
+import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
