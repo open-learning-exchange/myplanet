@@ -13,5 +13,6 @@ data class NotificationPayload(
     val priority: Int,
     val isFromServer: Boolean,
     val rev: String?,
-    val needsSync: Boolean
+    val needsSync: Boolean,
+    val subType: String? = null
 )

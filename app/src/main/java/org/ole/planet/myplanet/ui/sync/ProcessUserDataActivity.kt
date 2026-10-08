@@ -4,59 +4,54 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.SharedPreferences
-import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.net.Uri
 import android.os.Build
 import android.text.TextUtils
+import android.util.Log
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.webkit.URLUtil
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
-import kotlin.math.roundToInt
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BasePermissionActivity
-import org.ole.planet.myplanet.callback.OnSecurityDataListener
+import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Download
+import org.ole.planet.myplanet.repository.SyncRepository
+import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.showAlert
 import org.ole.planet.myplanet.utils.DialogUtils.showError
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils.installApk
+import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {
     @Inject
-    open lateinit var dispatcherProvider: DispatcherProvider
+    lateinit var syncRepository: SyncRepository
+
 
     @Inject
     lateinit var prefData: SharedPrefManager
-
-    @Inject
-    lateinit var uploadManager: UploadManager
 
     @Inject
     lateinit var uploadToShelfService: UploadToShelfService
@@ -64,16 +59,12 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     @Inject
     lateinit var userRepository: UserRepository
 
-    @Inject
-    @ApplicationScope
-    lateinit var applicationScope: CoroutineScope
+    private val viewModel: UserUploadViewModel by viewModels()
 
-    lateinit var settings: SharedPreferences
     val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
         DialogUtils.CustomProgressDialog(this)
     }
 
-    @JvmField
     var broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
@@ -92,14 +83,14 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     fun checkDownloadResult(download: Download?) {
-        runOnUiThread {
+        lifecycleScope.launch {
             if (!isFinishing && !isDestroyed) {
                 customProgressDialog.show()
                 customProgressDialog.setText("${getString(R.string.downloading)} ${download?.progress}% ${getString(R.string.complete)}")
                 customProgressDialog.setProgress(download?.progress ?: 0)
                 if (download?.completeAll == true) {
                     safelyDismissDialog()
-                    installApk(this, download.fileUrl)
+                    installApk(this@ProcessUserDataActivity, download.fileUrl)
                 } else {
                     safelyDismissDialog()
                     showError(customProgressDialog, download?.message)
@@ -113,7 +104,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             try {
                 customProgressDialog.dismiss()
             } catch (e: IllegalArgumentException) {
-                e.printStackTrace()
+                Log.w(TAG, "safelyDismissDialog failed", e)
             }
         }
     }
@@ -128,17 +119,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
     fun changeLogoColor() {
         val logo = findViewById<ImageView>(R.id.logoImageView)
-        val newColor = ContextCompat.getColor(this, android.R.color.white)
-        val alpha = (Color.alpha(newColor) * 10).toFloat().roundToInt()
-        val red = Color.red(newColor)
-        val green = Color.green(newColor)
-        val blue = Color.blue(newColor)
-        val alphaWhite = Color.argb(alpha, red, green, blue)
-        val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO ||
-            (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM && currentNightMode == Configuration.UI_MODE_NIGHT_NO)) {
-            logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP)
-        }
+        logo.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_ATOP)
     }
 
     fun setUrlParts(url: String, password: String): String {
@@ -148,9 +129,9 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         val urlUser: String
         val urlPwd: String
         if (url.contains("@")) {
-            val userinfo = getUserInfo(uri)
-            urlUser = userinfo[0]
-            urlPwd = userinfo[1]
+            val (u, p) = UrlUtils.getUserInfo(uri.userInfo)
+            urlUser = u
+            urlPwd = p
             couchdbURL = url
         } else if (TextUtils.isEmpty(password)) {
             showAlert(this, "", getString(R.string.pin_is_required))
@@ -162,20 +143,17 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:$port"
         }
 
-        prefData.setServerPin(password)
-        prefData.setUrlScheme(uri.scheme ?: "")
-        prefData.setUrlHost(uri.host ?: "")
-        prefData.setUrlPort(if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port)
-        prefData.setServerUrl(url)
-        prefData.setCouchdbUrl(couchdbURL)
-        prefData.setUrlUser(urlUser)
-        prefData.setUrlPwd(urlPwd)
+        prefData.saveServerConfig(
+            serverPin = password,
+            urlScheme = uri.scheme ?: "",
+            urlHost = uri.host ?: "",
+            serverUrl = url,
+            couchdbUrl = couchdbURL,
+            urlUser = urlUser,
+            urlPwd = urlPwd
+        )
 
-        if (!couchdbURL.endsWith("db")) {
-            couchdbURL += "/db"
-        }
-
-        return couchdbURL
+        return UrlUtils.dbUrl(couchdbURL)
     }
 
     fun isUrlValid(url: String): Boolean {
@@ -190,7 +168,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         return true
     }
 
-    fun startUpload(source: String, userName: String? = null, securityCallback: OnSecurityDataListener? = null) {
+    fun startUpload(source: String, userName: String? = null, securityCallback: OnChangedListener? = null) {
         when (source) {
             "becomeMember" -> uploadMemberData(userName, securityCallback)
             "login" -> uploadLoginData()
@@ -198,7 +176,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         }
     }
 
-    private fun uploadMemberData(userName: String?, securityCallback: OnSecurityDataListener?) {
+    private fun uploadMemberData(userName: String?, securityCallback: OnChangedListener?) {
         uploadToShelfService.uploadSingleUserData(userName, object : OnSuccessListener {
             override fun onSuccess(success: String?) {
                 uploadToShelfService.uploadSingleUserHealth("org.couchdb.user:${userName}", object : OnSuccessListener {
@@ -206,7 +184,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
                         userName?.let { name ->
                             fetchAndLogUserSecurityData(name, securityCallback)
                         } ?: run {
-                            securityCallback?.onSecurityDataUpdated()
+                            securityCallback?.onChanged()
                         }
                     }
                 })
@@ -215,101 +193,43 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     private fun uploadLoginData() {
-        applicationScope.launch(dispatcherProvider.io) {
-            uploadManager.uploadUserActivities(this@ProcessUserDataActivity)
-        }
+        val flow = viewModel.uploadLoginData()
+
+        collectWhenStarted(flow.takeWhile { value ->
+            if (value is SyncUiState.Success) {
+                onSuccess(value.message)
+                false
+            } else if (value is SyncUiState.Error) {
+                false
+            } else {
+                true
+            }
+        }) {}
     }
 
     private fun uploadBulkData() {
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        applicationScope.launch(dispatcherProvider.io) {
-            val asyncOperationsCounter = AtomicInteger(0)
-            val totalAsyncOperations = 6
-            val activity = this@ProcessUserDataActivity
+        val flow = viewModel.uploadBulkData()
 
-            suspend fun checkAllOperationsComplete() {
-                if (asyncOperationsCounter.incrementAndGet() == totalAsyncOperations) {
-                    withContext(dispatcherProvider.main) {
-                        if (!activity.isFinishing && !activity.isDestroyed) {
-                            customProgressDialog.dismiss()
-                            Toast.makeText(activity, "upload complete", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
+        collectWhenStarted(flow.takeWhile { value ->
+            if (value is SyncUiState.Success) {
+                safelyDismissDialog()
+                Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+                false
+            } else if (value is SyncUiState.Error) {
+                safelyDismissDialog()
+                false
+            } else {
+                true
             }
-
-            uploadManager.uploadAchievement()
-            uploadManager.uploadNews()
-            uploadManager.uploadResourceActivities("")
-            uploadManager.uploadCourseActivities()
-            uploadManager.uploadSearchActivity()
-            uploadManager.uploadRating()
-            uploadManager.uploadTeamTask()
-            uploadManager.uploadMeetups()
-            uploadManager.uploadAdoptedSurveys()
-            uploadManager.uploadSubmissions()
-            uploadManager.uploadCrashLog()
-
-            uploadToShelfService.uploadUserData {
-                uploadToShelfService.uploadHealth()
-                applicationScope.launch {
-                    checkAllOperationsComplete()
-                }
-            }
-
-            uploadManager.uploadUserActivities(object : OnSuccessListener {
-                override fun onSuccess(success: String?) {
-                    applicationScope.launch {
-                        checkAllOperationsComplete()
-                    }
-                }
-            })
-
-            uploadManager.uploadExamResult(object : OnSuccessListener {
-                override fun onSuccess(success: String?) {
-                    applicationScope.launch {
-                        checkAllOperationsComplete()
-                    }
-                }
-            })
-
-            applicationScope.launch(dispatcherProvider.io) {
-                val success = uploadManager.uploadFeedback()
-                checkAllOperationsComplete()
-            }
-
-            uploadManager.uploadResource(object : OnSuccessListener {
-                override fun onSuccess(success: String?) {
-                    applicationScope.launch(dispatcherProvider.io) {
-                        uploadManager.uploadTeams()
-                        checkAllOperationsComplete()
-                    }
-                }
-            })
-
-            uploadManager.uploadSubmitPhotos(object : OnSuccessListener {
-                override fun onSuccess(success: String?) {
-                    applicationScope.launch {
-                        checkAllOperationsComplete()
-                    }
-                }
-            })
-
-            uploadManager.uploadActivities(object : OnSuccessListener {
-                override fun onSuccess(success: String?) {
-                    applicationScope.launch {
-                        checkAllOperationsComplete()
-                    }
-                }
-            })
-        }
+        }) {}
     }
 
     protected fun hideKeyboard(view: View?) {
         val `in` = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-        `in`.hideSoftInputFromWindow(view?.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
+        `in`.hideSoftInputFromWindow(view?.windowToken, 0)
     }
 
 
@@ -323,27 +243,25 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     companion object {
+        private const val TAG = "ProcessUserDataActivity"
+
         fun getUserInfo(uri: Uri): Array<String> {
-            val ar = arrayOf("", "")
-            val info =
-                uri.userInfo?.split(":".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
-            if ((info?.size ?: 0) > 1) {
-                ar[0] = "${info?.get(0)}"
-                ar[1] = "${info?.get(1)}"
-            }
-            return ar
+            val (u, p) = UrlUtils.getUserInfo(uri.userInfo)
+            return arrayOf(u, p)
         }
     }
 
-    fun fetchAndLogUserSecurityData(name: String, securityCallback: OnSecurityDataListener? = null) {
+    fun fetchAndLogUserSecurityData(name: String, securityCallback: OnChangedListener? = null) {
         lifecycleScope.launch {
             try {
-                userRepository.fetchUserSecurityData(name)
+                viewModel.fetchUserSecurityData(name)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "fetchAndLogUserSecurityData failed", e)
             } finally {
                 withContext(dispatcherProvider.main) {
-                    securityCallback?.onSecurityDataUpdated()
+                    securityCallback?.onChanged()
                 }
             }
         }

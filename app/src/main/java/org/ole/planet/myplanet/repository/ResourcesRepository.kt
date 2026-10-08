@@ -2,87 +2,137 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import java.io.File
 import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.OfflineResourceItem
+import org.ole.planet.myplanet.model.ResourceListModel
+import org.ole.planet.myplanet.model.TagEntity
+import org.ole.planet.myplanet.model.UserEntity
 
-data class ResourceUploadData(
-    val libraryId: String?,
-    val title: String?,
-    val isPrivate: Boolean,
-    val privateFor: String?,
-    val serialized: JsonObject
+data class StorageBreakdown(
+    val totalBytes: Long,
+    val sizes: LongArray,
+    val counts: IntArray
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        other as StorageBreakdown
+        if (totalBytes != other.totalBytes) return false
+        if (!sizes.contentEquals(other.sizes)) return false
+        if (!counts.contentEquals(other.counts)) return false
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = totalBytes.hashCode()
+        result = 31 * result + sizes.contentHashCode()
+        result = 31 * result + counts.contentHashCode()
+        return result
+    }
+}
+
+data class LibraryWithMetadata(
+    val library: MyLibrary,
+    val tags: List<TagEntity>
 )
 
-data class UploadedResourceInfo(
-    val libraryId: String,
+data class LibraryTitle(
     val id: String,
-    val rev: String,
-    val isPrivate: Boolean,
-    val privateFor: String?,
     val title: String?
 )
 
-interface ResourcesRepository {
-    suspend fun getUnuploadedResources(user: RealmUser?): List<ResourceUploadData>
-    suspend fun markResourceUploaded(libraryId: String, id: String, rev: String)
-    suspend fun markResourcesUploaded(uploadedInfos: List<UploadedResourceInfo>, planetCode: String?)
-    suspend fun getAllLibraries(): List<RealmMyLibrary>
-    suspend fun getAllLibraryItems(): List<RealmMyLibrary>
-    suspend fun getLibraryItemById(id: String): RealmMyLibrary?
-    suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<RealmMyLibrary>
-    suspend fun getLibraryItemByResourceId(resourceId: String): RealmMyLibrary?
-    suspend fun getLibraryItemsByIds(ids: Collection<String>): List<RealmMyLibrary>
-    suspend fun getLibraryItemsByLocalAddress(localAddress: String): List<RealmMyLibrary>
-    suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary>
-    suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary>
-    suspend fun getMyLibrary(userId: String?): List<RealmMyLibrary>
-    suspend fun getStepResources(stepId: String?, resourceOffline: Boolean): List<RealmMyLibrary>
-    suspend fun getAllStepResources(stepId: String?): List<RealmMyLibrary>
-    fun getRecentResources(userId: String): Flow<List<RealmMyLibrary>>
-    fun getPendingDownloads(userId: String): Flow<List<RealmMyLibrary>>
-    suspend fun getPrivateImagesCreatedAfter(timestamp: Long): List<RealmMyLibrary>
+data class LocalResourceRequest(
+    val title: String?,
+    val addedBy: String?,
+    val author: String?,
+    val year: String?,
+    val description: String?,
+    val publisher: String?,
+    val linkToLicense: String?,
+    val openWith: String?,
+    val language: String?,
+    val mediaType: String?,
+    val resourceType: String?,
+    val subjects: List<String>?,
+    val levels: List<String>?,
+    val resourceFor: List<String>?,
+    val resourceUrl: String?,
+    val userId: String?,
+    val isPrivateTeamResource: Boolean,
+    val teamId: String?
+)
+
+interface ResourcesRepository : ResourcesSyncWriter {
+    suspend fun getLibraryTitles(): List<LibraryTitle>
+    suspend fun getLibraryItemById(id: String): MyLibrary?
+    suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<MyLibrary>
+    suspend fun getLibraryItemByResourceId(resourceId: String): MyLibrary?
+    suspend fun getLibraryItemsByIds(ids: Collection<String>): List<MyLibrary>
+    suspend fun getLibraryItemsByLocalAddress(localAddress: String): List<MyLibrary>
+    suspend fun getLibraryListForUser(userId: String?): List<MyLibrary>
+    fun getMyLibraryFlow(userId: String?): Flow<List<MyLibrary>>
+    suspend fun getAllStepResources(stepId: String?): List<MyLibrary>
+    fun getRecentResources(userId: String): Flow<List<MyLibrary>>
+    fun getPendingDownloads(userId: String): Flow<List<String>>
     suspend fun countLibrariesNeedingUpdate(userId: String?): Int
     suspend fun resourceTitleExists(title: String): Boolean
-    suspend fun saveLibraryItem(item: RealmMyLibrary)
-    suspend fun saveLocalResource(resource: RealmMyLibrary, userId: String?, isPrivateTeamResource: Boolean, teamId: String?): Result<Unit>
-    suspend fun markResourceAdded(userId: String?, resourceId: String)
-    suspend fun updateUserLibrary(resourceId: String, userId: String, isAdd: Boolean): RealmMyLibrary?
-    suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit)
+    suspend fun resolveLibraryItem(id: String): MyLibrary?
+    suspend fun saveLocalResource(request: LocalResourceRequest): Result<Unit>
+    suspend fun setUserLibrary(resourceId: String, add: Boolean): MyLibrary?
+    suspend fun updateLibraryItem(id: String, updater: (MyLibrary) -> Unit)
     suspend fun markResourceOfflineByUrl(url: String)
-    suspend fun markResourceOfflineByLocalAddress(localAddress: String)
-    suspend fun markAllResourcesOffline(isOffline: Boolean)
+    suspend fun reconcileHtmlResourceOffline(resourceId: String)
     suspend fun saveSearchActivity(
         userName: String,
         searchText: String,
         planetCode: String,
         parentCode: String,
-        tags: List<RealmTag>,
+        tags: List<TagEntity>,
         subjects: Set<String>,
         languages: Set<String>,
         levels: Set<String>,
         mediums: Set<String>
     )
-    suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean
-    suspend fun downloadResourcesPriority(resources: List<RealmMyLibrary>): Boolean
-    suspend fun getAllLibrariesToSync(): List<RealmMyLibrary>
+    suspend fun getResourceById(id: String): MyLibrary?
+    suspend fun updateLocalResource(
+        resourceId: String,
+        title: String,
+        author: String,
+        year: String,
+        description: String,
+        publisher: String,
+        linkToLicense: String,
+        subjects: List<String>?,
+        levels: List<String>?
+    ): Result<Unit>
+    suspend fun downloadResources(resources: List<MyLibrary>): Boolean
+    suspend fun downloadResourcesPriority(resources: List<MyLibrary>): Boolean
+    suspend fun getAllLibrariesToSync(): List<MyLibrary>
+    suspend fun downloadFiles(libraryList: List<MyLibrary>?): List<MyLibrary>
     suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit>
-    suspend fun addAllResourcesToUserLibrary(resources: List<RealmMyLibrary>, userId: String): Result<Unit>
-    suspend fun getOpenedResourceIds(userId: String): Set<String>
+    suspend fun addAllResourcesToUserLibrary(resources: List<MyLibrary>, userId: String): Result<Unit>
     suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>>
-    suspend fun getDownloadSuggestionList(userId: String? = null): List<RealmMyLibrary>
-    suspend fun getLibraryByUserId(userId: String): List<RealmMyLibrary>
-    suspend fun removeDeletedResources(currentIds: List<String?>)
+    suspend fun getDownloadSuggestionList(userId: String? = null): List<MyLibrary>
     suspend fun getMyLibIds(userId: String): JsonArray
     suspend fun removeResourceFromShelf(resourceId: String, userId: String)
+    suspend fun removeResourcesFromShelf(resourceIds: List<String>, userId: String): Result<Unit>
     suspend fun getHtmlResourceDownloadUrls(resourceId: String): ResourceUrlsResponse
-    suspend fun getFilterFacets(libraries: List<RealmMyLibrary>): Map<String, Set<String>>
-    suspend fun batchInsertResources(documents: List<JsonObject>): List<String>
-    suspend fun getResourceRatings(resourceId: String): JsonObject?
-    suspend fun getResourceTags(resourceId: String): List<RealmTag>
-    suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject>
-    suspend fun getResourceTagsBulk(ids: List<String>): Map<String, List<RealmTag>>
+    suspend fun getResourceListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>
+    fun getCachedResourceListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>?
+    suspend fun getLibraryItemsByResourceIds(ids: Collection<String>): List<MyLibrary>
+    suspend fun getTeamPrivateResources(teamId: String): List<MyLibrary>
+    suspend fun getPublicLibraryItems(): List<MyLibrary>
+    suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>)
+    suspend fun getPendingResourceUploads(): List<MyLibrary>
+    suspend fun markResourceUploaded(localId: String, remoteId: String, remoteRev: String, planetCode: String?): Boolean
+    suspend fun trackResourceOpen(item: MyLibrary)
+    suspend fun getOfflineResourceItems(oleDirPath: String, extensions: Set<String>, allKnownExtensions: Set<String>): List<OfflineResourceItem>
+    suspend fun deleteOfflineResources(oleDirPath: String, items: List<OfflineResourceItem>)
+    suspend fun getStorageBreakdown(oleDir: File): StorageBreakdown
+    suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
+    fun serializeForUpload(library: MyLibrary, user: UserEntity?): JsonObject
 }
 
 sealed class ResourceUrlsResponse {

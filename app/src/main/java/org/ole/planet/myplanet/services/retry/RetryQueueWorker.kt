@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.services.retry
 
 import android.content.Context
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.hilt.work.HiltWorker
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
@@ -9,36 +10,45 @@ import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
-import androidx.work.PeriodicWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkRequest
 import androidx.work.WorkerParameters
-import com.google.gson.JsonParser
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import java.io.IOException
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.model.RealmRetryOperation
-import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.model.RetryOperation
+import org.ole.planet.myplanet.repository.RetryOperationResult
+import org.ole.planet.myplanet.repository.RetryRepository
+import org.ole.planet.myplanet.services.sync.SyncManager
 
 @HiltWorker
 class RetryQueueWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
     private val retryQueue: RetryQueue,
-    private val apiInterface: ApiInterface
+    private val retryRepository: RetryRepository,
+    private val syncManager: SyncManager
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
         private const val TAG = "RetryQueueWorker"
         private const val WORK_NAME = "retryQueueWork"
         private const val BATCH_SIZE = 50
+        private const val MAX_CONCURRENT_RETRIES = 6
 
         fun schedule(context: Context) {
             val workRequest = createScheduleWorkRequest()
@@ -52,7 +62,7 @@ class RetryQueueWorker @AssistedInject constructor(
             Log.d(TAG, "Scheduled RetryQueueWorker")
         }
 
-        @androidx.annotation.VisibleForTesting
+        @VisibleForTesting
         internal fun createScheduleWorkRequest(): PeriodicWorkRequest {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -77,7 +87,7 @@ class RetryQueueWorker @AssistedInject constructor(
             Log.d(TAG, "Triggered immediate retry")
         }
 
-        @androidx.annotation.VisibleForTesting
+        @VisibleForTesting
         internal fun createImmediateRetryWorkRequest(): OneTimeWorkRequest {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -89,21 +99,22 @@ class RetryQueueWorker @AssistedInject constructor(
         }
     }
 
+    private fun isAnySyncRunning(): Boolean =
+        MainApplication.isSyncRunning.get() || syncManager.isMainSyncActive()
+
     override suspend fun doWork(): Result {
-        if (MainApplication.isSyncRunning) {
+        if (isAnySyncRunning()) {
             Log.d(TAG, "Sync is running, skipping retry processing")
             return Result.success()
         }
 
         // Check if already processing
-        if (retryQueue.isCurrentlyProcessing()) {
+        if (!retryQueue.tryStartProcessing()) {
             Log.d(TAG, "Retry queue is already being processed, skipping")
             return Result.success()
         }
 
         return try {
-            retryQueue.setProcessing(true)
-
             val pendingOperations = retryQueue.getPendingOperations()
 
             if (pendingOperations.isEmpty()) {
@@ -116,19 +127,30 @@ class RetryQueueWorker @AssistedInject constructor(
             var successCount = 0
             var failureCount = 0
 
+            val semaphore = Semaphore(MAX_CONCURRENT_RETRIES)
+
             // Add timeout for entire batch processing (5 minutes max)
-            withTimeout(5 * 60 * 1000L) {
+            withTimeout(5.minutes) {
                 pendingOperations.chunked(BATCH_SIZE).forEach { batch ->
                     // Check if sync started while we're processing
-                    if (MainApplication.isSyncRunning) {
+                    if (isAnySyncRunning()) {
                         Log.d(TAG, "Sync started, pausing retry processing")
                         return@withTimeout
                     }
 
-                    batch.forEach { operation ->
-                        val success = processOperation(operation)
-                        if (success) successCount++ else failureCount++
+                    val results = coroutineScope {
+                        batch.map { operation ->
+                            async {
+                                semaphore.withPermit {
+                                    processOperation(operation)
+                                }
+                            }
+                        }.awaitAll()
                     }
+
+                    val (batchSuccesses, batchFailures) = results.partition { it }
+                    successCount += batchSuccesses.size
+                    failureCount += batchFailures.size
                 }
             }
 
@@ -137,101 +159,38 @@ class RetryQueueWorker @AssistedInject constructor(
             retryQueue.cleanup()
 
             Result.success()
-        } catch (e: TimeoutCancellationException) {
+        } catch (_: TimeoutCancellationException) {
             Log.w(TAG, "Retry processing timed out, will continue next cycle")
             Result.success()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Error during retry processing", e)
             Result.retry()
         } finally {
-            retryQueue.setProcessing(false)
+            retryQueue.finishProcessing()
         }
     }
 
-    private suspend fun processOperation(operation: RealmRetryOperation): Boolean {
+    private suspend fun processOperation(operation: RetryOperation): Boolean {
         return try {
             // Timeout for individual operation (30 seconds)
-            withTimeout(30_000L) {
-                processOperationInternal(operation)
+            withTimeout(30.seconds) {
+                when (retryRepository.executeOperation(operation)) {
+                    is RetryOperationResult.Success -> true
+                    is RetryOperationResult.RetryableFailure,
+                    is RetryOperationResult.TerminalFailure -> false
+                }
             }
-        } catch (e: TimeoutCancellationException) {
+        } catch (_: TimeoutCancellationException) {
             Log.w(TAG, "Operation ${operation.id} timed out")
-            retryQueue.markFailed(operation.id, "Timeout", null)
+            retryRepository.markFailed(operation.id, "Timeout", null)
             false
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Unexpected error for ${operation.id}", e)
-            retryQueue.markFailed(operation.id, e.message, null)
-            false
-        }
-    }
-
-    private suspend fun processOperationInternal(operation: RealmRetryOperation): Boolean {
-        return try {
-            retryQueue.markInProgress(operation.id)
-
-            val payload = try {
-                JsonParser.parseString(operation.serializedPayload).asJsonObject
-            } catch (e: Exception) {
-                Log.e(TAG, "Invalid payload for ${operation.id}, abandoning")
-                retryQueue.markFailed(operation.id, "Invalid payload", null)
-                return false
-            }
-            val requestUrl = if (operation.dbId.isNullOrEmpty()) {
-                "${UrlUtils.getUrl()}/${operation.endpoint}"
-            } else {
-                "${UrlUtils.getUrl()}/${operation.endpoint}/${operation.dbId}"
-            }
-
-            val response = if (operation.httpMethod == "PUT" && !operation.dbId.isNullOrEmpty()) {
-                apiInterface.putDoc(
-                    UrlUtils.header,
-                    "application/json",
-                    requestUrl,
-                    payload
-                )
-            } else {
-                apiInterface.postDoc(
-                    UrlUtils.header,
-                    "application/json",
-                    requestUrl,
-                    payload
-                )
-            }
-
-            if (response.isSuccessful) {
-                retryQueue.markCompleted(operation.id)
-                Log.d(TAG, "Successfully retried operation ${operation.id}")
-                true
-            } else if (response.code() == 409) {
-                // 409 Conflict means document already exists - data is already synced
-                retryQueue.markCompleted(operation.id)
-                Log.d(TAG, "Operation ${operation.id} already synced (409 conflict)")
-                true
-            } else {
-                val isRetryable = response.code() >= 500
-                if (isRetryable) {
-                    retryQueue.markFailed(
-                        operation.id,
-                        "HTTP ${response.code()}",
-                        response.code()
-                    )
-                } else {
-                    retryQueue.markFailed(
-                        operation.id,
-                        "Non-retryable HTTP ${response.code()}",
-                        response.code()
-                    )
-                }
-                Log.w(TAG, "Retry failed for ${operation.id}: HTTP ${response.code()}")
-                false
-            }
-        } catch (e: IOException) {
-            retryQueue.markFailed(operation.id, e.message, null)
-            Log.w(TAG, "Network error during retry for ${operation.id}", e)
-            false
-        } catch (e: Exception) {
-            retryQueue.markFailed(operation.id, e.message, null)
-            Log.e(TAG, "Unexpected error during retry for ${operation.id}", e)
+            retryRepository.markFailed(operation.id, e.message, null)
             false
         }
     }

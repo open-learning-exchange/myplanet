@@ -1,44 +1,44 @@
 package org.ole.planet.myplanet
 
-import android.app.Activity
 import android.app.Application
+import android.content.ComponentCallbacks2
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
-import android.net.TrafficStats
-import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
+import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.hilt.work.HiltWorkerFactory
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.Configuration as WorkManagerConfiguration
+import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
-import java.net.HttpURLConnection
-import java.net.URL
-import java.util.Date
-import java.util.UUID
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Provider
-import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.callback.OnTeamPageListener
-import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
-import org.ole.planet.myplanet.di.NetworkDependenciesEntryPoint
-import org.ole.planet.myplanet.model.RealmApkLog
+import org.ole.planet.myplanet.di.ServiceDependenciesEntryPoint
+import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AutoSyncWorker
 import org.ole.planet.myplanet.services.NetworkMonitorWorker
@@ -48,6 +48,7 @@ import org.ole.planet.myplanet.services.TaskNotificationWorker
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.utils.ANRWatchdog
+import org.ole.planet.myplanet.utils.CrashLogStore
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utils.FileUtils
@@ -56,12 +57,14 @@ import org.ole.planet.myplanet.utils.MarkdownUtils
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utils.NetworkUtils.stopListenNetworkState
+import org.ole.planet.myplanet.utils.PdfThumbnailLoader
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.ThemeMode
-import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
+import org.ole.planet.myplanet.utils.UrlUtils.init
+import org.ole.planet.myplanet.utils.Utilities
 
 @HiltAndroidApp
-class MainApplication : Application(), Application.ActivityLifecycleCallbacks, WorkManagerConfiguration.Provider {
+class MainApplication : Application(), WorkManagerConfiguration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
@@ -69,11 +72,14 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     lateinit var dispatcherProvider: DispatcherProvider
 
     @Inject
-    lateinit var databaseServiceProvider: Provider<DatabaseService>
-    val databaseService: DatabaseService by lazy { databaseServiceProvider.get() }
+    lateinit var appDatabaseProvider: Provider<AppDatabase>
+    val appDatabase: AppDatabase by lazy { appDatabaseProvider.get() }
 
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
+
+    @Inject
+    lateinit var themeManager: ThemeManager
 
     @Inject
     @DefaultPreferences
@@ -94,51 +100,75 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
-        lateinit var context: Context
+        private const val ANR_LOG_TYPE = "anr"
+        private const val TAG = "MainApplication"
+        private lateinit var instance: MainApplication
+
+        @VisibleForTesting
+        var testContext: Context? = null
+
+        val context: Context get() = testContext ?: instance.applicationContext
         var syncFailedCount = 0
-        var isCollectionSwitchOn = false
         var showDownload = false
-        var isSyncRunning = false
-        var listener: OnTeamPageListener? = null
+        val isSyncRunning = AtomicBoolean(false)
         val androidId: String get() {
             try {
                 return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to get Android ID", e)
             }
             return "0"
         }
         lateinit var applicationScope: CoroutineScope
-        val apiClientInitialized = CompletableDeferred<Unit>()
+
+        val coreDependenciesEntryPoint: CoreDependenciesEntryPoint by lazy {
+            EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
+        }
+
+        private suspend fun runBestEffort(what: String, block: suspend () -> Unit) {
+            try {
+                block()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                warnBestEffortFailed(what, e)
+            } catch (e: LinkageError) {
+                warnBestEffortFailed(what, e)
+            }
+        }
+
+        private fun warnBestEffortFailed(what: String, failure: Throwable) {
+            try {
+                Log.w(TAG, "$what failed", failure)
+            } catch (loggingFailure: RuntimeException) {
+            }
+        }
 
         fun createLog(type: String, error: String = "") {
             applicationScope.launch {
-                val entryPoint = EntryPointAccessors.fromApplication(
-                    context,
-                    CoreDependenciesEntryPoint::class.java
-                )
-                val userSessionManager = entryPoint.userSessionManager()
-                val spm = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
-                try {
-                    val databaseService = (context.applicationContext as MainApplication).databaseService
-                    val model = userSessionManager.getUserModel()
-                    databaseService.executeTransactionAsync { r ->
-                        val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
-                        log.parentCode = spm.getParentCode()
-                        log.createdOn = spm.getPlanetCode()
-                        model?.let { log.userId = it.id }
-                        log.time = "${Date().time}"
-                        log.page = ""
-                        log.version = getVersionName(context)
-                        log.type = type
-                        if (error.isNotEmpty()) {
-                            log.error = error
-                        }
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                runBestEffort("createLog") {
+                    saveLogToRoom(type, error, "${coreDependenciesEntryPoint.timeProvider().now()}")
                 }
             }
+        }
+
+        suspend fun saveLogToRoom(type: String, error: String, time: String): Boolean {
+            val entryPoint = EntryPointAccessors.fromApplication(
+                context,
+                CoreDependenciesEntryPoint::class.java
+            )
+            val diagnosticsRepository = entryPoint.diagnosticsRepository()
+            return diagnosticsRepository.saveLogToRoom(type, error, time)
+        }
+
+        suspend fun saveLogsToRoom(pendingLogs: List<CrashLogStore.PendingLog>): Boolean {
+            if (pendingLogs.isEmpty()) return true
+            val entryPoint = EntryPointAccessors.fromApplication(
+                context,
+                CoreDependenciesEntryPoint::class.java
+            )
+            val diagnosticsRepository = entryPoint.diagnosticsRepository()
+            return diagnosticsRepository.saveLogsToRoom(pendingLogs)
         }
 
         private fun applyThemeMode(themeMode: String?) {
@@ -148,51 +178,28 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                 ThemeMode.FOLLOW_SYSTEM -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
             }
         }
+        
+        suspend fun isServerReachable(urlString: String): Boolean =
+            coreDependenciesEntryPoint.serverReachabilityProvider().isServerReachable(urlString)
 
-        suspend fun isServerReachable(
-            urlString: String,
-            ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO
-        ): Boolean {
-            val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
-            val serverUrlMapper = entryPoint.serverUrlMapper()
-            val mapping = serverUrlMapper.processUrl(urlString)
-            val urlsToTry = mutableListOf(urlString)
-            mapping.alternativeUrl?.let { urlsToTry.add(it) }
+        suspend fun isPrimaryServerReachable(urlString: String): Boolean =
+            coreDependenciesEntryPoint.serverReachabilityProvider().isPrimaryServerReachable(urlString)
 
-            return try {
-                if (urlString.isBlank()) return false
-
-                val formattedUrl = if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
-                    "http://$urlString"
-                } else {
-                    urlString
-                }
-
-                val url = URL(formattedUrl)
-                val responseCode = withContext(ioDispatcher) {
-                    TrafficStats.setThreadStatsTag(Thread.currentThread().id.toInt())
-                    val connection = url.openConnection() as HttpURLConnection
-                    try {
-                        connection.requestMethod = "GET"
-                        connection.connectTimeout = 5000
-                        connection.readTimeout = 5000
-                        connection.connect()
-                        connection.responseCode
-                    } finally {
-                        connection.disconnect()
-                        TrafficStats.clearThreadStatsTag()
+        fun persistCriticalLog(type: String, error: String) {
+            val pendingFile = CrashLogStore.save(context, type, error, coreDependenciesEntryPoint.timeProvider())
+            applicationScope.launch {
+                runBestEffort("persistCriticalLog") {
+                    if (saveLogToRoom(type, error, "${coreDependenciesEntryPoint.timeProvider().now()}")) {
+                        pendingFile?.delete()
                     }
                 }
-                responseCode in 200..299
-            } catch (e: Exception) {
-                e.printStackTrace()
-                false
             }
         }
 
         fun handleUncaughtException(e: Throwable) {
-            e.printStackTrace()
-            createLog(RealmApkLog.ERROR_TYPE_CRASH, e.stackTraceToString())
+            Log.e(TAG, "Uncaught exception", e)
+            val error = e.stackTraceToString()
+            persistCriticalLog(ApkLog.ERROR_TYPE_CRASH, error)
 
             val homeIntent = Intent(Intent.ACTION_MAIN).apply {
                 addCategory(Intent.CATEGORY_HOME)
@@ -202,18 +209,15 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         }
     }
 
-    private var mainThreadRealm: io.realm.Realm? = null
-    private var activityReferences = 0
-    private var isActivityChangingConfigurations = false
     private var isFirstLaunch = true
     private lateinit var anrWatchdog: ANRWatchdog
 
     override fun onCreate() {
         super.onCreate()
-        context = this
+        instance = this
+        init(sharedPrefManager)
         setupCriticalProperties()
         LocaleUtils.preload(this)
-        warmUpMainThreadRealm()
         performDeferredInitialization()
         setupStrictMode()
         registerExceptionHandler()
@@ -221,20 +225,39 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private fun performDeferredInitialization() {
-        applicationScope.launch(Dispatchers.IO) {
-            FileUtils.warmUp(this@MainApplication)
-            SecurePrefs.warmUp(this@MainApplication)
-            MarkdownUtils.warmUp(this@MainApplication)
-            runCatching { Class.forName("pl.droidsonroids.gif.GifInfoHandle") }
+        applicationScope.launch(dispatcherProvider.io) {
+            runBestEffort("FileUtils.warmUp") { FileUtils.warmUp(this@MainApplication) }
+            runBestEffort("SecurePrefs.warmUp") { SecurePrefs.warmUp(this@MainApplication) }
+            runBestEffort("MarkdownUtils.warmUp") { MarkdownUtils.warmUp(this@MainApplication) }
+            runBestEffort("Utilities.warmUp") { Utilities.warmUp() }
+            runBestEffort("defaultPref.warmUp") { defaultPref }
+            runBestEffort("GifInfoHandle preload") { Class.forName("pl.droidsonroids.gif.GifInfoHandle") }
         }
         applicationScope.launch {
             initApp()
             loadAndApplyTheme()
-            ensureApiClientInitialized()
             initializeDatabaseConnection()
+            sweepPendingLogs()
             setupAnrWatchdog()
             scheduleWorkersOnStart()
             observeNetworkForDownloads()
+        }
+    }
+
+    private suspend fun sweepPendingLogs() {
+        try {
+            withContext(dispatcherProvider.io) {
+                val pendingLogs = CrashLogStore.loadPendingLogs(this@MainApplication)
+                if (pendingLogs.isNotEmpty()) {
+                    if (saveLogsToRoom(pendingLogs)) {
+                        for (pending in pendingLogs) {
+                            pending.file.delete()
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to sweep pending logs", e)
         }
     }
     private fun initApp() {
@@ -250,26 +273,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         ).applicationScope()
     }
 
-    private fun warmUpMainThreadRealm() {
-        try {
-            mainThreadRealm = databaseService.createManagedRealmInstance()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private suspend fun ensureApiClientInitialized() {
-        withContext(dispatcherProvider.io) {
-            EntryPointAccessors.fromApplication(
-                this@MainApplication,
-                NetworkDependenciesEntryPoint::class.java
-            ).apiClient()
-            apiClientInitialized.complete(Unit)
-        }
-    }
-    
     private suspend fun initializeDatabaseConnection() {
-        databaseService.withRealmAsync { }
+        withContext(dispatcherProvider.io) {
+            appDatabase.openHelper.writableDatabase
+        }
     }
 
     private fun setupStrictMode() {
@@ -291,12 +298,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     private suspend fun setupAnrWatchdog() {
         withContext(dispatcherProvider.default) {
             anrWatchdog = ANRWatchdog(
+                scope = applicationScope,
                 timeout = 5000L,
                 listener = object : ANRWatchdog.ANRListener {
                     override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
-                        applicationScope.launch {
-                            createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")
-                        }
+                        val error = "ANR detected! Duration: ${duration}ms\n $message"
+                        persistCriticalLog(ANR_LOG_TYPE, error)
                     }
                 },
                 dispatcherProvider = dispatcherProvider
@@ -307,9 +314,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
 
     private suspend fun scheduleWorkersOnStart() {
         withContext(dispatcherProvider.default) {
-            if (sharedPrefManager.getAutoSync() && sharedPrefManager.rawPreferences.contains("autoSyncInterval")) {
-                val syncInterval = sharedPrefManager.getAutoSyncInterval()
-                scheduleAutoSyncWork(syncInterval)
+            if (sharedPrefManager.getAutoSync()) {
+                scheduleAutoSyncWork(sharedPrefManager.getAutoSyncInterval())
             } else {
                 cancelAutoSyncWork()
             }
@@ -325,11 +331,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
             try {
                 val entryPoint = EntryPointAccessors.fromApplication(
                     this@MainApplication,
-                    NetworkDependenciesEntryPoint::class.java
+                    ServiceDependenciesEntryPoint::class.java
                 )
                 entryPoint.retryQueue().recoverStuckOperations()
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to recover stuck operations", e)
             }
         }
         RetryQueueWorker.schedule(this)
@@ -342,7 +348,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private fun setupLifecycleCallbacks() {
-        registerActivityLifecycleCallbacks(this)
+        ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onStart(owner: LifecycleOwner) {
+                onAppForegrounded()
+            }
+        })
         onAppStarted()
     }
 
@@ -360,38 +370,58 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     private suspend fun observeNetworkForDownloads() {
         withContext(dispatcherProvider.default) {
             isNetworkConnectedFlow.onEach { isConnected ->
-                if (isConnected) {
-                    val serverUrl = sharedPrefManager.getServerUrl()
-                    if (serverUrl.isNotEmpty()) {
-                        applicationScope.launch {
-                            val canReachServer = isServerReachable(serverUrl, dispatcherProvider.io)
-                            if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
-                                resourceDownloadCoordinator.startBackgroundDownload(
-                                    downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
-                                )
-                            }
-                        }
-                    }
+                if (!isConnected) return@onEach
+
+                val serverUrl = sharedPrefManager.getServerUrl()
+                if (serverUrl.isEmpty()) return@onEach
+
+                applicationScope.launch {
+                    checkServerAndStartDownload(serverUrl)
                 }
             }.launchIn(applicationScope)
         }
     }
 
-    private fun scheduleAutoSyncWork(syncInterval: Int?) {
-        val autoSyncWork: PeriodicWorkRequest? = syncInterval?.let { PeriodicWorkRequest.Builder(AutoSyncWorker::class.java, it.toLong(), TimeUnit.SECONDS).build() }
-        val workManager = WorkManager.getInstance(this)
-        if (autoSyncWork != null) {
-            workManager.enqueueUniquePeriodicWork(AUTO_SYNC_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, autoSyncWork)
+    private suspend fun checkServerAndStartDownload(serverUrl: String) {
+        val canReachServer = isServerReachable(serverUrl)
+        if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
+            resourceDownloadCoordinator.startBackgroundDownload(
+                downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
+            )
         }
     }
 
+    fun applyAutoSyncSettings() {
+        if (sharedPrefManager.getAutoSync()) {
+            scheduleAutoSyncWork(sharedPrefManager.getAutoSyncInterval())
+        } else {
+            cancelAutoSyncWork()
+        }
+    }
+
+    private fun scheduleAutoSyncWork(syncInterval: Int?) {
+        if (syncInterval == null) return
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+        val autoSyncWork = PeriodicWorkRequest.Builder(AutoSyncWorker::class.java, syncInterval.toLong(), TimeUnit.SECONDS)
+            .setConstraints(constraints)
+            .build()
+        WorkManager.getInstance(this)
+            .enqueueUniquePeriodicWork(AUTO_SYNC_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, autoSyncWork)
+    }
+
     private fun cancelAutoSyncWork() {
-        val workManager = WorkManager.getInstance(this)
-        workManager.cancelUniqueWork(AUTO_SYNC_WORK_TAG)
+        WorkManager.getInstance(this).cancelUniqueWork(AUTO_SYNC_WORK_TAG)
     }
 
     private fun scheduleTaskNotificationWork() {
-        val taskNotificationWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(TaskNotificationWorker::class.java, 900, TimeUnit.SECONDS).build()
+        val constraints = Constraints.Builder()
+            .setRequiresBatteryNotLow(true)
+            .build()
+        val taskNotificationWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(TaskNotificationWorker::class.java, 900, TimeUnit.SECONDS)
+            .setConstraints(constraints)
+            .build()
         val workManager = WorkManager.getInstance(this)
         workManager.enqueueUniquePeriodicWork(TASK_NOTIFICATION_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, taskNotificationWork)
     }
@@ -416,33 +446,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private fun getCurrentThemeMode(): String {
-        return ThemeManager.getCurrentThemeMode(context)
+        return themeManager.getCurrentThemeMode()
     }
-
-    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
-
-    override fun onActivityStarted(activity: Activity) {
-        if (++activityReferences == 1 && !isActivityChangingConfigurations) {
-            onAppForegrounded()
-        }
-    }
-
-    override fun onActivityResumed(activity: Activity) {
-        if (isFirstLaunch) {
-            isFirstLaunch = false
-        }
-    }
-
-    override fun onActivityPaused(activity: Activity) {}
-
-    override fun onActivityStopped(activity: Activity) {
-        isActivityChangingConfigurations = activity.isChangingConfigurations
-        --activityReferences
-    }
-
-    override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle) {}
-
-    override fun onActivityDestroyed(activity: Activity) {}
 
     private fun onAppForegrounded() {
         if (isFirstLaunch) {
@@ -460,12 +465,17 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         }
     }
 
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
+            PdfThumbnailLoader.evictAll()
+        }
+    }
+
     override fun onTerminate() {
         if (::anrWatchdog.isInitialized) {
             anrWatchdog.stop()
         }
-        mainThreadRealm?.close()
-        mainThreadRealm = null
         super.onTerminate()
         stopListenNetworkState()
     }

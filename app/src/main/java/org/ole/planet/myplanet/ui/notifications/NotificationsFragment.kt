@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.notifications
 
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings.ACTION_INTERNAL_STORAGE_SETTINGS
@@ -9,192 +8,177 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.ArrayList
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.status_options
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNotificationsListener
 import org.ole.planet.myplanet.databinding.FragmentNotificationsBinding
 import org.ole.planet.myplanet.model.Notification
-import org.ole.planet.myplanet.model.TaskNotificationResult
-import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
+import org.ole.planet.myplanet.ui.teams.TeamPageConfig
+import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ChatPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
+import org.ole.planet.myplanet.ui.voices.ReplyActivity
+import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class NotificationsFragment : Fragment() {
-    private var _binding: FragmentNotificationsBinding? = null
-    private val binding get() = _binding!!
+class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(FragmentNotificationsBinding::inflate) {
+    @Inject
+    lateinit var timeProvider: TimeProvider
+
     private val viewModel: NotificationsViewModel by viewModels()
     private lateinit var adapter: NotificationsAdapter
     private lateinit var userId: String
     private var notificationUpdateListener: OnNotificationsListener? = null
-    private lateinit var dashboardActivity: DashboardActivity
     private var currentFilter: String = "all"
     private var isAdmin: Boolean = false
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        if (context is DashboardActivity) {
-            dashboardActivity = context
-        }
-    }
 
     fun setNotificationUpdateListener(listener: OnNotificationsListener) {
         this.notificationUpdateListener = listener
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         userId = arguments?.getString("userId") ?: ""
         isAdmin = arguments?.getBoolean("isAdmin", false) ?: false
+        currentFilter = savedInstanceState?.getString(KEY_FILTER) ?: currentFilter
+
         adapter = NotificationsAdapter(
-            onMarkAsReadClick = { notificationId ->
-                markAsReadById(notificationId)
-            },
-            onNotificationClick = { notification ->
-                handleNotificationClick(notification)
-            }
+            onMarkAsReadClick = { notificationId -> viewModel.markAsRead(notificationId) },
+            onNotificationClick = { notification -> handleNotificationClick(notification) },
+            onToggleSelection = { notificationId -> viewModel.toggleSelection(notificationId) },
+            onToggleGroupExpansion = { type -> viewModel.toggleGroupExpansion(type) },
+            now = { timeProvider.now() }
         )
         binding.rvNotifications.adapter = adapter
         binding.rvNotifications.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvNotifications.setHasFixedSize(true)
+
         val options = resources.getStringArray(status_options)
         val optionsList: MutableList<String?> = ArrayList(listOf(*options))
-        val spinnerAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, optionsList)
+        val spinnerAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item_right, optionsList)
         spinnerAdapter.setDropDownViewResource(R.layout.spinner_item)
         binding.status.adapter = spinnerAdapter
         binding.status.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                currentFilter = parent.getItemAtPosition(position).toString().lowercase()
+                val filter = filterAt(position)
+                if (filter == currentFilter) return
+                currentFilter = filter
                 viewModel.loadNotifications(userId, currentFilter, isAdmin)
             }
-
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
-        viewModel.loadNotifications(userId, "all", isAdmin)
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    viewModel.notifications.collect { notifications ->
-                        adapter.submitList(notifications)
-                        val isEmpty = notifications.isEmpty()
-                        binding.emptyData.visibility = if (isEmpty) View.VISIBLE else View.GONE
-                        binding.emptyData.text = when (currentFilter) {
-                            "unread" -> getString(R.string.no_unread_notifications)
-                            "read" -> getString(R.string.no_read_notifications)
-                            else -> getString(R.string.no_notifications)
-                        }
-                        binding.status.visibility = if (isEmpty && currentFilter == "all") View.GONE else View.VISIBLE
-                    }
-                }
-                launch {
-                    viewModel.unreadCount.collect { count ->
-                        notificationUpdateListener?.onNotificationCountUpdated(count)
-                        val showButton = count > 0 && currentFilter != "read"
-                        binding.btnMarkAllAsRead.visibility = if (showButton) View.VISIBLE else View.GONE
-                    }
-                }
+
+        binding.btnMarkAllAsRead.setOnClickListener { viewModel.markAllAsRead(userId) }
+        binding.btnBulkMarkAsRead.setOnClickListener { viewModel.markSelectedAsRead() }
+        binding.btnBulkDelete.setOnClickListener { viewModel.deleteSelected() }
+        binding.btnCancelSelection.setOnClickListener { viewModel.clearSelection() }
+
+        viewModel.loadNotifications(userId, currentFilter, isAdmin)
+
+        collectWhenStarted(viewModel.groupedItems) { items ->
+            adapter.submitList(items)
+            val isEmpty = items.isEmpty()
+            binding.emptyData.visibility = if (isEmpty) View.VISIBLE else View.GONE
+            binding.emptyData.text = when (currentFilter) {
+                "unread" -> getString(R.string.no_unread_notifications)
+                "read" -> getString(R.string.no_read_notifications)
+                else -> getString(R.string.no_notifications)
             }
+            binding.status.visibility = if (isEmpty && currentFilter == "all") View.GONE else View.VISIBLE
         }
-        binding.btnMarkAllAsRead.setOnClickListener {
-            markAllAsRead()
+        collectWhenStarted(viewModel.unreadCount) { count ->
+            notificationUpdateListener?.onNotificationCountUpdated(count)
+            val showButton = count > 0 && currentFilter != "read"
+            binding.btnMarkAllAsRead.visibility = if (showButton) View.VISIBLE else View.GONE
         }
-        return binding.root
+        collectWhenStarted(viewModel.isSelectionMode) { inSelectionMode ->
+            binding.ltBulkActionBar.visibility = if (inSelectionMode) View.VISIBLE else View.GONE
+            binding.ltTopBar.visibility = if (inSelectionMode) View.GONE else View.VISIBLE
+        }
+        collectWhenStarted(viewModel.selectedCount) { count ->
+            binding.tvSelectedCount.text = getString(R.string.selected_count, count)
+        }
+
+        return view
     }
 
     private fun handleNotificationClick(notification: Notification) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val result = when (notification.type) {
-                "survey" -> viewModel.getSurveyId(notification.relatedId)
-                "task" -> viewModel.getTaskDetails(notification.relatedId)
-                "join_request" -> notification.relatedId?.let {
-                    viewModel.getJoinRequestTeamId(it)
-                }
-                else -> null
+        when (notification.type) {
+            "join_request" -> resolveAndOpenTeam(notification.relatedId, JoinRequestsPage) { relatedId ->
+                viewModel.getJoinRequestTeamId(relatedId)
             }
+            "team_join" -> openTeam(notification.relatedId, navigateToPage = null)
+            "chat" -> openTeam(notification.relatedId, ChatPage)
+            "task" -> resolveAndOpenTeam(notification.relatedId, TasksPage) { relatedId ->
+                viewModel.getTaskDetails(relatedId)?.teamId
+            }
+            "voice_reply" -> notification.relatedId?.let { newsId ->
+                startActivity(Intent(requireContext(), ReplyActivity::class.java).putExtra("id", newsId))
+            }
+            "resource" -> (activity as? OnHomeItemClickListener)?.openMyFragment(ResourcesFragment())
+            "storage" -> startActivity(Intent(ACTION_INTERNAL_STORAGE_SETTINGS))
+        }
 
-            when (notification.type) {
-                "storage" -> {
-                    val intent = Intent(ACTION_INTERNAL_STORAGE_SETTINGS)
-                    startActivity(intent)
-                }
-                "survey" -> {
-                    val examId = result as? String
-                    if (examId != null && activity is OnHomeItemClickListener) {
-                        SubmissionsAdapter.openSurvey(
-                            activity as OnHomeItemClickListener,
-                            examId,
-                            false,
-                            false,
-                            "",
-                        )
-                    }
-                }
-                "task" -> {
-                    val teamDetails = result as? TaskNotificationResult
-                    if (teamDetails != null && activity is OnHomeItemClickListener) {
-                        val (teamId, teamName, teamType) = teamDetails
-                        val f = TeamDetailFragment.newInstance(
-                            teamId = teamId,
-                            teamName = teamName ?: "",
-                            teamType = teamType ?: "",
-                            isMyTeam = true,
-                            navigateToPage = TasksPage,
-                        )
-                        (activity as OnHomeItemClickListener).openCallFragment(f)
-                    }
-                }
-                "join_request" -> {
-                    val teamId = result as? String
-                    if (teamId?.isNotEmpty() == true && activity is OnHomeItemClickListener) {
-                        val f = TeamDetailFragment()
-                        val b = Bundle()
-                        b.putString("id", teamId)
-                        b.putBoolean("isMyTeam", true)
-                        b.putString("navigateToPage", JoinRequestsPage.id)
-                        f.arguments = b
-                        (activity as OnHomeItemClickListener).openCallFragment(f)
-                    }
-                }
-                "resource" -> {
-                    dashboardActivity.openMyFragment(ResourcesFragment())
-                }
-            }
-
-            if (!notification.isRead) {
-                markAsReadById(notification.id)
-            }
+        if (!notification.isRead) {
+            viewModel.markAsRead(notification.id)
         }
     }
 
-    private fun markAsReadById(notificationId: String) {
-        viewModel.markAsRead(notificationId)
+    /**
+     * [relatedId] is either a task/join-request id (resolved to a team id via [resolve]) or
+     * already a team id (server-synced notifications carry the team id directly). When [resolve]
+     * can't match it to a known task/join-request, [relatedId] is used as-is.
+     */
+    private fun resolveAndOpenTeam(relatedId: String?, navigateToPage: TeamPageConfig?, resolve: suspend (String) -> String?) {
+        if (relatedId.isNullOrEmpty()) return
+        viewLifecycleOwner.lifecycleScope.launch {
+            val teamId = resolve(relatedId) ?: relatedId
+            openTeam(teamId, navigateToPage)
+        }
     }
 
-    private fun markAllAsRead() {
-        viewModel.markAllAsRead(userId)
+    private fun openTeam(teamId: String?, navigateToPage: TeamPageConfig?) {
+        if (teamId.isNullOrEmpty()) return
+        val listener = activity as? OnHomeItemClickListener ?: return
+        listener.openCallFragment(
+            TeamDetailFragment.newInstance(
+                teamId = teamId,
+                teamName = "",
+                teamType = "",
+                isMyTeam = true,
+                navigateToPage = navigateToPage,
+            )
+        )
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(KEY_FILTER, currentFilter)
     }
 
     fun refreshNotificationsList() {
         if (::adapter.isInitialized && _binding != null) {
-            currentFilter = binding.status.selectedItem.toString().lowercase()
+            currentFilter = filterAt(binding.status.selectedItemPosition)
             viewModel.loadNotifications(userId, currentFilter, isAdmin)
         }
     }
+    
+    private fun filterAt(position: Int): String = FILTERS.getOrElse(position) { FILTERS.first() }
 
-    override fun onDestroyView() {
-        _binding = null
-        super.onDestroyView()
+    companion object {
+        private const val KEY_FILTER = "notifications_filter"
+        private val FILTERS = listOf("all", "read", "unread")
     }
 }

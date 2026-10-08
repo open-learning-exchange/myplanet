@@ -1,40 +1,161 @@
 package org.ole.planet.myplanet.utils
 
-import com.google.gson.JsonNull
-import com.google.gson.JsonObject
+import com.google.gson.JsonObject as GsonJsonObject
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.putJsonArray
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class JsonUtilsTest {
+    private val gsonDoc = GsonJsonObject().apply {
+        addProperty("name", "value")
+        addProperty("intAsString", "42")
+        addProperty("count", 7)
+        addProperty("flag", true)
+        addProperty("temp", 98.6f)
+        add("missing", null)
+        add("nested", GsonJsonObject().apply { addProperty("inner", "yes") })
+    }
+    private val kotlinxDoc = gsonDoc.toKotlinx().jsonObject
 
     @Test
-    fun testGetStringWithValidString() {
-        val jsonObject = JsonObject()
-        jsonObject.addProperty("key", "value")
-        assertEquals("value", JsonUtils.getString("key", jsonObject))
+    fun `getString matches for a present string field`() {
+        assertEquals(
+            GsonUtils.getString("name", gsonDoc),
+            JsonUtils.getString("name", kotlinxDoc)
+        )
+        assertEquals("value", JsonUtils.getString("name", kotlinxDoc))
     }
 
     @Test
-    fun testGetStringWithJsonNull() {
-        val jsonObject = JsonObject()
-        jsonObject.add("key", JsonNull.INSTANCE)
-        assertEquals("", JsonUtils.getString("key", jsonObject))
+    fun `getString on a missing field returns empty on both`() {
+        assertEquals(
+            GsonUtils.getString("nope", gsonDoc),
+            JsonUtils.getString("nope", kotlinxDoc)
+        )
+        assertEquals("", JsonUtils.getString("nope", kotlinxDoc))
     }
 
     @Test
-    fun testGetStringWithMissingKey() {
-        val jsonObject = JsonObject()
-        assertEquals("", JsonUtils.getString("missing", jsonObject))
+    fun `getString on a numeric field returns empty on both, matching the string-only contract`() {
+        assertEquals(
+            GsonUtils.getString("count", gsonDoc),
+            JsonUtils.getString("count", kotlinxDoc)
+        )
+        assertEquals("", JsonUtils.getString("count", kotlinxDoc))
     }
 
     @Test
-    fun testGetBoolean() {
-        val jsonObject = JsonObject()
-        jsonObject.addProperty("flagTrue", true)
-        jsonObject.addProperty("flagFalse", false)
+    fun `getInt parses a numeric field and a numeric string field the same way`() {
+        assertEquals(GsonUtils.getInt("count", gsonDoc), JsonUtils.getInt("count", kotlinxDoc))
+        assertEquals(7, JsonUtils.getInt("count", kotlinxDoc))
 
-        assertEquals(true, JsonUtils.getBoolean("flagTrue", jsonObject))
-        assertEquals(false, JsonUtils.getBoolean("flagFalse", jsonObject))
-        assertEquals(false, JsonUtils.getBoolean("missing", jsonObject))
+        assertEquals(
+            GsonUtils.getInt("intAsString", gsonDoc),
+            JsonUtils.getInt("intAsString", kotlinxDoc)
+        )
+        assertEquals(42, JsonUtils.getInt("intAsString", kotlinxDoc))
+    }
+
+    @Test
+    fun `getInt on a missing field returns 0 on both`() {
+        assertEquals(GsonUtils.getInt("nope", gsonDoc), JsonUtils.getInt("nope", kotlinxDoc))
+    }
+
+    @Test
+    fun `getLong matches`() {
+        assertEquals(GsonUtils.getLong("count", gsonDoc), JsonUtils.getLong("count", kotlinxDoc))
+    }
+
+    @Test
+    fun `getFloat matches`() {
+        assertEquals(GsonUtils.getFloat("temp", gsonDoc), JsonUtils.getFloat("temp", kotlinxDoc))
+    }
+
+    @Test
+    fun `getBoolean matches for present and missing fields`() {
+        assertEquals(GsonUtils.getBoolean("flag", gsonDoc), JsonUtils.getBoolean("flag", kotlinxDoc))
+        assertEquals(true, JsonUtils.getBoolean("flag", kotlinxDoc))
+        assertEquals(GsonUtils.getBoolean("nope", gsonDoc), JsonUtils.getBoolean("nope", kotlinxDoc))
+        assertFalse(JsonUtils.getBoolean("nope", kotlinxDoc))
+    }
+
+    @Test
+    fun `getJsonObject returns the nested object, or an empty one when missing`() {
+        val nested = JsonUtils.getJsonObject("nested", kotlinxDoc)
+        assertEquals("yes", JsonUtils.getString("inner", nested))
+
+        val missing = JsonUtils.getJsonObject("nope", kotlinxDoc)
+        assertEquals(0, missing.size)
+    }
+
+    @Test
+    fun `getJsonArray returns the nested array, or an empty one when missing`() {
+        val doc = buildJsonObject {
+            putJsonArray("items") {
+                add("a")
+                add("b")
+            }
+        }
+
+        assertEquals(2, JsonUtils.getJsonArray("items", doc).size)
+        assertEquals(0, JsonUtils.getJsonArray("nope", doc).size)
+    }
+
+    @Test
+    fun `a null-valued field behaves like a missing field, matching Gson's JsonNull handling`() {
+        assertEquals(
+            GsonUtils.getString("missing", gsonDoc),
+            JsonUtils.getString("missing", kotlinxDoc)
+        )
+        assertEquals("", JsonUtils.getString("missing", kotlinxDoc))
+    }
+
+    @Test
+    fun `raw getters return null for a missing field, unlike the default-returning getters`() {
+        assertEquals(null, JsonUtils.rawString("nope", kotlinxDoc))
+        assertEquals(null, JsonUtils.rawLong("nope", kotlinxDoc))
+        assertEquals(null, JsonUtils.rawInt("nope", kotlinxDoc))
+        assertEquals(null, JsonUtils.rawBoolean("nope", kotlinxDoc))
+    }
+
+    @Test
+    fun `raw getters read any primitive kind, matching Gson's forgiving asString-asLong-asBoolean`() {
+        assertEquals("7", JsonUtils.rawString("count", kotlinxDoc))
+        assertEquals(7L, JsonUtils.rawLong("count", kotlinxDoc))
+        assertEquals(7, JsonUtils.rawInt("count", kotlinxDoc))
+        assertEquals(true, JsonUtils.rawBoolean("flag", kotlinxDoc))
+    }
+
+    @Test
+    fun `getJsonObject returns shared empty singleton on missing fields`() {
+        val miss1 = JsonUtils.getJsonObject("missing1", kotlinxDoc)
+        val miss2 = JsonUtils.getJsonObject("missing2", kotlinxDoc)
+        assertSame(miss1, miss2)
+        assertEquals(0, miss1.size)
+
+        val hit = JsonUtils.getJsonObject("nested", kotlinxDoc)
+        assertNotSame(miss1, hit)
+    }
+
+    @Test
+    fun `getJsonArray returns shared empty singleton on missing fields`() {
+        val miss1 = JsonUtils.getJsonArray("missing1", kotlinxDoc)
+        val miss2 = JsonUtils.getJsonArray("missing2", kotlinxDoc)
+        assertSame(miss1, miss2)
+        assertEquals(0, miss1.size)
+
+        val doc = buildJsonObject {
+            putJsonArray("items") {
+                add("a")
+            }
+        }
+        val hit = JsonUtils.getJsonArray("items", doc)
+        assertNotSame(miss1, hit)
     }
 }

@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -9,12 +8,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.utils.TimeProvider
 
 class UserSessionManager @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -22,37 +22,26 @@ class UserSessionManager @Inject constructor(
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val userRepository: UserRepository,
     private val activitiesRepository: ActivitiesRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val timeProvider: TimeProvider
 ) {
-    private val fullName: String
-
-    init {
-        try {
-            fullName = sharedPrefManager.getUserName()
-        } catch (e: IllegalArgumentException) {
-            throw e
-        }
+    suspend fun getUserModel(): UserEntity? {
+        return userRepository.getUserModel()
     }
 
-    suspend fun getUserModel(): RealmUser? {
-        return userRepository.getUserModelSuspending()
-    }
-
-    suspend fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUser?) {
+    suspend fun saveUserInfoPref(password: String?, user: UserEntity?) {
         withContext(dispatcherProvider.io) {
-            SecurePrefs.saveCredentials(context, settings, user?.name, password)
+            SecurePrefs.saveCredentials(context, sharedPrefManager.rawPreferences, user?.name, password)
         }
-        sharedPrefManager.setUserId(user?.id ?: "")
-        sharedPrefManager.setUserName(user?.name ?: "")
-        sharedPrefManager.rawPreferences.edit().apply {
-            remove("password")
-            putString("firstName", user?.firstName)
-            putString("lastName", user?.lastName)
-            putString("middleName", user?.middleName)
-            user?.userAdmin?.let { putBoolean("isUserAdmin", it) }
-            putLong("lastLogin", System.currentTimeMillis())
-            apply()
-        }
+        sharedPrefManager.saveUserInfo(
+            userId = user?.id ?: "",
+            userName = user?.name ?: "",
+            firstName = user?.firstName,
+            lastName = user?.lastName,
+            middleName = user?.middleName,
+            isUserAdmin = user?.userAdmin,
+            lastLogin = timeProvider.now()
+        )
     }
 
     fun onLogin() {
@@ -69,13 +58,9 @@ class UserSessionManager @Inject constructor(
                     parentCode = model?.parentCode,
                     planetCode = model?.planetCode
                 )
-                withContext(dispatcherProvider.main) {
-                    callback?.invoke()
-                }
+                callback?.invoke()
             } catch (e: Exception) {
-                withContext(dispatcherProvider.main) {
-                    onError?.invoke(e)
-                }
+                onError?.invoke(e)
             }
         }
     }
@@ -91,11 +76,11 @@ class UserSessionManager @Inject constructor(
         }
     }
 
-    fun setResourceOpenCount(item: RealmMyLibrary) {
+    fun setResourceOpenCount(item: MyLibrary) {
         setResourceOpenCount(item, KEY_RESOURCE_OPEN)
     }
 
-    fun setResourceOpenCount(item: RealmMyLibrary, type: String?) {
+    fun setResourceOpenCount(item: MyLibrary, type: String?) {
         val itemTitle = item.title
         val itemResourceId = item.resourceId
 

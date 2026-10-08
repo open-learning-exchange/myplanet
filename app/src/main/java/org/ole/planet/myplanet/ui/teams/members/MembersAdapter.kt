@@ -12,17 +12,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnMemberActionListener
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
-import org.ole.planet.myplanet.repository.JoinedMemberData
+import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class MembersAdapter(
@@ -30,21 +26,32 @@ class MembersAdapter(
     private var currentUserId: String?,
     private val actionListener: OnMemberActionListener
 ) : ListAdapter<JoinedMemberData, MembersAdapter.MembersViewHolder>(DIFF_CALLBACK) {
+    private val avatarSize: Int by lazy { context.resources.getDimensionPixelSize(R.dimen._40dp) }
+    private val teamLeaderLabel: String by lazy { context.getString(R.string.team_leader) }
+    private val noVisitLabel: String by lazy { context.getString(R.string.no_visit) }
     private var isLoggedInUserTeamLeader: Boolean = false
-    private val dateFormatter = DateTimeFormatter.ofPattern(TimeUtils.DATE_FORMAT).withZone(ZoneId.systemDefault())
 
     fun setUserId(userId: String?) {
         this.currentUserId = userId
     }
 
     companion object {
+        const val PAYLOAD_KEY_LEADER = "PAYLOAD_KEY_LEADER"
+        const val PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED = "PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED"
         private val DIFF_CALLBACK = DiffUtils.itemCallback<JoinedMemberData>(
             areItemsTheSame = { oldItem, newItem -> oldItem.user.id == newItem.user.id },
-            areContentsTheSame = { oldItem, newItem -> oldItem == newItem },
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem.isLeader == newItem.isLeader &&
+                    oldItem.visitCount == newItem.visitCount &&
+                    oldItem.lastVisitDate == newItem.lastVisitDate &&
+                    oldItem.user.name == newItem.user.name &&
+                    oldItem.user.userImage == newItem.user.userImage &&
+                    oldItem.user.getRoleAsString() == newItem.user.getRoleAsString()
+            },
             getChangePayload = { oldItem, newItem ->
                 val payload = Bundle()
                 if (oldItem.isLeader != newItem.isLeader) {
-                    payload.putBoolean("KEY_LEADER", newItem.isLeader)
+                    payload.putBoolean(PAYLOAD_KEY_LEADER, newItem.isLeader)
                 }
                 if (payload.isEmpty) null else payload
             }
@@ -61,13 +68,28 @@ class MembersAdapter(
         payloads: MutableList<Any>
     ) {
         if (payloads.isNotEmpty()) {
-            val payload = payloads[0] as Bundle
-            if (payload.containsKey("KEY_LEADER")) {
-                val isLeader = payload.getBoolean("KEY_LEADER")
-                holder.binding.tvIsLeader.visibility = if (isLeader) View.VISIBLE else View.GONE
-                if (isLeader) {
-                    holder.binding.tvIsLeader.text = context.getString(R.string.team_leader)
+            var unhandled = false
+            payloads.forEach { payload ->
+                when (payload) {
+                    is Bundle -> {
+                        if (payload.containsKey(PAYLOAD_KEY_LEADER)) {
+                            val isLeader = payload.getBoolean(PAYLOAD_KEY_LEADER)
+                            holder.binding.tvIsLeader.visibility = if (isLeader) View.VISIBLE else View.GONE
+                            if (isLeader) {
+                                holder.binding.tvIsLeader.text = teamLeaderLabel
+                            }
+                        } else {
+                            unhandled = true
+                        }
+                    }
+                    PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED -> {
+                        checkUserAndShowOverflowMenu(holder, position)
+                    }
+                    else -> unhandled = true
                 }
+            }
+            if (unhandled) {
+                super.onBindViewHolder(holder, position, payloads)
             }
         } else {
             super.onBindViewHolder(holder, position, payloads)
@@ -79,55 +101,35 @@ class MembersAdapter(
         val member = memberData.user
         val binding = holder.binding
 
-        binding.tvTitle.text = if (member.toString() == " ") member.name else member.toString()
+        binding.tvTitle.text = member.name
         binding.tvDescription.text = context.getString(
             R.string.member_description,
             member.getRoleAsString(),
             memberData.visitCount
         )
         val lastVisitDate = if (memberData.lastVisitDate != null) {
-            dateFormatter.format(Instant.ofEpochMilli(memberData.lastVisitDate))
+            TimeUtils.getFormattedShortDate(memberData.lastVisitDate)
         } else {
-            context.getString(R.string.no_visit)
+            noVisitLabel
         }
         binding.tvLastVisit.text = context.getString(
             R.string.last_visit,
             lastVisitDate
         )
-        Glide.with(binding.memberImage.context)
-            .load(member.userImage)
-            .diskCacheStrategy(DiskCacheStrategy.ALL)
-            .circleCrop()
-            .placeholder(R.drawable.profile)
-            .error(R.drawable.profile)
-            .into(binding.memberImage)
+        ImageUtils.loadProfileImage(member.userImage, binding.memberImage, avatarSize)
 
         if (memberData.isLeader) {
             binding.tvIsLeader.visibility = View.VISIBLE
-            binding.tvIsLeader.text = context.getString(R.string.team_leader)
+            binding.tvIsLeader.text = teamLeaderLabel
         } else {
             binding.tvIsLeader.visibility = View.GONE
         }
 
-        checkUserAndShowOverflowMenu(binding, position)
+        checkUserAndShowOverflowMenu(holder, position)
 
         holder.itemView.setOnClickListener {
             val activity = it.context as AppCompatActivity
-            val userName = "${member.firstName} ${member.lastName}".trim().ifBlank {
-                member.name
-            }
-            val fragment = MembersDetailFragment.newInstance(
-                userName.toString(),
-                member.email.toString(),
-                member.dob.toString().substringBefore("T"),
-                member.language.toString(),
-                member.phoneNumber.toString(),
-                "${memberData.visitCount}",
-                memberData.profileLastVisit,
-                "${member.firstName} ${member.lastName}",
-                member.level.toString(),
-                member.userImage
-            )
+            val fragment = MembersDetailFragment.newInstance(MembersDetailInfo.fromUser(member))
             FragmentNavigator.replaceFragment(
                 activity.supportFragmentManager,
                 R.id.fragment_container,
@@ -137,7 +139,8 @@ class MembersAdapter(
         }
     }
 
-    private fun checkUserAndShowOverflowMenu(binding: RowJoinedUserBinding, position: Int) {
+    private fun checkUserAndShowOverflowMenu(holder: MembersViewHolder, position: Int) {
+        val binding = holder.binding
         val currentMember = getItem(position)
         val isOwnCard = currentMember.user.id == currentUserId
 
@@ -154,27 +157,19 @@ class MembersAdapter(
                 }
 
                 val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                val adapter = object : ArrayAdapter<CharSequence>(
-                    context,
-                    android.R.layout.simple_list_item_1,
-                    overflowMenuOptions
-                ) {
-                    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                        val view = super.getView(position, convertView, parent) as TextView
-                        val color = ContextCompat.getColor(context, R.color.daynight_textColor)
-                        view.setTextColor(color)
-                        return view
-                    }
-                }
+                val adapter = MemberMenuAdapter(context, overflowMenuOptions.toList())
                 builder.setAdapter(adapter) { _, i ->
                     if (isOwnCard) {
                         when (i) {
                             0 -> actionListener.onLeaveTeam()
                         }
                     } else {
+                        val currentPosition = holder.bindingAdapterPosition
+                        if (currentPosition == RecyclerView.NO_POSITION) return@setAdapter
+                        val member = getItem(currentPosition)
                         when (i) {
-                            0 -> actionListener.onRemoveMember(getItem(position), position)
-                            1 -> actionListener.onMakeLeader(getItem(position))
+                            0 -> actionListener.onRemoveMember(member, currentPosition)
+                            1 -> actionListener.onMakeLeader(member)
                         }
                     }
                 }.setNegativeButton(R.string.dismiss, null).show()
@@ -185,10 +180,28 @@ class MembersAdapter(
     }
 
     fun updateData(newList: List<JoinedMemberData>, isLoggedInUserTeamLeader: Boolean) {
+        val leaderStatusChanged = this.isLoggedInUserTeamLeader != isLoggedInUserTeamLeader
+        val menuAvailabilityChanged = (itemCount > 1) != (newList.size > 1)
         this.isLoggedInUserTeamLeader = isLoggedInUserTeamLeader
-        submitList(newList)
+        if (leaderStatusChanged || menuAvailabilityChanged) {
+            submitList(newList) { notifyItemRangeChanged(0, itemCount, PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED) }
+        } else {
+            submitList(newList)
+        }
     }
 
     class MembersViewHolder(val binding: RowJoinedUserBinding) :
         RecyclerView.ViewHolder(binding.root)
+
+    private class MemberMenuAdapter(
+        context: Context,
+        items: List<CharSequence>
+    ) : ArrayAdapter<CharSequence>(context, android.R.layout.simple_list_item_1, items) {
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+            val view = super.getView(position, convertView, parent) as TextView
+            val color = ContextCompat.getColor(context, R.color.daynight_textColor)
+            view.setTextColor(color)
+            return view
+        }
+    }
 }

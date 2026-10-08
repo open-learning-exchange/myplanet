@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.ratings
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -11,13 +12,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.MainDispatcherRule
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.RatingEntry
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @ExperimentalCoroutinesApi
 class RatingsViewModelTest {
@@ -35,11 +36,12 @@ class RatingsViewModelTest {
         userRepository = mockk()
         val testDispatcherProvider = object : DispatcherProvider {
             override val main = Dispatchers.Unconfined
+            override val mainImmediate = Dispatchers.Unconfined
             override val io = Dispatchers.Unconfined
             override val default = Dispatchers.Unconfined
             override val unconfined = Dispatchers.Unconfined
         }
-        viewModel = RatingsViewModel(ratingsRepository, userRepository, testDispatcherProvider)
+        viewModel = RatingsViewModel(ratingsRepository, userRepository)
     }
 
     @Test
@@ -48,7 +50,7 @@ class RatingsViewModelTest {
         val itemId = "item-1"
         val userId = "user-1"
 
-        val mockUser = RealmUser().apply { id = userId }
+        val mockUser = UserEntity().apply { id = userId }
         val mockSummary = RatingSummary(
             existingRating = RatingEntry("r-1", "Good", 5),
             averageRating = 4.5f,
@@ -56,10 +58,10 @@ class RatingsViewModelTest {
             userRating = 5
         )
 
-        coEvery { userRepository.getUserById(userId) } returns mockUser
+        coEvery { userRepository.getUserProfile() } returns mockUser
         coEvery { ratingsRepository.getRatingSummary(type, itemId, userId) } returns mockSummary
 
-        viewModel.loadRatingData(type, itemId, userId)
+        viewModel.loadRatingData(type, itemId)
         advanceUntilIdle()
 
         val state = viewModel.ratingState.value
@@ -77,12 +79,12 @@ class RatingsViewModelTest {
         val itemId = "item-1"
         val userId = "user-1"
 
-        val mockUser = RealmUser().apply { id = userId }
+        val mockUser = UserEntity().apply { id = userId }
 
-        coEvery { userRepository.getUserById(userId) } returns mockUser
+        coEvery { userRepository.getUserProfile() } returns mockUser
         coEvery { ratingsRepository.getRatingSummary(type, itemId, userId) } throws RuntimeException("fail")
 
-        viewModel.loadRatingData(type, itemId, userId)
+        viewModel.loadRatingData(type, itemId)
         advanceUntilIdle()
 
         val state = viewModel.ratingState.value
@@ -97,7 +99,7 @@ class RatingsViewModelTest {
         val itemId = "item-1"
         val userId = "user-1"
 
-        val mockUser = RealmUser().apply { id = userId }
+        val mockUser = UserEntity().apply { id = userId }
         val mockSummary = RatingSummary(
             existingRating = RatingEntry("r-1", "Good", 5),
             averageRating = 4.5f,
@@ -105,12 +107,92 @@ class RatingsViewModelTest {
             userRating = 5
         )
 
-        coEvery { userRepository.getUserById(userId) } returns mockUser
+        coEvery { userRepository.getUserProfile() } returns mockUser
         coEvery { ratingsRepository.getRatingSummary(type, itemId, userId) } returns mockSummary
 
-        viewModel.loadRatingData(type, itemId, userId)
+        viewModel.loadRatingData(type, itemId)
         advanceUntilIdle()
 
         assertEquals(mockUser, viewModel.userState.value)
+    }
+
+    @Test
+    fun `getRatingSummary handles null user`() = runTest {
+        val type = "course"
+        val itemId = "item-1"
+
+        coEvery { userRepository.getUserProfile() } returns null
+
+        viewModel.loadRatingData(type, itemId)
+        advanceUntilIdle()
+
+        val state = viewModel.ratingState.value
+        assertTrue(state is RatingsViewModel.RatingUiState.Error)
+        assertEquals("User not found", (state as RatingsViewModel.RatingUiState.Error).message)
+    }
+
+    @Test
+    fun `getRatingSummary falls back to _id when user id is blank`() = runTest {
+        val type = "course"
+        val itemId = "item-1"
+        val fallbackId = "u1"
+
+        val mockUser = UserEntity().apply {
+            id = ""
+            _id = fallbackId
+        }
+        val mockSummary = RatingSummary(
+            existingRating = null,
+            averageRating = 0f,
+            totalRatings = 0,
+            userRating = null
+        )
+
+        coEvery { userRepository.getUserProfile() } returns mockUser
+        coEvery { ratingsRepository.getRatingSummary(type, itemId, fallbackId) } returns mockSummary
+
+        viewModel.loadRatingData(type, itemId)
+        advanceUntilIdle()
+
+        coVerify { ratingsRepository.getRatingSummary(type, itemId, fallbackId) }
+    }
+
+    @Test
+    fun `submitRating updates submit state on success`() = runTest {
+        val type = "course"
+        val itemId = "item-1"
+        val userId = "user-1"
+
+        val mockUser = UserEntity().apply { id = userId }
+        val mockSummary = RatingSummary(
+            existingRating = RatingEntry("r-1", "Good", 5),
+            averageRating = 4.5f,
+            totalRatings = 10,
+            userRating = 5
+        )
+
+        coEvery { userRepository.getUserProfile() } returns mockUser
+        coEvery {
+            ratingsRepository.submitRating(
+                type = type,
+                itemId = itemId,
+                title = "Title",
+                user = mockUser,
+                rating = 4f,
+                comment = "Nice"
+            )
+        } returns mockSummary
+
+        viewModel.submitRating(
+            type = type,
+            itemId = itemId,
+            title = "Title",
+            rating = 4f,
+            comment = "Nice"
+        )
+        advanceUntilIdle()
+
+        val submitState = viewModel.submitState.value
+        assertTrue(submitState is RatingsViewModel.SubmitState.Success)
     }
 }

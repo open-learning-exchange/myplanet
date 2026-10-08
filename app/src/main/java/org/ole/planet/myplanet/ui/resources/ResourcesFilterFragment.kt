@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.resources
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.animation.ValueAnimator
+import android.app.Dialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,19 +11,20 @@ import android.view.ViewGroup
 import android.widget.AbsListView
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.CheckedTextView
 import android.widget.ListView
 import android.widget.TextView
 import androidx.core.view.isGone
-import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingBottomSheetFragment
 import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryFilterBinding
 
-class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListener {
-    private var _binding: FragmentLibraryFilterBinding? = null
-    private val binding get() = _binding!!
+class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFilterBinding>(FragmentLibraryFilterBinding::inflate), AdapterView.OnItemClickListener {
     var languages: Set<String>? = null
     var subjects: Set<String>? = null
     var mediums: Set<String>? = null
@@ -42,7 +44,7 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentLibraryFilterBinding.inflate(inflater, container, false)
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         binding.listMedium.onItemClickListener = this
         binding.listLang.onItemClickListener = this
         binding.listLevel.onItemClickListener = this
@@ -80,12 +82,14 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
             )
             isLevelsExpanded = !isLevelsExpanded
         }
-        return binding.root
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+        binding.btnClearTags.setOnClickListener {
+            filterListener?.clearAllFilters()
+            dismiss()
+        }
+        binding.btnConfirmFilters.setOnClickListener {
+            dismiss()
+        }
+        return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -93,41 +97,62 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
         initList()
     }
 
-    override fun onStart() {
-        super.onStart()
-        dialog?.window?.let { window ->
-            val params = window.attributes
-            params.width = (resources.displayMetrics.widthPixels * 0.9).toInt()
-            params.height = ViewGroup.LayoutParams.WRAP_CONTENT
-            window.attributes = params
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
+        dialog.behavior.apply {
+            state = BottomSheetBehavior.STATE_EXPANDED
+            skipCollapsed = true
         }
+        return dialog
     }
 
     private fun initList() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val data = filterListener?.getData()
             languages = data?.get("languages")
             subjects = data?.get("subjects")
             mediums = data?.get("mediums")
             levels = data?.get("levels")
-            selectedLvls = filterListener?.getSelectedFilter()?.get("levels") as MutableSet<String>
-            selectedSubs = filterListener?.getSelectedFilter()?.get("subjects") as MutableSet<String>
-            selectedMeds = filterListener?.getSelectedFilter()?.get("mediums") as MutableSet<String>
-            selectedLang = filterListener?.getSelectedFilter()?.get("languages") as MutableSet<String>
+            val selectedFilter = filterListener?.getSelectedFilter()
+            selectedLvls = selectedFilter?.get("levels")?.toMutableSet() ?: selectedLvls
+            selectedSubs = selectedFilter?.get("subjects")?.toMutableSet() ?: selectedSubs
+            selectedMeds = selectedFilter?.get("mediums")?.toMutableSet() ?: selectedMeds
+            selectedLang = selectedFilter?.get("languages")?.toMutableSet() ?: selectedLang
             setAdapter(binding.listLevel, levels, selectedLvls)
             setAdapter(binding.listLang, languages, selectedLang)
-            setAdapter(binding.listMedium, mediums, selectedMeds)
+            setAdapter(binding.listMedium, mediums, selectedMeds, ::getMediumDisplayName)
             setAdapter(binding.listSub, subjects, selectedSubs)
+            updateResultCount()
         }
     }
 
-    private fun setAdapter(listView: ListView, ar: Set<String>?, set: Set<String>) {
+    private fun updateResultCount() {
+        val count = filterListener?.getFilteredCount(selectedSubs, selectedLang, selectedMeds, selectedLvls) ?: 0
+        showResultCount(count)
+    }
+
+    private fun showResultCount(count: Int) {
+        if (_binding == null) return
+        binding.btnConfirmFilters.text = getString(R.string.show_n_results, count)
+    }
+
+    private fun setAdapter(listView: ListView, ar: Set<String>?, set: Set<String>, label: (String) -> String = { it }, ) {
         val arr = ar?.let { ArrayList(it) } ?: return
         listView.choiceMode = AbsListView.CHOICE_MODE_MULTIPLE
-        listView.adapter = ArrayAdapter(requireActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, arr)
-        for (i in arr.indices) {
-                listView.setItemChecked(i, set.contains(arr[i]))
+        listView.adapter = object : ArrayAdapter<String>(requireActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, arr) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getView(position, convertView, parent)
+                val textView = view.findViewById<CheckedTextView>(R.id.checkBoxRowLayout)
+                val item = getItem(position)
+                if (item != null && textView != null) {
+                    textView.text = label(item)
+                }
+                return view
             }
+        }
+        for (i in arr.indices) {
+            listView.setItemChecked(i, set.contains(arr[i]))
+        }
     }
 
     override fun onItemClick(adapterView: AdapterView<*>, view: View, i: Int, l: Long) {
@@ -139,7 +164,8 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
                 R.id.list_level -> addToList(s, selectedLvls)
                 R.id.list_medium -> addToList(s, selectedMeds)
             }
-            filterListener?.filter(selectedSubs, selectedLang, selectedMeds, selectedLvls)
+            val count = filterListener?.filter(selectedSubs, selectedLang, selectedMeds, selectedLvls) ?: 0
+            showResultCount(count)
         }
     }
 
@@ -198,5 +224,9 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
     private fun rotateDrawable(textView: TextView, rotation: Float) {
         val drawableRes = if (rotation == 180f) R.drawable.outline_keyboard_arrow_up_24 else R.drawable.down_arrow
         textView.setCompoundDrawablesWithIntrinsicBounds(0, 0, drawableRes, 0)
+    }
+
+    fun getMediumDisplayName(medium: String): String {
+        return ResourcesMediaType.displayName(requireContext(), medium)
     }
 }

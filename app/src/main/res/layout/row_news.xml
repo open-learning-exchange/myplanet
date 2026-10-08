@@ -90,7 +90,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_marginTop="4dp"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="@dimen/item_margin_standard"
                 android:contentDescription="@string/recycler_chat_label"
                 app:layout_constrainedHeight="true"
                 app:layout_constraintBottom_toTopOf="@+id/text_gchat_indicator"
@@ -115,8 +115,8 @@
                     app:justifyContent="flex_start" />
                 <ImageView
                     android:id="@+id/img_news"
-                    android:layout_width="120dp"
-                    android:layout_height="120dp"
+                    android:layout_width="@dimen/image_thumbnail_size_120"
+                    android:layout_height="@dimen/image_thumbnail_size_120"
                     android:layout_gravity="center"
                     android:padding="@dimen/padding_small"
                     android:visibility="gone" />

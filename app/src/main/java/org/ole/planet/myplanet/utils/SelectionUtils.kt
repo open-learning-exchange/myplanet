@@ -2,10 +2,11 @@ package org.ole.planet.myplanet.utils
 
 object SelectionUtils {
     fun <T> handleCheck(b: Boolean, i: Int, selectedItems: MutableList<T?>, list: List<T?>) {
+        val item = list[i]
         if (b) {
-            selectedItems.add(list[i])
-        } else if (selectedItems.contains(list[i])) {
-            selectedItems.remove(list[i])
+            selectedItems.add(item)
+        } else {
+            selectedItems.remove(item)
         }
     }
 }

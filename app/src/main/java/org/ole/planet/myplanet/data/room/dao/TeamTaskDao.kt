@@ -1,0 +1,64 @@
+package org.ole.planet.myplanet.data.room.dao
+
+import androidx.room.Dao
+import androidx.room.Query
+import androidx.room.Upsert
+import kotlinx.coroutines.flow.Flow
+import org.ole.planet.myplanet.model.TeamTask
+
+@Dao
+interface TeamTaskDao {
+    @Query("SELECT * FROM team_tasks WHERE (status IS NULL OR status != 'archived') AND completed = 0 AND assignee IS :userId")
+    fun getOpenTasksForUser(userId: String?): Flow<List<TeamTask>>
+
+    @Query("SELECT * FROM team_tasks WHERE completed = 0 AND assignee = :userId AND isNotified = 0 AND deadline BETWEEN :start AND :end")
+    suspend fun getPendingTasksForUser(userId: String, start: Long, end: Long): List<TeamTask>
+
+    @Query("UPDATE team_tasks SET isNotified = 1 WHERE id IN (:taskIds)")
+    suspend fun markTasksNotifiedInternal(taskIds: List<String>)
+
+    suspend fun markTasksNotified(taskIds: List<String>) {
+        if (taskIds.isEmpty()) return
+        taskIds.distinct().chunked(900).forEach { markTasksNotifiedInternal(it) }
+    }
+
+    @Query("SELECT * FROM team_tasks WHERE teamId = :teamId AND (status IS NULL OR status != 'archived')")
+    fun getTasksByTeamId(teamId: String): Flow<List<TeamTask>>
+
+    @Query("SELECT * FROM team_tasks WHERE (_id IS NULL OR _id = '' OR isUpdated = 1)")
+    suspend fun getPendingUploads(): List<TeamTask>
+
+    @Query("DELETE FROM team_tasks WHERE id = :taskId")
+    suspend fun deleteById(taskId: String)
+
+    @Upsert
+    suspend fun upsert(task: TeamTask)
+
+    @Upsert
+    suspend fun upsertAll(tasks: List<TeamTask>)
+
+    @Query("SELECT * FROM team_tasks WHERE id = :taskId LIMIT 1")
+    suspend fun getById(taskId: String): TeamTask?
+
+    @Query("SELECT * FROM team_tasks WHERE id IN (:taskIds)")
+    suspend fun getByIdsInternal(taskIds: List<String>): List<TeamTask>
+
+    suspend fun getByIds(taskIds: List<String>): List<TeamTask> {
+        if (taskIds.isEmpty()) return emptyList()
+        return taskIds.distinct().chunked(900).flatMap { getByIdsInternal(it) }
+    }
+
+    @Query("SELECT * FROM team_tasks WHERE title IN (:titles)")
+    suspend fun getByTitlesInternal(titles: List<String>): List<TeamTask>
+
+    suspend fun getByTitles(titles: List<String>): List<TeamTask> {
+        if (titles.isEmpty()) return emptyList()
+        return titles.distinct().chunked(900).flatMap { getByTitlesInternal(it) }
+    }
+
+    @Query("SELECT * FROM team_tasks WHERE assignee = :userId AND deadline BETWEEN :start AND :end")
+    suspend fun getTasksForUserBetween(userId: String, start: Long, end: Long): List<TeamTask>
+
+    @Query("UPDATE team_tasks SET _id = :remoteId, _rev = :remoteRev, isUpdated = 0 WHERE id = :localId")
+    suspend fun markUploaded(localId: String, remoteId: String?, remoteRev: String?): Int
+}

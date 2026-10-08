@@ -3,21 +3,24 @@ package org.ole.planet.myplanet.utils
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import android.util.Log
 import androidx.core.net.toUri
-import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity
+import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
+import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 
 object IntentUtils {
-    @JvmStatic
     fun openAudioFile(context: Context, path: String?, resourceTitle: String? = null) {
-        val intent = Intent(context, AudioPlayerActivity::class.java).apply {
+        val intent = Intent(context, ResourceViewerActivity::class.java).apply {
             putExtra("isFullPath", true)
             putExtra("TOUCHED_FILE", path)
             putExtra("RESOURCE_TITLE", resourceTitle)
+            putExtra("resourceType", ResourceViewerFragment.ResourceType.AUDIO.name)
         }
         context.startActivity(intent)
     }
 
-    @JvmStatic
     fun openPlayStore(context: Context) {
         val appPackageName = context.packageName
         val intent = Intent(Intent.ACTION_VIEW, "market://details?id=$appPackageName".toUri()).apply {
@@ -31,6 +34,21 @@ object IntentUtils {
                 "https://play.google.com/store/apps/details?id=$appPackageName".toUri(),
             ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
             context.startActivity(webIntent)
+        }
+    }
+
+    fun openAppSettings(context: Context) {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", context.packageName, null)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        try {
+            context.startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            Log.e("IntentUtils", "ActivityNotFoundException for app settings", e)
+            context.startActivity(
+                Intent(Settings.ACTION_SETTINGS).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) },
+            )
         }
     }
 }

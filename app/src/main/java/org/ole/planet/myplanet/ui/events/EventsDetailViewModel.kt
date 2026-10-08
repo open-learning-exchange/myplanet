@@ -1,0 +1,99 @@
+package org.ole.planet.myplanet.ui.events
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.model.Meetup
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.EventsRepository
+import org.ole.planet.myplanet.repository.UserRepository
+
+@HiltViewModel
+class EventsDetailViewModel @Inject constructor(
+    private val eventsRepository: EventsRepository,
+    private val userRepository: UserRepository
+) : ViewModel() {
+
+    private val _user = MutableStateFlow<UserEntity?>(null)
+    val user: StateFlow<UserEntity?> = _user.asStateFlow()
+
+    private val _meetup = MutableStateFlow<Meetup?>(null)
+    val meetup: StateFlow<Meetup?> = _meetup.asStateFlow()
+
+    private val _members = MutableStateFlow<List<UserEntity>>(emptyList())
+    val members: StateFlow<List<UserEntity>> = _members.asStateFlow()
+
+    private val _updateSuccess = MutableStateFlow<Boolean?>(null)
+    val updateSuccess: StateFlow<Boolean?> = _updateSuccess.asStateFlow()
+
+    fun loadData(meetUpId: String?) {
+        viewModelScope.launch {
+            coroutineScope {
+                val userDeferred = async { userRepository.getUserModel() }
+
+                if (!meetUpId.isNullOrBlank()) {
+                    val meetupDeferred = async { eventsRepository.getMeetupByLocalId(meetUpId) }
+                    val membersDeferred = async { eventsRepository.getJoinedMembers(meetUpId) }
+
+                    _user.value = userDeferred.await()
+                    _meetup.value = meetupDeferred.await()
+                    _members.value = membersDeferred.await()
+                } else {
+                    _user.value = userDeferred.await()
+                }
+            }
+        }
+    }
+
+    fun updateMeetup(
+        meetupId: String,
+        title: String,
+        description: String,
+        startDate: Long,
+        endDate: Long,
+        startTime: String,
+        endTime: String,
+        meetupLocation: String,
+        meetupLink: String,
+        recurring: String
+    ) {
+        viewModelScope.launch {
+            val success = eventsRepository.updateMeetup(
+                meetupId = meetupId,
+                title = title,
+                description = description,
+                startDate = startDate,
+                endDate = endDate,
+                startTime = startTime,
+                endTime = endTime,
+                meetupLocation = meetupLocation,
+                meetupLink = meetupLink,
+                recurring = recurring
+            )
+
+            if (success) {
+                _meetup.value = eventsRepository.getMeetupByLocalId(meetupId)
+            }
+            _updateSuccess.value = success
+        }
+    }
+
+    fun resetUpdateSuccess() {
+        _updateSuccess.value = null
+    }
+
+    fun toggleAttendance(meetupId: String) {
+        viewModelScope.launch {
+            val currentUserId = _user.value?.id ?: return@launch
+            _meetup.value = eventsRepository.toggleAttendance(meetupId, currentUserId)
+            _members.value = eventsRepository.getJoinedMembers(meetupId)
+        }
+    }
+}

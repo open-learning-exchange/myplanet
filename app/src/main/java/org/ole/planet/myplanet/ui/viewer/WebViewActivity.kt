@@ -1,13 +1,16 @@
 package org.ole.planet.myplanet.ui.viewer
 
-import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.View
 import android.webkit.ConsoleMessage
 import android.webkit.CookieManager
+import android.webkit.GeolocationPermissions
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -15,39 +18,40 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.addCallback
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewFeature
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
+import java.io.FileInputStream
+import java.net.URLConnection
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.ServerConfigUtils
 import org.ole.planet.myplanet.utils.WebViewSafety
 
+@AndroidEntryPoint
 class WebViewActivity : AppCompatActivity() {
     private lateinit var activityWebViewBinding: ActivityWebViewBinding
     private var fromDeepLink = false
+    private val viewModel: ResourceViewerViewModel by viewModels()
+    private val exitCoordinator by lazy {
+        ResourcesExitCoordinator(this, viewModel)
+    }
     private lateinit var link: String
     private val trustedHosts by lazy {
-        listOfNotNull(
-            BuildConfig.PLANET_LEARNING_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_GUATEMALA_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_SANPABLO_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_SANPABLO_CLONE_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_EARTH_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_SOMALIA_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_VI_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_XELA_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_URIUR_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_URIUR_CLONE_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_RUIRU_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_EMBAKASI_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_EMBAKASI_CLONE_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_CAMBRIDGE_URL.takeIf { it.isNotEmpty() }
-        )
+        ServerConfigUtils.getTrustedServerHosts()
+    }
+    private val resourceDirectory: File? by lazy {
+        getLocalResourceDirectory(intent.getStringExtra("RESOURCE_ID"))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,7 +63,6 @@ class WebViewActivity : AppCompatActivity() {
         fromDeepLink = !TextUtils.isEmpty(dataFromDeepLink)
         val title: String? = intent.getStringExtra("title")
         link = intent.getStringExtra("link") ?: ""
-        val resourceId = intent.getStringExtra("RESOURCE_ID")
         clearCookie()
         if (!TextUtils.isEmpty(title)) {
             activityWebViewBinding.contentWebView.webTitle.text = title
@@ -70,16 +73,27 @@ class WebViewActivity : AppCompatActivity() {
         setupWebView()
         setListeners()
 
-        activityWebViewBinding.contentWebView.finish.setOnClickListener { finish() }
+        activityWebViewBinding.contentWebView.finish.setOnClickListener { handleBackNavigation() }
         setWebClient()
 
-        if (resourceId != null) {
-            val directory = File(getExternalFilesDir(null), "ole/$resourceId")
-            val indexFile = File(directory, "index.html")
+        onBackPressedDispatcher.addCallback(this) {
+            val webView = activityWebViewBinding.contentWebView.wv
+            if (webView.canGoBack()) {
+                webView.goBack()
+            } else {
+                handleBackNavigation()
+            }
+        }
 
-            if (indexFile.exists()) {
-                requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                activityWebViewBinding.contentWebView.wv.loadUrl("https://appassets.androidplatform.net/assets/index.html")
+        val dir = resourceDirectory
+        if (dir != null) {
+            val entryRelativePath = intent.getStringExtra("OPEN_WHICH_FILE")
+            val indexFile = FileUtils.resolveHtmlEntryFile(dir, entryRelativePath)
+
+            if (indexFile?.exists() == true) {
+                val entryPath = indexFile.relativeTo(dir).invariantSeparatorsPath
+                val encodedEntryPath = entryPath.split("/").joinToString("/") { Uri.encode(it) }
+                activityWebViewBinding.contentWebView.wv.loadUrl("https://appassets.androidplatform.net/assets/$encodedEntryPath")
             }
         } else {
             activityWebViewBinding.contentWebView.wv.loadUrl(link)
@@ -89,7 +103,7 @@ class WebViewActivity : AppCompatActivity() {
     private fun setupWebView() {
         activityWebViewBinding.contentWebView.wv.settings.apply {
             // Only enable JavaScript for local resources that need it
-            val isLocalResource = intent.getStringExtra("RESOURCE_ID") != null
+            val isLocalResource = resourceDirectory != null
             javaScriptEnabled = isLocalResource
             javaScriptCanOpenWindowsAutomatically = false
             
@@ -107,14 +121,14 @@ class WebViewActivity : AppCompatActivity() {
             displayZoomControls = false
             
             // Disable geolocation
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 setGeolocationEnabled(false)
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val nightModeFlags = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+                val nightModeFlags = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
                 when (nightModeFlags) {
-                    android.content.res.Configuration.UI_MODE_NIGHT_YES -> {
+                    Configuration.UI_MODE_NIGHT_YES -> {
                         if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
                             WebSettingsCompat.setAlgorithmicDarkeningAllowed(this, true)
                         } else {
@@ -126,7 +140,7 @@ class WebViewActivity : AppCompatActivity() {
                         activityWebViewBinding.contentWebView.contentWebView.setBackgroundColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_black_1000))
                     }
 
-                    android.content.res.Configuration.UI_MODE_NIGHT_NO -> {
+                    Configuration.UI_MODE_NIGHT_NO -> {
                         if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
                             WebSettingsCompat.setAlgorithmicDarkeningAllowed(this, false)
                         } else {
@@ -141,21 +155,28 @@ class WebViewActivity : AppCompatActivity() {
         }
     }
 
+    private fun handleBackNavigation() {
+        exitCoordinator.handleBackNavigation(
+            resourceId = intent.getStringExtra("RESOURCE_ID"),
+            title = activityWebViewBinding.contentWebView.webTitle.text.toString().ifBlank {
+                intent.getStringExtra("title") ?: ""
+            },
+        )
+    }
 
     private fun setWebClient() {
         val assetLoader = setupAssetLoader()
         activityWebViewBinding.contentWebView.wv.webViewClient = createWebViewClient(assetLoader)
     }
 
-    private fun setupAssetLoader(): androidx.webkit.WebViewAssetLoader? {
-        val resourceId = intent.getStringExtra("RESOURCE_ID") ?: return null
-        val directory = File(getExternalFilesDir(null), "ole/$resourceId")
-        val externalPathHandler = androidx.webkit.WebViewAssetLoader.PathHandler { path ->
+    private fun setupAssetLoader(): WebViewAssetLoader? {
+        val directory = resourceDirectory ?: return null
+        val externalPathHandler = WebViewAssetLoader.PathHandler { path ->
             try {
                 val file = File(directory, path)
-                if (file.exists() && file.canonicalPath.startsWith(directory.canonicalPath)) {
-                    val mimeType = java.net.URLConnection.guessContentTypeFromName(file.name) ?: "application/octet-stream"
-                    return@PathHandler WebResourceResponse(mimeType, "utf-8", java.io.FileInputStream(file))
+                if (file.exists() && isWithinDirectory(file, directory)) {
+                    val mimeType = URLConnection.guessContentTypeFromName(file.name) ?: "application/octet-stream"
+                    return@PathHandler WebResourceResponse(mimeType, "utf-8", FileInputStream(file))
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -163,12 +184,12 @@ class WebViewActivity : AppCompatActivity() {
             null
         }
 
-        return androidx.webkit.WebViewAssetLoader.Builder()
+        return WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", externalPathHandler)
             .build()
     }
 
-    private fun createWebViewClient(assetLoader: androidx.webkit.WebViewAssetLoader?): WebViewClient {
+    private fun createWebViewClient(assetLoader: WebViewAssetLoader?): WebViewClient {
         return object : WebViewClient() {
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
@@ -220,8 +241,8 @@ class WebViewActivity : AppCompatActivity() {
     }
 
     private fun applyNightMode(view: WebView) {
-        val nightModeFlags = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
-        if (nightModeFlags == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
+        val nightModeFlags = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES) {
             view.evaluateJavascript(
                 """
                     (function() {
@@ -264,9 +285,38 @@ class WebViewActivity : AppCompatActivity() {
     }
     
     private fun checkUrlSafety(url: String): Boolean {
-        val resourceId = intent.getStringExtra("RESOURCE_ID")
+        val resourceId = resourceDirectory?.name
         val appDir = getExternalFilesDir(null)?.absolutePath ?: ""
         return WebViewSafety.isUrlSafe(url, trustedHosts, resourceId, appDir)
+    }
+
+    private fun getLocalResourceDirectory(resourceId: String?): File? {
+        if (resourceId.isNullOrBlank() || resourceId == "." || resourceId == "..") {
+            return null
+        }
+
+        if (resourceId.any { it == '/' || it == '\\' || it == File.separatorChar }) {
+            return null
+        }
+
+        val externalFilesDirectory = getExternalFilesDir(null) ?: return null
+
+        return try {
+            val oleDirectory = File(externalFilesDirectory, "ole").canonicalFile
+            val resourceDirectory = File(oleDirectory, resourceId).canonicalFile
+            resourceDirectory.takeIf { isWithinDirectory(it, oleDirectory) }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    companion object {
+        internal fun isWithinDirectory(file: File, directory: File): Boolean {
+            val canonicalFile = file.canonicalFile
+            val canonicalDirectory = directory.canonicalFile
+            return canonicalFile.path == canonicalDirectory.path ||
+                canonicalFile.path.startsWith(canonicalDirectory.path + File.separator)
+        }
     }
 
     private fun setListeners() {
@@ -276,7 +326,6 @@ class WebViewActivity : AppCompatActivity() {
                 if (view.url?.startsWith("file://") == false && view.url?.endsWith("/eng/") == true) {
                     finish()
                 }
-                activityWebViewBinding.contentWebView.pBar.incrementProgressBy(newProgress)
                 if (newProgress == 100 && activityWebViewBinding.contentWebView.pBar.isShown) {
                     activityWebViewBinding.contentWebView.pBar.visibility = View.GONE
                 }
@@ -297,7 +346,7 @@ class WebViewActivity : AppCompatActivity() {
 
             override fun onShowFileChooser(
                 webView: WebView?,
-                filePathCallback: android.webkit.ValueCallback<Array<android.net.Uri>>?,
+                filePathCallback: ValueCallback<Array<Uri>>?,
                 fileChooserParams: FileChooserParams?
             ): Boolean {
                 return false
@@ -305,7 +354,7 @@ class WebViewActivity : AppCompatActivity() {
 
             override fun onGeolocationPermissionsShowPrompt(
                 origin: String?,
-                callback: android.webkit.GeolocationPermissions.Callback?
+                callback: GeolocationPermissions.Callback?
             ) {
                 callback?.invoke(origin, false, false)
             }

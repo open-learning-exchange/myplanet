@@ -1,0 +1,65 @@
+package org.ole.planet.myplanet.repository
+
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import org.ole.planet.myplanet.data.room.dao.DictionaryDao
+import org.ole.planet.myplanet.utils.DispatcherProvider
+
+class DictionaryRepositoryImpl @Inject constructor(
+    private val dictionaryDao: DictionaryDao,
+    private val dispatcherProvider: DispatcherProvider,
+    private val dictionaryFileReader: DictionaryFileReader
+) : DictionaryRepository {
+
+    private val seedMutex = Mutex()
+
+    override suspend fun count(): Long {
+        return dictionaryDao.count()
+    }
+
+    override suspend fun findByWord(word: String): DictionaryWord? {
+        val entity = dictionaryDao.findByWord(word) ?: return null
+        return DictionaryWord(
+            word = entity.word,
+            meaning = entity.meaning,
+            definition = entity.definition,
+            synonym = entity.synonym,
+            antonym = entity.antonym
+        )
+    }
+
+    override suspend fun insertDictionaryData(): DictionaryLoad {
+        return withContext(dispatcherProvider.io) {
+            if (!dictionaryFileReader.exists()) {
+                return@withContext DictionaryLoad.FileMissing
+            }
+
+            seedMutex.withLock {
+                if (dictionaryDao.count() > 0) {
+                    return@withLock DictionaryLoad.AlreadyPopulated
+                }
+
+                try {
+                    val data = dictionaryFileReader.readText()
+                    val json = data?.let { Json.parseToJsonElement(it).jsonArray }
+                    if (json != null) {
+                        val entities = DictionaryMapper.mapJsonArrayToEntities(json)
+                        dictionaryDao.insertAll(entities)
+                        DictionaryLoad.Inserted
+                    } else {
+                        DictionaryLoad.Failed(null)
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    DictionaryLoad.Failed(e)
+                }
+            }
+        }
+    }
+}

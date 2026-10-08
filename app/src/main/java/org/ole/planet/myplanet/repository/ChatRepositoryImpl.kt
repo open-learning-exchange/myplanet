@@ -1,47 +1,87 @@
 package org.ole.planet.myplanet.repository
 
+import androidx.annotation.VisibleForTesting
+import com.google.gson.Gson
 import com.google.gson.JsonArray
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import io.realm.RealmList
-import io.realm.Sort
 import java.util.Date
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
+import javax.inject.Singleton
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ChatApiService
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.data.room.dao.ChatDao
+import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.AiProvider
+import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatRequest
-import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatRequest
+import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.Data
-import org.ole.planet.myplanet.model.RealmChatHistory
-import org.ole.planet.myplanet.model.RealmConversation
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.utils.JsonUtils
-import retrofit2.Response
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.ServerReachabilityProvider
 
+@Singleton
 class ChatRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    private val chatDao: ChatDao,
     private val chatApiService: ChatApiService,
     private val serverUrlMapper: ServerUrlMapper,
-    private val sharedPrefManager: SharedPrefManager
-) : RealmRepository(databaseService, realmDispatcher), ChatRepository {
+    private val sharedPrefManager: SharedPrefManager,
+    private val dispatcherProvider: DispatcherProvider,
+    private val serverReachabilityProvider: ServerReachabilityProvider,
+    @PlainGson private val gson: Gson
+) : ChatRepository, ChatSyncWriter {
+
+    @VisibleForTesting
+    internal var reachabilityCheck: suspend (String) -> Boolean = { url ->
+        serverReachabilityProvider.isServerReachable(url)
+    }
 
     override suspend fun sendNewChatRequest(
         query: String,
         user: String?,
         aiProvider: AiProvider
-    ): Response<ChatResponse> {
-        val chatData = ChatRequest(data = ContentData(user ?: "", query, aiProvider), save = true)
-        val jsonContent = JsonUtils.gson.toJson(chatData)
-        val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
-        return chatApiService.sendChatRequest(requestBody)
+    ): ChatResult {
+        return try {
+            val chatData = ChatRequest(data = ContentData(user ?: "", query, aiProvider), save = true)
+            val jsonContent = gson.toJson(chatData)
+            val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
+            val response = chatApiService.sendChatRequest(requestBody)
+            val responseBody = response.body()
+            if (response.isSuccessful && responseBody != null && responseBody.status == "Success") {
+                val chatResponse = responseBody.chat ?: ""
+                val id = responseBody.couchDBResponse?.id ?: ""
+                val rev = responseBody.couchDBResponse?.rev ?: ""
+                val jsonObject = JsonObject().apply {
+                    addProperty("_rev", rev)
+                    addProperty("_id", id)
+                    addProperty("aiProvider", aiProvider.name)
+                    addProperty("user", user)
+                    addProperty("title", query)
+                    addProperty("createdDate", Date().time)
+                    addProperty("updatedDate", Date().time)
+                    val conversationsArray = JsonArray()
+                    val conversationObject = JsonObject().apply {
+                        addProperty("query", query)
+                        addProperty("response", chatResponse)
+                    }
+                    conversationsArray.add(conversationObject)
+                    add("conversations", conversationsArray)
+                }
+                saveNewChat(jsonObject)
+                ChatResult.Success(chatResponse, id, rev)
+            } else {
+                ChatResult.Error(responseBody?.message ?: response.message() ?: "Request failed")
+            }
+        } catch (e: Exception) {
+            ChatResult.Error(e.message ?: "Request failed")
+        }
     }
 
     override suspend fun sendContinueChatRequest(
@@ -50,114 +90,146 @@ class ChatRepositoryImpl @Inject constructor(
         aiProvider: AiProvider,
         id: String,
         rev: String
-    ): Response<ChatResponse> {
-        val continueChatData = ContinueChatRequest(data = Data(user ?: "", message, aiProvider, id, rev), save = true)
-        val jsonContent = JsonUtils.gson.toJson(continueChatData)
-        val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
-        return chatApiService.sendChatRequest(requestBody)
+    ): ChatResult {
+        return try {
+            val continueChatData = ContinueChatRequest(data = Data(user ?: "", message, aiProvider, id, rev), save = true)
+            val jsonContent = gson.toJson(continueChatData)
+            val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
+            val response = chatApiService.sendChatRequest(requestBody)
+            val responseBody = response.body()
+            if (response.isSuccessful && responseBody != null && responseBody.status == "Success") {
+                val chatResponse = responseBody.chat ?: ""
+                val newRev = responseBody.couchDBResponse?.rev ?: rev
+                continueConversation(id, message, chatResponse, newRev)
+                ChatResult.Success(chatResponse, id, newRev)
+            } else {
+                continueConversation(id, message, "", rev)
+                ChatResult.Error(responseBody?.message ?: response.message() ?: "Request failed")
+            }
+        } catch (e: Exception) {
+            continueConversation(id, message, "", rev)
+            ChatResult.Error(e.message ?: "Request failed")
+        }
     }
 
-    override suspend fun fetchAiProviders(serverUrl: String, isServerReachable: suspend (String) -> Boolean): Map<String, Boolean>? {
+    override suspend fun fetchAiProviders(serverUrl: String): Map<String, Boolean>? {
         val mapping = serverUrlMapper.processUrl(serverUrl)
         serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-            isServerReachable(url)
+            reachabilityCheck(url)
         }
         return chatApiService.fetchAiProviders()
     }
 
-    override suspend fun getChatHistoryForUser(userName: String?): List<RealmChatHistory> {
+    override suspend fun getChatHistoryForUser(userName: String?): List<ChatHistory> {
         if (userName.isNullOrEmpty()) {
             return emptyList()
         }
-        return queryList(RealmChatHistory::class.java) {
-            equalTo("user", userName)
-            sort("id", Sort.DESCENDING)
+        val chats = chatDao.getByUser(userName)
+        return sortChats(chats)
+    }
+
+    private fun sortChats(chats: List<ChatHistory>): List<ChatHistory> {
+        return chats.sortedByDescending { chat ->
+            maxOf(chat.createdDate?.toLongOrNull() ?: 0L, chat.updatedDate?.toLongOrNull() ?: 0L)
         }
     }
 
     override suspend fun getLatestRev(id: String): String? {
-        return withRealm { realm ->
-            realm.where(RealmChatHistory::class.java)
-                .equalTo("_id", id)
-                .findAll()
-                .maxByOrNull { rev -> rev._rev?.split("-")?.get(0)?.toIntOrNull() ?: 0 }
-                ?._rev
-        }
+        return chatDao.getRevsByDocId(id)
+            .maxByOrNull { rev -> rev?.split("-")?.get(0)?.toIntOrNull() ?: 0 }
     }
 
-    override suspend fun saveNewChat(chat: JsonObject) {
-        executeTransaction { realm ->
-            insertChatHistory(realm, chat)
-        }
+    private suspend fun saveNewChat(chat: JsonObject) {
+        insertChatsBatchInternal(listOf(chat))
     }
 
-    override suspend fun continueConversation(id: String, query: String, response: String, rev: String) {
-        executeTransaction { realm ->
-            addConversation(realm, id, query, response, rev)
-        }
+    private suspend fun continueConversation(id: String, query: String, response: String, rev: String) {
+        addConversation(id, query, response, rev)
     }
 
     override suspend fun insertChatHistoryList(chats: List<JsonObject>) {
-        executeTransaction { realm ->
-            chats.forEach { insertChatHistory(realm, it) }
-        }
+        insertChatsBatchInternal(chats)
     }
 
-    override fun insertChatHistoryBatch(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        bulkInsertFromSync(realm, jsonArray)
-    }
-
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val docs = mutableListOf<JsonObject>()
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
+    override suspend fun insertChatHistoryFromSync(docs: List<JsonObject>) {
+        val unwrappedDocs = mutableListOf<JsonObject>()
+        for (j in docs) {
+            val jsonDoc = GsonUtils.getJsonObject("doc", j)
+            val id = GsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
-                docs.add(jsonDoc)
+                unwrappedDocs.add(jsonDoc)
             }
         }
-        docs.forEach { insertChatHistory(realm, it) }
+        insertChatsBatchInternal(unwrappedDocs)
     }
 
-    private fun insertChatHistory(realm: io.realm.Realm, json: JsonObject) {
-        val chatHistoryId = JsonUtils.getString("_id", json)
-        val existingChatHistory = realm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
-        existingChatHistory?.deleteFromRealm()
-        val chatHistory = realm.createObject(RealmChatHistory::class.java, chatHistoryId)
-        chatHistory._rev = JsonUtils.getString("_rev", json)
-        chatHistory._id = JsonUtils.getString("_id", json)
-        chatHistory.title = JsonUtils.getString("title", json)
-        chatHistory.createdDate = "${JsonUtils.getLong("createdDate", json)}"
-        chatHistory.updatedDate = "${JsonUtils.getLong("updatedDate", json)}"
-        chatHistory.user = JsonUtils.getString("user", json)
-        chatHistory.aiProvider = JsonUtils.getString("aiProvider", json)
-        chatHistory.conversations = parseConversations(realm, JsonUtils.getJsonArray("conversations", json))
+    private suspend fun insertChatsBatchInternal(chats: List<JsonObject>) {
+        if (chats.isEmpty()) return
+        // @Insert(REPLACE) upserts by primary key, replacing the whole row (including the embedded
+        // conversations JSON), which subsumes the old "delete orphaned conversations" step.
+        val entities = chats.map { json ->
+            val chatHistoryId = GsonUtils.getString("_id", json)
+            ChatHistory().apply {
+                id = chatHistoryId
+                _id = chatHistoryId
+                _rev = GsonUtils.getString("_rev", json)
+                title = GsonUtils.getString("title", json)
+                createdDate = "${GsonUtils.getLong("createdDate", json)}"
+                updatedDate = "${GsonUtils.getLong("updatedDate", json)}"
+                user = GsonUtils.getString("user", json)
+                aiProvider = GsonUtils.getString("aiProvider", json)
+                val conversationsArray = GsonUtils.getJsonArray("conversations", json)
+                conversations = conversationsArray.map {
+                    gson.fromJson(it, Conversation::class.java)
+                }
+                lastUsed = Date().time
+            }
+        }
+        chatDao.upsertAll(entities)
+    }
+
+    private suspend fun addConversation(chatHistoryId: String?, query: String?, response: String?, newRev: String?) {
+        if (chatHistoryId == null) return
+        val chatHistory = chatDao.findByDocId(chatHistoryId) ?: return
+        val conversation = Conversation().apply {
+            this.query = query
+            this.response = response
+        }
+        chatHistory.conversations = (chatHistory.conversations ?: emptyList()) + conversation
+        chatHistory.updatedDate = "${Date().time}"
         chatHistory.lastUsed = Date().time
-    }
-
-    private fun parseConversations(realm: io.realm.Realm, jsonArray: JsonArray): io.realm.RealmList<RealmConversation> {
-        val conversations = io.realm.RealmList<RealmConversation>()
-        val unmanagedConversations = jsonArray.map { JsonUtils.gson.fromJson(it, RealmConversation::class.java) }
-        conversations.addAll(realm.copyToRealm(unmanagedConversations))
-        return conversations
-    }
-
-    private fun addConversation(realm: io.realm.Realm, chatHistoryId: String?, query: String?, response: String?, newRev: String?) {
-        val chatHistory = realm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
-        if (chatHistory != null) {
-            if (chatHistory.conversations == null) {
-                chatHistory.conversations = io.realm.RealmList()
-            }
-            val conversation = realm.createObject(RealmConversation::class.java)
-            conversation.query = query
-            conversation.response = response
-            chatHistory.conversations?.add(conversation)
-            chatHistory.updatedDate = "${Date().time}"
-            chatHistory.lastUsed = Date().time
-            if (!newRev.isNullOrEmpty()) {
-                chatHistory._rev = newRev
-            }
+        if (!newRev.isNullOrEmpty()) {
+            chatHistory._rev = newRev
         }
+        chatDao.update(chatHistory)
+    }
+
+    override fun extractSharedViewInIds(sharedNews: List<News>): Map<String, Set<String>> {
+        if (sharedNews.isEmpty()) return emptyMap()
+        return sharedNews
+            .groupBy { it.newsId }
+            .mapNotNull { (newsId, newsEntries) ->
+                if (newsId == null) null
+                else {
+                    val ids = newsEntries.flatMap { news ->
+                        try {
+                            val array = gson.fromJson(news.viewIn, JsonArray::class.java)
+                            val list = mutableListOf<String>()
+                            for (i in 0 until array.size()) {
+                                val elem = array.get(i) as JsonElement
+                                if (elem.isJsonObject) {
+                                    val id = elem.asJsonObject.get("_id")?.asString
+                                    if (id != null) list.add(id)
+                                }
+                            }
+                            list
+                        } catch (_: Exception) {
+                            emptyList<String>()
+                        }
+                    }.toSet()
+                    newsId to ids
+                }
+            }
+            .toMap()
     }
 }

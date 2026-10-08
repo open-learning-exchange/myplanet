@@ -12,17 +12,19 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 class ANRWatchdog(
+    private val scope: CoroutineScope,
     private val timeout: Long = DEFAULT_ANR_TIMEOUT,
     private val listener: ANRListener? = null,
-    private val dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider()
+    private val dispatcherProvider: DispatcherProvider
 ) {
-    private var scope: CoroutineScope? = null
     private var job: Job? = null
     companion object {
         private const val DEFAULT_ANR_TIMEOUT = 5000L
     }
 
+    @Volatile
     private var isWatching = false
+    @Volatile
     private var tick = 0L
     private val mainHandler = Handler(Looper.getMainLooper())
     private val tickUpdater = Runnable { updateTick() }
@@ -45,17 +47,15 @@ class ANRWatchdog(
         tick = SystemClock.elapsedRealtime()
         mainHandler.post(tickUpdater)
 
-        scope = CoroutineScope(dispatcherProvider.default)
-        job = scope?.launch {
+        job = scope.launch(dispatcherProvider.default) {
             while (isWatching && isActive) {
                 val lastTick = tick
-                val currentTime = SystemClock.elapsedRealtime()
                 mainHandler.post(tickUpdater)
 
                 delay(timeout / 2)
 
                 if (isWatching && lastTick == tick) {
-                    val duration = currentTime - lastTick
+                    val duration = SystemClock.elapsedRealtime() - lastTick
                     val mainThread = Looper.getMainLooper().thread
 
                     val threadId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -87,7 +87,5 @@ class ANRWatchdog(
         mainHandler.removeCallbacks(tickUpdater)
         job?.cancel()
         job = null
-        scope?.cancel()
-        scope = null
     }
 }

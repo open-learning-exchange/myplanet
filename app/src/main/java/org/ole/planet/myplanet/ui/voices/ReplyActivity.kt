@@ -4,7 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -27,41 +27,39 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.VoicesEditor
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
-import org.ole.planet.myplanet.ui.voices.VoicesActions
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utils.FileUtils.getImagePath
-import org.ole.planet.myplanet.utils.FileUtils.getRealPathFromURI
-import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.FileUtils.resolveUriToPath
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils.getString
 
 @AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var activityReplyBinding: ActivityReplyBinding
     var id: String? = null
     private lateinit var newsAdapter: VoicesAdapter
-    var user: RealmUser? = null
+    var user: UserEntity? = null
 
     private val viewModel: ReplyViewModel by viewModels()
+    private val voicesViewModel: VoicesViewModel by viewModels()
     
     @Inject
     lateinit var userSessionManager: UserSessionManager
 
     @Inject
-    lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
-    @Inject
-    lateinit var userRepository: org.ole.planet.myplanet.repository.UserRepository
+    lateinit var dispatcherProvider: DispatcherProvider
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
-    lateinit var voicesRepository: VoicesRepository
+    lateinit var voicesEditor: VoicesEditor
 
     private lateinit var imageList: MutableList<String>
     private var llImage: ViewGroup? = null
@@ -98,68 +96,58 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
             }
             val (news, list) = viewModel.getNewsWithReplies(id)
             if (!::newsAdapter.isInitialized) {
-                val labelManager = VoicesLabelManager(this@ReplyActivity, voicesRepository, lifecycleScope)
+                val labelManager = VoicesLabelManager(
+                    context = this@ReplyActivity,
+                    scope = lifecycleScope,
+                    dispatcherProvider = dispatcherProvider,
+                    addLabelFn = { newsId, label -> voicesViewModel.addLabel(newsId, label) },
+                    removeLabelFn = { newsId, label -> voicesViewModel.removeLabel(newsId, label) }
+                )
                 newsAdapter = VoicesAdapter(
                     context = this@ReplyActivity,
                     currentUser = user,
                     parentNews = news,
                     teamName = "",
                     teamId = null,
-                    userSessionManager = userSessionManager,
-                    isTeamLeaderFn = { onResult ->
-                        val job = lifecycleScope.launch {
-                            onResult(false)
-                        }
-                        return@VoicesAdapter { job.cancel() }
-                    },
+                    isTeamLeaderFn = { onResult -> onResult(false) },
                     getUserFn = { userId, onResult ->
-                        val job = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                            val result = userRepository.getUserById(userId)
-                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
+                        lifecycleScope.launch {
+                            val result = voicesViewModel.getUserById(userId)
+                            onResult(result)
                         }
-                        return@VoicesAdapter { job.cancel() }
                     },
                     getReplyCountFn = { newsId, onResult ->
-                        val job = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                            try {
-                                val result = voicesRepository.getReplyCount(newsId)
-                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
+                        val job = lifecycleScope.launch {
+                            val result = voicesViewModel.getReplyCount(newsId)
+                            onResult(result)
                         }
                         return@VoicesAdapter { job.cancel() }
                     },
-                    deletePostFn = { newsId, onComplete ->
-                        val job = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                            voicesRepository.deletePost(newsId, "")
-                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onComplete() }
+                    deletePostFn = { newsId ->
+                        voicesViewModel.deletePost(newsId, "") {
+                            newsAdapter.removePost(newsId)
                         }
-                        return@VoicesAdapter { job.cancel() }
                     },
-                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName, onResult ->
-                        val job = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                            val result = voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
-                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
+                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
+                        voicesViewModel.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName) { result ->
+                            VoicesAdapterHelper.handleShareNewsResult(this@ReplyActivity, result)
                         }
-                        return@VoicesAdapter { job.cancel() }
                     },
                     getLibraryResourceFn = { resourceId, onResult ->
-                        val job = lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-                            val result = voicesRepository.getLibraryResource(resourceId)
-                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onResult(result) }
+                        lifecycleScope.launch {
+                            val result = voicesViewModel.getLibraryResource(resourceId)
+                            onResult(result)
                         }
-                        return@VoicesAdapter { job.cancel() }
                     },
-                    launchCoroutine = { action ->
-                        val job = lifecycleScope.launch { action() }
-                        return@VoicesAdapter { job.cancel() }
+                    onEditAction = { action ->
+                        lifecycleScope.launch { action() }
                     },
+                    onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(lifecycleScope, dispatcherProvider),
                     labelManager = labelManager,
-                    voicesRepository = voicesRepository,
-                    userRepository = userRepository
+                    voicesEditor = voicesEditor,
+                    leadersList = voicesViewModel.getCommunityLeaders(),
+                    setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
                 )
-                newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
                 newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
@@ -185,7 +173,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         refreshData()
     }
 
-    override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
+    override fun showReply(news: News?, fromLogin: Boolean, nonTeamMember: Boolean) {
         startActivity(Intent(this, ReplyActivity::class.java).putExtra("id", news?.id))
     }
 
@@ -196,11 +184,11 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         openFolderLauncher.launch(Intent.createChooser(intent, "Select Image"))
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: News?) {}
 
-    override fun onMemberSelected(userModel: RealmUser?) {
+    override fun onMemberSelected(userModel: UserEntity?) {
         lifecycleScope.launch {
-            val fragment = VoicesActions.showMemberDetails(userModel, activitiesRepository) ?: return@launch
+            val fragment = VoicesActions.showMemberDetails(userModel) ?: return@launch
             FragmentNavigator.replaceFragment(
                 supportFragmentManager,
                 R.id.fragment_container,
@@ -224,10 +212,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
             return
         }
 
-        var path: String? = getRealPathFromURI(this, url)
-        if (TextUtils.isEmpty(path)) {
-            path = getImagePath(this, url)
-        }
+        val path: String? = resolveUriToPath(this, url)
 
         if (path == null) {
             return
@@ -241,19 +226,19 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         val jsonObject = JsonObject()
         jsonObject.addProperty("imageUrl", path)
         jsonObject.addProperty("fileName", getFileNameFromUrl(path))
-        imageList.add(JsonUtils.gson.toJson(jsonObject))
+        imageList.add(GsonUtils.gson.toJson(jsonObject))
 
         try {
             showSelectedImages()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "handleImageSelection failed", e)
         }
     }
 
     private fun isImageAlreadyAdded(path: String): Boolean {
         return imageList.any { imageJson ->
             try {
-                val imgObject = JsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
+                val imgObject = GsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
                 getString("imageUrl", imgObject) == path
             } catch (e: Exception) {
                 false
@@ -265,7 +250,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         llImage?.removeAllViews()
         llImage?.visibility = View.VISIBLE
         for (img in imageList) {
-            val ob = JsonUtils.gson.fromJson(img, JsonObject::class.java)
+            val ob = GsonUtils.gson.fromJson(img, JsonObject::class.java)
             val inflater = LayoutInflater.from(this).inflate(R.layout.image_thumb, llImage, false)
             val imgView = inflater.findViewById<ImageView>(R.id.thumb)
             Glide.with(this)
@@ -286,5 +271,9 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     override fun onDestroy() {
         super.onDestroy()
+    }
+
+    companion object {
+        private const val TAG = "ReplyActivity"
     }
 }

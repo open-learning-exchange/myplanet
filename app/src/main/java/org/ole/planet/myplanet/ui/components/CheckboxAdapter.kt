@@ -13,7 +13,7 @@ class CheckboxAdapter(
     private val checkChangeListener: CheckChangeListener? = null
 ) : ListAdapter<String, CheckboxAdapter.ViewHolder>(DiffUtils.itemCallback<String>({ old, new -> old == new }, { old, new -> old == new })) {
 
-    val selectedItemsList = ArrayList<Int>()
+    val selectedItemsList = HashSet<Int>()
 
     init {
         selectedItemsList.addAll(initialSelectedItems)
@@ -25,7 +25,23 @@ class CheckboxAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.rowlayout, parent, false) as CheckedTextView
-        return ViewHolder(view)
+        val holder = ViewHolder(view)
+
+        holder.checkedTextView.setOnClickListener {
+            val currentPos = holder.bindingAdapterPosition
+            if (currentPos == RecyclerView.NO_POSITION) return@setOnClickListener
+
+            if (selectedItemsList.contains(currentPos)) {
+                selectedItemsList.remove(currentPos)
+                holder.checkedTextView.isChecked = false
+            } else {
+                selectedItemsList.add(currentPos)
+                holder.checkedTextView.isChecked = true
+            }
+            checkChangeListener?.onCheckChange()
+        }
+
+        return holder
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -35,20 +51,6 @@ class CheckboxAdapter(
         val isChecked = selectedItemsList.contains(bindingAdapterPosition)
         holder.checkedTextView.text = getItem(bindingAdapterPosition)
         holder.checkedTextView.isChecked = isChecked
-
-        holder.checkedTextView.setOnClickListener {
-            val currentPos = holder.bindingAdapterPosition
-            if (currentPos == RecyclerView.NO_POSITION) return@setOnClickListener
-
-            if (selectedItemsList.contains(currentPos)) {
-                selectedItemsList.remove(Integer.valueOf(currentPos))
-                holder.checkedTextView.isChecked = false
-            } else {
-                selectedItemsList.add(currentPos)
-                holder.checkedTextView.isChecked = true
-            }
-            checkChangeListener?.onCheckChange()
-        }
     }
 
     class ViewHolder(val checkedTextView: CheckedTextView) : RecyclerView.ViewHolder(checkedTextView)

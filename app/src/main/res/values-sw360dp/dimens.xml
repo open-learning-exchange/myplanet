@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="dashboard_tile_color_block_width">92dp</dimen>
+    <dimen name="dashboard_chip_width">108dp</dimen>
+    <dimen name="dashboard_rail_width">212dp</dimen>
+</resources>

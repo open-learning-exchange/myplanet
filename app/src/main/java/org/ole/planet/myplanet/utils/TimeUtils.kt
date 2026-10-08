@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utils
 
 import android.text.format.DateUtils
+import android.util.Log
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -8,8 +9,10 @@ import java.time.Period
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
 
 object TimeUtils {
+    private const val TAG = "TimeUtils"
     const val DATE_FORMAT = "dd MMM yyyy"
 
     private val defaultLocale: Locale
@@ -17,73 +20,84 @@ object TimeUtils {
 
     private val utcZone: ZoneId = ZoneId.of("UTC")
 
+    private data class FormatterKey(
+        val pattern: String,
+        val zone: ZoneId?,
+        val locale: Locale?
+    )
+
+    private val formatters = ConcurrentHashMap<FormatterKey, DateTimeFormatter>()
+
+    private fun formatterFor(
+        pattern: String,
+        zone: ZoneId? = null,
+        locale: Locale? = defaultLocale
+    ): DateTimeFormatter {
+        val key = FormatterKey(pattern, zone, locale)
+        return formatters.getOrPut(key) {
+            val formatter = if (locale != null) {
+                DateTimeFormatter.ofPattern(pattern, locale)
+            } else {
+                DateTimeFormatter.ofPattern(pattern)
+            }
+            if (zone != null) formatter.withZone(zone) else formatter
+        }
+    }
+
     private val defaultDateFormatter by lazy {
         DateTimeFormatter.ofPattern("EEEE, MMM dd, yyyy", defaultLocale).withZone(utcZone)
     }
 
-    private val dateTimeFormatter by lazy {
-        DateTimeFormatter
-            .ofPattern("EEE dd, MMMM yyyy , hh:mm a", defaultLocale)
-            .withZone(ZoneId.systemDefault())
+    private fun dateTimeFormatter() =
+        formatterFor("EEE dd, MMMM yyyy, hh:mm a", ZoneId.systemDefault())
+
+    private fun tzFormatter() =
+        formatterFor("yyyy-MM-dd HH:mm:ss", ZoneId.systemDefault(), locale = null)
+
+    private fun dateOnlyFormatter() =
+        formatterFor("EEE dd, MMMM yyyy", ZoneId.systemDefault())
+
+    private fun fallbackDateFormatter() =
+        formatterFor("dd, MMMM yyyy")
+
+    private fun csvDateFormatter() =
+        formatterFor("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)", ZoneId.systemDefault(), Locale.US)
+
+    private val iso8601Formatter by lazy {
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
     }
 
-    private val tzFormatter by lazy {
-        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault())
-    }
+    private fun formatInstant(instant: Instant, fallback: String, formatter: () -> DateTimeFormatter): String =
+        try {
+            formatter().format(instant)
+        } catch (e: Exception) {
+            Log.w(TAG, "formatInstant failed", e)
+            fallback
+        }
 
-    private val dateOnlyFormatter by lazy {
-        DateTimeFormatter.ofPattern("EEE dd, MMMM yyyy", defaultLocale).withZone(ZoneId.systemDefault())
-    }
-
-    private val fallbackDateFormatter by lazy {
-        DateTimeFormatter.ofPattern("dd, MMMM yyyy", defaultLocale).withZone(ZoneId.systemDefault())
-    }
-
-    private val csvDateFormatter by lazy {
-        DateTimeFormatter.ofPattern("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)", Locale.US).withZone(ZoneId.systemDefault())
-    }
-
-    fun getRelativeTime(timestamp: Long): String {
-        val timeNow = System.currentTimeMillis()
+    fun getRelativeTime(timestamp: Long, timeProvider: TimeProvider? = null): String {
+        val timeNow = timeProvider?.now() ?: System.currentTimeMillis()
         return if (timestamp < timeNow) {
             DateUtils.getRelativeTimeSpanString(timestamp, timeNow, 0).toString()
         } else "Just now"
     }
 
-    fun getFormattedDate(date: Long?): String =
-        try {
-            val instant = date?.let { Instant.ofEpochMilli(it) } ?: Instant.now()
-            defaultDateFormatter.format(instant)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            "N/A"
-        }
+    fun getFormattedDate(date: Long?): String {
+        val instant = date?.let { Instant.ofEpochMilli(it) } ?: Instant.now()
+        return formatInstant(instant, "N/A") { defaultDateFormatter }
+    }
+
+    fun getFormattedShortDate(date: Long): String =
+        formatInstant(Instant.ofEpochMilli(date), "N/A") { formatterFor(DATE_FORMAT, ZoneId.systemDefault()) }
 
     fun getFormattedDateWithTime(date: Long): String =
-        try {
-            val instant = Instant.ofEpochMilli(date)
-            dateTimeFormatter.format(instant)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            "N/A"
-        }
+        formatInstant(Instant.ofEpochMilli(date), "N/A") { dateTimeFormatter() }
 
     fun formatDateTZ(data: Long): String =
-        try {
-            val instant = Instant.ofEpochMilli(data)
-            tzFormatter.format(instant)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            ""
-        }
+        formatInstant(Instant.ofEpochMilli(data), "") { tzFormatter() }
 
     fun formatDateForCsv(date: Long): String =
-        try {
-            csvDateFormatter.format(Instant.ofEpochMilli(date))
-        } catch (e: Exception) {
-            e.printStackTrace()
-            ""
-        }
+        formatInstant(Instant.ofEpochMilli(date), "") { csvDateFormatter() }
 
     fun getAge(date: String): Int {
         return try {
@@ -92,15 +106,15 @@ object TimeUtils {
             val dob =
                 try {
                     LocalDateTime
-                        .parse(cleaned, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                        .parse(cleaned, formatterFor("yyyy-MM-dd HH:mm:ss", locale = null))
                         .toLocalDate()
                 } catch (e: Exception) {
-                    LocalDate.parse(cleaned, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                    LocalDate.parse(cleaned, formatterFor("yyyy-MM-dd", locale = null))
                 }
             val today = LocalDate.now()
             Period.between(dob, today).years
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "getAge failed", e)
             0
         }
     }
@@ -111,50 +125,39 @@ object TimeUtils {
     ): String {
         return try {
             if (stringDate.isNullOrBlank() || pattern.isNullOrBlank()) return "N/A"
-            val formatter = DateTimeFormatter.ofPattern(pattern, defaultLocale).withZone(utcZone)
+            val formatter = formatterFor(pattern, utcZone)
             val instant = if (stringDate.contains("T")) {
                 Instant.from(formatter.parse(stringDate))
             } else {
-                val dateOnlyFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", defaultLocale)
+                val dateOnlyFormatter = formatterFor("yyyy-MM-dd")
                 LocalDate.parse(stringDate, dateOnlyFormatter).atStartOfDay(utcZone).toInstant()
             }
             getFormattedDate(instant.toEpochMilli())
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "getFormattedDate failed", e)
             "N/A"
         }
     }
 
     fun formatDate(date: Long): String =
-        try {
-            dateOnlyFormatter.format(Instant.ofEpochMilli(date))
-        } catch (e: Exception) {
-            e.printStackTrace()
-            ""
-        }
+        formatInstant(Instant.ofEpochMilli(date), "") { dateOnlyFormatter() }
 
     fun formatDate(
         date: Long,
         format: String?,
     ): String =
-        try {
-            val formatter = DateTimeFormatter.ofPattern(format ?: "", defaultLocale).withZone(ZoneId.systemDefault())
-            formatter.format(Instant.ofEpochMilli(date))
-        } catch (e: Exception) {
-            e.printStackTrace()
-            ""
-        }
+        formatInstant(Instant.ofEpochMilli(date), "") { formatterFor(format ?: "", ZoneId.systemDefault()) }
 
     fun parseDate(dateString: String): Long? =
         try {
             val localDate = runCatching {
-                LocalDate.parse(dateString, dateOnlyFormatter)
+                LocalDate.parse(dateString, dateOnlyFormatter())
             }.recoverCatching {
-                LocalDate.parse(dateString, fallbackDateFormatter)
+                LocalDate.parse(dateString, fallbackDateFormatter())
             }.getOrThrow()
             localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "parseDate failed", e)
             null
         }
 
@@ -166,31 +169,18 @@ object TimeUtils {
                 Instant.parse("${dateString}T00:00:00.000Z")
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "parseInstantFromString failed", e)
             null
         }
 
     fun convertToISO8601(date: String): String {
         return try {
-            val calendar = java.util.Calendar.getInstance()
             val parts = date.split("-")
-            if (parts.size == 3) {
-                calendar.set(parts[0].toInt(), parts[1].toInt() - 1, parts[2].toInt(), 0, 0, 0)
-                calendar.set(java.util.Calendar.MILLISECOND, 0)
-                String.format(
-                    Locale.US,
-                    "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ",
-                    calendar.get(java.util.Calendar.YEAR),
-                    calendar.get(java.util.Calendar.MONTH) + 1,
-                    calendar.get(java.util.Calendar.DAY_OF_MONTH),
-                    calendar.get(java.util.Calendar.HOUR_OF_DAY),
-                    calendar.get(java.util.Calendar.MINUTE),
-                    calendar.get(java.util.Calendar.SECOND),
-                    calendar.get(java.util.Calendar.MILLISECOND)
-                )
-            } else {
-                date
-            }
+            if (parts.size != 3) return date
+            val localDate = LocalDate.of(parts[0].toInt(), 1, 1)
+                .plusMonths(parts[1].toInt() - 1L)
+                .plusDays(parts[2].toInt() - 1L)
+            localDate.atStartOfDay().format(iso8601Formatter)
         } catch (_: Exception) {
             date
         }
@@ -202,15 +192,15 @@ object TimeUtils {
 
             val localDate = if (dateString.contains("T")) {
                 val cleaned = dateString.replace("T", " ").replace(".000Z", "")
-                LocalDateTime.parse(cleaned, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")).toLocalDate()
+                LocalDateTime.parse(cleaned, formatterFor("yyyy-MM-dd HH:mm:ss", locale = null)).toLocalDate()
             } else {
-                LocalDate.parse(dateString, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                LocalDate.parse(dateString, formatterFor("yyyy-MM-dd", locale = null))
             }
 
-            val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy", defaultLocale)
+            val formatter = formatterFor("dd-MM-yyyy")
             localDate.format(formatter)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "formatDateToDDMMYYYY failed", e)
             dateString ?: ""
         }
     }
@@ -219,11 +209,11 @@ object TimeUtils {
         return try {
             if (dateString.isNullOrBlank()) return ""
 
-            val localDate = LocalDate.parse(dateString, DateTimeFormatter.ofPattern("dd-MM-yyyy", defaultLocale))
-            val isoDate = localDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+            val localDate = LocalDate.parse(dateString, formatterFor("dd-MM-yyyy"))
+            val isoDate = localDate.format(formatterFor("yyyy-MM-dd", locale = null))
             convertToISO8601(isoDate)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "convertDDMMYYYYToISO failed", e)
             dateString ?: ""
         }
     }

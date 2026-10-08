@@ -2,20 +2,20 @@ package org.ole.planet.myplanet.utils
 
 import android.content.Context
 import androidx.preference.PreferenceManager
-import org.ole.planet.myplanet.model.RealmAchievement
-import org.ole.planet.myplanet.model.RealmCertification
-import org.ole.planet.myplanet.model.RealmCourseProgress
-import org.ole.planet.myplanet.model.RealmFeedback
-import org.ole.planet.myplanet.model.RealmHealthExamination
-import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.model.RealmRating
-import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmTeamLog
-import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.Achievement
+import org.ole.planet.myplanet.model.AppNotification
+import org.ole.planet.myplanet.model.Certification
+import org.ole.planet.myplanet.model.CourseProgress
+import org.ole.planet.myplanet.model.Feedback
+import org.ole.planet.myplanet.model.HealthExamination
+import org.ole.planet.myplanet.model.Meetup
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.Rating
+import org.ole.planet.myplanet.model.TagEntity
+import org.ole.planet.myplanet.model.TeamLog
+import org.ole.planet.myplanet.model.TeamTask
 
 object Constants {
     const val HTTP_PROTOCOL = "http://"
@@ -23,7 +23,6 @@ object Constants {
     const val KEY_LOGIN = "isLoggedIn"
     const val DICTIONARY_URL = "http://157.245.241.39:8000/output.json"
     var shelfDataList = mutableListOf<ShelfData>()
-    const val KEY_SYNC = "beta_wifi_switch"
     const val KEY_MEETUPS = "key_meetup"
     const val KEY_AUTOSYNC_ = "auto_sync_with_server"
     const val KEY_AUTOSYNC_WEEKLY = "force_weekly_sync"
@@ -31,10 +30,16 @@ object Constants {
     const val KEY_UPGRADE_MAX = "beta_upgrade_max"
     const val PREFS_NAME = "OLE_PLANET"
     var classList = mutableMapOf<String, Class<*>>()
-    var LABELS = mutableMapOf<String, String>()
+    val LABELS = mapOf(
+        "Offer" to "offer",
+        "Help wanted" to "help",
+        "Request for advice" to "advice"
+    )
+    val LABEL_VALUE_TO_NAME: Map<String, String> by lazy { LABELS.entries.associate { it.value to it.key } }
     const val KEY_NOTIFICATION_SHOWN = "notification_shown"
     const val SELECTED_LANGUAGE = "app_language"
     const val ACTION_RETRY_EVENT = "ACTION_RETRY_EVENT"
+    const val NETWORK_TRAFFIC_TAG = 0x4F_4C_45 // "OLE"
 
     init {
         initClasses()
@@ -44,53 +49,38 @@ object Constants {
             ShelfData("courseIds", "courses", "courseId"),
             ShelfData("myTeamIds", "teams", "teamId")
         )
-        LABELS = mutableMapOf(
-            "Offer" to "offer",
-            "Help wanted" to "help",
-            "Request for advice" to "advice"
-        )
     }
 
     private fun initClasses() {
-        classList["news"] = RealmNews::class.java
-        classList["tags"] = RealmTag::class.java
-        classList["ratings"] = RealmRating::class.java
-        classList["courses"] = RealmMyCourse::class.java
-        classList["achievements"] = RealmAchievement::class.java
-        classList["feedback"] = RealmFeedback::class.java
-        classList["teams"] = RealmMyTeam::class.java
-        classList["tasks"] = RealmTeamTask::class.java
-        classList["meetups"] = RealmMeetup::class.java
-        classList["health"] = RealmHealthExamination::class.java
-        classList["certifications"] = RealmCertification::class.java
-        classList["team_activities"] = RealmTeamLog::class.java
-        classList["courses_progress"] = RealmCourseProgress::class.java
-        classList["notifications"] = RealmNotification::class.java
+        classList["news"] = News::class.java
+        classList["tags"] = TagEntity::class.java
+        classList["ratings"] = Rating::class.java
+        classList["courses"] = MyCourse::class.java
+        classList["achievements"] = Achievement::class.java
+        classList["feedback"] = Feedback::class.java
+        classList["teams"] = MyTeam::class.java
+        classList["tasks"] = TeamTask::class.java
+        classList["meetups"] = Meetup::class.java
+        classList["health"] = HealthExamination::class.java
+        classList["certifications"] = Certification::class.java
+        classList["team_activities"] = TeamLog::class.java
+        classList["courses_progress"] = CourseProgress::class.java
+        classList["notifications"] = AppNotification::class.java
     }
 
-    @JvmStatic
     fun showBetaFeature(s: String, context: Context): Boolean {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
         return preferences.getBoolean("beta_function", false)
     }
 
-    @JvmStatic
-    fun isBetaWifiFeatureEnabled(context: Context): Boolean {
-        val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-        val betaEnabled = preferences.getBoolean("beta_function", false)
-        val wifiSwitchEnabled = preferences.getBoolean(KEY_SYNC, false)
-        return betaEnabled && wifiSwitchEnabled
-    }
-
-    @JvmStatic
     fun autoSynFeature(s: String?, context: Context): Boolean {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
         return preferences.getBoolean(s, false)
     }
 
     class ShelfData(
-        @JvmField var key: String,
-        @JvmField var type: String,
-        @JvmField var categoryKey: String
+        var key: String,
+        var type: String,
+        var categoryKey: String
     )
 }

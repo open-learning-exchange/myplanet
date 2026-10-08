@@ -1,80 +1,90 @@
 package org.ole.planet.myplanet.services
 
+import android.app.Application
 import android.content.Context
+import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
+import androidx.test.core.app.ApplicationProvider
 import com.google.android.flexbox.FlexboxLayout
-import fisk.chipcloud.ChipCloud
+import com.google.android.material.chip.Chip
 import io.mockk.clearAllMocks
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkConstructor
-import io.mockk.mockkObject
 import io.mockk.unmockkAll
-import io.mockk.verify
-import io.realm.RealmList
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.job
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
+import org.robolectric.shadows.ShadowPopupMenu
 
+@RunWith(RobolectricTestRunner::class)
 class VoicesLabelManagerTest {
 
     private lateinit var context: Context
-    private lateinit var voicesRepository: VoicesRepository
-    private lateinit var scope: CoroutineScope
+    private lateinit var dispatcherProvider: DispatcherProvider
+    private lateinit var scope: TestScope
     private lateinit var voicesLabelManager: VoicesLabelManager
     private lateinit var binding: RowNewsBinding
     private lateinit var btnAddLabel: Button
     private lateinit var fbChips: FlexboxLayout
-    private lateinit var voice: RealmNews
+    private lateinit var voice: News
+
+    private lateinit var addLabelFn: suspend (String, String) -> Unit
+    private lateinit var removeLabelFn: suspend (String, String) -> Unit
 
     @Before
     fun setUp() {
-        context = mockk(relaxed = true)
-        voicesRepository = mockk(relaxed = true)
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        val themedContext = android.view.ContextThemeWrapper(app, R.style.Theme_App_Chip)
+        context = themedContext
+        dispatcherProvider = mockk(relaxed = true)
+        every { dispatcherProvider.main } returns UnconfinedTestDispatcher()
         scope = TestScope()
 
-        mockkObject(org.ole.planet.myplanet.utils.Utilities)
-        every { org.ole.planet.myplanet.utils.Utilities.getCloudConfig() } returns mockk(relaxed = true)
+        addLabelFn = mockk(relaxed = true)
+        removeLabelFn = mockk(relaxed = true)
 
-        voicesLabelManager = VoicesLabelManager(context, voicesRepository, scope)
+        voicesLabelManager = VoicesLabelManager(
+            context = context,
+            scope = scope,
+            dispatcherProvider = dispatcherProvider,
+            addLabelFn = addLabelFn,
+            removeLabelFn = removeLabelFn
+        )
 
-        mockkConstructor(ChipCloud::class)
-        every { anyConstructed<ChipCloud>().addChip(any<String>()) } answers { }
-        every { anyConstructed<ChipCloud>().setDeleteListener(any<fisk.chipcloud.ChipDeletedListener>()) } answers { }
+        binding = RowNewsBinding.inflate(LayoutInflater.from(context))
+        btnAddLabel = binding.btnAddLabel
+        fbChips = binding.fbChips
 
-        binding = mockk(relaxed = true)
-        btnAddLabel = mockk(relaxed = true)
-        fbChips = mockk(relaxed = true)
-
-        // Reflection is required here because RowNewsBinding is a generated Java class with final public fields.
-        // MockK cannot mock Java fields using property access syntax (throws MockKException).
-        // Since we cannot use Robolectric (due to Realm core crashes) and RowNewsBinding has a private constructor
-        // with 21 non-null arguments, reflection is the most robust way to inject our mock views.
-        val btnAddLabelField = RowNewsBinding::class.java.getField("btnAddLabel")
-        btnAddLabelField.isAccessible = true
-        btnAddLabelField.set(binding, btnAddLabel)
-
-        val fbChipsField = RowNewsBinding::class.java.getField("fbChips")
-        fbChipsField.isAccessible = true
-        fbChipsField.set(binding, fbChips)
-
-        voice = mockk(relaxed = true)
-        every { voice.id } returns "test-id"
-        every { voice.labels } returns null
+        voice = News().apply {
+            id = "test-id"
+            labels = null
+        }
     }
 
     @After
     fun tearDown() {
         clearAllMocks()
-        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.Utilities)
         unmockkAll()
     }
 
@@ -92,60 +102,210 @@ class VoicesLabelManagerTest {
     fun testSetupAddLabelMenu_CannotManageLabels() {
         voicesLabelManager.setupAddLabelMenu(binding, voice, false)
 
-        verify { btnAddLabel.isEnabled = false }
-        verify { btnAddLabel.setOnClickListener(null) }
+        assertFalse(btnAddLabel.isEnabled)
     }
 
     @Test
     fun testSetupAddLabelMenu_CanManageLabels() {
         voicesLabelManager.setupAddLabelMenu(binding, voice, true)
 
-        verify { btnAddLabel.isEnabled = true }
-        verify { btnAddLabel.setOnClickListener(any()) }
+        assertTrue(btnAddLabel.isEnabled)
+    }
+
+    @Test
+    fun testRemoveLabelActionTriggered() = runTest {
+        voice.labels = listOf("Offer")
+
+        voicesLabelManager.showChips(binding, voice, true)
+
+        assertEquals(1, fbChips.childCount)
+        val chip = fbChips.getChildAt(0) as Chip
+        assertEquals("Offer", chip.text)
+        chip.performCloseIconClick()
+        scope.advanceUntilIdle()
+
+        coVerify(timeout = 1000) { removeLabelFn("test-id", "Offer") }
+    }
+
+    @Test
+    fun testRemoveLabelActionTriggered_DuplicateDisplayNameLabels() = runTest {
+        voice.labels = listOf("Offer", "offer")
+
+        voicesLabelManager.showChips(binding, voice, true)
+
+        assertEquals(2, fbChips.childCount)
+        val secondChip = fbChips.getChildAt(1) as Chip
+        secondChip.performCloseIconClick()
+        scope.advanceUntilIdle()
+
+        coVerify(timeout = 1000) { removeLabelFn("test-id", "offer") }
+
+        val firstChip = fbChips.getChildAt(0) as Chip
+        firstChip.performCloseIconClick()
+        scope.advanceUntilIdle()
+
+        coVerify(timeout = 1000) { removeLabelFn("test-id", "Offer") }
+    }
+
+    @Test
+    fun testRemoveLabelCancellation_IsRethrownNotSwallowed() {
+        coEvery { removeLabelFn(any(), any()) } throws CancellationException("scope cancelled")
+        voice.labels = listOf("offer")
+        voicesLabelManager.showChips(binding, voice, true)
+
+        (fbChips.getChildAt(0) as Chip).performCloseIconClick()
+        val job = scope.coroutineContext.job.children.first()
+        scope.advanceUntilIdle()
+
+        assertTrue(job.isCancelled)
+    }
+
+    @Test
+    fun testAddLabelCancellation_IsRethrownNotSwallowed() {
+        coEvery { addLabelFn(any(), any()) } throws CancellationException("scope cancelled")
+        voicesLabelManager.setupAddLabelMenu(binding, voice, true)
+
+        btnAddLabel.performClick()
+        val popupMenu = ShadowPopupMenu.getLatestPopupMenu()
+        shadowOf(popupMenu).onMenuItemClickListener.onMenuItemClick(popupMenu.menu.getItem(0))
+        val job = scope.coroutineContext.job.children.first()
+        scope.advanceUntilIdle()
+
+        assertTrue(job.isCancelled)
     }
 
     @Test
     fun testShowChips_EmptyLabels_CannotManage() {
         voicesLabelManager.showChips(binding, voice, false)
 
-        verify { fbChips.removeAllViews() }
-        verify(exactly = 0) { anyConstructed<ChipCloud>().addChip(any<String>()) }
-        verify { btnAddLabel.visibility = View.GONE }
+        assertEquals(0, fbChips.childCount)
+        assertEquals(View.GONE, btnAddLabel.visibility)
     }
 
     @Test
     fun testShowChips_WithLabels_CannotManage() {
-        val labelsMock = mockk<RealmList<String>>(relaxed = true)
-        every { labelsMock.iterator() } answers { mutableListOf("offer").iterator() }
-
-        every { voice.labels } returns labelsMock
+        voice.labels = listOf("offer")
 
         voicesLabelManager.showChips(binding, voice, false)
 
-        verify { fbChips.removeAllViews() }
-        verify { anyConstructed<ChipCloud>().addChip("Offer") }
-        verify { btnAddLabel.visibility = View.GONE }
+        assertEquals(1, fbChips.childCount)
+        val chip = fbChips.getChildAt(0) as Chip
+        assertEquals("Offer", chip.text)
+        assertFalse(chip.isCloseIconVisible)
+        assertEquals(View.GONE, btnAddLabel.visibility)
     }
 
     @Test
     fun testShowChips_EmptyLabels_CanManage() {
         voicesLabelManager.showChips(binding, voice, true)
 
-        verify { fbChips.removeAllViews() }
-        verify { btnAddLabel.visibility = View.VISIBLE }
+        assertEquals(0, fbChips.childCount)
+        assertEquals(View.VISIBLE, btnAddLabel.visibility)
     }
 
     @Test
     fun testShowChips_AllLabelsUsed_CanManage() {
-        val allLabelsMock = mockk<RealmList<String>>(relaxed = true)
-        every { allLabelsMock.size } returns Constants.LABELS.values.size
-        every { allLabelsMock.iterator() } answers { Constants.LABELS.values.iterator() }
-        every { voice.labels } returns allLabelsMock
+        voice.labels = Constants.LABELS.values.toList()
 
         voicesLabelManager.showChips(binding, voice, true)
 
-        verify { fbChips.removeAllViews() }
-        verify { anyConstructed<ChipCloud>().addChip("Offer") }
-        verify { btnAddLabel.visibility = View.GONE }
+        assertEquals(Constants.LABELS.size, fbChips.childCount)
+        assertEquals(View.GONE, btnAddLabel.visibility)
     }
+
+    @Test
+    fun testShowChips_UnchangedLabels_SkipsRedundantRebuild() {
+        voice.labels = listOf("offer")
+
+        voicesLabelManager.showChips(binding, voice, true)
+        val chip = fbChips.getChildAt(0) as Chip
+        val sentinel = addRebuildSentinel()
+
+        voicesLabelManager.showChips(binding, voice, true)
+
+        assertTrue(fbChips.indexOfChild(sentinel) >= 0)
+        assertSame(chip, fbChips.getChildAt(0))
+        assertEquals(View.VISIBLE, btnAddLabel.visibility)
+    }
+
+    @Test
+    fun testShowChips_EmptyLabels_Unchanged_SkipsRedundantRebuild() {
+        voicesLabelManager.showChips(binding, voice, false)
+        val sentinel = addRebuildSentinel()
+
+        voicesLabelManager.showChips(binding, voice, false)
+
+        assertTrue(fbChips.indexOfChild(sentinel) >= 0)
+        assertEquals(1, fbChips.childCount)
+    }
+
+    @Test
+    fun testShowChips_NullAndEmptyLabels_TreatedAsSame_SkipsRebuild() {
+        voice.labels = null
+        voicesLabelManager.showChips(binding, voice, false)
+        val sentinel = addRebuildSentinel()
+
+        voice.labels = emptyList()
+        voicesLabelManager.showChips(binding, voice, false)
+
+        assertTrue(fbChips.indexOfChild(sentinel) >= 0)
+    }
+
+    @Test
+    fun testShowChips_ChangedLabels_Rebuilds() {
+        voice.labels = listOf("offer")
+        voicesLabelManager.showChips(binding, voice, false)
+        assertEquals("Offer", (fbChips.getChildAt(0) as Chip).text)
+        val sentinel = addRebuildSentinel()
+
+        voice.labels = listOf("help")
+        voicesLabelManager.showChips(binding, voice, false)
+
+        assertEquals(-1, fbChips.indexOfChild(sentinel))
+        assertEquals(1, fbChips.childCount)
+        assertEquals("Help wanted", (fbChips.getChildAt(0) as Chip).text)
+    }
+
+    @Test
+    fun testShowChips_CanManageChanged_Rebuilds() {
+        voice.labels = listOf("offer")
+
+        voicesLabelManager.showChips(binding, voice, false)
+        assertFalse((fbChips.getChildAt(0) as Chip).isCloseIconVisible)
+        val sentinel = addRebuildSentinel()
+
+        voicesLabelManager.showChips(binding, voice, true)
+
+        assertEquals(-1, fbChips.indexOfChild(sentinel))
+        assertEquals(1, fbChips.childCount)
+        assertTrue((fbChips.getChildAt(0) as Chip).isCloseIconVisible)
+    }
+
+    @Test
+    fun testShowChips_PerBindingIsolation_RebuildsEachBinding() {
+        voice.labels = listOf("offer")
+        val otherBinding = RowNewsBinding.inflate(LayoutInflater.from(context))
+
+        voicesLabelManager.showChips(binding, voice, false)
+        voicesLabelManager.showChips(otherBinding, voice, false)
+
+        assertEquals(1, fbChips.childCount)
+        assertEquals(1, otherBinding.fbChips.childCount)
+    }
+
+    @Test
+    fun testShowChips_SameBindingDifferentVoice_Rebuilds() {
+        val voiceA = News().apply { id = "a"; labels = listOf("offer") }
+        val voiceB = News().apply { id = "b"; labels = listOf("offer") }
+
+        voicesLabelManager.showChips(binding, voiceA, true)
+        val sentinel = addRebuildSentinel()
+
+        voicesLabelManager.showChips(binding, voiceB, true)
+
+        assertEquals(-1, fbChips.indexOfChild(sentinel))
+        assertEquals(1, fbChips.childCount)
+    }
+
+    private fun addRebuildSentinel(): View = View(context).also { fbChips.addView(it) }
 }

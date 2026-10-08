@@ -1,15 +1,57 @@
 package org.ole.planet.myplanet.ui.notifications
 
+import android.content.Context
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
+import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.ole.planet.myplanet.model.NotificationListItem
+import org.ole.planet.myplanet.model.NotificationPayload
+import org.ole.planet.myplanet.repository.EnrichedNotifications
+import org.ole.planet.myplanet.repository.NotificationsRepository
+import org.ole.planet.myplanet.utils.MainDispatcherRule
+import org.ole.planet.myplanet.utils.TaskNotificationUtils
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class NotificationsViewModelTest {
+
+    private val testDispatcher = StandardTestDispatcher()
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+
+    private lateinit var repository: NotificationsRepository
+    private lateinit var viewModel: NotificationsViewModel
+
+    @Before
+    fun setup() {
+        repository = mockk(relaxed = true)
+        viewModel = NotificationsViewModel(repository, mockk<Context>(relaxed = true), TestDispatcherProvider(testDispatcher))
+    }
 
     @Test
     fun testParseTaskDate_withValidDate() {
         val message = "Complete math assignment Mon 12, Jan 2024"
-        val result = NotificationsViewModel.parseTaskDate(message)
+        val result = TaskNotificationUtils.splitTitleAndDate(message)
         assertEquals("Complete math assignment", result?.first)
         assertEquals("Mon 12, Jan 2024", result?.second)
     }
@@ -17,7 +59,7 @@ class NotificationsViewModelTest {
     @Test
     fun testParseTaskDate_withNoDate() {
         val message = "Complete math assignment as soon as possible"
-        val result = NotificationsViewModel.parseTaskDate(message)
+        val result = TaskNotificationUtils.splitTitleAndDate(message)
         assertNull(result)
     }
 
@@ -68,5 +110,345 @@ class NotificationsViewModelTest {
             userRequestedToJoinTeamStr = "John Doe requested to join Awesome Team"
         )
         assertEquals("<b>Join Request</b> John Doe requested to join Awesome Team", result)
+    }
+
+    @Test
+    fun testGroupIsExpandedByDefaultOnlyWhenItHasUnread() = runTest(testDispatcher) {
+        loadNotifications(unreadTask, readResource)
+
+        assertTrue(header("task").isExpanded)
+        assertFalse(header("resource").isExpanded)
+    }
+
+    @Test
+    fun testToggleGroupExpansionOverridesTheDefault() = runTest(testDispatcher) {
+        loadNotifications(unreadTask, readResource)
+
+        viewModel.toggleGroupExpansion("task")
+        viewModel.toggleGroupExpansion("resource")
+        runCurrent()
+
+        assertFalse(header("task").isExpanded)
+        assertTrue(header("resource").isExpanded)
+    }
+
+    @Test
+    fun testToggleGroupExpansionTwiceRestoresTheDefault() = runTest(testDispatcher) {
+        loadNotifications(unreadTask, readResource)
+
+        repeat(2) { viewModel.toggleGroupExpansion("task") }
+        runCurrent()
+
+        assertTrue(header("task").isExpanded)
+    }
+
+    @Test
+    fun testMarkAllAsReadClearsOverridesAndCollapsesEveryGroup() = runTest(testDispatcher) {
+        loadNotifications(unreadTask, readResource)
+        coEvery { repository.markAllUnreadAsRead(USER_ID) } returns setOf(unreadTask.id)
+
+        viewModel.toggleGroupExpansion("resource")
+        runCurrent()
+        assertTrue(header("resource").isExpanded)
+
+        viewModel.markAllAsRead(USER_ID)
+        advanceUntilIdle()
+
+        assertEquals(0, viewModel.unreadCount.value)
+        assertFalse(header("task").isExpanded)
+        assertFalse(header("resource").isExpanded)
+    }
+
+    @Test
+    fun testViewModelDelegatesResolveTypeToRepository() = runTest(testDispatcher) {
+        val payload = notification(id = "1", type = "team", isRead = false, message = "whatever", subType = "join_request")
+        coEvery { repository.getEnrichedNotifications(USER_ID, FILTER_ALL, false) } returns EnrichedNotifications(
+            payloads = listOf(payload),
+            taskTeamNames = emptyMap(),
+            joinRequestDetails = emptyMap(),
+            parsedTaskDates = emptyMap(),
+            unreadCount = 1
+        )
+        every { repository.resolveType("team", "whatever", "join_request") } returns "join_request"
+        backgroundScope.launch { viewModel.groupedItems.collect {} }
+
+        viewModel.loadNotifications(USER_ID, FILTER_ALL)
+        advanceUntilIdle()
+
+        assertEquals("join_request", item("1").notification.type)
+        verify { repository.resolveType("team", "whatever", "join_request") }
+    }
+
+    @Test
+    fun testLoadNotificationsPreservesOrder() = runTest(testDispatcher) {
+        val task1 = notification(id = "t1", type = "TaSk", isRead = false, message = "Task 1", subType = null).copy(relatedId = "rel1")
+        val other1 = notification(id = "o1", type = "OTHER", isRead = false, message = "Other 1", subType = null)
+        val join1 = notification(id = "j1", type = "joiN_rEquEst", isRead = false, message = "Join 1", subType = null).copy(relatedId = "rel2")
+        val task2 = notification(id = "t2", type = "task", isRead = false, message = "Task 2", subType = null).copy(relatedId = "rel3")
+
+        loadNotifications(task1, other1, join1, task2)
+
+        val notifs = viewModel.notifications.value
+        assertEquals(4, notifs.size)
+        assertEquals("t1", notifs[0].id)
+        assertEquals("o1", notifs[1].id)
+        assertEquals("j1", notifs[2].id)
+        assertEquals("t2", notifs[3].id)
+    }
+
+    @Test
+    fun testParseTaskDateRunsOncePerTaskNotification() = runTest(testDispatcher) {
+        val task1 = notification(id = "t1", type = "task", isRead = false, message = "Submit report Mon 12, Jan 2024")
+        val task2 = notification(id = "t2", type = "task", isRead = false, message = "Review code Fri 7, Feb 2025")
+        val task3 = notification(id = "t3", type = "task", isRead = false, message = "Complete as soon as possible")
+
+        mockkObject(TaskNotificationUtils)
+        try {
+            every {
+                TaskNotificationUtils.splitTitleAndDate(any())
+            } answers { callOriginal() }
+
+            loadNotifications(task1, task2, task3)
+
+            verify(exactly = 1) { TaskNotificationUtils.splitTitleAndDate(task1.message) }
+            verify(exactly = 1) { TaskNotificationUtils.splitTitleAndDate(task2.message) }
+            verify(exactly = 1) { TaskNotificationUtils.splitTitleAndDate(task3.message) }
+        } finally {
+            unmockkObject(TaskNotificationUtils)
+        }
+    }
+
+    @Test
+    fun testLoadNotificationsUpdatesStateFromEnrichment() = runTest(testDispatcher) {
+        val taskWithId = notification(id = "t1", type = "task", isRead = false, message = "Task By Id Mon 12, Jan 2024").copy(relatedId = "rel_task_1")
+        val taskWithTitleOnly = notification(id = "t2", type = "task", isRead = false, message = "Task By Title Mon 12, Jan 2024").copy(relatedId = null)
+        val joinReq = notification(id = "j1", type = "join_request", isRead = false, message = "Join Req").copy(relatedId = "rel_join_1")
+
+        val enrichment = EnrichedNotifications(
+            payloads = listOf(taskWithId, taskWithTitleOnly, joinReq),
+            taskTeamNames = mapOf("rel_task_1" to "Alpha Team", "Task By Title" to "Beta Team"),
+            joinRequestDetails = mapOf("rel_join_1" to Pair("Alice", "Gamma Team")),
+            parsedTaskDates = mapOf(
+                "t1" to Pair("Task By Id", "Mon 12, Jan 2024"),
+                "t2" to Pair("Task By Title", "Mon 12, Jan 2024")
+            ),
+            unreadCount = 3
+        )
+
+        coEvery { repository.getEnrichedNotifications(USER_ID, FILTER_ALL, false) } returns enrichment
+
+        backgroundScope.launch { viewModel.groupedItems.collect {} }
+        viewModel.loadNotifications(USER_ID, FILTER_ALL)
+        advanceUntilIdle()
+
+        assertEquals(3, viewModel.unreadCount.value)
+        val notifications = viewModel.notifications.value
+        assertEquals(3, notifications.size)
+        coVerify { repository.getEnrichedNotifications(USER_ID, FILTER_ALL, false) }
+    }
+
+    @Test
+    fun testToggleSelectionUpdatesSelectionStateOnListItems() = runTest(testDispatcher) {
+        loadNotifications(unreadTask)
+
+        assertFalse(item("1").isSelected)
+        assertFalse(item("1").isSelectionMode)
+
+        viewModel.toggleSelection("1")
+        runCurrent()
+
+        assertTrue(item("1").isSelected)
+        assertTrue(item("1").isSelectionMode)
+
+        viewModel.toggleSelection("1")
+        runCurrent()
+
+        assertFalse(item("1").isSelected)
+        assertFalse(item("1").isSelectionMode)
+    }
+
+    @Test
+    fun testMarkSelectedAsRead_withPartiallyReadSelectedRows_decrementsUnreadCountOnlyForUnread() = runTest(testDispatcher) {
+        loadNotifications(unreadTask, readResource)
+        assertEquals(1, viewModel.unreadCount.value)
+
+        viewModel.toggleSelection("1")
+        viewModel.toggleSelection("2")
+
+        coEvery { repository.markNotificationsAsRead(setOf("1", "2")) } returns setOf("1", "2")
+
+        viewModel.markSelectedAsRead()
+        advanceUntilIdle()
+
+        assertEquals(0, viewModel.unreadCount.value)
+        assertTrue(viewModel.notifications.value.first { it.id == "1" }.isRead)
+    }
+
+    @Test
+    fun testDeleteSelected_withPartiallyReadSelectedRows_decrementsUnreadCountOnlyForUnread() = runTest(testDispatcher) {
+        val unreadTask2 = notification(id = "3", type = "task", isRead = false)
+        loadNotifications(unreadTask, readResource, unreadTask2)
+        assertEquals(2, viewModel.unreadCount.value)
+
+        viewModel.toggleSelection("1")
+        viewModel.toggleSelection("2")
+
+        coEvery { repository.deleteNotifications(setOf("1", "2")) } returns setOf("1", "2")
+
+        viewModel.deleteSelected()
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.unreadCount.value)
+        val remainingIds = viewModel.notifications.value.map { it.id }
+        assertFalse(remainingIds.contains("1"))
+        assertFalse(remainingIds.contains("2"))
+        assertTrue(remainingIds.contains("3"))
+    }
+
+    @Test
+    fun testMarkSelectedAsRead_underUnreadFilter_removesMarkedRowsAndDecrementsUnreadCount() = runTest(testDispatcher) {
+        val unreadTask2 = notification(id = "3", type = "task", isRead = false)
+        loadNotificationsWithFilter("unread", unreadTask, unreadTask2)
+        assertEquals(2, viewModel.unreadCount.value)
+
+        viewModel.toggleSelection("1")
+
+        coEvery { repository.markNotificationsAsRead(setOf("1")) } returns setOf("1")
+
+        viewModel.markSelectedAsRead()
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.unreadCount.value)
+        val remainingIds = viewModel.notifications.value.map { it.id }
+        assertFalse(remainingIds.contains("1"))
+        assertTrue(remainingIds.contains("3"))
+    }
+
+    @Test
+    fun testUnreadCountDoesNotGoBelowZeroWhenStoredCountIsSmallerThanAffected() = runTest(testDispatcher) {
+        val unreadTask2 = notification(id = "3", type = "task", isRead = false)
+        loadNotificationsWithFilter(FILTER_ALL, unreadTask, unreadTask2, unreadCountOverride = 1)
+        assertEquals(1, viewModel.unreadCount.value)
+
+        viewModel.toggleSelection("1")
+        viewModel.toggleSelection("3")
+
+        coEvery { repository.markNotificationsAsRead(setOf("1", "3")) } returns setOf("1", "3")
+
+        viewModel.markSelectedAsRead()
+        advanceUntilIdle()
+
+        assertEquals(0, viewModel.unreadCount.value)
+    }
+
+    @Test
+    fun testNotificationGroupOrdering_knownTypesFirstInTypeOrder_unknownTypesAfterInFirstSeenOrder() = runTest(testDispatcher) {
+        val resourceNotif = notification(id = "1", type = "resource", isRead = false)
+        val unknownNotif = notification(id = "2", type = "unknown_type", isRead = false)
+        val taskNotif = notification(id = "3", type = "task", isRead = false)
+        val joinNotif = notification(id = "4", type = "join_request", isRead = false)
+
+        loadNotifications(resourceNotif, unknownNotif, taskNotif, joinNotif)
+
+        val headerTypes = viewModel.groupedItems.value
+            .filterIsInstance<NotificationListItem.Header>()
+            .map { it.type }
+
+        assertEquals(listOf("join_request", "task", "resource", "notification"), headerTypes)
+    }
+
+    @Test
+    fun testLoadNotifications_cancelsPreviousSlowLoadAndReflectsLatestResult() = runTest(testDispatcher) {
+        val payloadA = notification(id = "1", type = "task", isRead = false, message = "Old Task")
+        val payloadB = notification(id = "2", type = "resource", isRead = false, message = "New Resource")
+
+        val resultA = EnrichedNotifications(
+            payloads = listOf(payloadA),
+            taskTeamNames = emptyMap(),
+            joinRequestDetails = emptyMap(),
+            parsedTaskDates = emptyMap(),
+            unreadCount = 1
+        )
+        val resultB = EnrichedNotifications(
+            payloads = listOf(payloadB),
+            taskTeamNames = emptyMap(),
+            joinRequestDetails = emptyMap(),
+            parsedTaskDates = emptyMap(),
+            unreadCount = 1
+        )
+
+        coEvery { repository.getEnrichedNotifications(USER_ID, "filterA", false) } coAnswers {
+            delay(1_000)
+            resultA
+        }
+        coEvery { repository.getEnrichedNotifications(USER_ID, "filterB", false) } returns resultB
+        every { repository.resolveType(any(), any(), any()) } answers { firstArg<String>().lowercase() }
+
+        viewModel.loadNotifications(USER_ID, "filterA")
+        viewModel.loadNotifications(USER_ID, "filterB")
+
+        advanceUntilIdle()
+
+        val currentNotifications = viewModel.notifications.value
+        assertEquals(1, currentNotifications.size)
+        assertEquals("2", currentNotifications[0].id)
+    }
+
+    private fun item(id: String): NotificationListItem.Item =
+        viewModel.groupedItems.value
+            .filterIsInstance<NotificationListItem.Item>()
+            .first { it.notification.id == id }
+
+    private fun TestScope.loadNotifications(vararg payloads: NotificationPayload) {
+        loadNotificationsWithFilter(FILTER_ALL, *payloads)
+    }
+
+    private fun TestScope.loadNotificationsWithFilter(filter: String, vararg payloads: NotificationPayload, unreadCountOverride: Int? = null) {
+        val taskNotifications = payloads.filter { it.type.equals("task", ignoreCase = true) }
+        val parsedTaskDates = taskNotifications.associateBy({ it.id }, { TaskNotificationUtils.splitTitleAndDate(it.message) })
+        val enrichment = EnrichedNotifications(
+            payloads = payloads.toList(),
+            taskTeamNames = emptyMap(),
+            joinRequestDetails = emptyMap(),
+            parsedTaskDates = parsedTaskDates,
+            unreadCount = unreadCountOverride ?: payloads.count { !it.isRead }
+        )
+        coEvery { repository.getEnrichedNotifications(USER_ID, filter, false) } returns enrichment
+        every { repository.resolveType(any(), any(), any()) } answers {
+            firstArg<String>().lowercase()
+        }
+        backgroundScope.launch { viewModel.groupedItems.collect {} }
+        viewModel.loadNotifications(USER_ID, filter)
+        advanceUntilIdle()
+    }
+
+    private fun header(type: String): NotificationListItem.Header =
+        viewModel.groupedItems.value
+            .filterIsInstance<NotificationListItem.Header>()
+            .first { it.type == type }
+
+    companion object {
+        private const val USER_ID = "user1"
+        private const val FILTER_ALL = "all"
+
+        private val unreadTask = notification(id = "1", type = "task", isRead = false)
+        private val readResource = notification(id = "2", type = "resource", isRead = true)
+
+        private fun notification(id: String, type: String, isRead: Boolean, message: String = "message $id", subType: String? = null) = NotificationPayload(
+            id = id,
+            userId = USER_ID,
+            message = message,
+            isRead = isRead,
+            createdAt = 0L,
+            type = type,
+            relatedId = null,
+            title = null,
+            link = null,
+            priority = 0,
+            isFromServer = false,
+            rev = null,
+            needsSync = false,
+            subType = subType
+        )
     }
 }

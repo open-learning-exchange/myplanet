@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.di
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.google.gson.Gson
+import android.util.Log
 import dagger.Lazy
 import dagger.Module
 import dagger.Provides
@@ -11,21 +11,40 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Qualifier
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.repository.PersonalsRepository
+import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.ChatSyncWriter
+import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.EventsSyncWriter
+import org.ole.planet.myplanet.repository.FeedbackSyncWriter
+import org.ole.planet.myplanet.repository.HealthRepository
+import org.ole.planet.myplanet.repository.NotificationsRepository
+import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.services.UploadManager
+import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.repository.TagsRepository
+import org.ole.planet.myplanet.repository.TeamsSyncRepository
+import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserSyncRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
-import org.ole.planet.myplanet.services.sync.ImprovedSyncManager
-import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NotificationUtils
+import org.ole.planet.myplanet.utils.SyncTimeLogger
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class ApplicationScope
+
+private const val APPLICATION_SCOPE_LOG_TAG = "ApplicationScope"
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -33,107 +52,61 @@ object ServiceModule {
 
     @Provides
     @Singleton
+    fun provideNotificationManager(
+        @ApplicationContext context: Context,
+        timeProvider: TimeProvider
+    ): NotificationUtils.NotificationManager = NotificationUtils.NotificationManager(context, timeProvider)
+
+    @Provides
+    @Singleton
     @ApplicationScope
-    fun provideApplicationScope(dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider): CoroutineScope {
-        return CoroutineScope(SupervisorJob() + dispatcherProvider.io)
-    }
-
-    @Provides
-    @Singleton
-    fun provideSyncManager(
-        @ApplicationContext context: Context,
-        databaseService: DatabaseService,
-        sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
-        apiInterface: ApiInterface,
-        improvedSyncManager: Lazy<ImprovedSyncManager>,
-        transactionSyncManager: TransactionSyncManager,
-        resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
-        loginSyncManager: org.ole.planet.myplanet.services.sync.LoginSyncManager,
-        @ApplicationScope scope: CoroutineScope,
-        activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
-        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
-        teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository
-    ): SyncManager {
-        return SyncManager(context, databaseService, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, teamsRepository)
-    }
-
-    @Provides
-    @Singleton
-    fun provideUploadRepository(
-        databaseService: DatabaseService,
-        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
-    ): org.ole.planet.myplanet.repository.UploadRepository {
-        return org.ole.planet.myplanet.repository.UploadRepositoryImpl(databaseService, dispatcherProvider)
-    }
-
-    @Provides
-    @Singleton
-    fun provideUploadManager(
-        @ApplicationContext context: Context,
-        databaseService: DatabaseService,
-        submissionsRepository: SubmissionsRepository,
-        sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
-        gson: Gson,
-        uploadCoordinator: org.ole.planet.myplanet.services.upload.UploadCoordinator,
-        personalsRepository: PersonalsRepository,
-        userRepository: org.ole.planet.myplanet.repository.UserRepository,
-        chatRepository: org.ole.planet.myplanet.repository.ChatRepository,
-        voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository,
-        uploadConfigs: org.ole.planet.myplanet.services.upload.UploadConfigs,
-        resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
-        teamsRepository: Lazy<org.ole.planet.myplanet.repository.TeamsRepository>,
-        activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
-        apiInterface: ApiInterface,
-        @ApplicationScope scope: CoroutineScope,
-        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
-        photoUploader: org.ole.planet.myplanet.services.upload.PhotoUploader
-    ): UploadManager {
-        return UploadManager(context, databaseService, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, apiInterface, activitiesRepository, dispatcherProvider, scope, photoUploader)
+    fun provideApplicationScope(dispatcherProvider: DispatcherProvider): CoroutineScope {
+        val logFailure = CoroutineExceptionHandler { _, failure ->
+            Log.e(APPLICATION_SCOPE_LOG_TAG, "application scope work failed", failure)
+        }
+        return CoroutineScope(SupervisorJob() + dispatcherProvider.io + logFailure)
     }
 
     @Provides
     @Singleton
     fun provideUploadToShelfService(
         @ApplicationContext context: Context,
-        databaseService: DatabaseService,
         @AppPreferences preferences: SharedPreferences,
-        sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
-        userRepository: org.ole.planet.myplanet.repository.UserRepository,
-        userSyncRepository: org.ole.planet.myplanet.repository.UserSyncRepository,
-        healthRepository: org.ole.planet.myplanet.repository.HealthRepository,
+        userRepository: UserRepository,
+        userSyncRepository: UserSyncRepository,
+        healthRepository: HealthRepository,
         @ApplicationScope appScope: CoroutineScope,
-        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
-        apiInterface: org.ole.planet.myplanet.data.api.ApiInterface
+        dispatcherProvider: DispatcherProvider
     ): UploadToShelfService {
-        return UploadToShelfService(context, databaseService, preferences, sharedPrefManager, userRepository, userSyncRepository, healthRepository, appScope, dispatcherProvider, apiInterface)
+        return UploadToShelfService(context, preferences, userRepository, userSyncRepository, healthRepository, appScope, dispatcherProvider)
     }
 
     @Provides
     @Singleton
     fun provideTransactionSyncManager(
         apiInterface: ApiInterface,
-        databaseService: DatabaseService,
         @ApplicationContext context: Context,
-        voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository,
-        chatRepository: org.ole.planet.myplanet.repository.ChatRepository,
-        feedbackRepository: org.ole.planet.myplanet.repository.FeedbackRepository,
-        sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
-        userRepository: org.ole.planet.myplanet.repository.UserRepository,
-        userSyncRepository: org.ole.planet.myplanet.repository.UserSyncRepository,
-        activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
-        teamsRepository: dagger.Lazy<org.ole.planet.myplanet.repository.TeamsRepository>,
-        notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
-        tagsRepository: org.ole.planet.myplanet.repository.TagsRepository,
-        ratingsRepository: org.ole.planet.myplanet.repository.RatingsRepository,
-        submissionsRepository: org.ole.planet.myplanet.repository.SubmissionsRepository,
-        coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
-        communityRepository: org.ole.planet.myplanet.repository.CommunityRepository,
-        healthRepository: org.ole.planet.myplanet.repository.HealthRepository,
-        progressRepository: org.ole.planet.myplanet.repository.ProgressRepository,
-        surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository,
-        @ApplicationScope scope: CoroutineScope,
-        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
+        voicesRepository: VoicesRepository,
+        chatRepository: ChatSyncWriter,
+        feedbackRepository: FeedbackSyncWriter,
+        sharedPrefManager: SharedPrefManager,
+        userRepository: UserRepository,
+        userSyncRepository: UserSyncRepository,
+        activitiesRepository: ActivitiesRepository,
+        teamsSyncRepository: Lazy<TeamsSyncRepository>,
+        notificationsRepository: NotificationsRepository,
+        tagsRepository: TagsRepository,
+        ratingsRepository: RatingsRepository,
+        submissionsRepository: SubmissionsRepository,
+        coursesRepository: CoursesRepository,
+        eventsSyncWriter: EventsSyncWriter,
+        healthRepository: HealthRepository,
+        progressRepository: ProgressRepository,
+        surveysRepository: SurveysRepository,
+        dispatcherProvider: DispatcherProvider,
+        userSessionManager: UserSessionManager,
+        syncTimeLogger: SyncTimeLogger
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope, dispatcherProvider)
+        return TransactionSyncManager(apiInterface, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, eventsSyncWriter, healthRepository, progressRepository, surveysRepository, dispatcherProvider, userSessionManager, syncTimeLogger)
     }
 }

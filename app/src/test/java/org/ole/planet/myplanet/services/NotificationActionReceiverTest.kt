@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services
 
+import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -8,6 +9,7 @@ import androidx.test.core.app.ApplicationProvider
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
@@ -17,12 +19,14 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.currentTime
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -31,7 +35,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], application = android.app.Application::class)
+@Config(application = Application::class)
 @OptIn(ExperimentalCoroutinesApi::class)
 class NotificationActionReceiverTest {
 
@@ -49,8 +53,6 @@ class NotificationActionReceiverTest {
         testDispatcher = StandardTestDispatcher()
         testScope = TestScope(testDispatcher)
 
-        MainApplication.applicationScope = testScope
-
         mockContext = spyk(ApplicationProvider.getApplicationContext<Context>())
         every { mockContext.startActivity(any()) } returns Unit
 
@@ -60,7 +62,7 @@ class NotificationActionReceiverTest {
         every { mockDispatcherProvider.unconfined } returns testDispatcher
 
         mockNotificationUtils = mockk(relaxed = true)
-        mockkStatic(NotificationUtils::class)
+        mockkObject(NotificationUtils)
         every { NotificationUtils.getInstance(any()) } returns mockNotificationUtils
 
         mockkStatic("org.ole.planet.myplanet.di.ServiceDependenciesEntryPointKt")
@@ -69,9 +71,10 @@ class NotificationActionReceiverTest {
         receiver = spyk(NotificationActionReceiver().apply {
             notificationsRepository = mockNotificationsRepository
             dispatcherProvider = mockDispatcherProvider
+            applicationScope = testScope
         })
         try {
-            val injectedField = org.ole.planet.myplanet.services.Hilt_NotificationActionReceiver::class.java.getDeclaredField("injected")
+            val injectedField = Hilt_NotificationActionReceiver::class.java.getDeclaredField("injected")
             injectedField.isAccessible = true
             injectedField.set(receiver, true)
         } catch (e: Exception) {
@@ -160,5 +163,51 @@ class NotificationActionReceiverTest {
 
         verify { mockNotificationUtils.clearNotification(notificationId) }
         verify { pendingResult.finish() }
+    }
+
+    @Test
+    fun `test onReceive calls finish when notification action throws exception`() = testScope.runTest {
+        val notificationId = "test_id"
+        val mockIntent = Intent(NotificationUtils.ACTION_MARK_AS_READ)
+        mockIntent.putExtra(NotificationUtils.EXTRA_NOTIFICATION_ID, notificationId)
+
+        mockkStatic(android.util.Log::class)
+        every { android.util.Log.e(any(), any(), any()) } returns 0
+
+        every { mockNotificationUtils.clearNotification(notificationId) } throws RuntimeException("Clear error")
+
+        val pendingResult = mockk<BroadcastReceiver.PendingResult>(relaxed = true)
+        every { receiver.goAsync() } returns pendingResult
+
+        receiver.onReceive(mockContext, mockIntent)
+        advanceUntilIdle()
+
+        verify { android.util.Log.e("NotificationActionReceiver", "broadcast work failed", any()) }
+        verify { pendingResult.finish() }
+    }
+
+    @Test
+    fun `test markNotificationAsRead dispatches system broadcast immediately without virtual time delay`() = testScope.runTest {
+        val notificationId = "id"
+
+        receiver.markNotificationAsRead(mockContext, notificationId)
+        runCurrent()
+
+        verify {
+            mockContext.sendBroadcast(match {
+                it.action == "org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM" &&
+                        it.getStringExtra("notification_id") == notificationId
+            })
+        }
+        assertEquals(0L, currentTime)
+    }
+
+    @Test
+    fun `test markNotificationAsRead with null notificationId does not send broadcast`() = testScope.runTest {
+        receiver.markNotificationAsRead(mockContext, null)
+        runCurrent()
+
+        verify(exactly = 0) { mockContext.sendBroadcast(any()) }
+        assertEquals(0L, currentTime)
     }
 }

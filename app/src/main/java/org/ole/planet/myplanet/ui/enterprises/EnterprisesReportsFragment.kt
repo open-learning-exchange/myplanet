@@ -3,52 +3,61 @@ package org.ole.planet.myplanet.ui.enterprises
 import android.app.Activity
 import android.app.DatePickerDialog
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
-import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.IOException
-import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
-import java.util.Date
 import java.util.Locale
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.FragmentReportsBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.FinanceReport
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class EnterprisesReportsFragment : BaseTeamFragment() {
     private var _binding: FragmentReportsBinding? = null
     private val binding get() = _binding!!
-    private var reports: List<RealmMyTeam> = emptyList()
+    private var reports: List<FinanceReport> = emptyList()
     private lateinit var reportsAdapter: EnterprisesReportsAdapter
     private var scrollToLatestReport = false
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
     lateinit var teamType: String
     private lateinit var createFileLauncher: ActivityResultLauncher<Intent>
+    private lateinit var pickImageLauncher: ActivityResultLauncher<String>
     private val viewModel: EnterprisesViewModel by viewModels()
     private var activeDialog: AlertDialog? = null
+    private var selectedImageUri: Uri? = null
+    private var dialogImagePreview: ImageView? = null
+    private var isReportSaving = false
+    private val fromCommunity: Boolean
+        get() = arguments?.getBoolean("fromCommunity", false) == true
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentReportsBinding.inflate(inflater, container, false)
@@ -58,10 +67,8 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         }
 
         binding.exportCSV.setOnClickListener {
-            val currentDate = Date()
-            val dateFormat = SimpleDateFormat("EEE_MMM_dd_yyyy", Locale.US)
-            val formattedDate = dateFormat.format(currentDate)
-            val teamName = prefData.getTeamName()?.replace(" ", "_")
+            val formattedDate = LocalDate.now().format(dateFormatter)
+            val teamName = getEffectiveTeamName().replace(" ", "_")
 
             val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE)
@@ -76,17 +83,27 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                 result.data?.data?.let { uri ->
                     viewLifecycleOwner.lifecycleScope.launch {
                         try {
-                            val csvContent = viewModel.exportReportsAsCsv(reports, prefData.getTeamName() ?: "")
+                            val csvContent = viewModel.exportReportsAsCsv(teamId, getEffectiveTeamName())
                             requireContext().contentResolver.openOutputStream(uri)?.use { outputStream ->
                                 outputStream.write(csvContent.toByteArray())
                             }
                             Utilities.toast(requireContext(), getString(R.string.csv_file_saved_successfully))
                         } catch (e: IOException) {
-                            e.printStackTrace()
+                            Log.w(TAG, "CSV export write failed", e)
                             Utilities.toast(requireContext(), getString(R.string.failed_to_save_csv_file))
                         }
                     }
                 } ?: Utilities.toast(requireContext(), getString(R.string.export_cancelled))
+            }
+        }
+
+        pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            if (uri != null) {
+                selectedImageUri = uri
+                dialogImagePreview?.let { preview ->
+                    preview.visibility = View.VISIBLE
+                    Glide.with(this).load(uri).into(preview)
+                }
             }
         }
         return binding.root
@@ -96,47 +113,38 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         super.onViewCreated(view, savedInstanceState)
         reportsAdapter = EnterprisesReportsAdapter(
             requireContext(),
-            prefData,
+            getEffectiveTeamName(),
             onEdit = { report -> showEditReportDialog(report) },
             onDelete = { report -> showDeleteReportDialog(report) }
         )
         binding.rvReports.adapter = reportsAdapter
         binding.rvReports.layoutManager = LinearLayoutManager(activity)
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    isMemberFlow.collectLatest { isMember ->
-                        binding.addReports.isVisible = isMember
-                        reportsAdapter.setNonTeamMember(!isMember)
+        collectLatestWhenStarted(isMemberFlow) { isMember ->
+            val canManage = if (fromCommunity) user?.isManager() == true else isMember
+            binding.addReports.isVisible = canManage
+            reportsAdapter.setNonTeamMember(!canManage)
+        }
+        collectLatestWhenStarted(viewModel.getReportsFlow(teamId)) { reportList ->
+            updatedReportsList(reportList)
+        }
+        collectLatestWhenStarted(viewModel.reportEvent) { event ->
+            when (event) {
+                is ReportEvent.ReportAdded,
+                is ReportEvent.ReportUpdated -> {
+                    if (event is ReportEvent.ReportAdded) {
+                        scrollToLatestReport = true
                     }
+                    activeDialog?.dismiss()
+                    activeDialog = null
+                    isReportSaving = false
                 }
-                launch {
-                    viewModel.getReportsFlow(teamId).collectLatest { reportList ->
-                        updatedReportsList(reportList)
-                    }
+                is ReportEvent.ReportArchived -> {
+                    // archived successfully
                 }
-                launch {
-                    viewModel.reportEvent.collectLatest { event ->
-                        when (event) {
-                            is ReportEvent.ReportAdded,
-                            is ReportEvent.ReportUpdated -> {
-                                if (event is ReportEvent.ReportAdded) {
-                                    scrollToLatestReport = true
-                                }
-                                activeDialog?.dismiss()
-                                activeDialog = null
-                            }
-                            is ReportEvent.ReportArchived -> {
-                                // archived successfully
-                            }
-                            is ReportEvent.Error -> {
-                                view?.let {
-                                    Snackbar.make(it, event.message, Snackbar.LENGTH_LONG).show()
-                                } ?: Utilities.toast(requireContext(), event.message)
-                            }
-                        }
-                    }
+                is ReportEvent.Error -> {
+                    isReportSaving = false
+                    Snackbar.make(view, event.message, Snackbar.LENGTH_LONG).show()
                 }
             }
         }
@@ -145,6 +153,11 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
     private fun showAddReportDialog() {
         val dialogAddReportBinding = DialogAddReportBinding.inflate(LayoutInflater.from(requireContext()))
         val v: View = dialogAddReportBinding.root
+        selectedImageUri = null
+        dialogImagePreview = dialogAddReportBinding.reportImagePreview
+        dialogAddReportBinding.btnAddReportImage.setOnClickListener {
+            pickImageLauncher.launch("image/*")
+        }
         val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
         builder.setTitle(R.string.add_report)
             .setView(v)
@@ -170,31 +183,63 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         setupDatePickers(dialogAddReportBinding, calendar, true)
 
         submit?.setOnClickListener {
+            if (isReportSaving) return@setOnClickListener
             if (isValidReportForm(dialogAddReportBinding)) {
+                isReportSaving = true
+                val description = dialogAddReportBinding.summary.text.toString()
+                val beginningBalance = dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: 0
+                val sales = dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: 0
+                val otherIncome = dialogAddReportBinding.otherIncome.text.toString().toIntOrNull() ?: 0
+                val wages = dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: 0
+                val otherExpenses = dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: 0
+                val startDate = startTimeStamp?.toLongOrNull() ?: 0L
+                val endDate = endTimeStamp?.toLongOrNull() ?: 0L
+                val capturedTeamId = teamId
+                val teamType = team?.teamType
+                val teamPlanetCode = team?.teamPlanetCode
+                val imageUri = selectedImageUri
+
                 viewModel.addReport(
-                    description = dialogAddReportBinding.summary.text.toString(),
-                    beginningBalance = dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: 0,
-                    sales = dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: 0,
-                    otherIncome = dialogAddReportBinding.otherIncome.text.toString().toIntOrNull() ?: 0,
-                    wages = dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: 0,
-                    otherExpenses = dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: 0,
-                    startDate = startTimeStamp?.toLongOrNull() ?: 0L,
-                    endDate = endTimeStamp?.toLongOrNull() ?: 0L,
-                    teamId = teamId,
-                    teamType = team?.teamType,
-                    teamPlanetCode = team?.teamPlanetCode
+                    description = description,
+                    beginningBalance = beginningBalance,
+                    sales = sales,
+                    otherIncome = otherIncome,
+                    wages = wages,
+                    otherExpenses = otherExpenses,
+                    startDate = startDate,
+                    endDate = endDate,
+                    teamId = capturedTeamId,
+                    teamType = teamType,
+                    teamPlanetCode = teamPlanetCode,
+                    imageUri = imageUri
                 )
             }
         }
 
         cancel?.setOnClickListener { activeDialog?.dismiss() }
 
-        activeDialog?.setOnDismissListener { activeDialog = null }
+        activeDialog?.setOnDismissListener {
+            activeDialog = null
+            dialogImagePreview = null
+            selectedImageUri = null
+            isReportSaving = false
+        }
     }
 
-    private fun showEditReportDialog(currentReport: RealmMyTeam) {
+    private fun showEditReportDialog(currentReport: FinanceReport) {
         val dialogAddReportBinding = DialogAddReportBinding.inflate(LayoutInflater.from(requireContext()))
         val v: View = dialogAddReportBinding.root
+        selectedImageUri = null
+        dialogImagePreview = dialogAddReportBinding.reportImagePreview
+        val existingImage = MyTeam.getAttachmentFile(requireContext(), currentReport._id, currentReport.imageName)
+        if (existingImage != null && existingImage.exists()) {
+            dialogAddReportBinding.reportImagePreview.visibility = View.VISIBLE
+            Glide.with(this).load(existingImage).into(dialogAddReportBinding.reportImagePreview)
+            dialogAddReportBinding.btnAddReportImage.text = getString(R.string.change_image)
+        }
+        dialogAddReportBinding.btnAddReportImage.setOnClickListener {
+            pickImageLauncher.launch("image/*")
+        }
         val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
         builder.setTitle("Edit Report")
             .setView(v)
@@ -223,9 +268,10 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         setupDatePickers(dialogAddReportBinding, calendar, false)
 
         submit?.setOnClickListener {
+            if (isReportSaving) return@setOnClickListener
             if (isValidReportForm(dialogAddReportBinding)) {
                 val reportId = currentReport._id
-                if (reportId.isNullOrBlank()) {
+                if (reportId.isBlank()) {
                     Snackbar.make(
                         binding.root,
                         "Failed to update report. Please try again.",
@@ -234,35 +280,50 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                     return@setOnClickListener
                 }
 
+                isReportSaving = true
+                val description = dialogAddReportBinding.summary.text.toString()
+                val beginningBalance = dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: currentReport.beginningBalance
+                val sales = dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: currentReport.sales
+                val otherIncome = dialogAddReportBinding.otherIncome.text.toString().toIntOrNull() ?: currentReport.otherIncome
+                val wages = dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: currentReport.wages
+                val otherExpenses = dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: currentReport.otherExpenses
+                val startDate = startTimeStamp?.toLongOrNull() ?: currentReport.startDate
+                val endDate = endTimeStamp?.toLongOrNull() ?: currentReport.endDate
+                val imageUri = selectedImageUri
+
                 viewModel.updateReport(
                     reportId = reportId,
-                    description = dialogAddReportBinding.summary.text.toString(),
-                    beginningBalance = dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: currentReport.beginningBalance,
-                    sales = dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: currentReport.sales,
-                    otherIncome = dialogAddReportBinding.otherIncome.text.toString().toIntOrNull() ?: currentReport.otherIncome,
-                    wages = dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: currentReport.wages,
-                    otherExpenses = dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: currentReport.otherExpenses,
-                    startDate = startTimeStamp?.toLongOrNull() ?: currentReport.startDate,
-                    endDate = endTimeStamp?.toLongOrNull() ?: currentReport.endDate
+                    description = description,
+                    beginningBalance = beginningBalance,
+                    sales = sales,
+                    otherIncome = otherIncome,
+                    wages = wages,
+                    otherExpenses = otherExpenses,
+                    startDate = startDate,
+                    endDate = endDate,
+                    imageUri = imageUri
                 )
             }
         }
 
         cancel?.setOnClickListener { activeDialog?.dismiss() }
 
-        activeDialog?.setOnDismissListener { activeDialog = null }
+        activeDialog?.setOnDismissListener {
+            activeDialog = null
+            dialogImagePreview = null
+            selectedImageUri = null
+        }
     }
 
-    private fun showDeleteReportDialog(report: RealmMyTeam) {
-        report._id?.let { reportId ->
-            val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-            builder.setTitle(getString(R.string.delete_report))
-                .setMessage(R.string.delete_record)
-                .setPositiveButton(R.string.ok) { _, _ ->
-                    viewModel.archiveReport(reportId = reportId)
-                }
-                .setNegativeButton("Cancel", null)
-                .show()
+    private fun showDeleteReportDialog(report: FinanceReport) {
+        report._id.let { reportId ->
+            requireContext().confirmDialog(
+                title = getString(R.string.delete_report),
+                message = getString(R.string.delete_record),
+                positiveText = getString(R.string.ok),
+                onPositive = { viewModel.archiveReport(reportId = reportId) },
+                negativeText = "Cancel"
+            )
         }
     }
 
@@ -306,27 +367,27 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                 binding.endDate.error = "end date is required"
                 false
             }
-            TextUtils.isEmpty("${binding.summary.text}") -> {
+            "${binding.summary.text}".isNullOrEmpty() -> {
                 binding.summary.error = "summary is required"
                 false
             }
-            TextUtils.isEmpty("${binding.beginningBalance.text}") -> {
+            "${binding.beginningBalance.text}".isNullOrEmpty() -> {
                 binding.beginningBalance.error = "beginning balance is required"
                 false
             }
-            TextUtils.isEmpty("${binding.sales.text}") -> {
+            "${binding.sales.text}".isNullOrEmpty() -> {
                 binding.sales.error = "sales is required"
                 false
             }
-            TextUtils.isEmpty("${binding.otherIncome.text}") -> {
+            "${binding.otherIncome.text}".isNullOrEmpty() -> {
                 binding.otherIncome.error = "other income is required"
                 false
             }
-            TextUtils.isEmpty("${binding.personnel.text}") -> {
+            "${binding.personnel.text}".isNullOrEmpty() -> {
                 binding.personnel.error = "personnel is required"
                 false
             }
-            TextUtils.isEmpty("${binding.nonPersonnel.text}") -> {
+            "${binding.nonPersonnel.text}".isNullOrEmpty() -> {
                 binding.nonPersonnel.error = "non-personnel is required"
                 false
             }
@@ -334,14 +395,14 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: News?) {}
 
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
     }
 
-    private fun updatedReportsList(results: List<RealmMyTeam>) {
+    private fun updatedReportsList(results: List<FinanceReport>) {
         if (_binding == null) return
         reports = results
         if (scrollToLatestReport && reports.isNotEmpty()) {
@@ -359,5 +420,10 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
     override fun onDestroyView() {
         _binding = null
         super.onDestroyView()
+    }
+
+    companion object {
+        private const val TAG = "EnterprisesReportsFragment"
+        private val dateFormatter = DateTimeFormatter.ofPattern("EEE_MMM_dd_yyyy", Locale.US)
     }
 }

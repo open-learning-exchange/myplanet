@@ -7,31 +7,32 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.annotation.VisibleForTesting
 import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
-import dagger.hilt.android.EntryPointAccessors
 import java.util.regex.Pattern
-import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.di.RepositoryDependenciesEntryPoint
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.services.DownloadWorker
 
 object DownloadUtils {
+    private const val TAG = "DownloadUtils"
     private const val DOWNLOAD_CHANNEL = "DownloadChannel"
     private const val COMPLETION_CHANNEL = "DownloadCompletionChannel"
     private const val WORKER_CHANNEL = "DownloadWorkerChannel"
     private val LINK_PATTERN = Pattern.compile("!\\[.*?]\\((.*?)\\)")
 
-    @JvmStatic
+    @Volatile
+    private var channelsCreated = false
+
     fun createChannels(context: Context) {
+        if (channelsCreated) return
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (manager.getNotificationChannel(DOWNLOAD_CHANNEL) == null) {
             val channel = NotificationChannel(DOWNLOAD_CHANNEL, "Download Service",
@@ -60,9 +61,14 @@ object DownloadUtils {
             }
             manager.createNotificationChannel(channel)
         }
+        channelsCreated = true
     }
 
-    @JvmStatic
+    @VisibleForTesting
+    internal fun resetChannelsCreatedForTesting() {
+        channelsCreated = false
+    }
+
     fun buildInitialNotification(context: Context): Notification {
         createChannels(context)
         return NotificationCompat.Builder(context, DOWNLOAD_CHANNEL)
@@ -78,7 +84,6 @@ object DownloadUtils {
             .build()
     }
 
-    @JvmStatic
     fun buildProgressNotification(
         context: Context,
         current: Int,
@@ -108,7 +113,6 @@ object DownloadUtils {
         return builder.build()
     }
 
-    @JvmStatic
     fun buildCompletionNotification(
         context: Context,
         completed: Int,
@@ -132,40 +136,32 @@ object DownloadUtils {
             .setAutoCancel(true)
             .build()
     }
-    @JvmStatic
-    fun downloadAllFiles(dbMyLibrary: List<RealmMyLibrary?>): ArrayList<String> {
-        return ArrayList(dbMyLibrary.map { UrlUtils.getUrl(it) })
+    fun downloadAllFiles(dbMyLibrary: List<MyLibrary?>): ArrayList<String> {
+        val base = UrlUtils.getUrl()
+        return dbMyLibrary.mapTo(ArrayList()) { library ->
+            UrlUtils.getUrl(library?.resourceId, library?.resourceLocalAddress, base)
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
     fun openPriorityDownloadService(context: Context?, urls: ArrayList<String>) {
-        context?.let { ctx ->
-            val preferences = ctx.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
-
-            val existingPriority = preferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
-            val mergedPriority = existingPriority.toMutableSet().apply { addAll(urls) }
-
-            preferences.edit {
-                putStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, mergedPriority)
-            }
-            startDownloadServiceSafely(ctx, DownloadService.PRIORITY_DOWNLOADS_KEY, false)
-        }
+        context?.let { enqueueUrls(it, DownloadService.PRIORITY_DOWNLOADS_KEY, urls, false) }
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
     fun openDownloadService(context: Context?, urls: ArrayList<String>, fromSync: Boolean) {
-        context?.let { ctx ->
-            val preferences = ctx.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+        context?.let { enqueueUrls(it, DownloadService.PENDING_DOWNLOADS_KEY, urls, fromSync) }
+    }
 
-            val existingUrls = preferences.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, emptySet()) ?: emptySet()
-            val mergedUrls = existingUrls.toMutableSet().apply { addAll(urls) }
-
-            preferences.edit {
-                putStringSet(DownloadService.PENDING_DOWNLOADS_KEY, mergedUrls)
-            }
-
-            startDownloadServiceSafely(ctx, DownloadService.PENDING_DOWNLOADS_KEY, fromSync)
+    @RequiresApi(Build.VERSION_CODES.S)
+    private fun enqueueUrls(context: Context, key: String, urls: Collection<String>, fromSync: Boolean) {
+        val preferences = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+        val existing = preferences.getStringSet(key, emptySet()) ?: emptySet()
+        val merged = existing.toMutableSet().apply { addAll(urls) }
+        preferences.edit {
+            putStringSet(key, merged)
         }
+        startDownloadServiceSafely(context, key, fromSync)
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
@@ -174,7 +170,7 @@ object DownloadUtils {
             try {
                 DownloadService.startService(context, urlsKey, fromSync)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "startDownloadServiceSafely failed", e)
                 handleForegroundServiceNotAllowed(context, urlsKey, fromSync)
             }
         } else {
@@ -205,7 +201,6 @@ object DownloadUtils {
 
     fun canStartForegroundService(context: Context): Boolean {
         return when {
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.O -> true
             Build.VERSION.SDK_INT < Build.VERSION_CODES.S -> {
                 isAppInForeground(context)
             }
@@ -253,25 +248,4 @@ object DownloadUtils {
         }
         return links
     }
-
-    @JvmStatic
-    fun updateResourceOfflineStatus(url: String) {
-        MainApplication.applicationScope.launch {
-            try {
-                resourcesRepository.markResourceOfflineByUrl(url)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    private val resourcesRepository: ResourcesRepository by lazy {
-        val entryPoint = EntryPointAccessors.fromApplication(
-            MainApplication.context,
-            RepositoryDependenciesEntryPoint::class.java
-        )
-        entryPoint.resourcesRepository()
-    }
-
-
 }

@@ -2,19 +2,25 @@ package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
 import android.util.Base64
-import com.google.gson.JsonArray
+import android.util.Log
 import com.google.gson.JsonObject
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import java.net.UnknownHostException
+import java.util.Base64 as JavaBase64
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
@@ -23,7 +29,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter
@@ -38,9 +44,9 @@ class LoginSyncManagerTest {
     private lateinit var loginSyncManager: LoginSyncManager
     private val context: Context = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
-    private val userRepository: UserRepository = mockk(relaxed = true)
     private val userSyncRepository: UserSyncRepository = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
+    private val configurationsRepository: ConfigurationsRepository = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
     private val testScope = TestScope(testDispatcher)
     private val dispatcherProvider: DispatcherProvider = TestDispatcherProvider(testDispatcher)
@@ -48,9 +54,13 @@ class LoginSyncManagerTest {
 
     @Before
     fun setup() {
+        mockkStatic(Log::class)
+        every { Log.e(any(), any()) } returns 0
+        every { Log.e(any(), any(), any()) } returns 0
+
         mockkStatic(Base64::class)
         every { Base64.encodeToString(any(), any()) } answers {
-            java.util.Base64.getEncoder().encodeToString(firstArg<ByteArray>())
+            JavaBase64.getEncoder().encodeToString(firstArg<ByteArray>())
         }
 
         mockkObject(UrlUtils)
@@ -63,9 +73,9 @@ class LoginSyncManagerTest {
         loginSyncManager = LoginSyncManager(
             context,
             sharedPrefManager,
-            userRepository,
             userSyncRepository,
             apiInterface,
+            configurationsRepository,
             testScope,
             dispatcherProvider
         )
@@ -123,7 +133,7 @@ class LoginSyncManagerTest {
 
     @Test
     fun `login handles missing auth data`() = runTest {
-        val jsonDoc = JsonObject() // No derived_key or salt
+        val jsonDoc = kotlinx.serialization.json.JsonObject(emptyMap()) // No derived_key or salt
         coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
 
         loginSyncManager.login("testUser", "testPass", listener)
@@ -133,12 +143,11 @@ class LoginSyncManagerTest {
 
     @Test
     fun `login with valid credentials and manager role`() = runTest {
-        val jsonDoc = JsonObject()
-        jsonDoc.addProperty("derived_key", "test_derived_key")
-        jsonDoc.addProperty("salt", "test_salt")
-        val roles = JsonArray()
-        roles.add("manager")
-        jsonDoc.add("roles", roles)
+        val jsonDoc = kotlinx.serialization.json.buildJsonObject {
+            put("derived_key", "test_derived_key")
+            put("salt", "test_salt")
+            putJsonArray("roles") { add("manager") }
+        }
 
         coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
 
@@ -153,9 +162,82 @@ class LoginSyncManagerTest {
 
     @Test
     fun `login with valid credentials but not manager`() = runTest {
-        val jsonDoc = JsonObject()
-        jsonDoc.addProperty("derived_key", "test_derived_key")
-        jsonDoc.addProperty("salt", "test_salt")
+        val jsonDoc = kotlinx.serialization.json.buildJsonObject {
+            put("derived_key", "test_derived_key")
+            put("salt", "test_salt")
+        }
+
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
+        every { AndroidDecrypter.androidDecrypter(any(), any(), any(), any()) } returns true
+        every { context.getString(R.string.user_verification_in_progress) } returns "Verification in progress"
+
+        loginSyncManager.login("testUser", "testPass", listener)
+
+        verify { listener.onSyncFailed("Verification in progress") }
+    }
+
+    @Test
+    fun `login with valid credentials and capital Manager role`() = runTest {
+        val jsonDoc = kotlinx.serialization.json.buildJsonObject {
+            put("derived_key", "test_derived_key")
+            put("salt", "test_salt")
+            putJsonArray("roles") { add("Manager") }
+        }
+
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
+
+        every { AndroidDecrypter.androidDecrypter("testUser", "testPass", "test_derived_key", "test_salt") } returns true
+        coEvery { userSyncRepository.saveUser(any(), any(), any()) } returns mockk(relaxed = true)
+
+        loginSyncManager.login("testUser", "testPass", listener)
+
+        verify { listener.onSyncStarted() }
+        verify { listener.onSyncComplete() }
+    }
+
+    @Test
+    fun `login with valid credentials and managerial role`() = runTest {
+        val jsonDoc = kotlinx.serialization.json.buildJsonObject {
+            put("derived_key", "test_derived_key")
+            put("salt", "test_salt")
+            putJsonArray("roles") { add("managerial") }
+        }
+
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
+        every { AndroidDecrypter.androidDecrypter(any(), any(), any(), any()) } returns true
+        every { context.getString(R.string.user_verification_in_progress) } returns "Verification in progress"
+
+        loginSyncManager.login("testUser", "testPass", listener)
+
+        verify { listener.onSyncFailed("Verification in progress") }
+    }
+
+    @Test
+    fun `login with valid credentials and admin without manager role`() = runTest {
+        val jsonDoc = kotlinx.serialization.json.buildJsonObject {
+            put("derived_key", "test_derived_key")
+            put("salt", "test_salt")
+            put("isUserAdmin", true)
+        }
+
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
+
+        every { AndroidDecrypter.androidDecrypter("testUser", "testPass", "test_derived_key", "test_salt") } returns true
+        coEvery { userSyncRepository.saveUser(any(), any(), any()) } returns mockk(relaxed = true)
+
+        loginSyncManager.login("testUser", "testPass", listener)
+
+        verify { listener.onSyncStarted() }
+        verify { listener.onSyncComplete() }
+    }
+
+    @Test
+    fun `login with valid credentials and null roles`() = runTest {
+        val jsonDoc = kotlinx.serialization.json.buildJsonObject {
+            put("derived_key", "test_derived_key")
+            put("salt", "test_salt")
+            // Note: roles property is intentionally omitted
+        }
 
         coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
         every { AndroidDecrypter.androidDecrypter(any(), any(), any(), any()) } returns true
@@ -168,9 +250,10 @@ class LoginSyncManagerTest {
 
     @Test
     fun `login with invalid credentials`() = runTest {
-        val jsonDoc = JsonObject()
-        jsonDoc.addProperty("derived_key", "test_derived_key")
-        jsonDoc.addProperty("salt", "test_salt")
+        val jsonDoc = kotlinx.serialization.json.buildJsonObject {
+            put("derived_key", "test_derived_key")
+            put("salt", "test_salt")
+        }
 
         coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
         every { AndroidDecrypter.androidDecrypter(any(), any(), any(), any()) } returns false
@@ -182,7 +265,7 @@ class LoginSyncManagerTest {
 
     @Test
     fun `login handles network error`() = runTest {
-        val exception = object : java.net.UnknownHostException() {
+        val exception = object : UnknownHostException() {
             override fun printStackTrace() {
                 // Do nothing to avoid polluting test logs
             }
@@ -192,5 +275,93 @@ class LoginSyncManagerTest {
         loginSyncManager.login("testUser", "testPass", listener)
 
         verify { listener.onSyncFailed("Server not reachable. Check your internet connection.") }
+    }
+
+    @Test
+    fun `syncAdmin delegates to configurationsRepository syncCommunityLeaders`() = runTest {
+        loginSyncManager.syncAdmin()
+
+        coVerify(exactly = 1) { configurationsRepository.syncCommunityLeaders() }
+    }
+
+    @Test
+    fun `login with valid credentials and roles containing learner Manager leader`() = runTest {
+        val jsonDoc = kotlinx.serialization.json.buildJsonObject {
+            put("derived_key", "test_derived_key")
+            put("salt", "test_salt")
+            putJsonArray("roles") {
+                add("learner")
+                add("Manager")
+                add("leader")
+            }
+        }
+
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
+
+        every { AndroidDecrypter.androidDecrypter("testUser", "testPass", "test_derived_key", "test_salt") } returns true
+        coEvery { userSyncRepository.saveUser(any(), any(), any()) } returns mockk(relaxed = true)
+
+        loginSyncManager.login("testUser", "testPass", listener)
+
+        verify { listener.onSyncStarted() }
+        verify { listener.onSyncComplete() }
+    }
+
+    @Test
+    fun `login with valid credentials, isUserAdmin true and manager role`() = runTest {
+        val jsonDoc = kotlinx.serialization.json.buildJsonObject {
+            put("derived_key", "test_derived_key")
+            put("salt", "test_salt")
+            put("isUserAdmin", true)
+            putJsonArray("roles") { add("manager") }
+        }
+
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
+
+        every { AndroidDecrypter.androidDecrypter("testUser", "testPass", "test_derived_key", "test_salt") } returns true
+        coEvery { userSyncRepository.saveUser(any(), any(), any()) } returns mockk(relaxed = true)
+
+        loginSyncManager.login("testUser", "testPass", listener)
+
+        verify { listener.onSyncStarted() }
+        verify { listener.onSyncComplete() }
+    }
+
+    @Test
+    fun `login with roles as string instead of array fails with authentication processing failed`() = runTest {
+        val jsonDoc = kotlinx.serialization.json.buildJsonObject {
+            put("derived_key", "test_derived_key")
+            put("salt", "test_salt")
+            put("isUserAdmin", true)
+            put("roles", "manager")
+        }
+
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
+
+        every { AndroidDecrypter.androidDecrypter("testUser", "testPass", "test_derived_key", "test_salt") } returns true
+
+        loginSyncManager.login("testUser", "testPass", listener)
+
+        verify { listener.onSyncFailed("Authentication processing failed.") }
+        coVerify(exactly = 0) { userSyncRepository.saveUser(any(), any(), any()) }
+    }
+
+    @Test
+    fun `login with isUserAdmin null and manager role fails with authentication processing failed`() = runTest {
+        val jsonDoc = kotlinx.serialization.json.buildJsonObject {
+            put("derived_key", "test_derived_key")
+            put("salt", "test_salt")
+            put("isUserAdmin", kotlinx.serialization.json.JsonNull)
+            putJsonArray("roles") { add("manager") }
+        }
+
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
+
+        every { AndroidDecrypter.androidDecrypter("testUser", "testPass", "test_derived_key", "test_salt") } returns true
+
+        loginSyncManager.login("testUser", "testPass", listener)
+
+        verify { listener.onSyncFailed("Authentication processing failed.") }
+        coVerify(exactly = 0) { userSyncRepository.saveUser(any(), any(), any()) }
     }
 }

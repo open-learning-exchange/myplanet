@@ -9,12 +9,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
 class CourseProgressViewModel @Inject constructor(
     private val coursesRepository: CoursesRepository,
-    private val userSessionManager: UserSessionManager
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _courseProgress = MutableStateFlow<CourseProgressData?>(null)
@@ -23,7 +23,7 @@ class CourseProgressViewModel @Inject constructor(
     fun loadProgress(courseId: String) {
         if (_courseProgress.value != null) return
         viewModelScope.launch {
-            val user = userSessionManager.getUserModel()
+            val user = userRepository.getUserModel()
             _courseProgress.value = coursesRepository.getCourseProgress(courseId, user?._id)
         }
     }

@@ -9,6 +9,9 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -22,8 +25,8 @@ import org.ole.planet.myplanet.callback.OnResourcesUpdateListener
 import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.databinding.FragmentTeamResourceBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
@@ -34,6 +37,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
     private var _binding: FragmentTeamResourceBinding? = null
     private val binding get() = _binding!!
     private lateinit var adapterLibrary: TeamResourcesAdapter
+    private val viewModel: TeamResourcesViewModel by viewModels()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamResourceBinding.inflate(inflater, container, false)
@@ -49,6 +53,9 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         collectLatestWhenStarted(isMemberFlow) { isMember ->
             binding.fabAddResource.isVisible = isMember
         }
+        collectLatestWhenStarted(viewModel.uiState) { state ->
+            state?.let { renderResources(it) }
+        }
     }
 
     override fun onResume() {
@@ -56,35 +63,39 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         showLibraryList()
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: News?) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
     }
 
-    private fun showLibraryList() {
+    private fun showLibraryList(force: Boolean = false) {
         if (!isAdded || activity == null) return
+        if (force) {
+            viewModel.reload(teamId, user?.id)
+        } else {
+            viewModel.loadResources(teamId, user?.id)
+        }
+    }
+
+    private fun renderResources(state: TeamResourcesUiState) {
         val safeActivity = activity ?: return
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val libraries = teamsRepository.getTeamResources(teamId)
-            val canRemoveResources = teamsRepository.isTeamLeader(teamId, user?.id)
-
-            if (!::adapterLibrary.isInitialized) {
-                adapterLibrary = TeamResourcesAdapter(
-                    safeActivity,
-                    canRemoveResources,
-                    this@TeamResourcesFragment,
+        if (!::adapterLibrary.isInitialized) {
+            adapterLibrary = TeamResourcesAdapter(
+                safeActivity,
+                state.canRemove,
+                this@TeamResourcesFragment,
+                dispatcherProvider,
                 ) { resource, position ->
-                    handleResourceRemoval(resource, position)
-                }
-                binding.rvResource.layoutManager = GridLayoutManager(safeActivity, 3)
-                binding.rvResource.adapter = adapterLibrary
+                handleResourceRemoval(resource, position)
             }
+            binding.rvResource.layoutManager = GridLayoutManager(safeActivity, 3)
+            binding.rvResource.adapter = adapterLibrary
+        }
 
-            adapterLibrary.submitList(libraries) {
-                checkAndShowNoData()
-            }
+        adapterLibrary.submitList(state.resources) {
+            checkAndShowNoData()
         }
     }
 
@@ -93,7 +104,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         val safeActivity = activity ?: return
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val availableLibraries = teamsRepository.getAvailableResourcesToAdd(teamId)
+            val availableLibraries = viewModel.getAvailableResources(teamId)
 
             val titleView = TextView(safeActivity).apply {
                 text = getString(R.string.select_resource)
@@ -116,9 +127,8 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
                             if (id != null) TeamResourceDto(id, it.title) else null
                         }
                     viewLifecycleOwner.lifecycleScope.launch {
-                        teamsRepository.addResourceLinks(teamId, selectedResources, user?.id)
-                        teamsRepository.syncTeamActivities()
-                        showLibraryList()
+                        viewModel.addResources(teamId, selectedResources, user?.id)
+                        showLibraryList(force = true)
                     }
                 }
                 .setNeutralButton(R.string.create_new_resource) { _: DialogInterface?, _: Int ->
@@ -138,10 +148,18 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
             putInt("type", 0)
             putString("teamId", teamId)
         }
+        childFragmentManager.registerFragmentLifecycleCallbacks(object : FragmentManager.FragmentLifecycleCallbacks() {
+            override fun onFragmentDetached(fm: FragmentManager, f: Fragment) {
+                if (f === fragment) {
+                    fm.unregisterFragmentLifecycleCallbacks(this)
+                    showLibraryList(force = true)
+                }
+            }
+        }, false)
         fragment.show(childFragmentManager, "AddResourceFragment")
     }
 
-    private fun listSetting(alertDialog: AlertDialog, libraries: List<RealmMyLibrary>, lv: RecyclerView) {
+    private fun listSetting(alertDialog: AlertDialog, libraries: List<MyLibrary>, lv: RecyclerView) {
         val names = libraries.map { it.title ?: "" }
         val adapter = CheckboxAdapter {
             alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv.adapter as CheckboxAdapter).selectedItemsList.isNotEmpty()
@@ -154,7 +172,10 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
     }
 
     fun checkAndShowNoData() {
-        showNoData(binding.tvNodata, adapterLibrary.itemCount, "teamResources")
+        val binding = _binding ?: return
+        if (::adapterLibrary.isInitialized) {
+            showNoData(binding.tvNodata, adapterLibrary.itemCount, "teamResources")
+        }
     }
 
     override fun onResourceListUpdated() {
@@ -167,7 +188,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         }
     }
 
-    private fun handleResourceRemoval(resource: RealmMyLibrary, position: Int) {
+    private fun handleResourceRemoval(resource: MyLibrary, position: Int) {
         val resourceId = resource.id ?: resource.resourceId
         if (resourceId.isNullOrBlank()) {
             onResourceUpdateFailed(R.string.failed_to_remove_resource)
@@ -175,8 +196,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         }
         viewLifecycleOwner.lifecycleScope.launch {
             runCatching {
-                teamsRepository.removeResourceLink(teamId, resourceId)
-                teamsRepository.syncTeamActivities()
+                viewModel.removeResource(teamId, resourceId)
             }.onSuccess {
                 adapterLibrary.removeResourceAt(position)
             }.onFailure {

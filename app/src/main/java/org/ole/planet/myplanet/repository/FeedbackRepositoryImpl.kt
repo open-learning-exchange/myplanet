@@ -3,34 +3,33 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.Realm
-import io.realm.Sort
-import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
-import org.ole.planet.myplanet.model.RealmFeedback
-import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.data.room.dao.FeedbackDao
+import org.ole.planet.myplanet.model.Feedback
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.distinctByContent
 
+@Singleton
 class FeedbackRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
-    private val gson: Gson
-) : RealmRepository(databaseService, realmDispatcher), FeedbackRepository {
+    private val feedbackDao: FeedbackDao, private val gson: Gson, private val timeProvider: TimeProvider
+) : FeedbackRepository, FeedbackSyncWriter {
 
-    override fun createFeedback(
-        user: String?,
-        urgent: String,
-        type: String,
-        message: String,
-        item: String?,
-        state: String?,
-    ): RealmFeedback {
-        val feedback = RealmFeedback()
+    override suspend fun createAndSaveFeedback(
+        user: String?, urgent: String, type: String, message: String, item: String?,
+        state: String?
+    ) {
+        val feedback = createFeedback(user, urgent, type, message, item, state)
+        saveFeedback(feedback)
+    }
+
+    fun createFeedback(
+        user: String?, urgent: String, type: String, message: String, item: String?, state: String?
+    ): Feedback {
+        val feedback = Feedback()
         feedback.id = UUID.randomUUID().toString()
         if (state != null) {
             feedback.title = "Question regarding /$state"
@@ -41,7 +40,7 @@ class FeedbackRepositoryImpl @Inject constructor(
             feedback.title = "Question regarding /"
             feedback.url = "/"
         }
-        val timestamp = Date().time
+        val timestamp = timeProvider.now()
         feedback.openTime = timestamp
         feedback.owner = user
         feedback.source = user
@@ -59,91 +58,94 @@ class FeedbackRepositoryImpl @Inject constructor(
         return feedback
     }
 
-    override suspend fun getFeedback(userModel: RealmUser?): Flow<List<RealmFeedback>> =
-        queryListFlow(RealmFeedback::class.java) {
-            if (userModel?.isManager() == true) {
-                sort("openTime", Sort.DESCENDING)
-            } else {
-                equalTo("owner", userModel?.name)
-                sort("openTime", Sort.DESCENDING)
-            }
+    override fun getFeedback(ownerName: String?, isManager: Boolean): Flow<List<Feedback>> {
+        val flow = if (isManager) {
+            feedbackDao.getAllSortedFlow()
+        } else {
+            feedbackDao.getByOwnerFlow(ownerName)
         }
+        return flow.distinctByContent { a, b ->
+            // Compare CouchDB sync markers alongside local status changes and reply messages
+            a.id == b.id && a._rev == b._rev && a.status == b.status &&
+                a.isUploaded == b.isUploaded && a.messages == b.messages
+        }
+    }
 
-    override suspend fun getFeedbackById(id: String?): RealmFeedback? {
-        return id?.let { findByField(RealmFeedback::class.java, "id", it) }
+    override suspend fun getPendingFeedback(): List<Feedback> {
+        return feedbackDao.getPending()
+    }
+
+    override suspend fun getFeedbackById(id: String?): Feedback? {
+        return id?.let { feedbackDao.findById(it) }
     }
 
     override suspend fun closeFeedback(id: String?) {
+        id?.let { feedbackDao.closeById(it) }
+    }
+
+    override suspend fun addReply(id: String?, message: String, user: String?) {
         id?.let {
-            update(RealmFeedback::class.java, "id", it) { feedback ->
-                feedback.status = "Closed"
+            val feedback = feedbackDao.findById(it) ?: return
+            val obj = JsonObject().apply {
+                addProperty("message", message)
+                addProperty("time", timeProvider.now().toString())
+                addProperty("user", user ?: "")
             }
+            val messages = feedback.messages
+            val msgArray = if (messages.isNullOrEmpty()) JsonArray() else gson.fromJson(messages, JsonArray::class.java)
+            msgArray.add(obj)
+            feedback.setMessages(msgArray)
+            feedback.isUploaded = false
+            feedbackDao.update(feedback)
         }
     }
 
-    override suspend fun addReply(id: String?, obj: JsonObject) {
-        id?.let {
-            update(RealmFeedback::class.java, "id", it) { feedback ->
-                val msgArray = gson.fromJson(feedback.messages, JsonArray::class.java)
-                msgArray.add(obj)
-                feedback.setMessages(msgArray)
-            }
-        }
+    private suspend fun saveFeedback(feedback: Feedback) {
+        feedbackDao.upsert(feedback)
     }
 
-    override suspend fun saveFeedback(feedback: RealmFeedback) {
-        save(feedback)
-    }
-
-    override suspend fun insertFromJson(jsonObject: JsonObject) {
-        executeTransaction { realm ->
-            insertFeedbackToRealm(realm, jsonObject)
-        }
+    suspend fun insertFromJson(jsonObject: JsonObject) {
+        val id = GsonUtils.getString("_id", jsonObject)
+        val existing = feedbackDao.findById(id)
+        feedbackDao.upsert(mapToFeedback(jsonObject, existing, id))
     }
 
     override suspend fun insertFeedbackList(jsonObjects: List<JsonObject>) {
-        executeTransaction { realm ->
-            jsonObjects.forEach { jsonObject ->
-                insertFeedbackToRealm(realm, jsonObject)
-            }
-        }
+        val ids = jsonObjects.map { GsonUtils.getString("_id", it) }
+        val existingById = feedbackDao.getByIds(ids).associateBy { it.id }
+        feedbackDao.upsertAll(
+            jsonObjects.zip(ids) { json, id -> mapToFeedback(json, existingById[id], id) }
+        )
     }
 
-    private fun insertFeedbackToRealm(mRealm: Realm, act: JsonObject) {
-        var feedback = mRealm.where(RealmFeedback::class.java)
-            .equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
-        if (feedback == null) {
-            feedback = mRealm.createObject(RealmFeedback::class.java, JsonUtils.getString("_id", act))
-        }
-        feedback?._id = JsonUtils.getString("_id", act)
-        feedback?.title = JsonUtils.getString("title", act)
-        feedback?.source = JsonUtils.getString("source", act)
-        feedback?.status = JsonUtils.getString("status", act)
-        feedback?.priority = JsonUtils.getString("priority", act)
-        feedback?.owner = JsonUtils.getString("owner", act)
-        feedback?.openTime = JsonUtils.getLong("openTime", act)
-        feedback?.type = JsonUtils.getString("type", act)
-        feedback?.url = JsonUtils.getString("url", act)
-        feedback?.parentCode = JsonUtils.getString("parentCode", act)
-        feedback?.setMessages(JsonUtils.gson.toJson(JsonUtils.getJsonArray("messages", act)))
-        feedback?.isUploaded = true
-        feedback?.item = JsonUtils.getString("item", act)
-        feedback?.state = JsonUtils.getString("state", act)
-        feedback?._rev = JsonUtils.getString("_rev", act)
+    override suspend fun markFeedbackUploaded(id: String, remoteId: String, remoteRev: String): Boolean {
+        return feedbackDao.markUploaded(id, remoteId, remoteRev) > 0
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
+    private fun mapToFeedback(act: JsonObject, existing: Feedback?, idStr: String): Feedback {
+        val hasPendingLocalChange = existing?.isUploaded == false
+        return Feedback().apply {
+            id = idStr
+            _id = idStr
+            title = GsonUtils.getString("title", act)
+            source = GsonUtils.getString("source", act)
+            status = if (hasPendingLocalChange && existing.status == "Closed") existing.status else GsonUtils.getString("status", act)
+            priority = GsonUtils.getString("priority", act)
+            owner = GsonUtils.getString("owner", act)
+            openTime = GsonUtils.getLong("openTime", act)
+            type = GsonUtils.getString("type", act)
+            url = GsonUtils.getString("url", act)
+            parentCode = GsonUtils.getString("parentCode", act)
+            item = GsonUtils.getString("item", act)
+            state = GsonUtils.getString("state", act)
+            _rev = GsonUtils.getString("_rev", act)
+            if (hasPendingLocalChange) {
+                messages = existing.messages
+                isUploaded = false
+            } else {
+                messages = GsonUtils.gson.toJson(GsonUtils.getJsonArray("messages", act))
+                isUploaded = true
             }
-        }
-        documentList.forEach { jsonDoc ->
-            insertFeedbackToRealm(realm, jsonDoc)
         }
     }
 }

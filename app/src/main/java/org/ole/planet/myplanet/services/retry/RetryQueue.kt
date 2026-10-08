@@ -1,34 +1,28 @@
 package org.ole.planet.myplanet.services.retry
 
-import android.content.Context
 import android.util.Log
 import com.google.gson.JsonObject
-import dagger.hilt.android.qualifiers.ApplicationContext
-import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.RetryFailure
+import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.repository.RetryRepository
 import org.ole.planet.myplanet.services.upload.UploadError
 
 @Singleton
 class RetryQueue @Inject constructor(
-    private val retryRepository: RetryRepository,
-    @ApplicationContext private val context: Context
+    private val retryRepository: RetryRepository
 ) {
     companion object {
         private const val TAG = "RetryQueue"
     }
 
-    private val isProcessing = AtomicBoolean(false)
-    private val mutex = Mutex()
+    fun isCurrentlyProcessing(): Boolean = retryRepository.isCurrentlyProcessing()
 
-    fun isCurrentlyProcessing(): Boolean = isProcessing.get()
+    internal fun tryStartProcessing(): Boolean = retryRepository.tryStartProcessing()
 
-    internal fun setProcessing(processing: Boolean) {
-        isProcessing.set(processing)
+    internal fun finishProcessing() {
+        retryRepository.finishProcessing()
     }
 
     suspend fun queueFailedOperation(
@@ -46,49 +40,16 @@ class RetryQueue @Inject constructor(
             return
         }
 
-        val existingOperation = retryRepository.getExistingOperation(error.itemId, uploadType)
-
-        if (existingOperation != null) {
-            retryRepository.updateAttempt(existingOperation.id, error)
-            Log.d(TAG, "Updated existing retry operation for item ${error.itemId}")
-        } else {
-            retryRepository.enqueue(
-                uploadType, error, payload.toString(), endpoint,
-                httpMethod, dbId, modelClassName, userId
-            )
-            Log.i(TAG, "RETRY_QUEUE: Queued new operation - type=$uploadType, itemId=${error.itemId}, error=${error.message}")
-        }
+        val failure = RetryFailure(error.itemId, error.message, error.httpCode)
+        retryRepository.recordFailure(
+            uploadType, failure, payload.toString(), endpoint,
+            httpMethod, dbId, modelClassName, userId
+        )
+        Log.i(TAG, "RETRY_QUEUE: Recorded failure - type=$uploadType, itemId=${error.itemId}, error=${error.message}")
     }
 
-    suspend fun queueFailedOperations(
-        uploadType: String,
-        errors: List<UploadError>,
-        payloadProvider: (String) -> JsonObject?,
-        endpoint: String,
-        httpMethod: String = "POST",
-        dbIdProvider: ((String) -> String?)? = null,
-        modelClassName: String,
-        userId: String? = null
-    ) {
-        errors.filter { it.retryable }.forEach { error ->
-            val payload = payloadProvider(error.itemId)
-            if (payload != null) {
-                queueFailedOperation(
-                    uploadType, error, payload, endpoint, httpMethod,
-                    dbIdProvider?.invoke(error.itemId), modelClassName, userId
-                )
-            } else {
-                Log.w(TAG, "Could not retrieve payload for item ${error.itemId}, skipping queue")
-            }
-        }
-    }
-
-    suspend fun getPendingOperations(): List<RealmRetryOperation> {
+    suspend fun getPendingOperations(): List<RetryOperation> {
         return retryRepository.getPending()
-    }
-
-    suspend fun getPendingCount(): Long {
-        return retryRepository.getPendingCount()
     }
 
     suspend fun markInProgress(operationId: String) {
@@ -108,30 +69,12 @@ class RetryQueue @Inject constructor(
         retryRepository.cleanup()
     }
 
-    suspend fun resetAllPending() {
-        retryRepository.resetAllPending()
-    }
-
     /**
      * Safely clear all pending/abandoned operations.
      * Returns false if processing is active (cannot clear).
      */
     suspend fun safeClearQueue(): Boolean {
-        if (isProcessing.get()) {
-            Log.w(TAG, "Cannot clear queue while processing is active")
-            return false
-        }
-
-        return mutex.withLock {
-            if (isProcessing.get()) {
-                Log.w(TAG, "Cannot clear queue while processing is active")
-                return@withLock false
-            }
-
-            retryRepository.deletePendingAndAbandonedOperations()
-            Log.i(TAG, "Queue cleared successfully")
-            true
-        }
+        return retryRepository.safeClearQueue()
     }
 
     /**

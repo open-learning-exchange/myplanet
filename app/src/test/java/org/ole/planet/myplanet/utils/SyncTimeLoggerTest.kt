@@ -1,0 +1,318 @@
+package org.ole.planet.myplanet.utils
+
+import android.util.Log
+import io.mockk.coEvery
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.verify
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.ole.planet.myplanet.services.UploadManager
+
+class SyncTimeLoggerTest {
+
+    @Test
+    fun testGenerateSummary() {
+        mockkStatic(Log::class)
+        every { Log.isLoggable(any(), any()) } returns true
+        every { Log.d(any(), any()) } returns 0
+
+        var currentTime = 1000L
+        val timeProvider = mockk<TimeProvider> {
+            every { now() } answers { currentTime }
+        }
+
+        val testDispatcher = UnconfinedTestDispatcher()
+        val logger = SyncTimeLogger(
+            timeProvider = timeProvider,
+            appScope = CoroutineScope(testDispatcher),
+            dispatcherProvider = TestDispatcherProvider(testDispatcher),
+            sharedPrefManager = mockk(relaxed = true),
+            serverUrlMapper = mockk(relaxed = true),
+            diagnosticsRepository = mockk(relaxed = true),
+            serverReachabilityProvider = mockk(relaxed = true)
+        )
+
+        logger.startLogging()
+
+        currentTime = 1200L
+        logger.logApiCall("http://server/api/v1/courses", duration = 300L, success = true, itemsReturned = 5)
+
+        currentTime = 1500L
+        logger.logApiCall("http://server/api/v1/courses", duration = 200L, success = false, itemsReturned = 0)
+
+        currentTime = 1700L
+        logger.logDbOperation("INSERT", "CourseModel", duration = 400L, itemCount = 5)
+
+        currentTime = 2000L
+        logger.stopLogging()
+
+        assertTrue(logger.isVerbose)
+
+        val summary = logger.generateSummary()
+
+        assertTrue(summary.contains("Total API calls: 2 (Success: 1, Failed: 1)"))
+        assertTrue(summary.contains("Total API time: 500ms (50.0% of total sync)"))
+        assertTrue(summary.contains("Total Db operations: 1"))
+        assertTrue(summary.contains("Total Db time: 400ms (40.0% of total sync)"))
+        assertTrue(summary.contains("Total items processed: 5"))
+        assertTrue(summary.contains("Network time: 50.0%"))
+        assertTrue(summary.contains("Database time: 40.0%"))
+        assertTrue(summary.contains("Other processing: 10.0%"))
+    }
+
+    @Test
+    fun testEndProcess() {
+        mockkStatic(Log::class)
+        every { Log.isLoggable(any(), any()) } returns false
+
+        var currentTime = 1000L
+        val timeProvider = mockk<TimeProvider> {
+            every { now() } answers { currentTime }
+        }
+
+        val testDispatcher = UnconfinedTestDispatcher()
+        val logger = SyncTimeLogger(
+            timeProvider = timeProvider,
+            appScope = CoroutineScope(testDispatcher),
+            dispatcherProvider = TestDispatcherProvider(testDispatcher),
+            sharedPrefManager = mockk(relaxed = true),
+            serverUrlMapper = mockk(relaxed = true),
+            diagnosticsRepository = mockk(relaxed = true),
+            serverReachabilityProvider = mockk(relaxed = true)
+        )
+
+        logger.startLogging()
+
+        // Call endProcess for a process that was never started (missing start key)
+        currentTime = 1200L
+        logger.endProcess("nonExistentProcess", itemCount = 5)
+
+        // Call startProcess and endProcess for a valid process
+        currentTime = 1500L
+        logger.startProcess("validProcess")
+
+        currentTime = 2000L
+        logger.endProcess("validProcess", itemCount = 10)
+
+        currentTime = 2500L
+        logger.stopLogging()
+
+        val summary = logger.generateSummary()
+        assertTrue(summary.contains("validProcess"))
+        assertTrue(!summary.contains("nonExistentProcess"))
+    }
+
+    @Test
+    fun testWhenTagNotLoggableNoPerEventLogOutput() {
+        mockkStatic(Log::class)
+        every { Log.isLoggable("SyncPerf", Log.DEBUG) } returns false
+        every { Log.d(any(), any()) } returns 0
+
+        var currentTime = 1000L
+        val timeProvider = mockk<TimeProvider> {
+            every { now() } answers { currentTime }
+        }
+
+        val testDispatcher = UnconfinedTestDispatcher()
+        val logger = SyncTimeLogger(
+            timeProvider = timeProvider,
+            appScope = CoroutineScope(testDispatcher),
+            dispatcherProvider = TestDispatcherProvider(testDispatcher),
+            sharedPrefManager = mockk(relaxed = true),
+            serverUrlMapper = mockk(relaxed = true),
+            diagnosticsRepository = mockk(relaxed = true),
+            serverReachabilityProvider = mockk(relaxed = true)
+        )
+
+        logger.startLogging()
+
+        assertTrue(!logger.isVerbose)
+
+        currentTime = 1200L
+        logger.startProcess("testProcess")
+
+        currentTime = 1400L
+        logger.logApiCall("http://server/api/v1/courses", duration = 200L, success = true, itemsReturned = 1)
+
+        currentTime = 1600L
+        logger.logDbOperation("INSERT", "CourseModel", duration = 150L, itemCount = 1)
+
+        currentTime = 1800L
+        logger.logDetail("context", "message")
+
+        currentTime = 2000L
+        logger.endProcess("testProcess", itemCount = 1)
+
+        currentTime = 2200L
+        logger.stopLogging()
+
+        io.mockk.verify(exactly = 0) { Log.d("SyncPerf", any()) }
+
+        val summary = logger.generateSummary()
+        assertTrue(summary.contains("Total API calls: 1"))
+    }
+
+    @Test
+    fun testExtractProcessName() {
+        assertEquals("Courses", SyncTimeLogger.extractProcessName("courses"))
+        assertEquals("Courses", SyncTimeLogger.extractProcessName("api/v1/courses"))
+        assertEquals("Courses", SyncTimeLogger.extractProcessName("api/v1/courses?limit=10"))
+        assertEquals("Courses", SyncTimeLogger.extractProcessName("api/v1/courses/"))
+        assertEquals("Courses", SyncTimeLogger.extractProcessName("api//v1//courses//"))
+        assertEquals("Api", SyncTimeLogger.extractProcessName("api"))
+        assertEquals("Unknown", SyncTimeLogger.extractProcessName(""))
+    }
+
+    @Test
+    fun testGenerateSummaryMultipleKeysAndLogs() {
+        mockkStatic(Log::class)
+        every { Log.isLoggable(any(), any()) } returns true
+        every { Log.d(any(), any()) } returns 0
+
+        var currentTime = 0L
+        val timeProvider = mockk<TimeProvider> {
+            every { now() } answers { currentTime }
+        }
+
+        val testDispatcher = UnconfinedTestDispatcher()
+        val logger = SyncTimeLogger(
+            timeProvider = timeProvider,
+            appScope = CoroutineScope(testDispatcher),
+            dispatcherProvider = TestDispatcherProvider(testDispatcher),
+            sharedPrefManager = mockk(relaxed = true),
+            serverUrlMapper = mockk(relaxed = true),
+            diagnosticsRepository = mockk(relaxed = true),
+            serverReachabilityProvider = mockk(relaxed = true)
+        )
+
+        logger.startLogging()
+
+        currentTime = 100L
+        logger.logApiCall("http://server/api/v1/courses", duration = 300L, success = true, itemsReturned = 5)
+        logger.logApiCall("http://server/api/v1/courses", duration = 200L, success = false, itemsReturned = 0)
+        logger.logApiCall("http://server/api/v1/users", duration = 100L, success = true, itemsReturned = 2)
+        logger.logApiCall("http://server/api/v1/users", duration = 400L, success = true, itemsReturned = 8)
+
+        currentTime = 500L
+        logger.logDbOperation("INSERT", "CourseModel", duration = 200L, itemCount = 5)
+        logger.logDbOperation("UPDATE", "CourseModel", duration = 100L, itemCount = 3)
+        logger.logDbOperation("INSERT", "UserModel", duration = 300L, itemCount = 2)
+        logger.logDbOperation("UPDATE", "UserModel", duration = 200L, itemCount = 8)
+
+        currentTime = 2000L
+        logger.stopLogging()
+
+        val summary = logger.generateSummary()
+
+        assertTrue(summary.contains("Total API calls: 4 (Success: 3, Failed: 1)"))
+        assertTrue(summary.contains("Total API time: 1.00s (50.0% of total sync)"))
+        assertTrue(summary.contains("Total Db operations: 4"))
+        assertTrue(summary.contains("Total Db time: 800ms (40.0% of total sync)"))
+        assertTrue(summary.contains("Total items processed: 18"))
+        assertTrue(summary.contains("Network time: 50.0%"))
+        assertTrue(summary.contains("Database time: 40.0%"))
+        assertTrue(summary.contains("Other processing: 10.0%"))
+    }
+
+    @Test
+    fun testGenerateSummaryGolden() {
+        mockkStatic(Log::class)
+        every { Log.isLoggable(any(), any()) } returns true
+        every { Log.d(any(), any()) } returns 0
+
+        var currentTime = 0L
+        val timeProvider = mockk<TimeProvider> {
+            every { now() } answers { currentTime }
+        }
+
+        val testDispatcher = UnconfinedTestDispatcher()
+        val logger = SyncTimeLogger(
+            timeProvider = timeProvider,
+            appScope = CoroutineScope(testDispatcher),
+            dispatcherProvider = TestDispatcherProvider(testDispatcher),
+            sharedPrefManager = mockk(relaxed = true),
+            serverUrlMapper = mockk(relaxed = true),
+            diagnosticsRepository = mockk(relaxed = true),
+            serverReachabilityProvider = mockk(relaxed = true)
+        )
+
+        logger.startLogging()
+
+        currentTime = 100L
+        logger.logApiCall("http://server/api/v1/courses", duration = 200L, success = true, itemsReturned = 5)
+        logger.logApiCall("http://server/api/v1/courses", duration = 100L, success = false, itemsReturned = 0)
+        logger.logApiCall("http://server/api/v1/users", duration = 150L, success = true, itemsReturned = 2)
+        logger.logApiCall("http://server/api/v1/users", duration = 150L, success = true, itemsReturned = 8)
+
+        currentTime = 500L
+        logger.logDbOperation("INSERT", "CourseModel", duration = 250L, itemCount = 5)
+        logger.logDbOperation("UPDATE", "CourseModel", duration = 150L, itemCount = 3)
+        logger.logDbOperation("INSERT", "UserModel", duration = 200L, itemCount = 2)
+        logger.logDbOperation("UPDATE", "UserModel", duration = 200L, itemCount = 8)
+
+        currentTime = 2000L
+        logger.stopLogging()
+
+        val expectedSummary = """
+            === SYNC TIME SUMMARY ===
+            Total sync time: 0 min 2 sec (2.00s)
+
+            PROCESS BREAKDOWN:
+
+            API CALL STATISTICS:
+              Total API calls: 4 (Success: 3, Failed: 1)
+              Total API time: 600ms (30.0% of total sync)
+                Courses                  : 2 calls,      300ms total,    150ms avg, 5 items
+                Users                    : 2 calls,      300ms total,    150ms avg, 10 items
+
+            DB OPERATION STATISTICS:
+              Total Db operations: 4
+              Total Db time: 800ms (40.0% of total sync)
+              Total items processed: 18
+                UserModel                : 2 ops,      400ms total,    200ms avg, 10 items
+                CourseModel              : 2 ops,      400ms total,    200ms avg, 8 items
+
+            PERFORMANCE INSIGHTS:
+              Network time: 30.0%
+              Database time: 40.0%
+              Other processing: 30.0%
+            =========================
+        """.trimIndent()
+
+        val summary = logger.generateSummary()
+        assertEquals(expectedSummary, summary)
+    }
+
+    @Test
+    fun testStopLoggingWhenUploadCrashLogThrows() {
+        mockkStatic(Log::class)
+        every { Log.isLoggable(any(), any()) } returns false
+        every { Log.e(any(), any(), any()) } returns 0
+
+        val testException = RuntimeException("Upload failed")
+        val uploadManager = mockk<UploadManager> {
+            coEvery { uploadCrashLog() } throws testException
+        }
+
+        val testDispatcher = UnconfinedTestDispatcher()
+        val logger = SyncTimeLogger(
+            timeProvider = mockk(relaxed = true),
+            appScope = CoroutineScope(testDispatcher),
+            dispatcherProvider = TestDispatcherProvider(testDispatcher),
+            sharedPrefManager = mockk(relaxed = true),
+            serverUrlMapper = mockk(relaxed = true),
+            diagnosticsRepository = mockk(relaxed = true),
+            serverReachabilityProvider = mockk(relaxed = true)
+        )
+
+        logger.startLogging()
+        logger.stopLogging(uploadManager)
+
+        verify { Log.e("SyncPerf", "crash log upload failed", testException) }
+    }
+}

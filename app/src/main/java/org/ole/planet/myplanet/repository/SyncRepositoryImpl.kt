@@ -1,0 +1,309 @@
+package org.ole.planet.myplanet.repository
+
+import android.util.Log
+import com.google.gson.JsonArray
+import com.google.gson.JsonNull
+import com.google.gson.JsonObject
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.jsonObject
+import org.ole.planet.myplanet.data.api.ApiClient
+import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.model.Rows
+import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.UserDataUploadScheduler
+import org.ole.planet.myplanet.services.UserDataWorker
+import org.ole.planet.myplanet.services.sync.AdaptiveBatchProcessor
+import org.ole.planet.myplanet.services.sync.TransactionSyncManager
+import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.GsonUtils.getInt
+import org.ole.planet.myplanet.utils.GsonUtils.getJsonArray
+import org.ole.planet.myplanet.utils.GsonUtils.getJsonObject
+import org.ole.planet.myplanet.utils.GsonUtils.getString
+import org.ole.planet.myplanet.utils.GsonUtils.gson
+import org.ole.planet.myplanet.utils.SyncTimeLogger
+import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
+
+@Singleton
+class SyncRepositoryImpl @Inject constructor(
+    private val apiInterface: ApiInterface,
+    private val dispatcherProvider: DispatcherProvider,
+    private val resourcesRepository: ResourcesSyncWriter,
+    private val coursesRepository: CoursesRepository,
+    private val eventsRepository: EventsSyncWriter,
+    private val teamsSyncRepository: TeamsSyncRepository,
+    private val userSyncRepository: dagger.Lazy<UserSyncRepository>,
+    private val transactionSyncManager: dagger.Lazy<TransactionSyncManager>,
+    private val syncTimeLogger: SyncTimeLogger,
+    private val sharedPrefManager: SharedPrefManager,
+    private val timeProvider: TimeProvider,
+    private val userDataUploadScheduler: UserDataUploadScheduler
+) : SyncRepository {
+
+    private val shelfDispatchMap: Map<String, suspend (String?, List<JsonObject>) -> Int> by lazy {
+        mapOf(
+            "resources" to { shelfId, docs -> resourcesRepository.batchInsertMyLibrary(shelfId, docs) },
+            "courses" to { shelfId, docs -> coursesRepository.batchInsertMyCourses(shelfId, docs) },
+            "meetups" to { _, docs -> eventsRepository.batchInsertMeetups(docs) },
+            "teams" to { _, docs -> teamsSyncRepository.batchInsertMyTeams(docs) }
+        )
+    }
+
+    override fun uploadLoginData(): Flow<SyncUiState> =
+        userDataUploadScheduler.enqueueUserDataUpload("UploadUserData_Login", UserDataWorker.UPLOAD_TYPE_LOGIN)
+
+    override fun uploadBulkData(): Flow<SyncUiState> =
+        userDataUploadScheduler.enqueueUserDataUpload("UploadUserData_Bulk", UserDataWorker.UPLOAD_TYPE_BULK)
+
+    override suspend fun processShelfParallel(shelfId: String): Int {
+        var processedItems = 0
+
+        try {
+            val shelfDoc: JsonObject? = withContext(dispatcherProvider.io) {
+                var doc: JsonObject? = null
+                ApiClient.executeWithRetryAndWrap {
+                    apiInterface.getJsonObject(
+                        UrlUtils.header,
+                        "${UrlUtils.getUrl()}/shelf/$shelfId"
+                    )
+                }?.let {
+                    doc = it.body()?.toGson()
+                }
+                coroutineContext.ensureActive()
+                doc
+            }
+
+            if (shelfDoc == null) {
+                return 0
+            }
+
+            coroutineScope {
+                val dataJobs = Constants.shelfDataList.mapNotNull { shelfData ->
+                    val array = getJsonArray(shelfData.key, shelfDoc)
+                    if (!array.isEmpty()) {
+                        async(dispatcherProvider.io) {
+                            processShelfDataOptimizedSync(shelfId, shelfData, shelfDoc)
+                        }
+                    } else null
+                }
+
+                processedItems = dataJobs.awaitAll().sum()
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e("SyncRepositoryImpl", "Error in processShelfParallel", e)
+        }
+
+        return processedItems
+    }
+
+    private suspend fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?): Int {
+        var processedCount = 0
+        val logger = syncTimeLogger
+
+        try {
+            val array = getJsonArray(shelfData.key, shelfDoc)
+            val validIds = array.filterNot { it is JsonNull }.map { it.asString }
+
+            val batchSizer = AdaptiveBatchProcessor(initialSize = 50)
+            var i = 0
+            var batchNum = 0
+
+            while (i < validIds.size) {
+                batchNum++
+                val batchStartTime = timeProvider.elapsedRealtime()
+
+                val end = minOf(i + batchSizer.currentSize, validIds.size)
+                val batch = validIds.subList(i, end)
+                i = end
+
+                val keysObject = JsonObject()
+                keysObject.add("keys", gson.toJsonTree(batch))
+
+                // API call
+                val apiStartTime = timeProvider.elapsedRealtime()
+                var response: JsonObject? = null
+                ApiClient.executeWithRetryAndWrap {
+                    apiInterface.postDoc(
+                        UrlUtils.header,
+                        "application/json",
+                        "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true",
+                        keysObject.toKotlinx().jsonObject
+                    )
+                }?.let {
+                    response = it.body()?.toGson()
+                }
+                val apiDuration = timeProvider.elapsedRealtime() - apiStartTime
+
+                if (response == null) {
+                    batchSizer.recordFailure()
+                    logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum)", apiDuration, false, 0)
+                    continue
+                }
+                batchSizer.recordSuccess(apiDuration)
+
+                val responseRows = getJsonArray("rows", response)
+                logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum)", apiDuration, true, responseRows.size())
+
+                if (responseRows.isEmpty()) continue
+
+                val documentsToProcess = mutableListOf<JsonObject>()
+                for (rowElement in responseRows) {
+                    val rowObj = rowElement.asJsonObject
+                    if (rowObj.has("doc")) {
+                        val doc = getJsonObject("doc", rowObj)
+                        documentsToProcess.add(doc)
+                    }
+                }
+
+                if (documentsToProcess.isNotEmpty()) {
+                    val realmStartTime = timeProvider.elapsedRealtime()
+                    val handler = shelfDispatchMap[shelfData.type]
+                    if (handler != null) {
+                        processedCount += handler(shelfId, documentsToProcess)
+                    }
+                    val realmDuration = timeProvider.elapsedRealtime() - realmStartTime
+                    logger.logDbOperation("shelf_insert", shelfData.type, realmDuration, documentsToProcess.size)
+                }
+
+                val batchDuration = timeProvider.elapsedRealtime() - batchStartTime
+                if (batchDuration > 1000) {
+                    logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} batch $batchNum ($end/${validIds.size} ids): ${batchDuration}ms for ${documentsToProcess.size} docs")
+                }
+            }
+
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e("SyncRepositoryImpl", "Error in processShelfDataOptimizedSync", e)
+            logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} failed: ${e.message}")
+        }
+        return processedCount
+    }
+
+    override suspend fun fetchResourceTotalRows(): Int? {
+        val url = UrlUtils.getUrl()
+        val header = UrlUtils.header
+        val response = ApiClient.executeWithRetryAndWrap {
+            apiInterface.getJsonObject(header, "$url/resources/_all_docs?limit=0")
+        }
+        val body = response?.body()?.toGson()
+        return if (body != null && body.has("total_rows")) {
+            getInt("total_rows", body)
+        } else {
+            null
+        }
+    }
+
+    override suspend fun fetchResourceRows(limit: Int, skip: Int): JsonArray? {
+        val url = UrlUtils.getUrl()
+        val header = UrlUtils.header
+        val response = ApiClient.executeWithRetryAndWrap {
+            apiInterface.getJsonObject(header, "$url/resources/_all_docs?include_docs=true&limit=$limit&skip=$skip")
+        }
+        val body = response?.body()?.toGson() ?: return null
+        return getJsonArray("rows", body)
+    }
+
+    override fun filterSyncableResourceDocs(rows: JsonArray): List<JsonObject> {
+        val validDocuments = mutableListOf<JsonObject>()
+        for (rowElement in rows) {
+            val rowObj = rowElement.asJsonObject
+            if (rowObj.has("doc")) {
+                val doc = getJsonObject("doc", rowObj)
+                val id = getString("_id", doc)
+
+                if (!id.startsWith("_design") && id.isNotBlank()) {
+                    validDocuments.add(doc)
+                }
+            }
+        }
+        return validDocuments
+    }
+
+    override suspend fun syncDashboardKeyId(role: String?): SyncUiState {
+        return try {
+            transactionSyncManager.get().syncDashboardKeyId(role)
+            SyncUiState.Success(null)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            SyncUiState.Error(e.message)
+        }
+    }
+
+    override suspend fun getShelvesWithData(): List<String> {
+        val shelvesWithData = mutableListOf<String>()
+        val cachedShelves = getCachedShelvesWithData()
+        if (cachedShelves.isNotEmpty()) {
+            return cachedShelves
+        }
+
+        val url = UrlUtils.getUrl()
+        val header = UrlUtils.header
+
+        val allShelves = ApiClient.executeWithRetryAndWrap {
+            apiInterface.getDocuments(header, "$url/shelf/_all_docs")
+        }?.body()?.rows ?: return emptyList()
+
+        coroutineScope {
+            val semaphore = Semaphore(8)
+            val checkJobs = allShelves.chunked(25).map { shelfBatch ->
+                async(dispatcherProvider.io) {
+                    semaphore.withPermit {
+                        checkShelfBatchForDataOptimized(shelfBatch)
+                    }
+                }
+            }
+
+            checkJobs.awaitAll().flatten().let { validShelves ->
+                shelvesWithData.addAll(validShelves)
+            }
+        }
+
+        cacheShelvesWithData(shelvesWithData)
+        return shelvesWithData
+    }
+
+    private suspend fun checkShelfBatchForDataOptimized(shelfBatch: List<Rows>): List<String> {
+        return userSyncRepository.get().checkShelfBatchForDataOptimized(shelfBatch.mapNotNull { it.id })
+    }
+
+    internal fun getCachedShelvesWithData(): List<String> {
+        val cacheTime = sharedPrefManager.getRawLong(CACHE_KEY_SHELVES_CACHE_TIME, 0)
+        val now = timeProvider.now()
+
+        if (now - cacheTime < CACHE_VALIDITY_HOURS * 60 * 60 * 1000) {
+            val cachedData = sharedPrefManager.getRawString(CACHE_KEY_SHELVES_WITH_DATA, "")
+            if (cachedData.isNotEmpty()) {
+                return cachedData.split(",").filter { it.isNotBlank() }
+            }
+        }
+        return emptyList()
+    }
+
+    internal fun cacheShelvesWithData(shelves: List<String>) {
+        sharedPrefManager.setRawString(CACHE_KEY_SHELVES_WITH_DATA, shelves.joinToString(","))
+        sharedPrefManager.setRawLong(CACHE_KEY_SHELVES_CACHE_TIME, timeProvider.now())
+    }
+
+    private companion object {
+        const val CACHE_KEY_SHELVES_WITH_DATA = "shelves_with_data"
+        const val CACHE_KEY_SHELVES_CACHE_TIME = "shelves_cache_time"
+        const val CACHE_VALIDITY_HOURS = 6
+    }
+}

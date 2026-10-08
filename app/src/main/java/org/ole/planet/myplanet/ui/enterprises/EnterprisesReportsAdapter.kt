@@ -6,56 +6,82 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.model.FinanceReport
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.FileExistenceCache
+import org.ole.planet.myplanet.utils.ImageViewerUtils
+import org.ole.planet.myplanet.utils.SystemTimeProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class EnterprisesReportsAdapter(
     private val context: Context,
-    private val prefData: SharedPrefManager,
-    private val onEdit: (RealmMyTeam) -> Unit,
-    private val onDelete: (RealmMyTeam) -> Unit
-) : ListAdapter<RealmMyTeam, EnterprisesReportsAdapter.ReportsViewHolder>(diffCallback) {
+    private val teamName: String?,
+    private val onEdit: (FinanceReport) -> Unit,
+    private val onDelete: (FinanceReport) -> Unit,
+    private val timeProvider: TimeProvider = SystemTimeProvider(),
+) : ListAdapter<FinanceReport, EnterprisesReportsAdapter.ReportsViewHolder>(diffCallback) {
     private var nonTeamMember = false
+    private val attachmentPresenceCache = FileExistenceCache()
+    private val reportTitle: String by lazy { context.getString(R.string.team_financial_report, teamName) }
+
+    override fun onCurrentListChanged(
+        previousList: MutableList<FinanceReport>,
+        currentList: MutableList<FinanceReport>
+    ) {
+        super.onCurrentListChanged(previousList, currentList)
+        attachmentPresenceCache.clear()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReportsViewHolder {
         val binding = ReportListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ReportsViewHolder(binding)
     }
 
+    override fun onBindViewHolder(holder: ReportsViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.isNotEmpty()) {
+            var unhandled = false
+            payloads.forEach { payload ->
+                if (payload == PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED) {
+                    setNonTeamMemberVisibility(holder.binding)
+                } else {
+                    unhandled = true
+                }
+            }
+            if (unhandled) {
+                super.onBindViewHolder(holder, position, payloads)
+            }
+        } else {
+            super.onBindViewHolder(holder, position, payloads)
+        }
+    }
+
     override fun onBindViewHolder(holder: ReportsViewHolder, position: Int) {
         val binding = holder.binding
-        if (nonTeamMember) {
-            binding.edit.visibility = View.GONE
-            binding.delete.visibility = View.GONE
-        } else {
-            binding.edit.visibility = View.VISIBLE
-            binding.delete.visibility = View.VISIBLE
-        }
+        setNonTeamMemberVisibility(binding)
         val report = getItem(position)
-        binding.tvReportTitle.text = context.getString(R.string.team_financial_report, prefData.getTeamName())
+        binding.tvReportTitle.text = reportTitle
         report?.let {
+            val totals = reportTotals(it)
             with(binding) {
-                val totalIncome = report.sales + report.otherIncome
-                val totalExpenses = report.wages + report.otherExpenses
-                val profitLoss = totalIncome - totalExpenses
-
                 date.text = context.getString(R.string.string_range, TimeUtils.formatDate(it.startDate, " MMM dd, yyyy"), TimeUtils.formatDate(it.endDate, "MMM dd, yyyy"))
                 beginningBalanceValue.text = context.getString(R.string.number_placeholder, it.beginningBalance)
                 salesValue.text = context.getString(R.string.number_placeholder, it.sales)
                 otherValue.text = context.getString(R.string.number_placeholder, it.otherIncome)
-                totalIncomeValue.text = context.getString(R.string.number_placeholder, totalIncome)
+                totalIncomeValue.text = context.getString(R.string.number_placeholder, totals.totalIncome)
                 personnelValue.text = context.getString(R.string.number_placeholder, it.wages)
                 nonPersonnelValue.text = context.getString(R.string.number_placeholder, it.otherExpenses)
-                totalExpensesValue.text = context.getString(R.string.number_placeholder, totalExpenses)
-                profitLossValue.text = context.getString(R.string.number_placeholder, profitLoss)
-                endingBalanceValue.text = context.getString(R.string.number_placeholder, profitLoss + it.beginningBalance)
+                totalExpensesValue.text = context.getString(R.string.number_placeholder, totals.totalExpenses)
+                profitLossValue.text = context.getString(R.string.number_placeholder, totals.profitLoss)
+                endingBalanceValue.text = context.getString(R.string.number_placeholder, totals.endingBalance)
                 tvReportDetails.text = context.getString(R.string.message_placeholder, it.description)
                 createUpdate.text = context.getString(R.string.report_date_details, TimeUtils.formatDate(it.createdDate, "MMM dd, yyyy"), TimeUtils.formatDate(it.updatedDate, "MMM dd, yyyy"))
             }
+            bindReportImage(binding, it)
         }
 
         binding.edit.setOnClickListener {
@@ -73,16 +99,89 @@ class EnterprisesReportsAdapter(
         }
     }
 
+    override fun onViewRecycled(holder: ReportsViewHolder) {
+        super.onViewRecycled(holder)
+        Glide.with(context).clear(holder.binding.reportImage)
+        holder.binding.reportImage.setOnClickListener(null)
+        holder.binding.edit.setOnClickListener(null)
+        holder.binding.delete.setOnClickListener(null)
+    }
+
+    private fun bindReportImage(binding: ReportListItemBinding, report: FinanceReport) {
+        val imageFile = MyTeam.getAttachmentFile(context, report._id, report.imageName)
+        val exists = attachmentPresenceCache.exists(imageFile, timeProvider.now())
+
+        if (imageFile != null && exists) {
+            binding.reportImage.visibility = View.VISIBLE
+            Glide.with(context)
+                .load(imageFile)
+                .placeholder(R.drawable.ic_loading)
+                .error(R.drawable.ic_loading)
+                .into(binding.reportImage)
+            binding.reportImage.setOnClickListener {
+                ImageViewerUtils.showZoomableImage(context, imageFile.absolutePath)
+            }
+        } else {
+            binding.reportImage.visibility = View.GONE
+            binding.reportImage.setOnClickListener(null)
+        }
+    }
+
     fun setNonTeamMember(nonTeamMember: Boolean) {
+        if (this.nonTeamMember == nonTeamMember) return
         this.nonTeamMember = nonTeamMember
+        notifyItemRangeChanged(0, itemCount, PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED)
+    }
+
+    private fun setNonTeamMemberVisibility(binding: ReportListItemBinding) {
+        if (nonTeamMember) {
+            binding.edit.visibility = View.GONE
+            binding.delete.visibility = View.GONE
+        } else {
+            binding.edit.visibility = View.VISIBLE
+            binding.delete.visibility = View.VISIBLE
+        }
     }
 
     class ReportsViewHolder(val binding: ReportListItemBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        val diffCallback = DiffUtils.itemCallback<RealmMyTeam>(
+        const val PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED = "PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED"
+        val diffCallback = DiffUtils.itemCallback<FinanceReport>(
             areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
-            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem.startDate == newItem.startDate &&
+                    oldItem.endDate == newItem.endDate &&
+                    oldItem.beginningBalance == newItem.beginningBalance &&
+                    oldItem.sales == newItem.sales &&
+                    oldItem.otherIncome == newItem.otherIncome &&
+                    oldItem.wages == newItem.wages &&
+                    oldItem.otherExpenses == newItem.otherExpenses &&
+                    oldItem.description == newItem.description &&
+                    oldItem.createdDate == newItem.createdDate &&
+                    oldItem.updatedDate == newItem.updatedDate &&
+                    oldItem.imageName == newItem.imageName
+            }
         )
     }
+}
+
+internal data class ReportTotals(
+    val totalIncome: Int,
+    val totalExpenses: Int,
+    val profitLoss: Int,
+    val endingBalance: Int
+)
+
+internal fun reportTotals(report: FinanceReport): ReportTotals {
+    val totalIncome = report.sales + report.otherIncome
+    val totalExpenses = report.wages + report.otherExpenses
+    val profitLoss = totalIncome - totalExpenses
+    val endingBalance = profitLoss + report.beginningBalance
+    return ReportTotals(
+        totalIncome = totalIncome,
+        totalExpenses = totalExpenses,
+        profitLoss = profitLoss,
+        endingBalance = endingBalance
+    )
 }

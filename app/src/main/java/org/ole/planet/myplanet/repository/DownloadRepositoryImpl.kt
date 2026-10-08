@@ -1,27 +1,39 @@
 package org.ole.planet.myplanet.repository
 
 import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication.Companion.createLog
+import okhttp3.HttpUrl
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 
 class DownloadRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val diagnosticsRepository: DiagnosticsRepository,
+    private val timeProvider: TimeProvider
 ) : DownloadRepository {
 
-    override suspend fun downloadFileResponse(url: String, authHeader: String): DownloadResult = withContext(dispatcherProvider.io) {
+    private fun diagnosticUrl(u: HttpUrl): String = u.newBuilder().username("").password("").query(null).fragment(null).build().toString()
+
+    override suspend fun downloadFileResponse(url: String, authHeader: String, resumeOffset: Long, ifRange: String?): DownloadResult = withContext(dispatcherProvider.io) {
         try {
-            val response = apiInterface.downloadFile(authHeader, url)
+            val rangeHeader = if (resumeOffset > 0) "bytes=$resumeOffset-" else null
+            val ifRangeHeader = if (resumeOffset > 0) ifRange else null
+            val response = apiInterface.downloadFile(authHeader, url, rangeHeader, ifRangeHeader)
             if (response.isSuccessful) {
                 val responseBody = response.body()
                 if (responseBody == null) {
                     return@withContext DownloadResult.Error("Empty response body")
                 } else {
-                    return@withContext DownloadResult.Success(responseBody)
+                    val validator = response.headers()["ETag"] ?: response.headers()["Last-Modified"]
+                    return@withContext DownloadResult.Success(responseBody, response.code(), validator)
                 }
             } else {
                 val errorMessage = when (response.code()) {
@@ -29,6 +41,7 @@ class DownloadRepositoryImpl @Inject constructor(
                     403 -> "Forbidden - Access denied"
                     404 -> "File not found"
                     408 -> "Request timeout"
+                    416 -> "Requested range not satisfiable"
                     500 -> "Server error"
                     502 -> "Bad gateway"
                     503 -> "Service unavailable"
@@ -36,25 +49,17 @@ class DownloadRepositoryImpl @Inject constructor(
                     else -> "Connection failed (${response.code()})"
                 }
 
-                if (response.code() == 404) {
-                    try {
-                        val responseString = response.toString()
-                        val regex = Regex("url=([^}]*)")
-                        val matchResult = regex.find(responseString)
-                        val extractedUrl = matchResult?.groupValues?.get(1)
-                        createLog("File Not Found", "$extractedUrl")
-                    } catch (e: Exception) {
-                        createLog("File Not Found", url)
-                    }
-                }
+                if (response.code() == 404) diagnosticsRepository.saveLogToRoom("File Not Found", diagnosticUrl(response.raw().request.url), "${timeProvider.now()}")
 
                 return@withContext DownloadResult.Error(errorMessage, response.code())
             }
-        } catch (e: java.net.UnknownHostException) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: UnknownHostException) {
             return@withContext DownloadResult.Error("Server not reachable. Check internet connection.")
-        } catch (e: java.net.SocketTimeoutException) {
+        } catch (e: SocketTimeoutException) {
             return@withContext DownloadResult.Error("Connection timeout. Please try again.")
-        } catch (e: java.net.ConnectException) {
+        } catch (e: ConnectException) {
             return@withContext DownloadResult.Error("Unable to connect to server")
         } catch (e: IOException) {
             return@withContext DownloadResult.Error("Network error: ${e.localizedMessage ?: "Unknown IO error"}")

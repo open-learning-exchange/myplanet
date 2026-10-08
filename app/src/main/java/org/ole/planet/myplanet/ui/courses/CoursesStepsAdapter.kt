@@ -11,9 +11,14 @@ import org.ole.planet.myplanet.databinding.RowStepsBinding
 import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.utils.DiffUtils
 
-class CoursesStepsAdapter(private val context: Context) : ListAdapter<StepItem, CoursesStepsAdapter.ViewHolder>(STEP_ITEM_COMPARATOR) {
-    private val descriptionVisibilityMap = mutableMapOf<String, Boolean>()
-    private var currentlyVisibleStepId: String? = null
+class CoursesStepsAdapter(
+    private val context: Context,
+    private val onStepClicked: (String) -> Unit
+) : ListAdapter<StepItem, CoursesStepsAdapter.ViewHolder>(STEP_ITEM_COMPARATOR) {
+
+    private val testSizeTemplate by lazy { context.getString(R.string.test_size) }
+    private val formatLocale by lazy { context.resources.configuration.locales[0] }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CoursesStepsAdapter.ViewHolder {
         val rowStepsBinding = RowStepsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(rowStepsBinding)
@@ -28,16 +33,10 @@ class CoursesStepsAdapter(private val context: Context) : ListAdapter<StepItem, 
             super.onBindViewHolder(holder, position, payloads)
         } else {
             if (payloads.first() is Boolean) {
-                holder.updateDescriptionVisibility()
+                val isDescriptionVisible = payloads.first() as Boolean
+                holder.updateDescriptionVisibility(isDescriptionVisible)
             }
         }
-    }
-
-    override fun submitList(list: List<StepItem>?) {
-        list?.forEach { step ->
-            step.id?.let { descriptionVisibilityMap.getOrPut(it) { false } }
-        }
-        super.submitList(list)
     }
 
     inner class ViewHolder(private val rowStepsBinding: RowStepsBinding) : RecyclerView.ViewHolder(rowStepsBinding.root) {
@@ -46,7 +45,7 @@ class CoursesStepsAdapter(private val context: Context) : ListAdapter<StepItem, 
                 val position = bindingAdapterPosition
                 if (position != RecyclerView.NO_POSITION) {
                     getItem(position)?.id?.let { stepId ->
-                        toggleDescriptionVisibility(stepId)
+                        onStepClicked(stepId)
                     }
                 }
             }
@@ -54,54 +53,30 @@ class CoursesStepsAdapter(private val context: Context) : ListAdapter<StepItem, 
 
         fun bind(step: StepItem) {
             rowStepsBinding.tvTitle.text = step.stepTitle
-            rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, step.questionCount)
-            updateDescriptionVisibility()
+            rowStepsBinding.tvDescription.text = String.format(formatLocale, testSizeTemplate, step.questionCount)
+            updateDescriptionVisibility(step.isDescriptionVisible)
         }
 
-        fun updateDescriptionVisibility() {
-            val position = bindingAdapterPosition
-            if (position != RecyclerView.NO_POSITION) {
-                val stepId = getItem(position)?.id
-                if (stepId != null) {
-                    if (descriptionVisibilityMap[stepId] == true) {
-                        rowStepsBinding.tvDescription.visibility = View.VISIBLE
-                    } else {
-                        rowStepsBinding.tvDescription.visibility = View.GONE
-                    }
-                }
+        fun updateDescriptionVisibility(isVisible: Boolean) {
+            if (isVisible) {
+                rowStepsBinding.tvDescription.visibility = View.VISIBLE
+            } else {
+                rowStepsBinding.tvDescription.visibility = View.GONE
             }
-        }
-
-    }
-
-    private fun toggleDescriptionVisibility(stepId: String) {
-        val currentVisibility = descriptionVisibilityMap.getOrElse(stepId) { false }
-        val newVisibility = !currentVisibility
-
-        if (newVisibility) {
-            currentlyVisibleStepId?.let {
-                if (it != stepId) {
-                    descriptionVisibilityMap[it] = false
-                    val oldPosition = currentList.indexOfFirst { step -> step.id == it }
-                    if (oldPosition != -1) notifyItemChanged(oldPosition, false)
-                }
-            }
-            currentlyVisibleStepId = stepId
-        } else if (currentlyVisibleStepId == stepId) {
-            currentlyVisibleStepId = null
-        }
-
-        descriptionVisibilityMap[stepId] = newVisibility
-        val position = currentList.indexOfFirst { it.id == stepId }
-        if (position != -1) {
-            notifyItemChanged(position, newVisibility)
         }
     }
 
     companion object {
         private val STEP_ITEM_COMPARATOR = DiffUtils.itemCallback<StepItem>(
             areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
-            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+            areContentsTheSame = { oldItem, newItem -> oldItem == newItem },
+            getChangePayload = { oldItem, newItem ->
+                if (oldItem.isDescriptionVisible != newItem.isDescriptionVisible) {
+                    newItem.isDescriptionVisible
+                } else {
+                    null
+                }
+            }
         )
     }
 }

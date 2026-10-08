@@ -230,8 +230,9 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_weight="1"
-                    android:gravity="center"
-                    android:padding="@dimen/padding_large"
+                    android:gravity="start|center_vertical"
+                    android:paddingStart="@dimen/padding_large"
+                    android:paddingEnd="28dp"
                     android:theme="@style/ResourcePopupMenu" />
             </LinearLayout>
 

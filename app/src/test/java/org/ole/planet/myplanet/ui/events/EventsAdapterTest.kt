@@ -1,0 +1,126 @@
+package org.ole.planet.myplanet.ui.events
+
+import android.app.Application
+import android.content.Context
+import android.widget.LinearLayout
+import androidx.test.core.app.ApplicationProvider
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.ole.planet.myplanet.model.Meetup
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLooper
+
+@RunWith(RobolectricTestRunner::class)
+@Config(application = Application::class)
+class EventsAdapterTest {
+
+    private lateinit var context: Context
+    private lateinit var adapter: EventsAdapter
+
+    private var clickedMeetup: Meetup? = null
+
+    @Before
+    fun setup() {
+        context = ApplicationProvider.getApplicationContext()
+        adapter = EventsAdapter(onMeetupClick = { meetup ->
+            clickedMeetup = meetup
+        })
+    }
+
+    @Test
+    fun `test adapter item binding and partial payload diff`() {
+        val oldMeetup = Meetup().apply {
+            id = "1"
+            title = "Old Title"
+            description = "Old Desc"
+            startDate = 1000L
+            endDate = 2000L
+            startTime = "10:00"
+            endTime = "11:00"
+            meetupLocation = "Old Location"
+            meetupLink = "Old Link"
+            recurring = "none"
+            creator = "Old Creator"
+        }
+
+        var committed = false
+        adapter.submitList(listOf(oldMeetup)) {
+            committed = true
+        }
+
+        while (!committed) {
+            ShadowLooper.idleMainLooper()
+        }
+
+        val parent = LinearLayout(context)
+        val holder = adapter.onCreateViewHolder(parent, 0)
+        adapter.onBindViewHolder(holder, 0)
+
+        assertEquals("Old Title", holder.binding.tvTitle.text.toString())
+        assertEquals("Old Desc", holder.binding.tvDescription.text.toString())
+        assertEquals("Old Location", holder.binding.tvLocation.text.toString())
+
+        val newMeetup = Meetup().apply {
+            id = "1"
+            title = "New Title"
+            description = "Old Desc"
+            startDate = 1000L
+            endDate = 2000L
+            startTime = "10:00"
+            endTime = "11:00"
+            meetupLocation = "New Location"
+            meetupLink = "Old Link"
+            recurring = "none"
+            creator = "Old Creator"
+        }
+
+        var updatedCommitted = false
+        adapter.submitList(listOf(newMeetup)) {
+            updatedCommitted = true
+        }
+
+        while (!updatedCommitted) {
+            ShadowLooper.idleMainLooper()
+        }
+
+        // Apply partial bind
+        adapter.onBindViewHolder(holder, 0, mutableListOf(setOf("TITLE", "MEETUP_LOCATION")))
+
+        assertEquals("New Title", holder.binding.tvTitle.text.toString())
+        assertEquals("New Location", holder.binding.tvLocation.text.toString())
+        assertEquals("Old Desc", holder.binding.tvDescription.text.toString())
+
+        holder.binding.root.performClick()
+        assertEquals("New Title", clickedMeetup?.title)
+        assertEquals("New Location", clickedMeetup?.meetupLocation)
+    }
+
+    @Test
+    @Config(qualifiers = "fr")
+    fun `recurring key is shown in the device language and older stored labels are left as stored`() {
+        val keyed = Meetup().apply { id = "1"; title = "Keyed"; recurring = "daily" }
+        val legacyEnglish = Meetup().apply { id = "2"; title = "Legacy"; recurring = "Daily" }
+        val legacyTranslated = Meetup().apply { id = "3"; title = "Translated"; recurring = "Quotidienne" }
+
+        var committed = false
+        adapter.submitList(listOf(keyed, legacyEnglish, legacyTranslated)) { committed = true }
+        while (!committed) {
+            ShadowLooper.idleMainLooper()
+        }
+
+        val parent = LinearLayout(context)
+        fun recurringText(position: Int): String {
+            val holder = adapter.onCreateViewHolder(parent, 0)
+            adapter.onBindViewHolder(holder, position)
+            return holder.binding.tvRecurring.text.toString()
+        }
+
+        assertTrue(recurringText(0).contains("Quotidien"))
+        assertTrue(recurringText(1).contains("Quotidien"))
+        assertTrue(recurringText(2).contains("Quotidienne"))
+    }
+}

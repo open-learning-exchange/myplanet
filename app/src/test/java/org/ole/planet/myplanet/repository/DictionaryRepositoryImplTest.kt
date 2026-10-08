@@ -1,0 +1,177 @@
+package org.ole.planet.myplanet.repository
+
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.ole.planet.myplanet.data.room.dao.DictionaryDao
+import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
+
+@ExperimentalCoroutinesApi
+class DictionaryRepositoryImplTest {
+
+    private lateinit var dictionaryDao: DictionaryDao
+    private lateinit var dictionaryFileReader: DictionaryFileReader
+    private lateinit var dispatcherProvider: TestDispatcherProvider
+    private lateinit var dictionaryRepository: DictionaryRepositoryImpl
+    private val testScheduler = TestCoroutineScheduler()
+    private val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+
+    @Before
+    fun setup() {
+        dictionaryDao = mockk(relaxed = true)
+        dictionaryFileReader = mockk(relaxed = true)
+        dispatcherProvider = TestDispatcherProvider(testDispatcher)
+        dictionaryRepository = DictionaryRepositoryImpl(dictionaryDao, dispatcherProvider, dictionaryFileReader)
+    }
+
+    @Test
+    fun `insertDictionaryData returns FileMissing if file does not exist`() = runTest(testDispatcher) {
+        every { dictionaryFileReader.exists() } returns false
+
+        val result = dictionaryRepository.insertDictionaryData()
+
+        assertTrue(result is DictionaryLoad.FileMissing)
+        coVerify(exactly = 0) { dictionaryDao.insertAll(any()) }
+    }
+
+    @Test
+    fun `insertDictionaryData returns AlreadyPopulated if data is already populated`() = runTest(testDispatcher) {
+        every { dictionaryFileReader.exists() } returns true
+        coEvery { dictionaryDao.count() } returns 100L
+
+        val result = dictionaryRepository.insertDictionaryData()
+
+        assertTrue(result is DictionaryLoad.AlreadyPopulated)
+        coVerify(exactly = 0) { dictionaryDao.insertAll(any()) }
+    }
+
+    @Test(expected = kotlinx.coroutines.CancellationException::class)
+    fun `insertDictionaryData propagates CancellationException`() = runTest(testDispatcher) {
+        every { dictionaryFileReader.exists() } returns true
+        coEvery { dictionaryDao.count() } returns 0L
+        every { dictionaryFileReader.readText() } throws kotlinx.coroutines.CancellationException("Cancelled")
+
+        dictionaryRepository.insertDictionaryData()
+    }
+
+    @Test
+    fun `insertDictionaryData returns Failed if json parsing fails`() = runTest(testDispatcher) {
+        every { dictionaryFileReader.exists() } returns true
+        coEvery { dictionaryDao.count() } returns 0L
+        every { dictionaryFileReader.readText() } throws Exception("Forced exception for testing")
+
+        val result = dictionaryRepository.insertDictionaryData()
+
+        assertTrue(result is DictionaryLoad.Failed)
+        coVerify(exactly = 0) { dictionaryDao.insertAll(any()) }
+    }
+
+    @Test
+    fun `insertDictionaryData returns Failed when insertAll throws RuntimeException`() = runTest(testDispatcher) {
+        every { dictionaryFileReader.exists() } returns true
+        coEvery { dictionaryDao.count() } returns 0L
+        val validJson = """[{"code": "1", "language": "en", "advance_code": "2", "word": "hello", "meaning": "greeting", "definition": "A greeting", "synonym": "hi", "antonoym": "bye"}]"""
+        every { dictionaryFileReader.readText() } returns validJson
+        val expectedException = RuntimeException("Database error")
+        coEvery { dictionaryDao.insertAll(any()) } throws expectedException
+
+        val result = dictionaryRepository.insertDictionaryData()
+
+        assertTrue(result is DictionaryLoad.Failed)
+        assertEquals(expectedException, (result as DictionaryLoad.Failed).cause)
+    }
+
+    @Test
+    fun `insertDictionaryData returns Inserted and inserts entities on success`() = runTest(testDispatcher) {
+        every { dictionaryFileReader.exists() } returns true
+        coEvery { dictionaryDao.count() } returns 0L
+
+        val validJson = """[{"code": "1", "language": "en", "advance_code": "2", "word": "hello", "meaning": "greeting", "definition": "A greeting", "synonym": "hi", "antonoym": "bye"}]"""
+        every { dictionaryFileReader.readText() } returns validJson
+
+        val result = dictionaryRepository.insertDictionaryData()
+
+        assertTrue(result is DictionaryLoad.Inserted)
+        coVerify(exactly = 1) { dictionaryDao.insertAll(any()) }
+    }
+
+    @Test
+    fun `concurrent insertDictionaryData calls only insert once`() = runTest(testScheduler) {
+        every { dictionaryFileReader.exists() } returns true
+        val validJson = """[{"code": "1", "language": "en", "advance_code": "2", "word": "hello", "meaning": "greeting", "definition": "A greeting", "synonym": "hi", "antonoym": "bye"}]"""
+        every { dictionaryFileReader.readText() } returns validJson
+
+        val concurrentDispatcher = StandardTestDispatcher(testScheduler)
+        val concurrentRepository = DictionaryRepositoryImpl(
+            dictionaryDao,
+            TestDispatcherProvider(concurrentDispatcher),
+            dictionaryFileReader
+        )
+
+        val inserted = AtomicBoolean(false)
+        coEvery { dictionaryDao.count() } answers { if (inserted.get()) 1L else 0L }
+        coEvery { dictionaryDao.insertAll(any()) } coAnswers {
+            delay(10)
+            inserted.set(true)
+        }
+
+        val results = listOf(
+            async { concurrentRepository.insertDictionaryData() },
+            async { concurrentRepository.insertDictionaryData() }
+        ).map { it.await() }
+
+        assertEquals(1, results.count { it is DictionaryLoad.Inserted })
+        assertEquals(1, results.count { it is DictionaryLoad.AlreadyPopulated })
+        coVerify(exactly = 1) { dictionaryDao.insertAll(any()) }
+    }
+
+    @Test
+    fun `findByWord maps DictionaryEntity to DictionaryWord`() = runTest(testDispatcher) {
+        val entity = DictionaryEntity(
+            id = "123",
+            word = "hello",
+            meaning = "greeting",
+            definition = "A greeting expression",
+            synonym = "hi",
+            antonym = "bye"
+        )
+        coEvery { dictionaryDao.findByWord("hello") } returns entity
+
+        val result = dictionaryRepository.findByWord("hello")
+
+        assertEquals(
+            DictionaryWord(
+                word = "hello",
+                meaning = "greeting",
+                definition = "A greeting expression",
+                synonym = "hi",
+                antonym = "bye"
+            ),
+            result
+        )
+    }
+
+    @Test
+    fun `findByWord returns null when not found`() = runTest(testDispatcher) {
+        coEvery { dictionaryDao.findByWord("unknown") } returns null
+
+        val result = dictionaryRepository.findByWord("unknown")
+
+        assertNull(result)
+    }
+}

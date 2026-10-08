@@ -38,9 +38,8 @@
                     android:id="@+id/filterByLabel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:padding="@dimen/padding_large"
-                    android:theme="@style/ResourcePopupMenu" />
+                    android:popupBackground="@color/secondary_bg"
+                    android:padding="@dimen/padding_large" />
             </LinearLayout>
 
             <include

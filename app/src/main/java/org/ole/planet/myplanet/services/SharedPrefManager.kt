@@ -9,24 +9,22 @@ import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
-
-data class CachedMyLifeItem(
-    val imageId: String?,
-    val title: String?,
-    val isVisible: Boolean,
-    val weight: Int
-)
+import org.ole.planet.myplanet.utils.ListViewMode
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
-class SharedPrefManager @Inject constructor(@ApplicationContext private val context: Context) {
+class SharedPrefManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val gson: Gson
+) {
     private var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val gson = Gson()
+
     val rawPreferences: SharedPreferences get() = pref
 
     companion object {
+        private val userListType = object : TypeToken<List<User>>() {}.type
         private const val SAVED_USERS = "savedUsers"
         private const val REPLIED_NEWS_ID = "repliedNewsId"
         const val MANUAL_CONFIG = "manualConfig"
@@ -43,7 +41,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
         private const val URL_PWD = "url_pwd"
         private const val URL_SCHEME = "url_Scheme"
         private const val URL_HOST = "url_Host"
-        private const val URL_PORT = "url_Port"
         private const val ALTERNATIVE_URL = "alternativeUrl"
         private const val PROCESSED_ALTERNATIVE_URL = "processedAlternativeUrl"
         private const val IS_ALTERNATIVE_URL = "isAlternativeUrl"
@@ -57,8 +54,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
         private const val USER_NAME = "name"
         private const val COMMUNITY_LEADERS = "communityLeaders"
         private const val AUTO_SYNC = "autoSync"
-        private const val FAST_SYNC = "fastSync"
-        private const val USE_IMPROVED_SYNC = "useImprovedSync"
         private const val AUTO_SYNC_INTERVAL = "autoSyncInterval"
         private const val AUTO_SYNC_POSITION = "autoSyncPosition"
         private const val FIRST_RUN = "firstRun"
@@ -71,32 +66,41 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
         private const val KEY_NOTIFICATION_SHOWN = "notification_shown"
         private const val VERSION_DETAIL = "versionDetail"
         private const val CONCATENATED_LINKS = "concatenated_links"
-        private const val MY_LIFE_CACHE_PREFIX = "myLifeCache_"
+        private const val LIBRARY_VIEW_MODE = "libraryViewMode"
+        private const val COURSE_VIEW_MODE = "courseViewMode"
     }
 
-    enum class SyncKey(val key: String) {
-        CHAT_HISTORY("chat_history_synced"),
-        TEAMS("teams_synced"),
-        FEEDBACK("feedback_synced"),
-        ACHIEVEMENTS("achievements_synced"),
-        HEALTH("health_synced"),
-        COURSES("courses_synced"),
-        RESOURCES("resources_synced"),
-        EXAMS("exams_synced")
-    }
+    private data class SavedUsersCache(val raw: String?, val parsed: List<User>)
+
+    @Volatile
+    private var savedUsersCache: SavedUsersCache? = null
+
+    /**
+     * [User] is a data class with mutable properties, so a shallow copy of the list would still
+     * expose the cached entries. Copy the elements too, both when handing the cache out and when
+     * taking a caller's list in.
+     */
+    private fun List<User>.detach(): List<User> = map { it.copy() }
 
     fun getSavedUsers(): List<User> {
         val usersJson = pref.getString(SAVED_USERS, null)
-        return if (usersJson != null) {
-            val type = object : TypeToken<List<User>>() {}.type
-            gson.fromJson(usersJson, type)
+        val cache = savedUsersCache
+        if (cache != null && cache.raw == usersJson) {
+            return cache.parsed.detach()
+        }
+        val parsed = if (usersJson != null) {
+            gson.fromJson<List<User>>(usersJson, userListType) ?: emptyList()
         } else {
             emptyList()
         }
+        savedUsersCache = SavedUsersCache(usersJson, parsed)
+        return parsed.detach()
     }
 
     fun setSavedUsers(users: List<User>) {
-        pref.edit { putString(SAVED_USERS, gson.toJson(users)) }
+        val json = gson.toJson(users)
+        pref.edit { putString(SAVED_USERS, json) }
+        savedUsersCache = SavedUsersCache(json, users.detach())
     }
 
     fun getRepliedNewsId(): String? {
@@ -116,7 +120,7 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
     }
 
     fun getSelectedTeamId(): String? {
-        return pref.getString(SELECTED_TEAM_ID, "").takeIf { !it.isNullOrEmpty() } ?: ""
+        return pref.getString(SELECTED_TEAM_ID, "") ?: ""
     }
 
     fun setSelectedTeamId(selectedTeamId: String?) {
@@ -132,35 +136,36 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
     }
 
     fun getTeamName(): String? {
-        return pref.getString(TEAM_NAME, "").takeIf { !it.isNullOrEmpty() } ?: ""
+        return pref.getString(TEAM_NAME, "") ?: ""
     }
 
     fun setTeamName(teamName: String?) {
         pref.edit { putString(TEAM_NAME, teamName) }
     }
 
-    fun isSynced(key: SyncKey): Boolean {
-        return pref.getBoolean(key.key, false)
+    fun getNewLoginUsername(): String? {
+        val encryptedUsername = pref.getString("new_login_username", null)
+        return if (encryptedUsername != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(context, encryptedUsername) else null
     }
-
-    fun setSynced(key: SyncKey, synced: Boolean) {
-        pref.edit {
-            putBoolean(key.key, synced)
-            if (synced) {
-                putLong("${key.key}_time", System.currentTimeMillis())
-            }
+    fun setNewLoginUsername(username: String?) = pref.edit {
+        if (username != null) {
+            putString("new_login_username", org.ole.planet.myplanet.utils.SecurePrefs.encryptString(context, username))
+        } else {
+            remove("new_login_username")
         }
     }
 
-    fun getSyncTime(key: SyncKey): Long {
-        return pref.getLong("${key.key}_time", 0L)
+    fun getNewLoginPassword(): String? {
+        val encryptedPassword = pref.getString("new_login_password", null)
+        return if (encryptedPassword != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(context, encryptedPassword) else null
     }
-
-    fun getNewLoginUsername(): String? = pref.getString("new_login_username", null)
-    fun setNewLoginUsername(username: String?) = pref.edit { putString("new_login_username", username) }
-
-    fun getNewLoginPassword(): String? = pref.getString("new_login_password", null)
-    fun setNewLoginPassword(password: String?) = pref.edit { putString("new_login_password", password) }
+    fun setNewLoginPassword(password: String?) = pref.edit {
+        if (password != null) {
+            putString("new_login_password", org.ole.planet.myplanet.utils.SecurePrefs.encryptString(context, password))
+        } else {
+            remove("new_login_password")
+        }
+    }
 
     fun getServerUrl(): String = pref.getString(SERVER_URL, "") ?: ""
     fun setServerUrl(url: String) = pref.edit { putString(SERVER_URL, url) }
@@ -178,13 +183,22 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
     fun setConfigurationId(id: String) = pref.edit { putString(CONFIGURATION_ID, id) }
 
     fun getCouchdbUrl(): String = pref.getString(COUCHDB_URL, "") ?: ""
-    fun setCouchdbUrl(url: String) = pref.edit { putString(COUCHDB_URL, url) }
+    fun setCouchdbUrl(url: String) {
+        pref.edit { putString(COUCHDB_URL, url) }
+        UrlUtils.invalidateCaches()
+    }
 
     fun getUrlUser(): String = pref.getString(URL_USER, "") ?: ""
-    fun setUrlUser(user: String) = pref.edit { putString(URL_USER, user) }
+    fun setUrlUser(user: String) {
+        pref.edit { putString(URL_USER, user) }
+        UrlUtils.invalidateCaches()
+    }
 
     fun getUrlPwd(): String = pref.getString(URL_PWD, "") ?: ""
-    fun setUrlPwd(pwd: String) = pref.edit { putString(URL_PWD, pwd) }
+    fun setUrlPwd(pwd: String) {
+        pref.edit { putString(URL_PWD, pwd) }
+        UrlUtils.invalidateCaches()
+    }
 
     fun getUrlScheme(): String = pref.getString(URL_SCHEME, "") ?: ""
     fun setUrlScheme(scheme: String) = pref.edit { putString(URL_SCHEME, scheme) }
@@ -192,17 +206,86 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
     fun getUrlHost(): String = pref.getString(URL_HOST, "") ?: ""
     fun setUrlHost(host: String) = pref.edit { putString(URL_HOST, host) }
 
-    fun getUrlPort(): Int = pref.getInt(URL_PORT, 443)
-    fun setUrlPort(port: Int) = pref.edit { putInt(URL_PORT, port) }
-
-    fun getAlternativeUrl(): String = pref.getString(ALTERNATIVE_URL, "") ?: ""
     fun setAlternativeUrl(url: String) = pref.edit { putString(ALTERNATIVE_URL, url) }
 
     fun getProcessedAlternativeUrl(): String = pref.getString(PROCESSED_ALTERNATIVE_URL, "") ?: ""
-    fun setProcessedAlternativeUrl(url: String) = pref.edit { putString(PROCESSED_ALTERNATIVE_URL, url) }
+    fun setProcessedAlternativeUrl(url: String) {
+        pref.edit { putString(PROCESSED_ALTERNATIVE_URL, url) }
+        UrlUtils.invalidateCaches()
+    }
 
     fun isAlternativeUrl(): Boolean = pref.getBoolean(IS_ALTERNATIVE_URL, false)
-    fun setIsAlternativeUrl(value: Boolean) = pref.edit { putBoolean(IS_ALTERNATIVE_URL, value) }
+    fun setIsAlternativeUrl(value: Boolean) {
+        pref.edit { putBoolean(IS_ALTERNATIVE_URL, value) }
+        UrlUtils.invalidateCaches()
+    }
+
+    fun saveServerConfig(
+        serverPin: String,
+        urlScheme: String,
+        urlHost: String,
+        serverUrl: String,
+        couchdbUrl: String,
+        urlUser: String,
+        urlPwd: String
+    ) {
+        pref.edit {
+            putString(SERVER_PIN, serverPin)
+            putString(URL_SCHEME, urlScheme)
+            putString(URL_HOST, urlHost)
+            putString(SERVER_URL, serverUrl)
+            putString(COUCHDB_URL, couchdbUrl)
+            putString(URL_USER, urlUser)
+            putString(URL_PWD, urlPwd)
+        }
+        UrlUtils.invalidateCaches()
+    }
+
+    fun saveAlternativeServerConfig(
+        serverPin: String,
+        urlUser: String,
+        urlPwd: String,
+        urlScheme: String,
+        urlHost: String,
+        alternativeUrl: String,
+        processedAlternativeUrl: String,
+        isAlternativeUrl: Boolean = true
+    ) {
+        pref.edit {
+            putString(SERVER_PIN, serverPin)
+            putString(URL_USER, urlUser)
+            putString(URL_PWD, urlPwd)
+            putString(URL_SCHEME, urlScheme)
+            putString(URL_HOST, urlHost)
+            putString(ALTERNATIVE_URL, alternativeUrl)
+            putString(PROCESSED_ALTERNATIVE_URL, processedAlternativeUrl)
+            putBoolean(IS_ALTERNATIVE_URL, isAlternativeUrl)
+        }
+        UrlUtils.invalidateCaches()
+    }
+
+    fun saveUserInfo(
+        userId: String,
+        userName: String,
+        firstName: String?,
+        lastName: String?,
+        middleName: String?,
+        isUserAdmin: Boolean?,
+        lastLogin: Long
+    ) {
+        pref.edit {
+            putString(USER_ID, userId)
+            putString(USER_NAME, userName)
+            remove("password")
+            putString("firstName", firstName)
+            putString("lastName", lastName)
+            putString("middleName", middleName)
+            if (isUserAdmin != null) {
+                putBoolean("isUserAdmin", isUserAdmin)
+            }
+            putLong("lastLogin", lastLogin)
+        }
+    }
 
     fun getPinnedServerUrl(): String? = pref.getString(PINNED_SERVER_URL, null)
     fun setPinnedServerUrl(url: String) = pref.edit { putString(PINNED_SERVER_URL, url) }
@@ -217,7 +300,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
     fun setParentCode(code: String) = pref.edit { putString(PARENT_CODE, code) }
 
     fun getPlanetCode(): String = pref.getString(PLANET_CODE, "") ?: ""
-    fun setPlanetCode(code: String) = pref.edit { putString(PLANET_CODE, code) }
 
     fun getCustomDeviceName(): String = pref.getString(CUSTOM_DEVICE_NAME, "") ?: ""
     fun setCustomDeviceName(name: String) = pref.edit { putString(CUSTOM_DEVICE_NAME, name) }
@@ -237,16 +319,9 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
     fun getAutoSync(): Boolean = pref.getBoolean(AUTO_SYNC, true)
     fun setAutoSync(value: Boolean) = pref.edit { putBoolean(AUTO_SYNC, value) }
 
-    fun getFastSync(): Boolean = pref.getBoolean(FAST_SYNC, false)
-    fun setFastSync(value: Boolean) = pref.edit { putBoolean(FAST_SYNC, value) }
-
-    fun getUseImprovedSync(): Boolean = pref.getBoolean(USE_IMPROVED_SYNC, false)
-    fun setUseImprovedSync(value: Boolean) = pref.edit { putBoolean(USE_IMPROVED_SYNC, value) }
-
     fun getAutoSyncInterval(): Int = pref.getInt(AUTO_SYNC_INTERVAL, 60 * 60)
     fun setAutoSyncInterval(interval: Int) = pref.edit { putInt(AUTO_SYNC_INTERVAL, interval) }
 
-    fun getAutoSyncPosition(): Int = pref.getInt(AUTO_SYNC_POSITION, 0)
     fun setAutoSyncPosition(position: Int) = pref.edit { putInt(AUTO_SYNC_POSITION, position) }
 
     fun getFirstRun(): Boolean = pref.getBoolean(FIRST_RUN, true)
@@ -258,10 +333,8 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
     fun getLastSync(): Long = pref.getLong(LAST_SYNC, 0L)
     fun setLastSync(time: Long) = pref.edit { putLong(LAST_SYNC, time) }
 
-    fun getLastWifiId(): Int = pref.getInt(LAST_WIFI_ID, -1)
     fun setLastWifiId(id: Int) = pref.edit { putInt(LAST_WIFI_ID, id) }
 
-    fun getLastWifiSsid(): String? = pref.getString(LAST_WIFI_SSID, null)
     fun setLastWifiSsid(ssid: String) = pref.edit { putString(LAST_WIFI_SSID, ssid) }
 
     fun getHasShownCongrats(): Boolean = pref.getBoolean(HAS_SHOWN_CONGRATS, false)
@@ -270,11 +343,26 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
     fun isLoggedIn(): Boolean = pref.getBoolean(KEY_LOGIN, false)
     fun setLoggedIn(value: Boolean) = pref.edit { putBoolean(KEY_LOGIN, value) }
 
-    fun isNotificationShown(): Boolean = pref.getBoolean(KEY_NOTIFICATION_SHOWN, false)
     fun setNotificationShown(value: Boolean) = pref.edit { putBoolean(KEY_NOTIFICATION_SHOWN, value) }
+
+    fun getBetaAutoDownload(): Boolean {
+        val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        return defaultPreferences.getBoolean("beta_auto_download", false)
+    }
+
+    fun setBetaAutoDownload(enabled: Boolean) {
+        val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        defaultPreferences.edit { putBoolean("beta_auto_download", enabled) }
+    }
 
     fun getVersionDetail(): String? = pref.getString(VERSION_DETAIL, null)
     fun setVersionDetail(json: String) = pref.edit { putString(VERSION_DETAIL, json) }
+
+    fun getLibraryViewMode(): ListViewMode = ListViewMode.fromPref(pref.getString(LIBRARY_VIEW_MODE, null))
+    fun setLibraryViewMode(mode: ListViewMode) = pref.edit { putString(LIBRARY_VIEW_MODE, mode.name) }
+
+    fun getCourseViewMode(): ListViewMode = ListViewMode.fromPref(pref.getString(COURSE_VIEW_MODE, null))
+    fun setCourseViewMode(mode: ListViewMode) = pref.edit { putString(COURSE_VIEW_MODE, mode.name) }
 
     fun getConcatenatedLinks(): String? = pref.getString(CONCATENATED_LINKS, null)
     fun setConcatenatedLinks(json: String) = pref.edit { putString(CONCATENATED_LINKS, json) }
@@ -283,36 +371,33 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
     fun setRawString(key: String, value: String) = pref.edit { putString(key, value) }
     fun getRawLong(key: String, default: Long = 0L): Long = pref.getLong(key, default)
     fun setRawLong(key: String, value: Long) = pref.edit { putLong(key, value) }
+
+    fun getMediaPlaybackPosition(resourceKey: String): Long = pref.getLong("media_progress_$resourceKey", 0L)
+    fun setMediaPlaybackPosition(resourceKey: String, positionMs: Long) {
+        if (positionMs <= 0L) {
+            removeKey("media_progress_$resourceKey")
+        } else {
+            pref.edit { putLong("media_progress_$resourceKey", positionMs) }
+        }
+    }
+
+    fun getMediaPlaybackSpeed(): Float = pref.getFloat("media_playback_speed", 1.0f)
+    fun setMediaPlaybackSpeed(speed: Float) = pref.edit { putFloat("media_playback_speed", speed) }
+
     fun removeKey(key: String) = pref.edit { remove(key) }
     fun clearPreferences() {
-        val editor = pref.edit()
         val keysToKeep = setOf(FIRST_LAUNCH, MANUAL_CONFIG)
         val tempStorage = HashMap<String, Boolean>()
         for (key in keysToKeep) {
             tempStorage[key] = pref.getBoolean(key, false)
         }
-        editor.clear().apply()
-        for ((key, value) in tempStorage) {
-            editor.putBoolean(key, value)
+        pref.edit {
+            clear()
+            tempStorage.forEach { (k, v) -> putBoolean(k, v) }
         }
-        editor.commit()
         val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         defaultPreferences.edit { clear() }
-    }
-
-    fun getCachedMyLifeItems(userId: String): List<CachedMyLifeItem>? {
-        val json = pref.getString("$MY_LIFE_CACHE_PREFIX$userId", null) ?: return null
-        return try {
-            val type = object : TypeToken<List<CachedMyLifeItem>>() {}.type
-            gson.fromJson(json, type)
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    fun cacheMyLifeItems(userId: String, items: List<RealmMyLife>) {
-        val cached = items.map { CachedMyLifeItem(it.imageId, it.title, it.isVisible, it.weight) }
-        pref.edit { putString("$MY_LIFE_CACHE_PREFIX$userId", gson.toJson(cached)) }
+        UrlUtils.invalidateCaches()
     }
 
 }

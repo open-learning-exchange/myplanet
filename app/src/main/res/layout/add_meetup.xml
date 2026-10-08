@@ -10,7 +10,7 @@
         android:id="@+id/tvTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Add Meetup"
+        android:text="@string/add_meetup"
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:background="@color/primary"
         android:textStyle="bold"

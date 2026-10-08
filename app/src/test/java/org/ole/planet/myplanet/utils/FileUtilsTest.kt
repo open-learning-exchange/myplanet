@@ -1,13 +1,20 @@
 package org.ole.planet.myplanet.utils
 
 import android.app.Application
+import android.content.ContentProvider
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ProviderInfo
+import android.database.Cursor
+import android.database.MatrixCursor
 import android.net.Uri
 import android.os.Environment
+import android.os.ParcelFileDescriptor
+import android.provider.OpenableColumns
+import androidx.core.content.IntentCompat
 import java.io.File
 import org.junit.After
-import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -18,10 +25,11 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowContentResolver
 import org.robolectric.shadows.ShadowEnvironment
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], manifest = Config.NONE, application = Application::class)
+@Config(manifest = Config.NONE, application = Application::class)
 class FileUtilsTest {
 
     private lateinit var context: Context
@@ -31,6 +39,11 @@ class FileUtilsTest {
     fun setUp() {
         // We use a generic Application class to avoid MainApplication initialization that calls Realm.init()
         context = RuntimeEnvironment.getApplication()
+        // FileUtils caches externalFilesDir in an object-level field, and Robolectric hands every test
+        // method a fresh temp directory while re-using one sandbox (so one set of statics) for every
+        // class on this SDK level. Without this reset, a cache warmed by an earlier test — in this
+        // class or another one in the same sandbox — points at a temp directory that no longer exists.
+        resetExternalFilesDirCache()
         tempDir = File(context.cacheDir, "test_dir")
         if (!tempDir.exists()) {
             tempDir.mkdirs()
@@ -39,8 +52,16 @@ class FileUtilsTest {
 
     @After
     fun tearDown() {
+        resetExternalFilesDirCache()
         if (tempDir.exists()) {
             tempDir.deleteRecursively()
+        }
+    }
+
+    private fun resetExternalFilesDirCache() {
+        FileUtils::class.java.getDeclaredField("cachedExternalFilesDir").apply {
+            isAccessible = true
+            set(FileUtils, null)
         }
     }
 
@@ -52,21 +73,11 @@ class FileUtilsTest {
     }
 
     @Test
-    fun fullyReadFileToBytes_returnsCorrectBytes() {
-        val file = File(tempDir, "test.txt")
-        val data = "Hello, World!".toByteArray()
-        file.writeBytes(data)
-
-        val bytes = FileUtils.fullyReadFileToBytes(file)
-        assertArrayEquals(data, bytes)
-    }
-
-    @Test
     fun checkFileExist_returnsTrueWhenFileExists() {
         FileUtils.warmUp(context)
         val testFile = File(FileUtils.getExternalFilesDir(context), "ole/123/test_file.txt")
         testFile.parentFile?.mkdirs()
-        testFile.createNewFile()
+        testFile.writeText("dummy content")
 
         val url = "http://example.com/resources/123/test_file.txt"
 
@@ -78,7 +89,13 @@ class FileUtilsTest {
     @Test
     fun checkFileExist_returnsFalseWhenFileDoesNotExist() {
         val url = "http://example.com/resources/123/nonexistent.txt"
+        val expectedFile = FileUtils.getSDPathFromUrl(context, url)
+        val parentDir = expectedFile.parentFile
+
         assertFalse(FileUtils.checkFileExist(context, url))
+        if (parentDir != null) {
+            assertFalse("Parent directory should not be created by existence check", parentDir.exists())
+        }
     }
 
     @Test
@@ -104,6 +121,167 @@ class FileUtilsTest {
     }
 
     @Test
+    fun getSDPathFromUrl_keepsPlusAndPercentInFileNames() {
+        FileUtils.warmUp(context)
+
+        val plus = FileUtils.getSDPathFromUrl(context, "http://example.com/resources/123/Grade 1+2.pdf")
+        assertTrue("plus=${plus.absolutePath}", plus.absolutePath.endsWith("ole/123/Grade 1+2.pdf"))
+
+        val percent = FileUtils.getSDPathFromUrl(context, "http://example.com/resources/123/50% off.pdf")
+        assertTrue("percent=${percent.absolutePath}", percent.absolutePath.endsWith("ole/123/50% off.pdf"))
+    }
+
+    @Test
+    fun getFileNameFromUrl_keepsPlusAndDecodesPercentEscapesOnce() {
+        assertEquals("Grade 1+2.pdf", FileUtils.getFileNameFromUrl("http://example.com/resources/1/Grade 1+2.pdf"))
+        assertEquals("a b.pdf", FileUtils.getFileNameFromUrl("http://example.com/resources/1/a%20b.pdf"))
+    }
+
+    @Test
+    fun getSDPathFromUrl_preservesNestedAttachmentPath() {
+        FileUtils.warmUp(context)
+        val url = "http://example.com/resources/123/js/game_manager.js"
+
+        val resolved = FileUtils.getSDPathFromUrl(context, url)
+
+        assertEquals("game_manager.js", resolved.name)
+        assertEquals("js", resolved.parentFile?.name)
+        assertTrue(resolved.absolutePath.endsWith("ole/123/js/game_manager.js"))
+    }
+
+    @Test
+    fun getSDPathFromUrl_singleSegmentFileHasNoSubdirectory() {
+        FileUtils.warmUp(context)
+        val url = "http://example.com/resources/123/index.html"
+
+        val resolved = FileUtils.getSDPathFromUrl(context, url)
+
+        assertEquals("index.html", resolved.name)
+        assertEquals("123", resolved.parentFile?.name)
+    }
+
+    @Test
+    fun resolveHtmlEntryFile_defaultsToIndexHtmlAtRootWhenUnset() {
+        val resolved = FileUtils.resolveHtmlEntryFile(tempDir, null)
+
+        assertEquals(File(tempDir, "index.html").canonicalFile, resolved)
+    }
+
+    @Test
+    fun resolveHtmlEntryFile_defaultsToIndexHtmlAtRootWhenBlank() {
+        val resolved = FileUtils.resolveHtmlEntryFile(tempDir, "")
+
+        assertEquals(File(tempDir, "index.html").canonicalFile, resolved)
+    }
+
+    @Test
+    fun resolveHtmlEntryFile_honorsNestedRelativePath() {
+        val resolved = FileUtils.resolveHtmlEntryFile(tempDir, "sudoku/index.html")
+
+        assertEquals(File(tempDir, "sudoku/index.html").canonicalFile, resolved)
+    }
+
+    @Test
+    fun resolveHtmlEntryFile_rejectsPathTraversal() {
+        assertNull(FileUtils.resolveHtmlEntryFile(tempDir, "../outside.html"))
+        assertNull(FileUtils.resolveHtmlEntryFile(tempDir, "sudoku/../../outside.html"))
+    }
+
+    @Test
+    fun resolveHtmlEntryFile_rejectsAbsolutePath() {
+        assertNull(FileUtils.resolveHtmlEntryFile(tempDir, "/etc/passwd"))
+    }
+
+    @Test
+    fun findHtmlCoverImage_prefersNameHintOverLargerFile() {
+        File(tempDir, "cover.png").writeBytes(ByteArray(10))
+        File(tempDir, "photo.jpg").writeBytes(ByteArray(1000))
+
+        val cover = FileUtils.findHtmlCoverImage(tempDir)
+
+        assertEquals("cover.png", cover?.name)
+    }
+
+    @Test
+    fun findHtmlCoverImage_fallsBackToLargestImageWhenNoNameHint() {
+        File(tempDir, "photo.jpg").writeBytes(ByteArray(10))
+        File(tempDir, "banner.jpg").writeBytes(ByteArray(1000))
+
+        val cover = FileUtils.findHtmlCoverImage(tempDir)
+
+        assertEquals("banner.jpg", cover?.name)
+    }
+
+    @Test
+    fun findHtmlCoverImage_findsHintedImageNestedInSubdirectory() {
+        val assetsDir = File(tempDir, "assets").apply { mkdirs() }
+        File(assetsDir, "thumbnail.png").writeBytes(ByteArray(10))
+
+        val cover = FileUtils.findHtmlCoverImage(tempDir)
+
+        assertEquals("thumbnail.png", cover?.name)
+    }
+
+    @Test
+    fun findHtmlCoverImage_returnsNullWhenNoImagesPresent() {
+        File(tempDir, "index.html").writeText("<html></html>")
+
+        assertNull(FileUtils.findHtmlCoverImage(tempDir))
+    }
+
+    @Test
+    fun findHtmlCoverImage_returnsNullForNonDirectoryInput() {
+        val fileInput = File(tempDir, "file.txt").apply { writeText("hello") }
+        assertNull(FileUtils.findHtmlCoverImage(fileInput))
+
+        val nonExistent = File(tempDir, "non_existent_folder")
+        assertNull(FileUtils.findHtmlCoverImage(nonExistent))
+    }
+
+    @Test
+    fun findHtmlCoverImage_handlesCaseInsensitiveExtensionsAndHints() {
+        File(tempDir, "POSTER_IMAGE.WEBP").writeBytes(ByteArray(10))
+
+        val cover = FileUtils.findHtmlCoverImage(tempDir)
+
+        assertEquals("POSTER_IMAGE.WEBP", cover?.name)
+    }
+
+    @Test
+    fun findHtmlCoverImage_respectsMaxDepthLimit() {
+        // Depth 1: tempDir
+        // Depth 2: d1
+        // Depth 3: d1/d2
+        // Depth 4: d1/d2/d3
+        // Depth 5: d1/d2/d3/d4
+        val depth4Dir = File(tempDir, "d1/d2/d3").apply { mkdirs() }
+        val depth5Dir = File(tempDir, "d1/d2/d3/d4").apply { mkdirs() }
+
+        File(depth5Dir, "cover.png").writeBytes(ByteArray(10))
+
+        // cover.png is at depth 5, so walkTopDown().maxDepth(4) will not reach it
+        assertNull(FileUtils.findHtmlCoverImage(tempDir))
+
+        File(depth4Dir, "cover_depth4.png").writeBytes(ByteArray(10))
+        val found = FileUtils.findHtmlCoverImage(tempDir)
+        assertEquals("cover_depth4.png", found?.name)
+    }
+
+    @Test
+    fun findHtmlCoverImage_preservesWalkOrderTieBreakingForLargestFileFallback() {
+        val file1 = File(tempDir, "a_image.jpg").apply { writeBytes(ByteArray(100)) }
+        val file2 = File(tempDir, "b_image.jpg").apply { writeBytes(ByteArray(100)) }
+
+        val expectedFirstInWalk = tempDir.walkTopDown()
+            .maxDepth(4)
+            .first { it.isFile && it.extension.lowercase() in setOf("jpg") }
+
+        val cover = FileUtils.findHtmlCoverImage(tempDir)
+
+        assertEquals(expectedFirstInWalk.name, cover?.name)
+    }
+
+    @Test
     fun getIdFromUrl_returnsCorrectId() {
         assertEquals("123", FileUtils.getIdFromUrl("http://example.com/resources/123/file.txt"))
         assertEquals("abc", FileUtils.getIdFromUrl("https://test.com/api/resources/abc/data"))
@@ -117,6 +295,13 @@ class FileUtilsTest {
         assertEquals("jpg", FileUtils.getFileExtension("image.jpg"))
         assertEquals("", FileUtils.getFileExtension("file_without_extension"))
         assertEquals("", FileUtils.getFileExtension(null))
+        assertEquals("", FileUtils.getFileExtension(""))
+        assertEquals("hidden", FileUtils.getFileExtension(".hidden"))
+        assertEquals("hidden", FileUtils.getFileExtension("/path/to/.hidden"))
+        assertEquals("", FileUtils.getFileExtension("/path.with.dot/file_without_extension"))
+        assertEquals("", FileUtils.getFileExtension("archive.zip/README"))
+        assertEquals("jpg", FileUtils.getFileExtension("IMAGE.JPG"))
+        assertEquals("txt", FileUtils.getFileExtension("/path/file.Txt"))
     }
 
     @Test
@@ -132,6 +317,116 @@ class FileUtilsTest {
 
         assertTrue(destFile.exists())
         assertEquals(content, destFile.readText())
+    }
+
+    @Test
+    fun resolveUriToPath_returnsPathDirectlyForFileScheme() {
+        val sourceFile = File(tempDir, "source.txt")
+        sourceFile.writeText("Test Content")
+        val fileUri = Uri.fromFile(sourceFile)
+
+        val resolved = FileUtils.resolveUriToPath(context, fileUri)
+
+        assertEquals(sourceFile.absolutePath, resolved)
+    }
+
+    @Test
+    fun resolveUriToPath_returnsNullForNullUri() {
+        assertNull(FileUtils.resolveUriToPath(context, null))
+    }
+
+    @Test
+    fun resolveUriToPath_copiesContentUriUsingDisplayName() {
+        val authority = "org.ole.planet.myplanet.test.fileutils"
+        val displayName = "photo.jpg"
+        val sourceBytes = "fake image bytes".toByteArray()
+        val sourceFile = File(tempDir, "provider_source.jpg").apply { writeBytes(sourceBytes) }
+        val contentUri = Uri.parse("content://$authority/$displayName")
+
+        val provider = object : ContentProvider() {
+            override fun onCreate() = true
+
+            override fun query(
+                uri: Uri,
+                projection: Array<out String>?,
+                selection: String?,
+                selectionArgs: Array<out String>?,
+                sortOrder: String?
+            ): Cursor {
+                return MatrixCursor(arrayOf(OpenableColumns.DISPLAY_NAME)).apply {
+                    addRow(arrayOf(displayName))
+                }
+            }
+
+            override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor =
+                ParcelFileDescriptor.open(sourceFile, ParcelFileDescriptor.MODE_READ_ONLY)
+
+            override fun getType(uri: Uri): String? = null
+            override fun insert(uri: Uri, values: ContentValues?): Uri? = null
+            override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?) = 0
+            override fun update(
+                uri: Uri,
+                values: ContentValues?,
+                selection: String?,
+                selectionArgs: Array<out String>?
+            ) = 0
+        }
+        val providerInfo = ProviderInfo().apply { this.authority = authority }
+        provider.attachInfo(context, providerInfo)
+        ShadowContentResolver.registerProviderInternal(authority, provider)
+
+        val resolved = FileUtils.resolveUriToPath(context, contentUri)
+
+        assertEquals(displayName, resolved?.let { File(it).name })
+        assertEquals("fake image bytes", resolved?.let { File(it).readText() })
+    }
+
+    @Test
+    fun resolveUriToPath_sanitizesTraversalDisplayName() {
+        val authority = "org.ole.planet.myplanet.test.fileutils.traversal"
+        val maliciousDisplayName = "../../evil.txt"
+        val sourceBytes = "fake image bytes".toByteArray()
+        val sourceFile = File(tempDir, "provider_source_traversal.jpg").apply { writeBytes(sourceBytes) }
+        val contentUri = Uri.parse("content://$authority/malicious")
+
+        val provider = object : ContentProvider() {
+            override fun onCreate() = true
+
+            override fun query(
+                uri: Uri,
+                projection: Array<out String>?,
+                selection: String?,
+                selectionArgs: Array<out String>?,
+                sortOrder: String?
+            ): Cursor {
+                return MatrixCursor(arrayOf(OpenableColumns.DISPLAY_NAME)).apply {
+                    addRow(arrayOf(maliciousDisplayName))
+                }
+            }
+
+            override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor =
+                ParcelFileDescriptor.open(sourceFile, ParcelFileDescriptor.MODE_READ_ONLY)
+
+            override fun getType(uri: Uri): String? = null
+            override fun insert(uri: Uri, values: ContentValues?): Uri? = null
+            override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?) = 0
+            override fun update(
+                uri: Uri,
+                values: ContentValues?,
+                selection: String?,
+                selectionArgs: Array<out String>?
+            ) = 0
+        }
+        val providerInfo = ProviderInfo().apply { this.authority = authority }
+        provider.attachInfo(context, providerInfo)
+        ShadowContentResolver.registerProviderInternal(authority, provider)
+
+        val destinationDir = File(tempDir, "destination").apply { mkdirs() }
+        val resolved = FileUtils.resolveUriToPath(context, contentUri, destinationDir)
+
+        val resolvedFile = File(requireNotNull(resolved))
+        assertEquals(destinationDir.canonicalFile, resolvedFile.parentFile?.canonicalFile)
+        assertEquals("evil.txt", resolvedFile.name)
     }
 
     @Test
@@ -157,7 +452,7 @@ class FileUtilsTest {
     fun openOleFolder_returnsCorrectIntent() {
         val intent = FileUtils.openOleFolder(context)
         assertEquals(Intent.ACTION_CHOOSER, intent.action)
-        val innerIntent = intent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+        val innerIntent = IntentCompat.getParcelableExtra(intent, Intent.EXTRA_INTENT, Intent::class.java)
         assertEquals(Intent.ACTION_GET_CONTENT, innerIntent?.action)
         assertEquals("*/*", innerIntent?.type)
         assertTrue(innerIntent?.getBooleanExtra(Intent.EXTRA_ALLOW_MULTIPLE, false) == true)
@@ -190,5 +485,14 @@ class FileUtilsTest {
         // Based on test output, "no_extension" returns "no_extension" rather than null
         assertEquals("no_extension", FileUtils.nameWithoutExtension("no_extension"))
         assertNull(FileUtils.nameWithoutExtension(null))
+    }
+
+    @Test
+    fun getMimeType_returnsCorrectMimeType() {
+        assertEquals("image/png", FileUtils.getMimeType("my photo.png"))
+        assertEquals("image/png", FileUtils.getMimeType("photo.PNG"))
+        assertNull(FileUtils.getMimeType("noext"))
+        assertNull(FileUtils.getMimeType(""))
+        assertNull(FileUtils.getMimeType(null))
     }
 }

@@ -6,11 +6,14 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
+import androidx.core.view.doOnLayout
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatItemClickListener
 import org.ole.planet.myplanet.databinding.ItemAiResponseMessageBinding
+import org.ole.planet.myplanet.databinding.ItemChatLoadMoreBinding
 import org.ole.planet.myplanet.databinding.ItemUserMessageBinding
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.utils.DiffUtils
@@ -19,20 +22,30 @@ import org.ole.planet.myplanet.utils.Utilities
 class ChatAdapter(
     val context: Context,
     private val recyclerView: RecyclerView,
-    private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit)?
+    private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit)
 ) : ListAdapter<ChatMessage, RecyclerView.ViewHolder>(
     DiffUtils.itemCallback(
-        { old, new -> old.message == new.message && old.viewType == new.viewType },
-        { old, new -> old == new }
+        { old, new -> old.id == new.id },
+        { old, new -> old.message == new.message && old.viewType == new.viewType && old.source == new.source }
     )
 ) {
     val animatedMessages = HashMap<Int, Boolean>()
     var lastAnimatedPosition: Int = -1
+    var onLoadMoreClick: (() -> Unit)? = null
 
     private var chatItemClickListener: OnChatItemClickListener? = null
+    private val clipboardManager by lazy {
+        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    }
 
     fun setOnChatItemClickListener(listener: OnChatItemClickListener) {
         this.chatItemClickListener = listener
+    }
+
+    class LoadMoreViewHolder(private val binding: ItemChatLoadMoreBinding) : RecyclerView.ViewHolder(binding.root) {
+        fun bind(onClick: (() -> Unit)?) {
+            binding.btnLoadMore.setOnClickListener { onClick?.invoke() }
+        }
     }
 
     class QueryViewHolder(private val textUserMessageBinding: ItemUserMessageBinding, private val copyToClipboard: (String) -> Unit) : RecyclerView.ViewHolder(textUserMessageBinding.root) {
@@ -51,7 +64,7 @@ class ChatAdapter(
         private val copyToClipboard: (String) -> Unit,
         val context: Context,
         private val recyclerView: RecyclerView,
-        private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit)?
+        private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit)
     ) : RecyclerView.ViewHolder(textAiMessageBinding.root) {
         internal var cancelAnimation: (() -> Unit)? = null
 
@@ -61,9 +74,18 @@ class ChatAdapter(
             if (responseSource == ChatMessage.RESPONSE_SOURCE_NETWORK) {
                 if (shouldAnimate) {
                     textAiMessageBinding.textGchatMessageOther.text = context.getString(R.string.empty_text)
+                    var lastLineCount = -1
                     cancelAnimation = onAnimateTyping(response, { text ->
                         textAiMessageBinding.textGchatMessageOther.text = text
-                        recyclerView.scrollToPosition(bindingAdapterPosition)
+                        textAiMessageBinding.textGchatMessageOther.doOnLayout { view ->
+                            val lines = (view as android.widget.TextView).lineCount
+                            if (lines != lastLineCount || text.length == response.length) {
+                                if (bindingAdapterPosition != RecyclerView.NO_POSITION) {
+                                    recyclerView.scrollToPosition(bindingAdapterPosition)
+                                }
+                                lastLineCount = lines
+                            }
+                        }
                     }, {
                         markAnimated()
                     })
@@ -85,13 +107,12 @@ class ChatAdapter(
     }
 
     private fun copyToClipboard(text: String) {
-        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         val clip = ClipData.newPlainText("copied Text", text)
-        clipboard.setPrimaryClip(clip)
+        clipboardManager.setPrimaryClip(clip)
         Utilities.toast(
             context,
             context.getString(R.string.copied_to_clipboard),
-            android.widget.Toast.LENGTH_SHORT
+            Toast.LENGTH_SHORT
         )
     }
 
@@ -118,6 +139,22 @@ class ChatAdapter(
         submitList(emptyList())
     }
 
+    fun prependMessages(messages: List<ChatMessage>, hasLoadMoreAbove: Boolean) {
+        val current = currentList.toMutableList()
+        val shift = messages.size + if (hasLoadMoreAbove) 1 else 0
+        if (lastAnimatedPosition >= 0) lastAnimatedPosition += shift
+        val remapped = HashMap<Int, Boolean>(animatedMessages.size)
+        animatedMessages.forEach { (pos, v) -> remapped[pos + shift] = v }
+        animatedMessages.clear()
+        animatedMessages.putAll(remapped)
+        if (current.firstOrNull()?.viewType == ChatMessage.LOAD_MORE) current.removeAt(0)
+        val newList = mutableListOf<ChatMessage>()
+        if (hasLoadMoreAbove) newList.add(ChatMessage("", ChatMessage.LOAD_MORE))
+        newList.addAll(messages)
+        newList.addAll(current)
+        submitList(newList)
+    }
+
     private fun scrollToLastItem() {
         val lastPosition = itemCount - 1
         if (lastPosition >= 0) {
@@ -131,6 +168,10 @@ class ChatAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return when (viewType) {
+            ChatMessage.LOAD_MORE -> {
+                val loadMoreBinding = ItemChatLoadMoreBinding.inflate(LayoutInflater.from(context), parent, false)
+                LoadMoreViewHolder(loadMoreBinding)
+            }
             ChatMessage.QUERY -> {
                 val userMessageBinding = ItemUserMessageBinding.inflate(LayoutInflater.from(context), parent, false)
                 QueryViewHolder(userMessageBinding, this::copyToClipboard)
@@ -146,10 +187,8 @@ class ChatAdapter(
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val chatItem = getItem(position)
         when (holder.itemViewType) {
-            ChatMessage.QUERY -> {
-                val queryViewHolder = holder as QueryViewHolder
-                queryViewHolder.bind(chatItem.message)
-            }
+            ChatMessage.LOAD_MORE -> (holder as LoadMoreViewHolder).bind(onLoadMoreClick)
+            ChatMessage.QUERY -> (holder as QueryViewHolder).bind(chatItem.message)
             ChatMessage.RESPONSE -> {
                 val responseViewHolder = holder as ResponseViewHolder
                 val shouldAnimate = (position == lastAnimatedPosition && !animatedMessages.containsKey(position))
@@ -159,8 +198,10 @@ class ChatAdapter(
             }
             else -> throw IllegalArgumentException("Invalid view type")
         }
-        holder.itemView.setOnClickListener {
-            chatItemClickListener?.onChatItemClick(position, chatItem)
+        if (holder.itemViewType != ChatMessage.LOAD_MORE) {
+            holder.itemView.setOnClickListener {
+                chatItemClickListener?.onChatItemClick(position, chatItem)
+            }
         }
     }
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {

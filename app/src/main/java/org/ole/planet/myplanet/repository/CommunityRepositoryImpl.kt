@@ -1,78 +1,65 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
 import com.google.gson.JsonArray
-import io.realm.Sort
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
-import org.ole.planet.myplanet.data.DatabaseService
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.RealmDispatcher
-import org.ole.planet.myplanet.model.RealmCommunity
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.data.room.dao.CommunityDao
+import org.ole.planet.myplanet.model.Community
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.toGson
 
+@Singleton
 class CommunityRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
-    private val apiInterface: ApiInterface
-) : RealmRepository(databaseService, realmDispatcher), CommunityRepository {
+    private val apiInterface: ApiInterface,
+    private val communityDao: CommunityDao
+) : CommunityRepository {
 
     override suspend fun replaceAll(rows: JsonArray) {
-        executeTransaction { realm ->
-            realm.delete(RealmCommunity::class.java)
-            val communities = mutableListOf<RealmCommunity>()
-            for (j in rows) {
-                var jsonDoc = j.asJsonObject
-                jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-                val id = JsonUtils.getString("_id", jsonDoc)
-                val community = RealmCommunity()
-                community.id = id
-                if (JsonUtils.getString("name", jsonDoc) == "learning") {
-                    community.weight = 0
-                }
-                community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-                community.name = JsonUtils.getString("name", jsonDoc)
-                community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
-                communities.add(community)
+        val communities = mutableListOf<Community>()
+        for (j in rows) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = GsonUtils.getJsonObject("doc", jsonDoc)
+            val id = GsonUtils.getString("_id", jsonDoc)
+            val community = Community()
+            community.id = id
+            if (GsonUtils.getString("name", jsonDoc) == "learning") {
+                community.weight = 0
             }
-            realm.insertOrUpdate(communities)
+            community.localDomain = GsonUtils.getString("localDomain", jsonDoc)
+            community.name = GsonUtils.getString("name", jsonDoc)
+            community.parentDomain = GsonUtils.getString("parentDomain", jsonDoc)
+            community.registrationRequest = GsonUtils.getString("registrationRequest", jsonDoc)
+            communities.add(community)
         }
+        communityDao.replaceAll(communities)
     }
 
-    override suspend fun getAllSorted(): List<RealmCommunity> {
-        return queryList(RealmCommunity::class.java) {
-            sort("weight", Sort.ASCENDING)
-        }
+    override suspend fun getAllSorted(): List<Community> {
+        return communityDao.getAllSorted()
     }
 
     override suspend fun syncCommunityDocs(): Boolean {
         return try {
             val response = apiInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true")
             if (response.isSuccessful && response.body() != null) {
-                val arr = JsonUtils.getJsonArray("rows", response.body())
+                val arr = GsonUtils.getJsonArray("rows", response.body()?.toGson())
                 replaceAll(arr)
                 true
             } else {
                 false
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "syncCommunityDocs failed", e)
             false
         }
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
-        }
-        documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmMeetup.insert(realm, jsonDoc)
-        }
+    companion object {
+        private const val TAG = "CommunityRepositoryImpl"
     }
 }

@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
@@ -14,6 +15,8 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.MainApplication
@@ -21,12 +24,14 @@ import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
+import org.ole.planet.myplanet.services.sync.HeavyTableSyncWorker
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @HiltWorker
 class ServerReachabilityWorker @AssistedInject constructor(
@@ -36,10 +41,13 @@ class ServerReachabilityWorker @AssistedInject constructor(
     private val uploadManager: UploadManager,
     private val submissionsRepository: SubmissionsRepository,
     private val serverUrlMapper: ServerUrlMapper,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val timeProvider: TimeProvider,
+    private val syncManager: SyncManager
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
+        private const val TAG = "ServerReachabilityWorker"
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "server_reachability_channel"
         private const val CHANNEL_NAME = "Server Connectivity"
@@ -71,7 +79,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
 
             if (isReachable && isNetworkReconnection) {
                 val lastNotificationTime = sharedPrefManager.getRawLong(LAST_NOTIFICATION_TIME_KEY)
-                val currentTime = System.currentTimeMillis()
+                val currentTime = timeProvider.now()
                 val timeSinceLastNotification = currentTime - lastNotificationTime
                 if (timeSinceLastNotification > NOTIFICATION_COOLDOWN_MS) {
                     showServerNotification()
@@ -83,8 +91,10 @@ class ServerReachabilityWorker @AssistedInject constructor(
             }
 
             Result.success()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "doWork failed", e)
             Result.retry()
         }
     }
@@ -105,7 +115,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
 
                     if (isNetworkReconnection) {
                         val lastNotificationTime = sharedPrefManager.getRawLong(LAST_NOTIFICATION_TIME_KEY)
-                        val currentTime = System.currentTimeMillis()
+                        val currentTime = timeProvider.now()
                         val timeSinceLastNotification = currentTime - lastNotificationTime
                         if (timeSinceLastNotification > NOTIFICATION_COOLDOWN_MS) {
                             showServerNotification()
@@ -117,8 +127,10 @@ class ServerReachabilityWorker @AssistedInject constructor(
                     }
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "tryServerSwitch failed", e)
         }
     }
 
@@ -149,7 +161,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
         try {
             notificationManager.notify(NOTIFICATION_ID, notification)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "showServerNotification failed", e)
         }
     }
 
@@ -158,12 +170,12 @@ class ServerReachabilityWorker @AssistedInject constructor(
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
         try {
-            val primaryAvailable = withTimeoutOrNull(15000) {
+            val primaryAvailable = withTimeoutOrNull(15000.milliseconds) {
                 isServerReachable(mapping.primaryUrl)
             } ?: false
 
             val alternativeAvailable = if (mapping.alternativeUrl != null) {
-                withTimeoutOrNull(15000) {
+                withTimeoutOrNull(15000.milliseconds) {
                     isServerReachable(mapping.alternativeUrl)
                 } ?: false
             } else {
@@ -178,25 +190,33 @@ class ServerReachabilityWorker @AssistedInject constructor(
                 }
             }
             uploadSubmissions()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "checkAvailableServerAndUpload failed", e)
             uploadSubmissions()
         }
     }
 
     private suspend fun uploadSubmissions() {
         try {
-            if (submissionsRepository.hasPendingOfflineSubmissions()) {
-                withContext(dispatcherProvider.io) {
-                    uploadManager.uploadSubmissions()
+            val syncAlreadyRunning = MainApplication.isSyncRunning.get() || syncManager.isMainSyncActive()
+            if (!syncAlreadyRunning) {
+                if (submissionsRepository.hasPendingOfflineSubmissions()) {
+                    withContext(dispatcherProvider.io) {
+                        uploadManager.uploadSubmissions()
+                    }
                 }
+                uploadExamResultWrapper()
             }
-            uploadExamResultWrapper()
-            if (!MainApplication.isSyncRunning) {
+            HeavyTableSyncWorker.scheduleIfPending(applicationContext, sharedPrefManager)
+            if (!syncAlreadyRunning) {
                 RetryQueueWorker.triggerImmediateRetry(applicationContext)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "uploadSubmissions failed", e)
         }
     }
 
@@ -206,14 +226,14 @@ class ServerReachabilityWorker @AssistedInject constructor(
         }
 
         try {
-            val successListener = object : OnSuccessListener {
-                override fun onSuccess(success: String?) {
-                    // No UI updates required for background sync completion.
-                }
+            val successListener = OnSuccessListener {
+                // No UI updates required for background sync completion.
             }
             uploadManager.uploadExamResult(successListener)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "uploadExamResultWrapper failed", e)
         }
     }
 
@@ -239,7 +259,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
                 planetString
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "getServerDisplayName failed", e)
             "Server"
         }
     }

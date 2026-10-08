@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.model
 
 data class ExamAnswerData(
-    val submission: RealmSubmission?,
-    val question: RealmExamQuestion,
+    val submission: Submission?,
+    val question: ExamQuestion,
     val ans: String,
     val listAns: Map<String, String>?,
     val otherText: String?,
@@ -10,5 +10,6 @@ data class ExamAnswerData(
     val type: String,
     val index: Int,
     val total: Int,
-    val isExplicitSubmission: Boolean
+    val isExplicitSubmission: Boolean,
+    val userId: String? = null
 )

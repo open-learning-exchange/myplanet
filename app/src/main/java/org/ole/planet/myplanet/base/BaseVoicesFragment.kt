@@ -6,7 +6,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
-import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -26,25 +26,20 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.ImageThumbBinding
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.ReplyActivity
 import org.ole.planet.myplanet.ui.voices.VoicesActions
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utils.FileUtils.getRealPathFromURI
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 
 abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickListener {
     lateinit var imageList: MutableList<String>
 
-    @javax.inject.Inject
-    lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
-    @JvmField
     protected var llImage: ViewGroup? = null
-    @JvmField
     protected var adapterNews: VoicesAdapter? = null
     lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
     private lateinit var replyActivityLauncher: ActivityResultLauncher<Intent>
@@ -102,7 +97,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         if (context is OnHomeItemClickListener) homeItemClickListener = context
     }
 
-    override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
+    override fun showReply(news: News?, fromLogin: Boolean, nonTeamMember: Boolean) {
         if (news != null) {
             val intent = Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)
                 .putExtra("fromLogin", fromLogin)
@@ -111,11 +106,12 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         }
     }
 
-    override fun onMemberSelected(userModel: RealmUser?) {
+    override fun onMemberSelected(userModel: UserEntity?) {
         if (!isAdded) return
 
-        lifecycleScope.launch {
-            val fragment = VoicesActions.showMemberDetails(userModel, activitiesRepository) ?: return@launch
+        viewLifecycleOwner.lifecycleScope.launch {
+            val fragment = VoicesActions.showMemberDetails(userModel) ?: return@launch
+            if (!isAdded) return@launch
             FragmentNavigator.replaceFragment(
                 requireActivity().supportFragmentManager,
                 R.id.fragment_container,
@@ -125,7 +121,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         }
     }
 
-    abstract fun setData(list: List<RealmNews?>?)
+    abstract fun setData(list: List<News?>?)
     fun showNoData(v: View?, count: Int?, source: String) {
         count?.let { BaseRecyclerFragment.showNoData(v, it, source) }
     }
@@ -154,10 +150,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
     private fun processImageUri(uri: Uri?, resultCode: Int) {
         if (uri == null) return
 
-        var path: String? = getRealPathFromURI(requireActivity(), uri)
-        if (TextUtils.isEmpty(path)) {
-            path = FileUtils.getPathFromURI(requireActivity(), uri)
-        }
+        val path: String? = FileUtils.resolveUriToPath(requireActivity(), uri)
 
         if (path.isNullOrEmpty()) return
 
@@ -169,7 +162,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         val `object` = JsonObject()
         `object`.addProperty("imageUrl", path)
         `object`.addProperty("fileName", getFileNameFromUrl(path))
-        imageList.add(JsonUtils.gson.toJson(`object`))
+        imageList.add(GsonUtils.gson.toJson(`object`))
 
         try {
             llImage?.visibility = View.VISIBLE
@@ -180,18 +173,22 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
             llImage?.addView(imageBinding.root)
             if (resultCode == 102) adapterNews?.setImageList(imageList)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "processImageUri failed", e)
         }
     }
 
     private fun isImageAlreadyAdded(path: String): Boolean {
         return imageList.any { imageJson ->
             try {
-                val imgObject = JsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
-                JsonUtils.getString("imageUrl", imgObject) == path
+                val imgObject = GsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
+                GsonUtils.getString("imageUrl", imgObject) == path
             } catch (e: Exception) {
                 false
             }
         }
+    }
+
+    companion object {
+        private const val TAG = "BaseVoicesFragment"
     }
 }

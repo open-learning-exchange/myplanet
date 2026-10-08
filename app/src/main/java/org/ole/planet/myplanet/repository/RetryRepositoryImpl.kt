@@ -1,21 +1,37 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
+import java.io.IOException
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
-import org.ole.planet.myplanet.model.RealmRetryOperation
-import org.ole.planet.myplanet.repository.RealmRepository
-import org.ole.planet.myplanet.services.upload.UploadError
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.room.dao.RetryDao
+import org.ole.planet.myplanet.model.RetryFailure
+import org.ole.planet.myplanet.model.RetryOperation
+import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.UrlUtils
 
 class RetryRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
-) : RealmRepository(databaseService, realmDispatcher), RetryRepository {
+    private val retryDao: RetryDao,
+    private val apiInterface: ApiInterface,
+    private val timeProvider: TimeProvider
+) : RetryRepository {
 
-    override suspend fun enqueue(
+    companion object {
+        private const val TAG = "RetryRepository"
+    }
+
+    private val isProcessing = AtomicBoolean(false)
+    private val mutex = Mutex()
+
+    override suspend fun recordFailure(
         uploadType: String,
-        error: UploadError,
+        failure: RetryFailure,
         payload: String,
         endpoint: String,
         httpMethod: String,
@@ -23,152 +39,147 @@ class RetryRepositoryImpl @Inject constructor(
         modelClassName: String,
         userId: String?
     ) {
-        executeTransaction { realm ->
-            RealmRetryOperation.createFromUploadError(
-                realm, uploadType, error, payload, endpoint,
-                httpMethod, dbId, modelClassName, userId
-            )
-        }
-    }
-
-    override suspend fun updateAttempt(
-        operationId: String,
-        error: UploadError
-    ) {
-        executeTransaction { realm ->
-            realm.where(RealmRetryOperation::class.java)
-                .equalTo("id", operationId)
-                .findFirst()?.let { op ->
-                    op.attemptCount += 1
-                    op.lastAttemptTime = System.currentTimeMillis()
-                    op.nextRetryTime = RealmRetryOperation.calculateNextRetryTime(op.attemptCount)
-                    op.errorMessage = error.message
-                    op.httpCode = error.httpCode
-
-                    if (op.attemptCount >= op.maxAttempts) {
-                        op.status = RealmRetryOperation.STATUS_ABANDONED
-                    }
-                }
+        mutex.withLock {
+            val existingId = retryDao.findExistingId(failure.itemId, uploadType)
+            if (existingId != null) {
+                markFailed(existingId, failure.message, failure.httpCode)
+            } else {
+                val operation = RetryOperation.createFromRetryFailure(
+                    uploadType, failure, payload, endpoint,
+                    httpMethod, dbId, modelClassName, userId
+                )
+                retryDao.insert(operation)
+            }
         }
     }
 
     override suspend fun markInProgress(operationId: String) {
-        executeTransaction { realm ->
-            realm.where(RealmRetryOperation::class.java)
-                .equalTo("id", operationId)
-                .findFirst()?.let { op ->
-                    op.status = RealmRetryOperation.STATUS_IN_PROGRESS
-                }
-        }
+        retryDao.markInProgress(operationId)
     }
 
     override suspend fun markCompleted(operationId: String) {
-        executeTransaction { realm ->
-            realm.where(RealmRetryOperation::class.java)
-                .equalTo("id", operationId)
-                .findFirst()?.let { op ->
-                    op.status = RealmRetryOperation.STATUS_COMPLETED
-                    op.lastAttemptTime = System.currentTimeMillis()
-                }
-        }
+        retryDao.markCompleted(operationId, timeProvider.now())
     }
 
     override suspend fun markFailed(operationId: String, errorMessage: String?, httpCode: Int?) {
-        executeTransaction { realm ->
-            realm.where(RealmRetryOperation::class.java)
-                .equalTo("id", operationId)
-                .findFirst()?.let { op ->
-                    op.attemptCount += 1
-                    op.lastAttemptTime = System.currentTimeMillis()
-                    op.errorMessage = errorMessage
-                    op.httpCode = httpCode
+        retryDao.recordFailedAttempt(operationId, errorMessage, httpCode, timeProvider.now())
+    }
 
-                    if (op.attemptCount >= op.maxAttempts) {
-                        op.status = RealmRetryOperation.STATUS_ABANDONED
-                    } else {
-                        op.status = RealmRetryOperation.STATUS_PENDING
-                        op.nextRetryTime = RealmRetryOperation.calculateNextRetryTime(op.attemptCount)
-                    }
+    override suspend fun executeOperation(operation: RetryOperation): RetryOperationResult {
+        markInProgress(operation.id)
+
+        return try {
+            val payload = try {
+                Json.parseToJsonElement(operation.serializedPayload).jsonObject
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                markFailed(operation.id, "Invalid payload", null)
+                return RetryOperationResult.TerminalFailure("Invalid payload", null)
+            }
+
+            val baseUrl = UrlUtils.getUrl()
+            val authHeader = UrlUtils.header
+            val requestUrl = if (operation.dbId.isNullOrEmpty()) {
+                "$baseUrl/${operation.endpoint}"
+            } else {
+                "$baseUrl/${operation.endpoint}/${operation.dbId}"
+            }
+
+            val response = if (operation.httpMethod == "PUT" && !operation.dbId.isNullOrEmpty()) {
+                apiInterface.putDoc(
+                    authHeader,
+                    "application/json",
+                    requestUrl,
+                    payload
+                )
+            } else {
+                apiInterface.postDoc(
+                    authHeader,
+                    "application/json",
+                    requestUrl,
+                    payload
+                )
+            }
+
+            if (response.isSuccessful) {
+                markCompleted(operation.id)
+                RetryOperationResult.Success
+            } else if (response.code() == 409) {
+                // 409 Conflict means document already exists - data is already synced
+                markCompleted(operation.id)
+                RetryOperationResult.Success
+            } else {
+                val code = response.code()
+                val isRetryable = code >= 500
+                if (isRetryable) {
+                    markFailed(operation.id, "HTTP $code", code)
+                    RetryOperationResult.RetryableFailure("HTTP $code", code)
+                } else {
+                    markFailed(operation.id, "Non-retryable HTTP $code", code)
+                    RetryOperationResult.TerminalFailure("Non-retryable HTTP $code", code)
                 }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            markFailed(operation.id, e.message, null)
+            Log.w(TAG, "Network error during retry for ${operation.id}", e)
+            RetryOperationResult.RetryableFailure(e.message, null)
+        } catch (e: Exception) {
+            markFailed(operation.id, e.message, null)
+            Log.e(TAG, "Unexpected error during retry for ${operation.id}", e)
+            RetryOperationResult.RetryableFailure(e.message, null)
         }
     }
 
-    override suspend fun getPending(): List<RealmRetryOperation> {
-        return withRealmAsync { realm ->
-            val results = realm.where(RealmRetryOperation::class.java)
-                .equalTo("status", RealmRetryOperation.STATUS_PENDING)
-                .lessThanOrEqualTo("nextRetryTime", System.currentTimeMillis())
-                .findAll()
-
-            results.filter { it.attemptCount < it.maxAttempts }
-                .let { realm.copyFromRealm(it) }
-        }
+    override suspend fun getPending(): List<RetryOperation> {
+        return retryDao.getPending(timeProvider.now())
     }
 
-    override suspend fun getPendingCount(): Long {
-        return withRealmAsync { realm ->
-            realm.where(RealmRetryOperation::class.java)
-                .equalTo("status", RealmRetryOperation.STATUS_PENDING)
-                .or()
-                .equalTo("status", RealmRetryOperation.STATUS_IN_PROGRESS)
-                .count()
-        }
+    private suspend fun getPendingCount(): Long {
+        return retryDao.getActiveCount()
     }
 
     override suspend fun cleanup() {
-        executeTransaction { realm ->
-            val cutoffTime = System.currentTimeMillis() - 24 * 60 * 60 * 1000L
-            realm.where(RealmRetryOperation::class.java)
-                .equalTo("status", RealmRetryOperation.STATUS_COMPLETED)
-                .lessThan("lastAttemptTime", cutoffTime)
-                .findAll()
-                .deleteAllFromRealm()
-        }
+        val cutoffTime = timeProvider.now() - 24 * 60 * 60 * 1000L
+        retryDao.deleteOldCompleted(cutoffTime)
     }
 
-    override suspend fun resetAllPending() {
-        executeTransaction { realm ->
-            realm.where(RealmRetryOperation::class.java)
-                .equalTo("status", RealmRetryOperation.STATUS_PENDING)
-                .findAll()
-                .forEach { op ->
-                    op.nextRetryTime = System.currentTimeMillis()
-                }
-        }
-    }
-
-    override suspend fun getExistingOperation(itemId: String, uploadType: String): RealmRetryOperation? {
-        return withRealmAsync { realm ->
-            realm.where(RealmRetryOperation::class.java)
-                .equalTo("itemId", itemId)
-                .equalTo("uploadType", uploadType)
-                .notEqualTo("status", RealmRetryOperation.STATUS_COMPLETED)
-                .notEqualTo("status", RealmRetryOperation.STATUS_ABANDONED)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
-        }
-    }
-
-    override suspend fun deletePendingAndAbandonedOperations() {
-        executeTransaction { realm ->
-            realm.where(RealmRetryOperation::class.java)
-                .equalTo("status", RealmRetryOperation.STATUS_PENDING)
-                .or()
-                .equalTo("status", RealmRetryOperation.STATUS_ABANDONED)
-                .findAll()
-                .deleteAllFromRealm()
-        }
+    private suspend fun deletePendingAndAbandonedOperations() {
+        retryDao.deletePendingAndAbandoned()
     }
 
     override suspend fun recoverStuckOperations() {
-        executeTransaction { realm ->
-            realm.where(RealmRetryOperation::class.java)
-                .equalTo("status", RealmRetryOperation.STATUS_IN_PROGRESS)
-                .findAll()
-                .forEach { op ->
-                    op.status = RealmRetryOperation.STATUS_PENDING
-                    op.nextRetryTime = System.currentTimeMillis() + 60_000 // Retry in 1 minute
-                }
+        retryDao.recoverStuck(timeProvider.now() + 60_000)
+    }
+
+    override fun isCurrentlyProcessing(): Boolean = isProcessing.get()
+
+    override fun tryStartProcessing(): Boolean = isProcessing.compareAndSet(false, true)
+
+    override fun finishProcessing() {
+        isProcessing.set(false)
+    }
+
+    override suspend fun safeClearQueue(): Boolean {
+        if (!isProcessing.compareAndSet(false, true)) {
+            return false
         }
+
+        return try {
+            mutex.withLock {
+                deletePendingAndAbandonedOperations()
+                true
+            }
+        } finally {
+            isProcessing.set(false)
+        }
+    }
+
+    override suspend fun getRetryQueueSnapshot(): RetryQueueDetails {
+        val pendingCount = getPendingCount()
+        val pendingOps = getPending()
+        val isProcessing = isCurrentlyProcessing()
+        return RetryQueueDetails(pendingCount, pendingOps, isProcessing)
     }
 }

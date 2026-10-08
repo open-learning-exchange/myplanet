@@ -17,7 +17,7 @@
         <TextView
             android:layout_width="110dp"
             android:layout_height="wrap_content"
-            android:text="Name:"
+            android:text="@string/label_name_with_colon"
             android:textColor="@color/daynight_textColor"
             android:textSize="13sp"
             android:textStyle="bold" />

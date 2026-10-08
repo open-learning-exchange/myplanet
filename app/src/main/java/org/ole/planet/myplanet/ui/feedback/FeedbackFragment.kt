@@ -4,34 +4,22 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.RadioButton
 import androidx.core.widget.doAfterTextChanged
-import androidx.fragment.app.DialogFragment
-import androidx.lifecycle.lifecycleScope
+import androidx.fragment.app.viewModels
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnFeedbackSubmittedListener
+import org.ole.planet.myplanet.base.BaseBindingDialogFragment
+import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.databinding.FragmentFeedbackBinding
-import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.FeedbackRepository
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
-class FeedbackFragment : DialogFragment(), View.OnClickListener {
-    private var _binding: FragmentFeedbackBinding? = null
-    private val binding get() = _binding!!
-    @Inject
-    lateinit var feedbackRepository: FeedbackRepository
-    @Inject
-    lateinit var userSessionManager: UserSessionManager
-    private var model: RealmUser ?= null
-    var user: String? = ""
+class FeedbackFragment : BaseBindingDialogFragment<FragmentFeedbackBinding>(FragmentFeedbackBinding::inflate), View.OnClickListener {
+    private val viewModel: FeedbackComposerViewModel by viewModels()
 
-    private var mListener: OnFeedbackSubmittedListener? = null
-    fun setOnFeedbackSubmittedListener(listener: OnFeedbackSubmittedListener?) {
+    private var mListener: OnChangedListener? = null
+    fun setOnFeedbackSubmittedListener(listener: OnChangedListener?) {
         mListener = listener
     }
 
@@ -41,18 +29,31 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentFeedbackBinding.inflate(inflater, container, false)
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         binding.btnSubmit.setOnClickListener(this)
         binding.btnCancel.setOnClickListener(this)
         setupFormValidation()
-        return binding.root
+        return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        viewLifecycleOwner.lifecycleScope.launch {
-            model = userSessionManager.getUserModel()
-            user = model?.name
+        collectLatestWhenStarted(viewModel.isSubmitting) { isSubmitting ->
+            binding.btnSubmit.isEnabled = !isSubmitting
+            binding.btnCancel.isEnabled = !isSubmitting
+        }
+        collectLatestWhenStarted(viewModel.events) { event ->
+            when (event) {
+                is FeedbackComposerViewModel.SubmitEvent.Saved -> {
+                    Utilities.toast(activity, getString(R.string.feedback_saved))
+                    mListener?.onChanged()
+                    dismiss()
+                }
+                is FeedbackComposerViewModel.SubmitEvent.Error -> {
+                    val msg = event.message ?: "An error occurred"
+                    Utilities.toast(activity, getString(R.string.error, msg))
+                }
+            }
         }
     }
 
@@ -74,11 +75,6 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
         }
     }
 
-    override fun onDestroyView() {
-        _binding = null
-        super.onDestroyView()
-    }
-
     override fun onClick(view: View) {
         if (view.id == R.id.btn_submit) {
             clearError()
@@ -94,27 +90,26 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
             binding.tlMessage.error = getString(R.string.please_enter_feedback)
             return
         }
-        val rbUrgent = requireView().findViewById<RadioButton>(binding.rgUrgent.checkedRadioButtonId)
-        val rbType = requireView().findViewById<RadioButton>(binding.rgType.checkedRadioButtonId)
-        if (rbUrgent == null) {
-            binding.tlUrgent.error = getString(R.string.feedback_priority_is_required)
-            return
+        val urgent = when (binding.rgUrgent.checkedRadioButtonId) {
+            R.id.urgent_yes -> "Yes"
+            R.id.urgent_no -> "No"
+            else -> {
+                binding.tlUrgent.error = getString(R.string.feedback_priority_is_required)
+                return
+            }
         }
-        if (rbType == null) {
-            binding.tlType.error = getString(R.string.feedback_type_is_required)
-            return
+        val type = when (binding.rgType.checkedRadioButtonId) {
+            R.id.type_question -> "Question"
+            R.id.type_bug -> "Bug"
+            R.id.type_suggestion -> "Suggestion"
+            else -> {
+                binding.tlType.error = getString(R.string.feedback_type_is_required)
+                return
+            }
         }
-        val urgent = rbUrgent.text.toString()
-        val type = rbType.text.toString()
         val item = arguments?.getString("item")
         val state = arguments?.getString("state")
-        val feedback = feedbackRepository.createFeedback(user, urgent, type, message, item, state)
-        viewLifecycleOwner.lifecycleScope.launch {
-            feedbackRepository.saveFeedback(feedback)
-            Utilities.toast(activity, getString(R.string.feedback_saved))
-            mListener?.onFeedbackSubmitted()
-            dismiss()
-        }
+        viewModel.submitFeedback(urgent, type, message, item, state)
     }
 
     private fun clearError() {

@@ -6,133 +6,123 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.roundToInt
-import kotlinx.coroutines.CoroutineDispatcher
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
-import org.ole.planet.myplanet.model.RealmRating
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.data.room.dao.RatingDao
+import org.ole.planet.myplanet.model.Rating
+import org.ole.planet.myplanet.model.RatingPromptLog
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.utils.GsonUtils
 
 class RatingsRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val gson: Gson,
-) : RealmRepository(databaseService, realmDispatcher), RatingsRepository {
+    private val ratingDao: RatingDao,
+) : RatingsRepository {
 
-    override suspend fun getRatings(type: String?, userId: String?): HashMap<String?, JsonObject> {
-        val ratings = queryList(RealmRating::class.java) {
-            equalTo("type", type)
-        }
-        val aggregated = aggregateRatings(ratings, userId)
-        val map = HashMap<String?, JsonObject>(Math.ceil(aggregated.size / 0.75).toInt())
-        for ((item, aggregation) in aggregated) {
-            map[item] = aggregation.toJson()
-        }
-        return map
+    override suspend fun isRatingPrompted(userId: String, resourceId: String): Boolean {
+        return ratingDao.isRatingPrompted(userId = userId, item = resourceId, type = "resource")
     }
 
-    override suspend fun getRatingsById(type: String, resourceId: String?, userId: String?): JsonObject? {
-        val ratings = queryList(RealmRating::class.java) {
-            equalTo("type", type)
-            equalTo("item", resourceId)
-        }
-        val aggregated = aggregateRatings(ratings, userId)[resourceId]
-        return aggregated?.toJson()
-    }
-
-    override suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject> {
-        return getRatings("course", userId)
-    }
-
-    override suspend fun getResourceRatings(userId: String?): HashMap<String?, JsonObject> {
-        return getRatings("resource", userId)
+    override suspend fun setRatingPrompted(userId: String, resourceId: String) {
+        ratingDao.setRatingPrompted(RatingPromptLog(userId = userId, item = resourceId, type = "resource"))
     }
 
     override suspend fun getRatingSummary(
         type: String,
         itemId: String,
-        userId: String,
+        userId: String?,
     ): RatingSummary {
-        return withRealmAsync { realm ->
-            val results =
-                realm.where(RealmRating::class.java)
-                    .equalTo("type", type)
-                    .equalTo("item", itemId)
-                    .findAll()
-
-            val totalRatings = results.size
-            val averageRating =
-                if (totalRatings > 0) {
-                    results.average("rate").toFloat()
-                } else {
-                    0f
-                }
-
-            val existingRating =
-                results.where()
-                    .equalTo("userId", userId)
-                    .findFirst()
-
-            RatingSummary(
-                existingRating = existingRating?.toRatingEntry(),
-                averageRating = averageRating,
-                totalRatings = totalRatings,
-                userRating = existingRating?.rate,
-            )
+        val aggregate = ratingDao.getAggregate(type, itemId)
+        val totalRatings = aggregate.totalCount
+        val averageRating = aggregate.averageRate?.toFloat() ?: 0f
+        val existingRating = if (userId != null) {
+            ratingDao.findByTypeUserItem(type, userId, itemId)
+        } else {
+            null
         }
+        return RatingSummary(
+            existingRating = existingRating?.toRatingEntry(),
+            averageRating = averageRating,
+            totalRatings = totalRatings,
+            userRating = existingRating?.rate,
+        )
     }
 
     override suspend fun submitRating(
         type: String,
         itemId: String,
         title: String,
-        userId: String,
+        user: UserEntity,
         rating: Float,
         comment: String,
     ): RatingSummary {
-        val resolvedUser = findUserForRating(userId)
-        val resolvedUserId = resolvedUser.id?.takeIf { it.isNotBlank() } ?: resolvedUser._id
+        val resolvedUserId = user.id?.takeIf { it.isNotBlank() } ?: user._id
         require(!resolvedUserId.isNullOrBlank()) { "Resolved user is missing an identifier" }
 
-        val existingRating = queryList(RealmRating::class.java) {
-            equalTo("type", type)
-            equalTo("userId", resolvedUserId)
-            equalTo("item", itemId)
-        }.firstOrNull()
+        val existingRating = ratingDao.findByTypeUserItem(type, resolvedUserId, itemId)
 
-        if (existingRating == null || existingRating.id.isNullOrBlank()) {
-            val newRating = RealmRating().apply {
+        if (existingRating == null || existingRating.id.isBlank()) {
+            val newRating = Rating().apply {
                 id = UUID.randomUUID().toString()
             }
-            setRatingData(newRating, resolvedUser, type, itemId, title, rating, comment)
-            save(newRating)
+            setRatingData(newRating, user, type, itemId, title, rating, comment)
+            ratingDao.upsert(newRating)
         } else {
-            update(RealmRating::class.java, "id", existingRating.id!!) { ratingObject ->
-                setRatingData(ratingObject, resolvedUser, type, itemId, title, rating, comment)
+            val ratingObject = ratingDao.findById(existingRating.id)
+            if (ratingObject != null) {
+                setRatingData(ratingObject, user, type, itemId, title, rating, comment)
+                ratingDao.update(ratingObject)
             }
         }
 
         return getRatingSummary(type, itemId, resolvedUserId)
     }
 
-    private fun RealmRating.toRatingEntry(): RatingEntry =
+    override suspend fun insertRatingsFromSync(documentList: List<JsonObject>) {
+        if (documentList.isEmpty()) return
+        val entities = documentList.map { act ->
+            // The embedded user object can carry base64 `_attachments` (e.g. a profile photo)
+            // that bloat the stored blob past SQLite's ~2MB CursorWindow limit, crashing later
+            // `SELECT *` reads with SQLiteBlobTooBigException. Attachments aren't needed to
+            // round-trip a rating on upload, so drop them before persisting.
+            val userObject = GsonUtils.getJsonObject("user", act).apply { remove("_attachments") }
+            Rating().apply {
+                _rev = GsonUtils.getString("_rev", act)
+                _id = GsonUtils.getString("_id", act)
+                id = GsonUtils.getString("_id", act)
+                time = GsonUtils.getLong("time", act)
+                title = GsonUtils.getString("title", act)
+                type = GsonUtils.getString("type", act)
+                item = GsonUtils.getString("item", act)
+                rate = GsonUtils.getInt("rate", act)
+                isUpdated = false
+                comment = GsonUtils.getString("comment", act)
+                user = GsonUtils.gson.toJson(userObject)
+                userId = GsonUtils.getString("_id", userObject)
+                parentCode = GsonUtils.getString("parentCode", act)
+                planetCode = GsonUtils.getString("planetCode", act)
+                createdOn = GsonUtils.getString("createdOn", act)
+            }
+        }
+        ratingDao.upsertAll(entities)
+    }
+
+    override suspend fun getPendingRatingUploads(): List<Rating> {
+        return ratingDao.getPendingUploads()
+    }
+
+    override suspend fun markRatingUploaded(id: String): Boolean {
+        return ratingDao.markUploaded(id) > 0
+    }
+
+    private fun Rating.toRatingEntry(): RatingEntry =
         RatingEntry(
             id = id,
             comment = comment,
             rate = rate,
         )
 
-    private suspend fun findUserForRating(userId: String): RealmUser {
-        require(userId.isNotBlank()) { "User ID is required to submit a rating" }
-
-        val user = findByField(RealmUser::class.java, "id", userId)
-            ?: findByField(RealmUser::class.java, "_id", userId)
-
-        return requireNotNull(user) { "Unable to locate user with ID '$userId'" }
-    }
-
     private fun setRatingData(
-        ratingObject: RealmRating,
-        userModel: RealmUser?,
+        ratingObject: Rating,
+        userModel: UserEntity?,
         type: String,
         itemId: String,
         title: String,
@@ -160,62 +150,12 @@ class RatingsRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun aggregateRatings(
-        ratings: Iterable<RealmRating>,
-        userId: String?
-    ): Map<String?, RatingAggregation> {
-        val aggregationMap = LinkedHashMap<String?, RatingAggregation>()
-        for (rating in ratings) {
-            val item = rating.item
-            val aggregation = aggregationMap.getOrPut(item) { RatingAggregation() }
-            aggregation.totalRating += rating.rate
-            aggregation.totalCount += 1
-            if (userId != null && userId == rating.userId) {
-                aggregation.ratingByUser = rating.rate
-            }
-        }
-        return aggregationMap
-    }
-
-    private data class RatingAggregation(
-        var totalRating: Int = 0,
-        var totalCount: Int = 0,
-        var ratingByUser: Int? = null
-    ) {
-        fun toJson(): JsonObject {
-            val `object` = JsonObject()
-            if (ratingByUser != null) {
-                `object`.addProperty("ratingByUser", ratingByUser)
-            }
-            if (totalCount > 0) {
-                `object`.addProperty("averageRating", totalRating.toFloat() / totalCount)
-                `object`.addProperty("total", totalCount)
-            }
-            return `object`
-        }
-    }
-
     companion object {
         private const val MIN_RATING = 1
         private const val MAX_RATING = 5
 
         internal fun roundToSupportedRating(rating: Float): Int {
             return rating.roundToInt().coerceIn(MIN_RATING, MAX_RATING)
-        }
-    }
-
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
-        }
-        documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmRating.insert(realm, jsonDoc)
         }
     }
 }

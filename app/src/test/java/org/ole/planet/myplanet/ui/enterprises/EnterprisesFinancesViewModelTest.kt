@@ -1,0 +1,355 @@
+package org.ole.planet.myplanet.ui.enterprises
+
+import android.content.Context
+import android.net.Uri
+import androidx.test.core.app.ApplicationProvider
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.ole.planet.myplanet.model.Transaction
+import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.utils.AttachmentReader
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.MainDispatcherRule
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import org.ole.planet.myplanet.utils.TimeProvider
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+
+@OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(manifest = Config.NONE)
+class EnterprisesFinancesViewModelTest {
+
+    private lateinit var teamsRepository: TeamsRepository
+    private lateinit var viewModel: EnterprisesFinancesViewModel
+    private val testDispatcher = StandardTestDispatcher()
+    private val testScope = TestScope(testDispatcher)
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+
+    @Before
+    fun setup() {
+        teamsRepository = mockk()
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val timeProvider = mockk<TimeProvider>()
+        val dispatcherProvider = TestDispatcherProvider(testDispatcher)
+        viewModel = EnterprisesFinancesViewModel(
+            teamsRepository = teamsRepository,
+            appScope = testScope,
+            attachmentReader = AttachmentReader(context, timeProvider, dispatcherProvider)
+        )
+    }
+
+    @Test
+    fun `createTransaction emits success result`() = runTest {
+        val teamId = "test_team_id"
+        val type = "credit"
+        val note = "test note"
+        val amount = 100
+        val date = 123456789L
+        val parentCode = "parent"
+        val planetCode = "planet"
+        val imageName = "image.png"
+        val imageData = byteArrayOf(1, 2, 3)
+
+        coEvery {
+            teamsRepository.createTransaction(
+                teamId = teamId,
+                type = type,
+                note = note,
+                amount = amount,
+                date = date,
+                parentCode = parentCode,
+                planetCode = planetCode,
+                imageName = imageName,
+                imageData = imageData
+            )
+        } returns Result.success(Unit)
+
+        val results = mutableListOf<Result<Unit>>()
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.transactionCreated.collect { results.add(it) }
+        }
+
+        viewModel.createTransaction(
+            teamId = teamId,
+            type = type,
+            note = note,
+            amount = amount,
+            date = date,
+            parentCode = parentCode,
+            planetCode = planetCode,
+            imageName = imageName,
+            imageData = imageData
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(1, results.size)
+        assertEquals(Result.success(Unit), results[0])
+        job.cancel()
+    }
+
+    @Test
+    fun `createTransaction emits failure result when attachment read throws`() = runTest {
+        val teamId = "test_team_id"
+        val type = "credit"
+        val note = "test note"
+        val amount = 100
+        val date = 123456789L
+        val mockUri = mockk<Uri>()
+        val error = SecurityException("Permission denied")
+
+        mockkObject(FileUtils)
+        try {
+            every { FileUtils.getDisplayName(any(), any(), any()) } throws error
+
+            val results = mutableListOf<Result<Unit>>()
+            val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.transactionCreated.collect { results.add(it) }
+            }
+
+            viewModel.createTransaction(
+                teamId = teamId,
+                type = type,
+                note = note,
+                amount = amount,
+                date = date,
+                parentCode = null,
+                planetCode = null,
+                imageUri = mockUri
+            )
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(1, results.size)
+            assertTrue(results[0].isFailure)
+            assertEquals("Permission denied", results[0].exceptionOrNull()?.message)
+            job.cancel()
+        } finally {
+            unmockkObject(FileUtils)
+        }
+    }
+
+    @Test
+    fun `createTransaction emits failure result`() = runTest {
+        val teamId = "test_team_id"
+        val type = "credit"
+        val note = "test note"
+        val amount = 100
+        val date = 123456789L
+        val error = Exception("Test error")
+
+        coEvery {
+            teamsRepository.createTransaction(
+                teamId = teamId,
+                type = type,
+                note = note,
+                amount = amount,
+                date = date,
+                parentCode = null,
+                planetCode = null,
+                imageName = null,
+                imageData = null
+            )
+        } returns Result.failure(error)
+
+        val results = mutableListOf<Result<Unit>>()
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.transactionCreated.collect { results.add(it) }
+        }
+
+        viewModel.createTransaction(
+            teamId = teamId,
+            type = type,
+            note = note,
+            amount = amount,
+            date = date,
+            parentCode = null,
+            planetCode = null,
+            imageName = null,
+            imageData = null
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(1, results.size)
+        assertEquals(Result.failure<Unit>(error), results[0])
+        job.cancel()
+    }
+
+    @Test
+    fun `getTeamTransactions updates transactions state`() = runTest {
+        val mockTransactions = listOf(Transaction("1", 0L, "desc", "type", 100, 100))
+        val teamId = "test_team_id"
+        val sortAscending = true
+        val startDate = 1000L
+        val endDate = 2000L
+
+        coEvery {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = startDate,
+                endDate = endDate,
+                sortAscending = sortAscending
+            )
+        } returns flowOf(mockTransactions)
+
+        viewModel.getTeamTransactions(teamId, sortAscending, startDate, endDate)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val actualTransactions = viewModel.transactions.first()
+        assertEquals(mockTransactions, actualTransactions)
+    }
+
+    @Test
+    fun `getTeamTransactions duplicate call while active does not re-query repository`() = runTest {
+        val mockTransactions = listOf(Transaction("1", 0L, "desc", "type", 100, 100))
+        val teamId = "test_team_id"
+        val sortAscending = true
+        val startDate = 1000L
+        val endDate = 2000L
+
+        coEvery {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = startDate,
+                endDate = endDate,
+                sortAscending = sortAscending
+            )
+        } returns flowOf(mockTransactions)
+
+        viewModel.getTeamTransactions(teamId, sortAscending, startDate, endDate)
+        viewModel.getTeamTransactions(teamId, sortAscending, startDate, endDate)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = startDate,
+                endDate = endDate,
+                sortAscending = sortAscending
+            )
+        }
+    }
+
+    @Test
+    fun `getTeamTransactions call with different arguments re-queries repository`() = runTest {
+        val mockTransactions = listOf(Transaction("1", 0L, "desc", "type", 100, 100))
+        val teamId = "test_team_id"
+
+        coEvery {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = null,
+                endDate = null,
+                sortAscending = any()
+            )
+        } returns flowOf(mockTransactions)
+
+        viewModel.getTeamTransactions(teamId, sortAscending = false, startDate = null, endDate = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.getTeamTransactions(teamId, sortAscending = true, startDate = null, endDate = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = null,
+                endDate = null,
+                sortAscending = false
+            )
+        }
+        coVerify(exactly = 1) {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = null,
+                endDate = null,
+                sortAscending = true
+            )
+        }
+    }
+
+    @Test
+    fun `getTeamTransactions calculates total and updates financeSummary correctly`() = runTest {
+        val mockTransactions = listOf(
+            Transaction("1", 0L, "credit entry", "credit", 500, 500),
+            Transaction("2", 0L, "debit entry 1", "debit", 200, 300),
+            Transaction("3", 0L, "debit entry 2", "debit", 100, 200)
+        )
+        val teamId = "test_team_id"
+
+        coEvery {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = null,
+                endDate = null,
+                sortAscending = true
+            )
+        } returns flowOf(mockTransactions)
+
+        val states = mutableListOf<FinanceSummaryUiState>()
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.financeSummary.collect { states.add(it) }
+        }
+
+        viewModel.getTeamTransactions(teamId, true, null, null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val summary = states.last()
+        assertEquals(300, summary.debit)
+        assertEquals(500, summary.credit)
+        assertEquals(200, summary.total)
+        assertEquals(false, summary.isCautionVisible)
+        job.cancel()
+    }
+
+    @Test
+    fun `financeSummary exhibits caution when total is negative`() = runTest {
+        val mockTransactions = listOf(
+            Transaction("1", 0L, "credit entry", "credit", 100, 100),
+            Transaction("2", 0L, "debit entry", "debit", 300, -200)
+        )
+        val teamId = "test_team_id"
+
+        coEvery {
+            teamsRepository.getTeamTransactionsWithBalance(
+                teamId = teamId,
+                startDate = null,
+                endDate = null,
+                sortAscending = true
+            )
+        } returns flowOf(mockTransactions)
+
+        val states = mutableListOf<FinanceSummaryUiState>()
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.financeSummary.collect { states.add(it) }
+        }
+
+        viewModel.getTeamTransactions(teamId, true, null, null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val summary = states.last()
+        assertEquals(300, summary.debit)
+        assertEquals(100, summary.credit)
+        assertEquals(-200, summary.total)
+        assertEquals(true, summary.isCautionVisible)
+        job.cancel()
+    }
+}

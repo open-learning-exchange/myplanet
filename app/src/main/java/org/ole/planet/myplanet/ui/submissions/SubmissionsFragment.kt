@@ -1,11 +1,7 @@
 package org.ole.planet.myplanet.ui.submissions
 
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -13,35 +9,28 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
-class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
-    private var _binding: FragmentMySubmissionBinding? = null
-    private val binding get() = _binding!!
+@OptIn(kotlinx.coroutines.FlowPreview::class)
+class SubmissionsFragment : BaseBindingFragment<FragmentMySubmissionBinding>(FragmentMySubmissionBinding::inflate), CompoundButton.OnCheckedChangeListener {
     private val viewModel: SubmissionViewModel by viewModels()
 
-    @Inject
-    lateinit var userSessionManager: UserSessionManager
-
-    private lateinit var textWatcher: TextWatcher
     private lateinit var adapter: SubmissionsAdapter
     var type: String? = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) type = requireArguments().getString("type")
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentMySubmissionBinding.inflate(inflater, container, false)
-        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -57,29 +46,19 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
 
         viewModel.setFilter(type ?: "", "")
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            combine(
-                viewModel.submissions,
-                viewModel.exams,
-                viewModel.submissionCounts
-            ) { submissions, exams, counts ->
-                Triple(submissions, exams, counts)
-            }.collectLatest { (submissions, exams, counts) ->
-                adapter.setExams(exams)
-                adapter.setSubmissionCounts(counts)
-                adapter.submitList(submissions)
-                updateEmptyState(submissions.size)
-            }
+        collectLatestWhenStarted(viewModel.submissions) { submissions ->
+            adapter.submitList(submissions)
+            updateEmptyState(submissions.size)
         }
 
-        textWatcher = object : TextWatcher {
-            override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-            override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
-                viewModel.setFilter(type ?: "", charSequence.toString())
-            }
-            override fun afterTextChanged(editable: Editable) {}
-        }
-        binding.etSearch.addTextChangedListener(textWatcher)
+
+
+        binding.etSearch.textChanges()
+            .drop(1)
+            .debounce(300)
+            .distinctUntilChanged()
+            .onEach { text -> viewModel.setFilter(type ?: "", text?.toString() ?: "") }
+            .launchIn(viewLifecycleOwner.lifecycleScope)
         showHideRadioButton()
     }
 
@@ -136,17 +115,12 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     }
 
     override fun onDestroyView() {
-        if (this::textWatcher.isInitialized) {
-            binding.etSearch.removeTextChangedListener(textWatcher)
-        }
         binding.rbExam.setOnCheckedChangeListener(null)
         binding.rbSurvey.setOnCheckedChangeListener(null)
-        _binding = null
         super.onDestroyView()
     }
 
     companion object {
-        @JvmStatic
         fun newInstance(type: String?): Fragment {
             val fragment = SubmissionsFragment()
             val b = Bundle()

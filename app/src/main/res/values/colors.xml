@@ -46,8 +46,69 @@
     <color name="chat_ai_response_text">#000000</color>
     <color name="chat_ai_response_background">#EEF1F6</color>
     <color name="chat_detail_divider">#E0E0E0</color>
+    <color name="warning_color">#FF9800</color>
 
     <color name="status_not_started">#9E9E9E</color>
     <color name="status_in_progress">#FFC107</color>
     <color name="status_completed">#4CAF50</color>
+
+    <color name="field_fill">#E8EEF5</color>
+    <color name="md_blue_100">#BBDEFB</color>
+    <color name="md_blue_200">#90CAF9</color>
+    <color name="pending_request_indicator">#9fa0a4</color>
+
+    <color name="dashboard_page_bg">#FAF7F2</color>
+    <color name="dashboard_ink_1">#1A1814</color>
+    <color name="dashboard_ink_2">#4A453E</color>
+    <color name="dashboard_ink_3">#807868</color>
+    <color name="dashboard_hairline">#E8E2D5</color>
+    <color name="dashboard_tile_library">#D32F2F</color>
+    <color name="dashboard_tile_courses">#F57C00</color>
+    <color name="dashboard_tile_teams">#388E3C</color>
+    <color name="dashboard_tile_life">#7B1FA2</color>
+    <color name="dashboard_badge_bg">#FFFFFF</color>
+    <color name="dashboard_badge_ink">#1A1814</color>
+    <color name="dashboard_avatar_ring">#0D47A1</color>
+    <color name="dashboard_accent_blue">#1976D2</color>
+    <color name="dashboard_sync_banner_bg">#E3F2FD</color>
+    <color name="dashboard_star_filled">#1976D2</color>
+    <color name="dashboard_star_empty">#90A4AE</color>
+    <color name="dashboard_chip_icon_library">@color/dashboard_tile_library</color>
+    <color name="dashboard_chip_icon_courses">@color/dashboard_tile_courses</color>
+    <color name="dashboard_chip_icon_teams">@color/dashboard_tile_teams</color>
+    <color name="dashboard_chip_icon_life">@color/dashboard_tile_life</color>
+
+    <color name="card_border">#E8E2D5</color>
+    <color name="chip_selected_bg">#E3F2FD</color>
+    <color name="chip_selected_border">#1976D2</color>
+    <color name="chip_selected_text">#0D47A1</color>
+
+    <color name="type_pdf">#D32F2F</color>
+    <color name="type_video">#7B1FA2</color>
+    <color name="type_audio">#388E3C</color>
+    <color name="type_book">#F57C00</color>
+
+    <color name="subject_math">#F57C00</color>
+    <color name="subject_literacy">#D32F2F</color>
+    <color name="subject_health">#388E3C</color>
+    <color name="subject_social_studies">#7B1FA2</color>
+    <color name="subject_technology">#1976D2</color>
+
+    <color name="progress_track_bg">#F4EFE6</color>
+    <color name="progress_fill">#7CB342</color>
+
+    <color name="list_status_completed_bg">#E8F5E9</color>
+    <color name="list_status_completed_text">#2E7D32</color>
+    <color name="list_status_in_progress_bg">#FFF3D6</color>
+    <color name="list_status_in_progress_text">#8A6400</color>
+    <color name="list_status_not_started_bg">#F4EFE6</color>
+    <color name="list_status_not_started_text">#807868</color>
+
+    <color name="profile_avatar_ring">#E6FFFFFF</color>
+    <color name="profile_text_on_primary_secondary">#D1FFFFFF</color>
+    <color name="profile_button_stroke_on_primary">#B3FFFFFF</color>
+    <color name="profile_button_fill_on_primary">#1FFFFFFF</color>
+    <color name="profile_guest_pill_bg">#29FFFFFF</color>
+
+    <color name="ink_1">#1A1814</color>
 </resources>

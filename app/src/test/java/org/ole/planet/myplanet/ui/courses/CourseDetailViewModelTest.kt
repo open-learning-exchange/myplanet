@@ -1,0 +1,187 @@
+package org.ole.planet.myplanet.ui.courses
+
+import android.content.Context
+import io.mockk.coEvery
+import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.ole.planet.myplanet.model.CourseDetailModel
+import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.StepItem
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.RatingSummary
+import org.ole.planet.myplanet.repository.RatingsRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.MainDispatcherRule
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class CourseDetailViewModelTest {
+
+    private val testDispatcher = StandardTestDispatcher()
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+
+    private val coursesRepository: CoursesRepository = mockk()
+    private val ratingsRepository: RatingsRepository = mockk()
+    private val dispatcherProvider = object : DispatcherProvider {
+        override val main: CoroutineDispatcher = testDispatcher
+        override val mainImmediate: CoroutineDispatcher = testDispatcher
+        override val io: CoroutineDispatcher = testDispatcher
+        override val default: CoroutineDispatcher = testDispatcher
+        override val unconfined: CoroutineDispatcher = testDispatcher
+    }
+
+    private val context: Context = mockk(relaxed = true)
+
+    private lateinit var viewModel: CourseDetailViewModel
+
+    private val courseId = "course_1"
+
+    @Before
+    fun setUp() {
+        every { context.getExternalFilesDir(null) } returns null
+
+        viewModel = CourseDetailViewModel(
+            context,
+            coursesRepository,
+            ratingsRepository
+        )
+    }
+
+    private fun stubCourseLoad(
+        course: MyCourse?,
+        examCount: Int = 0,
+        steps: List<CourseStep> = emptyList(),
+        user: UserEntity? = UserEntity().apply { id = "user_1" },
+        ratingSummary: RatingSummary = RatingSummary(
+            existingRating = null,
+            averageRating = 4.0f,
+            totalRatings = 3,
+            userRating = 5
+        )
+    ) {
+        val model = if (course == null) null else {
+            val stepItems = steps.map {
+                StepItem(
+                    id = it.id,
+                    stepTitle = it.stepTitle,
+                    questionCount = 2
+                )
+            }
+            CourseDetailModel(
+                course = course,
+                user = user,
+                ratingSummary = ratingSummary,
+                examCount = examCount,
+                resources = emptyList(),
+                downloadedResources = emptyList(),
+                steps = stepItems
+            )
+        }
+        every { coursesRepository.getCourseDetailModel(courseId) } returns flowOf(model)
+        every { coursesRepository.getCourseByCourseIdFlow(courseId) } returns flowOf(course)
+    }
+
+    @Test
+    fun loadCourseDetail_whenCourseExists_emitsSuccessWithAggregatedData() = runTest {
+        val course = MyCourse().apply { courseId = this@CourseDetailViewModelTest.courseId }
+        stubCourseLoad(course = course, examCount = 7)
+
+        viewModel.loadCourseDetail(courseId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state is CourseDetailUiState.Success)
+        state as CourseDetailUiState.Success
+        assertEquals(7, state.examCount)
+        assertEquals(4.0f, state.ratingSummary?.averageRating)
+
+    }
+
+    @Test
+    fun loadCourseDetail_whenCourseNull_emitsError() = runTest {
+        every { coursesRepository.getCourseDetailModel(courseId) } returns flowOf(null)
+
+        viewModel.loadCourseDetail(courseId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state is CourseDetailUiState.Error)
+        assertEquals("Course not found", (state as CourseDetailUiState.Error).message)
+    }
+
+    @Test
+    fun loadCourseDetail_populatesStepItemsWithQuestionCounts() = runTest {
+        val course = MyCourse().apply { courseId = this@CourseDetailViewModelTest.courseId }
+        val step = CourseStep().apply { id = "step_1"; stepTitle = "Intro" }
+        stubCourseLoad(course = course, steps = listOf(step))
+
+        viewModel.loadCourseDetail(courseId)
+        advanceUntilIdle()
+
+        val steps = viewModel.stepItems.value
+        assertEquals(1, steps.size)
+        assertEquals("step_1", steps[0].id)
+        assertEquals("Intro", steps[0].stepTitle)
+        assertEquals(2, steps[0].questionCount)
+    }
+
+    @Test
+    fun toggleStepDescription_expandsMatchingStepAndCollapsesOthers() = runTest {
+        val course = MyCourse().apply { courseId = this@CourseDetailViewModelTest.courseId }
+        val stepA = CourseStep().apply { id = "a"; stepTitle = "A" }
+        val stepB = CourseStep().apply { id = "b"; stepTitle = "B" }
+        stubCourseLoad(course = course, steps = listOf(stepA, stepB))
+
+        viewModel.loadCourseDetail(courseId)
+        advanceUntilIdle()
+
+        viewModel.toggleStepDescription("a")
+        val afterFirst = viewModel.stepItems.value
+        assertTrue(afterFirst.first { it.id == "a" }.isDescriptionVisible)
+        assertFalse(afterFirst.first { it.id == "b" }.isDescriptionVisible)
+
+        // Expanding B collapses A
+        viewModel.toggleStepDescription("b")
+        val afterSecond = viewModel.stepItems.value
+        assertFalse(afterSecond.first { it.id == "a" }.isDescriptionVisible)
+        assertTrue(afterSecond.first { it.id == "b" }.isDescriptionVisible)
+    }
+
+    @Test
+    fun refreshRatings_updatesRatingSummaryOnSuccessState() = runTest {
+        val course = MyCourse().apply { courseId = this@CourseDetailViewModelTest.courseId }
+        stubCourseLoad(course = course)
+
+        viewModel.loadCourseDetail(courseId)
+        advanceUntilIdle()
+
+        coEvery { ratingsRepository.getRatingSummary("course", courseId, "user_1") } returns RatingSummary(
+            existingRating = null,
+            averageRating = 5.0f,
+            totalRatings = 10,
+            userRating = 5
+        )
+
+        viewModel.refreshRatings(courseId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as CourseDetailUiState.Success
+        assertEquals(5.0f, state.ratingSummary?.averageRating)
+        assertEquals(10, state.ratingSummary?.totalRatings)
+    }
+}
