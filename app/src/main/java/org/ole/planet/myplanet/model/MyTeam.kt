@@ -78,7 +78,7 @@ open class MyTeam(
             )
         }
 
-        fun populateTeamFields(doc: JsonObject, team: MyTeam) {
+        fun populateTeamFields(doc: JsonObject, team: MyTeam, includeCourses: Boolean = false) {
             val kDoc = doc.toKotlinx().jsonObject
             val hadLocalChanges = team.updated
 
@@ -131,7 +131,7 @@ open class MyTeam(
                 try {
                     val id = (e.jsonObject["_id"] as JsonPrimitive).content
                     serverCourseIds.add(id)
-                } catch (_: Exception) {
+                } catch (ex: Exception) {
                     if (e is JsonPrimitive) {
                         serverCourseIds.add(e.content)
                     }
@@ -150,7 +150,7 @@ open class MyTeam(
         fun serialize(team: MyTeam): JsonObject {
             if (team.isDeletePending) {
                 val `object` = buildJsonObject {
-                    if (team._id.isNotEmpty()) put("_id", team._id)
+                    if (!team._id.isNullOrEmpty()) put("_id", team._id)
                     if (!team._rev.isNullOrEmpty()) put("_rev", team._rev)
                     put("_deleted", true)
                     if (!team.teamId.isNullOrEmpty()) put("teamId", team.teamId)
@@ -168,7 +168,7 @@ open class MyTeam(
 
             if (team.docType == "resourceLink") {
                 val `object` = buildJsonObject {
-                    if (team._id.isNotEmpty()) put("_id", team._id)
+                    if (!team._id.isNullOrEmpty()) put("_id", team._id)
                     if (!team._rev.isNullOrEmpty()) put("_rev", team._rev)
                     put("resourceId", team.resourceId)
                     put("title", team.title)
@@ -185,7 +185,7 @@ open class MyTeam(
             }
 
             val `object` = buildJsonObject {
-                if (team._id.isNotEmpty()) put("_id", team._id)
+                if (!team._id.isNullOrEmpty()) put("_id", team._id)
                 if (!team._rev.isNullOrEmpty()) put("_rev", team._rev)
                 put("name", team.name)
                 put("userId", team.userId)

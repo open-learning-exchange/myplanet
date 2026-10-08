@@ -34,10 +34,13 @@ class RequestsAdapter(
     }
 
     fun setData(members: List<UserEntity>, isLeader: Boolean, memberCount: Int, limit: Int = 0) {
+        val capacityChanged = joinedTeamMembers != memberCount || memberLimit != limit || teamLeader != isLeader
         teamLeader = isLeader
         joinedTeamMembers = memberCount
         memberLimit = limit
-        submitList(members)
+        submitList(members) {
+            if (capacityChanged) notifyItemRangeChanged(0, itemCount)
+        }
     }
 
     fun setUser(user: UserEntity) {

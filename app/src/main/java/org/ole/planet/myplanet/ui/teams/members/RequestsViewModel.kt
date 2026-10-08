@@ -130,7 +130,7 @@ class RequestsViewModel @Inject constructor(
         viewModelScope.launch {
             coroutineScope {
                 val membersDeferred = async { teamsRepository.getRequestedMembers(teamId) }
-                val memberCountDeferred = async { teamsRepository.getJoinedMemberCount(teamId) }
+                val memberCountDeferred = async { teamsRepository.getMemberCountTowardLimit(teamId) }
                 val memberLimitDeferred = async { teamsRepository.getTeamMemberLimit(teamId) }
                 val userDeferred = async { userRepository.getUserModel() }
                 val user = userDeferred.await()
