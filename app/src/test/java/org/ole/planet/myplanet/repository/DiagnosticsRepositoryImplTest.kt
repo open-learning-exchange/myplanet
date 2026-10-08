@@ -101,9 +101,27 @@ class DiagnosticsRepositoryImplTest {
         coVerify(exactly = 0) { apkLogDao.insert(any()) }
     }
 
+    @Test
+    fun `saveLogToRoom returns false when apkLogDao insert throws`() = runTest {
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { apkLogDao.insert(any()) } throws RuntimeException("insert failed")
+
+        val result = repository.saveLogToRoom("crash", "boom", "1700000000000")
+
+        assertFalse(result)
+    }
+
     @Test(expected = CancellationException::class)
     fun `saveLogToRoom rethrows CancellationException`() = runTest {
         coEvery { userRepository.getUserModel() } throws CancellationException("cancelled")
+
+        repository.saveLogToRoom("crash", "boom", "1700000000000")
+    }
+
+    @Test(expected = CancellationException::class)
+    fun `saveLogToRoom rethrows CancellationException when apkLogDao insert throws`() = runTest {
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { apkLogDao.insert(any()) } throws CancellationException("cancelled")
 
         repository.saveLogToRoom("crash", "boom", "1700000000000")
     }
@@ -189,6 +207,18 @@ class DiagnosticsRepositoryImplTest {
 
         assertFalse(result)
         coVerify(exactly = 0) { apkLogDao.insertAll(any()) }
+    }
+
+    @Test
+    fun `saveLogsToRoom returns false when apkLogDao insertAll throws`() = runTest {
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { apkLogDao.insertAll(any()) } throws RuntimeException("insertAll failed")
+
+        val result = repository.saveLogsToRoom(
+            listOf(CrashLogStore.PendingLog(File("/tmp/a.log"), "crash", "1700000000001", "err1"))
+        )
+
+        assertFalse(result)
     }
 
     @Test(expected = CancellationException::class)
