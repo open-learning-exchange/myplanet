@@ -231,16 +231,17 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             binding.btnRemove.visibility = View.GONE
         }
         binding.btnRemove.setOnClickListener {
+            val addOnTap = userId?.let { library.userId?.contains(it) } != true
             viewLifecycleOwner.lifecycleScope.launch {
                 val id = libraryId ?: return@launch
                 if (!isAdded) {
                     return@launch
                 }
                 try {
-                    val updated = viewModel.setUserLibrary(id, isAdd)
+                    val updated = viewModel.setUserLibrary(id, addOnTap)
                     if (updated != null) {
                         library = updated
-                        val formatRes = if (isAdd) R.string.format_added_to_mylibrary else R.string.format_removed_from_mylibrary
+                        val formatRes = if (addOnTap) R.string.format_added_to_mylibrary else R.string.format_removed_from_mylibrary
                         Utilities.toast(activity, getString(formatRes, getString(R.string.resources)))
                         setLibraryData()
                     }
