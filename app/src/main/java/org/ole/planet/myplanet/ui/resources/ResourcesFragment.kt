@@ -445,6 +445,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private fun hideButton(){
+        if (_binding == null) return
         val count = selectedItems?.size ?: 0
         tvDelete?.isEnabled = count != 0
         tvAddToLib.isEnabled = count != 0
@@ -650,6 +651,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private fun changeButtonStatus() {
+        if (!::adapterLibrary.isInitialized || _binding == null) return
         if (adapterLibrary.areAllSelected()) {
             selectAll.isChecked = true
             selectAll.text = getString(R.string.unselect_all)
@@ -713,6 +715,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
         confirmation = null
         if (::adapterLibrary.isInitialized) {
+            adapterLibrary.selectAllItems(false)
             adapterLibrary.setListener(null)
         }
 
