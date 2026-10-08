@@ -45,6 +45,7 @@ import com.mikepenz.materialdrawer.holder.DimenHolder
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
+import dagger.Lazy
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.math.ceil
@@ -69,6 +70,7 @@ import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.chat.ChatHistoryFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.ui.components.showThemeModePicker
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.notifications.NotificationsFragment
@@ -121,6 +123,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     @Inject
     override lateinit var resourcesRepository: ResourcesRepository
+    @Inject
+    lateinit var notificationManagerProvider: Lazy<NotificationUtils.NotificationManager>
     private val challengeManager: ChallengePrompter by lazy {
         ChallengePrompter(this, prefData)
     }
@@ -178,7 +182,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             isReady = true
             binding.root.invalidate()
             notificationManager = withContext(dispatcherProvider.io) {
-                NotificationUtils.getInstance(this@DashboardActivity)
+                notificationManagerProvider.get()
             }
         }
     }
@@ -443,7 +447,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.id.action_about -> openCallFragment(AboutFragment(), AboutFragment::class.java.simpleName)
             R.id.action_logout -> logout()
             R.id.change_language -> SettingsActivity.SettingFragment.languageChanger(this)
-            R.id.action_theme -> themeManager.showThemeDialog(this)
+            R.id.action_theme -> showThemeModePicker(this, themeManager)
             else -> {}
         }
     }
