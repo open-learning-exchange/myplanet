@@ -9,6 +9,9 @@ import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.longOrNull
 
 object JsonUtils {
+    private val EMPTY_OBJECT = JsonObject(emptyMap())
+    private val EMPTY_ARRAY = JsonArray(emptyList())
+
     private fun field(fieldName: String, jsonObject: JsonObject?): kotlinx.serialization.json.JsonElement? =
         jsonObject?.get(fieldName)?.takeIf { it != JsonNull }
 
@@ -43,10 +46,10 @@ object JsonUtils {
     }
 
     fun getJsonObject(fieldName: String, jsonObject: JsonObject?): JsonObject =
-        field(fieldName, jsonObject) as? JsonObject ?: JsonObject(emptyMap())
+        field(fieldName, jsonObject) as? JsonObject ?: EMPTY_OBJECT
 
     fun getJsonArray(fieldName: String, jsonObject: JsonObject?): JsonArray =
-        field(fieldName, jsonObject) as? JsonArray ?: JsonArray(emptyList())
+        field(fieldName, jsonObject) as? JsonArray ?: EMPTY_ARRAY
 
     fun rawString(fieldName: String, jsonObject: JsonObject?): String? =
         (field(fieldName, jsonObject) as? JsonPrimitive)?.content
