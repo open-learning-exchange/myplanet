@@ -1003,6 +1003,7 @@
     <string name="no_feedback">wax jawaab celin ah lama hayo</string>
     <string name="medium_html">HTML</string>
     <string name="empty_text" />
+    <string name="filter_header_with_count">%1$s (%2$d)</string>
     <string name="message_placeholder">%s</string>
     <string name="reports">warbixino</string>
     <string name="number_placeholder">%d</string>
