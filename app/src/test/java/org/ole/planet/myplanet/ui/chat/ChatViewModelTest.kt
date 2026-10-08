@@ -259,6 +259,49 @@ class ChatViewModelTest {
     }
 
     @Test
+    fun `reloading chat history keeps the active search applied`() = runTest {
+        val chat1 = ChatHistory().apply { title = "Chat 1" }
+        val chat2 = ChatHistory().apply { title = "Chat 2" }
+        val chat3 = ChatHistory().apply { title = "Chat 1 follow-up" }
+
+        coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)
+        every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("", "", null)
+
+        viewModel.loadChatHistoryScreenData("user123")
+        testScheduler.advanceUntilIdle()
+        viewModel.searchChats("Chat 1", isFullSearch = false, isQuestion = false)
+        testScheduler.advanceUntilIdle()
+
+        // A reload (return to the screen or a realtime update) brings in a new matching chat
+        coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2, chat3)
+        viewModel.loadChatHistoryScreenData("user123")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(listOf("Chat 1", "Chat 1 follow-up"), viewModel.filteredChats.value.map { it.title })
+    }
+
+    @Test
+    fun `clearing the search before a reload restores the full list`() = runTest {
+        val chat1 = ChatHistory().apply { title = "Chat 1" }
+        val chat2 = ChatHistory().apply { title = "Chat 2" }
+
+        coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)
+        every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("", "", null)
+
+        viewModel.loadChatHistoryScreenData("user123")
+        testScheduler.advanceUntilIdle()
+        viewModel.searchChats("Chat 1", isFullSearch = true, isQuestion = true)
+        testScheduler.advanceUntilIdle()
+
+        // A fresh ChatHistoryFragment pushes its empty search box before its reload lands
+        viewModel.searchChats("", isFullSearch = false, isQuestion = false)
+        viewModel.loadChatHistoryScreenData("user123")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(listOf("Chat 1", "Chat 2"), viewModel.filteredChats.value.map { it.title })
+    }
+
+    @Test
     fun `loadChatHistoryScreenData uses cached data and handles nulls gracefully`() = runTest {
         val cachedUser = mockk<UserEntity>(relaxed = true)
         val conversation = ChatHistory().apply {
