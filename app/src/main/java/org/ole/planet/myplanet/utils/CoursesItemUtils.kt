@@ -108,7 +108,7 @@ internal object CoursesItemUtils {
             else -> fallbackHeight
         }.coerceAtLeast(1)
 
-        Glide.with(context)
+        Glide.with(ivCover)
             .load(model)
             .diskCacheStrategy(DiskCacheStrategy.ALL)
             .signature(ObjectKey(course.courseRev.orEmpty()))
