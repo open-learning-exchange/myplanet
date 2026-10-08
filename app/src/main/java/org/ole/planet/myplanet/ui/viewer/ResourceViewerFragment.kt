@@ -637,6 +637,33 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         if (truncated) {
             Utilities.toast(requireContext(), getString(R.string.text_content_truncated))
         }
+        setupTextReadAloud(text)
+    }
+
+    private fun setupTextReadAloud(text: String) {
+        binding.fabRecord.visibility = View.GONE
+        binding.fabPlay.visibility = View.GONE
+        binding.fabMenu.visibility = View.VISIBLE
+        binding.fabReadAloud.setOnClickListener {
+            if (ttsManager.isSpeaking) {
+                ttsManager.stop()
+                return@setOnClickListener
+            }
+            viewLifecycleOwner.lifecycleScope.launch {
+                val speech = withContext(dispatcherProvider.default) {
+                    when (type) {
+                        ResourceType.MARKDOWN -> TTSManager.stripMarkdown(text)
+                        ResourceType.CSV -> runCatching { TTSManager.formatCsvTextForSpeech(text) }.getOrDefault("")
+                        else -> text
+                    }
+                }
+                if (speech.isBlank()) {
+                    Utilities.toast(requireContext(), getString(R.string.tts_not_available))
+                } else {
+                    ttsManager.speak(speech)
+                }
+            }
+        }
     }
 
     override fun setAuthSession(responseHeader: Map<String, List<String>>) {
