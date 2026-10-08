@@ -99,6 +99,20 @@ class CoursesProgressAdapterTest {
     }
 
     @Test
+    fun `recycled row without progress clears the previous course step text`() {
+        val withProgress = CoursesProgressRow("1", "Course 1", 2, 5, null, null)
+        val withoutProgress = CoursesProgressRow("2", "Course 2", null, null, null, null)
+        adapter.submitList(listOf(withProgress, withoutProgress))
+        val holder = adapter.onCreateViewHolder(LinearLayout(activity), 0)
+
+        adapter.onBindViewHolder(holder, 0)
+        assertEquals(activity.getString(org.ole.planet.myplanet.R.string.step_progress, 2, 5), holder.binding.tvDescription.text.toString())
+
+        adapter.onBindViewHolder(holder, 1)
+        assertEquals("", holder.binding.tvDescription.text.toString())
+    }
+
+    @Test
     fun `click row with progress launches CourseProgressActivity`() {
         val withProgressItem = CoursesProgressRow(
             courseId = "course123",

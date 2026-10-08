@@ -151,6 +151,39 @@ class NotificationDaoTest {
     }
 
     @Test
+    fun chunkedListOperations_deduplicateRepeatedIdsAcrossChunkBoundary() = runBlocking {
+        val notifications = (1..1000).map { i ->
+            createNotification("notif_$i", rev = "rev_$i", needsSync = true).apply {
+                isRead = false
+            }
+        }
+        notificationDao.upsertAll(notifications)
+
+        val idsWithDuplicate = notifications.map { it.id } + "notif_1"
+        assertEquals(1001, idsWithDuplicate.size)
+
+        // Test getByIds
+        val fetchedNotifications = notificationDao.getByIds(idsWithDuplicate)
+        assertEquals(1000, fetchedNotifications.size)
+
+        // Test getIdsByIds
+        val fetchedIds = notificationDao.getIdsByIds(idsWithDuplicate)
+        assertEquals(1000, fetchedIds.size)
+
+        // Test markAsRead(ids, date) returns distinct count
+        val markDate = java.util.Date()
+        val markResult = notificationDao.markAsRead(idsWithDuplicate, markDate)
+        assertEquals(1000, markResult)
+
+        // Test deleteByIds returns distinct count
+        val deleteResult = notificationDao.deleteByIds(idsWithDuplicate)
+        assertEquals(1000, deleteResult)
+
+        val remainingNotifications = notificationDao.getByIds(idsWithDuplicate)
+        assertTrue(remainingNotifications.isEmpty())
+    }
+
+    @Test
     fun chunkedListOperations_handleMoreThan900Items() = runBlocking {
         val notifications = (1..1200).map { i ->
             createNotification("notif_$i", rev = "rev_$i", needsSync = true).apply {
