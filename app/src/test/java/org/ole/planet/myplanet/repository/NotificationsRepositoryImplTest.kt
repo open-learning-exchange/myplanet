@@ -703,6 +703,76 @@ class NotificationsRepositoryImplTest {
     }
 
     @Test
+    fun `getEnrichedNotifications deduplicates userIds across join requests and resolves both`() = runTest {
+        val mockUserRepo = mockk<UserRepository>(relaxed = true)
+        io.mockk.every { userRepository.get() } returns mockUserRepo
+
+        val joinNotif1 = AppNotification().apply {
+            id = "j1"
+            userId = "user1"
+            type = "join_request"
+            message = "Join 1"
+            relatedId = "rel1"
+        }
+        val joinNotif2 = AppNotification().apply {
+            id = "j2"
+            userId = "user1"
+            type = "join_request"
+            message = "Join 2"
+            relatedId = "rel2"
+        }
+
+        coEvery { notificationDao.getNotifications("user1", "", false) } returns listOf(joinNotif1, joinNotif2)
+        coEvery { notificationDao.getUnreadCount("user1", false) } returns 2
+
+        val jr1 = JoinRequestInfo("rel1", "teamA", "sameUser")
+        val jr2 = JoinRequestInfo("rel2", "teamB", "sameUser")
+        coEvery { teamsRepository.get().getJoinRequestsInfo(listOf("rel1", "rel2")) } returns listOf(jr1, jr2)
+        coEvery { teamsRepository.get().getTeamNamesByIds(listOf("teamA", "teamB")) } returns mapOf("teamA" to "Alpha Team", "teamB" to "Beta Team")
+        coEvery { mockUserRepo.getUsersByIds(listOf("sameUser")) } returns listOf(
+            org.ole.planet.myplanet.model.UserEntity(id = "sameUser", name = "Shared User")
+        )
+
+        val enrichment = repository.getEnrichedNotifications("user1", "all", false)
+
+        coVerify(exactly = 1) { mockUserRepo.getUsersByIds(listOf("sameUser")) }
+        assertEquals(Pair("Shared User", "Alpha Team"), enrichment.joinRequestDetails["rel1"])
+        assertEquals(Pair("Shared User", "Beta Team"), enrichment.joinRequestDetails["rel2"])
+    }
+
+    @Test
+    fun `getEnrichedNotifications drops join request with empty id and excludes its userId`() = runTest {
+        val mockUserRepo = mockk<UserRepository>(relaxed = true)
+        io.mockk.every { userRepository.get() } returns mockUserRepo
+
+        val joinNotif1 = AppNotification().apply {
+            id = "j1"
+            userId = "user1"
+            type = "join_request"
+            message = "Join 1"
+            relatedId = "rel1"
+        }
+
+        coEvery { notificationDao.getNotifications("user1", "", false) } returns listOf(joinNotif1)
+        coEvery { notificationDao.getUnreadCount("user1", false) } returns 1
+
+        val validJr = JoinRequestInfo("rel1", "teamA", "userValid")
+        val emptyIdJr = JoinRequestInfo("", "teamB", "userEmptyReq")
+        coEvery { teamsRepository.get().getJoinRequestsInfo(listOf("rel1")) } returns listOf(validJr, emptyIdJr)
+        coEvery { teamsRepository.get().getTeamNamesByIds(listOf("teamA", "teamB")) } returns mapOf("teamA" to "Alpha Team", "teamB" to "Beta Team")
+        coEvery { mockUserRepo.getUsersByIds(listOf("userValid")) } returns listOf(
+            org.ole.planet.myplanet.model.UserEntity(id = "userValid", name = "Valid User")
+        )
+
+        val enrichment = repository.getEnrichedNotifications("user1", "all", false)
+
+        coVerify(exactly = 1) { mockUserRepo.getUsersByIds(listOf("userValid")) }
+        assertEquals(1, enrichment.joinRequestDetails.size)
+        assertEquals(Pair("Valid User", "Alpha Team"), enrichment.joinRequestDetails["rel1"])
+        assertFalse(enrichment.joinRequestDetails.containsKey(""))
+    }
+
+    @Test
     fun `resolveType passes through known types lowercased`() {
         assertEquals("join_request", repository.resolveType("join_request", "anything", null))
         assertEquals("task", repository.resolveType("Task", "anything", null))

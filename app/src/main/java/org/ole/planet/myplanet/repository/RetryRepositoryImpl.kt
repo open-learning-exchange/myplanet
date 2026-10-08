@@ -24,6 +24,7 @@ class RetryRepositoryImpl @Inject constructor(
 
     companion object {
         private const val TAG = "RetryRepository"
+        private const val PREVIEW_LIMIT = 10
     }
 
     private val isProcessing = AtomicBoolean(false)
@@ -177,9 +178,11 @@ class RetryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getRetryQueueSnapshot(): RetryQueueDetails {
+        val now = timeProvider.now()
         val pendingCount = getPendingCount()
-        val pendingOps = getPending()
+        val pendingOps = retryDao.getPendingPreview(now, PREVIEW_LIMIT)
+        val pendingDueCount = retryDao.getPendingDueCount(now)
         val isProcessing = isCurrentlyProcessing()
-        return RetryQueueDetails(pendingCount, pendingOps, isProcessing)
+        return RetryQueueDetails(pendingCount, pendingOps, isProcessing, pendingDueCount)
     }
 }
