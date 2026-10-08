@@ -19,6 +19,7 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.model.AppNotification
+import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.robolectric.RobolectricTestRunner
@@ -470,27 +471,54 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `getEnrichedNotifications classifies task and join_request buckets and performs fan-out`() = runTest {
-        val task1 = AppNotification().apply {
-            id = "t1"
-            userId = "user1"
-            type = "task"
-            message = "Task 1 Mon 12, Jan 2024"
-            relatedId = "rel1"
-        }
-        val join1 = AppNotification().apply {
-            id = "j1"
-            userId = "user1"
-            type = "join_request"
-            message = "Join 1"
-            relatedId = "rel2"
-        }
-        val joinNoId = AppNotification().apply {
-            id = "j2"
-            userId = "user1"
-            type = "join_request"
-            message = "Join No ID"
-            relatedId = null
-        }
+        val task1 = NotificationPayload(
+            id = "t1",
+            userId = "user1",
+            message = "Task 1 Mon 12, Jan 2024",
+            isRead = false,
+            createdAt = 0L,
+            type = "task",
+            relatedId = "rel1",
+            title = null,
+            link = null,
+            priority = 0,
+            isFromServer = false,
+            rev = null,
+            needsSync = false,
+            subType = null
+        )
+        val join1 = NotificationPayload(
+            id = "j1",
+            userId = "user1",
+            message = "Join 1",
+            isRead = false,
+            createdAt = 0L,
+            type = "join_request",
+            relatedId = "rel2",
+            title = null,
+            link = null,
+            priority = 0,
+            isFromServer = false,
+            rev = null,
+            needsSync = false,
+            subType = null
+        )
+        val joinNoId = NotificationPayload(
+            id = "j2",
+            userId = "user1",
+            message = "Join No ID",
+            isRead = false,
+            createdAt = 0L,
+            type = "join_request",
+            relatedId = null,
+            title = null,
+            link = null,
+            priority = 0,
+            isFromServer = false,
+            rev = null,
+            needsSync = false,
+            subType = null
+        )
 
         coEvery { notificationDao.getNotifications("user1", "", false) } returns listOf(task1, join1, joinNoId)
         coEvery { notificationDao.getUnreadCount("user1", false) } returns 3
@@ -534,13 +562,22 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `getEnrichedNotifications task id precedence over task title precedence`() = runTest {
-        val task1 = AppNotification().apply {
-            id = "t1"
-            userId = "user1"
-            type = "task"
-            message = "Task 1 Mon 12, Jan 2024"
-            relatedId = "rel1"
-        }
+        val task1 = NotificationPayload(
+            id = "t1",
+            userId = "user1",
+            message = "Task 1 Mon 12, Jan 2024",
+            isRead = false,
+            createdAt = 0L,
+            type = "task",
+            relatedId = "rel1",
+            title = null,
+            link = null,
+            priority = 0,
+            isFromServer = false,
+            rev = null,
+            needsSync = false,
+            subType = null
+        )
         coEvery { notificationDao.getNotifications("user1", "", false) } returns listOf(task1)
         coEvery { notificationDao.getUnreadCount("user1", false) } returns 1
 
@@ -573,13 +610,22 @@ class NotificationsRepositoryImplTest {
         val mockTeamsRepo = mockk<TeamsNotificationsRepository>(relaxed = true)
         io.mockk.every { teamsRepository.get() } returns mockTeamsRepo
 
-        val taskDateless = AppNotification().apply {
-            id = "t1"
-            userId = "user1"
-            type = "task"
-            message = "Task without date"
-            relatedId = "rel1"
-        }
+        val taskDateless = NotificationPayload(
+            id = "t1",
+            userId = "user1",
+            message = "Task without date",
+            isRead = false,
+            createdAt = 0L,
+            type = "task",
+            relatedId = "rel1",
+            title = null,
+            link = null,
+            priority = 0,
+            isFromServer = false,
+            rev = null,
+            needsSync = false,
+            subType = null
+        )
         coEvery { notificationDao.getNotifications("user1", "", false) } returns listOf(taskDateless)
         coEvery { notificationDao.getUnreadCount("user1", false) } returns 1
 
@@ -598,13 +644,22 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `getEnrichedNotifications maps join request to Unknown Team when team is absent from getTeamNamesByIds`() = runTest {
-        val joinNotif = AppNotification().apply {
-            id = "j1"
-            userId = "user1"
-            type = "join_request"
-            message = "Join 1"
-            relatedId = "rel1"
-        }
+        val joinNotif = NotificationPayload(
+            id = "j1",
+            userId = "user1",
+            message = "Join 1",
+            isRead = false,
+            createdAt = 0L,
+            type = "join_request",
+            relatedId = "rel1",
+            title = null,
+            link = null,
+            priority = 0,
+            isFromServer = false,
+            rev = null,
+            needsSync = false,
+            subType = null
+        )
 
         coEvery { notificationDao.getNotifications("user1", "", false) } returns listOf(joinNotif)
         coEvery { notificationDao.getUnreadCount("user1", false) } returns 1
@@ -627,13 +682,22 @@ class NotificationsRepositoryImplTest {
         val mockUserRepo = mockk<UserRepository>(relaxed = true)
         io.mockk.every { userRepository.get() } returns mockUserRepo
 
-        val joinNotif = AppNotification().apply {
-            id = "j1"
-            userId = "user1"
-            type = "join_request"
-            message = "Join 1"
-            relatedId = "rel1"
-        }
+        val joinNotif = NotificationPayload(
+            id = "j1",
+            userId = "user1",
+            message = "Join 1",
+            isRead = false,
+            createdAt = 0L,
+            type = "join_request",
+            relatedId = "rel1",
+            title = null,
+            link = null,
+            priority = 0,
+            isFromServer = false,
+            rev = null,
+            needsSync = false,
+            subType = null
+        )
 
         coEvery { notificationDao.getNotifications("user1", "", false) } returns listOf(joinNotif)
         coEvery { notificationDao.getUnreadCount("user1", false) } returns 1
@@ -653,13 +717,22 @@ class NotificationsRepositoryImplTest {
         val mockTeamsRepo = mockk<TeamsNotificationsRepository>(relaxed = true)
         io.mockk.every { teamsRepository.get() } returns mockTeamsRepo
 
-        val taskNotif = AppNotification().apply {
-            id = "t1"
-            userId = "user1"
-            type = "task"
-            message = "Task 1 Mon 12, Jan 2024"
-            relatedId = "rel1"
-        }
+        val taskNotif = NotificationPayload(
+            id = "t1",
+            userId = "user1",
+            message = "Task 1 Mon 12, Jan 2024",
+            isRead = false,
+            createdAt = 0L,
+            type = "task",
+            relatedId = "rel1",
+            title = null,
+            link = null,
+            priority = 0,
+            isFromServer = false,
+            rev = null,
+            needsSync = false,
+            subType = null
+        )
 
         coEvery { notificationDao.getNotifications("user1", "", false) } returns listOf(taskNotif)
         coEvery { notificationDao.getUnreadCount("user1", false) } returns 1
@@ -681,13 +754,22 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `getEnrichedNotifications maps join request to Unknown User when user is missing from getUsersByIds result`() = runTest {
-        val joinNotif = AppNotification().apply {
-            id = "j1"
-            userId = "user1"
-            type = "join_request"
-            message = "Join 1"
-            relatedId = "rel1"
-        }
+        val joinNotif = NotificationPayload(
+            id = "j1",
+            userId = "user1",
+            message = "Join 1",
+            isRead = false,
+            createdAt = 0L,
+            type = "join_request",
+            relatedId = "rel1",
+            title = null,
+            link = null,
+            priority = 0,
+            isFromServer = false,
+            rev = null,
+            needsSync = false,
+            subType = null
+        )
 
         coEvery { notificationDao.getNotifications("user1", "", false) } returns listOf(joinNotif)
         coEvery { notificationDao.getUnreadCount("user1", false) } returns 1
@@ -707,20 +789,38 @@ class NotificationsRepositoryImplTest {
         val mockUserRepo = mockk<UserRepository>(relaxed = true)
         io.mockk.every { userRepository.get() } returns mockUserRepo
 
-        val joinNotif1 = AppNotification().apply {
-            id = "j1"
-            userId = "user1"
-            type = "join_request"
-            message = "Join 1"
-            relatedId = "rel1"
-        }
-        val joinNotif2 = AppNotification().apply {
-            id = "j2"
-            userId = "user1"
-            type = "join_request"
-            message = "Join 2"
-            relatedId = "rel2"
-        }
+        val joinNotif1 = NotificationPayload(
+            id = "j1",
+            userId = "user1",
+            message = "Join 1",
+            isRead = false,
+            createdAt = 0L,
+            type = "join_request",
+            relatedId = "rel1",
+            title = null,
+            link = null,
+            priority = 0,
+            isFromServer = false,
+            rev = null,
+            needsSync = false,
+            subType = null
+        )
+        val joinNotif2 = NotificationPayload(
+            id = "j2",
+            userId = "user1",
+            message = "Join 2",
+            isRead = false,
+            createdAt = 0L,
+            type = "join_request",
+            relatedId = "rel2",
+            title = null,
+            link = null,
+            priority = 0,
+            isFromServer = false,
+            rev = null,
+            needsSync = false,
+            subType = null
+        )
 
         coEvery { notificationDao.getNotifications("user1", "", false) } returns listOf(joinNotif1, joinNotif2)
         coEvery { notificationDao.getUnreadCount("user1", false) } returns 2
@@ -745,13 +845,22 @@ class NotificationsRepositoryImplTest {
         val mockUserRepo = mockk<UserRepository>(relaxed = true)
         io.mockk.every { userRepository.get() } returns mockUserRepo
 
-        val joinNotif1 = AppNotification().apply {
-            id = "j1"
-            userId = "user1"
-            type = "join_request"
-            message = "Join 1"
-            relatedId = "rel1"
-        }
+        val joinNotif1 = NotificationPayload(
+            id = "j1",
+            userId = "user1",
+            message = "Join 1",
+            isRead = false,
+            createdAt = 0L,
+            type = "join_request",
+            relatedId = "rel1",
+            title = null,
+            link = null,
+            priority = 0,
+            isFromServer = false,
+            rev = null,
+            needsSync = false,
+            subType = null
+        )
 
         coEvery { notificationDao.getNotifications("user1", "", false) } returns listOf(joinNotif1)
         coEvery { notificationDao.getUnreadCount("user1", false) } returns 1

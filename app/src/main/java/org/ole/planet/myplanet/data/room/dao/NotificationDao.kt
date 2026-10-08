@@ -9,6 +9,7 @@ import androidx.sqlite.db.SimpleSQLiteQuery
 import androidx.sqlite.db.SupportSQLiteQuery
 import java.util.Date
 import org.ole.planet.myplanet.model.AppNotification
+import org.ole.planet.myplanet.model.NotificationPayload
 
 @Dao
 interface NotificationDao {
@@ -34,7 +35,7 @@ interface NotificationDao {
     suspend fun deleteById(id: String): Int
 
     @Query("SELECT * FROM notifications WHERE (userId = :userId OR (:isAdmin = 1 AND userId = 'SYSTEM')) AND message != 'INVALID' AND message != '' AND (:filter = '' OR (:filter = 'read' AND isRead = 1) OR (:filter = 'unread' AND isRead = 0)) ORDER BY isRead ASC, createdAt DESC")
-    suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean): List<AppNotification>
+    suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean): List<NotificationPayload>
 
     @Query("SELECT * FROM notifications WHERE id IN (:ids)")
     suspend fun getByIdsInternal(ids: List<String>): List<AppNotification>
