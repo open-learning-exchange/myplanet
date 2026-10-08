@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LifeViewModelTest {
@@ -29,7 +28,6 @@ class LifeViewModelTest {
     private lateinit var userRepository: UserRepository
     private lateinit var viewModel: LifeViewModel
     private val testDispatcher = StandardTestDispatcher()
-    private val testDispatcherProvider = TestDispatcherProvider(testDispatcher)
     private val labelResolver: (Int) -> String = { "mock_string_$it" }
 
     @Before
@@ -40,8 +38,7 @@ class LifeViewModelTest {
 
         viewModel = LifeViewModel(
             lifeRepository,
-            userRepository,
-            testDispatcherProvider
+            userRepository
         )
     }
 
