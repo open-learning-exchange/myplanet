@@ -62,6 +62,7 @@ import org.ole.planet.myplanet.repository.TeamsMembersRepository
 import org.ole.planet.myplanet.repository.TeamsNotificationsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsRepositoryImpl
+import org.ole.planet.myplanet.repository.TeamsShareRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UploadRepositoryImpl
@@ -73,6 +74,7 @@ import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.repository.VoicesEditor
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.VoicesRepositoryImpl
+import org.ole.planet.myplanet.repository.VoicesShareRepository
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -208,6 +210,10 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindTeamsShareRepository(impl: TeamsRepositoryImpl): TeamsShareRepository
+
+    @Binds
+    @Singleton
     abstract fun bindTeamsSyncRepository(impl: TeamsRepositoryImpl): TeamsSyncRepository
 
     @Binds
@@ -236,4 +242,7 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindVoicesRepository(impl: VoicesRepositoryImpl): VoicesRepository
+
+    @Binds
+    abstract fun bindVoicesShareRepository(repository: VoicesRepository): VoicesShareRepository
 }
