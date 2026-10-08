@@ -67,7 +67,14 @@ jobs:
         run: |
           FLAVOR=${{ matrix.build }}
           SHARD=${{ matrix.shard }}
-          ./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=${{ strategy.job-total }} -PtestShardIndex=$((SHARD - 1)) -ProbolectricOffline=true --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
+          args=(test${FLAVOR^}DebugUnitTest -PtestShardTotal=${{ strategy.job-total }} -PtestShardIndex=$((SHARD - 1)) -ProbolectricOffline=true --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4)
+          log="$RUNNER_TEMP/gradle-test.log"
+          if ! ./gradlew "${args[@]}" 2>&1 | tee "$log"; then
+            grep -q "Incremental compilation failed" "$log" || exit 1
+            echo "::warning::stale Kotlin incremental caches in the restored build dir; retrying without them"
+            rm -rf app/build/kotlin
+            ./gradlew "${args[@]}"
+          fi
 
       - name: check the offline robolectric runtime took effect
         if: always()
@@ -76,7 +83,6 @@ jobs:
           staged=$(find build/robolectric-sdks -name '*.jar' 2>/dev/null | wc -l || true)
           size=$(du -sh build/robolectric-sdks 2>/dev/null | cut -f1 || true)
           echo "staged android-all jars: ${staged:-0} (${size:-0})" | tee -a "$GITHUB_STEP_SUMMARY"
-          # Nothing else writes here, so a jar means -ProbolectricOffline missed the forks.
           fetched=$(find "$HOME/.m2/repository/org/robolectric" -name '*.jar' 2>/dev/null || true)
           if [ -n "$fetched" ]; then
             echo "offline mode did not take effect: a test fork resolved an android-all jar at runtime" | tee -a "$GITHUB_STEP_SUMMARY"
