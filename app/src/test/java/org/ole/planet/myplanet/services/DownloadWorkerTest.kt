@@ -125,14 +125,15 @@ class DownloadWorkerTest {
 
         val result = worker.doWork()
 
-        assertTrue(result is androidx.work.ListenableWorker.Result.Success)
+        // The only download failed, so the run is retried rather than reported as a success
+        assertTrue(result is androidx.work.ListenableWorker.Result.Retry)
         verify(atLeast = 1) { Log.e("DownloadWorker", any(), any<Throwable>()) }
 
         unmockkObject(FileUtils)
     }
 
     @Test
-    fun `doWork returns success even when an individual download reports an error`() = runTest(testDispatcher) {
+    fun `doWork retries when every download reports an error`() = runTest(testDispatcher) {
         val url = "http://example.com/resources/123/file.txt"
         every { preferences.getStringSet(any(), any()) } returns setOf(url)
         every { workerParams.inputData.getString("urls_key") } returns "url_list_key"
@@ -146,7 +147,7 @@ class DownloadWorkerTest {
 
         val result = worker.doWork()
 
-        assertTrue(result is androidx.work.ListenableWorker.Result.Success)
+        assertTrue(result is androidx.work.ListenableWorker.Result.Retry)
 
         unmockkObject(FileUtils)
     }
@@ -242,6 +243,43 @@ class DownloadWorkerTest {
         coVerify(exactly = 1) { downloadRepository.downloadFileResponse(any(), any()) }
         coVerify(exactly = 0) { downloadRepository.downloadFileResponse(url2, any()) }
         coVerify(exactly = 0) { downloadRepository.downloadFileResponse(url3, any()) }
+
+        unmockkObject(FileUtils)
+    }
+
+    @Test
+    fun `resultFor succeeds on any success, retries a total failure, then gives up`() {
+        assertTrue(DownloadWorker.resultFor(1, 3, runAttemptCount = 0) is androidx.work.ListenableWorker.Result.Success)
+        assertTrue(DownloadWorker.resultFor(0, 3, runAttemptCount = 0) is androidx.work.ListenableWorker.Result.Retry)
+        assertTrue(
+            DownloadWorker.resultFor(0, 3, runAttemptCount = DownloadWorker.MAX_RETRY_ATTEMPTS)
+                is androidx.work.ListenableWorker.Result.Failure
+        )
+    }
+
+    @Test
+    fun `successful downloads are removed from the queue and failed ones stay`() = runTest(testDispatcher) {
+        val done = "http://example.com/resources/1/done.txt"
+        val failed = "http://example.com/resources/2/failed.txt"
+        val queued = setOf(done, failed)
+        every { preferences.getStringSet(any(), any()) } returns queued
+        val editor = mockk<SharedPreferences.Editor>(relaxed = true)
+        every { preferences.edit() } returns editor
+        every { editor.putStringSet(any(), any()) } returns editor
+        every { workerParams.inputData.getString("urls_key") } returns "url_list_key"
+        every { workerParams.inputData.getBoolean("fromSync", false) } returns false
+
+        mockkObject(FileUtils)
+        // An already-downloaded file counts as a success without hitting the network
+        every { FileUtils.checkFileExist(context, done) } returns true
+        every { FileUtils.checkFileExist(context, failed) } returns false
+        every { FileUtils.getSDPathFromUrl(context, failed) } returns mockk(relaxed = true)
+        coEvery { downloadRepository.downloadFileResponse(failed, any()) } returns DownloadResult.Error("err", 500)
+
+        val result = worker.doWork()
+
+        assertTrue(result is androidx.work.ListenableWorker.Result.Success)
+        verify { editor.putStringSet("url_list_key", setOf(failed)) }
 
         unmockkObject(FileUtils)
     }

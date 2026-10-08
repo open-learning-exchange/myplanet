@@ -11,6 +11,7 @@ import java.io.IOException
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -49,6 +50,7 @@ import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.distinctByContent
 
+@Singleton
 class ResourcesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val activitiesRepository: ActivitiesRepository,
@@ -666,7 +668,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                     processedCount++
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w("ResourcesRepository", "batchInsertMyLibrary document insertion failed", e)
             }
         }
         if (librariesToUpsert.isNotEmpty()) {
@@ -714,7 +716,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                     savedIds.add(_id)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w("ResourcesRepository", "batchInsertResources document insertion failed", e)
             }
         }
         if (librariesToUpsert.isNotEmpty()) {
