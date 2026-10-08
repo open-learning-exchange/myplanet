@@ -62,7 +62,7 @@ import org.ole.planet.myplanet.repository.TeamsMembersRepository
 import org.ole.planet.myplanet.repository.TeamsNotificationsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsRepositoryImpl
-import org.ole.planet.myplanet.repository.TeamsShareTargetsRepository
+import org.ole.planet.myplanet.repository.TeamsShareRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UploadRepositoryImpl
@@ -210,7 +210,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindTeamsShareTargetsRepository(impl: TeamsRepositoryImpl): TeamsShareTargetsRepository
+    abstract fun bindTeamsShareRepository(impl: TeamsRepositoryImpl): TeamsShareRepository
 
     @Binds
     @Singleton

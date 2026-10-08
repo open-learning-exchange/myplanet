@@ -40,7 +40,7 @@ data class TeamUploadData(
     val imageName: String? = null
 )
 
-interface TeamsRepository : TeamsFinancesRepository, TeamsMembersRepository, TeamsNotificationsRepository, TeamsShareTargetsRepository {
+interface TeamsRepository : TeamsFinancesRepository, TeamsMembersRepository, TeamsNotificationsRepository, TeamsShareRepository {
     suspend fun getAllActiveTeams(): List<MyTeam>
     suspend fun getMyTeamsFlow(userId: String): Flow<List<MyTeam>>
     fun getMyTeamDetailsFlow(userId: String, type: String? = null): Flow<List<TeamDetails>>
