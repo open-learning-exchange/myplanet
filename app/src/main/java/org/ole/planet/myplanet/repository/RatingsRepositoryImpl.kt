@@ -3,22 +3,22 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import java.util.Date
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.roundToInt
+import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.RatingPromptLog
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.GsonUtils
-import java.util.Locale
-import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 
 class RatingsRepositoryImpl @Inject constructor(
     private val gson: Gson,
     private val ratingDao: RatingDao,
     private val myLibraryDao: MyLibraryDao,
-    ) : RatingsRepository {
+) : RatingsRepository {
 
     override suspend fun isRatingPrompted(userId: String, resourceId: String): Boolean {
         return ratingDao.isRatingPrompted(userId = userId, item = resourceId, type = "resource")
