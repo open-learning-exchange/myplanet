@@ -377,7 +377,7 @@ class HealthViewModelTest {
         val user = UserEntity().apply { id = "1"; name = "Test Patient" }
         val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
 
-        coEvery { healthRepository.getPatientById("1") } returns user
+        coEvery { userRepository.getUserById("1") } returns user
         coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
 
         customViewModel.setSyncActive(true)
@@ -392,7 +392,7 @@ class HealthViewModelTest {
         realtimeSyncManager.notifyTableUpdated(TableDataUpdate("health", 1, 0, true))
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { healthRepository.getPatientById("1") }
+        coVerify(exactly = 1) { userRepository.getUserById("1") }
     }
 
     @Test
