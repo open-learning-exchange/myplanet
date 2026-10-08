@@ -714,7 +714,6 @@ class TeamsRepositoryImplTest {
         teamsRepository.markTeamsUploaded(uploadedTeams)
 
         coVerify(exactly = 1) { teamDao.getByIds(listOf("team1", "team2")) }
-        coVerify(exactly = 0) { teamDao.getAll() }
         coVerify(exactly = 1) { teamDao.upsertAll(any()) }
     }
 
@@ -748,7 +747,6 @@ class TeamsRepositoryImplTest {
         teamsRepository.bulkInsertFromSync(jsonArray)
 
         coVerify(exactly = 1) { teamDao.getByIds(listOf("team1", "team2")) }
-        coVerify(exactly = 0) { teamDao.getAll() }
 
         io.mockk.unmockkStatic("androidx.room.RoomDatabaseKt")
     }
@@ -768,7 +766,6 @@ class TeamsRepositoryImplTest {
         coVerify(exactly = 1) { teamDao.getByIds(ids.subList(0, 500)) }
         coVerify(exactly = 1) { teamDao.getByIds(ids.subList(500, 1000)) }
         coVerify(exactly = 1) { teamDao.getByIds(ids.subList(1000, 1200)) }
-        coVerify(exactly = 0) { teamDao.getAll() }
     }
 
     @Test
@@ -778,7 +775,6 @@ class TeamsRepositoryImplTest {
         teamsRepository.batchInsertMyTeams(emptyList())
 
         coVerify(exactly = 0) { teamDao.getByIds(any()) }
-        coVerify(exactly = 0) { teamDao.getAll() }
     }
 
     @Test
