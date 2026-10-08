@@ -50,13 +50,7 @@ class RetryRepositoryImplTest {
     fun setUp() {
         MockKAnnotations.init(this, relaxed = true)
         mockkStatic(Log::class)
-        every { Log.d(any<String>(), any<String>()) } returns 0
-        every { Log.d(any<String>(), any<String>(), any<Throwable>()) } returns 0
-        every { Log.i(any<String>(), any<String>()) } returns 0
-        every { Log.i(any<String>(), any<String>(), any<Throwable>()) } returns 0
-        every { Log.w(any<String>(), any<String>()) } returns 0
         every { Log.w(any<String>(), any<String>(), any<Throwable>()) } returns 0
-        every { Log.e(any<String>(), any<String>()) } returns 0
         every { Log.e(any<String>(), any<String>(), any<Throwable>()) } returns 0
 
         retryDao = mockk(relaxed = true)
@@ -195,6 +189,7 @@ class RetryRepositoryImplTest {
         assertTrue(result is RetryOperationResult.Success)
         coVerify { retryDao.markInProgress("op1") }
         coVerify { retryDao.markCompleted("op1", timeProvider.now()) }
+        coVerify(exactly = 0) { retryDao.recordFailedAttempt(any(), any(), any(), any()) }
     }
 
     @Test
