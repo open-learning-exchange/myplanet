@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
+import org.ole.planet.myplanet.utils.FileUtils
 
 @Singleton
 class ResourceDownloadCoordinator @Inject constructor(
@@ -29,6 +30,14 @@ class ResourceDownloadCoordinator @Inject constructor(
                 if (urls.isNotEmpty()) {
                     DownloadUtils.openDownloadService(context, urls, false)
                 }
+            }
+        }
+    }
+
+    suspend fun downloadIfMissing(url: String) {
+        withContext(dispatcherProvider.io) {
+            if (!FileUtils.checkFileExist(context, url)) {
+                DownloadUtils.openDownloadService(context, arrayListOf(url), false)
             }
         }
     }
