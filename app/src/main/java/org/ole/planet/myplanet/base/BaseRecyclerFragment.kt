@@ -281,6 +281,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             "survey" to R.string.no_surveys,
             "survey_submission" to R.string.no_survey_submissions,
             "exam_submission" to R.string.no_exam_submissions,
+            "submissions_filtered" to R.string.no_results_for_filter,
             "team" to R.string.no_teams,
             "enterprise" to R.string.no_enterprise,
             "chatHistory" to R.string.no_chats,
