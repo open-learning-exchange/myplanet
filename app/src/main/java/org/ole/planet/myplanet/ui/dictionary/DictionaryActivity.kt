@@ -3,9 +3,9 @@ package org.ole.planet.myplanet.ui.dictionary
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.viewModels
 import androidx.core.text.HtmlCompat
 import dagger.hilt.android.AndroidEntryPoint

@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.ui.resources
 
 import android.app.Application
-import android.widget.TextView
 import android.widget.ImageView
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
