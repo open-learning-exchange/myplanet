@@ -11,6 +11,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnSuccessListener
+import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.repository.PhotoUpload
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -48,16 +49,15 @@ class PhotoUploader @Inject constructor(
                         async {
                             if (photoId == null) return@async null
                             try {
-                                val response = semaphore.withPermit {
+                                val result = semaphore.withPermit {
                                     uploadRepository.postUpload(
                                         "$baseUrl/submissions", serialized
                                     )
                                 }
 
-                                val `object` = response.body()
-                                if (response.isSuccessful && `object` != null) {
-                                    val rev = getString("rev", `object`)
-                                    val id = getString("id", `object`)
+                                if (result is NetworkResult.Success) {
+                                    val rev = getString("rev", result.data)
+                                    val id = getString("id", result.data)
                                     PhotoUpload(photoId, rev, id)
                                 } else null
                             } catch (e: CancellationException) {

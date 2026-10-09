@@ -76,6 +76,11 @@ jobs:
             ./gradlew "${args[@]}"
           fi
 
+      - name: run shared module tests
+        if: matrix.shard == 1
+        shell: bash
+        run: ./gradlew :shared:allTests --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
+
       - name: check the offline robolectric runtime took effect
         if: always()
         shell: bash

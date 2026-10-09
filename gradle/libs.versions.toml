@@ -55,9 +55,11 @@ flexbox = "3.0.0"
 
 [plugins]
 application = { id = "com.android.application" }
+android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library" }
 ksp = { id = "com.google.devtools.ksp" }
 dagger-hilt-android = { id = "com.google.dagger.hilt.android" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform" }
 
 [libraries]
 test-junit = { module = "junit:junit", version.ref = "junit" }

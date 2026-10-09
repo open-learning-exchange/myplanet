@@ -5,6 +5,7 @@ import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.callback.OnSuccessListener
+import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.repository.UploadRepository
@@ -52,14 +53,14 @@ open class FileUploader(
     private fun uploadDoc(params: UploadDocParams) {
         scope.launch {
             try {
-                val response = uploadRepository.uploadAttachment(
+                val result = uploadRepository.uploadAttachment(
                     file = params.f,
                     destinationFormat = params.format,
                     id = params.id,
                     rev = params.rev,
                     name = params.name
                 )
-                onDataReceived(response.body(), params.listener)
+                onDataReceived((result as? NetworkResult.Success)?.data, params.listener)
             } catch (t: Exception) {
                 t.printStackTrace()
                 params.listener.onSuccess("Unable to upload resource")
