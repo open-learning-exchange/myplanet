@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import android.app.Application
 import androidx.room.Room
 import com.google.gson.Gson
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockk
@@ -12,6 +13,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -19,6 +21,7 @@ import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
@@ -83,6 +86,7 @@ class VoicesRepositoryNewsSyncTest {
     fun tearDown() {
         db.close()
         unmockkObject(UrlUtils)
+        unmockkObject(NetworkUtils)
     }
 
     @Test
@@ -136,5 +140,52 @@ class VoicesRepositoryNewsSyncTest {
         val blankNews = newsDao.getByUnderscoreId("")
         assertNotNull(blankNews)
         assertEquals("Blank id message", blankNews?.message)
+    }
+
+    private fun reactionsOf(vararg entries: Pair<String, List<String>>): JsonObject =
+        JsonObject().apply {
+            entries.forEach { (emoji, users) -> add(emoji, JsonArray().apply { users.forEach { add(it) } }) }
+        }
+
+    @Test
+    fun `insertNewsList stores server reactions so they can be displayed`() = runBlocking {
+        val serverReactions = mapOf(
+            "👍" to listOf("org.couchdb.user:alice", "org.couchdb.user:bob"),
+            "🎉" to listOf("org.couchdb.user:carol"),
+        )
+        val doc = messageDoc("n1", "Hello").apply {
+            add("reactions", reactionsOf(*serverReactions.toList().toTypedArray()))
+        }
+
+        repository.insertNewsList(listOf(doc))
+
+        assertEquals(serverReactions, newsDao.getByUnderscoreId("n1")?.reactionsMap)
+    }
+
+    @Test
+    fun `insertNewsList clears reactions removed on the server`() = runBlocking {
+        val withReactions = messageDoc("n1", "Hello").apply {
+            add("reactions", reactionsOf("👍" to listOf("org.couchdb.user:bob")))
+        }
+        repository.insertNewsList(listOf(withReactions))
+
+        repository.insertNewsList(listOf(messageDoc("n1", "Hello")))
+
+        assertNull(newsDao.getByUnderscoreId("n1")?.reactions)
+    }
+
+    @Test
+    fun `saveReactions is pushed in the upload payload as a reactions object`() = runBlocking {
+        repository.insertNewsList(listOf(messageDoc("n1", "Hello")))
+        val news = newsDao.getByUnderscoreId("n1")!!
+        news.updateReaction("❤️", "org.couchdb.user:alice")
+
+        repository.saveReactions(news.id, news.reactions)
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "test-device"
+
+        val payload = repository.getNewsForUpload().single { it._id == "n1" }.newsJson
+        val reactions = payload.getAsJsonObject("reactions")
+        assertEquals("org.couchdb.user:alice", reactions.getAsJsonArray("❤️")[0].asString)
     }
 }

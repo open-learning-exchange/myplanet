@@ -224,4 +224,31 @@ class NewsTest {
         news.viewIn = "not a valid json"
         assertFalse(news.isCommunityNews)
     }
+
+    @Test
+    fun testUpdateReactionAddsSwitchesAndRemoves() {
+        val news = News()
+        val user = "org.couchdb.user:alice"
+
+        news.updateReaction("👍", user)
+        assertEquals(mapOf("👍" to listOf(user)), news.reactionsMap)
+
+        news.updateReaction("😎", user)
+        assertEquals(mapOf("😎" to listOf(user)), news.reactionsMap)
+
+        news.updateReaction("😎", user)
+        assertTrue(news.reactionsMap.isEmpty())
+        assertEquals("{}", news.reactions)
+    }
+
+    @Test
+    fun testReactionsMapKeepsOtherUsersAndIgnoresMalformedJson() {
+        val news = News()
+        news.reactions = """{"🎉":["org.couchdb.user:bob"]}"""
+        news.updateReaction("🎉", "org.couchdb.user:alice")
+        assertEquals(listOf("org.couchdb.user:bob", "org.couchdb.user:alice"), news.reactionsMap["🎉"])
+
+        news.reactions = "not json"
+        assertTrue(news.reactionsMap.isEmpty())
+    }
 }
