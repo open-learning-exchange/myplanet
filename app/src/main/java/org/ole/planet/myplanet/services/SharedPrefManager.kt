@@ -189,10 +189,6 @@ class SharedPrefManager @Inject constructor(
     }
 
     fun getUrlUser(): String = pref.getString(URL_USER, "") ?: ""
-    fun setUrlUser(user: String) {
-        pref.edit { putString(URL_USER, user) }
-        UrlUtils.invalidateCaches()
-    }
 
     fun getUrlPwd(): String = pref.getString(URL_PWD, "") ?: ""
     fun setUrlPwd(pwd: String) {
@@ -201,7 +197,6 @@ class SharedPrefManager @Inject constructor(
     }
 
     fun getUrlScheme(): String = pref.getString(URL_SCHEME, "") ?: ""
-    fun setUrlScheme(scheme: String) = pref.edit { putString(URL_SCHEME, scheme) }
 
     fun getUrlHost(): String = pref.getString(URL_HOST, "") ?: ""
     fun setUrlHost(host: String) = pref.edit { putString(URL_HOST, host) }
@@ -311,7 +306,6 @@ class SharedPrefManager @Inject constructor(
     }
 
     fun getUserName(): String = pref.getString(USER_NAME, "") ?: ""
-    fun setUserName(name: String) = pref.edit { putString(USER_NAME, name) }
 
     fun getCommunityLeaders(): String = pref.getString(COMMUNITY_LEADERS, "") ?: ""
     fun setCommunityLeaders(json: String) = pref.edit { putString(COMMUNITY_LEADERS, json) }

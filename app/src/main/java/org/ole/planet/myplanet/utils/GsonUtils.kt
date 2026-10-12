@@ -124,22 +124,6 @@ object GsonUtils {
             if (!el.isJsonPrimitive) false else el.asBoolean
         }
 
-    fun addString(`object`: JsonObject, fieldName: String, value: String?) {
-        if (!value.isNullOrEmpty()) `object`.addProperty(fieldName, value)
-    }
-
-    fun addLong(`object`: JsonObject, fieldName: String, value: Long) {
-        if (value > 0) `object`.addProperty(fieldName, value)
-    }
-
-    fun addInteger(`object`: JsonObject, fieldName: String, value: Int) {
-        if (value != 0) `object`.addProperty(fieldName, value)
-    }
-
-    fun addFloat(`object`: JsonObject, fieldName: String, value: Float) {
-        if (value != 0f) `object`.addProperty(fieldName, value)
-    }
-
     fun addJson(`object`: JsonObject, fieldName: String, value: JsonObject?) {
         if (value != null && value.keySet().isNotEmpty()) `object`.add(fieldName, value)
     }
