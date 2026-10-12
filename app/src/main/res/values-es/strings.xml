@@ -586,7 +586,6 @@
     <string name="format_removed_from_mylibrary">%1$s eliminado de myLibrary</string>
     <string name="added_to_my_courses">agregado a myCourses</string>
     <string name="do_you_want_to_stay_online">¿Deseas permanecer en línea?</string>
-    <string name="device_not_connected_to_planet">Dispositivo no conectado a Planet.</string>
     <string name="all_files_downloaded_successfully">Todos los archivos se han descargado correctamente.</string>
     <string name="removed_from_mylibrary">Eliminado de miBiblioteca.</string>
     <string name="removed_from_mycourse">Eliminado de misCursos.</string>

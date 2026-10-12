@@ -585,7 +585,6 @@
     <string name="format_removed_from_mylibrary">%1$s laga saaray myLibrary</string>
     <string name="added_to_my_courses">lagu daray myCourses</string>
     <string name="do_you_want_to_stay_online">Ma rabtid inaad joogto internetka?</string>
-    <string name="device_not_connected_to_planet">Qalabka aan la xidhiidhin Geedka.</string>
     <string name="all_files_downloaded_successfully">Dhammaan faylashu waa la degsanayaa si guul ah.</string>
     <string name="removed_from_mylibrary">Ka tirtiray Maktabaddayda</string>
     <string name="removed_from_mycourse">Ka tirtiray kursiga kayga</string>

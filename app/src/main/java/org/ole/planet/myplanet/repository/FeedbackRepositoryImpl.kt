@@ -104,12 +104,6 @@ class FeedbackRepositoryImpl @Inject constructor(
         feedbackDao.upsert(feedback)
     }
 
-    suspend fun insertFromJson(jsonObject: JsonObject) {
-        val id = GsonUtils.getString("_id", jsonObject)
-        val existing = feedbackDao.findById(id)
-        feedbackDao.upsert(mapToFeedback(jsonObject, existing, id))
-    }
-
     override suspend fun insertFeedbackList(jsonObjects: List<JsonObject>) {
         val ids = jsonObjects.map { GsonUtils.getString("_id", it) }
         val existingById = feedbackDao.getByIds(ids).associateBy { it.id }

@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -107,14 +106,6 @@ class CoursesRepositoryImplTest {
         assertEquals("a e i o u", StringUtils.normalizeText("á é í ó ú"))
         assertEquals("c", StringUtils.normalizeText("ç"))
         assertEquals("aeiou", StringUtils.normalizeText("äëïöü"))
-    }
-
-    @Test
-    fun testMatchesAllParts() {
-        assertTrue(repository.matchesAllParts("hello world", listOf("hello", "world")))
-        assertFalse(repository.matchesAllParts("hello world", listOf("hello", "universe")))
-        assertTrue(repository.matchesAllParts("the quick brown fox", listOf("quick", "fox")))
-        assertTrue(repository.matchesAllParts("test", emptyList<String>()))
     }
 
     @Test

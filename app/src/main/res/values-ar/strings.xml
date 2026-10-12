@@ -586,7 +586,6 @@
     <string name="format_removed_from_mylibrary">%1$s تمت إزالتها من myLibrary</string>
     <string name="added_to_my_courses">تمت الإضافة إلى myCourses</string>
     <string name="do_you_want_to_stay_online">هل ترغب في البقاء متصلاً على الإنترنت؟</string>
-    <string name="device_not_connected_to_planet">الجهاز غير متصل بالكوكب.</string>
     <string name="all_files_downloaded_successfully">تم تنزيل جميع الملفات بنجاح</string>
     <string name="removed_from_mylibrary">تمت الإزالة من مكتبتي</string>
     <string name="removed_from_mycourse">تمت الإزالة من دوراتي</string>
