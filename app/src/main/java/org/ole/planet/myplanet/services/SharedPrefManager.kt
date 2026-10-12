@@ -26,7 +26,6 @@ class SharedPrefManager @Inject constructor(
     companion object {
         private val userListType = object : TypeToken<List<User>>() {}.type
         private const val SAVED_USERS = "savedUsers"
-        private const val REPLIED_NEWS_ID = "repliedNewsId"
         const val MANUAL_CONFIG = "manualConfig"
         private const val SELECTED_TEAM_ID = "selectedTeamId"
         const val FIRST_LAUNCH = "firstLaunch"
@@ -101,10 +100,6 @@ class SharedPrefManager @Inject constructor(
         val json = gson.toJson(users)
         pref.edit { putString(SAVED_USERS, json) }
         savedUsersCache = SavedUsersCache(json, users.detach())
-    }
-
-    fun setRepliedNewsId(repliedNewsId: String?) {
-        pref.edit { putString(REPLIED_NEWS_ID, repliedNewsId) }
     }
 
     fun getManualConfig(): Boolean {

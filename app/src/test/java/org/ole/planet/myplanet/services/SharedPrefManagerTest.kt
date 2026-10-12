@@ -223,13 +223,6 @@ class SharedPrefManagerTest {
     }
 
     @Test
-    fun testSetRepliedNewsId() {
-        sharedPrefManager.setRepliedNewsId("456")
-        verify { mockEditor.putString("repliedNewsId", "456") }
-        verify { mockEditor.apply() }
-    }
-
-    @Test
     fun testGetAndSetManualConfig() {
         every { mockSharedPreferences.getBoolean("manualConfig", false) } returns true
         assertTrue(sharedPrefManager.getManualConfig())
