@@ -51,6 +51,14 @@ interface MeetupDao {
     )
     suspend fun getPendingUploads(): List<Meetup>
 
+    @Query("DELETE FROM meetup WHERE id IN (:ids)")
+    suspend fun deleteByIdsInternal(ids: List<String>)
+
+    suspend fun deleteByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        ids.distinct().chunked(900).forEach { deleteByIdsInternal(it) }
+    }
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(item: Meetup)
 
