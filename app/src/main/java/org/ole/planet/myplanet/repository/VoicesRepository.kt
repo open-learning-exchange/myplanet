@@ -19,7 +19,8 @@ data class NewsUpdateData(
     val id: String?,
     val _id: String?,
     val _rev: String?,
-    val imagesArray: JsonArray
+    val imagesArray: JsonArray,
+    val message: String? = null
 )
 
 interface VoicesRepository : VoicesEditor, VoicesShareRepository {

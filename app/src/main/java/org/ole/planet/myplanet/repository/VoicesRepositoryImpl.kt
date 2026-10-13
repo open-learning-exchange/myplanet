@@ -60,6 +60,7 @@ class VoicesRepositoryImpl @Inject constructor(
                     news._id = update._id
                     news._rev = update._rev
                     news.images = gson.toJson(update.imagesArray)
+                    update.message?.let { news.message = it }
                     toUpdate.add(news)
                 }
             }

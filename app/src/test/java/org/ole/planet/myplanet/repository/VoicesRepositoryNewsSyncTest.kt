@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import android.app.Application
 import androidx.room.Room
 import com.google.gson.Gson
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockk
@@ -17,6 +18,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.NewsDao
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -136,5 +138,24 @@ class VoicesRepositoryNewsSyncTest {
         val blankNews = newsDao.getByUnderscoreId("")
         assertNotNull(blankNews)
         assertEquals("Blank id message", blankNews?.message)
+    }
+    @Test
+    fun `markNewsUploaded keeps the uploaded images and their markdown`() = runBlocking {
+        newsDao.upsert(News().apply {
+            id = "local-1"
+            message = "Hello"
+            imageUrls = listOf("{\"imageUrl\":\"/sdcard/new.png\"}")
+        })
+        val images = JsonArray().apply {
+            add(JsonObject().apply { addProperty("resourceId", "new-res"); addProperty("filename", "new.png") })
+        }
+
+        repository.markNewsUploaded(listOf(NewsUpdateData("local-1", "server-1", "1-abc", images, "Hello\n![](resources/new-res/new.png)")))
+
+        val saved = newsDao.getById("local-1")!!
+        assertEquals("server-1", saved._id)
+        assertEquals(images, saved.imagesArray)
+        assertEquals("Hello\n![](resources/new-res/new.png)", saved.message)
+        assertEquals(emptyList<String>(), saved.imageUrls)
     }
 }
