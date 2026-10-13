@@ -158,7 +158,7 @@ class EventsRepositoryImplTest {
         assertEquals(2, count)
 
         val slot = slot<List<Meetup>>()
-        coVerify(exactly = 1) { meetupDao.upsertAll(capture(slot)) }
+        coVerify(exactly = 1) { meetupDao.replaceSyncedMeetups(emptyList(), capture(slot)) }
         assertEquals(2, slot.captured.size)
     }
 
@@ -172,7 +172,7 @@ class EventsRepositoryImplTest {
         val count = repository.batchInsertMeetups(docs)
         assertEquals(1, count)
 
-        coVerify(exactly = 0) { meetupDao.upsertAll(any()) }
+        coVerify(exactly = 1) { meetupDao.replaceSyncedMeetups(emptyList(), emptyList()) }
     }
 
     @Test

@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.UserEntity
 
@@ -64,4 +65,10 @@ interface MeetupDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<Meetup>)
+
+    @Transaction
+    suspend fun replaceSyncedMeetups(duplicateIds: List<String>, items: List<Meetup>) {
+        deleteByIds(duplicateIds)
+        if (items.isNotEmpty()) upsertAll(items)
+    }
 }

@@ -70,6 +70,30 @@ class EventsRepositoryMeetupSyncTest {
     }
 
     @Test
+    fun `pulling keeps an unsynced edit made on the server-id duplicate`() = runBlocking {
+        meetupDao.upsert(Meetup().apply { id = "local-uuid"; meetupId = "server-1"; title = "Meetup" })
+        meetupDao.upsert(Meetup().apply { id = "server-1"; meetupId = "server-1"; title = "Edited"; updated = true })
+
+        repository.insertMeetupsFromSync(listOf(pulledMeetup("server-1", "Meetup")))
+
+        val rows = meetupDao.getByMeetupIds(listOf("server-1"))
+        assertEquals(listOf("server-1"), rows.map { it.id })
+        assertEquals("Edited", rows[0].title)
+        assertEquals(true, rows[0].updated)
+    }
+
+    @Test
+    fun `pulling deletes no duplicate that still holds an unsynced edit`() = runBlocking {
+        meetupDao.upsert(Meetup().apply { id = "local-uuid"; meetupId = "server-1"; title = "Local edit"; updated = true })
+        meetupDao.upsert(Meetup().apply { id = "server-1"; meetupId = "server-1"; title = "Server edit"; updated = true })
+
+        repository.insertMeetupsFromSync(listOf(pulledMeetup("server-1", "Meetup")))
+
+        val rows = meetupDao.getByMeetupIds(listOf("server-1")).sortedBy { it.id }
+        assertEquals(listOf("Local edit", "Server edit"), rows.map { it.title })
+    }
+
+    @Test
     fun `meetups created on the server are stored under their server id as before`() = runBlocking {
         repository.insertMeetupsFromSync(listOf(pulledMeetup("server-2", "From Planet")))
 

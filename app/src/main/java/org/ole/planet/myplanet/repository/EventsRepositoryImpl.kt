@@ -107,8 +107,12 @@ class EventsRepositoryImpl @Inject constructor(
         val ids = docs.map { GsonUtils.getString("_id", it) }
         val existingRows = meetupDao.getByMeetupIds(ids)
         val existingByMeetupId = existingRows.groupBy { it.meetupId }
-            .mapValues { (_, rows) -> rows.firstOrNull { it.id != it.meetupId } ?: rows.first() }
-        val duplicateIds = existingRows.filter { it.id != existingByMeetupId[it.meetupId]?.id }.map { it.id }
+            .mapValues { (_, rows) ->
+                rows.firstOrNull { it.updated } ?: rows.firstOrNull { it.id != it.meetupId } ?: rows.first()
+            }
+        val duplicateIds = existingRows
+            .filter { !it.updated && it.id != existingByMeetupId[it.meetupId]?.id }
+            .map { it.id }
 
         val meetupsToInsert = docs.mapNotNull { meetupDoc ->
             val id = GsonUtils.getString("_id", meetupDoc)
@@ -119,10 +123,7 @@ class EventsRepositoryImpl @Inject constructor(
                 Meetup.fromJson(meetupDoc, "", existing).apply { existing?.let { this.id = it.id } }
             }
         }
-        meetupDao.deleteByIds(duplicateIds)
-        if (meetupsToInsert.isNotEmpty()) {
-            meetupDao.upsertAll(meetupsToInsert)
-        }
+        meetupDao.replaceSyncedMeetups(duplicateIds, meetupsToInsert)
     }
 
     override suspend fun batchInsertMeetups(documents: List<JsonObject>): Int {
