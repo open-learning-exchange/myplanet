@@ -858,16 +858,6 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun setTaskCompletion(taskId: String, completed: Boolean) {
-        teamTaskDao.getById(taskId)?.let { task ->
-            task.completed = completed
-            task.status = if (completed) TaskStatus.COMPLETED.value else TaskStatus.TODO.value
-            task.completedTime = if (completed) Date().time else 0
-            task.isUpdated = true
-            teamTaskDao.upsert(task)
-        }
-    }
-
     override suspend fun setTaskStatus(taskId: String, status: String) {
         teamTaskDao.getById(taskId)?.let { task ->
             task.status = status

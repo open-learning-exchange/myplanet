@@ -13,7 +13,6 @@ import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.TaskStatus
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.effectiveStatus
-import org.ole.planet.myplanet.model.nextStatus
 import org.ole.planet.myplanet.repository.TeamsRepositoryImpl
 
 class TeamsTasksFilterAndStatusTest {
@@ -32,29 +31,15 @@ class TeamsTasksFilterAndStatusTest {
         val taskInProgress = TeamTask().apply { completed = false; status = "in_progress" }
         assertEquals(TaskStatus.IN_PROGRESS.value, taskInProgress.effectiveStatus())
 
-        val taskStatusCompleted = TeamTask().apply { completed = false; status = "completed" }
-        assertEquals(TaskStatus.COMPLETED.value, taskStatusCompleted.effectiveStatus())
+        // completed wins: older Planet builds untick by clearing `completed` and leaving `status`
+        val taskUntickedByOldPlanet = TeamTask().apply { completed = false; status = "completed" }
+        assertEquals(TaskStatus.TODO.value, taskUntickedByOldPlanet.effectiveStatus())
 
         val taskFlagCompletedEmptyStatus = TeamTask().apply { completed = true; status = "" }
         assertEquals(TaskStatus.COMPLETED.value, taskFlagCompletedEmptyStatus.effectiveStatus())
 
         val taskFlagCompletedTodoStatus = TeamTask().apply { completed = true; status = "to_do" }
         assertEquals(TaskStatus.COMPLETED.value, taskFlagCompletedTodoStatus.effectiveStatus())
-    }
-
-    @Test
-    fun `nextStatus cycles in order todo to in_progress to completed to todo`() {
-        val taskTodo = TeamTask().apply { completed = false; status = TaskStatus.TODO.value }
-        assertEquals(TaskStatus.IN_PROGRESS, taskTodo.nextStatus())
-
-        val taskEmpty = TeamTask().apply { completed = false; status = "" }
-        assertEquals(TaskStatus.IN_PROGRESS, taskEmpty.nextStatus())
-
-        val taskInProgress = TeamTask().apply { completed = false; status = TaskStatus.IN_PROGRESS.value }
-        assertEquals(TaskStatus.COMPLETED, taskInProgress.nextStatus())
-
-        val taskCompleted = TeamTask().apply { completed = true; status = TaskStatus.COMPLETED.value }
-        assertEquals(TaskStatus.TODO, taskCompleted.nextStatus())
     }
 
     @Test
@@ -107,28 +92,6 @@ class TeamsTasksFilterAndStatusTest {
             courseStepDao = mockk(relaxed = true),
             appDatabase = mockk(relaxed = true)
         )
-    }
-
-    @Test
-    fun `TeamsRepositoryImpl setTaskCompletion updates both completed flag and status`() = runTest {
-        val mockTeamTaskDao = mockk<TeamTaskDao>(relaxed = true)
-        val repo = createRepository(mockTeamTaskDao)
-
-        val existingTask = TeamTask().apply { id = "t1"; completed = false; status = TaskStatus.TODO.value }
-        coEvery { mockTeamTaskDao.getById("t1") } returns existingTask
-
-        val slot = slot<TeamTask>()
-        coEvery { mockTeamTaskDao.upsert(capture(slot)) } returns Unit
-
-        repo.setTaskCompletion("t1", true)
-        assertTrue(slot.captured.completed)
-        assertEquals(TaskStatus.COMPLETED.value, slot.captured.status)
-        assertTrue(slot.captured.isUpdated)
-
-        repo.setTaskCompletion("t1", false)
-        assertFalse(slot.captured.completed)
-        assertEquals(TaskStatus.TODO.value, slot.captured.status)
-        assertTrue(slot.captured.isUpdated)
     }
 
     @Test

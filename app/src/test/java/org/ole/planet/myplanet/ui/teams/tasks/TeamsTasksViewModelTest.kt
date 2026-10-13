@@ -178,14 +178,6 @@ class TeamsTasksViewModelTest {
     }
 
     @Test
-    fun `setTaskCompletion calls repository`() = runTest(testDispatcher) {
-        viewModel.setTaskCompletion("task1", true)
-        yield()
-
-        coVerify { mockTeamsRepository.setTaskCompletion("task1", true) }
-    }
-
-    @Test
     fun `setTaskStatus calls repository`() = runTest(testDispatcher) {
         viewModel.setTaskStatus("task1", "in_progress")
         yield()

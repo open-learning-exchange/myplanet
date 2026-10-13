@@ -119,6 +119,30 @@ class TeamTaskTest {
     }
 
     @Test
+    fun testSerialize_archivedStatusPassesThrough() {
+        val task = TeamTask().apply {
+            _id = "t1"
+            status = "archived"
+            completed = false
+        }
+
+        val result = TeamTask.serialize(task, null)
+        assertEquals("archived", result.get("status").asString)
+    }
+
+    @Test
+    fun testSerialize_uncompletedFlagWinsOverCompletedStatus() {
+        val task = TeamTask().apply {
+            _id = "t1"
+            status = TaskStatus.COMPLETED.value
+            completed = false
+        }
+
+        val result = TeamTask.serialize(task, null)
+        assertEquals(TaskStatus.TODO.value, result.get("status").asString)
+    }
+
+    @Test
     fun testFromJson_withValidData() {
         val json = JsonObject().apply {
             addProperty("_id", "task123")

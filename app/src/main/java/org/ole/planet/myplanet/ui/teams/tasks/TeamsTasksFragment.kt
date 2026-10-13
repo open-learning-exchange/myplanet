@@ -339,11 +339,6 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
     }
 
-    override fun onCheckChange(realmTeamTask: TeamTask?, completed: Boolean) {
-        val taskId = realmTeamTask?.id ?: return
-        teamsTasksViewModel.setTaskCompletion(taskId, completed)
-    }
-
     override fun onStatusChange(task: TeamTask?, newStatus: String) {
         val taskId = task?.id ?: return
         teamsTasksViewModel.setTaskStatus(taskId, newStatus)
