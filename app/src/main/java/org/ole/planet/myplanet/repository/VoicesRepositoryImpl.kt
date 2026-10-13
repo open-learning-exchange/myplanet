@@ -35,15 +35,21 @@ class VoicesRepositoryImpl @Inject constructor(
     private val concatenatedLinks = ArrayList<String>()
 
     override suspend fun getNewsForUpload(): List<NewsUploadData> {
-        return newsDao.getAll()
+        val allNews = newsDao.getAll()
+        val byId = allNews.associateBy { it.id }
+        return allNews
             .mapNotNull { news ->
-                if (news.userId?.startsWith("guest") == true) null
-                else NewsUploadData(
+                if (news.userId?.startsWith("guest") == true) return@mapNotNull null
+                val parent = news.replyTo?.takeIf { it.isNotEmpty() }?.let { byId[it] }
+                if (parent != null && parent._id.isNullOrEmpty()) return@mapNotNull null
+                val newsJson = serializeNews(news)
+                parent?._id?.let { newsJson.addProperty("replyTo", it) }
+                NewsUploadData(
                     id = news.id,
                     _id = news._id,
                     message = news.message,
                     imageUrls = news.imageUrls?.toList() ?: emptyList(),
-                    newsJson = serializeNews(news)
+                    newsJson = newsJson
                 )
             }
     }
@@ -134,7 +140,7 @@ class VoicesRepositoryImpl @Inject constructor(
                     false
                 }
             } == true
-        } catch (throwable: Throwable) {
+        } catch (_: Throwable) {
             false
         }
     }
@@ -159,7 +165,7 @@ class VoicesRepositoryImpl @Inject constructor(
             .map { allNews ->
                 allNews.mapNotNull { news ->
                     news.viewIn?.takeIf { it.isNotEmpty() }?.let { s ->
-                        news.parsedViewIn = try { gson.fromJson(s, JsonArray::class.java) } catch (e: Exception) { null }
+                        news.parsedViewIn = try { gson.fromJson(s, JsonArray::class.java) } catch (_: Exception) { null }
                     }
 
                     if (isVisibleToUser(news, userIdentifier)) {
@@ -199,11 +205,11 @@ class VoicesRepositoryImpl @Inject constructor(
                 val viewInStr = news.viewIn
                 val array = try {
                     if (viewInStr.isNullOrEmpty()) JsonArray() else gson.fromJson(viewInStr, JsonArray::class.java)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     null
                 } ?: JsonArray()
 
-                if (!array.isEmpty()) {
+                if (!array.isEmpty) {
                     val firstElement = array.get(0)
                     if (firstElement.isJsonObject) {
                         val obj = firstElement.asJsonObject
@@ -245,7 +251,7 @@ class VoicesRepositoryImpl @Inject constructor(
         val viewInStr = news.viewIn
         val ar = try {
             if (viewInStr.isNullOrEmpty()) null else gson.fromJson(viewInStr, JsonArray::class.java)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
 
@@ -265,7 +271,7 @@ class VoicesRepositoryImpl @Inject constructor(
                     }
                 }
             }
-            if (filtered.isEmpty()) {
+            if (filtered.isEmpty) {
                 val idsToDelete = collectNewsAndReplies(newsId)
                 newsDao.deleteByIds(idsToDelete)
             } else {
@@ -372,7 +378,15 @@ class VoicesRepositoryImpl @Inject constructor(
             doc to id
         }
         val existing = newsDao.getByUnderscoreIds(underscoreIds).associateBy { it._id }
-        val newsList = mappedDocs.map { (doc, id) -> buildNewsFromJson(doc, id, existing) }
+        val replyToIds = docs.map { GsonUtils.getString("replyTo", it) }.filter { it.isNotEmpty() }
+        val localIdByRemoteId = newsDao.getByUnderscoreIds(replyToIds)
+            .filter { it._id != null && it.id != it._id }
+            .associate { it._id!! to it.id }
+        val newsList = mappedDocs.map { (doc, id) ->
+            buildNewsFromJson(doc, id, existing).apply {
+                replyTo?.let { remote -> localIdByRemoteId[remote]?.let { replyTo = it } }
+            }
+        }
         newsDao.upsertAll(newsList)
         saveConcatenatedLinksToPrefs()
     }
@@ -469,7 +483,7 @@ class VoicesRepositoryImpl @Inject constructor(
         val viewInStr = news.viewIn
         if (!viewInStr.isNullOrEmpty()) {
             val ar = plainGson.fromJson(viewInStr, JsonArray::class.java)
-            if (!ar.isEmpty()) `object`.add("viewIn", ar)
+            if (!ar.isEmpty) `object`.add("viewIn", ar)
         }
     }
 

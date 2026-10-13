@@ -17,8 +17,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.NewsDao
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
@@ -59,6 +61,8 @@ class VoicesRepositoryNewsSyncTest {
     fun setUp() {
         mockkObject(UrlUtils)
         every { UrlUtils.getUrl() } returns "http://test.local"
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "android-id"
         // Non-null String return => a relaxed mock yields "" and gson.fromJson("") returns null,
         // NPE-ing saveConcatenatedLinksToPrefs. Return null so it takes the empty-set branch.
         every { sharedPrefManager.getConcatenatedLinks() } returns null
@@ -82,7 +86,7 @@ class VoicesRepositoryNewsSyncTest {
     @After
     fun tearDown() {
         db.close()
-        unmockkObject(UrlUtils)
+        unmockkObject(UrlUtils, NetworkUtils)
     }
 
     @Test
@@ -136,5 +140,58 @@ class VoicesRepositoryNewsSyncTest {
         val blankNews = newsDao.getByUnderscoreId("")
         assertNotNull(blankNews)
         assertEquals("Blank id message", blankNews?.message)
+    }
+    private suspend fun storeLocalPost(id: String, remoteId: String? = null) = newsDao.upsert(News().apply {
+        this.id = id
+        _id = remoteId
+        message = "Post"
+        docType = "message"
+        user = "{}"
+    })
+
+    private suspend fun storeLocalReply(id: String, parentId: String) = newsDao.upsert(News().apply {
+        this.id = id
+        replyTo = parentId
+        message = "Reply"
+        docType = "message"
+        user = "{}"
+    })
+
+    @Test
+    fun `a reply to an uploaded local post is sent with the post's server id`() = runBlocking {
+        storeLocalPost("local-post", remoteId = "server-post")
+        storeLocalReply("local-reply", parentId = "local-post")
+
+        val upload = repository.getNewsForUpload().single { it.id == "local-reply" }
+
+        assertEquals("server-post", upload.newsJson.get("replyTo").asString)
+        assertEquals("local-post", newsDao.getById("local-reply")?.replyTo)
+    }
+
+    @Test
+    fun `a reply waits until its local parent post has uploaded`() = runBlocking {
+        storeLocalPost("local-post")
+        storeLocalReply("local-reply", parentId = "local-post")
+
+        assertEquals(listOf("local-post"), repository.getNewsForUpload().map { it.id })
+    }
+
+    @Test
+    fun `a pulled reply to an uploaded local post shows under that post`() = runBlocking {
+        storeLocalPost("local-post", remoteId = "server-post")
+
+        repository.insertNewsList(listOf(replyDoc("server-reply", replyTo = "server-post", message = "Hi")))
+
+        assertEquals(listOf("server-reply"), newsDao.getReplies("local-post").map { it.id })
+    }
+
+    @Test
+    fun `replies to posts from the server keep the server id`() = runBlocking {
+        storeLocalPost("server-post", remoteId = "server-post")
+        storeLocalReply("local-reply", parentId = "server-post")
+
+        val upload = repository.getNewsForUpload().single { it.id == "local-reply" }
+
+        assertEquals("server-post", upload.newsJson.get("replyTo").asString)
     }
 }
