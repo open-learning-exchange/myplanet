@@ -90,7 +90,6 @@ class TeamsTasksFilterAndStatusTest {
     private fun createRepository(teamTaskDao: TeamTaskDao): TeamsRepositoryImpl {
         return TeamsRepositoryImpl(
             context = mockk(relaxed = true),
-            activitiesRepository = mockk(relaxed = true),
             userSessionManager = mockk(relaxed = true),
             uploadManager = mockk(relaxed = true),
             gson = mockk(relaxed = true),
@@ -100,7 +99,6 @@ class TeamsTasksFilterAndStatusTest {
             dispatcherProvider = mockk(relaxed = true),
             userRepository = mockk(relaxed = true),
             resourcesRepositoryLazy = mockk(relaxed = true),
-            timeProvider = mockk(relaxed = true),
             teamLogDao = mockk(relaxed = true),
             teamTaskDao = teamTaskDao,
             myLibraryDao = mockk(relaxed = true),

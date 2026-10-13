@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.Personal
 
@@ -21,11 +20,8 @@ interface PersonalDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: Personal)
 
-    @Query("SELECT * FROM my_personal WHERE userId = :userId")
+    @Query("SELECT * FROM my_personal WHERE userId = :userId ORDER BY date DESC, title COLLATE NOCASE ASC")
     fun getByUserIdFlow(userId: String): Flow<List<Personal>>
-
-    @Query("SELECT * FROM my_personal WHERE userId = :userId AND isUploaded = 0")
-    suspend fun getPendingUploads(userId: String): List<Personal>
 
     @Query("SELECT * FROM my_personal WHERE _id = :id LIMIT 1")
     suspend fun findByDocId(id: String): Personal?
@@ -33,12 +29,15 @@ interface PersonalDao {
     @Query("SELECT * FROM my_personal WHERE id = :id LIMIT 1")
     suspend fun findById(id: String): Personal?
 
-    @Update
-    suspend fun update(item: Personal)
-
     @Query("DELETE FROM my_personal WHERE _id = :id OR id = :id")
     suspend fun deleteByIdOrDocId(id: String)
 
     @Query("UPDATE my_personal SET isUploaded = 1, _id = :newId, _rev = :rev WHERE id = :id")
     suspend fun updateUploadedStatus(id: String, newId: String, rev: String)
+
+    @Query("UPDATE my_personal SET _id = :newId, _rev = :rev WHERE id = :id")
+    suspend fun updateRemoteDocRef(id: String, newId: String, rev: String)
+
+    @Query("UPDATE my_personal SET title = COALESCE(:title, title), description = COALESCE(:description, description) WHERE _id = :id OR id = :id")
+    suspend fun updateFields(id: String, title: String?, description: String?)
 }

@@ -11,6 +11,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -36,6 +37,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
     private var _binding: FragmentTeamResourceBinding? = null
     private val binding get() = _binding!!
     private lateinit var adapterLibrary: TeamResourcesAdapter
+    private val viewModel: TeamResourcesViewModel by viewModels()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamResourceBinding.inflate(inflater, container, false)
@@ -51,6 +53,9 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         collectLatestWhenStarted(isMemberFlow) { isMember ->
             binding.fabAddResource.isVisible = isMember
         }
+        collectLatestWhenStarted(viewModel.uiState) { state ->
+            state?.let { renderResources(it) }
+        }
     }
 
     override fun onResume() {
@@ -64,29 +69,33 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         llImage?.removeAllViews()
     }
 
-    private fun showLibraryList() {
+    private fun showLibraryList(force: Boolean = false) {
         if (!isAdded || activity == null) return
+        if (force) {
+            viewModel.reload(teamId, user?.id)
+        } else {
+            viewModel.loadResources(teamId, user?.id)
+        }
+    }
+
+    private fun renderResources(state: TeamResourcesUiState) {
         val safeActivity = activity ?: return
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val libraries = teamsRepository.getTeamResources(teamId)
-            val canRemoveResources = teamsRepository.isTeamLeader(teamId, user?.id)
-
-            if (!::adapterLibrary.isInitialized) {
-                adapterLibrary = TeamResourcesAdapter(
-                    safeActivity,
-                    canRemoveResources,
-                    this@TeamResourcesFragment,
+        if (!::adapterLibrary.isInitialized) {
+            adapterLibrary = TeamResourcesAdapter(
+                safeActivity,
+                state.canRemove,
+                this@TeamResourcesFragment,
+                dispatcherProvider,
                 ) { resource, position ->
-                    handleResourceRemoval(resource, position)
-                }
-                binding.rvResource.layoutManager = GridLayoutManager(safeActivity, 3)
-                binding.rvResource.adapter = adapterLibrary
+                handleResourceRemoval(resource, position)
             }
+            binding.rvResource.layoutManager = GridLayoutManager(safeActivity, 3)
+            binding.rvResource.adapter = adapterLibrary
+        }
 
-            adapterLibrary.submitList(libraries) {
-                checkAndShowNoData()
-            }
+        adapterLibrary.submitList(state.resources) {
+            checkAndShowNoData()
         }
     }
 
@@ -95,7 +104,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         val safeActivity = activity ?: return
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val availableLibraries = teamsRepository.getAvailableResourcesToAdd(teamId)
+            val availableLibraries = viewModel.getAvailableResources(teamId)
 
             val titleView = TextView(safeActivity).apply {
                 text = getString(R.string.select_resource)
@@ -118,9 +127,8 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
                             if (id != null) TeamResourceDto(id, it.title) else null
                         }
                     viewLifecycleOwner.lifecycleScope.launch {
-                        teamsRepository.addResourceLinks(teamId, selectedResources, user?.id)
-                        showLibraryList()
-                        teamsRepository.recordTeamActivity()
+                        viewModel.addResources(teamId, selectedResources, user?.id)
+                        showLibraryList(force = true)
                     }
                 }
                 .setNeutralButton(R.string.create_new_resource) { _: DialogInterface?, _: Int ->
@@ -144,7 +152,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
             override fun onFragmentDetached(fm: FragmentManager, f: Fragment) {
                 if (f === fragment) {
                     fm.unregisterFragmentLifecycleCallbacks(this)
-                    showLibraryList()
+                    showLibraryList(force = true)
                 }
             }
         }, false)
@@ -164,7 +172,10 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
     }
 
     fun checkAndShowNoData() {
-        showNoData(binding.tvNodata, adapterLibrary.itemCount, "teamResources")
+        val binding = _binding ?: return
+        if (::adapterLibrary.isInitialized) {
+            showNoData(binding.tvNodata, adapterLibrary.itemCount, "teamResources")
+        }
     }
 
     override fun onResourceListUpdated() {
@@ -185,10 +196,9 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         }
         viewLifecycleOwner.lifecycleScope.launch {
             runCatching {
-                teamsRepository.removeResourceLink(teamId, resourceId)
+                viewModel.removeResource(teamId, resourceId)
             }.onSuccess {
                 adapterLibrary.removeResourceAt(position)
-                teamsRepository.recordTeamActivity()
             }.onFailure {
                 onResourceUpdateFailed(R.string.failed_to_remove_resource)
             }

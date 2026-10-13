@@ -64,7 +64,7 @@ class NetworkMonitorWorker @AssistedInject constructor(
         WorkManager.getInstance(applicationContext)
             .enqueueUniqueWork(
                 SERVER_REACHABILITY_WORK_TAG,
-                ExistingWorkPolicy.REPLACE,
+                ExistingWorkPolicy.KEEP,
                 workRequest
             )
     }

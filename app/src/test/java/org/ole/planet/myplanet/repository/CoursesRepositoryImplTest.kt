@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import androidx.room.withTransaction
 import com.google.gson.JsonParser
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -15,13 +16,10 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.CourseDao
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
@@ -31,20 +29,17 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.SearchActivity
-import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.StringUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CoursesRepositoryImplTest {
 
     private val progressRepository: ProgressRepository = mockk(relaxed = true)
-    private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)
     private val tagsRepository: TagsRepository = mockk(relaxed = true)
     private val ratingsRepository: RatingsRepository = mockk(relaxed = true)
@@ -55,8 +50,6 @@ class CoursesRepositoryImplTest {
     private val courseStepDao: CourseStepDao = mockk(relaxed = true)
     private val examDao: ExamDao = mockk(relaxed = true)
     private val questionDao: QuestionDao = mockk(relaxed = true)
-    private val submissionDao: SubmissionDao = mockk(relaxed = true)
-    private val answerDao: AnswerDao = mockk(relaxed = true)
     private val tagDao: TagDao = mockk(relaxed = true)
     private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
     private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
@@ -65,14 +58,17 @@ class CoursesRepositoryImplTest {
     private val userRepository: dagger.Lazy<UserRepository> = mockk(relaxed = true)
     private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider = object : org.ole.planet.myplanet.utils.DispatcherProvider { override val main = kotlinx.coroutines.Dispatchers.Unconfined; override val io = kotlinx.coroutines.Dispatchers.Unconfined; override val default = kotlinx.coroutines.Dispatchers.Unconfined; override val unconfined = kotlinx.coroutines.Dispatchers.Unconfined }
     private val realtimeSyncManager: org.ole.planet.myplanet.services.sync.RealtimeSyncManager = mockk(relaxed = true)
+    private val appDatabase: org.ole.planet.myplanet.data.room.AppDatabase = mockk(relaxed = true)
 
     private lateinit var repository: CoursesRepositoryImpl
 
     @Before
     fun setup() {
+        every { sharedPrefManager.getConcatenatedLinks() } returns "[]"
+        org.ole.planet.myplanet.utils.UrlUtils.init(sharedPrefManager)
         repository = CoursesRepositoryImpl(
+            mockk(relaxed = true),
             progressRepository,
-            activitiesRepository,
             submissionsRepository,
             tagsRepository,
             ratingsRepository,
@@ -83,26 +79,34 @@ class CoursesRepositoryImplTest {
             courseStepDao,
             examDao,
             questionDao,
-            submissionDao,
-            answerDao,
             searchActivityDao,
             courseProgressDao,
             removedLogDao,
             myLibraryDao,
             userRepository,
             dispatcherProvider,
-            realtimeSyncManager
+            realtimeSyncManager,
+            appDatabase
         )
     }
 
     @Test
+    fun testUpdateCourseProgressScopesUpdateToTheGivenUser() = runTest {
+        coEvery { courseProgressDao.updatePassedByCourseAndStep(any(), any(), any(), any()) } returns 1
+
+        repository.updateCourseProgress("course1", 2, true, "user-a")
+
+        coVerify { courseProgressDao.updatePassedByCourseAndStep("course1", 2, true, "user-a") }
+    }
+
+    @Test
     fun testNormalizeText() {
-        assertEquals("hello world", Utilities.normalizeText("HELLO World"))
-        assertEquals("cafe", Utilities.normalizeText("Café"))
-        assertEquals("nino", Utilities.normalizeText("Niño"))
-        assertEquals("a e i o u", Utilities.normalizeText("á é í ó ú"))
-        assertEquals("c", Utilities.normalizeText("ç"))
-        assertEquals("aeiou", Utilities.normalizeText("äëïöü"))
+        assertEquals("hello world", StringUtils.normalizeText("HELLO World"))
+        assertEquals("cafe", StringUtils.normalizeText("Café"))
+        assertEquals("nino", StringUtils.normalizeText("Niño"))
+        assertEquals("a e i o u", StringUtils.normalizeText("á é í ó ú"))
+        assertEquals("c", StringUtils.normalizeText("ç"))
+        assertEquals("aeiou", StringUtils.normalizeText("äëïöü"))
     }
 
     @Test
@@ -128,9 +132,9 @@ class CoursesRepositoryImplTest {
 
     @Test
     fun `search filters query parts before fetching and sorts startsWith before contains`() = runTest {
-        coEvery { courseDao.getAll() } returns listOf(
+        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        coEvery { courseDao.filterByTitleNormal(capture(querySlot)) } returns listOf(
             MyCourse(id = "1", courseId = "1", courseTitle = "Basic Math", courseTitleNormal = "basic math"),
-            MyCourse(id = "2", courseId = "2", courseTitle = "Science", courseTitleNormal = "science"),
             MyCourse(id = "3", courseId = "3", courseTitle = "Math 101", courseTitleNormal = "math 101")
         )
         coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
@@ -140,13 +144,14 @@ class CoursesRepositoryImplTest {
         assertEquals(2, result.size)
         assertEquals("Math 101", result[0].courseTitle)
         assertEquals("Basic Math", result[1].courseTitle)
+        assertTrue(querySlot.captured.sql.contains("courseTitleNormal LIKE ? ESCAPE '\\'"))
+        coVerify(exactly = 0) { courseDao.getAll() }
     }
 
     @Test
     fun `search multi word matches all parts`() = runTest {
-        coEvery { courseDao.getAll() } returns listOf(
-            MyCourse(id = "1", courseId = "1", courseTitle = "Basic Math 101", courseTitleNormal = "basic math 101"),
-            MyCourse(id = "2", courseId = "2", courseTitle = "Basic Science 101", courseTitleNormal = "basic science 101")
+        coEvery { courseDao.filterByTitleNormal(any()) } returns listOf(
+            MyCourse(id = "1", courseId = "1", courseTitle = "Basic Math 101", courseTitleNormal = "basic math 101")
         )
         coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
 
@@ -157,6 +162,27 @@ class CoursesRepositoryImplTest {
     }
 
     @Test
+    fun `search escapes LIKE wildcards present in the query`() = runTest {
+        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        coEvery { courseDao.filterByTitleNormal(capture(querySlot)) } returns emptyList()
+
+        repository.search("100%_test")
+
+        val bindArgs = mutableMapOf<Int, Any?>()
+        querySlot.captured.bindTo(object : androidx.sqlite.db.SupportSQLiteProgram {
+            override fun bindNull(index: Int) { bindArgs[index] = null }
+            override fun bindLong(index: Int, value: Long) { bindArgs[index] = value }
+            override fun bindDouble(index: Int, value: Double) { bindArgs[index] = value }
+            override fun bindString(index: Int, value: String) { bindArgs[index] = value }
+            override fun bindBlob(index: Int, value: ByteArray) { bindArgs[index] = value }
+            override fun clearBindings() {}
+            override fun close() {}
+        })
+
+        assertEquals("%100\\%\\_test%", bindArgs[1])
+    }
+
+    @Test
     fun `filterCourses sorts titles case-insensitively`() = runTest {
         coEvery { courseDao.getAll() } returns listOf(
             MyCourse(id = "1", courseId = "1", courseTitle = "banana", courseTitleNormal = "banana"),
@@ -164,7 +190,7 @@ class CoursesRepositoryImplTest {
             MyCourse(id = "3", courseId = "3", courseTitle = "cherry", courseTitleNormal = "cherry")
         )
         coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
-        coEvery { tagsRepository.getLinkIdsForTagNames(any(), any()) } returns emptyList()
+        coEvery { tagsRepository.getCourseLinkIds(any()) } returns emptySet()
 
         val result = repository.filterCourses("", "", "", emptyList())
 
@@ -284,6 +310,22 @@ class CoursesRepositoryImplTest {
     }
 
     @Test
+    fun `getMyCoursesFlow does not evaluate map until flow is collected`() = runTest {
+        val course = MyCourse(id = "1", courseId = "1", userId = listOf("user1"))
+        coEvery { courseDao.observeForUserPattern(any()) } returns flowOf(listOf(course))
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
+
+        val flow = repository.getMyCoursesFlow("user1")
+
+        coVerify(exactly = 0) { courseStepDao.getByCourseIds(any()) }
+
+        val emissions = flow.toList()
+
+        assertEquals(1, emissions.size)
+        coVerify(atLeast = 1) { courseStepDao.getByCourseIds(any()) }
+    }
+
+    @Test
     fun `getCourseByCourseIdFlow returns mapped course with steps`() = runTest {
         val courseId = "course-123"
         val myCourse = MyCourse(id = courseId, courseId = courseId, courseTitle = "Test Course")
@@ -366,7 +408,7 @@ class CoursesRepositoryImplTest {
         coEvery { myLibraryDao.getCourseResources("course_id", false) } returns emptyList()
         coEvery { myLibraryDao.getCourseResources("course_id", true) } returns emptyList()
         coEvery { courseStepDao.getByCourseId("course_id") } returns listOf(org.ole.planet.myplanet.model.CourseStep().apply { id = "step_1"; stepTitle = "Title" })
-        coEvery { submissionsRepository.getExamQuestionCount("step_1") } returns 3
+        coEvery { examDao.getByStepIds(listOf("step_1")) } returns listOf(org.ole.planet.myplanet.model.StepExam().apply { stepId = "step_1"; noOfQuestions = 3 })
 
         coEvery { ratingsRepository.getRatingSummary("course", "course_id", "user_1") } returns RatingSummary(
             existingRating = null,
@@ -421,5 +463,142 @@ class CoursesRepositoryImplTest {
         assertTrue(result.getOrDefault(false))
         coVerify(exactly = 1) { courseDao.upsertAll(any()) }
         assertEquals(listOf("userA", "userB", "userC"), capturedCourses.captured.first().userId)
+    }
+
+    @Test
+    fun `deleteCoursesProgress with 1000 submissions calls deleteSubmissionsWithAnswers twice`() = runTest {
+        io.mockk.mockkStatic("androidx.room.RoomDatabaseKt")
+        val transactionBlock = io.mockk.slot<suspend () -> Any?>()
+        coEvery { appDatabase.withTransaction(capture(transactionBlock)) } coAnswers {
+            transactionBlock.captured.invoke()
+        }
+
+        val courseIds = listOf("course1")
+        coEvery { examDao.getByCourseIds(listOf("course1")) } returns listOf(org.ole.planet.myplanet.model.StepExam().apply { id = "exam1" })
+
+        val thousandSubmissions = (1..1000).map { org.ole.planet.myplanet.model.Submission().apply { id = "sub_$it" } }
+        coEvery { submissionsRepository.getUnuploadedNonSurveySubmissionsByParentIds(listOf("exam1")) } returns thousandSubmissions
+
+        repository.deleteCoursesProgress(courseIds)
+
+        coVerify(exactly = 2) { submissionsRepository.deleteSubmissionsWithAnswers(any()) }
+        coVerify(exactly = 1) { submissionsRepository.deleteSubmissionsWithAnswers(match { it.size == 900 }) }
+        coVerify(exactly = 1) { submissionsRepository.deleteSubmissionsWithAnswers(match { it.size == 100 }) }
+
+        io.mockk.unmockkStatic("androidx.room.RoomDatabaseKt")
+    }
+
+    @Test
+    fun `bulkInsertFromSync derives correct stepId matching expected base64 encoding`() = runTest {
+        io.mockk.mockkStatic("androidx.room.RoomDatabaseKt")
+        val transactionBlock = io.mockk.slot<suspend () -> Any?>()
+        coEvery { appDatabase.withTransaction(capture(transactionBlock)) } coAnswers {
+            transactionBlock.captured.invoke()
+        }
+
+        val docWrapper = com.google.gson.JsonObject().apply {
+            addProperty("id", "course_101")
+            add("doc", com.google.gson.JsonObject().apply {
+                addProperty("_id", "course_101")
+                addProperty("courseTitle", "Test Course")
+                val steps = com.google.gson.JsonArray().apply {
+                    add(com.google.gson.JsonObject().apply {
+                        addProperty("stepTitle", "Step 1")
+                        addProperty("description", "Desc 1")
+                    })
+                }
+                add("steps", steps)
+            })
+        }
+        val syncData = com.google.gson.JsonArray().apply { add(docWrapper) }
+
+        val capturedSteps = slot<List<CourseStep>>()
+        coEvery { courseStepDao.upsertAll(capture(capturedSteps)) } returns Unit
+
+        repository.bulkInsertFromSync(syncData)
+
+        coVerify(exactly = 1) { courseStepDao.upsertAll(any()) }
+        assertEquals(1, capturedSteps.captured.size)
+
+        val stepElement = docWrapper.getAsJsonObject("doc").getAsJsonArray("steps")[0]
+        val expectedStepId = java.util.Base64.getEncoder().encodeToString(stepElement.toString().toByteArray())
+        assertEquals("eyJzdGVwVGl0bGUiOiJTdGVwIDEiLCJkZXNjcmlwdGlvbiI6IkRlc2MgMSJ9", expectedStepId)
+        assertEquals(expectedStepId, capturedSteps.captured.first().id)
+        coVerify(exactly = 1) { courseStepDao.deleteStaleSteps("course_101", listOf(expectedStepId)) }
+
+        io.mockk.unmockkStatic("androidx.room.RoomDatabaseKt")
+    }
+
+    @Test(expected = kotlinx.coroutines.CancellationException::class)
+    fun `flushPendingCourseResources rethrows CancellationException and abandons loop`() = runTest {
+        val jsonArray = com.google.gson.JsonArray().apply {
+            add(com.google.gson.JsonObject().apply {
+                addProperty("_id", "res1")
+                addProperty("mediaType", "HTML")
+            })
+            add(com.google.gson.JsonObject().apply {
+                addProperty("_id", "res2")
+                addProperty("mediaType", "HTML")
+            })
+            add(com.google.gson.JsonObject().apply {
+                addProperty("_id", "res3")
+                addProperty("mediaType", "HTML")
+            })
+        }
+
+        val queueMethod = CoursesRepositoryImpl::class.java.getDeclaredMethod(
+            "queueCourseResources",
+            String::class.java,
+            String::class.java,
+            com.google.gson.JsonArray::class.java
+        )
+        queueMethod.isAccessible = true
+        queueMethod.invoke(repository, "courseId", "stepId", jsonArray)
+
+        coEvery { myLibraryDao.getByIds(any()) } returns emptyList()
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+        coEvery { resourcesRepository.reconcileHtmlResourceOffline("res1") } returns Unit
+        coEvery { resourcesRepository.reconcileHtmlResourceOffline("res2") } throws kotlinx.coroutines.CancellationException()
+
+        try {
+            repository.flushPendingCourseResources()
+        } finally {
+            coVerify(exactly = 1) { resourcesRepository.reconcileHtmlResourceOffline("res1") }
+            coVerify(exactly = 1) { resourcesRepository.reconcileHtmlResourceOffline("res2") }
+            coVerify(exactly = 0) { resourcesRepository.reconcileHtmlResourceOffline("res3") }
+        }
+    }
+
+    @Test
+    fun `flushPendingCourseResources catches ordinary exceptions and continues loop`() = runTest {
+        val jsonArray = com.google.gson.JsonArray().apply {
+            add(com.google.gson.JsonObject().apply {
+                addProperty("_id", "res1")
+                addProperty("mediaType", "HTML")
+            })
+            add(com.google.gson.JsonObject().apply {
+                addProperty("_id", "res2")
+                addProperty("mediaType", "HTML")
+            })
+        }
+
+        val queueMethod = CoursesRepositoryImpl::class.java.getDeclaredMethod(
+            "queueCourseResources",
+            String::class.java,
+            String::class.java,
+            com.google.gson.JsonArray::class.java
+        )
+        queueMethod.isAccessible = true
+        queueMethod.invoke(repository, "courseId", "stepId", jsonArray)
+
+        coEvery { myLibraryDao.getByIds(any()) } returns emptyList()
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+        coEvery { resourcesRepository.reconcileHtmlResourceOffline("res1") } throws RuntimeException("Ordinary failure")
+        coEvery { resourcesRepository.reconcileHtmlResourceOffline("res2") } returns Unit
+
+        repository.flushPendingCourseResources()
+
+        coVerify(exactly = 1) { resourcesRepository.reconcileHtmlResourceOffline("res1") }
+        coVerify(exactly = 1) { resourcesRepository.reconcileHtmlResourceOffline("res2") }
     }
 }

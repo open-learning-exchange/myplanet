@@ -9,6 +9,7 @@ import androidx.work.workDataOf
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.io.File
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -44,7 +45,7 @@ class FreeSpaceWorker @AssistedInject constructor(
                         clearedResourceIds.add(child.name)
                     }
                     if (clearedResourceIds.size >= MARK_BATCH_SIZE) {
-                        resourcesRepository.markResourcesAsNotOffline(clearedResourceIds.toSet())
+                        resourcesRepository.markResourcesAsNotOffline(clearedResourceIds)
                         clearedResourceIds.clear()
                     }
                 }
@@ -54,6 +55,8 @@ class FreeSpaceWorker @AssistedInject constructor(
             }
 
             Result.success(workDataOf("deletedFiles" to deletedFiles, "freedBytes" to freedBytes))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Error in FreeSpaceWorker", e)
             Result.failure()
@@ -64,19 +67,17 @@ class FreeSpaceWorker @AssistedInject constructor(
         fileOrDirectory.walkBottomUp().forEach { file ->
             if (isStopped) return
 
-            if (file.exists()) {
-                val length = file.length()
-                if (file.delete()) {
-                    deletedFiles++
-                    freedBytes += length
+            val length = file.length()
+            if (file.delete()) {
+                deletedFiles++
+                freedBytes += length
 
-                    // Report progress every 10 files or so to avoid spamming updates
-                    if (deletedFiles % 10 == 0) {
-                         setProgress(workDataOf(
-                             "deletedFiles" to deletedFiles,
-                             "freedBytes" to freedBytes
-                         ))
-                    }
+                // Report progress every 10 files or so to avoid spamming updates
+                if (deletedFiles % 10 == 0) {
+                     setProgress(workDataOf(
+                         "deletedFiles" to deletedFiles,
+                         "freedBytes" to freedBytes
+                     ))
                 }
             }
         }

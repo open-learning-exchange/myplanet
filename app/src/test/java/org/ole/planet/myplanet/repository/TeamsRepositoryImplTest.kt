@@ -1,12 +1,16 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
+import androidx.room.withTransaction
 import com.google.gson.Gson
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkAll
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -19,8 +23,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -31,6 +35,7 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
+import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamTask
@@ -42,14 +47,12 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
-import org.ole.planet.myplanet.utils.TestTimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TeamsRepositoryImplTest {
 
     private lateinit var teamsRepository: TeamsRepositoryImpl
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
-    private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val uploadManager: UploadManager = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val preferences: SharedPreferences = mockk(relaxed = true)
@@ -85,7 +88,6 @@ class TeamsRepositoryImplTest {
 
         teamsRepository = TeamsRepositoryImpl(
             mockk<android.content.Context>(relaxed = true),
-            activitiesRepository,
             userSessionManager,
             uploadManager,
             gson,
@@ -95,7 +97,6 @@ class TeamsRepositoryImplTest {
             dispatcherProvider,
             userRepository,
             dagger.Lazy { mockk<ResourcesRepository>(relaxed = true) },
-            TestTimeProvider(),
             teamLogDao,
             teamTaskDao,
             myLibraryDao,
@@ -191,6 +192,56 @@ class TeamsRepositoryImplTest {
 
         val resultList = resultFlow.first()
         assertEquals(mockTasks, resultList)
+    }
+
+    @Test
+    fun `test getTaskById delegates to teamTaskDao`() = runTest(testDispatcher) {
+        val taskId = "task_1"
+        val mockTask = TeamTask().apply { id = taskId }
+        coEvery { teamTaskDao.getById(taskId) } returns mockTask
+
+        val result = teamsRepository.getTaskById(taskId)
+
+        assertEquals(mockTask, result)
+        coVerify(exactly = 1) { teamTaskDao.getById(taskId) }
+    }
+
+    @Test
+    fun `test getTasksByIds delegates to teamTaskDao`() = runTest(testDispatcher) {
+        val taskIds = listOf("task_1", "task_2")
+        val mockTasks = listOf(TeamTask().apply { id = "task_1" })
+        coEvery { teamTaskDao.getByIds(taskIds) } returns mockTasks
+
+        val result = teamsRepository.getTasksByIds(taskIds)
+
+        assertEquals(mockTasks, result)
+        coVerify(exactly = 1) { teamTaskDao.getByIds(taskIds) }
+    }
+
+    @Test
+    fun `test getTasksByTitles delegates to teamTaskDao`() = runTest(testDispatcher) {
+        val titles = listOf("Title 1", "Title 2")
+        val mockTasks = listOf(TeamTask().apply { title = "Title 1" })
+        coEvery { teamTaskDao.getByTitles(titles) } returns mockTasks
+
+        val result = teamsRepository.getTasksByTitles(titles)
+
+        assertEquals(mockTasks, result)
+        coVerify(exactly = 1) { teamTaskDao.getByTitles(titles) }
+    }
+
+    @Test
+    fun `test getTasksForUserBetween delegates to teamTaskDao`() = runTest(testDispatcher) {
+        val userId = "user_1"
+        val start = 100L
+        val end = 200L
+        val mockTasks = listOf(TeamTask().apply { assignee = userId })
+        coEvery { teamTaskDao.getTasksForUserBetween(userId, start, end) } returns mockTasks
+
+        val result = teamsRepository.getTasksForUserBetween(userId, start, end)
+
+        assertEquals(mockTasks, result)
+        coVerify(exactly = 1) { teamTaskDao.getTasksForUserBetween(userId, start, end) }
     }
 
     @Test
@@ -602,5 +653,295 @@ class TeamsRepositoryImplTest {
         assertEquals(listOf(user1, user2), result)
         coVerify(exactly = 1) { userRepository.getUsersByIds(listOf("user1", "user2")) }
         coVerify(exactly = 0) { userRepository.getUserById(any()) }
+    }
+
+    @Test
+    fun `getJoinedMembersWithVisitInfo aggregates member visit logs correctly in single pass`() = runTest(testDispatcher) {
+        val teamId = "team1"
+        val user1 = UserEntity().apply { id = "user1"; name = "Alice" }
+        val user2 = UserEntity().apply { id = "user2"; name = "Bob" }
+        val user3 = UserEntity().apply { id = "user3"; name = "Charlie" }
+
+        val member1 = MyTeam().apply { userId = "user1"; isDeletePending = false; isLeader = true }
+        val member2 = MyTeam().apply { userId = "user2"; isDeletePending = false; isLeader = false }
+        val member3 = MyTeam().apply { userId = "user3"; isDeletePending = false; isLeader = false }
+
+        coEvery { teamDao.getByTeamIdAndDocType(teamId, "membership") } returns listOf(member1, member2, member3)
+        coEvery { userRepository.getUsersByIds(listOf("user1", "user2", "user3")) } returns listOf(user1, user2, user3)
+        every { sharedPrefManager.getCommunityLeaders() } returns ""
+
+        val log1 = TeamLog().apply { user = "Alice"; time = 1000L }
+        val log2 = TeamLog().apply { user = "Alice"; time = 3000L }
+        val log3 = TeamLog().apply { user = "Alice"; time = 2000L }
+        val logNullTime = TeamLog().apply { user = "Bob"; time = null }
+
+        coEvery { teamLogDao.getTeamVisitsForUsers(teamId, listOf("Alice", "Bob", "Charlie")) } returns listOf(log1, log2, log3, logNullTime)
+
+        val result = teamsRepository.getJoinedMembersWithVisitInfo(teamId)
+
+        assertEquals(3, result.size)
+
+        // Leader (Alice) should be first
+        val aliceData = result[0]
+        assertEquals(user1, aliceData.user)
+        assertEquals(3L, aliceData.visitCount)
+        assertEquals(3000L, aliceData.lastVisitDate)
+        assertEquals(true, aliceData.isLeader)
+
+        // Bob: 1 log with null time
+        val bobData = result[1]
+        assertEquals(user2, bobData.user)
+        assertEquals(1L, bobData.visitCount)
+        assertEquals(0L, bobData.lastVisitDate) // null log.time resolves to 0L
+        assertEquals(false, bobData.isLeader)
+
+        // Charlie: 0 logs
+        val charlieData = result[2]
+        assertEquals(user3, charlieData.user)
+        assertEquals(0L, charlieData.visitCount)
+        assertEquals(null, charlieData.lastVisitDate)
+        assertEquals(false, charlieData.isLeader)
+    }
+
+    @Test
+    fun `markTeamsUploaded calls getByIds and never calls getAll`() = runTest(testDispatcher) {
+        val uploadedTeams = mapOf("team1" to "rev1", "team2" to "rev2")
+        val team1 = MyTeam().apply { _id = "team1"; name = "Team 1" }
+        val team2 = MyTeam().apply { _id = "team2"; name = "Team 2" }
+
+        coEvery { teamDao.getByIds(listOf("team1", "team2")) } returns listOf(team1, team2)
+
+        teamsRepository.markTeamsUploaded(uploadedTeams)
+
+        coVerify(exactly = 1) { teamDao.getByIds(listOf("team1", "team2")) }
+        coVerify(exactly = 1) { teamDao.upsertAll(any()) }
+    }
+
+    @Test
+    fun `bulkInsertFromSync calls getByIds and never calls getAll`() = runTest(testDispatcher) {
+        io.mockk.mockkStatic("androidx.room.RoomDatabaseKt")
+        val blockSlot = io.mockk.slot<suspend () -> Unit>()
+        coEvery { appDatabase.withTransaction(capture(blockSlot)) } coAnswers {
+            blockSlot.captured.invoke()
+        }
+
+        val jsonArray = com.google.gson.JsonArray().apply {
+            add(com.google.gson.JsonObject().apply {
+                add("doc", com.google.gson.JsonObject().apply {
+                    addProperty("_id", "team1")
+                    addProperty("name", "Team 1")
+                })
+            })
+            add(com.google.gson.JsonObject().apply {
+                add("doc", com.google.gson.JsonObject().apply {
+                    addProperty("_id", "team2")
+                    addProperty("name", "Team 2")
+                })
+            })
+        }
+        val team1 = MyTeam().apply { _id = "team1"; name = "Team 1" }
+        val team2 = MyTeam().apply { _id = "team2"; name = "Team 2" }
+
+        coEvery { teamDao.getByIds(listOf("team1", "team2")) } returns listOf(team1, team2)
+
+        teamsRepository.bulkInsertFromSync(jsonArray)
+
+        coVerify(exactly = 1) { teamDao.getByIds(listOf("team1", "team2")) }
+
+        io.mockk.unmockkStatic("androidx.room.RoomDatabaseKt")
+    }
+
+    @Test
+    fun `getByIds chunking splits 1200 ids into three calls of 500, 500, and 200`() = runTest(testDispatcher) {
+        val ids = (1..1200).map { "team_$it" }
+        val uploadedTeams = ids.associateWith { "rev_$it" }
+
+        coEvery { teamDao.getByIds(any()) } answers {
+            val chunk = firstArg<List<String>>()
+            chunk.map { id -> MyTeam().apply { _id = id } }
+        }
+
+        teamsRepository.markTeamsUploaded(uploadedTeams)
+
+        coVerify(exactly = 1) { teamDao.getByIds(ids.subList(0, 500)) }
+        coVerify(exactly = 1) { teamDao.getByIds(ids.subList(500, 1000)) }
+        coVerify(exactly = 1) { teamDao.getByIds(ids.subList(1000, 1200)) }
+    }
+
+    @Test
+    fun `empty id input performs no DAO read at all`() = runTest(testDispatcher) {
+        teamsRepository.markTeamsUploaded(emptyMap())
+        teamsRepository.bulkInsertFromSync(com.google.gson.JsonArray())
+        teamsRepository.batchInsertMyTeams(emptyList())
+
+        coVerify(exactly = 0) { teamDao.getByIds(any()) }
+    }
+
+    @Test
+    fun `batchInsertMyTeams rethrows CancellationException and abandons loop`() = runTest(testDispatcher) {
+        val doc1 = com.google.gson.JsonObject().apply { addProperty("_id", "team1") }
+        val doc2 = com.google.gson.JsonObject().apply { addProperty("_id", "team2") }
+        val doc3 = com.google.gson.JsonObject().apply { addProperty("_id", "team3") }
+        val docs = listOf(doc1, doc2, doc3)
+
+        coEvery { teamDao.getByIds(any()) } returns emptyList()
+        coEvery { teamDao.getById(any()) } returns null
+
+        coEvery { teamDao.upsert(match { it._id == "team1" }) } returns Unit
+        coEvery { teamDao.upsert(match { it._id == "team2" }) } throws CancellationException("cancelled")
+        coEvery { teamDao.upsert(match { it._id == "team3" }) } returns Unit
+
+        try {
+            teamsRepository.batchInsertMyTeams(docs)
+            org.junit.Assert.fail("Expected CancellationException to be thrown")
+        } catch (_: CancellationException) {
+            // Expected exception propagated
+        }
+
+        coVerify(exactly = 1) { teamDao.upsert(match { it._id == "team1" }) }
+        coVerify(exactly = 1) { teamDao.upsert(match { it._id == "team2" }) }
+        coVerify(exactly = 0) { teamDao.upsert(match { it._id == "team3" }) }
+    }
+
+    @Test
+    fun `batchInsertMyTeams handles ordinary exception and continues loop returning processedCount`() = runTest(testDispatcher) {
+        val doc1 = com.google.gson.JsonObject().apply { addProperty("_id", "team1") }
+        val doc2 = com.google.gson.JsonObject().apply { addProperty("_id", "team2") }
+        val doc3 = com.google.gson.JsonObject().apply { addProperty("_id", "team3") }
+        val docs = listOf(doc1, doc2, doc3)
+
+        coEvery { teamDao.getByIds(any()) } returns emptyList()
+        coEvery { teamDao.getById(any()) } returns null
+
+        coEvery { teamDao.upsert(match { it._id == "team1" }) } returns Unit
+        coEvery { teamDao.upsert(match { it._id == "team2" }) } throws RuntimeException("ordinary error")
+        coEvery { teamDao.upsert(match { it._id == "team3" }) } returns Unit
+
+        val count = teamsRepository.batchInsertMyTeams(docs)
+
+        assertEquals(2, count)
+        coVerify(exactly = 1) { teamDao.upsert(match { it._id == "team1" }) }
+        coVerify(exactly = 1) { teamDao.upsert(match { it._id == "team2" }) }
+        coVerify(exactly = 1) { teamDao.upsert(match { it._id == "team3" }) }
+    }
+
+    @Test
+    fun `requestToJoin takes planet code and type from the team`() = runTest(testDispatcher) {
+        val team = MyTeam().apply { _id = "team1"; teamPlanetCode = "teamPlanet"; teamType = "sync" }
+        coEvery { teamDao.getByTeamIdUserIdAndDocType("team1", "user1", any()) } returns null
+        coEvery { teamDao.getByTeamIdAndDocType("team1", "request") } returns emptyList()
+        coEvery { teamDao.getById("team1") } returns team
+        val saved = slot<MyTeam>()
+        coEvery { teamDao.upsert(capture(saved)) } returns Unit
+
+        teamsRepository.requestToJoin("team1", "user1", "userPlanet", "local")
+
+        assertEquals("request", saved.captured.docType)
+        assertEquals("teamPlanet", saved.captured.teamPlanetCode)
+        assertEquals("sync", saved.captured.teamType)
+        assertEquals("userPlanet", saved.captured.userPlanetCode)
+    }
+
+    @Test
+    fun `requestToJoin does not add a second pending request`() = runTest(testDispatcher) {
+        coEvery { teamDao.getByTeamIdUserIdAndDocType("team1", "user1", "membership") } returns null
+        coEvery { teamDao.getByTeamIdAndDocType("team1", "request") } returns listOf(MyTeam().apply { userId = "user1" })
+
+        teamsRepository.requestToJoin("team1", "user1", "userPlanet", "local")
+
+        coVerify(exactly = 0) { teamDao.upsert(any()) }
+    }
+
+    @Test
+    fun `createTeamAndAddMember sets the default member limit`() = runTest(testDispatcher) {
+        val saved = slot<List<MyTeam>>()
+        coEvery { teamDao.upsertAll(capture(saved)) } returns Unit
+        val request = CreateTeamRequest(
+            name = "Team", description = "", services = "", rules = "",
+            teamType = "local", isPublic = false, category = "team"
+        )
+
+        teamsRepository.createTeamAndAddMember(request, UserEntity().apply { _id = "user1" })
+
+        assertEquals(MyTeam.DEFAULT_MEMBER_LIMIT, saved.captured.first().limit)
+    }
+
+    @Test
+    fun `getTeamsForUpload refiles requests made under the requester's planet code`() = runTest(testDispatcher) {
+        val team = MyTeam().apply { _id = "team1"; teamPlanetCode = "teamPlanet"; teamType = "sync" }
+        val misfiled = MyTeam().apply { _id = "r1"; _rev = "1-a"; docType = "request"; teamId = "team1"; teamPlanetCode = "userPlanet" }
+        coEvery { teamDao.getMisfiledRequests() } returns listOf(misfiled)
+        coEvery { teamDao.getByIds(listOf("team1")) } returns listOf(team)
+        coEvery { teamDao.getUpdatedTeams() } returns emptyList()
+        val saved = slot<List<MyTeam>>()
+        coEvery { teamDao.upsertAll(capture(saved)) } returns Unit
+
+        teamsRepository.getTeamsForUpload()
+
+        assertEquals(listOf("r1"), saved.captured.map { it._id })
+        assertEquals("teamPlanet", saved.captured.single().teamPlanetCode)
+        assertEquals("sync", saved.captured.single().teamType)
+        assertTrue(saved.captured.single().updated)
+        assertEquals("1-a", saved.captured.single()._rev)
+    }
+
+    @Test
+    fun `rejecting a synced request uploads its deletion`() = runTest(testDispatcher) {
+        runTransactionsInline()
+        val request = MyTeam().apply { _id = "r1"; _rev = "1-a"; docType = "request"; teamId = "team1"; userId = "user1" }
+        coEvery { teamDao.getByTeamIdAndDocType("team1", "request") } returns listOf(request)
+
+        val result = teamsRepository.respondToMemberRequest("team1", "user1", accept = false)
+
+        assertTrue(result.isSuccess)
+        coVerify { teamDao.upsert(match { it._id == "r1" && it.isDeletePending && it.updated }) }
+        coVerify(exactly = 0) { teamDao.deleteById(any()) }
+    }
+
+    @Test
+    fun `rejecting an unsynced request deletes it locally`() = runTest(testDispatcher) {
+        runTransactionsInline()
+        val request = MyTeam().apply { _id = "r1"; docType = "request"; teamId = "team1"; userId = "user1" }
+        coEvery { teamDao.getByTeamIdAndDocType("team1", "request") } returns listOf(request)
+
+        teamsRepository.respondToMemberRequest("team1", "user1", accept = false)
+
+        coVerify { teamDao.deleteById("r1") }
+    }
+
+    @Test
+    fun `accepting a request fails once the team is full`() = runTest(testDispatcher) {
+        runTransactionsInline()
+        val request = MyTeam().apply { _id = "r1"; docType = "request"; teamId = "team1"; userId = "user1" }
+        coEvery { teamDao.getByTeamIdAndDocType("team1", "request") } returns listOf(request)
+        coEvery { teamDao.getById("team1") } returns MyTeam().apply { _id = "team1"; limit = 12 }
+        coEvery { teamDao.countActiveMembershipsByTeamId("team1") } returns 12
+
+        val result = teamsRepository.respondToMemberRequest("team1", "user1", accept = true)
+
+        assertTrue(result.isFailure)
+        coVerify(exactly = 0) { teamDao.upsert(any()) }
+    }
+
+    @Test
+    fun `accepting a request succeeds below the limit`() = runTest(testDispatcher) {
+        runTransactionsInline()
+        val request = MyTeam().apply { _id = "r1"; docType = "request"; teamId = "team1"; userId = "user1" }
+        coEvery { teamDao.getByTeamIdAndDocType("team1", "request") } returns listOf(request)
+        coEvery { teamDao.getById("team1") } returns MyTeam().apply { _id = "team1"; limit = 12 }
+        coEvery { teamDao.countActiveMembershipsByTeamId("team1") } returns 11
+
+        val result = teamsRepository.respondToMemberRequest("team1", "user1", accept = true)
+
+        assertTrue(result.isSuccess)
+        coVerify { teamDao.upsert(match { it._id == "r1" && it.docType == "membership" && it.updated }) }
+    }
+
+    private fun runTransactionsInline() {
+        mockkStatic("androidx.room.RoomDatabaseKt")
+        val blockSlot = slot<suspend () -> Unit>()
+        coEvery { appDatabase.withTransaction(capture(blockSlot)) } coAnswers {
+            blockSlot.captured.invoke()
+        }
     }
 }

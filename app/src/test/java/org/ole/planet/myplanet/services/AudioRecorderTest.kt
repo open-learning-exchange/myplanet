@@ -152,4 +152,59 @@ class AudioRecorderTest {
         audioRecorder.onRecordClicked()
         verify { mockLauncher.launch(Manifest.permission.RECORD_AUDIO) }
     }
+
+    @Test
+    fun testStopRecordingWhenStopThrowsRuntimeException() {
+        val mockMediaRecorder = mockk<MediaRecorder>(relaxed = true)
+        every { mockMediaRecorder.stop() } throws RuntimeException("stop failed")
+
+        val field = AudioRecorder::class.java.getDeclaredField("myAudioRecorder")
+        field.isAccessible = true
+        field.set(audioRecorder, mockMediaRecorder)
+
+        audioRecorder.setAudioRecordListener(mockListener)
+        audioRecorder.stopRecording()
+
+        verify { mockMediaRecorder.release() }
+        verify { mockListener.onError("stop failed") }
+        verify(exactly = 0) { mockListener.onRecordStopped(any()) }
+        assertFalse(audioRecorder.isRecording())
+        verify(exactly = 0) { mockContext.startActivity(any()) }
+    }
+
+    @Test
+    fun testForceStopWhenStopThrowsRuntimeException() {
+        val mockMediaRecorder = mockk<MediaRecorder>(relaxed = true)
+        every { mockMediaRecorder.stop() } throws RuntimeException("stop failed")
+
+        val field = AudioRecorder::class.java.getDeclaredField("myAudioRecorder")
+        field.isAccessible = true
+        field.set(audioRecorder, mockMediaRecorder)
+
+        audioRecorder.setAudioRecordListener(mockListener)
+        audioRecorder.forceStop()
+
+        verify { mockMediaRecorder.release() }
+        verify { mockListener.onError("Recording stopped") }
+        assertFalse(audioRecorder.isRecording())
+        verify(exactly = 0) { mockContext.startActivity(any()) }
+    }
+
+    @Test
+    fun testStopRecordingSuccess() {
+        val mockMediaRecorder = mockk<MediaRecorder>(relaxed = true)
+
+        val field = AudioRecorder::class.java.getDeclaredField("myAudioRecorder")
+        field.isAccessible = true
+        field.set(audioRecorder, mockMediaRecorder)
+
+        audioRecorder.setAudioRecordListener(mockListener)
+        audioRecorder.stopRecording()
+
+        verify { mockMediaRecorder.stop() }
+        verify { mockMediaRecorder.release() }
+        verify(exactly = 1) { mockListener.onRecordStopped(any()) }
+        verify(exactly = 0) { mockListener.onError(any()) }
+        assertFalse(audioRecorder.isRecording())
+    }
 }

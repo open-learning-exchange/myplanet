@@ -2,14 +2,16 @@ package org.ole.planet.myplanet.ui.resources
 
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -19,7 +21,6 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyLibrary.Companion.listToString
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.RatingSummary
-import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.FileUtils.getFileExtension
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -27,18 +28,14 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
-    @Inject
-    lateinit var ratingsRepository: RatingsRepository
+    private val viewModel: ResourceDetailViewModel by viewModels()
     private var _binding: FragmentLibraryDetailBinding? = null
     private val binding get() = _binding!!
     private var libraryId: String? = null
     private var lastKnownRating: RatingSummary? = null
     private lateinit var library: MyLibrary
     var userModel: UserEntity? = null
-    private suspend fun fetchLibrary(libraryId: String): MyLibrary? {
-        return resourcesRepository.getLibraryItemById(libraryId)
-            ?: resourcesRepository.getLibraryItemByResourceId(libraryId)
-    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -58,7 +55,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             val id = libraryId ?: return@launch
             try {
-                val updated = resourcesRepository.setUserLibrary(id, true)
+                val updated = viewModel.setUserLibrary(id, true)
                 if (updated != null) {
                     val changed = library.userId?.size != updated.userId?.size
                     library = updated
@@ -68,8 +65,10 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                         binding.btnRemove.contentDescription = getString(R.string.remove)
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "onDownloadComplete failed", e)
             }
             updateDownloadButtonState()
         }
@@ -85,14 +84,14 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
-            userModel = userRepository.getUserModel()
+            userModel = viewModel.getUserModel()
             val id = libraryId
             if (id.isNullOrBlank()) {
                 handleLibraryNotFound()
                 return@launch
             }
 
-            val fetchedLibrary = fetchLibrary(id)
+            val fetchedLibrary = viewModel.resolveLibraryItem(id)
 
             if (fetchedLibrary == null) {
                 handleLibraryNotFound()
@@ -138,8 +137,10 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             try {
                 onRatingChanged()
+            } catch (e: CancellationException) {
+                throw e
             } catch (ex: Exception) {
-                ex.printStackTrace()
+                Log.w(TAG, "setLibraryData failed", ex)
             }
             setupDownloadButton()
             setClickListeners()
@@ -230,21 +231,24 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             binding.btnRemove.visibility = View.GONE
         }
         binding.btnRemove.setOnClickListener {
+            val addOnTap = userId?.let { library.userId?.contains(it) } != true
             viewLifecycleOwner.lifecycleScope.launch {
                 val id = libraryId ?: return@launch
                 if (!isAdded) {
                     return@launch
                 }
                 try {
-                    val updated = resourcesRepository.setUserLibrary(id, isAdd)
+                    val updated = viewModel.setUserLibrary(id, addOnTap)
                     if (updated != null) {
                         library = updated
-                        val formatRes = if (isAdd) R.string.format_added_to_mylibrary else R.string.format_removed_from_mylibrary
+                        val formatRes = if (addOnTap) R.string.format_added_to_mylibrary else R.string.format_removed_from_mylibrary
                         Utilities.toast(activity, getString(formatRes, getString(R.string.resources)))
                         setLibraryData()
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.w(TAG, "setClickListeners failed", e)
                 }
             }
         }
@@ -267,12 +271,15 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         if (view == null) return
         viewLifecycleOwner.lifecycleScope.launch {
             if (!isAdded) return@launch
+            val resourceId = library.resourceId ?: return@launch
             try {
-                val rating = ratingsRepository.getRatingsById("resource", library.resourceId, userModel?.id)
+                val rating = viewModel.getRatingSummary("resource", resourceId, userModel?.id)
                 lastKnownRating = rating
                 setRatings(rating)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "onRatingChanged failed", e)
             }
         }
     }
@@ -280,5 +287,9 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onDestroyView() {
         _binding = null
         super.onDestroyView()
+    }
+
+    companion object {
+        private const val TAG = "ResourceDetailFragment"
     }
 }

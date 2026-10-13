@@ -19,21 +19,22 @@ import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
 import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.PreferenceManager
 import androidx.preference.SwitchPreference
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.RetryOperation
-import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
@@ -44,6 +45,8 @@ import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class SettingsActivity : AppCompatActivity() {
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleUtils.onAttach(base))
@@ -51,6 +54,9 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        lifecycleScope.launch(dispatcherProvider.io) {
+            PreferenceManager.getDefaultSharedPreferences(this@SettingsActivity)
+        }
         EdgeToEdgeUtils.setupEdgeToEdge(this, findViewById(android.R.id.content))
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         FragmentNavigator.replaceFragment(supportFragmentManager, android.R.id.content, SettingFragment())
@@ -79,12 +85,11 @@ class SettingsActivity : AppCompatActivity() {
     class SettingFragment : PreferenceFragmentCompat() {
         private val viewModel: SettingsViewModel by viewModels()
         @Inject
-        lateinit var profileDbHandler: UserSessionManager
-        @Inject
         lateinit var sharedPrefManager: SharedPrefManager
         @Inject
         lateinit var timeProvider: TimeProvider
-        var user: UserEntity? = null
+        @Inject
+        lateinit var dispatcherProvider: DispatcherProvider
         private var libraryList: List<MyLibrary>? = null
 
 
@@ -127,8 +132,8 @@ class SettingsActivity : AppCompatActivity() {
                             }
                             appendLine("$statusIcon ${op.uploadType}: ${op.status} (${op.attemptCount}/${op.maxAttempts})")
                         }
-                        if (pendingOps.size > 10) {
-                            appendLine("... and ${pendingOps.size - 10} more")
+                        if (detailsData.pendingDueCount > pendingOps.size) {
+                            appendLine("... and ${detailsData.pendingDueCount - pendingOps.size} more")
                         }
                     } else {
                         appendLine("No pending operations")
@@ -181,8 +186,7 @@ class SettingsActivity : AppCompatActivity() {
             requireContext().setTheme(R.style.PreferencesTheme)
             setPreferencesFromResource(R.xml.pref, rootKey)
             lifecycleScope.launch {
-                user = profileDbHandler.getUserModel()
-                blockGuestSwitches()
+                if (viewModel.isGuest()) blockGuestSwitches()
             }
 
             setBetaToggleOn()
@@ -218,8 +222,6 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         private fun blockGuestSwitches() {
-            if (user?.id?.startsWith("guest") != true) return
-
             fun processPreference(pref: Preference) {
                 when (pref) {
                     is SwitchPreference -> {
@@ -245,8 +247,7 @@ class SettingsActivity : AppCompatActivity() {
             refreshStorageBreakdownSummary()
             findPreference<Preference>("storage_breakdown")?.setOnPreferenceClickListener {
                 viewLifecycleOwner.lifecycleScope.launch {
-                    val userModel = profileDbHandler.getUserModel()
-                    if (userModel?.id?.startsWith("guest") == true) {
+                    if (viewModel.isGuest()) {
                         DialogUtils.guestDialog(requireActivity())
                     } else {
                         StorageBreakdownFragment().show(parentFragmentManager, "storage_breakdown")
@@ -261,8 +262,14 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         private fun refreshStorageBreakdownSummary() {
-            findPreference<Preference>("storage_breakdown")?.summary = getString(R.string.storage_breakdown_summary) +
-                " · ${getString(R.string.available_space_colon)} ${FileUtils.availableOverTotalMemoryFormattedString(requireContext())}"
+            val context = requireContext().applicationContext
+            lifecycleScope.launch {
+                val availableSpaceText = withContext(dispatcherProvider.io) {
+                    FileUtils.availableOverTotalMemoryFormattedString(context)
+                }
+                findPreference<Preference>("storage_breakdown")?.summary = getString(R.string.storage_breakdown_summary) +
+                    " · ${getString(R.string.available_space_colon)} $availableSpaceText"
+            }
         }
 
         private fun initRetryQueueDebug() {
@@ -282,8 +289,7 @@ class SettingsActivity : AppCompatActivity() {
             if (preference != null) {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
                     viewLifecycleOwner.lifecycleScope.launch {
-                        val userModel = profileDbHandler.getUserModel()
-                        if (userModel?.id?.startsWith("guest") == true) {
+                        if (viewModel.isGuest()) {
                             DialogUtils.guestDialog(requireActivity())
                             return@launch
                         }

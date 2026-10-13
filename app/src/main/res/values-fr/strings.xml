@@ -551,6 +551,8 @@
     <string name="subject_level">Niveau du sujet</string>
     <string name="order_by_date">Trier par date</string>
     <string name="order_by_title">Trier par titre</string>
+    <string name="sort">Trier</string>
+    <string name="show_n_results">Afficher %1$d résultats</string>
     <string name="exams">Examens</string>
     <string name="survey">Enquête</string>
     <string name="submitted_by">Soumis par</string>
@@ -605,9 +607,11 @@
     <string name="please_select_starting_date">Veuillez sélectionner la date de début: </string>
     <string name="read_offline_news_from">Lire les actualités hors ligne depuis: </string>
     <string name="downloading_started_please_check_notification">Téléchargement commencé, veuillez vérifier les notifications…</string>
+    <string name="dictionary_parsing_failed">L\'analyse du dictionnaire a échoué.</string>
     <string name="file_already_exists">Le fichier existe déjà…</string>
     <string name="feature_not_available">Fonctionnalité non disponible</string>
     <string name="sync">Synchroniser</string>
+    <string name="remove_item_format">Supprimer %s</string>
     <string name="session_expired">Session expirée.</string>
     <string name="downloading_started_please_check_notificati">Téléchargement commencé, veuillez vérifier les notifications…</string>
     <string name="dictionary">Dictionnaire</string>
@@ -911,11 +915,14 @@
     <string name="video_player">lecteur vidéo</string>
     <string name="video_unavailable">Vidéo indisponible — fichier introuvable et connexion au serveur impossible</string>
     <string name="video_playback_error">Erreur de lecture vidéo. Réessayez ou vérifiez votre connexion</string>
+    <string name="audio_unavailable">Audio indisponible — fichier introuvable et connexion au serveur impossible</string>
+    <string name="audio_playback_error">Erreur de lecture audio. Réessayez ou vérifiez votre connexion</string>
     <string name="video_loading_checking_server">Vérification de la disponibilité du serveur…</string>
     <string name="video_loading_connecting">Connexion au serveur…</string>
     <string name="video_loading_buffering">Mise en mémoire tampon…</string>
     <string name="video_loading_local">Chargement de la vidéo…</string>
     <string name="unable_to_play_video">Impossible de lire la vidéo</string>
+    <string name="unable_to_play_audio">Impossible de lire l\'audio</string>
     <string name="go_back">Retour</string>
     <string name="progress_bar">barre de progression</string>
     <string name="web_view">vue web</string>
@@ -981,6 +988,7 @@
     <string name="location_colon">emplacement:&#160;</string>
     <string name="recurring_colon">récurrent:&#160;</string>
     <string name="created_by_colon">créé par:&#160;</string>
+    <string name="team_colon">équipe:&#160;</string>
     <string name="you_want_to_connect_to_a_different_server">Vous souhaitez vous connecter à un autre serveur. Effacez les données de l\'application pour continuer</string>
     <string name="are_you_sure_you_want_to_clear_data">Êtes-vous sûr de vouloir effacer toutes les données ?</string>
     <string name="feedback_list">liste des retours</string>
@@ -994,7 +1002,9 @@
     <string name="no_teams">équipes non disponibles</string>
     <string name="no_chats">aucune discussion précédente</string>
     <string name="no_feedback">aucun commentaire disponible</string>
+    <string name="medium_html">HTML</string>
     <string name="empty_text" />
+    <string name="filter_header_with_count">%1$s (%2$d)</string>
     <string name="message_placeholder">%s</string>
     <string name="reports">rapports</string>
     <string name="number_placeholder">%d</string>
@@ -1015,9 +1025,10 @@
     <string name="user_name">%1$s (%2$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
-    <string name="member_description">%1$s (%2$d visites)</string>
+    <string name="member_description">%1$s (%2$d visites d’équipe)</string>
     <string name="last_visit">Dernière visite: %1$s</string>
     <string name="no_visit">Pas de visite</string>
+    <string name="no_logout_record_found">Aucun enregistrement de déconnexion trouvé</string>
     <string name="dark_mode">Mode Sombre</string>
     <string name="dark_mode_off">Désactivé</string>
     <string name="dark_mode_on">Activé</string>
@@ -1121,6 +1132,9 @@
     <string name="user_verification_in_progress">Vérification de l\'utilisateur en cours. Veuillez patienter pendant que nous traitons les données.</string>
     <string name="go_to_mylibrary">Aller à Ma Bibliothèque</string>
     <string name="choose_an_option">Choisissez une option</string>
+    <string name="profile_guest_banner_message">Invité — connectez-vous pour enregistrer votre profil</string>
+    <string name="profile_label_level">Niveau</string>
+    <string name="profile_activity_section">Activité</string>
     <string name="welcome">Bienvenue %1$s</string>
     <string name="edit_plan">Modifier le plan</string>
     <string name="show_additional_fields">afficher les champs supplémentaires</string>
@@ -1312,7 +1326,7 @@
     <string name="download_pdf">Télécharger le PDF</string>
     <string name="label_answer">Réponse :</string>
     <string name="label_link">Lien : </string>
-    <string name="number_of_visits">Nombre de visites</string>
+    <string name="number_of_visits">Visites totales</string>
     <string name="label_name_with_colon">Nom :</string>
     <string name="label_relationship">Relation :</string>
     <string name="label_phone_no">N° de tél. :</string>
@@ -1395,4 +1409,6 @@
         <item>Non téléchargé</item>
     </string-array>
 
+    <string name="playback_speed">Vitesse de lecture</string>
+    <string name="playback_speed_format">%1$sx</string>
 </resources>

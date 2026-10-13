@@ -19,8 +19,10 @@ class RetryQueue @Inject constructor(
 
     fun isCurrentlyProcessing(): Boolean = retryRepository.isCurrentlyProcessing()
 
-    internal fun setProcessing(processing: Boolean) {
-        retryRepository.setProcessing(processing)
+    internal fun tryStartProcessing(): Boolean = retryRepository.tryStartProcessing()
+
+    internal fun finishProcessing() {
+        retryRepository.finishProcessing()
     }
 
     suspend fun queueFailedOperation(
@@ -39,18 +41,11 @@ class RetryQueue @Inject constructor(
         }
 
         val failure = RetryFailure(error.itemId, error.message, error.httpCode)
-        val existingOperation = retryRepository.getExistingOperation(error.itemId, uploadType)
-
-        if (existingOperation != null) {
-            retryRepository.updateAttempt(existingOperation.id, failure)
-            Log.d(TAG, "Updated existing retry operation for item ${error.itemId}")
-        } else {
-            retryRepository.enqueue(
-                uploadType, failure, payload.toString(), endpoint,
-                httpMethod, dbId, modelClassName, userId
-            )
-            Log.i(TAG, "RETRY_QUEUE: Queued new operation - type=$uploadType, itemId=${error.itemId}, error=${error.message}")
-        }
+        retryRepository.recordFailure(
+            uploadType, failure, payload.toString(), endpoint,
+            httpMethod, dbId, modelClassName, userId
+        )
+        Log.i(TAG, "RETRY_QUEUE: Recorded failure - type=$uploadType, itemId=${error.itemId}, error=${error.message}")
     }
 
     suspend fun getPendingOperations(): List<RetryOperation> {

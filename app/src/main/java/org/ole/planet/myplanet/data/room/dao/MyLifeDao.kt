@@ -5,21 +5,30 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.MyLife
 
 @Dao
 interface MyLifeDao {
-    @Query("SELECT * FROM my_life WHERE (:userId IS NULL OR userId IS NULL OR userId = :userId) ORDER BY weight")
+    @Query("SELECT * FROM my_life WHERE (:userId IS NULL AND (userId IS NULL OR userId = '' OR userId = '--')) OR (:userId IS NOT NULL AND userId = :userId) ORDER BY weight ASC")
+    fun observeByUserId(userId: String?): Flow<List<MyLife>>
+
+    @Query("SELECT * FROM my_life WHERE (:userId IS NULL AND (userId IS NULL OR userId = '' OR userId = '--')) OR (:userId IS NOT NULL AND userId = :userId) ORDER BY weight ASC")
     suspend fun getByUserId(userId: String?): List<MyLife>
 
-    @Query("SELECT * FROM my_life WHERE (:userId IS NULL OR userId IS NULL OR userId = :userId) AND isVisible = 1 ORDER BY weight")
+    @Query("SELECT * FROM my_life WHERE ((:userId IS NULL AND (userId IS NULL OR userId = '' OR userId = '--')) OR (:userId IS NOT NULL AND userId = :userId)) AND isVisible = 1 ORDER BY weight ASC")
     suspend fun getVisibleByUserId(userId: String?): List<MyLife>
 
-    @Query("SELECT COUNT(*) FROM my_life WHERE (:userId IS NULL OR userId IS NULL OR userId = :userId)")
+    @Query("SELECT COUNT(*) FROM my_life WHERE (:userId IS NULL AND (userId IS NULL OR userId = '' OR userId = '--')) OR (:userId IS NOT NULL AND userId = :userId)")
     suspend fun countByUserId(userId: String?): Int
 
     @Query("SELECT * FROM my_life WHERE _id IN (:ids)")
-    suspend fun getByIds(ids: List<String>): List<MyLife>
+    suspend fun getByIdsInternal(ids: List<String>): List<MyLife>
+
+    suspend fun getByIds(ids: List<String>): List<MyLife> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.distinct().chunked(900).flatMap { getByIdsInternal(it) }
+    }
 
     @Query("UPDATE my_life SET isVisible = :isVisible WHERE _id = :id OR imageId = :id OR title = :id")
     suspend fun updateVisibility(id: String, isVisible: Boolean)

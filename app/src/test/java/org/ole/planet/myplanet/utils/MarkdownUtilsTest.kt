@@ -48,28 +48,35 @@ class MarkdownUtilsTest {
     @Test
     fun prependBaseUrlToImages_replaces_markdown_images_correctly() {
         val markdown = "This is an image: ![alt text](resources/image.png)"
-        val expected = "This is an image: <img src=http://base.url/image.png width=150 height=100/>"
+        val expected = "This is an image: <img src=\"http://base.url/image.png\" width=150 height=100/>"
         assertEquals(expected, MarkdownUtils.prependBaseUrlToImages(markdown, "http://base.url/"))
     }
 
     @Test
     fun prependBaseUrlToImages_replaces_multiple_markdown_images_correctly() {
         val markdown = "![alt](resources/img1.png) and ![alt2](img2.jpg)"
-        val expected = "<img src=http://base.url/img1.png width=150 height=100/> and <img src=http://base.url/img2.jpg width=150 height=100/>"
+        val expected = "<img src=\"http://base.url/img1.png\" width=150 height=100/> and <img src=\"http://base.url/img2.jpg\" width=150 height=100/>"
         assertEquals(expected, MarkdownUtils.prependBaseUrlToImages(markdown, "http://base.url/"))
     }
 
     @Test
     fun prependBaseUrlToImages_uses_custom_width_and_height() {
         val markdown = "![alt text](resources/image.png)"
-        val expected = "<img src=http://base.url/image.png width=300 height=200/>"
+        val expected = "<img src=\"http://base.url/image.png\" width=300 height=200/>"
         assertEquals(expected, MarkdownUtils.prependBaseUrlToImages(markdown, "http://base.url/", 300, 200))
     }
 
     @Test
     fun prependBaseUrlToImages_treats_dollar_in_path_literally() {
         val markdown = "![alt](resources/pa\$th/image.png)"
-        val expected = "<img src=http://base.url/pa\$th/image.png width=150 height=100/>"
+        val expected = "<img src=\"http://base.url/pa\$th/image.png\" width=150 height=100/>"
+        assertEquals(expected, MarkdownUtils.prependBaseUrlToImages(markdown, "http://base.url/"))
+    }
+
+    @Test
+    fun prependBaseUrlToImages_handles_url_with_spaces() {
+        val markdown = "![alt text](resources/my image filename.png)"
+        val expected = "<img src=\"http://base.url/my image filename.png\" width=150 height=100/>"
         assertEquals(expected, MarkdownUtils.prependBaseUrlToImages(markdown, "http://base.url/"))
     }
 
@@ -108,6 +115,22 @@ class MarkdownUtilsTest {
     }
 
     @Test
+    fun parseMarkdown_parses_markdown_to_spanned() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val spanned = MarkdownUtils.parseMarkdown(context, "**bold** text")
+        assertEquals("bold text", spanned.toString())
+    }
+
+    @Test
+    fun setParsedMarkdown_sets_movement_method() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val textView = TextView(context)
+        val spanned = MarkdownUtils.parseMarkdown(context, "**bold** text")
+        MarkdownUtils.setParsedMarkdown(textView, spanned)
+        assertNotNull(textView.movementMethod)
+    }
+
+    @Test
     fun setMarkdownText_reuses_same_movement_method_instance() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         MarkdownUtils.warmUp(context)
@@ -123,5 +146,17 @@ class MarkdownUtilsTest {
         assertNotNull(secondMovementMethod)
 
         assertSame(firstMovementMethod, secondMovementMethod)
+    }
+
+    @Test
+    fun prependBaseUrlToImages_returns_identical_string_when_no_bracket_present() {
+        val markdown = "plain text with no bracket at all"
+        assertSame(markdown, MarkdownUtils.prependBaseUrlToImages(markdown, "http://base.url/"))
+    }
+
+    @Test
+    fun prependBaseUrlToImages_returns_identical_string_when_brackets_present_without_image_markup() {
+        val markdown = "plain text with (parens) and a ! and [brackets]"
+        assertSame(markdown, MarkdownUtils.prependBaseUrlToImages(markdown, "http://base.url/"))
     }
 }

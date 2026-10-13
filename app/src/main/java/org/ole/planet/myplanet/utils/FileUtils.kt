@@ -5,14 +5,13 @@ import android.app.usage.StorageStatsManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
-import android.database.Cursor
 import android.net.Uri
 import android.os.Environment
 import android.os.StatFs
 import android.os.storage.StorageManager
-import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.text.format.Formatter
+import android.util.Log
 import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.core.content.FileProvider
@@ -20,14 +19,13 @@ import androidx.core.net.toUri
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
-import java.util.Locale
 import java.util.UUID
 import kotlin.math.roundToLong
-import org.ole.planet.myplanet.utils.TimeProvider
 
 object FileUtils {
+    private const val TAG = "FileUtils"
+    private val STRAY_PERCENT = Regex("%(?![0-9A-Fa-f]{2})")
+
     @Volatile private var cachedExternalFilesDir: File? = null
 
     fun warmUp(context: Context) {
@@ -62,31 +60,44 @@ object FileUtils {
     }
 
     fun getSDPathFromUrl(context: Context, url: String?): File {
-        return resolveFilePath(context, "/ole/${getIdFromUrl(url)}", getResourceRelativePathFromUrl(url))
+        val segments = parseUrlSegments(url)
+        return resolveFilePath(context, "/ole/${getIdFromSegments(segments)}", getResourceRelativePathFromSegments(segments))
     }
 
     fun getResourceRelativePathFromUrl(url: String?): String {
+        return getResourceRelativePathFromSegments(parseUrlSegments(url))
+    }
+
+    private fun parseUrlSegments(url: String?): List<String>? {
         return try {
-            val segments = url?.toUri()?.pathSegments ?: return getFileNameFromUrl(url)
-            val idx = segments.indexOf("resources")
-            if (idx != -1 && idx + 2 < segments.size) {
-                segments.subList(idx + 2, segments.size).joinToString("/") {
-                    URLDecoder.decode(it, StandardCharsets.UTF_8.name())
-                }
-            } else {
-                getFileNameFromUrl(url)
-            }
+            url?.toUri()?.encodedPath
+                ?.split('/')
+                ?.filter { it.isNotEmpty() }
+                ?.map { if (STRAY_PERCENT.containsMatchIn(it)) it else Uri.decode(it) }
         } catch (e: Exception) {
-            e.printStackTrace()
-            getFileNameFromUrl(url)
+            Log.e(TAG, "Failed to parse path segments from url", e)
+            null
         }
     }
 
-    /**
-     * Resolves an HTML resource's entry file (e.g. from `openWhichFile`, which may nest the
-     * entry point in a subfolder like `sudoku/index.html`) against its download directory,
-     * defaulting to `index.html` when unset and refusing to resolve outside [baseDirectory].
-     */
+    private fun getIdFromSegments(segments: List<String>?): String {
+        if (segments == null) return ""
+        val idx = segments.indexOf("resources")
+        return if (idx != -1 && idx + 1 < segments.size) segments[idx + 1] else ""
+    }
+
+    private fun getResourceRelativePathFromSegments(segments: List<String>?): String {
+        if (segments == null) return ""
+        val idx = segments.indexOf("resources")
+        return if (idx != -1 && idx + 2 < segments.size) {
+            segments.subList(idx + 2, segments.size).joinToString("/")
+        } else {
+            getFileNameFromSegments(segments)
+        }
+    }
+
+    private fun getFileNameFromSegments(segments: List<String>?): String = segments?.lastOrNull().orEmpty()
+
     fun resolveHtmlEntryFile(baseDirectory: File, relativePath: String?): File? {
         val candidate = relativePath?.takeIf { it.isNotBlank() } ?: "index.html"
         if (candidate.startsWith("/") || candidate.startsWith("\\") || candidate.contains("..")) {
@@ -101,7 +112,7 @@ object FileUtils {
                 null
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to resolve HTML entry file", e)
             null
         }
     }
@@ -111,14 +122,26 @@ object FileUtils {
 
     fun findHtmlCoverImage(resourceDir: File): File? {
         if (!resourceDir.isDirectory) return null
-        val images = resourceDir.walkTopDown()
-            .maxDepth(4)
-            .filter { it.isFile && it.extension.lowercase() in previewImageExtensions }
-            .toList()
-        if (images.isEmpty()) return null
-        return images.firstOrNull { image ->
-            previewImageNameHints.any { image.nameWithoutExtension.lowercase().contains(it) }
-        } ?: images.maxByOrNull { it.length() }
+        var largestFile: File? = null
+        var maxBytes: Long = -1L
+
+        for (file in resourceDir.walkTopDown().maxDepth(4)) {
+            if (!file.isFile) continue
+            if (file.extension.lowercase() !in previewImageExtensions) continue
+
+            val nameLower = file.nameWithoutExtension.lowercase()
+            if (previewImageNameHints.any { nameLower.contains(it) }) {
+                return file
+            }
+
+            val length = file.length()
+            if (largestFile == null || length > maxBytes) {
+                largestFile = file
+                maxBytes = length
+            }
+        }
+
+        return largestFile
     }
 
     fun checkFileExist(context: Context, url: String?): Boolean {
@@ -132,31 +155,18 @@ object FileUtils {
         return path.substringAfterLast('/')
     }
 
-    fun getFileNameFromUrl(url: String?): String {
-        return try {
-            url?.toUri()?.lastPathSegment?.let {
-                URLDecoder.decode(it, StandardCharsets.UTF_8.name())
-            } ?: ""
-        } catch (e: Exception) {
-            e.printStackTrace()
-            ""
-        }
-    }
+    fun getFileNameFromUrl(url: String?): String = getFileNameFromSegments(parseUrlSegments(url))
 
-    fun getIdFromUrl(url: String?): String {
-        return try {
-            url?.toUri()?.pathSegments?.let { segments ->
-                val idx = segments.indexOf("resources")
-                if (idx != -1 && idx + 1 < segments.size) segments[idx + 1] else ""
-            } ?: ""
-        } catch (e: Exception) {
-            e.printStackTrace()
-            ""
-        }
-    }
+    fun getIdFromUrl(url: String?): String = getIdFromSegments(parseUrlSegments(url))
 
     fun getFileExtension(address: String?): String {
-        return address?.let { File(it).extension.lowercase() } ?: ""
+        if (address.isNullOrBlank()) return ""
+        val cleanAddress = if (address.startsWith("http://", ignoreCase = true) || address.startsWith("https://", ignoreCase = true)) {
+            address.substringBefore('?').substringBefore('#')
+        } else {
+            address
+        }
+        return File(cleanAddress).extension.lowercase()
     }
 
     fun installApk(activity: Context, file: String?) {
@@ -176,7 +186,7 @@ object FileUtils {
             session.commit(intentSender)
             session.close()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to install APK", e)
         }
     }
 
@@ -191,23 +201,10 @@ object FileUtils {
     }
 
 
-    fun getRealPathFromURI(context: Context, contentUri: Uri?): String? {
-        var cursor: Cursor? = null
-        return try {
-            val proj = arrayOf(MediaStore.Images.Media.DATA)
-            cursor = contentUri?.let { context.contentResolver.query(it, proj, null, null, null) }
-            val columnIndex = cursor?.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
-            cursor?.moveToFirst()
-            cursor?.getString(columnIndex ?: 0)
-        } finally {
-            cursor?.close()
-        }
-    }
-
     fun getMimeType(fileName: String?): String? {
         if (fileName.isNullOrBlank()) return null
-        val ext = MimeTypeMap.getFileExtensionFromUrl(fileName)?.lowercase(Locale.getDefault())
-        return if (!ext.isNullOrBlank()) {
+        val ext = getFileExtension(fileName)
+        return if (ext.isNotBlank()) {
             MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
         } else {
             null
@@ -239,26 +236,25 @@ object FileUtils {
         }
     }
 
-    fun getPathFromURI(context: Context, uri: Uri?): String? {
-        var filePath: String? = null
-        if (uri != null) {
-            when (uri.scheme) {
-                "content" -> {
-                    context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                        if (cursor.moveToFirst()) {
-                            val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
-                            val fileName = cursor.getString(columnIndex)
-                            val cacheDir = context.cacheDir
-                            val destinationFile = File(cacheDir, fileName)
-                            copyUriToFile(context, uri, destinationFile)
-                            filePath = destinationFile.absolutePath
-                        }
-                    }
-                }
-                "file" -> filePath = uri.path
+    fun resolveUriToPath(context: Context, uri: Uri?, destinationDir: File = context.cacheDir): String? {
+        uri ?: return null
+        if (uri.scheme == "file") return uri.path
+        return try {
+            val displayName = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val columnIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (columnIndex >= 0) cursor.getString(columnIndex) else null
+                } else null
             }
+            val safeName = displayName?.let { File(it).name }
+                ?.takeIf { it.isNotBlank() && it != "." && it != ".." }
+            val destinationFile = File(destinationDir, safeName ?: UUID.randomUUID().toString())
+            copyUriToFile(context, uri, destinationFile)
+            destinationFile.absolutePath
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
-        return filePath
     }
 
     @Throws(Exception::class)
@@ -274,47 +270,11 @@ object FileUtils {
         return Intent.createChooser(intent, "Open folder")
     }
 
-    fun getImagePath(context: Context, uri: Uri?): String? {
-        if (uri == null) return null
-        val projection = arrayOf(MediaStore.Images.Media._ID, MediaStore.Images.Media.DATA)
-        return try {
-            context.contentResolver.query(uri, projection, null, null, null)?.use { firstCursor ->
-                if (firstCursor.moveToFirst()) {
-                    val idIndex = firstCursor.getColumnIndex(MediaStore.Images.Media._ID)
-                    if (idIndex >= 0) {
-                        val documentId = firstCursor.getString(idIndex)
-                        val selection = "${MediaStore.Images.Media._ID} = ?"
-                        val args = arrayOf(documentId)
-                        context.contentResolver.query(
-                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                            projection,
-                            selection,
-                            args,
-                            null
-                        )?.use { cursor ->
-                            if (cursor.moveToFirst()) {
-                                val dataIndex = cursor.getColumnIndex(MediaStore.Images.Media.DATA)
-                                if (dataIndex >= 0) return cursor.getString(dataIndex)
-                            }
-                        }
-                    }
-                }
-            }
-            null
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
-    }
-
     fun externalMemoryAvailable(): Boolean {
         return Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED
     }
 
     val availableExternalMemorySize: Long
-        /**
-         * Find space left in the external memory.
-         */
         get() =// Not the best way to check, shows internal memory
             // when there is not external memory mounted
             if (externalMemoryAvailable()) {
@@ -327,19 +287,9 @@ object FileUtils {
                 0
             }
 
-    /**
-     * Coverts Bytes to KB/MB/GB and changes magnitude accordingly.
-     *
-     * @param size
-     * @return A string with size followed by an appropriate suffix
-     */
     fun formatSize(context: Context, size: Long): String {
         return Formatter.formatFileSize(context, size)
     }
-
-    fun totalMemoryCapacity(context: Context): Long = getStorageStats(context).first
-
-    fun totalAvailableMemory(context: Context): Long = getStorageStats(context).second
 
     fun totalAvailableMemoryRatio(context: Context): Long {
         val (total, available) = getStorageStats(context)
@@ -384,8 +334,35 @@ object FileUtils {
             }
             context.startActivity(intent)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to open PDF", e)
             Toast.makeText(context, "Could not open PDF. File saved at: ${file.absolutePath}", Toast.LENGTH_LONG).show()
         }
+    }
+}
+
+class FileExistenceCache(
+    private val ttlMs: Long = DEFAULT_TTL_MS
+) {
+    private val cache = HashMap<String, Pair<Boolean, Long>>()
+
+    fun clear() {
+        cache.clear()
+    }
+
+    fun exists(file: File?, now: Long): Boolean {
+        if (file == null) return false
+        val path = file.absolutePath
+        val cached = cache[path]
+        return if (cached != null && now - cached.second < ttlMs) {
+            cached.first
+        } else {
+            val freshExists = file.exists()
+            cache[path] = Pair(freshExists, now)
+            freshExists
+        }
+    }
+
+    companion object {
+        const val DEFAULT_TTL_MS = 5000L
     }
 }

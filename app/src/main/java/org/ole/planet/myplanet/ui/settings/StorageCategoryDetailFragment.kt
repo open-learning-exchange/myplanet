@@ -5,28 +5,26 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingBottomSheetFragment
 import org.ole.planet.myplanet.databinding.FragmentStorageCategoryDetailBinding
 import org.ole.planet.myplanet.databinding.ItemDownloadedResourceBinding
 import org.ole.planet.myplanet.model.OfflineResourceItem
+import org.ole.planet.myplanet.model.StorageCategoryType
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
-    private var _binding: FragmentStorageCategoryDetailBinding? = null
-    private val binding get() = _binding!!
-
+class StorageCategoryDetailFragment : BaseBindingBottomSheetFragment<FragmentStorageCategoryDetailBinding>(FragmentStorageCategoryDetailBinding::inflate) {
     private val viewModel: StorageCategoryViewModel by viewModels()
 
     private var categoryLabel: String = ""
@@ -63,11 +61,6 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         return dialog
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentStorageCategoryDetailBinding.inflate(inflater, container, false)
-        return binding.root
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -84,25 +77,28 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
             viewModel.toggleAllChecked()
         }
 
+        val olePath = FileUtils.getOlePath(requireContext())
+
         binding.deleteSelectedButton.setOnClickListener {
-            val selected = viewModel.uiState.value.items.filter { it.isChecked }
-            confirmDelete(selected.size, getString(R.string.storage_delete_selected_confirm, selected.size)) {
-                deleteItems(selected)
+            val checkedCount = viewModel.uiState.value.checkedCount
+            confirmDelete(checkedCount, getString(R.string.storage_delete_selected_confirm, checkedCount)) {
+                viewModel.deleteSelected(olePath)
             }
         }
 
         binding.deleteAllButton.setOnClickListener {
-            val items = viewModel.uiState.value.items
-            confirmDelete(items.size, getString(R.string.storage_delete_confirm, categoryLabel)) {
-                deleteItems(items)
+            val count = viewModel.uiState.value.items.size
+            confirmDelete(count, getString(R.string.storage_delete_confirm, categoryLabel)) {
+                viewModel.deleteAll(olePath)
             }
         }
 
         observeViewModel()
         val category = StorageCategories.all.getOrNull(categoryIndex)
         viewModel.loadResources(
+            olePath = olePath,
             extensions = category?.extensions ?: emptySet(),
-            allKnownExtensions = StorageCategories.allKnownExtensions
+            allKnownExtensions = StorageCategoryType.allKnownExtensions
         )
     }
 
@@ -127,7 +123,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
                 binding.selectAllDivider.visibility = View.VISIBLE
 
                 adapter.submitList(state.items)
-                updateSelectionState(state.items)
+                updateSelectionState(state)
             }
 
             if (state.isDeleting) {
@@ -142,10 +138,10 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         }
     }
 
-    private fun updateSelectionState(items: List<OfflineResourceItem>) {
+    private fun updateSelectionState(state: StorageCategoryUiState) {
         if (_binding == null) return
-        val checkedCount = items.count { it.isChecked }
-        val allChecked = checkedCount == items.size && items.isNotEmpty()
+        val checkedCount = state.checkedCount
+        val allChecked = state.allChecked
 
         binding.selectAllCheckbox.isChecked = allChecked
         binding.deleteSelectedButton.isEnabled = checkedCount > 0
@@ -159,17 +155,11 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
     }
 
     private fun confirmDelete(count: Int, message: String, onConfirm: () -> Unit) {
-        AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-            .setTitle(R.string.are_you_sure)
-            .setMessage(message)
-            .setPositiveButton(R.string.yes) { _, _ -> onConfirm() }
-            .setNegativeButton(R.string.no, null)
-            .show()
-    }
-
-    private fun deleteItems(toDelete: List<OfflineResourceItem>) {
-        if (_binding == null) return
-        viewModel.deleteItems(toDelete)
+        requireContext().confirmDialog(
+            title = getString(R.string.are_you_sure),
+            message = message,
+            onPositive = onConfirm
+        )
     }
 
     private val DIFF_CALLBACK = DiffUtils.itemCallback<OfflineResourceItem>(
@@ -189,7 +179,20 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
             val b = ItemDownloadedResourceBinding.inflate(
                 LayoutInflater.from(parent.context), parent, false
             )
-            return ViewHolder(b)
+            val holder = ViewHolder(b)
+            holder.binding.root.setOnClickListener {
+                val pos = holder.bindingAdapterPosition
+                if (pos != RecyclerView.NO_POSITION) {
+                    onItemClicked(getItem(pos))
+                }
+            }
+            holder.binding.checkBox.setOnClickListener {
+                val pos = holder.bindingAdapterPosition
+                if (pos != RecyclerView.NO_POSITION) {
+                    onItemClicked(getItem(pos))
+                }
+            }
+            return holder
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -197,28 +200,15 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
             holder.binding.resourceTitle.text = item.title
             holder.binding.resourceSize.text = FileUtils.formatSize(requireContext(), item.totalSizeBytes)
             holder.binding.checkBox.isChecked = item.isChecked
-            holder.binding.root.setOnClickListener {
-                onItemClicked(item)
-            }
-            holder.binding.checkBox.setOnClickListener {
-                onItemClicked(item)
-            }
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
             if (payloads.isNotEmpty()) {
                 val item = getItem(position)
                 holder.binding.checkBox.isChecked = item.isChecked
-                holder.binding.root.setOnClickListener { onItemClicked(item) }
-                holder.binding.checkBox.setOnClickListener { onItemClicked(item) }
             } else {
                 super.onBindViewHolder(holder, position, payloads)
             }
         }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
     }
 }

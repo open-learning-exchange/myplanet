@@ -6,6 +6,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -16,7 +17,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.UserEntity
@@ -26,7 +26,6 @@ import org.ole.planet.myplanet.utils.SystemTimeProvider
 class EventsRepositoryImplTest {
 
     private lateinit var meetupDao: MeetupDao
-    private lateinit var userDao: UserDao
     private lateinit var repository: EventsRepositoryImpl
 
     class SilentException(message: String) : Exception(message) {
@@ -36,8 +35,18 @@ class EventsRepositoryImplTest {
     @Before
     fun setup() {
         meetupDao = mockk(relaxed = true)
-        userDao = mockk(relaxed = true)
-        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userDao, Gson())
+        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, Gson())
+    }
+
+    @Test
+    fun getMeetupsForUser() = runTest {
+        coEvery { meetupDao.getByUserId("user1") } returns listOf(Meetup().apply { id = "1"; userId = "user1" })
+
+        val result = repository.getMeetupsForUser("user1")
+
+        assertEquals(1, result.size)
+        assertEquals("1", result[0].id)
+        coVerify { meetupDao.getByUserId("user1") }
     }
 
     @Test
@@ -48,6 +57,26 @@ class EventsRepositoryImplTest {
 
         assertEquals(1, result.size)
         assertEquals("1", result[0].id)
+    }
+
+    @Test
+    fun getMeetupsForTeams() = runTest {
+        coEvery { meetupDao.getByTeamIds(listOf("team1", "team2")) } returns listOf(
+            Meetup().apply { id = "1"; teamId = "team1" },
+            Meetup().apply { id = "2"; teamId = "team2" }
+        )
+
+        val result = repository.getMeetupsForTeams(listOf("team1", "team2"))
+
+        assertEquals(2, result.size)
+    }
+
+    @Test
+    fun getMeetupsForTeamsReturnsEmptyForEmptyInput() = runTest {
+        val result = repository.getMeetupsForTeams(emptyList())
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { meetupDao.getByTeamIds(any()) }
     }
 
     @Test
@@ -65,10 +94,7 @@ class EventsRepositoryImplTest {
 
     @Test
     fun getJoinedMembers() = runTest {
-        coEvery { meetupDao.getMemberUserIdsByMeetupId("meetup1") } returns listOf(
-            "user1", "user2", "user1"
-        )
-        coEvery { userDao.getUsersByAnyIds(any()) } returns listOf(
+        coEvery { meetupDao.getJoinedMembersByMeetupId("meetup1") } returns listOf(
             UserEntity(id = "user1"),
             UserEntity(id = "user2", _id = "remote-user2")
         )
@@ -150,12 +176,38 @@ class EventsRepositoryImplTest {
     }
 
     @Test
+    fun insertMeetupsFromSyncPropagatesDaoException() = runTest {
+        val docs = listOf(JsonObject().apply { addProperty("_id", "m1") })
+        coEvery { meetupDao.getByMeetupIds(any()) } throws SilentException("boom")
+
+        try {
+            repository.insertMeetupsFromSync(docs)
+            org.junit.Assert.fail("Expected SilentException to be thrown")
+        } catch (_: SilentException) {
+            // Expected exception propagated
+        }
+    }
+
+    @Test
     fun batchInsertMeetupsException() = runTest {
         val docs = listOf(JsonObject().apply { addProperty("_id", "m1") })
         coEvery { meetupDao.getByMeetupIds(any()) } throws SilentException("boom")
 
         val count = repository.batchInsertMeetups(docs)
         assertEquals(0, count)
+    }
+
+    @Test
+    fun batchInsertMeetupsCancellationException() = runTest {
+        val docs = listOf(JsonObject().apply { addProperty("_id", "m1") })
+        coEvery { meetupDao.getByMeetupIds(any()) } throws CancellationException("cancelled")
+
+        try {
+            repository.batchInsertMeetups(docs)
+            org.junit.Assert.fail("Expected CancellationException to be thrown")
+        } catch (_: CancellationException) {
+            // Expected exception propagated
+        }
     }
 
     @Test
@@ -179,5 +231,35 @@ class EventsRepositoryImplTest {
 
         val result = repository.createMeetup(params)
         assertFalse(result)
+    }
+
+    @Test
+    fun createMeetupCancellationException() = runTest {
+        coEvery { meetupDao.upsert(any()) } throws CancellationException("cancelled")
+
+        val params = MeetupCreationParams(
+            "title", "link", "desc", "loc", "start", "end", null, "planet", "user", 1L, 2L, "teamId"
+        )
+
+        try {
+            repository.createMeetup(params)
+            org.junit.Assert.fail("Expected CancellationException to be thrown")
+        } catch (_: CancellationException) {
+            // Expected exception propagated
+        }
+    }
+
+    @Test
+    fun updateMeetupCancellationException() = runTest {
+        val meetup = Meetup().apply { id = "m1" }
+        coEvery { meetupDao.getById("m1") } returns meetup
+        coEvery { meetupDao.upsert(any()) } throws CancellationException("cancelled")
+
+        try {
+            repository.updateMeetup("m1", "t", "d", 0L, 0L, "st", "et", "loc", "link", "rec")
+            org.junit.Assert.fail("Expected CancellationException to be thrown")
+        } catch (_: CancellationException) {
+            // Expected exception propagated
+        }
     }
 }

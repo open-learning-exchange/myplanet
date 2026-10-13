@@ -22,7 +22,9 @@ class ANRWatchdog(
         private const val DEFAULT_ANR_TIMEOUT = 5000L
     }
 
+    @Volatile
     private var isWatching = false
+    @Volatile
     private var tick = 0L
     private val mainHandler = Handler(Looper.getMainLooper())
     private val tickUpdater = Runnable { updateTick() }
@@ -48,13 +50,12 @@ class ANRWatchdog(
         job = scope.launch(dispatcherProvider.default) {
             while (isWatching && isActive) {
                 val lastTick = tick
-                val currentTime = SystemClock.elapsedRealtime()
                 mainHandler.post(tickUpdater)
 
                 delay(timeout / 2)
 
                 if (isWatching && lastTick == tick) {
-                    val duration = currentTime - lastTick
+                    val duration = SystemClock.elapsedRealtime() - lastTick
                     val mainThread = Looper.getMainLooper().thread
 
                     val threadId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {

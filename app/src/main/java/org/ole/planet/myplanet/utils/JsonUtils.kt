@@ -1,144 +1,64 @@
 package org.ole.planet.myplanet.utils
 
-import android.util.Log
-import com.google.gson.Gson
-import com.google.gson.JsonArray
-import com.google.gson.JsonElement
-import com.google.gson.JsonNull
-import com.google.gson.JsonObject
-import com.google.gson.JsonParser.parseString
-import org.ole.planet.myplanet.model.News
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.floatOrNull
+import kotlinx.serialization.json.longOrNull
 
 object JsonUtils {
-    private const val TAG = "JsonUtils"
+    private val EMPTY_OBJECT = JsonObject(emptyMap())
+    private val EMPTY_ARRAY = JsonArray(emptyList())
 
-    val gson: Gson by lazy {
-        Gson()
+    private fun field(fieldName: String, jsonObject: JsonObject?): kotlinx.serialization.json.JsonElement? =
+        jsonObject?.get(fieldName)?.takeIf { it != JsonNull }
+
+    fun getString(fieldName: String, jsonObject: JsonObject?): String {
+        val primitive = field(fieldName, jsonObject) as? JsonPrimitive ?: return ""
+        return if (primitive.isString) primitive.content else ""
     }
 
-    private inline fun <T> safeGet(default: () -> T, block: () -> T): T {
-        return try {
-            block()
-        } catch (e: Exception) {
-            logFallback(e)
-            default()
-        }
+    fun getString(array: JsonArray, index: Int): String {
+        val primitive = array.getOrNull(index) as? JsonPrimitive ?: return ""
+        return primitive.content
     }
 
-    private fun logFallback(e: Exception) {
-        try {
-            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG, "expected type mismatch, using fallback: ${e.message}")
-            }
-        } catch (_: Throwable) {
-        }
+    fun getBoolean(fieldName: String, jsonObject: JsonObject?): Boolean {
+        val primitive = field(fieldName, jsonObject) as? JsonPrimitive ?: return false
+        return primitive.booleanOrNull ?: false
     }
 
-    fun extractSharedTeamName(news: News?): String {
-        if (news == null) return ""
-        val ar = news.parsedViewIn ?: if (!news.viewIn.isNullOrEmpty()) {
-            try {
-                gson.fromJson(news.viewIn, JsonArray::class.java)
-            } catch (e: Exception) {
-                Log.w(TAG, "failed to parse viewIn", e)
-                null
-            }
-        } else null
-
-        if (ar != null && ar.size() > 1) {
-            val ob = ar[0].asJsonObject
-            if (ob.has("name") && !ob.get("name").isJsonNull) {
-                return ob.get("name").asString
-            }
-        }
-        return ""
+    fun getInt(fieldName: String, jsonObject: JsonObject?): Int {
+        val primitive = field(fieldName, jsonObject) as? JsonPrimitive ?: return 0
+        return primitive.longOrNull?.toInt() ?: primitive.content.toIntOrNull() ?: 0
     }
 
-    fun getString(fieldName: String, jsonObject: JsonObject?): String = safeGet({ "" }) {
-        if (jsonObject?.has(fieldName) == true) {
-            val el: JsonElement = jsonObject.get(fieldName)
-            if (el is JsonNull || !el.isJsonPrimitive || !el.asJsonPrimitive.isString) "" else el.asString
-        } else ""
+    fun getLong(fieldName: String, jsonObject: JsonObject?): Long {
+        val primitive = field(fieldName, jsonObject) as? JsonPrimitive ?: return 0L
+        return primitive.longOrNull ?: primitive.content.toLongOrNull() ?: 0L
     }
 
-    fun getString(array: JsonArray, index: Int): String = safeGet({ "" }) {
-        val el: JsonElement? = if (index in 0 until array.size()) array.get(index) else null
-        if (el == null || !el.isJsonPrimitive) "" else el.asString
+    fun getFloat(fieldName: String, jsonObject: JsonObject?): Float {
+        val primitive = field(fieldName, jsonObject) as? JsonPrimitive ?: return 0f
+        return primitive.floatOrNull ?: primitive.content.toFloatOrNull() ?: 0f
     }
 
-    fun getAsJsonArray(list: List<String>?): JsonArray {
-        val array = JsonArray()
-        list?.forEach { s -> array.add(s) }
-        return array
-    }
+    fun getJsonObject(fieldName: String, jsonObject: JsonObject?): JsonObject =
+        field(fieldName, jsonObject) as? JsonObject ?: EMPTY_OBJECT
 
-    fun getStringAsJsonArray(s: String?): JsonArray {
-        if (s.isNullOrBlank()) return JsonArray()
-        val arrayElement = parseString(s)
-        return if (arrayElement.isJsonArray) arrayElement.asJsonArray else JsonArray()
-    }
+    fun getJsonArray(fieldName: String, jsonObject: JsonObject?): JsonArray =
+        field(fieldName, jsonObject) as? JsonArray ?: EMPTY_ARRAY
 
-    fun getBoolean(fieldName: String, jsonObject: JsonObject?): Boolean = safeGet({ false }) {
-        val el: JsonElement? = jsonObject?.takeIf { it.has(fieldName) }?.get(fieldName)
-        if (el == null || !el.isJsonPrimitive) false else el.asBoolean
-    }
+    fun rawString(fieldName: String, jsonObject: JsonObject?): String? =
+        (field(fieldName, jsonObject) as? JsonPrimitive)?.content
 
-    fun addString(`object`: JsonObject, fieldName: String, value: String?) {
-        if (!value.isNullOrEmpty()) `object`.addProperty(fieldName, value)
-    }
+    fun rawLong(fieldName: String, jsonObject: JsonObject?): Long? =
+        (field(fieldName, jsonObject) as? JsonPrimitive)?.let { it.longOrNull ?: it.content.toLongOrNull() }
 
-    fun addLong(`object`: JsonObject, fieldName: String, value: Long) {
-        if (value > 0) `object`.addProperty(fieldName, value)
-    }
+    fun rawInt(fieldName: String, jsonObject: JsonObject?): Int? = rawLong(fieldName, jsonObject)?.toInt()
 
-    fun addInteger(`object`: JsonObject, fieldName: String, value: Int) {
-        if (value != 0) `object`.addProperty(fieldName, value)
-    }
-
-    fun addFloat(`object`: JsonObject, fieldName: String, value: Float) {
-        if (value != 0f) `object`.addProperty(fieldName, value)
-    }
-
-    fun addJson(`object`: JsonObject, fieldName: String, value: JsonObject?) {
-        if (value != null && value.keySet().isNotEmpty()) `object`.add(fieldName, value)
-    }
-
-    fun getInt(fieldName: String, jsonObject: JsonObject?): Int = safeGet({ 0 }) {
-        val el: JsonElement? = jsonObject?.takeIf { it.has(fieldName) }?.get(fieldName)
-        if (el == null || !el.isJsonPrimitive) 0 else el.asJsonPrimitive.let { primitive ->
-            if (primitive.isNumber) primitive.asInt else primitive.asString.toIntOrNull() ?: 0
-        }
-    }
-
-    fun getFloat(fieldName: String, jsonObject: JsonObject?): Float = safeGet({ 0f }) {
-        if (jsonObject?.has(fieldName) != true) return@safeGet getInt(fieldName, jsonObject).toFloat()
-        val el: JsonElement = jsonObject.get(fieldName)
-        if (!el.isJsonPrimitive) 0f else el.asJsonPrimitive.let { primitive ->
-            if (primitive.isNumber) primitive.asFloat else primitive.asString.toFloatOrNull() ?: 0f
-        }
-    }
-
-    fun getJsonArray(fieldName: String, jsonObject: JsonObject?): JsonArray = safeGet({ JsonArray() }) {
-        val array: JsonElement? = jsonObject?.let { getJsonElement(fieldName, it, JsonArray::class.java) }
-        if (array is JsonNull || array !is JsonArray) JsonArray() else array
-    }
-
-    fun getJsonObject(fieldName: String, jsonObject: JsonObject?): JsonObject = safeGet({ JsonObject() }) {
-        val el: JsonElement? = jsonObject?.let { getJsonElement(fieldName, it, JsonObject::class.java) }
-        if (el is JsonObject) el else JsonObject()
-    }
-
-    private fun getJsonElement(fieldName: String, jsonObject: JsonObject, type: Class<*>): JsonElement {
-        if (!jsonObject.has(fieldName)) return if (type == JsonObject::class.java) JsonObject() else JsonArray()
-        return safeGet({ if (type == JsonObject::class.java) JsonObject() else JsonArray() }) {
-            jsonObject.get(fieldName)
-        }
-    }
-
-    fun getLong(fieldName: String, jsonObject: JsonObject?): Long = safeGet({ 0L }) {
-        val el: JsonElement? = jsonObject?.takeIf { it.has(fieldName) }?.get(fieldName)
-        if (el == null || !el.isJsonPrimitive) 0L else el.asJsonPrimitive.let { primitive ->
-            if (primitive.isNumber) primitive.asLong else primitive.asString.toLongOrNull() ?: 0L
-        }
-    }
+    fun rawBoolean(fieldName: String, jsonObject: JsonObject?): Boolean? =
+        (field(fieldName, jsonObject) as? JsonPrimitive)?.booleanOrNull
 }

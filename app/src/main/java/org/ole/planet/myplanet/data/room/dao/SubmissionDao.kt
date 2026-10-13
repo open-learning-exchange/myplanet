@@ -9,22 +9,34 @@ import org.ole.planet.myplanet.model.Submission
 @Dao
 interface SubmissionDao {
     @Query("SELECT * FROM submissions WHERE id = :id OR _id = :id LIMIT 1") suspend fun getByIdOrRemoteId(id: String): Submission?
-    @Query("SELECT * FROM submissions WHERE id IN (:ids)") suspend fun getByIds(ids: List<String>): List<Submission>
+    @Query("SELECT * FROM submissions WHERE id IN (:ids)") suspend fun getByIdsInternal(ids: List<String>): List<Submission>
+
+    suspend fun getByIds(ids: List<String>): List<Submission> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.distinct().chunked(900).flatMap { getByIdsInternal(it) }
+    }
     @Query("SELECT * FROM submissions WHERE userId = :userId AND teamId = :teamId") suspend fun getByUserIdAndTeamId(userId: String, teamId: String): List<Submission>
     @Query("SELECT * FROM submissions WHERE userId = :userId AND teamId IS NULL") suspend fun getByUserIdWithoutTeam(userId: String): List<Submission>
     @Query("SELECT * FROM submissions WHERE userId IS :userId AND type = 'exam'") suspend fun getExamSubmissionsByUser(userId: String?): List<Submission>
     @Query("SELECT * FROM submissions WHERE userId = :userId") fun observeByUserId(userId: String): Flow<List<Submission>>
     @Query("SELECT * FROM submissions WHERE userId = :userId AND status = 'pending' AND type = 'survey'") suspend fun getPendingSurveys(userId: String): List<Submission>
     @Query("SELECT COUNT(*) FROM submissions WHERE userId = :userId AND status = 'pending' AND type = 'survey'") suspend fun countPendingSurveys(userId: String): Int
-    @Query("SELECT * FROM submissions WHERE userId = :userId AND LOWER(status) = 'pending' AND type = 'survey'") fun observePendingSurveys(userId: String?): Flow<List<Submission>>
+    @Query("SELECT * FROM submissions WHERE userId = :userId AND LOWER(status) = 'pending' AND type = 'survey'") fun observePendingSurveys(userId: String): Flow<List<Submission>>
     @Query("SELECT * FROM submissions WHERE userId = :userId AND status = 'pending' AND type = 'survey' AND teamId IS NULL") suspend fun getUniquePendingSurveyCandidates(userId: String): List<Submission>
     @Query("SELECT COUNT(*) FROM submissions WHERE (isUpdated = 1 OR _id IS NULL OR _id = '')") suspend fun countPendingOfflineSubmissions(): Int
     @Query("SELECT COUNT(*) FROM submissions WHERE LOWER(status) = 'pending' AND id IN (SELECT submissionId FROM answers WHERE submissionId IS NOT NULL)") suspend fun countPendingExamResults(): Int
     @Query("SELECT COUNT(*) FROM submissions WHERE userId IS :userId AND parentId = :parentId AND type = :type") suspend fun countByUserParentAndType(userId: String?, parentId: String, type: String): Int
     @Query("SELECT COUNT(*) FROM submissions WHERE userId IS :userId AND parentId LIKE '%' || :examId || '%' AND status != 'pending'") suspend fun countCompletedByUserAndExamId(userId: String?, examId: String): Int
     @Query("SELECT * FROM submissions WHERE parentId IS :parentId AND userId IS :userId AND (:status IS NULL OR status = :status) ORDER BY startTime DESC") suspend fun getByParentUserAndStatus(parentId: String?, userId: String?, status: String?): List<Submission>
+    @Query("SELECT * FROM submissions WHERE parentId IS :parentId AND userId IS :userId AND status = 'pending' ORDER BY startTime DESC LIMIT 1") suspend fun getPendingByUserAndParent(parentId: String?, userId: String?): Submission?
     @Query("SELECT * FROM submissions WHERE teamId = :teamId") suspend fun getByTeamId(teamId: String): List<Submission>
-    @Query("SELECT * FROM submissions WHERE parentId IN (:parentIds) AND teamId = :teamId") suspend fun getByParentIdsAndTeamId(parentIds: List<String>, teamId: String): List<Submission>
+    @Query("SELECT * FROM submissions WHERE parentId IN (:parentIds) AND teamId = :teamId")
+    suspend fun getByParentIdsAndTeamIdInternal(parentIds: List<String>, teamId: String): List<Submission>
+
+    suspend fun getByParentIdsAndTeamId(parentIds: List<String>, teamId: String): List<Submission> {
+        if (parentIds.isEmpty()) return emptyList()
+        return parentIds.distinct().chunked(900).flatMap { getByParentIdsAndTeamIdInternal(it, teamId) }
+    }
     @Query("SELECT * FROM submissions WHERE userId IS :userId AND parentId = :parentId AND status = 'pending' ORDER BY lastUpdateTime DESC LIMIT 1") suspend fun getLatestPendingByUserAndParent(userId: String?, parentId: String): Submission?
     @Query("SELECT * FROM submissions WHERE parentId = :parentId AND status = :status ORDER BY lastUpdateTime DESC LIMIT 1") suspend fun getLatestByParentIdAndStatus(parentId: String, status: String): Submission?
     @Query("SELECT * FROM submissions WHERE userId IS :userId AND status = 'pending' ORDER BY startTime DESC LIMIT 1") suspend fun getLatestPendingByUser(userId: String?): Submission?

@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.ui.feedback
 
+import io.mockk.clearMocks
 import io.mockk.coEvery
-import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -37,9 +39,12 @@ class FeedbackListViewModelTest {
         feedbackRepository = mockk()
         userRepository = mockk()
 
-        val user = mockk<UserEntity>()
+        val user = mockk<UserEntity> {
+            every { name } returns "testUser"
+            every { isManager() } returns false
+        }
         coEvery { userRepository.getUserModel() } returns user
-        coEvery { feedbackRepository.getFeedback(user) } returns flowOf(emptyList())
+        every { feedbackRepository.getFeedback("testUser", false) } returns flowOf(emptyList())
 
         viewModel = FeedbackListViewModel(
             feedbackRepository = feedbackRepository,
@@ -55,13 +60,17 @@ class FeedbackListViewModelTest {
 
     @Test
     fun testFeedbackListEmitsDataFromFeedbackRepository() = runTest(testDispatcher) {
-        val user = mockk<UserEntity>()
+        val user = mockk<UserEntity> {
+            every { name } returns "testUser"
+            every { isManager() } returns false
+        }
         val feedback1 = mockk<Feedback>()
         val feedback2 = mockk<Feedback>()
         val feedbackList = listOf(feedback1, feedback2)
 
         coEvery { userRepository.getUserModel() } returns user
-        coEvery { feedbackRepository.getFeedback(user) } returns flowOf(feedbackList)
+        clearMocks(feedbackRepository, answers = false)
+        every { feedbackRepository.getFeedback("testUser", false) } returns flowOf(feedbackList)
 
         // Recreate viewModel to trigger init block with new mock data
         viewModel = FeedbackListViewModel(
@@ -72,19 +81,23 @@ class FeedbackListViewModelTest {
         advanceUntilIdle()
 
         assertEquals(feedbackList, viewModel.feedbackList.value)
-        coVerify(exactly = 1) { feedbackRepository.getFeedback(user) }
+        verify(exactly = 1) { feedbackRepository.getFeedback("testUser", false) }
     }
 
     @Test
     fun testRefreshFeedbackCancelsPreviousJobAndRetriggersFlowCollection() = runTest(testDispatcher) {
-        val user = mockk<UserEntity>()
+        val user = mockk<UserEntity> {
+            every { name } returns "testUser"
+            every { isManager() } returns false
+        }
         val initialFeedback = listOf(mockk<Feedback>())
         val updatedFeedback = listOf(mockk<Feedback>(), mockk<Feedback>())
 
         coEvery { userRepository.getUserModel() } returns user
+        clearMocks(feedbackRepository, answers = false)
 
         // First call returns initial list
-        coEvery { feedbackRepository.getFeedback(user) } returns flowOf(initialFeedback)
+        every { feedbackRepository.getFeedback("testUser", false) } returns flowOf(initialFeedback)
 
         // Init view model
         viewModel = FeedbackListViewModel(
@@ -95,7 +108,7 @@ class FeedbackListViewModelTest {
         assertEquals(initialFeedback, viewModel.feedbackList.value)
 
         // Setup for refresh
-        coEvery { feedbackRepository.getFeedback(user) } returns flowOf(updatedFeedback)
+        every { feedbackRepository.getFeedback("testUser", false) } returns flowOf(updatedFeedback)
 
         // Trigger refresh
         viewModel.refreshFeedback()
@@ -103,6 +116,6 @@ class FeedbackListViewModelTest {
 
         assertEquals(updatedFeedback, viewModel.feedbackList.value)
         // Verify it was called twice: once in init, once in refreshFeedback
-        coVerify(exactly = 2) { feedbackRepository.getFeedback(user) }
+        verify(exactly = 2) { feedbackRepository.getFeedback("testUser", false) }
     }
 }

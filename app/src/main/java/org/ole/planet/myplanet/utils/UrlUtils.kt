@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.utils
 
-import android.util.Base64
 import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import java.net.URLEncoder
+import java.util.Base64
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
 
@@ -16,6 +16,9 @@ object UrlUtils {
     private var cachedHeader: String? = null
 
     @Volatile
+    private var cachedBaseUrl: String? = null
+
+    @Volatile
     private var generation = 0
 
     fun init(sharedPrefManager: SharedPrefManager) {
@@ -23,6 +26,7 @@ object UrlUtils {
             generation++
             spmInstance = sharedPrefManager
             cachedHeader = null
+            cachedBaseUrl = null
         }
     }
 
@@ -31,10 +35,11 @@ object UrlUtils {
             ?: error("UrlUtils.init(SharedPrefManager) must be called before using UrlUtils")
     }
 
-    fun invalidateHeaderCache() {
+    fun invalidateCaches() {
         synchronized(this) {
             generation++
             cachedHeader = null
+            cachedBaseUrl = null
         }
     }
 
@@ -44,6 +49,7 @@ object UrlUtils {
             generation++
             spmInstance = null
             cachedHeader = null
+            cachedBaseUrl = null
         }
     }
 
@@ -71,7 +77,7 @@ object UrlUtils {
 
     fun basicAuthHeader(username: String, password: String): String {
         val credentials = "$username:$password".toByteArray()
-        return "Basic ${Base64.encodeToString(credentials, Base64.NO_WRAP)}"
+        return "Basic ${Base64.getEncoder().encodeToString(credentials)}"
     }
 
     val hostUrl: String
@@ -100,17 +106,34 @@ object UrlUtils {
             }
             return finalUrl
         }
+    /**
+     * Resolves and caches the CouchDB base URL.
+     * Note: The cache is keyed to the singleton [SharedPrefManager] instance. Callers
+     * passing a different instance will receive the cached value from the initial read.
+     */
     fun baseUrl(spm: SharedPrefManager): String {
-        val isAlternativeUrl = spm.isAlternativeUrl()
-        var url = if (isAlternativeUrl) {
-            spm.getProcessedAlternativeUrl()
-        } else {
-            spm.getCouchdbUrl()
+        cachedBaseUrl?.let { return it }
+        val currentGen: Int
+        var rawUrl: String
+        synchronized(this) {
+            cachedBaseUrl?.let { return it }
+            currentGen = generation
+            val isAlternativeUrl = spm.isAlternativeUrl()
+            rawUrl = if (isAlternativeUrl) {
+                spm.getProcessedAlternativeUrl()
+            } else {
+                spm.getCouchdbUrl()
+            }
         }
-        if (url.endsWith("/db")) {
-            url = url.removeSuffix("/db")
+        if (rawUrl.endsWith("/db")) {
+            rawUrl = rawUrl.removeSuffix("/db")
         }
-        return url
+        synchronized(this) {
+            if (generation == currentGen) {
+                cachedBaseUrl = rawUrl
+            }
+        }
+        return rawUrl
     }
 
     fun dbUrl(spm: SharedPrefManager): String {
@@ -183,6 +206,27 @@ object UrlUtils {
     fun getApkUpdateUrl(path: String?): String {
         val url = baseUrl(spm())
         return "$url$path"
+    }
+
+    /** Strips the userinfo (user:password@) from a URL so it is safe to log. */
+    fun redactForLog(url: String?): String {
+        if (url.isNullOrBlank()) return "<unparseable url>"
+        return try {
+            val uri = android.net.Uri.parse(url)
+            val scheme = uri.scheme
+            val host = uri.host
+            if (scheme.isNullOrEmpty() || host.isNullOrEmpty()) {
+                "<unparseable url>"
+            } else {
+                val portStr = if (uri.port != -1) ":${uri.port}" else ""
+                val path = uri.path.orEmpty()
+                val queryStr = if (uri.query != null) "?${uri.query}" else ""
+                val fragmentStr = if (uri.fragment != null) "#${uri.fragment}" else ""
+                "$scheme://$host$portStr$path$queryStr$fragmentStr"
+            }
+        } catch (e: Exception) {
+            "<unparseable url>"
+        }
     }
 
     fun getUserInfo(userInfo: String?): Pair<String, String> {

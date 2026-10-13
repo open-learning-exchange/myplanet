@@ -23,6 +23,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.annotation.RequiresApi
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.lifecycle.lifecycleScope
@@ -30,10 +31,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Date
 import javax.inject.Inject
-import kotlinx.coroutines.FlowPreview
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
@@ -64,8 +65,6 @@ import org.ole.planet.myplanet.utils.DialogUtils.getUpdateDialog
 import org.ole.planet.myplanet.utils.DialogUtils.showAlert
 import org.ole.planet.myplanet.utils.DialogUtils.showSnack
 import org.ole.planet.myplanet.utils.DialogUtils.showWifiSettingDialog
-import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
-import org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName
@@ -230,7 +229,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 override fun onVersionCheckSuccess() {
                     isSync = false
                     forceSync = true
-                    configurationsRepository.checkVersion(this@SyncActivity, prefData)
+                    configurationsRepository.checkVersion(this@SyncActivity)
                 }
 
                 override fun onContinueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
@@ -287,7 +286,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         delay(500.milliseconds)
                         restartApp()
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Failed to clear data", e)
                         customProgressDialog.dismiss()
                         releaseBackPressGuard()
                         dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
@@ -325,16 +324,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     suspend fun isServerReachable(processedUrl: String?, type: String): Boolean {
         try {
-            val isAlternativeUrl = prefData.isAlternativeUrl()
-            val url = if (isAlternativeUrl) {
-                if (processedUrl?.contains("/db") == true) {
-                    processedUrl.replace("/db", "") + "/db/_all_dbs"
-                } else {
-                    "$processedUrl/db/_all_dbs"
-                }
-            } else {
-                "$processedUrl/_all_dbs"
-            }
+            val url = reachabilityUrl(processedUrl, prefData.isAlternativeUrl())
 
             val isAvailable = configurationsRepository.checkServerAvailability(url)
             if (isAvailable) {
@@ -342,7 +332,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 return true
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to check server reachability", e)
         }
 
         syncFailed = true
@@ -406,7 +396,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to authenticate user", e)
             false
         }
     }
@@ -563,19 +553,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         prefData.setIsAlternativeUrl(false)
                     }
 
-                    val links = configurationsRepository.getQueuedDownloads()
-                    if (links.isNotEmpty()) {
-                        openDownloadService(context, ArrayList(links), true)
-                    }
-
-                    val betaAutoDownload = prefData.getBetaAutoDownload()
-                    if (betaAutoDownload) {
-                        withContext(dispatcherProvider.io) {
-                            resourceDownloadCoordinator.startBackgroundDownload(
-                                downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
-                            )
-                        }
-                    }
+                    resourceDownloadCoordinator.runPostSyncDownloads()
 
                     cancelAll(activityContext)
 
@@ -584,7 +562,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to complete sync post-processing", e)
         }
     }
 
@@ -635,7 +613,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     private fun checkForceSync(maxDays: Int): Boolean {
         val daysDiff = ForceSyncPolicy.overdueDays(
-            prefData.getLastSync(), System.currentTimeMillis(), maxDays
+            prefData.getLastSync(), timeProvider.now(), maxDays
         ) ?: return false
         val alertDialogBuilder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
         alertDialogBuilder.setMessage("${getString(R.string.it_has_been_more_than)}${(daysDiff - 1)}${getString(R.string.days_since_you_last_synced_this_device)}${getString(R.string.connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet)}")
@@ -650,13 +628,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         profileDbHandler.onLoginAsync(
             callback = {},
             onError = { error ->
-                error.printStackTrace()
+                Log.e(TAG, "Failed to log in profile", error)
             }
         )
 
         prefData.setLoggedIn(true)
         openDashboard()
-        isNetworkConnectedFlow.onEach { isConnected ->
+        loginNetworkJob?.cancel()
+        loginNetworkJob = isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
                 val serverUrl = prefData.getServerUrl()
                 if (serverUrl.isNotEmpty()) {
@@ -666,7 +645,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                             val state = syncRepository.uploadLoginData()
                                 .first { it is SyncUiState.Success || it is SyncUiState.Error }
                             if (state is SyncUiState.Success) {
-                                prefData.setLastUsageUploaded(Date().time)
+                                prefData.setLastUsageUploaded(timeProvider.now())
                             }
                             transactionSyncManager.syncDb("login_activities")
                         }
@@ -713,6 +692,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             dialog.getActionButton(DialogAction.NEUTRAL).text = getString(R.string.show_more)
         }
     }
+
     fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
         runOnUiThread {
             dialog.dismiss()
@@ -751,16 +731,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         if (::btnSignIn.isInitialized) {
             showSnack(btnSignIn, success)
         }
-        prefData.setLastUsageUploaded(Date().time)
+        prefData.setLastUsageUploaded(timeProvider.now())
         if (::lblLastSyncDate.isInitialized) {
-            lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, TimeUtils.getRelativeTime(Date().time, timeProvider))} >>")
+            lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, TimeUtils.getRelativeTime(timeProvider.now(), timeProvider))} >>")
         }
         syncFailed = false
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
         lifecycleScope.launch {
-            val builder = getUpdateDialog(this@SyncActivity, info, customProgressDialog, lifecycleScope, configurationsRepository)
+            val builder = getUpdateDialog(this@SyncActivity, info, customProgressDialog, lifecycleScope, configurationsRepository::checkCheckSum)
             if (cancelable || getCustomDeviceName(this@SyncActivity).endsWith("###")) {
                 builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
                     continueSyncProcess()
@@ -816,14 +796,25 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to continue sync process", e)
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
     }
+
     companion object {
+        private const val TAG = "SyncActivity"
+        private var loginNetworkJob: Job? = null
+        
+        @VisibleForTesting
+        internal fun reachabilityUrl(processedUrl: String?, isAlternativeUrl: Boolean): String =
+            if (isAlternativeUrl) {
+                UrlUtils.dbUrl(processedUrl.orEmpty()) + "/_all_dbs"
+            } else {
+                "$processedUrl/_all_dbs"
+            }
         private const val SYNC_STATUS_SAMPLE_MS = 150L
         private val secondsAgoRegex by lazy { Regex("^\\d{1,2} seconds ago$") }
         private val urlProtocolRegex by lazy { Regex("^https?://") }

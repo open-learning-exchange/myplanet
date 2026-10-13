@@ -80,27 +80,57 @@ class AchievementTest {
     }
 
     @Test
-    fun parseStringListToJsonArray_returnsCachedElementViaDeepCopy() {
-        // A JsonObject entry is serialized to a string, then parsed back and cached.
-        // deepCopy() produces a fresh JsonObject for each read, so repeated reads of the
-        // same cached entry are not the same instance (mutations of one won't leak to the other).
-        val entry = JsonObject().apply {
-            addProperty("title", "cached-value")
-        }
-        val first = Achievement.fromJson(JsonObject().apply {
+    fun parseStringListToJsonArray_neverHandsOutTheCachedInstance() {
+        val achievement = Achievement.fromJson(JsonObject().apply {
             addProperty("_id", "ach_cache")
-            add("achievements", JsonArray().apply { add(entry) })
-        }).achievementsArray
+            add("achievements", JsonArray().apply {
+                add(JsonObject().apply { addProperty("title", "cached-value") })
+            })
+        })
 
-        val second = Achievement.fromJson(JsonObject().apply {
+        val firstRead = achievement.achievementsArray
+        val secondRead = achievement.achievementsArray
+
+        // Each read gets its own mutable object, so mutating one cannot reach the cache
+        assertTrue(firstRead[0] !== secondRead[0])
+        firstRead[0].asJsonObject.addProperty("title", "mutated")
+
+        assertEquals("cached-value", secondRead[0].asJsonObject.get("title").asString)
+        assertEquals("cached-value", achievement.achievementsArray[0].asJsonObject.get("title").asString)
+    }
+
+    @Test
+    fun parseStringListToJsonArray_isolatesRecordsWithIdenticalContent() {
+        val entry = JsonObject().apply {
+            addProperty("title", "shared-value")
+        }
+        val ach1 = Achievement.fromJson(JsonObject().apply {
+            addProperty("_id", "ach_cache_1")
+            add("achievements", JsonArray().apply { add(entry) })
+        })
+        val ach2 = Achievement.fromJson(JsonObject().apply {
             addProperty("_id", "ach_cache_2")
             add("achievements", JsonArray().apply { add(entry) })
-        }).achievementsArray
+        })
 
-        assertEquals("cached-value", first[0].asJsonObject.get("title").asString)
-        assertEquals("cached-value", second[0].asJsonObject.get("title").asString)
-        // deepCopy ensures cached entries aren't shared by identity
-        assertTrue(first[0] !== second[0])
+        // Two records whose field serializes to the same string share the cache entry but not
+        // the instances, so one record cannot corrupt the other
+        ach1.achievementsArray[0].asJsonObject.addProperty("title", "mutated")
+
+        assertEquals("shared-value", ach1.achievementsArray[0].asJsonObject.get("title").asString)
+        assertEquals("shared-value", ach2.achievementsArray[0].asJsonObject.get("title").asString)
+    }
+
+    @Test
+    fun parseStringListToJsonArray_copyIsFreeForImmutablePrimitives() {
+        val achievement = Achievement.fromJson(JsonObject().apply {
+            addProperty("_id", "ach_primitives")
+            add("links", JsonArray().apply { add("https://example.com/resource-1") })
+        })
+
+        // JsonPrimitive.deepCopy() returns the receiver, so primitive-valued fields pay nothing
+        // for the copy that keeps object-valued fields safe
+        assertTrue(achievement.linksArray[0] === achievement.linksArray[0])
     }
 
     @Test

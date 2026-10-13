@@ -7,7 +7,6 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamResourceDto
-import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
 
@@ -33,12 +32,6 @@ data class TeamMemberStatus(
     val hasPendingRequest: Boolean
 )
 
-data class JoinRequestNotification(
-    val requesterName: String,
-    val teamName: String,
-    val requestId: String
-)
-
 data class TeamUploadData(
     val teamId: String?,
     val serialized: JsonObject,
@@ -46,11 +39,9 @@ data class TeamUploadData(
     val imageName: String? = null
 )
 
-interface TeamsRepository : TeamsFinancesRepository, TeamsMembersRepository, TeamsNotificationsRepository {
+interface TeamsRepository : TeamsFinancesRepository, TeamsMembersRepository, TeamsNotificationsRepository, TeamsShareRepository {
     suspend fun getAllActiveTeams(): List<MyTeam>
     suspend fun getMyTeamsFlow(userId: String): Flow<List<MyTeam>>
-    suspend fun getTeamSummaries(userId: String?): List<TeamSummary>
-    suspend fun getShareableEnterpriseSummaries(userId: String?): List<TeamSummary>
     fun getMyTeamDetailsFlow(userId: String, type: String? = null): Flow<List<TeamDetails>>
     suspend fun getShareableEnterpriseDetails(userId: String?): List<TeamDetails>
     suspend fun getTeamDetails(userId: String?): List<TeamDetails>
@@ -62,7 +53,6 @@ interface TeamsRepository : TeamsFinancesRepository, TeamsMembersRepository, Tea
     suspend fun getTeamByIdOrTeamId(id: String): MyTeam?
     suspend fun getTeamLinks(): List<MyTeam>
     suspend fun getTeamById(teamId: String): MyTeam?
-    suspend fun getTeamSummaryById(teamId: String): TeamSummary?
     suspend fun getTaskTeamInfo(taskId: String): Triple<String, String, String>?
     suspend fun getJoinRequestTeamId(requestId: String): String?
     fun getTasksFlow(userId: String?): Flow<List<TeamTask>>

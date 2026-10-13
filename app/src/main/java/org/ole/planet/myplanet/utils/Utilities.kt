@@ -11,13 +11,9 @@ import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
-import java.math.BigInteger
-import java.text.Normalizer
-import java.util.Locale
 
 object Utilities {
     private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
-    private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
 
     fun isValidEmail(target: CharSequence): Boolean {
         return target.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(target).matches()
@@ -57,33 +53,20 @@ object Utilities {
         val visualContext = getActivityFromContext(context)
 
         if (visualContext != null && !visualContext.isFinishing && !visualContext.isDestroyed) {
-            try {
-                Toast.makeText(visualContext, message, duration).show()
-            } catch (e: IllegalAccessException) {
-                e.printStackTrace()
-            }
+            Toast.makeText(visualContext, message, duration).show()
         }
-    }
-
-    fun checkNA(s: String?): String {
-        return if (s.isNullOrEmpty()) "N/A" else s
     }
 
     fun getUserName(settings: SharedPreferences): String {
         return settings.getString("name", "") ?: ""
     }
 
-    fun toHex(arg: String?): String {
-        return arg?.toByteArray()?.let { BigInteger(1, it).toString(16) } ?: ""
-    }
-
-    fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
-            .replace(DIACRITICS_REGEX, "")
-    }
-
     fun getMimeType(url: String?): String? {
         val extension = FileUtils.getFileExtension(url)
         return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+    }
+
+    fun warmUp() {
+        MimeTypeMap.getSingleton().getMimeTypeFromExtension("txt")
     }
 }

@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.content.DialogInterface
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,6 +12,7 @@ import android.widget.DatePicker
 import android.widget.ImageView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.ConcatAdapter
@@ -25,7 +27,6 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.Calendar
 import java.util.Locale
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.DialogAddTransactionBinding
@@ -33,7 +34,6 @@ import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
 import org.ole.planet.myplanet.databinding.HeaderFinanceBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.Transaction
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
@@ -124,11 +124,11 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
         hBinding.imgDate.rotation = if (headerState.isAsc) 180f else 0f
 
-        val state = viewModel.headerState.value
-        hBinding.tvDebit.text = getString(R.string.number_placeholder, state.debit)
-        hBinding.tvCredit.text = getString(R.string.number_placeholder, state.credit)
-        hBinding.tvBalance.text = getString(R.string.number_placeholder, state.total)
-        hBinding.balanceCaution.visibility = if (state.isCautionVisible) View.VISIBLE else View.GONE
+        val summary = viewModel.financeSummary.value
+        hBinding.tvDebit.text = getString(R.string.number_placeholder, summary.debit)
+        hBinding.tvCredit.text = getString(R.string.number_placeholder, summary.credit)
+        hBinding.tvBalance.text = getString(R.string.number_placeholder, summary.total)
+        hBinding.balanceCaution.visibility = if (summary.isCautionVisible) View.VISIBLE else View.GONE
     }
 
     private fun showDatePickerDialog(isFromDate: Boolean) {
@@ -209,7 +209,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             Calendar.getInstance().apply {
                 timeInMillis = localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
             }
-        } catch (e: DateTimeParseException) {
+        } catch (_: DateTimeParseException) {
             null
         }
     }
@@ -224,16 +224,19 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
     private fun filterDataByDateRange(fromDate: String, toDate: String) {
         try {
-            val start = LocalDate.parse(fromDate, dateFormatter).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-            val end = LocalDate.parse(toDate, dateFormatter).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            val (start, end) = inclusiveDayRange(
+                LocalDate.parse(fromDate, dateFormatter),
+                LocalDate.parse(toDate, dateFormatter),
+                ZoneId.systemDefault()
+            )
             currentStartDate = start
             currentEndDate = end
             observeTransactions()
 
         } catch (e: DateTimeParseException) {
-            e.printStackTrace()
+            Log.w(TAG, "Date range parsing failed", e)
         } catch (e: IllegalArgumentException) {
-            e.printStackTrace()
+            Log.w(TAG, "Date range filtering failed", e)
         }
     }
 
@@ -257,7 +260,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             transactions = results
             updatedFinanceList(results)
         }
-        collectLatestWhenStarted(viewModel.headerState) {
+        collectLatestWhenStarted(viewModel.financeSummary) {
             headerAdapter.notifyItemChanged(0, PAYLOAD_HEADER)
         }
         collectWhenStarted(viewModel.transactionCreated) { result ->
@@ -282,7 +285,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     private fun addTransaction() {
         AlertDialog.Builder(requireActivity()).setView(setUpAlertUi()).setTitle(R.string.add_transaction)
             .setPositiveButton("Submit") { _: DialogInterface?, _: Int ->
-                val type = addTransactionBinding.spnType.selectedItem.toString()
+                val type = if (addTransactionBinding.spnType.selectedItemPosition == 1) "Debit" else "Credit"
                 val note = "${addTransactionBinding.tlNote.editText?.text}".trim { it <= ' ' }
                 val amount = "${addTransactionBinding.tlAmount.editText?.text}".trim { it <= ' ' }
                 if (note.isEmpty()) {
@@ -297,20 +300,22 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                         Utilities.toast(activity, getString(R.string.amount_is_required))
                         return@setPositiveButton
                     }
-                    val imageUri = selectedImageUri
-                    val imageName = imageUri?.let { FileUtils.getDisplayName(requireContext(), it, timeProvider) }
-                    val imageData = imageUri?.let { FileUtils.readBytesFromUri(requireContext(), it) }
                     val capturedDate = date ?: return@setPositiveButton
+                    val dateInMillis = capturedDate.timeInMillis
+                    val capturedTeamId = teamId
+                    val parentCode = user?.parentCode
+                    val planetCode = user?.planetCode
+                    val imageUri = selectedImageUri
+
                     viewModel.createTransaction(
-                        teamId = teamId,
+                        teamId = capturedTeamId,
                         type = type,
                         note = note,
                         amount = amountValue,
-                        date = capturedDate.timeInMillis,
-                        parentCode = user?.parentCode,
-                        planetCode = user?.planetCode,
-                        imageName = imageName,
-                        imageData = imageData,
+                        date = dateInMillis,
+                        parentCode = parentCode,
+                        planetCode = planetCode,
+                        imageUri = imageUri,
                     )
                 }
             }.setNegativeButton("Cancel", null).show()
@@ -409,5 +414,16 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         }
 
         override fun getItemCount(): Int = 1
+    }
+
+    companion object {
+        private const val TAG = "EnterprisesFinancesFragment"
+
+        @VisibleForTesting
+        internal fun inclusiveDayRange(from: LocalDate, to: LocalDate, zone: ZoneId): Pair<Long, Long> {
+            val start = from.atStartOfDay(zone).toInstant().toEpochMilli()
+            val end = to.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
+            return start to end
+        }
     }
 }

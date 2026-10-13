@@ -23,15 +23,19 @@ import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class TeamsTasksAdapter(
     private val context: Context,
-    var nonTeamMember: Boolean
+    nonTeamMember: Boolean
 ) : ListAdapter<TeamTask, TeamsTasksViewHolder>(DIFF_CALLBACK) {
+    var nonTeamMember: Boolean = nonTeamMember
+        set(value) {
+            if (field == value) return
+            field = value
+            notifyItemRangeChanged(0, itemCount)
+        }
     private val assigneeCache: MutableMap<String, String> = mutableMapOf()
     private var listener: OnTaskCompletedListener? = null
     fun setListener(listener: OnTaskCompletedListener?) {
         this.listener = listener
     }
-
-    fun hasAssignee(id: String): Boolean = assigneeCache.containsKey(id)
 
     fun getKnownAssigneeIds(): Set<String> = assigneeCache.keys.toSet()
 
@@ -76,14 +80,14 @@ class TeamsTasksAdapter(
             }
         }
 
-        if (!it.completed) {
+        if (!it.completed || it.completedTime <= 0) {
             binding.deadline.text =
                 context.getString(R.string.deadline_colon, formatDate(it.deadline))
         } else {
             binding.deadline.text = context.getString(
                 R.string.two_strings,
                 context.getString(R.string.deadline_colon, formatDate(it.deadline)),
-                context.getString(R.string.completed_colon, formatDate(it.deadline))
+                context.getString(R.string.completed_colon, formatDate(it.completedTime))
             )
         }
         showAssignee(binding, it)
@@ -119,13 +123,14 @@ class TeamsTasksAdapter(
                 alertDialog.show()
             }
         }
-        if (nonTeamMember) {
-            binding.editTask.visibility = View.GONE
-            binding.deleteTask.visibility = View.GONE
-            binding.icMore.visibility = View.GONE
-            binding.checkbox.isClickable = false
-            binding.checkbox.isFocusable = false
-        } else {
+
+        val memberVisibility = if (nonTeamMember) View.GONE else View.VISIBLE
+        binding.editTask.visibility = memberVisibility
+        binding.deleteTask.visibility = memberVisibility
+        binding.icMore.visibility = memberVisibility
+        binding.checkbox.isClickable = !nonTeamMember
+        binding.checkbox.isFocusable = !nonTeamMember
+        if (!nonTeamMember) {
             binding.checkbox.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
                 listener?.onCheckChange(it, b)
             }

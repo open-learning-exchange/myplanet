@@ -4,7 +4,7 @@ import com.google.gson.JsonObject
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.model.TagEntity
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 
 class TagsRepositoryImpl @Inject constructor(
     private val tagDao: TagDao,
@@ -16,10 +16,10 @@ class TagsRepositoryImpl @Inject constructor(
 
     override suspend fun getTagsWithChildren(dbType: String?): Map<TagEntity, List<TagEntity>> {
         val parentTags = getTags(dbType)
-        val allTags = tagDao.getAll()
+        val attachedTags = tagDao.getAttached()
         val childMap = mutableMapOf<String, MutableList<TagEntity>>()
 
-        for (t in allTags) {
+        for (t in attachedTags) {
             val attached = t.attachedTo
             if (attached.isNullOrEmpty()) continue
 
@@ -54,7 +54,7 @@ class TagsRepositoryImpl @Inject constructor(
         return getLinkedTagsBulk("courses", courseIds)
     }
 
-    override suspend fun getLinkIdsForTagNames(dbType: String, tagNames: List<String>): List<String> {
+    private suspend fun getLinkIdsForTagNames(dbType: String, tagNames: List<String>): List<String> {
         val matchingTags = tagDao.getByNames(tagNames)
         if (matchingTags.isEmpty()) {
             return emptyList()
@@ -73,7 +73,7 @@ class TagsRepositoryImpl @Inject constructor(
             return emptyMap()
         }
 
-        val allTagIds = links.mapNotNull { it.tagId }.distinct()
+        val allTagIds = links.mapNotNullTo(LinkedHashSet()) { it.tagId }.toList()
         if (allTagIds.isEmpty()) {
             return emptyMap()
         }
@@ -103,7 +103,7 @@ class TagsRepositoryImpl @Inject constructor(
         if (links.isEmpty()) {
             return emptyList()
         }
-        val tagIds = links.mapNotNull { it.tagId }.distinct()
+        val tagIds = links.mapNotNullTo(LinkedHashSet()) { it.tagId }.toList()
         if (tagIds.isEmpty()) {
             return emptyList()
         }
@@ -120,7 +120,7 @@ class TagsRepositoryImpl @Inject constructor(
     override suspend fun insert(documentList: List<JsonObject>) {
         if (documentList.isEmpty()) return
         val tagsToInsert = documentList
-            .filter { !JsonUtils.getString("_id", it).startsWith("_design") }
+            .filter { !GsonUtils.getString("_id", it).startsWith("_design") }
             .map { createUnmanagedTag(it) }
         if (tagsToInsert.isNotEmpty()) {
             tagDao.upsertAll(tagsToInsert)
@@ -129,26 +129,29 @@ class TagsRepositoryImpl @Inject constructor(
 
     private fun createUnmanagedTag(act: JsonObject): TagEntity {
         val tag = TagEntity()
-        tag.id = JsonUtils.getString("_id", act)
-        tag._rev = JsonUtils.getString("_rev", act)
-        tag._id = JsonUtils.getString("_id", act)
-        tag.name = JsonUtils.getString("name", act)
-        tag.db = JsonUtils.getString("db", act)
-        tag.docType = JsonUtils.getString("docType", act)
-        tag.tagId = JsonUtils.getString("tagId", act)
-        tag.linkId = JsonUtils.getString("linkId", act)
+        tag.id = GsonUtils.getString("_id", act)
+        tag._rev = GsonUtils.getString("_rev", act)
+        tag._id = GsonUtils.getString("_id", act)
+        tag.name = GsonUtils.getString("name", act)
+        tag.db = GsonUtils.getString("db", act)
+        tag.docType = GsonUtils.getString("docType", act)
+        tag.tagId = GsonUtils.getString("tagId", act)
+        tag.linkId = GsonUtils.getString("linkId", act)
         val el = act["attachedTo"]
         val attachedTo = ArrayList<String>()
         if (el != null && el.isJsonArray) {
-            val arr = JsonUtils.getJsonArray("attachedTo", act)
+            val arr = GsonUtils.getJsonArray("attachedTo", act)
             for (i in 0 until arr.size()) {
-                attachedTo.add(JsonUtils.getString(arr, i))
+                attachedTo.add(GsonUtils.getString(arr, i))
             }
         } else {
-            attachedTo.add(JsonUtils.getString("attachedTo", act))
+            attachedTo.add(GsonUtils.getString("attachedTo", act))
         }
         tag.attachedTo = attachedTo
         tag.isAttached = attachedTo.isNotEmpty()
         return tag
     }
+
+    override suspend fun getCourseLinkIds(tagNames: List<String>): Set<String> =
+        getLinkIdsForTagNames("courses", tagNames).toSet()
 }

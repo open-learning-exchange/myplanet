@@ -4,26 +4,35 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
 import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao.UploadedPhoto
+import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.SubmissionDetail
 import org.ole.planet.myplanet.model.SubmissionItem
+import org.ole.planet.myplanet.model.SubmissionRowProjection
 import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.model.UserEntity
+
+data class PhotoUpload(val photoId: String, val rev: String, val remoteId: String)
 
 interface SubmissionsRepository {
     fun getPendingSurveysFlow(userId: String?): Flow<List<Submission>>
     fun getSubmissionsFlow(userId: String): Flow<List<Submission>>
+    suspend fun getSubmissionProjections(
+        submissions: List<Submission>,
+        userId: String,
+        type: String,
+        query: String,
+        examMap: Map<String?, StepExam>,
+    ): List<SubmissionRowProjection>
     suspend fun getPendingSurveys(userId: String?): List<Submission>
     suspend fun getUniquePendingSurveys(userId: String?): List<Submission>
     suspend fun getSurveyTitlesFromSubmissions(submissions: List<Submission>): List<String>
     suspend fun getSubmissionById(id: String): Submission?
     suspend fun getSubmissionsByIds(ids: List<String>): List<Submission>
     suspend fun getExamMap(submissions: List<Submission>): Map<String?, StepExam>
-    suspend fun getExamQuestionCount(stepId: String): Int
     suspend fun hasSubmission(
         stepExamId: String?,
         courseId: String?,
@@ -53,12 +62,13 @@ interface SubmissionsRepository {
     suspend fun getExamById(id: String): StepExam?
     suspend fun getUnuploadedPhotos(): List<Pair<String?, JsonObject>>
     suspend fun markPhotoUploaded(photoId: String?, rev: String, id: String)
-    suspend fun markPhotosUploadedBatch(uploads: List<UploadedPhoto>)
+    suspend fun markPhotosUploadedBatch(uploads: List<PhotoUpload>)
     suspend fun getOrCreateSubmission(userId: String?, parentId: String): Submission
     suspend fun getPhotosByIds(ids: Array<String>): List<SubmitPhotos>
     suspend fun bulkInsertFromSync(jsonArray: JsonArray)
     suspend fun insertSubmission(submission: JsonObject)
     suspend fun getExamUploadPayload(submission: Submission, user: UserEntity?): JsonObject
+    suspend fun markSubmissionsUploaded(results: List<UploadedItemResult>): List<UploadedItemResult>
     suspend fun serializeSubmission(submission: Submission, source: String, parentCode: String, user: UserEntity?): JsonObject
     suspend fun generateSubmissionPdf(submissionId: String): File?
     suspend fun generateMultipleSubmissionsPdf(submissionIds: List<String>, examTitle: String): File?
@@ -67,4 +77,8 @@ interface SubmissionsRepository {
     suspend fun getPendingSubmitPhotosUploads(): List<SubmitPhotos>
     suspend fun markSubmitPhotosUploaded(localId: String, remoteId: String, rev: String): Boolean
     suspend fun startExamSession(examId: String, parentId: String?, userId: String?, request: CreateExamSubmissionRequest, recreate: Boolean, deleteStale: Boolean = recreate): Submission
+    suspend fun getExamSubmissionsByUser(userId: String?): List<Submission>
+    suspend fun getAnswersBySubmissionIds(ids: List<String>): List<Answer>
+    suspend fun getUnuploadedNonSurveySubmissionsByParentIds(parentIds: List<String>): List<Submission>
+    suspend fun deleteSubmissionsWithAnswers(ids: List<String>)
 }

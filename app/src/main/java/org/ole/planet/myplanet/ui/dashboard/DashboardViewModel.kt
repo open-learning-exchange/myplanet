@@ -8,6 +8,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -24,11 +25,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -41,7 +44,7 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NotificationConfig
 import org.ole.planet.myplanet.utils.RetryUtils
 
@@ -64,6 +67,23 @@ data class ChallengeDialogData(
     val hasValidSync: Boolean
 )
 
+data class GuestVisitState(
+    val offlineVisits: Int,
+    val isGuest: Boolean
+) {
+    val bannerMessageRes: Int?
+        get() = when {
+            !isGuest -> null
+            offlineVisits == 2 -> R.string.guest_visit_limit_warning
+            offlineVisits == 3 -> R.string.last_login_message
+            else -> null
+        }
+    val shouldShowTrialEndedDialog: Boolean
+        get() = isGuest && offlineVisits >= 4
+    val shouldAutoOpenDrawer: Boolean
+        get() = !(isGuest && offlineVisits >= 3)
+}
+
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val application: Application,
@@ -76,11 +96,26 @@ class DashboardViewModel @Inject constructor(
     private val surveysRepository: SurveysRepository,
     private val progressRepository: ProgressRepository,
     private val voicesRepository: VoicesRepository,
+    private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider,
     private val syncRepository: SyncRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+
+    private var guestVisitStateDeferred: Deferred<GuestVisitState>? = null
+
+    fun getGuestVisitState(userId: String?): Deferred<GuestVisitState> {
+        return guestVisitStateDeferred ?: viewModelScope.async {
+            val isGuest = userId?.startsWith("guest") == true
+            val offlineVisits = if (isGuest && userId != null) {
+                activitiesRepository.getOfflineVisitCount(userId)
+            } else {
+                0
+            }
+            GuestVisitState(offlineVisits, isGuest)
+        }.also { guestVisitStateDeferred = it }
+    }
 
     private val _surveyNavigationEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val surveyNavigationEvent: SharedFlow<String> = _surveyNavigationEvent.asSharedFlow()
@@ -115,20 +150,6 @@ class DashboardViewModel @Inject constructor(
 
     fun setUnreadNotifications(count: Int) {
         _uiState.update { it.copy(unreadNotifications = count) }
-    }
-
-    fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
-        val earnedDollarsVoice = minOf(voiceCount, 5) * 2
-        val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
-        val total = earnedDollarsVoice + earnedDollarsSurvey
-        return total.coerceAtMost(500)
-    }
-
-    fun calculateCommunityProgress(allVoiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
-        val earnedDollarsVoice = minOf(allVoiceCount, 5) * 2
-        val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
-        val total = earnedDollarsVoice + earnedDollarsSurvey
-        return total.coerceAtMost(11)
     }
 
     suspend fun updateResourceNotification(userId: String?) {
@@ -339,8 +360,8 @@ class DashboardViewModel @Inject constructor(
 
     private fun getCourseStatusString(progress: JsonObject?, courseName: String?): String {
         return if (progress != null) {
-            val max = JsonUtils.getInt("max", progress)
-            val current = JsonUtils.getInt("current", progress)
+            val max = GsonUtils.getInt("max", progress)
+            val current = GsonUtils.getInt("current", progress)
             if (current == max) {
                 application.getString(org.ole.planet.myplanet.R.string.course_completed, courseName)
             } else {

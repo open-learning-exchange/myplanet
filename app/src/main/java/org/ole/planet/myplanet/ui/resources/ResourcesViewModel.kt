@@ -8,10 +8,13 @@ import javax.inject.Inject
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.MyLibrary
@@ -47,8 +50,12 @@ class ResourcesViewModel @Inject constructor(
     private var isAscending = true
     private var isTitleAscending = false
 
-    private val _downloadComplete = MutableStateFlow(false)
-    val downloadComplete: StateFlow<Boolean> = _downloadComplete.asStateFlow()
+    val currentSortMode: SortMode get() = sortMode
+    val isDateSortAscending: Boolean get() = isAscending
+    val isTitleSortAscending: Boolean get() = isTitleAscending
+
+    private val _downloadComplete = Channel<Unit>(Channel.CONFLATED)
+    val downloadComplete: Flow<Unit> = _downloadComplete.receiveAsFlow()
 
     private val _openedResourceIds = MutableStateFlow<Set<String>>(emptySet())
     val openedResourceIds: StateFlow<Set<String>> = _openedResourceIds.asStateFlow()
@@ -57,8 +64,7 @@ class ResourcesViewModel @Inject constructor(
     private var currentObservedUserId: String? = null
 
     fun notifyDownloadComplete() {
-        _downloadComplete.value = true
-        _downloadComplete.value = false
+        _downloadComplete.trySend(Unit)
     }
 
     fun observeOpenedResourceIds(userId: String) {
@@ -78,12 +84,89 @@ class ResourcesViewModel @Inject constructor(
         resourcesRepository.saveSearchActivity(userName, searchText, planetCode, parentCode, searchTags, subjects, languages, levels, mediums)
     }
 
+    private val _resourcesState = MutableStateFlow<List<ResourceListModel>>(emptyList())
+    val resourcesState: StateFlow<List<ResourceListModel>> = _resourcesState.asStateFlow()
+    private var loadJob: Job? = null
+
+    fun getCachedResources(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>? {
+        return resourcesRepository.getCachedResourceListModels(isMyCourseLib, modelId)?.let {
+            applyCurrentSortSynchronous(it)
+        }
+    }
+
+    fun loadResources(isMyCourseLib: Boolean, modelId: String?) {
+        val cached = getCachedResources(isMyCourseLib, modelId)
+        if (cached != null && _resourcesState.value.isEmpty()) {
+            _resourcesState.value = cached
+        }
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            val list = withContext(dispatcherProvider.io) {
+                try {
+                    applyCurrentSort(resourcesRepository.getResourceListModels(isMyCourseLib, modelId))
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    null
+                }
+            }
+            if (list != null) {
+                _resourcesState.value = list
+            }
+        }
+    }
+
     suspend fun removeResourcesFromShelf(resourceIds: List<String>, userId: String): Result<Unit> = withContext(dispatcherProvider.io) {
         resourcesRepository.removeResourcesFromShelf(resourceIds, userId)
     }
 
-    suspend fun getFilterFacets(libraries: List<MyLibrary>): Map<String, Set<String>> = withContext(dispatcherProvider.default) {
-        resourcesRepository.getFilterFacets(libraries)
+    private fun addFacetValue(facets: MutableMap<String, String>, raw: String?) {
+        val value = raw?.trim() ?: return
+        if (value.isEmpty()) return
+        facets.putIfAbsent(value.lowercase(Locale.ROOT), value)
+    }
+
+    private fun addMediumFacetValue(facets: MutableMap<String, String>, raw: String?) {
+        val value = raw?.trim() ?: return
+        if (value.isEmpty()) return
+        val canonical = ResourcesMediaType.canonicalMedium(value)
+        facets.putIfAbsent(canonical.lowercase(Locale.ROOT), canonical)
+    }
+
+    suspend fun getFilterFacets(libraries: List<MyLibrary>): Map<String, Set<String>> =
+        withContext(dispatcherProvider.default) {
+            val languages = linkedMapOf<String, String>()
+            val subjects = linkedMapOf<String, String>()
+            val mediums = linkedMapOf<String, String>()
+            val levels = linkedMapOf<String, String>()
+
+            libraries.forEach { library ->
+                library.language?.let { addFacetValue(languages, it) }
+                library.subject?.forEach { addFacetValue(subjects, it) }
+                library.mediaType?.let { addMediumFacetValue(mediums, it) }
+                library.level?.forEach { addFacetValue(levels, it) }
+            }
+
+            mapOf(
+                "languages" to languages.values.toSet(),
+                "subjects" to subjects.values.toSet(),
+                "mediums" to mediums.values.toSet(),
+                "levels" to levels.values.toSet()
+            )
+        }
+
+    private val listFilter = ResourcesListFilter()
+
+    fun applyFilter(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): List<ResourceListModel> =
+        listFilter.apply(models, criteria, locallyOfflineIds)
+
+    fun filterIfChanged(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): List<ResourceListModel>? =
+        listFilter.filterIfChanged(models, criteria, locallyOfflineIds)
+
+    fun countMatching(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): Int =
+        listFilter.countMatching(models, criteria, locallyOfflineIds)
+
+    fun resetFilter() {
+        listFilter.reset()
     }
 
     suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit> {
@@ -91,23 +174,33 @@ class ResourcesViewModel @Inject constructor(
     }
 
     suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> = withContext(dispatcherProvider.io) {
-        applyCurrentSort(resourcesRepository.getResourceListModels(isMyCourseLib, modelId))
+        applyCurrentSort(resourcesRepository.getResourceListModels(isMyCourseLib, modelId)).also {
+            _resourcesState.value = it
+        }
     }
 
     suspend fun toggleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
         sortMode = SortMode.DATE
         isAscending = !isAscending
-        applyCurrentSort(list)
+        applyCurrentSort(list).also {
+            if (_resourcesState.value.isNotEmpty()) _resourcesState.value = it
+        }
     }
 
     suspend fun toggleTitleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
         sortMode = SortMode.TITLE
         isTitleAscending = !isTitleAscending
-        applyCurrentSort(list)
+        applyCurrentSort(list).also {
+            if (_resourcesState.value.isNotEmpty()) _resourcesState.value = it
+        }
     }
 
     suspend fun applyCurrentSort(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
-        when (sortMode) {
+        applyCurrentSortSynchronous(list)
+    }
+
+    private fun applyCurrentSortSynchronous(list: List<ResourceListModel>): List<ResourceListModel> {
+        return when (sortMode) {
             SortMode.DATE -> {
                 if (isAscending) list.sortedBy { it.item.createdDate }
                 else list.sortedByDescending { it.item.createdDate }

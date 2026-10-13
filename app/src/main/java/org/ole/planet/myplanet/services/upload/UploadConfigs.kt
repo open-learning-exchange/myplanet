@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.ApkLogUpload
 import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
@@ -34,7 +35,7 @@ import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.VersionUtils
 
 @Singleton
 class UploadConfigs @Inject constructor(
@@ -53,11 +54,14 @@ class UploadConfigs @Inject constructor(
     private val diagnosticsRepository: DiagnosticsRepository,
     private val progressRepository: ProgressRepository
 ) {
+    private val androidId: String? get() = VersionUtils.getAndroidId(context)
+    private val customDeviceName: String get() = sharedPrefManager.getCustomDeviceName()
+
     val NewsActivities = RoomUploadConfig(
         endpoint = "myplanet_activities",
         modelClassName = "NewsLog",
         fetchPendingItems = { voicesRepository.getPendingNewsLogUploads() },
-        serializer = UploadSerializer.Simple(NewsLog::serialize),
+        serializer = UploadSerializer.Simple { log -> NewsLog.serialize(log, customDeviceName) },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -112,7 +116,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "search_activities",
         modelClassName = "SearchActivity",
         fetchPendingItems = { activitiesRepository.getPendingSearchActivityUploads() },
-        serializer = UploadSerializer.Simple { it.serialize() },
+        serializer = UploadSerializer.Simple { it.serialize(androidId, customDeviceName) },
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -188,10 +192,11 @@ class UploadConfigs @Inject constructor(
         endpoint = "exams",
         fetchPendingItems = { surveysRepository.getPendingAdoptedSurveys() },
         serializer = UploadSerializer.Async { exam ->
-            val questions = surveysRepository.getExamQuestions(exam.id ?: "")
+            val questions = surveysRepository.getExamQuestions(exam.id)
             StepExam.serializeExam(exam, questions)
         },
-        idExtractor = { it.id }
+        idExtractor = { it.id },
+        markUploaded = { surveysRepository.markExamsUploaded(it) }
     )
 
     // Migrated to Room: uses the database-agnostic RoomUploadConfig path in UploadCoordinator.
@@ -203,7 +208,7 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it.id },
         markUploaded = { results ->
             // Mark each uploaded feedback; rows that no longer exist are reported as failures.
-            results.filter { result -> !feedbackRepository.markFeedbackUploaded(result.localId) }
+            results.filter { result -> !feedbackRepository.markFeedbackUploaded(result.localId, result.remoteId, result.remoteRev) }
         }
     )
 
@@ -212,12 +217,13 @@ class UploadConfigs @Inject constructor(
         endpoint = "apk_logs",
         modelClassName = "ApkLog",
         fetchPendingItems = { diagnosticsRepository.getPendingApkLogs() },
-        serializer = UploadSerializer.Simple { log -> ApkLog.serialize(log, NetworkUtils.getCustomDeviceName(context)) },
+        serializer = UploadSerializer.Simple { log -> ApkLog.serialize(log, customDeviceName) },
         idExtractor = { it.id },
         markUploaded = { results ->
-            // A row is "pending" until it has a _rev; set it here. Rows that no longer exist
-            // (0 updated) are reported back as local failures.
-            results.filter { result -> !diagnosticsRepository.markApkLogUploaded(result.localId, result.remoteRev) }
+            if (results.isEmpty()) return@RoomUploadConfig emptyList()
+            val updates = results.map { ApkLogUpload(it.localId, it.remoteRev) }
+            val unappliedIds = diagnosticsRepository.markApkLogsUploaded(updates)
+            results.filter { it.localId in unappliedIds }
         }
     )
 
@@ -247,7 +253,8 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it.id },
         dbIdExtractor = { it._id },
         filterGuests = true,
-        guestUserIdExtractor = { it.userId }
+        guestUserIdExtractor = { it.userId },
+        markUploaded = { submissionsRepository.markSubmissionsUploaded(it) }
     )
 
     val Submissions = UploadConfig(
@@ -260,9 +267,7 @@ class UploadConfigs @Inject constructor(
         },
         idExtractor = { it.id },
         dbIdExtractor = { it._id },
-        additionalUpdates = { submission, _ ->
-            submission.isUpdated = false
-        }
+        markUploaded = { submissionsRepository.markSubmissionsUploaded(it) }
     )
 
     // Migrated to Room: uses the database-agnostic RoomUploadConfig path in UploadCoordinator.
@@ -273,7 +278,7 @@ class UploadConfigs @Inject constructor(
             modelClassName = "MyLibrary",
             fetchPendingItems = { resourcesRepository.getPendingResourceUploads() },
             serializer = UploadSerializer.Simple { library ->
-                MyLibrary.serialize(library, user)
+                resourcesRepository.serializeForUpload(library, user)
             },
             idExtractor = { it.id },
             markUploaded = { results ->
@@ -295,7 +300,7 @@ class UploadConfigs @Inject constructor(
         endpoint = "ratings",
         modelClassName = "Rating",
         fetchPendingItems = { ratingsRepository.getPendingRatingUploads() },
-        serializer = UploadSerializer.Simple(org.ole.planet.myplanet.model.Rating::serializeRating),
+        serializer = UploadSerializer.Simple { rating -> org.ole.planet.myplanet.model.Rating.serializeRating(rating, customDeviceName) },
         idExtractor = { it.id },
         dbIdExtractor = { it._id }, // Enables POST/PUT logic
         markUploaded = { results ->

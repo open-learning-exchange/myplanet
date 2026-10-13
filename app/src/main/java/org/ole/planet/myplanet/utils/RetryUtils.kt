@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.utils
 
+import kotlinx.coroutines.delay
+
 object RetryUtils {
     suspend fun <T> retry(
         maxAttempts: Int = 3,
@@ -23,7 +25,7 @@ object RetryUtils {
             }
             attempt++
             if (attempt < maxAttempts) {
-                kotlinx.coroutines.delay(delayMs)
+                delay(delayMs)
             }
         }
         lastException?.printStackTrace()

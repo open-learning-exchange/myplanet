@@ -16,17 +16,30 @@ import org.ole.planet.myplanet.databinding.RowFinanceBinding
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.FileExistenceCache
 import org.ole.planet.myplanet.utils.ImageViewerUtils
+import org.ole.planet.myplanet.utils.SystemTimeProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class EnterprisesFinancesAdapter(
     private val context: Context,
+    private val timeProvider: TimeProvider = SystemTimeProvider(),
 ) : ListAdapter<Transaction, EnterprisesFinancesAdapter.FinanceViewHolder>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
         areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
     )
 ) {
+    private val attachmentPresenceCache = FileExistenceCache()
+
+    override fun onCurrentListChanged(
+        previousList: MutableList<Transaction>,
+        currentList: MutableList<Transaction>
+    ) {
+        super.onCurrentListChanged(previousList, currentList)
+        attachmentPresenceCache.clear()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FinanceViewHolder {
         val binding = RowFinanceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -58,7 +71,9 @@ class EnterprisesFinancesAdapter(
 
     private fun bindFinanceImage(binding: RowFinanceBinding, item: Transaction) {
         val imageFile = MyTeam.getAttachmentFile(context, item.id, item.imageName)
-        if (imageFile != null && imageFile.exists()) {
+        val exists = attachmentPresenceCache.exists(imageFile, timeProvider.now())
+
+        if (imageFile != null && exists) {
             binding.financeImage.visibility = View.VISIBLE
             Glide.with(context)
                 .load(imageFile)

@@ -15,7 +15,12 @@ interface TeamTaskDao {
     suspend fun getPendingTasksForUser(userId: String, start: Long, end: Long): List<TeamTask>
 
     @Query("UPDATE team_tasks SET isNotified = 1 WHERE id IN (:taskIds)")
-    suspend fun markTasksNotified(taskIds: List<String>)
+    suspend fun markTasksNotifiedInternal(taskIds: List<String>)
+
+    suspend fun markTasksNotified(taskIds: List<String>) {
+        if (taskIds.isEmpty()) return
+        taskIds.distinct().chunked(900).forEach { markTasksNotifiedInternal(it) }
+    }
 
     @Query("SELECT * FROM team_tasks WHERE teamId = :teamId AND (status IS NULL OR status != 'archived')")
     fun getTasksByTeamId(teamId: String): Flow<List<TeamTask>>
@@ -36,16 +41,39 @@ interface TeamTaskDao {
     suspend fun getById(taskId: String): TeamTask?
 
     @Query("SELECT * FROM team_tasks WHERE id IN (:taskIds)")
-    suspend fun getByIds(taskIds: List<String>): List<TeamTask>
+    suspend fun getByIdsInternal(taskIds: List<String>): List<TeamTask>
 
-    @Query("SELECT * FROM team_tasks WHERE title = :title LIMIT 1")
-    suspend fun getByTitle(title: String): TeamTask?
+    suspend fun getByIds(taskIds: List<String>): List<TeamTask> {
+        if (taskIds.isEmpty()) return emptyList()
+        return taskIds.distinct().chunked(900).flatMap { getByIdsInternal(it) }
+    }
 
     @Query("SELECT * FROM team_tasks WHERE title IN (:titles)")
-    suspend fun getByTitles(titles: List<String>): List<TeamTask>
+    suspend fun getByTitlesInternal(titles: List<String>): List<TeamTask>
 
-    @Query("SELECT * FROM team_tasks WHERE assignee = :userId AND deadline BETWEEN :start AND :end")
+    suspend fun getByTitles(titles: List<String>): List<TeamTask> {
+        if (titles.isEmpty()) return emptyList()
+        return titles.distinct().chunked(900).flatMap { getByTitlesInternal(it) }
+    }
+
+    @Query("SELECT * FROM team_tasks WHERE assignee = :userId AND completed = 0 AND (status IS NULL OR status != 'archived') AND deadline BETWEEN :start AND :end")
     suspend fun getTasksForUserBetween(userId: String, start: Long, end: Long): List<TeamTask>
+
+    @Query("SELECT * FROM team_tasks WHERE _id IN (:remoteIds)")
+    suspend fun getByRemoteIdsInternal(remoteIds: List<String>): List<TeamTask>
+
+    suspend fun getByRemoteIds(remoteIds: List<String>): List<TeamTask> {
+        if (remoteIds.isEmpty()) return emptyList()
+        return remoteIds.distinct().chunked(900).flatMap { getByRemoteIdsInternal(it) }
+    }
+
+    @Query("DELETE FROM team_tasks WHERE id IN (:taskIds)")
+    suspend fun deleteByIdsInternal(taskIds: List<String>)
+
+    suspend fun deleteByIds(taskIds: List<String>) {
+        if (taskIds.isEmpty()) return
+        taskIds.distinct().chunked(900).forEach { deleteByIdsInternal(it) }
+    }
 
     @Query("UPDATE team_tasks SET _id = :remoteId, _rev = :remoteRev, isUpdated = 0 WHERE id = :localId")
     suspend fun markUploaded(localId: String, remoteId: String?, remoteRev: String?): Int

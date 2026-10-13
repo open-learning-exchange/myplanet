@@ -10,7 +10,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.RequestBody
 import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
@@ -41,7 +41,7 @@ class ChatApiService @Inject constructor(
                 return null
             }
 
-            JsonUtils.gson.fromJson(
+            GsonUtils.gson.fromJson(
                 responseString,
                 object : TypeToken<Map<String, Boolean>>() {}.type
             )

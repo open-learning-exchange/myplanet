@@ -7,6 +7,8 @@ import android.os.Environment
 import android.util.Log
 import android.util.Rational
 import android.view.MenuItem
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
@@ -17,6 +19,10 @@ import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 @AndroidEntryPoint
 class ResourceViewerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityResourceViewerBinding
+    private val viewModel: ResourceViewerViewModel by viewModels()
+    private val exitCoordinator by lazy {
+        ResourcesExitCoordinator(this, viewModel)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,6 +31,12 @@ class ResourceViewerActivity : AppCompatActivity() {
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                handleBackNavigation()
+            }
+        })
 
         if (savedInstanceState == null) {
             val resourceId = intent.getStringExtra("resourceId")
@@ -80,10 +92,18 @@ class ResourceViewerActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
-            finish()
+            handleBackNavigation()
             return true
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    private fun handleBackNavigation() {
+        exitCoordinator.handleBackNavigation(
+            resourceId = intent.getStringExtra("resourceId"),
+            title = intent.getStringExtra("RESOURCE_TITLE"),
+            isResourceFinished = currentViewerFragment()?.isResourceFinished() == true,
+        )
     }
 
     override fun onUserLeaveHint() {

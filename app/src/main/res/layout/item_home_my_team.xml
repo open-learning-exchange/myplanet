@@ -15,7 +15,7 @@
             android:layout_width="@dimen/dashboard_chip_icon_size"
             android:layout_height="@dimen/dashboard_chip_icon_size"
             app:srcCompat="@drawable/team"
-            app:tint="@color/dashboard_tile_teams"
+            app:tint="@color/dashboard_chip_icon_teams"
             android:contentDescription="@null" />
         <TextView
             android:id="@+id/tv_name"

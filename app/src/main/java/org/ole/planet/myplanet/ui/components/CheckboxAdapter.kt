@@ -25,16 +25,7 @@ class CheckboxAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.rowlayout, parent, false) as CheckedTextView
-        return ViewHolder(view)
-    }
-
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val bindingAdapterPosition = holder.bindingAdapterPosition
-        if (bindingAdapterPosition == RecyclerView.NO_POSITION) return
-
-        val isChecked = selectedItemsList.contains(bindingAdapterPosition)
-        holder.checkedTextView.text = getItem(bindingAdapterPosition)
-        holder.checkedTextView.isChecked = isChecked
+        val holder = ViewHolder(view)
 
         holder.checkedTextView.setOnClickListener {
             val currentPos = holder.bindingAdapterPosition
@@ -49,6 +40,17 @@ class CheckboxAdapter(
             }
             checkChangeListener?.onCheckChange()
         }
+
+        return holder
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val bindingAdapterPosition = holder.bindingAdapterPosition
+        if (bindingAdapterPosition == RecyclerView.NO_POSITION) return
+
+        val isChecked = selectedItemsList.contains(bindingAdapterPosition)
+        holder.checkedTextView.text = getItem(bindingAdapterPosition)
+        holder.checkedTextView.isChecked = isChecked
     }
 
     class ViewHolder(val checkedTextView: CheckedTextView) : RecyclerView.ViewHolder(checkedTextView)

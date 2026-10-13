@@ -1,24 +1,23 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
 import com.google.gson.JsonObject
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.room.dao.TeamDao
+import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
-import org.ole.planet.myplanet.utils.distinctByContent
 
 class EnterprisesRepositoryImpl @Inject constructor(
-    @param:ApplicationContext private val context: Context,
+    private val storagePathResolver: StoragePathResolver,
     private val teamDao: TeamDao,
     private val timeProvider: TimeProvider,
     private val dispatcherProvider: DispatcherProvider
@@ -54,25 +53,18 @@ class EnterprisesRepositoryImpl @Inject constructor(
 
     override suspend fun updateReport(reportId: String, payload: FinanceReportParams) {
         if (reportId.isBlank()) return
-        val doc = JsonObject().apply {
-            addProperty("description", payload.description)
-            addProperty("beginningBalance", payload.beginningBalance)
-            addProperty("sales", payload.sales)
-            addProperty("otherIncome", payload.otherIncome)
-            addProperty("wages", payload.wages)
-            addProperty("otherExpenses", payload.otherExpenses)
-            addProperty("startDate", payload.startDate)
-            addProperty("endDate", payload.endDate)
-            addProperty("updatedDate", timeProvider.now())
-            addProperty("updated", true)
-        }
-        updateTeamEntityById(reportId) { report ->
-            MyTeam.populateReportFields(doc, report)
-            report.updated = true
-            if (report.updatedDate == 0L) {
-                report.updatedDate = timeProvider.now()
-            }
-        }
+        teamDao.updateReportFields(
+            id = reportId,
+            description = payload.description,
+            beginningBalance = payload.beginningBalance,
+            sales = payload.sales,
+            otherIncome = payload.otherIncome,
+            wages = payload.wages,
+            otherExpenses = payload.otherExpenses,
+            startDate = payload.startDate,
+            endDate = payload.endDate,
+            updatedDate = timeProvider.now()
+        )
         if (payload.imageName != null && payload.imageData != null) {
             attachTeamImage(reportId, payload.imageName, payload.imageData)
         }
@@ -80,35 +72,17 @@ class EnterprisesRepositoryImpl @Inject constructor(
 
     override suspend fun archiveReport(reportId: String) {
         if (reportId.isBlank()) return
-        updateTeamEntityById(reportId) { report ->
-            report.status = "archived"
-            report.updated = true
-        }
+        teamDao.archiveById(reportId)
     }
 
-    override fun getReportsFlow(teamId: String): Flow<List<MyTeam>> {
-        return teamDao.observeByTeamIdAndDocType(teamId, "report")
-            .map { entities ->
-                entities.filter {
-                    it.status != "archived"
-                }.sortedByDescending { it.createdDate }
-            }
-            .distinctByContent { old, new ->
-                old._id == new._id && old._rev == new._rev && old.status == new.status &&
-                    old.description == new.description && old.beginningBalance == new.beginningBalance &&
-                    old.sales == new.sales && old.otherIncome == new.otherIncome &&
-                    old.wages == new.wages && old.otherExpenses == new.otherExpenses &&
-                    old.startDate == new.startDate && old.endDate == new.endDate &&
-                    old.updatedDate == new.updatedDate && old.updated == new.updated &&
-                    old.imageName == new.imageName
-            }
+    override fun getReportsFlow(teamId: String): Flow<List<FinanceReport>> {
+        return teamDao.observeNonArchivedFinanceReportsByTeamId(teamId)
+            .distinctUntilChanged()
             .flowOn(dispatcherProvider.default)
     }
 
     override suspend fun exportReportsAsCsv(teamId: String, teamName: String): String {
-        val reports = teamDao.getByTeamIdAndDocType(teamId, "report")
-            .filter { it.status != "archived" }
-            .sortedByDescending { it.createdDate }
+        val reports = teamDao.getNonArchivedReportCsvProjectionsByTeamId(teamId)
         val csvBuilder = StringBuilder()
         csvBuilder.append(teamName).append(" Financial Report Summary\n\n")
         csvBuilder.append("Start Date, End Date, Created Date, Updated Date, Beginning Balance, Sales, Other Income, Wages, Other Expenses, Profit/Loss, Ending Balance\n")
@@ -135,22 +109,12 @@ class EnterprisesRepositoryImpl @Inject constructor(
 
     private suspend fun attachTeamImage(teamId: String, imageName: String, imageData: ByteArray) {
         if (teamId.isBlank()) return
-        val destFile = MyTeam.getAttachmentFile(context, teamId, imageName) ?: return
+        val destFile = storagePathResolver.resolveTeamAttachment(teamId, imageName) ?: return
         withContext(dispatcherProvider.io) {
             destFile.parentFile?.mkdirs()
             destFile.writeBytes(imageData)
         }
-        updateTeamEntityById(teamId) { team ->
-            team.imageName = imageName
-            team.updated = true
-        }
+        teamDao.setImageNameById(teamId, imageName)
     }
 
-    private suspend fun updateTeamEntityById(id: String, updater: (MyTeam) -> Unit): Boolean {
-        val entity = teamDao.getById(id) ?: return false
-        val model = entity
-        updater(model)
-        teamDao.upsert(model)
-        return true
-    }
 }

@@ -296,6 +296,17 @@ class UrlUtilsTest {
     }
 
     @Test
+    fun testBasicAuthHeader_withPaddingAndNoPadding() {
+        // "user:pass" -> "dXNlcjpwYXNz" (no padding needed)
+        val result1 = UrlUtils.basicAuthHeader("user", "pass")
+        assertEquals("Basic dXNlcjpwYXNz", result1)
+
+        // "user:password" -> "dXNlcjpwYXNzd29yZA==" (with '=' padding)
+        val result2 = UrlUtils.basicAuthHeader("user", "password")
+        assertEquals("Basic dXNlcjpwYXNzd29yZA==", result2)
+    }
+
+    @Test
     fun testGetUserInfo_nullInput() {
         val (user, pass) = UrlUtils.getUserInfo(null)
         assertEquals("", user)
@@ -352,7 +363,7 @@ class UrlUtilsTest {
         every { mockSpm.getUrlUser() } returns "user2"
         every { mockSpm.getUrlPwd() } returns "pass2"
 
-        UrlUtils.invalidateHeaderCache()
+        UrlUtils.invalidateCaches()
         val thirdHeader = UrlUtils.header
 
         verify(exactly = 2) { mockSpm.getUrlUser() }
@@ -376,6 +387,45 @@ class UrlUtilsTest {
         verify(exactly = 2) { mockSpm.getUrlUser() }
     }
 
+    @Test
+    fun `baseUrl memoizes base url and reads SharedPreferences once`() {
+        unmockkObject(UrlUtils)
+        val spm = mockk<SharedPrefManager>(relaxed = true)
+        every { spm.isAlternativeUrl() } returns false
+        every { spm.getCouchdbUrl() } returns "http://example.com"
+        UrlUtils.resetForTesting()
+        UrlUtils.init(spm)
+
+        val firstUrl = UrlUtils.baseUrl(spm)
+        val secondUrl = UrlUtils.baseUrl(spm)
+
+        assertEquals("http://example.com", firstUrl)
+        assertEquals(firstUrl, secondUrl)
+        verify(exactly = 1) { spm.getCouchdbUrl() }
+        verify(exactly = 1) { spm.isAlternativeUrl() }
+    }
+
+    @Test
+    fun `baseUrl invalidates cache when invalidateCaches is called`() {
+        unmockkObject(UrlUtils)
+        val spm = mockk<SharedPrefManager>(relaxed = true)
+        every { spm.isAlternativeUrl() } returns false
+        every { spm.getCouchdbUrl() } returns "http://example.com"
+        UrlUtils.resetForTesting()
+        UrlUtils.init(spm)
+
+        val firstUrl = UrlUtils.baseUrl(spm)
+        assertEquals("http://example.com", firstUrl)
+
+        every { spm.getCouchdbUrl() } returns "http://new-example.com"
+        UrlUtils.invalidateCaches()
+
+        val secondUrl = UrlUtils.baseUrl(spm)
+        assertEquals("http://new-example.com", secondUrl)
+        verify(exactly = 2) { spm.getCouchdbUrl() }
+    }
+
+    @Test
     fun `getUrl with explicit base builds resource url without re-deriving base`() {
         unmockkObject(UrlUtils)
         val result = UrlUtils.getUrl("r1", "f1", "http://example.com/db")
@@ -399,5 +449,55 @@ class UrlUtilsTest {
         assertEquals("http://example.com/db/resources/r1/f1", urls[0])
         assertEquals("http://example.com/db/resources/r2/f2", urls[1])
         verify(exactly = 1) { spm.getCouchdbUrl() }
+    }
+
+    @Test
+    fun `redactForLog strips userinfo from standard CouchDB URL`() {
+        unmockkObject(UrlUtils)
+        val input = "http://satellite:1234@host.org:5984/db/resources/abc/file.pdf"
+        val result = UrlUtils.redactForLog(input)
+        assertEquals("http://host.org:5984/db/resources/abc/file.pdf", result)
+        assert(!result.contains("satellite"))
+        assert(!result.contains("1234"))
+        assert(!result.contains("@"))
+    }
+
+    @Test
+    fun `redactForLog handles https URL with port`() {
+        unmockkObject(UrlUtils)
+        val input = "https://user:pass@securehost.com:8443/db/teams/_bulk_docs"
+        val result = UrlUtils.redactForLog(input)
+        assertEquals("https://securehost.com:8443/db/teams/_bulk_docs", result)
+        assert(!result.contains("user"))
+        assert(!result.contains("pass"))
+        assert(!result.contains("@"))
+    }
+
+    @Test
+    fun `redactForLog returns URL without userinfo unchanged in substance`() {
+        unmockkObject(UrlUtils)
+        val input = "http://host.org:5984/db/resources/abc/file.pdf"
+        val result = UrlUtils.redactForLog(input)
+        assertEquals("http://host.org:5984/db/resources/abc/file.pdf", result)
+    }
+
+    @Test
+    fun `redactForLog handles empty and malformed URLs safely`() {
+        unmockkObject(UrlUtils)
+        assertEquals("<unparseable url>", UrlUtils.redactForLog(""))
+        assertEquals("<unparseable url>", UrlUtils.redactForLog(null))
+        assertEquals("<unparseable url>", UrlUtils.redactForLog("not a url"))
+        assertEquals("<unparseable url>", UrlUtils.redactForLog(":::invalid::"))
+    }
+
+    @Test
+    fun `redactForLog redacts password containing at sign or colon`() {
+        unmockkObject(UrlUtils)
+        val input = "http://admin:p%40ss%3Aword@server.com/db"
+        val result = UrlUtils.redactForLog(input)
+        assertEquals("http://server.com/db", result)
+        assert(!result.contains("admin"))
+        assert(!result.contains("p%40ss%3Aword"))
+        assert(!result.contains("@"))
     }
 }

@@ -1,12 +1,9 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.util.Date
 import java.util.UUID
@@ -14,6 +11,7 @@ import javax.inject.Inject
 import javax.inject.Provider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.ExamDao
@@ -25,24 +23,26 @@ import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
-import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.MembershipDoc
 import org.ole.planet.myplanet.model.QuestionAnswer
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.SubmissionDetail
 import org.ole.planet.myplanet.model.SubmissionItem
+import org.ole.planet.myplanet.model.SubmissionRowProjection
 import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.model.TeamReference
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
     private val teamsRepositoryProvider: Provider<TeamsRepository>,
-    @ApplicationContext private val context: Context,
+    private val userRepository: UserRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val exporter: SubmissionsRepositoryExporter,
     private val submitPhotosDao: SubmitPhotosDao,
@@ -50,19 +50,16 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     private val answerDao: AnswerDao,
     private val examDao: ExamDao,
     private val questionDao: QuestionDao,
-    @PlainGson private val gson: Gson
+    @PlainGson private val gson: Gson,
+    private val deviceNameProvider: DeviceNameProvider
 ) : SubmissionsRepository {
 
     override suspend fun generateSubmissionPdf(submissionId: String): File? {
-        return exporter.generateSubmissionPdf(context, submissionId)
+        return exporter.generateSubmissionPdf(submissionId)
     }
 
     override suspend fun generateMultipleSubmissionsPdf(submissionIds: List<String>, examTitle: String): File? {
-        return exporter.generateMultipleSubmissionsPdf(context, submissionIds, examTitle)
-    }
-
-    private fun Submission.examIdFromParentId(): String? {
-        return parentId?.substringBefore("@")
+        return exporter.generateMultipleSubmissionsPdf(submissionIds, examTitle)
     }
 
     private suspend fun hydrateSubmissions(rows: List<Submission>): List<Submission> {
@@ -76,14 +73,56 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override fun getPendingSurveysFlow(userId: String?): Flow<List<Submission>> {
+        if (userId.isNullOrEmpty()) return flowOf(emptyList())
         return submissionDao.observePendingSurveys(userId)
     }
 
     override fun getSubmissionsFlow(userId: String): Flow<List<Submission>> {
         return submissionDao.observeByUserId(userId).distinctUntilChanged { old, new ->
-            // Assuming any meaningful mutation bumps lastUpdateTime.
             old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.lastUpdateTime == n.lastUpdateTime }
         }
+    }
+
+    override suspend fun getSubmissionProjections(
+        submissions: List<Submission>,
+        userId: String,
+        type: String,
+        query: String,
+        examMap: Map<String?, StepExam>,
+    ): List<SubmissionRowProjection> {
+        var filtered = when (type) {
+            "survey" -> submissions.filter { it.userId == userId && it.type == "survey" }
+            "survey_submission" -> submissions.filter {
+                it.userId == userId && it.type == "survey" && it.status != "pending"
+            }
+            else -> submissions.filter { it.userId == userId && it.type != "survey" }
+        }.sortedByDescending { it.lastUpdateTime }
+
+        if (query.isNotEmpty()) {
+            val examIds = examMap.mapNotNullTo(HashSet()) { (id, exam) ->
+                if (exam.name?.contains(query, ignoreCase = true) == true) id else null
+            }
+            filtered = filtered.filter { examIds.contains(it.parentId) }
+        }
+
+        val uniqueRawSubmissions = mutableListOf<Submission>()
+        val submissionCountMap = HashMap<String?, Int>()
+        for (group in filtered.groupBy { it.parentId }.values) {
+            val newest = group.maxByOrNull { it.lastUpdateTime } ?: continue
+            uniqueRawSubmissions.add(newest)
+            submissionCountMap[newest.id] = group.size
+        }
+
+        val userIds = uniqueRawSubmissions.mapNotNull { it.userId }.distinct()
+        val fallbackUsersMap = userRepository.getUsersByIds(userIds).associateBy { it.id }
+
+        return uniqueRawSubmissions.map { sub ->
+            val name = getNormalizedSubmitterName(sub)
+            val fallback = sub.userId?.let { fallbackUsersMap[it]?.name }
+            val submitterName = name ?: fallback ?: ""
+            val count = submissionCountMap[sub.id] ?: 1
+            SubmissionRowProjection(sub, submitterName, count)
+        }.sortedByDescending { it.submission.lastUpdateTime }
     }
 
     override suspend fun getPendingSurveys(userId: String?): List<Submission> {
@@ -99,13 +138,12 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     override suspend fun getUniquePendingSurveys(userId: String?): List<Submission> {
         if (userId == null) return emptyList()
 
-        val pendingSurveys = hydrateSubmissions(submissionDao.getUniquePendingSurveyCandidates(userId))
-
-        if (pendingSurveys.isEmpty()) {
+        val candidates = submissionDao.getUniquePendingSurveyCandidates(userId)
+        if (candidates.isEmpty()) {
             return emptyList()
         }
 
-        val examIds = pendingSurveys.mapNotNull { it.examIdFromParentId() }.distinct()
+        val examIds = candidates.mapNotNullTo(LinkedHashSet()) { it.examIdFromParentId() }.toList()
         if (examIds.isEmpty()) {
             return emptyList()
         }
@@ -114,13 +152,13 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         val validExamIds = exams.map { it.id }.toSet()
 
         val uniqueSurveys = linkedMapOf<String, Submission>()
-        pendingSurveys.forEach { submission ->
+        candidates.forEach { submission ->
             val examId = submission.examIdFromParentId()
             if (examId != null && validExamIds.contains(examId) && !uniqueSurveys.containsKey(examId)) {
                 uniqueSurveys[examId] = submission
             }
         }
-        return uniqueSurveys.values.toList()
+        return hydrateSubmissions(uniqueSurveys.values.toList())
     }
 
     override suspend fun getSurveyTitlesFromSubmissions(
@@ -156,10 +194,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             val examId = sub.examIdFromParentId()
             examMap[examId]?.let { parentId to it }
         }.toMap()
-    }
-
-    override suspend fun getExamQuestionCount(stepId: String): Int {
-        return examDao.getFirstByStepId(stepId)?.noOfQuestions ?: 0
     }
 
     override suspend fun getSubmissionById(id: String): Submission? {
@@ -209,8 +243,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         userIds.chunked(500).forEach { chunk ->
             val existingSubmissions = submissionDao.getPendingByUsersAndParent(chunk, parentId)
             val existingUserIds = existingSubmissions.mapNotNull { it.userId }.toSet()
-            val newSubmissions = chunk.filter { it !in existingUserIds }.map { userId ->
-                Submission().apply {
+            val newSubmissions = chunk.mapNotNull { userId ->
+                if (userId in existingUserIds) null else Submission().apply {
                     id = UUID.randomUUID().toString()
                     this.userId = userId
                     this.parentId = parentId
@@ -248,7 +282,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         val examId = submission.parentId?.substringBefore('@')
         val exam = examId?.let { getExamById(it) }
 
-        val questions = examId?.let { questionDao.getByExamId(it).map { question -> question } } ?: emptyList()
+        val questions = examId?.let { questionDao.getByExamId(it) } ?: emptyList()
 
         val answersLookup = mutableMapOf<String, Answer>()
         submission.answers?.forEach { answer ->
@@ -317,7 +351,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return runCatching {
             submission.user?.takeIf { it.isNotBlank() }?.let { userJson ->
                 val jsonObject = JsonParser.parseString(userJson).asJsonObject
-                JsonUtils.getString("name", jsonObject).takeIf { it.isNotBlank() }
+                GsonUtils.getString("name", jsonObject).takeIf { it.isNotBlank() }
             }
         }.getOrNull()
     }
@@ -409,9 +443,12 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         )
     }
 
+    private suspend fun fetchPendingByUserAndParent(parentId: String?, userId: String?): Submission? =
+        submissionDao.getPendingByUserAndParent(parentId, userId)
+
     override suspend fun startExamSession(examId: String, parentId: String?, userId: String?, request: CreateExamSubmissionRequest, recreate: Boolean, deleteStale: Boolean): Submission {
         if (!recreate) {
-            val submission = getSubmissionsByParentId(parentId, userId, "pending").firstOrNull()
+            val submission = hydrateSubmission(fetchPendingByUserAndParent(parentId, userId))
             if (submission != null) {
                 return submission
             }
@@ -426,7 +463,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 }
                 return createExamSubmission(request)
             } catch (e: Exception) {
-                // Retry local Room writes to handle potential transient SQLite constraints during rapid operations
                 e.printStackTrace()
                 lastException = e
                 retries++
@@ -437,11 +473,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
     override suspend fun createExamSubmission(request: CreateExamSubmissionRequest): Submission {
         val (userId, userDob, userGender, exam, type, teamId) = request
-        val team = if (!teamId.isNullOrEmpty()) {
-            teamsRepositoryProvider.get().getTeamById(teamId)
-        } else {
-            null
-        }
+        val persistedTeamId = teamId?.takeIf { it.isNotBlank() }
+        val team = persistedTeamId?.let { getTeamByIdOrNull(it) }
 
         val now = Date().time
         val submission = Submission().apply {
@@ -469,18 +502,19 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             startTime = now
             lastUpdateTime = now
             answers = mutableListOf()
+            this.teamId = persistedTeamId
 
-            if (team != null) {
+            if (persistedTeamId != null) {
                 teamObject = TeamReference().apply {
-                    _id = team._id
-                    name = team.name
-                    this.type = team.type ?: "team"
+                    _id = persistedTeamId
+                    name = team?.name
+                    this.type = team?.type
                 }
-                membershipDoc = MembershipDoc().apply { this.teamId = teamId }
+                membershipDoc = MembershipDoc().apply { this.teamId = persistedTeamId }
                 user = JsonObject().apply {
                     addProperty("age", userDob ?: "")
                     addProperty("gender", userGender ?: "")
-                    add("membershipDoc", JsonObject().apply { addProperty("teamId", teamId) })
+                    add("membershipDoc", JsonObject().apply { addProperty("teamId", persistedTeamId) })
                 }.toString()
             }
         }
@@ -499,7 +533,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                     if (!exam?.courseId.isNullOrEmpty()) "$eId@${exam?.courseId}" else eId
                 }
                 if (parentId != null) {
-                    getSubmissionsByParentId(parentId, userId ?: submission?.userId, "pending").firstOrNull()
+                    hydrateSubmission(fetchPendingByUserAndParent(parentId, userId ?: submission?.userId))
                 } else null
             }
             ?: submissionDao.getLatestPendingByUser(userId ?: submission?.userId)
@@ -601,9 +635,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         photoId?.let { submitPhotosDao.markUploaded(it, rev, id) }
     }
 
-    override suspend fun markPhotosUploadedBatch(uploads: List<UploadedPhoto>) {
+    override suspend fun markPhotosUploadedBatch(uploads: List<PhotoUpload>) {
         if (uploads.isNotEmpty()) {
-            submitPhotosDao.markUploadedBatch(uploads)
+            val daoUploads = uploads.map { UploadedPhoto(it.photoId, it.rev, it.remoteId) }
+            submitPhotosDao.markUploadedBatch(daoUploads)
         }
     }
 
@@ -642,15 +677,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
-        }
+        val documentList = jsonArray.toSyncDocuments().map { it.second }
         upsertRoomSubmissionsFromSync(documentList)
     }
 
@@ -664,44 +691,41 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         val answers = ArrayList<Answer>()
 
         documentList.filterNot { it.has("_attachments") }.forEach { submission ->
-            val id = JsonUtils.getString("_id", submission)
+            val id = GsonUtils.getString("_id", submission)
             if (id.isBlank()) return@forEach
-            val serverStatus = JsonUtils.getString("status", submission)
-            val rev = JsonUtils.getString("_rev", submission)
-            val parentId = JsonUtils.getString("parentId", submission)
-            // Drop base64 `_attachments` (e.g. a profile photo) from the embedded user before
-            // persisting it as a blob; otherwise a single row can exceed SQLite's ~2MB
-            // CursorWindow limit and crash later `SELECT *` reads (SQLiteBlobTooBigException).
-            // Read membershipDoc first, then strip — the two keys are independent.
-            val userJson = JsonUtils.getJsonObject("user", submission)
-            val membershipJson = JsonUtils.getJsonObject("membershipDoc", userJson)
+            val serverStatus = GsonUtils.getString("status", submission)
+            val rev = GsonUtils.getString("_rev", submission)
+            val parentId = GsonUtils.getString("parentId", submission)
+            val userJson = GsonUtils.getJsonObject("user", submission)
+            val membershipJson = GsonUtils.getJsonObject("membershipDoc", userJson)
             userJson.remove("_attachments")
-            val teamJson = JsonUtils.getJsonObject("team", submission)
-            val userId = normalizeSubmissionUserId(JsonUtils.getString("_id", userJson))
+            val teamJson = GsonUtils.getJsonObject("team", submission)
+            val userId = normalizeSubmissionUserId(GsonUtils.getString("_id", userJson))
             submissions.add(
                 Submission(
                     id = id,
                     _id = id,
                     _rev = rev,
                     parentId = parentId,
-                    type = JsonUtils.getString("type", submission),
+                    type = GsonUtils.getString("type", submission),
                     userId = userId,
                     user = gson.toJson(userJson),
-                    startTime = JsonUtils.getLong("startTime", submission),
-                    lastUpdateTime = JsonUtils.getLong("lastUpdateTime", submission),
-                    grade = JsonUtils.getLong("grade", submission),
+                    startTime = GsonUtils.getLong("startTime", submission),
+                    lastUpdateTime = GsonUtils.getLong("lastUpdateTime", submission),
+                    grade = GsonUtils.getLong("grade", submission),
                     status = serverStatus,
                     uploaded = rev.isNotEmpty(),
-                    sender = JsonUtils.getString("sender", submission),
-                    source = JsonUtils.getString("source", submission),
-                    parentCode = JsonUtils.getString("parentCode", submission),
-                    parent = gson.toJson(JsonUtils.getJsonObject("parent", submission)),
-                    teamId = JsonUtils.getString("_id", teamJson).ifBlank { JsonUtils.getString("teamId", membershipJson) },
+                    sender = GsonUtils.getString("sender", submission),
+                    source = GsonUtils.getString("source", submission),
+                    parentCode = GsonUtils.getString("parentCode", submission),
+                    parent = gson.toJson(GsonUtils.getJsonObject("parent", submission)),
+                    teamId = GsonUtils.getString("_id", teamJson).ifBlank { GsonUtils.getString("teamId", membershipJson) },
                     isUpdated = false,
                 )
             )
 
-            val answersArray = JsonUtils.getJsonArray("answers", submission)
+            val answersArray = GsonUtils.getJsonArray("answers", submission)
+            val examIdPart = parentId.split("@").firstOrNull() ?: parentId
             for (i in 0 until answersArray.size()) {
                 val answerJson = answersArray[i].asJsonObject
                 val valueElement = answerJson.get("value")
@@ -710,7 +734,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 } else {
                     null
                 }
-                val examIdPart = parentId.split("@").firstOrNull() ?: parentId
                 answers.add(
                     Answer(
                         id = "$id-$i",
@@ -722,10 +745,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                             }
                         },
                         valueChoices = valueChoices,
-                        mistakes = JsonUtils.getInt("mistakes", answerJson),
-                        isPassed = JsonUtils.getBoolean("passed", answerJson),
+                        mistakes = GsonUtils.getInt("mistakes", answerJson),
+                        isPassed = GsonUtils.getBoolean("passed", answerJson),
                         examId = parentId,
-                        questionId = JsonUtils.getString("questionId", answerJson).ifBlank { "$examIdPart-$i" },
+                        questionId = GsonUtils.getString("questionId", answerJson).ifBlank { "$examIdPart-$i" },
                         submissionId = id,
                     )
                 )
@@ -747,131 +770,50 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
-    private data class PayloadData(
-        val user: UserEntity?,
-        val exam: StepExam?,
-        val questions: List<ExamQuestion>
+    private val payloadBuilder = SubmissionsPayloadBuilder(
+        teamsRepositoryProvider,
+        sharedPrefManager,
+        examDao,
+        questionDao,
+        gson,
+        deviceNameProvider
     )
 
-    private suspend fun getPayloadData(submission: Submission, user: UserEntity?): PayloadData {
-        val examId = submission.examIdFromParentId()
-        val exam = examId?.let { examDao.getById(it) }
-        val questions = exam?.id?.let { questionDao.getByExamId(it).map { question -> question } } ?: emptyList()
-        return PayloadData(user, exam, questions)
-    }
+    private suspend fun getTeamByIdOrNull(teamId: String) = payloadBuilder.getTeamByIdOrNull(teamId)
 
     override suspend fun getExamUploadPayload(submission: Submission, user: UserEntity?): JsonObject {
-        val `object` = JsonObject()
-        val payloadData = getPayloadData(submission, user)
-        val resolvedUser = payloadData.user
-        val exam = payloadData.exam
-
-        if (!TextUtils.isEmpty(submission._id)) {
-            `object`.addProperty("_id", submission._id)
-        }
-        if (!TextUtils.isEmpty(submission._rev)) {
-            `object`.addProperty("_rev", submission._rev)
-        }
-        `object`.addProperty("parentId", submission.parentId)
-        `object`.addProperty("type", submission.type)
-
-        if (submission.teamObject != null) {
-            val teamJson = JsonObject()
-            teamJson.addProperty("_id", submission.teamObject?._id)
-            teamJson.addProperty("name", submission.teamObject?.name)
-            teamJson.addProperty("type", submission.teamObject?.type)
-            `object`.add("team", teamJson)
-        }
-
-        `object`.addProperty("grade", submission.grade)
-        `object`.addProperty("startTime", submission.startTime)
-        `object`.addProperty("lastUpdateTime", submission.lastUpdateTime)
-        `object`.addProperty("status", submission.status)
-        `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-        `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
-        `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
-        `object`.addProperty("sender", submission.sender)
-        `object`.addProperty("source", sharedPrefManager.getPlanetCode())
-        `object`.addProperty("parentCode", sharedPrefManager.getParentCode())
-        `object`.add("answers", Answer.serializeAnswer(submission.answers ?: mutableListOf()))
-        if (exam != null) {
-            `object`.add("parent", StepExam.serializeExam(exam, payloadData.questions))
-        } else {
-            val parent = gson.fromJson(submission.parent, JsonObject::class.java)
-            `object`.add("parent", parent)
-        }
-        // Prefer the fresh user record (attachment-free, current data) so the upload never
-        // depends on the persisted blob, whose _attachments are stripped for storage safety.
-        val freshUser = resolvedUser?.serialize()
-        when {
-            freshUser != null -> `object`.add("user", freshUser)
-            !TextUtils.isEmpty(submission.user) -> `object`.add("user", JsonParser.parseString(submission.user))
-        }
-        return `object`
+        return payloadBuilder.examUploadPayload(submission, user)
     }
 
     override suspend fun serializeSubmission(submission: Submission, source: String, parentCode: String, user: UserEntity?): JsonObject {
-        val jsonObject = JsonObject()
-
-        try {
-            val payloadData = getPayloadData(submission, user)
-            val exam = payloadData.exam
-
-            if (!submission._id.isNullOrEmpty()) {
-                jsonObject.addProperty("_id", submission._id)
-            }
-            if (!submission._rev.isNullOrEmpty()) {
-                jsonObject.addProperty("_rev", submission._rev)
-            }
-
-            jsonObject.addProperty("parentId", submission.parentId ?: "")
-            jsonObject.addProperty("type", submission.type ?: "survey")
-            jsonObject.addProperty("grade", submission.grade)
-            jsonObject.addProperty("startTime", submission.startTime)
-            jsonObject.addProperty("lastUpdateTime", submission.lastUpdateTime)
-            jsonObject.addProperty("status", submission.status ?: "pending")
-            jsonObject.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-            jsonObject.addProperty("deviceName", NetworkUtils.getDeviceName())
-            jsonObject.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
-            jsonObject.addProperty("sender", submission.sender)
-            jsonObject.addProperty("source", source)
-            jsonObject.addProperty("parentCode", parentCode)
-            jsonObject.add("answers", Answer.serializeAnswer(submission.answers ?: mutableListOf()))
-            if (exam != null) {
-                jsonObject.add("parent", StepExam.serializeExam(exam, payloadData.questions))
-            } else if (!submission.parent.isNullOrEmpty()) {
-                jsonObject.add("parent", JsonParser.parseString(submission.parent))
-            }
-
-            // Prefer the fresh user record (attachment-free, current data) over the persisted
-            // blob, whose _attachments are stripped for storage safety.
-            val userJson = payloadData.user?.serialize()
-                ?: submission.user?.takeIf { it.isNotEmpty() }?.let { JsonParser.parseString(it).asJsonObject }
-            if (userJson != null) {
-                if (submission.membershipDoc != null) {
-                    val membershipJson = JsonObject()
-                    membershipJson.addProperty("teamId", submission.membershipDoc?.teamId ?: "")
-                    userJson.add("membershipDoc", membershipJson)
-                }
-                jsonObject.add("user", userJson)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return jsonObject
+        return payloadBuilder.submissionPayload(submission, source, parentCode, user)
     }
 
     override suspend fun getPendingExamResults(): List<Submission> {
-        return submissionDao.getPendingExamResults().map { entity ->
-            val answers = answerDao.getBySubmissionId(entity.id)
-            entity.apply { this.answers = answers.toMutableList(); teamId?.let { membershipDoc = MembershipDoc().apply { this.teamId = it } } }
-        }
+        return hydrateSubmissions(submissionDao.getPendingExamResults())
     }
 
     override suspend fun getPendingSubmissionsForUpload(): List<Submission> {
-        return submissionDao.getPendingSubmissions().map { entity ->
-            val answers = answerDao.getBySubmissionId(entity.id)
-            entity.apply { this.answers = answers.toMutableList(); teamId?.let { membershipDoc = MembershipDoc().apply { this.teamId = it } } }
-        }
+        return hydrateSubmissions(submissionDao.getPendingSubmissions())
+    }
+
+    override suspend fun markSubmissionsUploaded(results: List<UploadedItemResult>): List<UploadedItemResult> =
+        results.filter { submissionDao.markUploaded(it.localId, it.remoteId, it.remoteRev) == 0 }
+
+    override suspend fun getExamSubmissionsByUser(userId: String?): List<Submission> {
+        return submissionDao.getExamSubmissionsByUser(userId)
+    }
+
+    override suspend fun getAnswersBySubmissionIds(ids: List<String>): List<Answer> {
+        return answerDao.getBySubmissionIds(ids)
+    }
+
+    override suspend fun getUnuploadedNonSurveySubmissionsByParentIds(parentIds: List<String>): List<Submission> {
+        return submissionDao.getUnuploadedNonSurveyByParentIds(parentIds)
+    }
+
+    override suspend fun deleteSubmissionsWithAnswers(ids: List<String>) {
+        answerDao.deleteBySubmissionIds(ids)
+        submissionDao.deleteByIds(ids)
     }
 }

@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
-import android.net.TrafficStats
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
@@ -25,22 +24,16 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
-import java.lang.ref.WeakReference
-import java.net.HttpURLConnection
-import java.net.URL
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Provider
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
@@ -55,7 +48,6 @@ import org.ole.planet.myplanet.services.TaskNotificationWorker
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.utils.ANRWatchdog
-import org.ole.planet.myplanet.utils.Constants.NETWORK_TRAFFIC_TAG
 import org.ole.planet.myplanet.utils.CrashLogStore
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
@@ -69,6 +61,7 @@ import org.ole.planet.myplanet.utils.PdfThumbnailLoader
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.ThemeMode
 import org.ole.planet.myplanet.utils.UrlUtils.init
+import org.ole.planet.myplanet.utils.Utilities
 
 @HiltAndroidApp
 class MainApplication : Application(), WorkManagerConfiguration.Provider {
@@ -108,7 +101,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
         private const val ANR_LOG_TYPE = "anr"
-        private const val LOG_TAG = "MainApplication"
+        private const val TAG = "MainApplication"
         private lateinit var instance: MainApplication
 
         @VisibleForTesting
@@ -116,18 +109,13 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
         val context: Context get() = testContext ?: instance.applicationContext
         var syncFailedCount = 0
-        var isCollectionSwitchOn = false
         var showDownload = false
         val isSyncRunning = AtomicBoolean(false)
-        private var _listener: WeakReference<OnTeamPageListener>? = null
-        var listener: OnTeamPageListener?
-            get() = _listener?.get()
-            set(value) { _listener = value?.let { WeakReference(it) } }
         val androidId: String get() {
             try {
                 return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to get Android ID", e)
             }
             return "0"
         }
@@ -151,7 +139,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
         private fun warnBestEffortFailed(what: String, failure: Throwable) {
             try {
-                Log.w(LOG_TAG, "$what failed", failure)
+                Log.w(TAG, "$what failed", failure)
             } catch (loggingFailure: RuntimeException) {
             }
         }
@@ -191,92 +179,11 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             }
         }
         
-        private const val REACHABILITY_CACHE_TTL_MS = 30_000L
-        private val reachabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
+        suspend fun isServerReachable(urlString: String): Boolean =
+            coreDependenciesEntryPoint.serverReachabilityProvider().isServerReachable(urlString)
 
-        suspend fun isServerReachable(
-            urlString: String,
-            ioDispatcher: CoroutineDispatcher = coreDependenciesEntryPoint.dispatcherProvider().io
-        ): Boolean {
-            if (urlString.isBlank()) return false
-
-            reachabilityCache[urlString]?.let { (reachable, checkedAt) ->
-                if (System.currentTimeMillis() - checkedAt < REACHABILITY_CACHE_TTL_MS) {
-                    return reachable
-                }
-            }
-
-            val serverUrlMapper = coreDependenciesEntryPoint.serverUrlMapper()
-            val mapping = serverUrlMapper.processUrl(urlString)
-            val urlsToTry = mutableListOf(urlString)
-            mapping.alternativeUrl?.let { urlsToTry.add(it) }
-
-            var reachable = false
-            for (url in urlsToTry) {
-                if (tryConnect(url, ioDispatcher)) {
-                    reachable = true
-                    break
-                }
-            }
-            reachabilityCache[urlString] = reachable to System.currentTimeMillis()
-            return reachable
-        }
-
-        suspend fun isPrimaryServerReachable(
-            urlString: String,
-            ioDispatcher: CoroutineDispatcher = coreDependenciesEntryPoint.dispatcherProvider().io
-        ): Boolean {
-            if (urlString.isBlank()) return false
-            return tryConnect(urlString, ioDispatcher)
-        }
-
-        private suspend fun tryConnect(
-            urlString: String,
-            ioDispatcher: CoroutineDispatcher
-        ): Boolean {
-            return try {
-                val formattedUrl = if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
-                    "http://$urlString"
-                } else {
-                    urlString
-                }
-                val url = URL(formattedUrl)
-                val responseCode = withContext(ioDispatcher) {
-                    getResponseCode(url)
-                }
-                responseCode in 200..299
-            } catch (e: Exception) {
-                if (e is kotlinx.coroutines.CancellationException) throw e
-                false
-            }
-        }
-
-        private fun getResponseCode(url: URL): Int {
-            TrafficStats.setThreadStatsTag(NETWORK_TRAFFIC_TAG)
-            return try {
-                val headCode = executeRequest(url, "HEAD")
-                if (headCode == HttpURLConnection.HTTP_BAD_METHOD || headCode == HttpURLConnection.HTTP_NOT_IMPLEMENTED) {
-                    executeRequest(url, "GET")
-                } else {
-                    headCode
-                }
-            } finally {
-                TrafficStats.clearThreadStatsTag()
-            }
-        }
-
-        private fun executeRequest(url: URL, method: String): Int {
-            val connection = url.openConnection() as HttpURLConnection
-            return try {
-                connection.requestMethod = method
-                connection.connectTimeout = 5000
-                connection.readTimeout = 5000
-                connection.connect()
-                connection.responseCode
-            } finally {
-                connection.disconnect()
-            }
-        }
+        suspend fun isPrimaryServerReachable(urlString: String): Boolean =
+            coreDependenciesEntryPoint.serverReachabilityProvider().isPrimaryServerReachable(urlString)
 
         fun persistCriticalLog(type: String, error: String) {
             val pendingFile = CrashLogStore.save(context, type, error, coreDependenciesEntryPoint.timeProvider())
@@ -290,7 +197,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         }
 
         fun handleUncaughtException(e: Throwable) {
-            e.printStackTrace()
+            Log.e(TAG, "Uncaught exception", e)
             val error = e.stackTraceToString()
             persistCriticalLog(ApkLog.ERROR_TYPE_CRASH, error)
 
@@ -322,6 +229,8 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             runBestEffort("FileUtils.warmUp") { FileUtils.warmUp(this@MainApplication) }
             runBestEffort("SecurePrefs.warmUp") { SecurePrefs.warmUp(this@MainApplication) }
             runBestEffort("MarkdownUtils.warmUp") { MarkdownUtils.warmUp(this@MainApplication) }
+            runBestEffort("Utilities.warmUp") { Utilities.warmUp() }
+            runBestEffort("defaultPref.warmUp") { defaultPref }
             runBestEffort("GifInfoHandle preload") { Class.forName("pl.droidsonroids.gif.GifInfoHandle") }
         }
         applicationScope.launch {
@@ -348,7 +257,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to sweep pending logs", e)
         }
     }
     private fun initApp() {
@@ -426,7 +335,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 )
                 entryPoint.retryQueue().recoverStuckOperations()
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to recover stuck operations", e)
             }
         }
         RetryQueueWorker.schedule(this)
@@ -474,7 +383,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     }
 
     private suspend fun checkServerAndStartDownload(serverUrl: String) {
-        val canReachServer = isServerReachable(serverUrl, dispatcherProvider.io)
+        val canReachServer = isServerReachable(serverUrl)
         if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
             resourceDownloadCoordinator.startBackgroundDownload(
                 downloadAllFiles(resourcesRepository.getAllLibrariesToSync())

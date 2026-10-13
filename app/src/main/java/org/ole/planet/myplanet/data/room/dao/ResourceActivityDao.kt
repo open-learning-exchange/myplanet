@@ -7,6 +7,11 @@ import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.ResourceActivity
 
+data class ResourceOpenCount(
+    val title: String,
+    val openCount: Int
+)
+
 @Dao
 interface ResourceActivityDao {
     @Query("SELECT * FROM resource_activity WHERE _rev IS NULL AND type != 'sync'")
@@ -15,11 +20,11 @@ interface ResourceActivityDao {
     @Query("SELECT * FROM resource_activity WHERE _rev IS NULL AND type = 'sync'")
     suspend fun getPendingSyncUploads(): List<ResourceActivity>
 
-    @Query("SELECT * FROM resource_activity WHERE user = :userName AND type = :type")
-    suspend fun getByUserAndType(userName: String, type: String): List<ResourceActivity>
-
     @Query("SELECT COUNT(*) FROM resource_activity WHERE user = :userName AND type = :type")
     suspend fun countByUserAndType(userName: String, type: String): Long
+
+    @Query("SELECT MIN(title) AS title, COUNT(*) AS openCount FROM resource_activity WHERE user = :userName AND type = :type AND title IS NOT NULL AND TRIM(title) != '' GROUP BY resourceId ORDER BY openCount DESC, title ASC LIMIT 1")
+    suspend fun getMostOpenedResource(userName: String, type: String): ResourceOpenCount?
 
     @Query("SELECT * FROM resource_activity WHERE user = :userName AND type = :type")
     fun observeByUserAndType(userName: String, type: String): Flow<List<ResourceActivity>>

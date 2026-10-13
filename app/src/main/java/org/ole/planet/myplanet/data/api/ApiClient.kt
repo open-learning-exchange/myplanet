@@ -8,11 +8,15 @@ object ApiClient {
     private const val MAX_ATTEMPTS = 3
     private const val RETRY_DELAY_MS = 2000L
 
+    private fun isRetryable(resp: Response<*>?): Boolean {
+        return resp == null || resp.code() in 500..599
+    }
+
     suspend fun <T> executeWithRetryAndWrap(operation: suspend () -> Response<T>?): Response<T>? {
         return RetryUtils.retry(
             maxAttempts = MAX_ATTEMPTS,
             delayMs = RETRY_DELAY_MS,
-            shouldRetry = { resp -> resp == null || !resp.isSuccessful },
+            shouldRetry = { resp -> isRetryable(resp) },
             block = { operation() },
         )
     }

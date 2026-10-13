@@ -9,16 +9,19 @@ import android.graphics.PorterDuff
 import android.net.Uri
 import android.os.Build
 import android.text.TextUtils
+import android.util.Log
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.webkit.URLUtil
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -55,6 +58,8 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
     @Inject
     lateinit var userRepository: UserRepository
+
+    private val viewModel: UserUploadViewModel by viewModels()
 
     val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
         DialogUtils.CustomProgressDialog(this)
@@ -99,7 +104,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             try {
                 customProgressDialog.dismiss()
             } catch (e: IllegalArgumentException) {
-                e.printStackTrace()
+                Log.w(TAG, "safelyDismissDialog failed", e)
             }
         }
     }
@@ -138,13 +143,15 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:$port"
         }
 
-        prefData.setServerPin(password)
-        prefData.setUrlScheme(uri.scheme ?: "")
-        prefData.setUrlHost(uri.host ?: "")
-        prefData.setServerUrl(url)
-        prefData.setCouchdbUrl(couchdbURL)
-        prefData.setUrlUser(urlUser)
-        prefData.setUrlPwd(urlPwd)
+        prefData.saveServerConfig(
+            serverPin = password,
+            urlScheme = uri.scheme ?: "",
+            urlHost = uri.host ?: "",
+            serverUrl = url,
+            couchdbUrl = couchdbURL,
+            urlUser = urlUser,
+            urlPwd = urlPwd
+        )
 
         return UrlUtils.dbUrl(couchdbURL)
     }
@@ -186,7 +193,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     private fun uploadLoginData() {
-        val flow = syncRepository.uploadLoginData()
+        val flow = viewModel.uploadLoginData()
 
         collectWhenStarted(flow.takeWhile { value ->
             if (value is SyncUiState.Success) {
@@ -204,7 +211,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        val flow = syncRepository.uploadBulkData()
+        val flow = viewModel.uploadBulkData()
 
         collectWhenStarted(flow.takeWhile { value ->
             if (value is SyncUiState.Success) {
@@ -236,6 +243,8 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     companion object {
+        private const val TAG = "ProcessUserDataActivity"
+
         fun getUserInfo(uri: Uri): Array<String> {
             val (u, p) = UrlUtils.getUserInfo(uri.userInfo)
             return arrayOf(u, p)
@@ -245,9 +254,11 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     fun fetchAndLogUserSecurityData(name: String, securityCallback: OnChangedListener? = null) {
         lifecycleScope.launch {
             try {
-                userRepository.fetchUserSecurityData(name)
+                viewModel.fetchUserSecurityData(name)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "fetchAndLogUserSecurityData failed", e)
             } finally {
                 withContext(dispatcherProvider.main) {
                     securityCallback?.onChanged()

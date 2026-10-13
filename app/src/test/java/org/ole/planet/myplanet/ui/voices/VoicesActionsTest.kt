@@ -2,35 +2,47 @@ package org.ole.planet.myplanet.ui.voices
 
 import android.app.Application
 import android.content.Context
-import android.widget.LinearLayout
 import androidx.test.core.app.ApplicationProvider
 import io.mockk.coEvery
 import io.mockk.mockk
+import java.util.Locale
+import java.util.TimeZone
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertSame
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
-import org.ole.planet.myplanet.model.News
-import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.VoicesEditActions
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.VoicesEditor
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(application = Application::class, sdk = [34])
+@Config(application = Application::class)
 class VoicesActionsTest {
 
     private lateinit var context: Context
+    private lateinit var originalTimeZone: TimeZone
+    private lateinit var originalLocale: Locale
 
     @Before
     fun setUp() {
+        originalTimeZone = TimeZone.getDefault()
+        originalLocale = Locale.getDefault()
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+        Locale.setDefault(Locale.US)
         context = ApplicationProvider.getApplicationContext()
         context.setTheme(com.google.android.material.R.style.Theme_MaterialComponents)
+    }
+
+    @After
+    fun tearDown() {
+        TimeZone.setDefault(originalTimeZone)
+        Locale.setDefault(originalLocale)
     }
 
     @Test
@@ -49,7 +61,7 @@ class VoicesActionsTest {
 
     @Test
     fun `showEditAlert sets reply title and edit icon via binding`() = runTest {
-        val repository: VoicesEditActions = mockk()
+        val repository: VoicesEditor = mockk()
         coEvery { repository.getNewsById(any()) } returns null
         val listener: OnNewsItemClickListener = mockk(relaxed = true)
 
@@ -71,10 +83,71 @@ class VoicesActionsTest {
         assertEquals(false, launched) // positive button not clicked yet
     }
 
+    private fun fullyPopulatedUser() = UserEntity().apply {
+        id = "user123"
+        name = "john_doe"
+        firstName = "John"
+        lastName = "Doe"
+        email = "john@example.com"
+        dob = "2000-01-01T00:00:00"
+        language = "en"
+        phoneNumber = "1234567890"
+        level = "Level 1"
+        userImage = "image_url"
+    }
+
     @Test
     fun `showMemberDetails returns null for null user`() = runTest {
-        val activitiesRepository: ActivitiesRepository = mockk()
-        val result = VoicesActions.showMemberDetails(null, activitiesRepository)
+        val result = VoicesActions.showMemberDetails(null)
         assertEquals(null, result)
+    }
+
+    @Test
+    fun `showMemberDetails constructs fragment for user`() = runTest {
+        val user = fullyPopulatedUser()
+
+        val fragment = VoicesActions.showMemberDetails(user)
+
+        assertNotNull(fragment)
+        assertEquals("user123", fragment?.arguments?.getString("member_id"))
+        assertEquals("John Doe", fragment?.arguments?.getString("member_name"))
+        assertEquals("john@example.com", fragment?.arguments?.getString("profile_email"))
+    }
+
+    @Test
+    fun `showMemberDetails sets user details in fragment arguments`() = runTest {
+        val user = fullyPopulatedUser()
+
+        val fragment = VoicesActions.showMemberDetails(user)
+
+        assertNotNull(fragment)
+        assertEquals("2000-01-01", fragment?.arguments?.getString("detail_dob"))
+        assertEquals("en", fragment?.arguments?.getString("detail_language"))
+        assertEquals("1234567890", fragment?.arguments?.getString("profile_phone"))
+    }
+
+    @Test
+    fun `showMemberDetails passes the login name, not the display name, for the visit lookup`() = runTest {
+        val fragment = VoicesActions.showMemberDetails(fullyPopulatedUser())
+
+        // offline_activity.userName stores the login name, so the stats lookup keys on it.
+        assertEquals("john_doe", fragment?.arguments?.getString("member_login_name"))
+        // The display name stays separate -- feeding it to the lookup matches no rows.
+        assertEquals("John Doe", fragment?.arguments?.getString("username"))
+    }
+
+    @Test
+    fun `showMemberDetails handles user with minimal fields`() = runTest {
+        val user = UserEntity().apply {
+            id = "user123"
+            name = "john_doe"
+            firstName = "John"
+            lastName = "Doe"
+        }
+
+        val fragment = VoicesActions.showMemberDetails(user)
+
+        assertNotNull(fragment)
+        assertEquals("user123", fragment?.arguments?.getString("member_id"))
     }
 }

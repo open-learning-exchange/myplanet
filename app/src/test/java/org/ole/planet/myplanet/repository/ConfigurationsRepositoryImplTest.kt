@@ -2,33 +2,43 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import com.google.gson.Gson
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import com.google.gson.JsonPrimitive
+import io.mockk.clearStaticMockk
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import java.io.File
+import java.io.IOException
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.put
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -36,12 +46,13 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.Sha256Utils
+import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
@@ -58,7 +69,9 @@ class ConfigurationsRepositoryImplTest {
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val appDatabase: AppDatabase = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
-    private val serviceScope = CoroutineScope(testDispatcher)
+    private val storagePathResolver: StoragePathResolver = mockk(relaxed = true)
+    // Handed to the repository under test; cancelled in @After so nothing escapes the fork.
+    private val serviceScope = CoroutineScope(SupervisorJob() + testDispatcher)
 
     private val dispatcherProvider = object : DispatcherProvider {
         override val main = testDispatcher
@@ -68,12 +81,34 @@ class ConfigurationsRepositoryImplTest {
         override val unconfined = testDispatcher
     }
 
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkStatic(Log::class)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkStatic(Log::class)
+        }
+    }
+
     @get:Rule
     val temporaryFolder = TemporaryFolder()
+
+    @After
+    fun tearDown() {
+        clearStaticMockk(Log::class)
+        serviceScope.cancel()
+    }
 
     @Before
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
+        every { Log.e(any<String>(), any<String>()) } returns 0
+        every { Log.e(any<String>(), any<String>(), any<Throwable>()) } returns 0
         repository = ConfigurationsRepositoryImpl(
             context,
             apiInterface,
@@ -83,6 +118,7 @@ class ConfigurationsRepositoryImplTest {
             serverUrlMapper,
             dispatcherProvider,
             TestTimeProvider(),
+            storagePathResolver,
             Gson()
         )
     }
@@ -99,16 +135,75 @@ class ConfigurationsRepositoryImplTest {
         every { sharedPrefManager.getCouchdbUrl() } returns "http://test.url"
         every { sharedPrefManager.getServerPin() } returns "1234"
 
+        UrlUtils.resetForTesting()
+
         val responseBody = "".toResponseBody("application/json".toMediaTypeOrNull())
         val response = Response.success(200, responseBody)
 
         coEvery { apiInterface.healthAccess(any()) } returns response
-        every { context.getString(R.string.server_sync_successfully) } returns "Success"
 
         val result = repository.checkHealth()
 
         coVerify { apiInterface.healthAccess(healthUrl) }
-        assertEquals("Success", result)
+        assertEquals(HealthCheckResult.Healthy, result)
+    }
+
+    @Test
+    fun `checkHealth logs tagged error and returns network message when the request throws`() = runTest(testDispatcher) {
+        val healthUrl = "http://test.url/healthaccess?p=1234"
+
+        val rawPrefs: SharedPreferences = mockk()
+        every { sharedPrefManager.rawPreferences } returns rawPrefs
+        every { rawPrefs.getString(any(), any()) } returns "http://test.url"
+        every { sharedPrefManager.getServerUrl() } returns "http://test.url"
+        every { sharedPrefManager.isAlternativeUrl() } returns false
+        every { sharedPrefManager.getCouchdbUrl() } returns "http://test.url"
+        every { sharedPrefManager.getServerPin() } returns "1234"
+
+        UrlUtils.resetForTesting()
+
+        coEvery { apiInterface.healthAccess(any()) } throws IOException("boom")
+
+        val result = repository.checkHealth()
+
+        assertEquals(HealthCheckResult.Failed("Network connection error"), result)
+        verify { Log.e("ConfigurationsRepository", "Health access request failed", any<Throwable>()) }
+    }
+
+    @Test
+    fun `checkHealth returns NotConfigured when health URL is blank`() = runTest(testDispatcher) {
+        mockkObject(UrlUtils)
+        every { UrlUtils.getHealthAccessUrl(sharedPrefManager) } returns ""
+
+        val result = repository.checkHealth()
+
+        assertEquals(HealthCheckResult.NotConfigured, result)
+        unmockkObject(UrlUtils)
+    }
+
+    @Test
+    fun `checkHealth returns Failed when server returns 503`() = runTest(testDispatcher) {
+        val healthUrl = "http://test.url/healthaccess?p=1234"
+
+        val rawPrefs: SharedPreferences = mockk()
+        every { sharedPrefManager.rawPreferences } returns rawPrefs
+        every { rawPrefs.getString(any(), any()) } returns "http://test.url"
+        every { sharedPrefManager.getServerUrl() } returns "http://test.url"
+        every { sharedPrefManager.isAlternativeUrl() } returns false
+        every { sharedPrefManager.getCouchdbUrl() } returns "http://test.url"
+        every { sharedPrefManager.getServerPin() } returns "1234"
+
+        UrlUtils.resetForTesting()
+
+        val responseBody = "".toResponseBody("application/json".toMediaTypeOrNull())
+        val response = Response.error<ResponseBody>(503, responseBody)
+
+        coEvery { apiInterface.healthAccess(any()) } returns response
+
+        val result = repository.checkHealth()
+
+        coVerify { apiInterface.healthAccess(healthUrl) }
+        assertEquals(HealthCheckResult.Failed("Service temporarily unavailable"), result)
     }
 
     @Test
@@ -128,7 +223,7 @@ class ConfigurationsRepositoryImplTest {
 
         val callback = mockk<ConfigurationsRepository.CheckVersionCallback>(relaxed = true)
 
-        repository.checkVersion(callback, sharedPrefManager)
+        repository.checkVersion(callback)
 
         verify { callback.onError("Server URL not configured", true) }
     }
@@ -149,7 +244,7 @@ class ConfigurationsRepositoryImplTest {
             minapkcode = 1
             latestapkcode = 2
         }
-        val planetJson = JsonUtils.gson.toJson(myPlanet)
+        val planetJson = GsonUtils.gson.toJson(myPlanet)
 
         every { sharedPrefManager.getVersionDetail() } returns planetJson
         every { rawPrefs.getInt("cachedApkVersion", -1) } returns 2
@@ -178,7 +273,7 @@ class ConfigurationsRepositoryImplTest {
 
         val callback = mockk<ConfigurationsRepository.CheckVersionCallback>(relaxed = true)
 
-        repository.checkVersion(callback, sharedPrefManager)
+        repository.checkVersion(callback)
 
         // advance coroutine time for serviceScope
         testDispatcher.scheduler.advanceUntilIdle()
@@ -213,7 +308,7 @@ class ConfigurationsRepositoryImplTest {
         }
 
         val responsePlanet = retrofit2.Response.success(myPlanet)
-        val apkStringJson = JsonUtils.gson.toJson("v3")
+        val apkStringJson = GsonUtils.gson.toJson("v3")
         val responseApk = retrofit2.Response.success(apkStringJson.toResponseBody("application/json".toMediaTypeOrNull()))
 
         coEvery { apiInterface.checkVersion(any()) } returns responsePlanet
@@ -245,7 +340,7 @@ class ConfigurationsRepositoryImplTest {
 
         val callback = mockk<ConfigurationsRepository.CheckVersionCallback>(relaxed = true)
 
-        repository.checkVersion(callback, sharedPrefManager)
+        repository.checkVersion(callback)
 
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -402,6 +497,25 @@ class ConfigurationsRepositoryImplTest {
     }
 
     @Test
+    fun `checkServerAvailability does not probe alternative url when primary succeeds`() = runTest(testDispatcher) {
+        val updateUrl = "http://test.url"
+        every { sharedPrefManager.getServerUrl() } returns updateUrl
+
+        val mapping = ServerUrlMapper.UrlMapping("http://primary.url", "http://alt.url")
+        every { serverUrlMapper.processUrl(updateUrl) } returns mapping
+
+        val mockBody = "1,2,3,4,5,6,7,8".toResponseBody("text/plain".toMediaTypeOrNull())
+        val response = Response.success(200, mockBody)
+        coEvery { apiInterface.isPlanetAvailable("http://primary.url") } returns response
+
+        val result = repository.checkServerAvailability()
+
+        assertTrue(result)
+        coVerify(exactly = 0) { apiInterface.isPlanetAvailable("http://alt.url") }
+        verify(exactly = 0) { serverUrlMapper.updateUrlPreferences(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `checkServerAvailability falls back to alternative url when primary fails`() = runTest(testDispatcher) {
         val updateUrl = "http://test.url"
         every { sharedPrefManager.getServerUrl() } returns updateUrl
@@ -451,9 +565,8 @@ class ConfigurationsRepositoryImplTest {
         val response = Response.success(200, mockBody)
         coEvery { apiInterface.getChecksum(any()) } returns response
 
-        io.mockk.mockkObject(FileUtils)
         val mockFile = mockk<java.io.File>()
-        every { FileUtils.getSDPathFromUrl(context, path) } returns mockFile
+        every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
         every { mockFile.exists() } returns true
 
         io.mockk.mockkConstructor(Sha256Utils::class)
@@ -463,7 +576,6 @@ class ConfigurationsRepositoryImplTest {
 
         assertTrue(result)
 
-        io.mockk.unmockkObject(FileUtils)
         io.mockk.unmockkConstructor(Sha256Utils::class)
     }
 
@@ -484,9 +596,8 @@ class ConfigurationsRepositoryImplTest {
         val response = Response.success(200, mockBody)
         coEvery { apiInterface.getChecksum(any()) } returns response
 
-        io.mockk.mockkObject(FileUtils)
         val mockFile = mockk<java.io.File>()
-        every { FileUtils.getSDPathFromUrl(context, path) } returns mockFile
+        every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
         every { mockFile.exists() } returns true
 
         io.mockk.mockkConstructor(Sha256Utils::class)
@@ -496,7 +607,6 @@ class ConfigurationsRepositoryImplTest {
 
         assertFalse(result)
 
-        io.mockk.unmockkObject(FileUtils)
         io.mockk.unmockkConstructor(Sha256Utils::class)
     }
 
@@ -515,12 +625,10 @@ class ConfigurationsRepositoryImplTest {
         val response = Response.success(200, mockBody)
         coEvery { apiInterface.getChecksum(any()) } returns response
 
-        io.mockk.mockkStatic(android.util.Log::class)
         every { android.util.Log.w(any(), any<String>()) } returns 0
 
-        io.mockk.mockkObject(FileUtils)
         val mockFile = mockk<java.io.File>()
-        every { FileUtils.getSDPathFromUrl(context, path) } returns mockFile
+        every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
         every { mockFile.exists() } returns true
 
         io.mockk.mockkConstructor(Sha256Utils::class)
@@ -530,8 +638,6 @@ class ConfigurationsRepositoryImplTest {
 
         assertFalse(result)
 
-        io.mockk.unmockkStatic(android.util.Log::class)
-        io.mockk.unmockkObject(FileUtils)
         io.mockk.unmockkConstructor(Sha256Utils::class)
     }
 
@@ -551,16 +657,13 @@ class ConfigurationsRepositoryImplTest {
         val response = Response.success(200, mockBody)
         coEvery { apiInterface.getChecksum(any()) } returns response
 
-        io.mockk.mockkObject(FileUtils)
         val mockFile = mockk<java.io.File>()
-        every { FileUtils.getSDPathFromUrl(context, path) } returns mockFile
+        every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
         every { mockFile.exists() } returns false
 
         val result = repository.checkCheckSum(path)
 
         assertFalse(result)
-
-        io.mockk.unmockkObject(FileUtils)
     }
 
     @Test
@@ -593,8 +696,8 @@ class ConfigurationsRepositoryImplTest {
 
         // Mock checkConfigurationUrl response (versionsUrl)
         val versionsUrl = "$url/versions"
-        val versionsJson = JsonObject().apply {
-            add("minapk", JsonPrimitive("1.0.0"))
+        val versionsJson = kotlinx.serialization.json.buildJsonObject {
+            put("minapk", "1.0.0")
         }
         val versionsResponse = Response.success(200, versionsJson)
 
@@ -609,17 +712,17 @@ class ConfigurationsRepositoryImplTest {
         val couchdbURL = "http://satellite:1234@test.url:80"
         val configUrl = "http://satellite:1234@test.url:80/configurations/_all_docs?include_docs=true"
 
-        val docJson = JsonObject().apply {
-            add("code", JsonPrimitive("config_code"))
-            add("parentCode", JsonPrimitive("parent_code"))
+        val docJson = kotlinx.serialization.json.buildJsonObject {
+            put("code", "config_code")
+            put("parentCode", "parent_code")
         }
-        val rowJson = JsonObject().apply {
-            add("id", JsonPrimitive("config_id"))
-            add("doc", docJson)
+        val rowJson = kotlinx.serialization.json.buildJsonObject {
+            put("id", "config_id")
+            put("doc", docJson)
         }
-        val rowsArray = JsonArray().apply { add(rowJson) }
-        val configJson = JsonObject().apply {
-            add("rows", rowsArray)
+        val rowsArray = kotlinx.serialization.json.buildJsonArray { add(rowJson) }
+        val configJson = kotlinx.serialization.json.buildJsonObject {
+            put("rows", rowsArray)
         }
         val configResponse = Response.success(200, configJson)
 
@@ -668,8 +771,8 @@ class ConfigurationsRepositoryImplTest {
 
         // Mock checkConfigurationUrl response (versionsUrl)
         val versionsUrl = "$url/versions"
-        val versionsJson = JsonObject().apply {
-            add("minapk", JsonPrimitive("2.0.0"))
+        val versionsJson = kotlinx.serialization.json.buildJsonObject {
+            put("minapk", "2.0.0")
         }
         val versionsResponse = Response.success(200, versionsJson)
 
@@ -729,20 +832,15 @@ class ConfigurationsRepositoryImplTest {
         every { sharedPrefManager.getFirstRun() } returns true
         every { sharedPrefManager.setFirstRun(false) } just runs
 
-        mockkObject(FileUtils)
-        every { FileUtils.getOlePath(context) } returns oleDir.absolutePath
+        every { storagePathResolver.resolveOleDirectory() } returns oleDir
 
-        try {
-            repository.clearFirstRunStorageAndSetFlag(true)
+        repository.clearFirstRunStorageAndSetFlag(true)
 
-            assertFalse(looseFile.exists())
-            assertFalse(nestedFile.exists())
-            assertFalse(nested.exists())
-            assertTrue(oleDir.exists())
-            verify { sharedPrefManager.setFirstRun(false) }
-        } finally {
-            unmockkObject(FileUtils)
-        }
+        assertFalse(looseFile.exists())
+        assertFalse(nestedFile.exists())
+        assertFalse(nested.exists())
+        assertTrue(oleDir.exists())
+        verify { sharedPrefManager.setFirstRun(false) }
     }
 
     @Test
@@ -785,6 +883,22 @@ class ConfigurationsRepositoryImplTest {
     }
 
     @Test
+    fun `getCommunityConfiguration returns snapshot with all fields matching individual getters`() {
+        every { sharedPrefManager.getParentCode() } returns "parent_123"
+        every { sharedPrefManager.getCommunityName() } returns "community_abc"
+        every { sharedPrefManager.getRawString("planetType") } returns "planet_xyz"
+
+        val config = repository.getCommunityConfiguration()
+
+        assertEquals("parent_123", config.parentCode)
+        assertEquals("community_abc", config.communityName)
+        assertEquals("planet_xyz", config.planetType)
+        assertEquals(repository.getParentCode(), config.parentCode)
+        assertEquals(repository.getCommunityName(), config.communityName)
+        assertEquals(repository.getPlanetType(), config.planetType)
+    }
+
+    @Test
     fun `getParentCode delegates to sharedPrefManager`() {
         every { sharedPrefManager.getParentCode() } returns "parent_123"
 
@@ -801,11 +915,23 @@ class ConfigurationsRepositoryImplTest {
     }
 
     @Test
-    fun `getCommunityLeaders delegates to sharedPrefManager`() {
-        every { sharedPrefManager.getCommunityLeaders() } returns "leaders_json"
+    fun `getCommunityLeaders delegates to sharedPrefManager and UserEntity parseLeadersJson`() {
+        val leadersJson = "leaders_json"
+        val expectedLeaders = listOf(UserEntity(id = "leader_1", name = "Alice"))
 
-        assertEquals("leaders_json", repository.getCommunityLeaders())
-        verify { sharedPrefManager.getCommunityLeaders() }
+        every { sharedPrefManager.getCommunityLeaders() } returns leadersJson
+        mockkObject(UserEntity.Companion)
+        every { UserEntity.parseLeadersJson(leadersJson) } returns expectedLeaders
+
+        try {
+            val leaders = repository.getCommunityLeaders()
+            assertEquals(expectedLeaders, leaders)
+
+            verify { sharedPrefManager.getCommunityLeaders() }
+            verify { UserEntity.parseLeadersJson(leadersJson) }
+        } finally {
+            unmockkObject(UserEntity.Companion)
+        }
     }
 
     @Test
@@ -815,5 +941,63 @@ class ConfigurationsRepositoryImplTest {
         repository.clearPreferences()
 
         verify { sharedPrefManager.clearPreferences() }
+    }
+
+    @Test
+    fun `syncCommunityLeaders writes body JSON to setCommunityLeaders on success`() = runTest(testDispatcher) {
+        mockkObject(UrlUtils)
+        every { UrlUtils.header } returns "Basic header"
+        every { UrlUtils.getUrl() } returns "http://test.url"
+
+        val responseJson = kotlinx.serialization.json.buildJsonObject {
+            put("total_rows", 1)
+        }
+        coEvery { apiInterface.postDoc("Basic header", "application/json", "http://test.url/_users/_find", any()) } returns Response.success(responseJson)
+
+        repository.syncCommunityLeaders()
+
+        verify(exactly = 1) { sharedPrefManager.setCommunityLeaders("$responseJson") }
+
+        unmockkObject(UrlUtils)
+    }
+
+    @Test
+    fun `syncCommunityLeaders does not write when response is non-2xx`() = runTest(testDispatcher) {
+        mockkObject(UrlUtils)
+        every { UrlUtils.header } returns "Basic header"
+        every { UrlUtils.getUrl() } returns "http://test.url"
+
+        val errorResponseBody = "".toResponseBody("application/json".toMediaTypeOrNull())
+        coEvery { apiInterface.postDoc("Basic header", "application/json", "http://test.url/_users/_find", any()) } returns Response.error(500, errorResponseBody)
+
+        repository.syncCommunityLeaders()
+
+        verify(exactly = 0) { sharedPrefManager.setCommunityLeaders(any()) }
+
+        unmockkObject(UrlUtils)
+    }
+
+    @Test
+    fun `syncCommunityLeaders returns early and does not postDoc when header is blank`() = runTest(testDispatcher) {
+        mockkObject(UrlUtils)
+        every { UrlUtils.header } returns ""
+
+        repository.syncCommunityLeaders()
+
+        coVerify(exactly = 0) { apiInterface.postDoc(any(), any(), any(), any()) }
+
+        unmockkObject(UrlUtils)
+    }
+
+    @Test
+    fun `clearLocalAppData calls clearAllTables and then clearPreferences`() = runTest(testDispatcher) {
+        every { sharedPrefManager.clearPreferences() } just runs
+
+        repository.clearLocalAppData()
+
+        coVerifyOrder {
+            appDatabase.clearAllTables()
+            sharedPrefManager.clearPreferences()
+        }
     }
 }

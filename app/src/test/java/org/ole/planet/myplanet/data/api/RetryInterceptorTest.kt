@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.data.api
 
-import android.app.Application
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -17,16 +16,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
 import org.ole.planet.myplanet.services.BroadcastService
-import org.ole.planet.myplanet.utils.SystemTimeProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.TimeProvider
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
-@RunWith(RobolectricTestRunner::class)
-@Config(manifest = Config.NONE, application = Application::class)
 class RetryInterceptorTest {
     private lateinit var broadcastService: BroadcastService
     private lateinit var timeProvider: TimeProvider
@@ -214,25 +207,30 @@ class RetryInterceptorTest {
         every { chain.proceed(request) } returns errorResponse
         every { chain.call() } returns notCancelledCall()
 
-        val systemRetryInterceptor = RetryInterceptor(broadcastService, SystemTimeProvider())
-        systemRetryInterceptor.initialDelay = 2000L
-
-        val currentThread = Thread.currentThread()
-        val interrupterThread = Thread {
-            Thread.sleep(100)
-            currentThread.interrupt()
+        val interruptingTimeProvider = object : TimeProvider {
+            override fun now(): Long = 0L
+            override fun elapsedRealtime(): Long = 0L
+            override fun sleep(millis: Long) {
+                throw InterruptedException()
+            }
         }
-        interrupterThread.start()
+
+        val interceptor = RetryInterceptor(broadcastService, interruptingTimeProvider)
+        interceptor.initialDelay = 2000L
 
         try {
-            systemRetryInterceptor.intercept(chain)
+            interceptor.intercept(chain)
             fail("Expected IOException due to interruption")
         } catch (e: IOException) {
             assertEquals("Interrupted during retry delay", e.message)
-            // Thread.interrupted() returns true if the thread was interrupted,
-            // and clears the interrupted status so subsequent tests aren't affected.
+            assertTrue(e.cause is InterruptedException)
             assertTrue(Thread.interrupted())
+        } finally {
+            Thread.interrupted()
         }
+
+        verify(exactly = 1) { chain.proceed(request) }
+        verify(exactly = 1) { broadcastService.trySendBroadcast(any()) }
     }
 
     @Test

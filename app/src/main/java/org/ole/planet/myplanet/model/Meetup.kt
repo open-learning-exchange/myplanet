@@ -5,9 +5,25 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray as KJsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject as KJsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
 import org.json.JSONArray
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 /**
  * Room replacement for the former `Meetup` model. Meetups are both synced (pulled from
@@ -44,48 +60,51 @@ open class Meetup {
 
     companion object {
         /**
-         * Builds an unmanaged meetup from a CouchDB document. When [existingMeetup] is supplied its
-         * local-only fields (created date, recurring number, sync/source metadata) are preserved.
+         * Builds an unmanaged meetup from a CouchDB document. Created date, recurring number and
+         * sync/source metadata come from the document; [existingMeetup] only fills them in when the
+         * document lacks them, and carries over the local `updated` flag.
          */
         fun fromJson(meetupDoc: JsonObject, userId: String?, existingMeetup: Meetup?): Meetup {
+            val kDoc = meetupDoc.toKotlinx().jsonObject
             val meetup = Meetup()
-            meetup.id = JsonUtils.getString("_id", meetupDoc)
-            meetup.meetupId = JsonUtils.getString("_id", meetupDoc)
+            meetup.id = JsonUtils.getString("_id", kDoc)
+            meetup.meetupId = JsonUtils.getString("_id", kDoc)
             meetup.userId = userId
-            meetup.meetupIdRev = JsonUtils.getString("_rev", meetupDoc)
-            meetup.title = JsonUtils.getString("title", meetupDoc)
-            meetup.description = JsonUtils.getString("description", meetupDoc)
-            meetup.startDate = JsonUtils.getLong("startDate", meetupDoc)
-            meetup.endDate = JsonUtils.getLong("endDate", meetupDoc)
-            meetup.recurring = JsonUtils.getString("recurring", meetupDoc)
-            meetup.startTime = JsonUtils.getString("startTime", meetupDoc)
-            meetup.endTime = JsonUtils.getString("endTime", meetupDoc)
-            meetup.category = JsonUtils.getString("category", meetupDoc)
-            meetup.meetupLocation = JsonUtils.getString("meetupLocation", meetupDoc)
-            meetup.meetupLink = JsonUtils.getString("meetupLink", meetupDoc)
-            meetup.creator = JsonUtils.getString("createdBy", meetupDoc)
-            meetup.day = JsonUtils.getJsonArray("day", meetupDoc).toString()
-            meetup.link = JsonUtils.getJsonObject("link", meetupDoc).toString()
-            meetup.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("link", meetupDoc))
+            meetup.meetupIdRev = JsonUtils.getString("_rev", kDoc)
+            meetup.title = JsonUtils.getString("title", kDoc)
+            meetup.description = JsonUtils.getString("description", kDoc)
+            meetup.startDate = JsonUtils.getLong("startDate", kDoc)
+            meetup.endDate = JsonUtils.getLong("endDate", kDoc)
+            meetup.recurring = JsonUtils.getString("recurring", kDoc)
+            meetup.startTime = JsonUtils.getString("startTime", kDoc)
+            meetup.endTime = JsonUtils.getString("endTime", kDoc)
+            meetup.category = JsonUtils.getString("category", kDoc)
+            meetup.meetupLocation = JsonUtils.getString("meetupLocation", kDoc)
+            meetup.meetupLink = JsonUtils.getString("meetupLink", kDoc)
+            meetup.creator = JsonUtils.getString("createdBy", kDoc)
+            meetup.day = JsonUtils.getJsonArray("day", kDoc).toString()
+            val kLink = JsonUtils.getJsonObject("link", kDoc)
+            meetup.link = kLink.toString()
+            meetup.teamId = JsonUtils.getString("teams", kLink)
 
-            if (existingMeetup != null) {
-                meetup.createdDate = existingMeetup.createdDate
-                meetup.recurringNumber = existingMeetup.recurringNumber
-                meetup.sync = existingMeetup.sync
-                meetup.sourcePlanet = existingMeetup.sourcePlanet
-                meetup.updated = existingMeetup.updated
-            }
+            meetup.createdDate = JsonUtils.getLong("createdDate", kDoc)
+                .takeIf { it != 0L } ?: existingMeetup?.createdDate ?: 0L
+            meetup.recurringNumber = JsonUtils.getInt("recurringNumber", kDoc)
+                .takeIf { it > 0 } ?: existingMeetup?.recurringNumber ?: 10
+            meetup.sync = kDoc["sync"]?.takeIf { it !is JsonNull }
+                ?.let { if (it is JsonPrimitive) it.content else it.toString() } ?: existingMeetup?.sync
+            meetup.sourcePlanet = JsonUtils.getString("sourcePlanet", kDoc)
+                .ifEmpty { null } ?: existingMeetup?.sourcePlanet
+            meetup.updated = existingMeetup?.updated ?: false
 
             return meetup
         }
 
-        fun getMyMeetUpIds(meetups: List<Meetup>): JsonArray {
-            val ids = JsonArray()
+        fun getMyMeetUpIds(meetups: List<Meetup>): JsonArray = buildJsonArray {
             for (meetup in meetups) {
-                ids.add(meetup.meetupId)
+                add(meetup.meetupId)
             }
-            return ids
-        }
+        }.toGson()
 
         fun getHashMap(meetups: Meetup): HashMap<String, String> {
             val map = HashMap<String, String>()
@@ -121,32 +140,44 @@ open class Meetup {
         }
 
         fun serialize(meetup: Meetup): JsonObject {
-            val `object` = JsonObject()
-            if (!meetup.meetupId.isNullOrEmpty()) `object`.addProperty("_id", meetup.meetupId)
-            if (!meetup.meetupIdRev.isNullOrEmpty()) `object`.addProperty("_rev", meetup.meetupIdRev)
-            `object`.addProperty("title", meetup.title)
-            `object`.addProperty("description", meetup.description)
-            `object`.addProperty("startDate", meetup.startDate)
-            `object`.addProperty("endDate", meetup.endDate)
-            `object`.addProperty("startTime", meetup.startTime)
-            `object`.addProperty("endTime", meetup.endTime)
-            `object`.addProperty("recurring", meetup.recurring)
-            `object`.addProperty("meetupLocation", meetup.meetupLocation)
-            `object`.addProperty("meetupLink", meetup.meetupLink)
-            `object`.addProperty("createdBy", meetup.creator)
-            `object`.addProperty("teamId", meetup.teamId)
-            `object`.addProperty("category", meetup.category)
-            `object`.addProperty("createdDate", meetup.createdDate)
-            `object`.addProperty("recurringNumber", meetup.recurringNumber)
-            `object`.addProperty("sourcePlanet", meetup.sourcePlanet)
-            `object`.addProperty("sync", meetup.sync)
+            val linksJson = if (!meetup.link.isNullOrEmpty()) {
+                GsonUtils.gson.fromJson(meetup.link, JsonObject::class.java)
+            } else null
+            val `object` = buildJsonObject {
+                if (!meetup.meetupId.isNullOrEmpty()) put("_id", meetup.meetupId)
+                if (!meetup.meetupIdRev.isNullOrEmpty()) put("_rev", meetup.meetupIdRev)
+                put("title", meetup.title)
+                put("description", meetup.description)
+                put("startDate", meetup.startDate)
+                put("endDate", meetup.endDate)
+                put("startTime", meetup.startTime)
+                put("endTime", meetup.endTime)
+                put("recurring", meetup.recurring)
+                parseJson(meetup.day)?.let { if (it is KJsonArray) put("day", it) }
+                put("meetupLocation", meetup.meetupLocation)
+                put("meetupLink", meetup.meetupLink)
+                put("createdBy", meetup.creator)
+                put("teamId", meetup.teamId)
+                put("category", meetup.category)
+                put("createdDate", meetup.createdDate)
+                put("recurringNumber", meetup.recurringNumber)
+                put("sourcePlanet", meetup.sourcePlanet)
+                val sync = parseJson(meetup.sync)
+                if (sync is KJsonObject) put("sync", sync) else put("sync", meetup.sync)
+                if (!meetup.link.isNullOrEmpty()) put("link", linksJson?.toKotlinx() ?: JsonNull)
+            }.toGson()
 
-            if (!meetup.link.isNullOrEmpty()) {
-                val linksJson = JsonUtils.gson.fromJson(meetup.link, JsonObject::class.java)
-                `object`.add("link", linksJson)
-            }
-
+            `object`.addDocumentOrigin()
             return `object`
+        }
+
+        private fun parseJson(value: String?): JsonElement? {
+            if (value.isNullOrBlank()) return null
+            return try {
+                Json.parseToJsonElement(value)
+            } catch (e: SerializationException) {
+                null
+            }
         }
     }
 }

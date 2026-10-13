@@ -10,12 +10,10 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class NewsViewModel @Inject constructor(
-    private val resourcesRepository: ResourcesRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val resourcesRepository: ResourcesRepository
 ) : ViewModel() {
 
     private val _privateImageUrls = MutableSharedFlow<List<String>>(

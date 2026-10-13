@@ -2,9 +2,14 @@ package org.ole.planet.myplanet.ui.teams.members
 
 import android.view.View
 import android.widget.FrameLayout
+import androidx.appcompat.app.AppCompatActivity
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.mockk
+import io.mockk.spyk
+import io.mockk.verify
+import java.util.Locale
+import java.util.TimeZone
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -14,9 +19,6 @@ import org.ole.planet.myplanet.callback.OnMemberActionListener
 import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.teams.members.MembersAdapter.Companion.PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED
-import org.ole.planet.myplanet.utils.TimeUtils
-import java.util.Locale
-import java.util.TimeZone
 
 @RunWith(AndroidJUnit4::class)
 class MembersAdapterTest {
@@ -42,8 +44,8 @@ class MembersAdapterTest {
             name = "User 2"
         )
         val list = listOf(
-            JoinedMemberData(user1, 0, null, "", "", true),
-            JoinedMemberData(user2, 0, null, "", "", false)
+            JoinedMemberData(user1, 0, null, true),
+            JoinedMemberData(user2, 0, null, false)
         )
 
         var payloadEmitted: Any? = null
@@ -71,8 +73,8 @@ class MembersAdapterTest {
             name = "User 2"
         )
         val multiList = listOf(
-            JoinedMemberData(user1, 0, null, "", "", true), // Logged in user
-            JoinedMemberData(user2, 0, null, "", "", false)
+            JoinedMemberData(user1, 0, null, true), // Logged in user
+            JoinedMemberData(user2, 0, null, false)
         )
 
         adapter.submitList(multiList) {
@@ -105,8 +107,8 @@ class MembersAdapterTest {
             name = "User 2"
         )
         val multiList = listOf(
-            JoinedMemberData(user1, 0, null, "", "", true),
-            JoinedMemberData(user2, 0, null, "", "", false)
+            JoinedMemberData(user1, 0, null, true),
+            JoinedMemberData(user2, 0, null, false)
         )
 
         adapter.submitList(multiList) {
@@ -135,7 +137,7 @@ class MembersAdapterTest {
             name = "Alice Example"
         )
         val list = listOf(
-            JoinedMemberData(user, 0, null, "", "", true)
+            JoinedMemberData(user, 0, null, true)
         )
 
         adapter.submitList(list) {
@@ -155,7 +157,7 @@ class MembersAdapterTest {
             name = null
         )
         val list = listOf(
-            JoinedMemberData(user, 0, null, "", "", true)
+            JoinedMemberData(user, 0, null, true)
         )
 
         adapter.submitList(list) {
@@ -175,7 +177,7 @@ class MembersAdapterTest {
             name = "User 1"
         )
         val list = listOf(
-            JoinedMemberData(user1, 0, null, "", "", true)
+            JoinedMemberData(user1, 0, null, true)
         )
 
         adapter.submitList(list) {
@@ -209,7 +211,7 @@ class MembersAdapterTest {
             // March 11, 2024, 00:00:00 UTC -> "11 Mar 2024" in the short (dd MMM yyyy) format
             val timestamp = 1710115200000L
             val list = listOf(
-                JoinedMemberData(user1, 0, timestamp, "", "", false)
+                JoinedMemberData(user1, 0, timestamp, false)
             )
 
             adapter.submitList(list) {
@@ -235,7 +237,7 @@ class MembersAdapterTest {
             name = "User 1"
         )
         val list = listOf(
-            JoinedMemberData(user1, 0, null, "", "", false)
+            JoinedMemberData(user1, 0, null, false)
         )
 
         adapter.submitList(list) {
@@ -249,5 +251,70 @@ class MembersAdapterTest {
                 .getString(org.ole.planet.myplanet.R.string.no_visit)
             assertTrue(viewHolder.binding.tvLastVisit.text.toString().contains(expected))
         }
+    }
+
+    @Test
+    fun testOnBindViewHolder_hoistedStringsResolvedOnceAcrossMultipleBinds() {
+        val spyContext = spyk(ApplicationProvider.getApplicationContext<android.content.Context>())
+        val spyAdapter = MembersAdapter(spyContext, currentUserId, actionListener)
+
+        val leaderUser = UserEntity(id = "user1", name = "Leader")
+        val memberUser = UserEntity(id = "user2", name = "Member")
+        val list = listOf(
+            JoinedMemberData(leaderUser, 0, null, isLeader = true),
+            JoinedMemberData(memberUser, 0, null, isLeader = false)
+        )
+
+        spyAdapter.submitList(list) {
+            val parent = FrameLayout(spyContext)
+            val vh0 = spyAdapter.onCreateViewHolder(parent, 0)
+            val vh1 = spyAdapter.onCreateViewHolder(parent, 0)
+
+            spyAdapter.onBindViewHolder(vh0, 0)
+            spyAdapter.onBindViewHolder(vh1, 1)
+
+            verify(exactly = 1) { spyContext.getString(org.ole.planet.myplanet.R.string.team_leader) }
+            verify(exactly = 1) { spyContext.getString(org.ole.planet.myplanet.R.string.no_visit) }
+        }
+    }
+
+    @Test
+    fun removeFromMenu_afterEarlierRowRemoved_actsOnTheMemberShownInThatRow() {
+        val activity = org.robolectric.Robolectric.buildActivity(AppCompatActivity::class.java).setup().get()
+        val leaderAdapter = MembersAdapter(activity, currentUserId, actionListener)
+        val recyclerView = androidx.recyclerview.widget.RecyclerView(activity).apply {
+            layoutManager = androidx.recyclerview.widget.LinearLayoutManager(activity)
+            adapter = leaderAdapter
+        }
+        activity.setContentView(recyclerView)
+        val me = JoinedMemberData(UserEntity(id = "user1", name = "Me"), 0, null, true)
+        val bob = JoinedMemberData(UserEntity(id = "bob", name = "Bob"), 0, null, false)
+        val carol = JoinedMemberData(UserEntity(id = "carol", name = "Carol"), 0, null, false)
+
+        fun submitAndLayout(list: List<JoinedMemberData>) {
+            var done = false
+            leaderAdapter.updateData(list, true)
+            leaderAdapter.submitList(list) { done = true }
+            while (!done) org.robolectric.shadows.ShadowLooper.idleMainLooper()
+            recyclerView.measure(
+                View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY)
+            )
+            recyclerView.layout(0, 0, 1080, 1920)
+            org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        }
+
+        submitAndLayout(listOf(me, bob, carol))
+        val carolRow = recyclerView.findViewHolderForAdapterPosition(2) as MembersAdapter.MembersViewHolder
+
+        // Bob is removed; Carol's row moves up to position 1 without being rebound
+        submitAndLayout(listOf(me, carol))
+        assertEquals(1, carolRow.bindingAdapterPosition)
+
+        carolRow.binding.icMore.performClick()
+        val dialog = org.robolectric.shadows.ShadowDialog.getLatestDialog() as androidx.appcompat.app.AlertDialog
+        dialog.listView.performItemClick(null, 0, 0)
+
+        verify { actionListener.onRemoveMember(carol, 1) }
     }
 }

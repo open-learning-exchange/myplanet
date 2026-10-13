@@ -87,4 +87,39 @@ class ApiClientTest {
         assertTrue(result is NetworkResult.Exception)
         assertTrue((result as NetworkResult.Exception).exception is IOException)
     }
+
+    @Test
+    fun `executeWithRetryAndWrap returns a 404 after 1 call`() = runTest {
+        var calls = 0
+        val result = ApiClient.executeWithRetryAndWrap {
+            calls++
+            httpError(404, "not found")
+        }
+        assertEquals(1, calls)
+        assertEquals(404, result?.code())
+    }
+
+    @Test
+    fun `executeWithResult maps a 401 to NetworkResult Error(401, body) after 1 call`() = runTest {
+        var calls = 0
+        val result = ApiClient.executeWithResult {
+            calls++
+            httpError(401, "unauthorized")
+        }
+        assertEquals(1, calls)
+        assertTrue(result is NetworkResult.Error)
+        assertEquals(401, (result as NetworkResult.Error).code)
+        assertEquals("unauthorized", result.message)
+    }
+
+    @Test
+    fun `executeWithRetryAndWrap retries a null response, then succeeds (2 calls)`() = runTest {
+        var calls = 0
+        val result = ApiClient.executeWithRetryAndWrap {
+            calls++
+            if (calls < 2) null else success("ok")
+        }
+        assertEquals(2, calls)
+        assertTrue(result?.isSuccessful == true)
+    }
 }

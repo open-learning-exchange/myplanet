@@ -5,12 +5,12 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.ui.components.MarkdownDialogFragment
 import org.ole.planet.myplanet.ui.dashboard.ChallengeDialogData
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
+import org.ole.planet.myplanet.utils.calculateCommunityProgress
+import org.ole.planet.myplanet.utils.calculateIndividualProgress
 
 class ChallengePrompter(
     private val activity: DashboardActivity,
-    private val sharedPrefManager: SharedPrefManager,
-    private val viewModel: DashboardViewModel
+    private val sharedPrefManager: SharedPrefManager
 ) {
     private val fragmentManager: FragmentManager
         get() = activity.supportFragmentManager
@@ -38,8 +38,8 @@ class ChallengePrompter(
         if (isCompleted && !hasShownCongrats) {
             sharedPrefManager.setHasShownCongrats(true)
             val markdownContent = """
-            ${activity.getString(R.string.community_earnings, viewModel.calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey))}
-            ${activity.getString(R.string.your_earnings, viewModel.calculateIndividualProgress(voiceCount, hasUnfinishedSurvey))}
+            ${activity.getString(R.string.community_earnings, calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey))}
+            ${activity.getString(R.string.your_earnings, calculateIndividualProgress(voiceCount, hasUnfinishedSurvey))}
             ### ${activity.getString(R.string.congratulations)} <br/>
         """.trimIndent()
             MarkdownDialogFragment.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
@@ -52,8 +52,8 @@ class ChallengePrompter(
                 ""
             }
             val markdownContent = """
-            ${activity.getString(R.string.community_earnings, viewModel.calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey))}
-            ${activity.getString(R.string.your_earnings, viewModel.calculateIndividualProgress(voiceCount, hasUnfinishedSurvey))}
+            ${activity.getString(R.string.community_earnings, calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey))}
+            ${activity.getString(R.string.your_earnings, calculateIndividualProgress(voiceCount, hasUnfinishedSurvey))}
             ### ${activity.getString(R.string.per_survey, courseTaskDone)} <br/>
             ### ${activity.getString(R.string.share_opinion)} $voicesText <br/>
             ### ${activity.getString(R.string.remember_sync)} <br/>

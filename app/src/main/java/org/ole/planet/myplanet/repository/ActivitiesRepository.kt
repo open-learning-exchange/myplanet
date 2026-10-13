@@ -8,8 +8,20 @@ import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.UserEntity
 
+data class ProfileActivityStats(
+    val mostOpenedResource: Pair<String, Int>?,
+    val lastVisit: Long?,
+    val resourceOpenCount: Long
+)
+
+data class MemberVisitStats(
+    val offlineVisitCount: Int,
+    val lastVisit: Long?
+)
+
 interface ActivitiesRepository {
     suspend fun getOfflineVisitCount(userId: String): Int
+    suspend fun getMemberVisitStats(userId: String?, userName: String?): MemberVisitStats
     suspend fun getOfflineLoginCount(userName: String): Int
     fun getOfflineLogins(userName: String): Flow<List<OfflineActivity>>
     suspend fun markResourceAdded(userId: String?, resourceId: String)
@@ -19,9 +31,10 @@ interface ActivitiesRepository {
     suspend fun logLogout(userName: String?)
     suspend fun getGlobalLastVisit(): Long?
     suspend fun getLastVisit(userName: String): Long?
+    suspend fun getLastVisits(userNames: List<String>): Map<String, Long>
+    suspend fun getOfflineVisitCounts(userIds: List<String>): Map<String, Int>
     suspend fun logResourceOpen(userName: String?, parentCode: String?, planetCode: String?, title: String?, resourceId: String?, type: String?)
-    suspend fun getResourceOpenCount(userName: String, type: String): Long
-    suspend fun getMostOpenedResource(userName: String, type: String): Pair<String, Int>?
+    suspend fun getProfileActivityStats(userName: String): ProfileActivityStats
     suspend fun recordSyncActivity(userId: String)
     suspend fun recordSyncUserChallengeAction(userId: String)
     suspend fun hasUserSyncAction(userId: String?): Boolean

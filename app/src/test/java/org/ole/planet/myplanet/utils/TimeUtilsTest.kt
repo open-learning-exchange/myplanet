@@ -111,9 +111,9 @@ class TimeUtilsTest {
     fun testGetFormattedDateWithTime() {
         val timestamp = 1710115200000L
         val formatted = TimeUtils.getFormattedDateWithTime(timestamp)
-        // With UTC timezone default, it should be Mon 11, March 2024 , 12:00 AM
+        // With UTC timezone default, it should be Mon 11, March 2024, 12:00 AM
         // Note: Java 8 DateTimeFormatter with 'EEE' produces 'Mon'
-        assertEquals("Mon 11, March 2024 , 12:00 AM", formatted)
+        assertEquals("Mon 11, March 2024, 12:00 AM", formatted)
     }
 
     @Test

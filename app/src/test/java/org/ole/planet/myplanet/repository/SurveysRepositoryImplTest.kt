@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
@@ -26,6 +27,7 @@ import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -160,17 +162,16 @@ class SurveysRepositoryImplTest {
     }
 
     @Test
-    fun `getIndividualSurveys filters surveys without team and not shareable`() = runTest {
-        coEvery { examDao.getByType("surveys") } returns listOf(
-            StepExam(id = "survey1", isTeamShareAllowed = false, teamId = null), // Included
-            StepExam(id = "survey2", isTeamShareAllowed = true, teamId = null), // Excluded (shareable)
-            StepExam(id = "survey3", isTeamShareAllowed = false, teamId = "team1"), // Excluded (has teamId)
-            StepExam(id = "survey4", isTeamShareAllowed = false, teamId = "") // Included (empty teamId)
+    fun `getIndividualSurveys delegates to examDao`() = runTest {
+        val expected = listOf(
+            StepExam(id = "survey1", isTeamShareAllowed = false, teamId = null),
+            StepExam(id = "survey4", isTeamShareAllowed = false, teamId = "")
         )
+        coEvery { examDao.getIndividualSurveys() } returns expected
 
         val result = repository.getIndividualSurveys()
 
-        assertEquals(listOf("survey1", "survey4"), result.map { it.id })
+        assertEquals(expected, result)
     }
 
     @Test
@@ -338,6 +339,33 @@ class SurveysRepositoryImplTest {
 
         // Only 2 surveys were requested
         assertEquals(2, result.size)
+    }
+
+    @Test
+    fun `markExamsUploaded with empty succeeded list returns empty list`() = runTest {
+        val failed = repository.markExamsUploaded(emptyList())
+
+        assertEquals(emptyList<UploadedItemResult>(), failed)
+        coVerify(exactly = 0) { examDao.getByIds(any()) }
+    }
+
+    @Test
+    fun `markExamsUploaded updates exams and returns missing exams as failures`() = runTest {
+        val existingExam = StepExam(id = "exam-1")
+        coEvery { examDao.getByIds(listOf("exam-1", "exam-missing")) } returns listOf(existingExam)
+
+        val result1 = UploadedItemResult("exam-1", "remote-1", "rev-1", com.google.gson.JsonObject())
+        val result2 = UploadedItemResult("exam-missing", "remote-2", "rev-2", com.google.gson.JsonObject())
+
+        val failed = repository.markExamsUploaded(listOf(result1, result2))
+
+        // Only "exam-missing" should fail
+        assertEquals(1, failed.size)
+        assertEquals("exam-missing", failed.first().localId)
+
+        // examDao.upsertAll should be called with existingExam whose _rev has been updated to "rev-1"
+        assertEquals("rev-1", existingExam._rev)
+        coVerify { examDao.upsertAll(listOf(existingExam)) }
     }
 
 }

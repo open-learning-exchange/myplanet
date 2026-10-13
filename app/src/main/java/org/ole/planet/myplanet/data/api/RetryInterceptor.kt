@@ -60,7 +60,7 @@ class RetryInterceptor @Inject constructor(
             val delay = (initialDelay * factor.pow(tryCount - 1)).toLong()
 
             val intent = Intent(Constants.ACTION_RETRY_EVENT).apply {
-                putExtra("url", request.url.toString())
+                putExtra("url", request.url.encodedPath)
                 putExtra("attempt", tryCount)
                 putExtra("delay", delay)
             }

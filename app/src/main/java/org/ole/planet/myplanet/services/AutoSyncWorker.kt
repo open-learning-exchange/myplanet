@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services
 
-import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.util.Log
@@ -24,12 +23,12 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepository.CheckVersionCallback
 import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.services.upload.AutoSyncUploadRunner
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.Utilities
 
 @HiltWorker
 class AutoSyncWorker @AssistedInject constructor(
@@ -41,7 +40,8 @@ class AutoSyncWorker @AssistedInject constructor(
     private val uploadToShelfService: UploadToShelfService,
     private val configurationsRepository: ConfigurationsRepository,
     private val dispatcherProvider: DispatcherProvider,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val autoSyncUploadRunner: AutoSyncUploadRunner
 ) : CoroutineWorker(context, workerParams), OnSyncListener, CheckVersionCallback, OnSuccessListener {
 
     private lateinit var workerScope: CoroutineScope
@@ -59,14 +59,9 @@ class AutoSyncWorker @AssistedInject constructor(
             if (!serverReachable) {
                 return@coroutineScope Result.success()
             }
-            if (isAppInForeground(context)) {
-                withContext(dispatcherProvider.main) {
-                    Utilities.toast(context, "Syncing started...")
-                }
-            }
             suspendCancellableCoroutine { continuation ->
                 syncContinuation = continuation
-                configurationsRepository.checkVersion(this@AutoSyncWorker, sharedPrefManager)
+                configurationsRepository.checkVersion(this@AutoSyncWorker)
             }
         }
         return@coroutineScope Result.success()
@@ -90,7 +85,7 @@ class AutoSyncWorker @AssistedInject constructor(
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
         workerScope.launch(dispatcherProvider.main) {
-            startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null, workerScope, configurationsRepository)
+            startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null, workerScope, configurationsRepository::checkCheckSum)
         }
         syncContinuation?.takeIf { it.isActive }?.resume(Unit)
         syncContinuation = null
@@ -118,24 +113,14 @@ class AutoSyncWorker @AssistedInject constructor(
             }
             if (MainApplication.isSyncRunning.compareAndSet(false, true)) {
                 try {
-                    uploadManager.uploadExamResult(this@AutoSyncWorker)
-                    uploadManager.uploadFeedback()
-                    uploadManager.uploadAchievement()
-                    uploadManager.uploadResourceActivities("")
-                    uploadManager.uploadUserActivities(this@AutoSyncWorker)
-                    uploadManager.uploadCourseActivities()
-                    uploadManager.uploadSearchActivity()
-                    uploadManager.uploadRating()
-                    uploadManager.uploadResource(this@AutoSyncWorker)
-                    uploadManager.uploadNews()
-                    uploadManager.uploadTeams()
-                    uploadManager.uploadTeamTask()
-                    uploadManager.uploadMeetups()
-                    uploadManager.uploadAdoptedSurveys()
-                    uploadManager.uploadCrashLog()
-                    uploadManager.uploadSubmissions()
-                    uploadManager.uploadActivities(null)
-                    sharedPrefManager.setLastSync(timeProvider.now())
+                    val failure = autoSyncUploadRunner.runAll(this@AutoSyncWorker)
+                    if (failure == null) {
+                        sharedPrefManager.setLastSync(timeProvider.now())
+                    } else {
+                        withContext(dispatcherProvider.main) {
+                            onSyncFailed(failure.message)
+                        }
+                    }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -154,14 +139,5 @@ class AutoSyncWorker @AssistedInject constructor(
 
     override fun onSuccess(success: String?) {
         sharedPrefManager.setLastUsageUploaded(timeProvider.now())
-    }
-
-    private fun isAppInForeground(context: Context): Boolean {
-        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        val runningProcesses = activityManager.runningAppProcesses ?: return false
-        return runningProcesses.any {
-            it.processName == context.packageName &&
-                it.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-        }
     }
 }

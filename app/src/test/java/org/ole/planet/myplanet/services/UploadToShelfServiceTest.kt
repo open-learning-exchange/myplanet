@@ -9,8 +9,11 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -20,7 +23,6 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -81,15 +83,20 @@ class UploadToShelfServiceTest {
     }
 
     @Test
-    fun `uploadUserData does nothing when no pending users`() = runTest(testDispatcher) {
+    fun `uploadUserData still uploads shelves and notifies when no pending users`() = runTest(testDispatcher) {
+        val syncedUser = mockk<UserEntity>(relaxed = true)
         coEvery { userRepository.getPendingSyncUsers(100) } returns emptyList()
+        coEvery { userRepository.getSyncedUsers() } returns listOf(syncedUser)
+        coEvery { userSyncRepository.uploadAllSyncedUsersToShelf(listOf(syncedUser)) } returns Result.success(Unit)
         val listener = mockk<OnSuccessListener>(relaxed = true)
 
         service.uploadUserData(listener)
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { userRepository.getPendingSyncUsers(100) }
         verify(exactly = 0) { SecurePrefs.getPassword(any(), any()) }
+        coVerify(exactly = 0) { userSyncRepository.checkAndUploadUser(any(), any(), any()) }
+        coVerify(exactly = 1) { userSyncRepository.uploadAllSyncedUsersToShelf(listOf(syncedUser)) }
+        verify(exactly = 1) { listener.onSuccess("Sync with server completed successfully") }
     }
 
     @Test
@@ -157,19 +164,12 @@ class UploadToShelfServiceTest {
 
     @Test
     fun `uploadHealth uploads and marks health records`() = runTest(testDispatcher) {
-        val healthRecords = mockk<List<HealthExamination>>(relaxed = true)
-        val uploadedRecords = mockk<Map<String, String?>>(relaxed = true)
-
-        coEvery { healthRepository.getUpdatedHealthExaminations() } returns healthRecords
-        coEvery { healthRepository.uploadHealthData(healthRecords) } returns uploadedRecords
-        coEvery { healthRepository.markHealthExaminationsUploaded(uploadedRecords) } returns Unit
+        coEvery { healthRepository.syncPendingHealthExaminations() } returns Unit
 
         service.uploadHealth()
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { healthRepository.getUpdatedHealthExaminations() }
-        coVerify(exactly = 1) { healthRepository.uploadHealthData(healthRecords) }
-        coVerify(exactly = 1) { healthRepository.markHealthExaminationsUploaded(uploadedRecords) }
+        coVerify(exactly = 1) { healthRepository.syncPendingHealthExaminations() }
     }
 
     @Test
@@ -179,31 +179,25 @@ class UploadToShelfServiceTest {
         service.uploadSingleUserHealth(null, listener)
         advanceUntilIdle()
 
-        coVerify(exactly = 0) { healthRepository.getUpdatedHealthForUser(any()) }
+        coVerify(exactly = 0) { healthRepository.syncPendingHealthExaminationsForUser(any()) }
 
         service.uploadSingleUserHealth("", listener)
         advanceUntilIdle()
 
-        coVerify(exactly = 0) { healthRepository.getUpdatedHealthForUser(any()) }
+        coVerify(exactly = 0) { healthRepository.syncPendingHealthExaminationsForUser(any()) }
     }
 
     @Test
     fun `uploadSingleUserHealth uploads data for specific user`() = runTest(testDispatcher) {
         val userId = "user123"
         val listener = mockk<OnSuccessListener>(relaxed = true)
-        val healthRecords = mockk<List<HealthExamination>>(relaxed = true)
-        val uploadedRecords = mockk<Map<String, String?>>(relaxed = true)
 
-        coEvery { healthRepository.getUpdatedHealthForUser(userId) } returns healthRecords
-        coEvery { healthRepository.uploadHealthData(healthRecords) } returns uploadedRecords
-        coEvery { healthRepository.markHealthExaminationsUploaded(uploadedRecords) } returns Unit
+        coEvery { healthRepository.syncPendingHealthExaminationsForUser(userId) } returns Unit
 
         service.uploadSingleUserHealth(userId, listener)
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { healthRepository.getUpdatedHealthForUser(userId) }
-        coVerify(exactly = 1) { healthRepository.uploadHealthData(healthRecords) }
-        coVerify(exactly = 1) { healthRepository.markHealthExaminationsUploaded(uploadedRecords) }
+        coVerify(exactly = 1) { healthRepository.syncPendingHealthExaminationsForUser(userId) }
         verify(exactly = 1) { listener.onSuccess("Health data for user $userId uploaded successfully") }
     }
 
@@ -212,7 +206,7 @@ class UploadToShelfServiceTest {
         val userId = "user123"
         val listener = mockk<OnSuccessListener>(relaxed = true)
 
-        coEvery { healthRepository.getUpdatedHealthForUser(userId) } throws RuntimeException("Health error")
+        coEvery { healthRepository.syncPendingHealthExaminationsForUser(userId) } throws RuntimeException("Health error")
 
         service.uploadSingleUserHealth(userId, listener)
         advanceUntilIdle()
@@ -275,5 +269,76 @@ class UploadToShelfServiceTest {
 
         coVerify(exactly = 1) { userSyncRepository.uploadAllSyncedUsersToShelf(unmanagedUsers) }
         verify(exactly = 1) { listener.onSuccess("Unable to update documents: $errorMsg") }
+    }
+
+    @Test
+    fun `uploadUserData rethrows CancellationException and does not notify listener`() = runTest(testDispatcher) {
+        val cancellation = CancellationException("User data sync cancelled")
+        coEvery { userRepository.getPendingSyncUsers(100) } coAnswers {
+            delay(1)
+            throw cancellation
+        }
+        val listener = mockk<OnSuccessListener>(relaxed = true)
+
+        service.uploadUserData(listener)
+        val launchedJob = appScope.coroutineContext[Job]?.children?.lastOrNull()
+        advanceUntilIdle()
+
+        verify(exactly = 0) { listener.onSuccess(any()) }
+        assert(launchedJob?.isCancelled == true)
+    }
+
+    @Test
+    fun `uploadSingleUserData rethrows CancellationException and does not notify listener`() = runTest(testDispatcher) {
+        val userName = "testUser"
+        val user = mockk<UserEntity>(relaxed = true)
+        val cancellation = CancellationException("Single user sync cancelled")
+        coEvery { userRepository.getUserByName(userName) } returns user
+        coEvery { userRepository.getSyncedUserByName(userName) } returns user
+        coEvery { userSyncRepository.uploadShelfData(user) } coAnswers {
+            delay(1)
+            throw cancellation
+        }
+        val listener = mockk<OnSuccessListener>(relaxed = true)
+
+        service.uploadSingleUserData(userName, listener)
+        val launchedJob = appScope.coroutineContext[Job]?.children?.lastOrNull()
+        advanceUntilIdle()
+
+        verify(exactly = 0) { listener.onSuccess(any()) }
+        assert(launchedJob?.isCancelled == true)
+    }
+
+    @Test
+    fun `uploadSingleUserData notifies listener on ordinary failure`() = runTest(testDispatcher) {
+        val userName = "testUser"
+        val user = mockk<UserEntity>(relaxed = true)
+        coEvery { userRepository.getUserByName(userName) } returns user
+        coEvery { userRepository.getSyncedUserByName(userName) } returns user
+        coEvery { userSyncRepository.uploadShelfData(user) } throws RuntimeException("Shelf write error")
+        val listener = mockk<OnSuccessListener>(relaxed = true)
+
+        service.uploadSingleUserData(userName, listener)
+        advanceUntilIdle()
+
+        verify(exactly = 1) { listener.onSuccess("Unable to update document: Shelf write error") }
+    }
+
+    @Test
+    fun `uploadSingleUserHealth rethrows CancellationException and does not notify listener`() = runTest(testDispatcher) {
+        val userId = "user123"
+        val cancellation = CancellationException("Health sync cancelled")
+        coEvery { healthRepository.syncPendingHealthExaminationsForUser(userId) } coAnswers {
+            delay(1)
+            throw cancellation
+        }
+        val listener = mockk<OnSuccessListener>(relaxed = true)
+
+        service.uploadSingleUserHealth(userId, listener)
+        val launchedJob = appScope.coroutineContext[Job]?.children?.lastOrNull()
+        advanceUntilIdle()
+
+        verify(exactly = 0) { listener.onSuccess(any()) }
+        assert(launchedJob?.isCancelled == true)
     }
 }

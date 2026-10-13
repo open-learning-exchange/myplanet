@@ -6,11 +6,13 @@ import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.CourseProgress
 import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.CoursesProgressRow
 
 interface ProgressRepository {
     suspend fun getCourseProgress(courseIds: List<String>, userId: String?): Map<String, CourseProgressState>
     suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int
     suspend fun fetchCourseData(userId: String?): JsonArray
+    suspend fun getCourseProgressRows(userId: String?): List<CoursesProgressRow>
     suspend fun getProgressRecords(userId: String?): List<CourseProgress>
     suspend fun getCompletedCourses(userId: String): List<CourseCompletion>
     suspend fun saveCourseProgress(

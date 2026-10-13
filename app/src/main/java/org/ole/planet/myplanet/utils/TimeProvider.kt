@@ -8,8 +8,12 @@ package org.ole.planet.myplanet.utils
  * elapsed durations within a single process, use android.os.SystemClock.elapsedRealtime()
  * directly instead — it is monotonic and immune to wall-clock jumps.
  */
+
+import android.os.SystemClock
+
 interface TimeProvider {
     fun now(): Long
+    fun elapsedRealtime(): Long
     fun sleep(millis: Long) {
         Thread.sleep(millis)
     }
@@ -17,7 +21,5 @@ interface TimeProvider {
 
 class SystemTimeProvider : TimeProvider {
     override fun now(): Long = System.currentTimeMillis()
-    override fun sleep(millis: Long) {
-        Thread.sleep(millis)
-    }
+    override fun elapsedRealtime(): Long = SystemClock.elapsedRealtime()
 }

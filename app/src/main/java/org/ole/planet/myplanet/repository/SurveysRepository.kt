@@ -37,6 +37,7 @@ interface SurveysRepository {
     suspend fun getLastSurveyDialogShown(): Long
     suspend fun isReminderScheduled(surveyIds: String): Boolean
     suspend fun getPendingAdoptedSurveys(): List<StepExam>
+    suspend fun markExamsUploaded(results: List<UploadedItemResult>): List<UploadedItemResult>
     suspend fun fetchPublicSurvey(baseUrl: String, teamId: String, surveyId: String): JsonObject?
     suspend fun saveSurveyFromPublicApi(surveyDoc: JsonObject)
     suspend fun submitPublicSurvey(baseUrl: String, teamId: String, surveyId: String, answers: JsonArray, respondent: JsonObject? = null): Boolean

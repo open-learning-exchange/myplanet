@@ -44,6 +44,35 @@ class ExamAnswerUtilsTest {
     }
 
     @Test
+    fun testCheckMultipleSelectAnswer_SizeMismatchAndSemantics() {
+        val question = createQuestion("selectMultiple", listOf("Alpha", "Beta"))
+
+        // Size mismatch returns false without checking content
+        val sizeMismatchDiffContent = mapOf("0" to "X", "1" to "Y", "2" to "Z")
+        assertFalse(ExamAnswerUtils.checkCorrectAnswer("", sizeMismatchDiffContent, question))
+
+        // Equal-size correct match returns true
+        val correctMatch = mapOf("0" to "Alpha", "1" to "Beta")
+        assertTrue(ExamAnswerUtils.checkCorrectAnswer("", correctMatch, question))
+
+        val correctMatchReordered = mapOf("0" to "Beta", "1" to "Alpha")
+        assertTrue(ExamAnswerUtils.checkCorrectAnswer("", correctMatchReordered, question))
+
+        // Same-size set of answers differing only in case still matches
+        val caseMatch = mapOf("0" to "aLpHa", "1" to "bEtA")
+        assertTrue(ExamAnswerUtils.checkCorrectAnswer("", caseMatch, question))
+
+        // Duplicate values assert duplicate semantics are preserved
+        val dupQuestion = createQuestion("selectMultiple", listOf("A", "A", "B"))
+        val matchingDup = mapOf("0" to "A", "1" to "B", "2" to "A")
+        assertTrue(ExamAnswerUtils.checkCorrectAnswer("", matchingDup, dupQuestion))
+
+        // Same size (3 items), same set of unique elements ("A", "B"), but different duplicate counts
+        val differingDupCounts = mapOf("0" to "A", "1" to "B", "2" to "B")
+        assertFalse(ExamAnswerUtils.checkCorrectAnswer("", differingDupCounts, dupQuestion))
+    }
+
+    @Test
     fun testCheckCorrectAnswer_InputText() {
         val question = createQuestion("input", listOf("expected word"))
 

@@ -1,24 +1,19 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import com.google.gson.JsonArray
-import dagger.hilt.android.qualifiers.ApplicationContext
-import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
-import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
-import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.JsonUtils
 
 class DictionaryRepositoryImpl @Inject constructor(
     private val dictionaryDao: DictionaryDao,
     private val dispatcherProvider: DispatcherProvider,
-    @ApplicationContext private val context: Context
+    private val dictionaryFileReader: DictionaryFileReader
 ) : DictionaryRepository {
 
     private val seedMutex = Mutex()
@@ -27,13 +22,20 @@ class DictionaryRepositoryImpl @Inject constructor(
         return dictionaryDao.count()
     }
 
-    override suspend fun findByWord(word: String): DictionaryEntity? {
-        return dictionaryDao.findByWord(word)
+    override suspend fun findByWord(word: String): DictionaryWord? {
+        val entity = dictionaryDao.findByWord(word) ?: return null
+        return DictionaryWord(
+            word = entity.word,
+            meaning = entity.meaning,
+            definition = entity.definition,
+            synonym = entity.synonym,
+            antonym = entity.antonym
+        )
     }
 
     override suspend fun insertDictionaryData(): DictionaryLoad {
         return withContext(dispatcherProvider.io) {
-            if (!FileUtils.checkFileExist(context, Constants.DICTIONARY_URL)) {
+            if (!dictionaryFileReader.exists()) {
                 return@withContext DictionaryLoad.FileMissing
             }
 
@@ -43,32 +45,18 @@ class DictionaryRepositoryImpl @Inject constructor(
                 }
 
                 try {
-                    val data = FileUtils.getStringFromFile(
-                        FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL)
-                    )
-                    val json = JsonUtils.gson.fromJson(data, JsonArray::class.java)
+                    val data = dictionaryFileReader.readText()
+                    val json = data?.let { Json.parseToJsonElement(it).jsonArray }
                     if (json != null) {
-                        val entities = json.map { js ->
-                            val doc = js.asJsonObject
-                            DictionaryEntity(
-                                id = UUID.randomUUID().toString(),
-                                code = JsonUtils.getString("code", doc),
-                                language = JsonUtils.getString("language", doc),
-                                advanceCode = JsonUtils.getString("advance_code", doc),
-                                word = JsonUtils.getString("word", doc),
-                                meaning = JsonUtils.getString("meaning", doc),
-                                definition = JsonUtils.getString("definition", doc),
-                                synonym = JsonUtils.getString("synonym", doc),
-                                antonym = JsonUtils.getString("antonoym", doc)
-                            )
-                        }
+                        val entities = DictionaryMapper.mapJsonArrayToEntities(json)
                         dictionaryDao.insertAll(entities)
                         DictionaryLoad.Inserted
                     } else {
                         DictionaryLoad.Failed(null)
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
-                    e.printStackTrace()
                     DictionaryLoad.Failed(e)
                 }
             }

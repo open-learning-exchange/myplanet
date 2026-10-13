@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.health
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.TextView
@@ -22,16 +21,16 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.health.HealthExaminationAdapter.HealthExaminationViewHolder
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils.getString
-import org.ole.planet.myplanet.utils.TimeUtils.formatDate
-import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.GsonUtils.getString
+import org.ole.planet.myplanet.utils.StringUtils
 
 class HealthExaminationAdapter(
     private val context: Context,
     private var mh: HealthExamination,
     private var userModel: UserEntity?,
     private var userMap: Map<String, UserEntity>,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val onEditClick: ((Intent) -> Unit)? = null
 ) : ListAdapter<HealthExaminationAdapter.HealthExaminationItem, HealthExaminationViewHolder>(DIFF_CALLBACK) {
 
     data class HealthExaminationItem(
@@ -39,7 +38,7 @@ class HealthExaminationAdapter(
         val formattedDate: String,
         val isSelfExamination: Boolean,
         val resolvedName: String,
-        val hasEncryptedData: Boolean
+        val encrypted: JsonObject?
     )
 
     private val colorGrey50 by lazy { ContextCompat.getColor(context, R.color.md_grey_50) }
@@ -56,30 +55,7 @@ class HealthExaminationAdapter(
 
     suspend fun submitExaminations(list: List<HealthExamination>) {
         val items = withContext(dispatcherProvider.default) {
-            val displayNameCache = mutableMapOf<String, String>()
-            list.map { item ->
-                val formattedDate = formatDate(item.date, "MMM dd, yyyy")
-                val encrypted = userModel?.let { user -> item.getEncryptedDataAsJson(user) }
-                val createdBy = getString("createdBy", encrypted)
-
-                val (resolvedName, isSelfExamination) = if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {
-                    val name = displayNameCache.getOrPut(createdBy) {
-                        val model = userMap[createdBy]
-                        model?.getFullName() ?: createdBy.split(colonRegex).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: createdBy
-                    }
-                    name to false
-                } else {
-                    "" to true
-                }
-
-                HealthExaminationItem(
-                    examination = item,
-                    formattedDate = formattedDate,
-                    isSelfExamination = isSelfExamination,
-                    resolvedName = resolvedName,
-                    hasEncryptedData = encrypted != null
-                )
-            }
+            HealthExaminationItemMapper.map(list, userModel, userMap)
         }
         withContext(dispatcherProvider.main) {
             submitList(items)
@@ -100,7 +76,7 @@ class HealthExaminationAdapter(
 
         binding.txtTemp.text = checkEmpty(realmExamination.temperature)
         if (!item.isSelfExamination) {
-            binding.txtDate.text = context.getString(R.string.two_strings, item.formattedDate, item.resolvedName).trimIndent()
+            binding.txtDate.text = context.getString(R.string.two_strings, item.formattedDate, item.resolvedName)
             holder.itemView.setBackgroundColor(colorGrey50)
         } else {
             binding.txtDate.text = context.getString(R.string.self_examination, item.formattedDate)
@@ -116,8 +92,7 @@ class HealthExaminationAdapter(
         binding.txtVision.text = realmExamination.vision
 
         holder.itemView.setOnClickListener {
-            if (item.hasEncryptedData) {
-                val encrypted = userModel?.let { user -> item.examination.getEncryptedDataAsJson(user) } ?: JsonObject()
+            item.encrypted?.let { encrypted ->
                 showAlert(binding, item, encrypted)
             }
         }
@@ -139,7 +114,10 @@ class HealthExaminationAdapter(
             checkEmptyInt(realmExamination.pulse), realmExamination.bp, checkEmpty(realmExamination.height),
             checkEmpty(realmExamination.weight), realmExamination.vision, realmExamination.hearing).trimIndent()
 
-        alertExaminationBinding.tvCondition.text = HealthExamination.formatConditions(realmExamination.conditions)
+        val conditionLabels = HealthExaminationActivity.diagnosisKeys(context)
+            .zip(context.resources.getStringArray(R.array.diagnosis_list)).toMap()
+        alertExaminationBinding.tvCondition.text =
+            HealthExamination.formatConditions(realmExamination.conditions) { conditionLabels[it] ?: it }
         showEncryptedData(alertExaminationBinding.tvOtherNotes, encrypted)
 
         val dialog = AlertDialog.Builder(context, R.style.CustomAlertDialog)
@@ -149,26 +127,30 @@ class HealthExaminationAdapter(
         dialog.window?.setBackgroundDrawable(colorMultiSelectGrey.toDrawable())
 
         dialog.setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.edit)) { _: DialogInterface?, _: Int ->
-            context.startActivity(Intent(context, HealthExaminationActivity::class.java)
+            val intent = Intent(context, HealthExaminationActivity::class.java)
                 .putExtra("id", realmExamination._id)
-                .putExtra("userId", mh._id))
+                .putExtra("userId", mh._id)
+            if (onEditClick != null) {
+                onEditClick.invoke(intent)
+            } else {
+                context.startActivity(intent)
+            }
         }
 
         dialog.show()
     }
 
     private fun showEncryptedData(tvOtherNotes: TextView, encrypted: JsonObject) {
-        tvOtherNotes.text = context.getString(R.string.observations_notes_colon, Utilities.checkNA(getString("notes", encrypted)),
-            Utilities.checkNA(getString("diagnosis", encrypted)), Utilities.checkNA(getString("treatments", encrypted)),
-            Utilities.checkNA(getString("medications", encrypted)), Utilities.checkNA(getString("immunizations", encrypted)),
-            Utilities.checkNA(getString("allergies", encrypted)), Utilities.checkNA(getString("xrays", encrypted)),
-            Utilities.checkNA(getString("tests", encrypted)), Utilities.checkNA(getString("referrals", encrypted)))
+        tvOtherNotes.text = context.getString(R.string.observations_notes_colon, StringUtils.checkNA(getString("notes", encrypted)),
+            StringUtils.checkNA(getString("diagnosis", encrypted)), StringUtils.checkNA(getString("treatments", encrypted)),
+            StringUtils.checkNA(getString("medications", encrypted)), StringUtils.checkNA(getString("immunizations", encrypted)),
+            StringUtils.checkNA(getString("allergies", encrypted)), StringUtils.checkNA(getString("xrays", encrypted)),
+            StringUtils.checkNA(getString("tests", encrypted)), StringUtils.checkNA(getString("referrals", encrypted)))
     }
 
     class HealthExaminationViewHolder(val binding: RowExaminationBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        private val colonRegex by lazy { ":".toRegex() }
         private val DIFF_CALLBACK = DiffUtils.itemCallback<HealthExaminationItem>(
             { oldItem, newItem -> oldItem.examination._id == newItem.examination._id },
             { oldItem, newItem ->

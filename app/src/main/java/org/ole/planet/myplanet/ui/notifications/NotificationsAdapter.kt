@@ -22,7 +22,8 @@ class NotificationsAdapter(
     private val onMarkAsReadClick: (String) -> Unit,
     private val onNotificationClick: (Notification) -> Unit,
     private val onToggleSelection: (String) -> Unit,
-    private val onToggleGroupExpansion: (String) -> Unit
+    private val onToggleGroupExpansion: (String) -> Unit,
+    private val now: () -> Long = { System.currentTimeMillis() }
 ) : ListAdapter<NotificationListItem, RecyclerView.ViewHolder>(
     DiffUtils.itemCallback(
         areItemsTheSame = { old, new ->
@@ -85,13 +86,22 @@ class NotificationsAdapter(
         }
     }
 
-    class HeaderViewHolder(
+    inner class HeaderViewHolder(
         private val binding: RowNotificationHeaderBinding,
         private val onToggleGroupExpansion: (String) -> Unit
     ) : RecyclerView.ViewHolder(binding.root) {
 
+        init {
+            binding.root.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                val header = getItem(pos) as? NotificationListItem.Header ?: return@setOnClickListener
+                onToggleGroupExpansion(header.type)
+            }
+        }
+
         fun bind(header: NotificationListItem.Header) {
-            binding.tvHeaderLabel.text = header.label
+            binding.tvHeaderLabel.setText(labelResFor(header.type))
             binding.ivHeaderIcon.setImageResource(iconResFor(header.type))
             if (header.unreadCount > 0) {
                 binding.tvUnreadBadge.visibility = View.VISIBLE
@@ -100,7 +110,6 @@ class NotificationsAdapter(
                 binding.tvUnreadBadge.visibility = View.GONE
             }
             binding.ivExpand.rotation = if (header.isExpanded) 0f else 180f
-            binding.root.setOnClickListener { onToggleGroupExpansion(header.type) }
         }
     }
 
@@ -110,6 +119,40 @@ class NotificationsAdapter(
         private val onNotificationClick: (Notification) -> Unit,
         private val onToggleSelection: (String) -> Unit
     ) : RecyclerView.ViewHolder(binding.root) {
+
+        init {
+            binding.root.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                val item = getItem(pos) as? NotificationListItem.Item ?: return@setOnClickListener
+                if (item.isSelectionMode) {
+                    onToggleSelection(item.notification.id)
+                } else {
+                    onNotificationClick(item.notification)
+                }
+            }
+
+            binding.root.setOnLongClickListener {
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnLongClickListener false
+                val item = getItem(pos) as? NotificationListItem.Item ?: return@setOnLongClickListener false
+                if (item.isSelectionMode) {
+                    false
+                } else {
+                    onToggleSelection(item.notification.id)
+                    true
+                }
+            }
+
+            binding.btnMarkAsRead.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                val item = getItem(pos) as? NotificationListItem.Item ?: return@setOnClickListener
+                if (!item.notification.isRead) {
+                    onMarkAsReadClick(item.notification.id)
+                }
+            }
+        }
 
         fun bind(item: NotificationListItem.Item) {
             val notification = item.notification
@@ -130,27 +173,18 @@ class NotificationsAdapter(
                 binding.cbSelect.visibility = View.VISIBLE
                 binding.cbSelect.isChecked = item.isSelected
                 binding.btnMarkAsRead.visibility = View.GONE
-                binding.root.setOnClickListener { onToggleSelection(notification.id) }
-                binding.root.setOnLongClickListener(null)
             } else {
                 binding.cbSelect.visibility = View.GONE
                 if (notification.isRead) {
                     binding.btnMarkAsRead.visibility = View.GONE
-                    binding.btnMarkAsRead.setOnClickListener(null)
                 } else {
                     binding.btnMarkAsRead.visibility = View.VISIBLE
-                    binding.btnMarkAsRead.setOnClickListener { onMarkAsReadClick(notification.id) }
-                }
-                binding.root.setOnClickListener { onNotificationClick(notification) }
-                binding.root.setOnLongClickListener {
-                    onToggleSelection(notification.id)
-                    true
                 }
             }
         }
 
         private fun formatRelativeTime(createdAt: Long): String {
-            val diff = System.currentTimeMillis() - createdAt
+            val diff = now() - createdAt
             val context = binding.root.context
             return when {
                 diff < 60_000L -> context.getString(R.string.just_now)
@@ -163,6 +197,19 @@ class NotificationsAdapter(
         }
     }
 }
+
+private val LABEL_RES_BY_TYPE = mapOf(
+    "join_request" to R.string.notif_group_join_requests,
+    "team_join" to R.string.notif_group_team_updates,
+    "task" to R.string.tasks,
+    "chat" to R.string.notif_group_new_voices,
+    "voice_reply" to R.string.notif_group_voice_replies,
+    "resource" to R.string.resources,
+    "storage" to R.string.notification_group_system
+)
+
+internal fun labelResFor(type: String): Int =
+    LABEL_RES_BY_TYPE[type.lowercase(Locale.ROOT)] ?: R.string.notification_group_other
 
 private val ICON_BY_TYPE = mapOf(
     "join_request" to R.drawable.ic_join_request,

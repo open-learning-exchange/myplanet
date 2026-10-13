@@ -5,7 +5,6 @@ import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
@@ -28,8 +27,7 @@ class RealtimeSyncHelper(
     fun setupRealtimeSync() {
         val watchedTables = mixin.getWatchedTables().toSet()
         fragment.collectWhenStarted(
-            syncManagerInstance.dataUpdateFlow
-                .filter { update -> watchedTables.contains(update.table) }
+            syncManagerInstance.updatesFor(watchedTables)
                 .distinctUntilChanged { old, new ->
                     old.table == new.table &&
                     old.newItemsCount == new.newItemsCount &&

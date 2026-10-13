@@ -9,8 +9,10 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.AppDatabase
@@ -25,13 +27,11 @@ import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.TestTimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TeamsRepositoryBenchmarkTest {
     private lateinit var teamsRepository: TeamsRepositoryImpl
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
-    private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val uploadManager: UploadManager = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val preferences: SharedPreferences = mockk(relaxed = true)
@@ -60,7 +60,6 @@ class TeamsRepositoryBenchmarkTest {
 
         teamsRepository = TeamsRepositoryImpl(
             mockk(relaxed = true),
-            activitiesRepository,
             userSessionManager,
             uploadManager,
             gson,
@@ -70,7 +69,6 @@ class TeamsRepositoryBenchmarkTest {
             dispatcherProvider,
             userRepository,
             resourcesRepositoryLazy,
-            TestTimeProvider(),
             teamLogDao,
             teamTaskDao,
             myLibraryDao,
@@ -79,6 +77,11 @@ class TeamsRepositoryBenchmarkTest {
             courseStepDao,
             appDatabase,
         )
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
     @Test

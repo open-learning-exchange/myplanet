@@ -4,6 +4,7 @@ import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.every
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import java.util.UUID
@@ -14,6 +15,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 class StepExamTest {
 
@@ -24,6 +26,8 @@ class StepExamTest {
             val str = arg<CharSequence?>(0)
             str.isNullOrEmpty()
         }
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
     }
 
     @After
@@ -86,6 +90,68 @@ class StepExamTest {
     }
 
     @Test
+    fun testInsertCourseStepsExams_questionsThree() {
+        val examJson = JsonObject().apply {
+            addProperty("_id", "exam3")
+            add("questions", JsonArray().apply {
+                add(JsonObject())
+                add(JsonObject())
+                add(JsonObject())
+            })
+        }
+
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+
+        assertEquals(3, result.noOfQuestions)
+    }
+
+    @Test
+    fun testInsertCourseStepsExams_questionsNull() {
+        val examJson = JsonObject().apply {
+            addProperty("_id", "examNull")
+            add("questions", com.google.gson.JsonNull.INSTANCE)
+        }
+
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+
+        assertEquals(0, result.noOfQuestions)
+    }
+
+    @Test
+    fun testInsertCourseStepsExams_questionsObject() {
+        val examJson = JsonObject().apply {
+            addProperty("_id", "examObj")
+            add("questions", JsonObject())
+        }
+
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+
+        assertEquals(0, result.noOfQuestions)
+    }
+
+    @Test
+    fun testInsertCourseStepsExams_questionsMissing() {
+        val examJson = JsonObject().apply {
+            addProperty("_id", "examMissing")
+        }
+
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+
+        assertEquals(0, result.noOfQuestions)
+    }
+
+    @Test
+    fun testInsertCourseStepsExams_missingTypeDefaultsToExam() {
+        val examJson = JsonObject().apply {
+            addProperty("_id", "examNoType")
+        }
+
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+
+        assertEquals("exam", result.type)
+    }
+
+    @Test
     fun testSerializeExam() {
         val exam = StepExam().apply {
             id = "exam1"
@@ -122,5 +188,7 @@ class StepExamTest {
         assertEquals("survey1", json.get("sourceSurveyId").asString)
         assertEquals("team1", json.get("teamId").asString)
         assertTrue(json.has("questions"))
+        assertEquals("uniqueIdentifier", json.get("androidId").asString)
+        assertEquals("myplanet", json.get("app").asString)
     }
 }

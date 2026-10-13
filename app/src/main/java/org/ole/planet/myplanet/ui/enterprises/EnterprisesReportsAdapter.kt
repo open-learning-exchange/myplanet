@@ -9,18 +9,33 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
+import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.FileExistenceCache
 import org.ole.planet.myplanet.utils.ImageViewerUtils
+import org.ole.planet.myplanet.utils.SystemTimeProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class EnterprisesReportsAdapter(
     private val context: Context,
     private val teamName: String?,
-    private val onEdit: (MyTeam) -> Unit,
-    private val onDelete: (MyTeam) -> Unit
-) : ListAdapter<MyTeam, EnterprisesReportsAdapter.ReportsViewHolder>(diffCallback) {
+    private val onEdit: (FinanceReport) -> Unit,
+    private val onDelete: (FinanceReport) -> Unit,
+    private val timeProvider: TimeProvider = SystemTimeProvider(),
+) : ListAdapter<FinanceReport, EnterprisesReportsAdapter.ReportsViewHolder>(diffCallback) {
     private var nonTeamMember = false
+    private val attachmentPresenceCache = FileExistenceCache()
+    private val reportTitle: String by lazy { context.getString(R.string.team_financial_report, teamName) }
+
+    override fun onCurrentListChanged(
+        previousList: MutableList<FinanceReport>,
+        currentList: MutableList<FinanceReport>
+    ) {
+        super.onCurrentListChanged(previousList, currentList)
+        attachmentPresenceCache.clear()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReportsViewHolder {
         val binding = ReportListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -49,23 +64,20 @@ class EnterprisesReportsAdapter(
         val binding = holder.binding
         setNonTeamMemberVisibility(binding)
         val report = getItem(position)
-        binding.tvReportTitle.text = context.getString(R.string.team_financial_report, teamName)
+        binding.tvReportTitle.text = reportTitle
         report?.let {
+            val totals = reportTotals(it)
             with(binding) {
-                val totalIncome = report.sales + report.otherIncome
-                val totalExpenses = report.wages + report.otherExpenses
-                val profitLoss = totalIncome - totalExpenses
-
                 date.text = context.getString(R.string.string_range, TimeUtils.formatDate(it.startDate, " MMM dd, yyyy"), TimeUtils.formatDate(it.endDate, "MMM dd, yyyy"))
                 beginningBalanceValue.text = context.getString(R.string.number_placeholder, it.beginningBalance)
                 salesValue.text = context.getString(R.string.number_placeholder, it.sales)
                 otherValue.text = context.getString(R.string.number_placeholder, it.otherIncome)
-                totalIncomeValue.text = context.getString(R.string.number_placeholder, totalIncome)
+                totalIncomeValue.text = context.getString(R.string.number_placeholder, totals.totalIncome)
                 personnelValue.text = context.getString(R.string.number_placeholder, it.wages)
                 nonPersonnelValue.text = context.getString(R.string.number_placeholder, it.otherExpenses)
-                totalExpensesValue.text = context.getString(R.string.number_placeholder, totalExpenses)
-                profitLossValue.text = context.getString(R.string.number_placeholder, profitLoss)
-                endingBalanceValue.text = context.getString(R.string.number_placeholder, profitLoss + it.beginningBalance)
+                totalExpensesValue.text = context.getString(R.string.number_placeholder, totals.totalExpenses)
+                profitLossValue.text = context.getString(R.string.number_placeholder, totals.profitLoss)
+                endingBalanceValue.text = context.getString(R.string.number_placeholder, totals.endingBalance)
                 tvReportDetails.text = context.getString(R.string.message_placeholder, it.description)
                 createUpdate.text = context.getString(R.string.report_date_details, TimeUtils.formatDate(it.createdDate, "MMM dd, yyyy"), TimeUtils.formatDate(it.updatedDate, "MMM dd, yyyy"))
             }
@@ -95,9 +107,11 @@ class EnterprisesReportsAdapter(
         holder.binding.delete.setOnClickListener(null)
     }
 
-    private fun bindReportImage(binding: ReportListItemBinding, report: MyTeam) {
+    private fun bindReportImage(binding: ReportListItemBinding, report: FinanceReport) {
         val imageFile = MyTeam.getAttachmentFile(context, report._id, report.imageName)
-        if (imageFile != null && imageFile.exists()) {
+        val exists = attachmentPresenceCache.exists(imageFile, timeProvider.now())
+
+        if (imageFile != null && exists) {
             binding.reportImage.visibility = View.VISIBLE
             Glide.with(context)
                 .load(imageFile)
@@ -133,7 +147,7 @@ class EnterprisesReportsAdapter(
 
     companion object {
         const val PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED = "PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED"
-        val diffCallback = DiffUtils.itemCallback<MyTeam>(
+        val diffCallback = DiffUtils.itemCallback<FinanceReport>(
             areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
             areContentsTheSame = { oldItem, newItem ->
                 oldItem.startDate == newItem.startDate &&
@@ -150,4 +164,24 @@ class EnterprisesReportsAdapter(
             }
         )
     }
+}
+
+internal data class ReportTotals(
+    val totalIncome: Int,
+    val totalExpenses: Int,
+    val profitLoss: Int,
+    val endingBalance: Int
+)
+
+internal fun reportTotals(report: FinanceReport): ReportTotals {
+    val totalIncome = report.sales + report.otherIncome
+    val totalExpenses = report.wages + report.otherExpenses
+    val profitLoss = totalIncome - totalExpenses
+    val endingBalance = profitLoss + report.beginningBalance
+    return ReportTotals(
+        totalIncome = totalIncome,
+        totalExpenses = totalExpenses,
+        profitLoss = profitLoss,
+        endingBalance = endingBalance
+    )
 }

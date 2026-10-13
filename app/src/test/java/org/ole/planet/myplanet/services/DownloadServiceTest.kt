@@ -9,6 +9,8 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
 import android.util.Log
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.test.core.app.ApplicationProvider
 import androidx.work.OneTimeWorkRequest
@@ -24,6 +26,8 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import java.lang.reflect.Field
 import javax.inject.Provider
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,9 +37,12 @@ import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -43,13 +50,15 @@ import org.robolectric.util.ReflectionHelpers
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [Build.VERSION_CODES.UPSIDE_DOWN_CAKE], application = Application::class)
+@Config(application = Application::class)
 class DownloadServiceTest {
 
+    private var originalSdkInt: Int = 0
     private lateinit var mockPreferences: SharedPreferences
 
     @Before
     fun setUp() {
+        originalSdkInt = Build.VERSION.SDK_INT
         mockPreferences = mockk(relaxed = true)
         mockkStatic(ContextCompat::class)
         mockkObject(DownloadUtils)
@@ -65,7 +74,7 @@ class DownloadServiceTest {
     fun tearDown() {
         unmockkAll()
         // Reset SDK version for other tests that might run in same VM
-        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", 0)
+        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", originalSdkInt)
     }
 
     // --- Tests for startService ---
@@ -216,5 +225,173 @@ class DownloadServiceTest {
         val isQueueRunning = isQueueRunningField.get(service) as Boolean
 
         assertFalse("isQueueRunning should be false after exception", isQueueRunning)
+    }
+
+    @Test
+    fun `test sendNotification uses cached count and avoids SharedPreferences and NotificationManagerCompat checks`() {
+        val service = spyk(DownloadService())
+
+        // Set up field values
+        val currentDownloadUrlField = DownloadService::class.java.getDeclaredField("currentDownloadUrl")
+        currentDownloadUrlField.isAccessible = true
+        currentDownloadUrlField.set(service, "http://example.com/file.pdf")
+
+        val cachedRemainingCountField = DownloadService::class.java.getDeclaredField("cachedRemainingCount")
+        cachedRemainingCountField.isAccessible = true
+        cachedRemainingCountField.set(service, 5)
+
+        val areNotificationsEnabledField = DownloadService::class.java.getDeclaredField("areNotificationsEnabled")
+        areNotificationsEnabledField.isAccessible = true
+        areNotificationsEnabledField.set(service, true)
+
+        val sessionCompletedCountField = DownloadService::class.java.getDeclaredField("sessionCompletedCount")
+        sessionCompletedCountField.isAccessible = true
+        sessionCompletedCountField.set(service, 2)
+
+        val currentFileProgressField = DownloadService::class.java.getDeclaredField("currentFileProgress")
+        currentFileProgressField.isAccessible = true
+        currentFileProgressField.set(service, 50)
+
+        val mockNotificationManager = mockk<NotificationManager>(relaxed = true)
+        val notificationManagerField = DownloadService::class.java.getDeclaredField("notificationManager")
+        notificationManagerField.isAccessible = true
+        notificationManagerField.set(service, mockNotificationManager)
+
+        val mockBuilder = mockk<NotificationCompat.Builder>(relaxed = true)
+        every { mockBuilder.build() } returns mockk()
+        val notificationBuilderField = DownloadService::class.java.getDeclaredField("notificationBuilder")
+        notificationBuilderField.isAccessible = true
+        notificationBuilderField.set(service, mockBuilder)
+
+        val mockBroadcast = mockk<BroadcastService>(relaxed = true)
+        val broadcastServiceField = DownloadService::class.java.getDeclaredField("broadcastService")
+        broadcastServiceField.isAccessible = true
+        broadcastServiceField.set(service, mockBroadcast)
+
+        val appScopeField = DownloadService::class.java.getDeclaredField("appScope")
+        appScopeField.isAccessible = true
+        appScopeField.set(service, CoroutineScope(SupervisorJob() + Dispatchers.Unconfined))
+
+        mockkStatic(NotificationManagerCompat::class)
+
+        val download = Download()
+        val sendNotificationMethod = DownloadService::class.java.getDeclaredMethod("sendNotification", Download::class.java)
+        sendNotificationMethod.isAccessible = true
+        sendNotificationMethod.invoke(service, download)
+
+        verify(exactly = 0) { mockPreferences.getStringSet(any(), any()) }
+        verify(exactly = 0) { NotificationManagerCompat.from(any()) }
+        verify { mockBuilder.setSubText("2 completed, 5 remaining") }
+    }
+
+    @Test
+    fun `test updateNotificationForBatchDownload reuses existing notificationBuilder`() {
+        val service = spyk(DownloadService())
+
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val mockNotificationManager = mockk<NotificationManager>(relaxed = true)
+        val notificationManagerField = DownloadService::class.java.getDeclaredField("notificationManager")
+        notificationManagerField.isAccessible = true
+        notificationManagerField.set(service, mockNotificationManager)
+
+        val existingBuilder = spyk(NotificationCompat.Builder(context, "DownloadChannel"))
+        val notificationBuilderField = DownloadService::class.java.getDeclaredField("notificationBuilder")
+        notificationBuilderField.isAccessible = true
+        notificationBuilderField.set(service, existingBuilder)
+
+        val cachedRemainingCountField = DownloadService::class.java.getDeclaredField("cachedRemainingCount")
+        cachedRemainingCountField.isAccessible = true
+        cachedRemainingCountField.set(service, 3)
+
+        val updateMethod = DownloadService::class.java.getDeclaredMethod("updateNotificationForBatchDownload")
+        updateMethod.isAccessible = true
+        updateMethod.invoke(service)
+
+        val resultBuilder = notificationBuilderField.get(service) as NotificationCompat.Builder
+        assertSame("Existing notification builder instance should be reused", existingBuilder, resultBuilder)
+        verify { existingBuilder.setContentText("Starting downloads (0/4)") }
+    }
+
+    @Test
+    fun `test cleanupProcessedUrls persists only after QUEUE_PERSIST_INTERVAL calls`() {
+        val service = spyk(DownloadService())
+        val prefsField = DownloadService::class.java.getDeclaredField("preferences\$delegate")
+        prefsField.isAccessible = true
+        prefsField.set(service, kotlin.lazyOf(mockPreferences))
+
+        val cleanupMethod = DownloadService::class.java.getDeclaredMethod("cleanupProcessedUrls", String::class.java)
+        cleanupMethod.isAccessible = true
+
+        repeat(9) { i ->
+            cleanupMethod.invoke(service, "http://example.com/file$i.pdf")
+        }
+        verify(exactly = 0) { mockPreferences.edit() }
+
+        cleanupMethod.invoke(service, "http://example.com/file9.pdf")
+        verify(exactly = 1) { mockPreferences.edit() }
+    }
+
+    @Test
+    fun `test onDestroy does not remove in-flight url from shared preferences`() {
+        val service = spyk(DownloadService())
+        val prefsField = DownloadService::class.java.getDeclaredField("preferences\$delegate")
+        prefsField.isAccessible = true
+        prefsField.set(service, kotlin.lazyOf(mockPreferences))
+
+        val pendingSet = mutableSetOf("http://example.com/completed.pdf", "http://example.com/in-flight.pdf")
+        every { mockPreferences.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, any()) } returns pendingSet
+        every { mockPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, any()) } returns emptySet()
+
+        val processedField = DownloadService::class.java.getDeclaredField("processedUrls")
+        processedField.isAccessible = true
+        val processedUrls = processedField.get(service) as MutableSet<String>
+        processedUrls.add("http://example.com/completed.pdf")
+        processedUrls.add("http://example.com/in-flight.pdf")
+
+        val cleanupMethod = DownloadService::class.java.getDeclaredMethod("cleanupProcessedUrls", String::class.java)
+        cleanupMethod.isAccessible = true
+        cleanupMethod.invoke(service, "http://example.com/completed.pdf")
+
+        val mockEditor = mockk<SharedPreferences.Editor>(relaxed = true)
+        every { mockPreferences.edit() } returns mockEditor
+
+        service.onDestroy()
+
+        val slotPending = slot<Set<String>>()
+        verify { mockEditor.putStringSet(DownloadService.PENDING_DOWNLOADS_KEY, capture(slotPending)) }
+        val remainingPending = slotPending.captured
+        assertFalse("Completed URL should be removed from SharedPreferences", remainingPending.contains("http://example.com/completed.pdf"))
+        assertTrue("In-flight URL should be retained in SharedPreferences for retry", remainingPending.contains("http://example.com/in-flight.pdf"))
+    }
+
+    @Test
+    fun `test processDownloadQueue persists when queue is empty even below interval`() {
+        val service = spyk(DownloadService())
+        every { service.stopSelf() } returns Unit
+        every { service.packageName } returns "org.ole.planet.myplanet"
+        every { service.applicationInfo } returns mockk(relaxed = true)
+        every { DownloadUtils.createChannels(any()) } returns Unit
+
+        mockkStatic(NotificationManagerCompat::class)
+        val mockCompat = mockk<NotificationManagerCompat>(relaxed = true)
+        every { NotificationManagerCompat.from(any()) } returns mockCompat
+
+        val prefsField = DownloadService::class.java.getDeclaredField("preferences\$delegate")
+        prefsField.isAccessible = true
+        prefsField.set(service, kotlin.lazyOf(mockPreferences))
+
+        every { mockPreferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, any()) } returns emptySet()
+        every { mockPreferences.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, any()) } returns emptySet()
+
+        val processMethod = DownloadService::class.java.getDeclaredMethod("processDownloadQueue", Continuation::class.java)
+        processMethod.isAccessible = true
+
+        val completion = object : Continuation<Any?> {
+            override val context = EmptyCoroutineContext
+            override fun resumeWith(result: Result<Any?>) {}
+        }
+        processMethod.invoke(service, completion)
+
+        verify(exactly = 1) { mockPreferences.edit() }
     }
 }

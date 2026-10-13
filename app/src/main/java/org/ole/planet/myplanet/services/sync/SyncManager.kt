@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.SystemClock
 import android.util.Log
 import androidx.core.content.edit
-import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Instant
 import java.time.ZoneId
@@ -20,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -33,21 +33,16 @@ import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyCourse.Companion.saveConcatenatedLinksToPrefs
-import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.ResourcesSyncWriter
 import org.ole.planet.myplanet.repository.SyncRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils.getInt
-import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
-import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
-import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.NotificationUtils.cancel
 import org.ole.planet.myplanet.utils.NotificationUtils.create
 import org.ole.planet.myplanet.utils.SyncTimeLogger
@@ -60,16 +55,27 @@ class SyncManager @Inject constructor(
     private val sharedPrefManager: SharedPrefManager,
     private val apiInterface: ApiInterface,
     private val transactionSyncManager: TransactionSyncManager,
-    private val resourcesRepository: ResourcesRepository,
+    private val resourcesRepository: ResourcesSyncWriter,
     private val loginSyncManager: LoginSyncManager,
     @param:ApplicationScope private val syncScope: CoroutineScope,
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider,
     private val userSyncRepository: UserSyncRepository,
+    private val userRepository: UserRepository,
     private val syncRepository: SyncRepository,
     private val syncTimeLogger: SyncTimeLogger
 ) {
+    private inline fun syncPerf(message: () -> String) {
+        if (syncTimeLogger.isVerbose) {
+            Log.d(TAG, message())
+        }
+    }
+
+    companion object {
+        private const val TAG = "SyncPerf"
+    }
+
     private val timestampFormat = DateTimeFormatter.ofPattern("HH:mm:ss.SSS").withZone(ZoneId.systemDefault())
     private val isSyncing = AtomicBoolean(false)
     private var listener: OnSyncListener? = null
@@ -108,14 +114,18 @@ class SyncManager @Inject constructor(
 
     fun isMainSyncActive(): Boolean = isSyncing.get()
 
-    private fun destroy() {
+    private fun destroy(succeeded: Boolean) {
         cancelBackgroundSync()
         cancel(context, 111)
         isSyncing.set(false)
-        sharedPrefManager.setLastSync(Date().time)
-        listener?.onSyncComplete()
+        if (succeeded) {
+            sharedPrefManager.setLastSync(Date().time)
+            listener?.onSyncComplete()
+        }
         listener = null
-        _syncStatus.value = SyncStatus.Success("Sync completed")
+        if (succeeded) {
+            _syncStatus.value = SyncStatus.Success("Sync completed")
+        }
     }
 
     private fun authenticateAndSync() {
@@ -133,15 +143,18 @@ class SyncManager @Inject constructor(
         val syncStartTime = SystemClock.elapsedRealtime()
 
         syncTimeLogger.startLogging()
-        Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-        Log.d("SyncPerf", "FULL SYNC STARTED at ${timestampFormat.format(Instant.now())}")
-        Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+        syncPerf { "═══════════════════════════════════════════════════════════════" }
+        syncPerf { "FULL SYNC STARTED at ${timestampFormat.format(Instant.now())}" }
+        syncPerf { "═══════════════════════════════════════════════════════════════" }
+        var succeeded = false
         try {
 
             initializeSync()
 
-            // Phase 1: Sync non-library tables in parallel
-            // Note: teams, meetups, and courses base tables are synced here, then augmented by library sync
+            syncTimeLogger.startProcess("shelf_push")
+            pushCurrentUserShelf()
+            syncTimeLogger.endProcess("shelf_push")
+
             val parallelTables = listOf(
                 "tablet_users", "exams", "achievements",
                 "tags", "news", "feedback", "tasks",
@@ -168,19 +181,16 @@ class SyncManager @Inject constructor(
                 syncJobs.awaitAll()
             }
 
-            // Phase 2: Sync resources base table (must run before library to establish base records)
             _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_resources), 2, 4)
             syncTimeLogger.startProcess("resource_sync")
             resourceTransactionSync()
             syncTimeLogger.endProcess("resource_sync")
 
-            // Phase 3: Sync library (augments courses, resources, teams, meetups with shelf data)
             _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_library), 3, 4)
             syncTimeLogger.startProcess("library_sync")
             myLibraryTransactionSync()
             syncTimeLogger.endProcess("library_sync")
 
-            // Phase 4: Admin and finalization
             _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_finalizing), 4, 4)
             syncTimeLogger.startProcess("admin_sync")
             loginSyncManager.syncAdmin()
@@ -202,21 +212,24 @@ class SyncManager @Inject constructor(
             val totalSyncTime = syncEndTime - syncStartTime
             val minutes = totalSyncTime / 60000
             val seconds = (totalSyncTime % 60000) / 1000
-            Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-            Log.d("SyncPerf", "FULL SYNC COMPLETED at ${timestampFormat.format(Instant.now())}")
-            Log.d("SyncPerf", "TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms)")
-            Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+            syncPerf { "═══════════════════════════════════════════════════════════════" }
+            syncPerf { "FULL SYNC COMPLETED at ${timestampFormat.format(Instant.now())}" }
+            syncPerf { "TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms)" }
+            syncPerf { "═══════════════════════════════════════════════════════════════" }
+            succeeded = true
+        } catch (e: CancellationException) {
+            throw e
         } catch (err: Exception) {
             val syncEndTime = SystemClock.elapsedRealtime()
             val totalSyncTime = syncEndTime - syncStartTime
-            Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-            Log.d("SyncPerf", "SYNC FAILED after ${totalSyncTime}ms")
-            Log.d("SyncPerf", "Error: ${err.message}")
-            Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+            syncPerf { "═══════════════════════════════════════════════════════════════" }
+            syncPerf { "SYNC FAILED after ${totalSyncTime}ms" }
+            syncPerf { "Error: ${err.message}" }
+            syncPerf { "═══════════════════════════════════════════════════════════════" }
             Log.e("SyncManager", "Full sync failed", err)
             handleException(err.message)
         } finally {
-            destroy()
+            destroy(succeeded)
         }
     }
 
@@ -251,6 +264,16 @@ class SyncManager @Inject constructor(
         create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
     }
 
+    private suspend fun pushCurrentUserShelf() {
+        try {
+            userRepository.getUserModel()?.let { userSyncRepository.uploadShelfData(it) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e("SyncManager", "Failed to push shelf data before sync", e)
+        }
+    }
+
     fun cancelBackgroundSync() {
         backgroundSync?.cancel()
         backgroundSync = null
@@ -259,7 +282,7 @@ class SyncManager @Inject constructor(
 
     private suspend fun resourceTransactionSync() {
         val resourceSyncStartTime = SystemClock.elapsedRealtime()
-        Log.d("SyncPerf", "  ▶ Starting resource sync")
+        syncPerf { "  ▶ Starting resource sync" }
 
 
         syncTimeLogger.startProcess("resource_sync_main")
@@ -269,19 +292,19 @@ class SyncManager @Inject constructor(
             val url = UrlUtils.getUrl()
             val header = UrlUtils.header
 
-            val newIds: MutableList<String?> = ArrayList()
+            val newIds: MutableList<String> = ArrayList()
             var totalRows = 0
+            var countKnown = false
             var hadBatchFailure = false
 
-            // Get total count
             syncTimeLogger.startProcess("resource_get_total_count")
             val countApiStartTime = SystemClock.elapsedRealtime()
-            ApiClient.executeWithRetryAndWrap {
-                apiInterface.getJsonObject(header, "$url/resources/_all_docs?limit=0")
-            }?.let { response ->
-                response.body()?.let { body ->
-                    totalRows = getInt("total_rows", body)
-                }
+            val count = syncRepository.fetchResourceTotalRows()
+            countKnown = count != null
+            totalRows = count ?: 0
+            if (!countKnown) {
+                hadBatchFailure = true
+                syncTimeLogger.logDetail("resource_sync", "Resource count unavailable; paging until a short page and skipping delete-cleanup")
             }
             val countApiDuration = SystemClock.elapsedRealtime() - countApiStartTime
             syncTimeLogger.logApiCall("$url/resources/_all_docs?limit=0", countApiDuration, true, totalRows)
@@ -291,56 +314,37 @@ class SyncManager @Inject constructor(
             var skip = 0
             var batchCount = 0
 
-            Log.d("SyncPerf", "    Resources: Found $totalRows documents to sync")
+            syncPerf { "    Resources: Found $totalRows documents to sync" }
             syncTimeLogger.logDetail("resource_sync", "Total resources: $totalRows, batch size: ${batchSizer.currentSize} (adaptive)")
 
-            while (skip < totalRows || (totalRows == 0 && skip == 0)) {
+            while (!countKnown || skip < totalRows) {
                 batchCount++
                 val batchSize = batchSizer.currentSize
                 val batchStartTime = SystemClock.elapsedRealtime()
 
                 try {
-                    // Fetch batch of documents
                     val batchApiStartTime = SystemClock.elapsedRealtime()
-                    var response: JsonObject? = null
-                    ApiClient.executeWithRetryAndWrap {
-                        apiInterface.getJsonObject(header, "$url/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip")
-                    }?.let {
-                        response = it.body()
-                    }
+                    val rows = syncRepository.fetchResourceRows(batchSize, skip)
                     val batchApiDuration = SystemClock.elapsedRealtime() - batchApiStartTime
 
-                    if (response == null) {
+                    if (rows == null) {
                         batchSizer.recordFailure()
                         hadBatchFailure = true
                         syncTimeLogger.logApiCall("$url/resources/_all_docs (batch $batchCount)", batchApiDuration, false, 0)
+                        if (!countKnown) break
                         skip += batchSize
                         continue
                     }
                     batchSizer.recordSuccess(batchApiDuration)
 
-                    val rows = getJsonArray("rows", response)
                     syncTimeLogger.logApiCall("$url/resources/_all_docs (batch $batchCount)", batchApiDuration, true, rows.size())
 
-                    if (rows.isEmpty()) {
+                    if (rows.isEmpty) {
                         break
                     }
 
-                    // Parse documents
                     val parseStartTime = SystemClock.elapsedRealtime()
-                    val validDocuments = mutableListOf<JsonObject>()
-
-                    for (rowElement in rows) {
-                        val rowObj = rowElement.asJsonObject
-                        if (rowObj.has("doc")) {
-                            val doc = getJsonObject("doc", rowObj)
-                            val id = getString("_id", doc)
-
-                            if (!id.startsWith("_design") && id.isNotBlank()) {
-                                validDocuments.add(doc)
-                            }
-                        }
-                    }
+                    val validDocuments = syncRepository.filterSyncableResourceDocs(rows)
                     val parseDuration = SystemClock.elapsedRealtime() - parseStartTime
                     if (parseDuration > 100) {
                         syncTimeLogger.logDetail("resource_sync", "Batch $batchCount: Parse took ${parseDuration}ms for ${rows.size()} docs")
@@ -360,6 +364,7 @@ class SyncManager @Inject constructor(
                     }
 
                     skip += rows.size()
+                    if (!countKnown && rows.size() < batchSize) break
                     val resourcesDone = skip.coerceAtMost(totalRows)
                     _syncStatus.value = SyncStatus.Syncing(
                         context.getString(R.string.sync_phase_resources), 2, 4,
@@ -370,18 +375,21 @@ class SyncManager @Inject constructor(
                     val batchEndTime = SystemClock.elapsedRealtime()
                     val batchTime = batchEndTime - batchStartTime
                     if (batchCount % 10 == 0) {
-                        Log.d("SyncPerf", "    Resources batch $batchCount: ${batchTime}ms - Progress: $skip/$totalRows (${(skip * 100 / totalRows.coerceAtLeast(1))}%)")
+                        syncPerf { "    Resources batch $batchCount: ${batchTime}ms - Progress: $skip/$totalRows (${(skip * 100 / totalRows.coerceAtLeast(1))}%)" }
                         syncTimeLogger.logDetail("resource_sync", "Batch $batchCount progress: $skip/$totalRows (${(skip * 100 / totalRows.coerceAtLeast(1))}%)")
                         sharedPrefManager.rawPreferences.edit {
                             putLong("ResourceLastSyncTime", timeProvider.now())
                             putInt("ResourceSyncPosition", skip)
                         }
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e("SyncManager", "Resource batch failed", e)
                     batchSizer.recordFailure()
                     hadBatchFailure = true
                     syncTimeLogger.logDetail("resource_sync", "Batch $batchCount failed: ${e.message}")
+                    if (!countKnown) break
                     skip += batchSize
                 }
             }
@@ -389,17 +397,18 @@ class SyncManager @Inject constructor(
             try {
                 syncTimeLogger.startProcess("resource_cleanup")
                 val cleanupStartTime = SystemClock.elapsedRealtime()
-                val validNewIds = newIds.filter { !it.isNullOrBlank() }
                 if (hadBatchFailure) {
                     syncTimeLogger.logDetail("resource_sync", "Skipping delete-cleanup: one or more batches failed, id list is incomplete")
-                } else if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
-                    resourcesRepository.removeDeletedResources(validNewIds)
+                } else if (newIds.isNotEmpty()) {
+                    resourcesRepository.removeDeletedResources(newIds)
                 }
                 val cleanupDuration = SystemClock.elapsedRealtime() - cleanupStartTime
                 syncTimeLogger.endProcess("resource_cleanup")
                 if (cleanupDuration > 100) {
-                    syncTimeLogger.logDbOperation("delete_cleanup", "resources", cleanupDuration, newIds.size - validNewIds.size)
+                    syncTimeLogger.logDbOperation("delete_cleanup", "resources", cleanupDuration, newIds.size)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e("SyncManager", "Resource cleanup failed", e)
                 syncTimeLogger.logDetail("resource_sync", "Cleanup failed: ${e.message}")
@@ -410,90 +419,28 @@ class SyncManager @Inject constructor(
             val resourceSyncTime = resourceSyncEndTime - resourceSyncStartTime
             val minutes = resourceSyncTime / 60000
             val seconds = (resourceSyncTime % 60000) / 1000
-            Log.d("SyncPerf", "  ✓ Resources sync completed: ${minutes}m ${seconds}s - $processedItems items")
+            syncPerf { "  ✓ Resources sync completed: ${minutes}m ${seconds}s - $processedItems items" }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("SyncManager", "Resource sync failed", e)
             syncTimeLogger.endProcess("resource_sync_main", processedItems)
             val resourceSyncEndTime = SystemClock.elapsedRealtime()
-            Log.d("SyncPerf", "  ✗ Resources sync failed after ${resourceSyncEndTime - resourceSyncStartTime}ms: ${e.message}")
+            syncPerf { "  ✗ Resources sync failed after ${resourceSyncEndTime - resourceSyncStartTime}ms: ${e.message}" }
         }
     }
 
     private fun handleException(message: String?) {
-        if (listener != null) {
-            isSyncing.set(false)
-            MainApplication.syncFailedCount++
-            listener?.onSyncFailed(message)
-            _syncStatus.value = SyncStatus.Error(message ?: "Unknown error")
-        }
-    }
-
-    private suspend fun getShelvesWithDataBatchOptimized(): List<String> {
-        val shelvesWithData = mutableListOf<String>()
-        val cachedShelves = getCachedShelvesWithData()
-        if (cachedShelves.isNotEmpty()) {
-            return cachedShelves
-        }
-
-        val url = UrlUtils.getUrl()
-        val header = UrlUtils.header
-
-        val allShelves = ApiClient.executeWithRetryAndWrap {
-            apiInterface.getDocuments(header, "$url/shelf/_all_docs")
-        }?.body()?.rows ?: return emptyList()
-
-        coroutineScope {
-            val semaphore = Semaphore(8)
-            val checkJobs = allShelves.chunked(25).map { shelfBatch ->
-                async(dispatcherProvider.io) {
-                    semaphore.withPermit {
-                        checkShelfBatchForDataOptimized(shelfBatch)
-                    }
-                }
-            }
-
-            checkJobs.awaitAll().flatten().let { validShelves ->
-                shelvesWithData.addAll(validShelves)
-            }
-        }
-
-        cacheShelvesWithData(shelvesWithData)
-        return shelvesWithData
-    }
-
-    private suspend fun checkShelfBatchForDataOptimized(shelfBatch: List<Rows>): List<String> {
-        return userSyncRepository.checkShelfBatchForDataOptimized(shelfBatch.mapNotNull { it.id })
-    }
-
-    private fun getCachedShelvesWithData(): List<String> {
-        val cacheKey = "shelves_with_data"
-        val cacheTimeKey = "shelves_cache_time"
-        val cacheValidityHours = 6
-
-        val cacheTime = sharedPrefManager.getRawLong(cacheTimeKey, 0)
-        val now = timeProvider.now()
-
-        if (now - cacheTime < cacheValidityHours * 60 * 60 * 1000) {
-            val cachedData = sharedPrefManager.getRawString(cacheKey, "")
-            if (cachedData.isNotEmpty()) {
-                return cachedData.split(",").filter { it.isNotBlank() }
-            }
-        }
-        return emptyList()
-    }
-
-    private fun cacheShelvesWithData(shelves: List<String>) {
-        val cacheKey = "shelves_with_data"
-        val cacheTimeKey = "shelves_cache_time"
-
-        sharedPrefManager.setRawString(cacheKey, shelves.joinToString(","))
-        sharedPrefManager.setRawLong(cacheTimeKey, timeProvider.now())
+        isSyncing.set(false)
+        MainApplication.syncFailedCount++
+        listener?.onSyncFailed(message)
+        _syncStatus.value = SyncStatus.Error(message ?: "Unknown error")
     }
 
     private suspend fun myLibraryTransactionSync() {
 
         val librarySyncStartTime = SystemClock.elapsedRealtime()
-        Log.d("SyncPerf", "  ▶ Starting library sync")
+        syncPerf { "  ▶ Starting library sync" }
 
         syncTimeLogger.startProcess("library_sync_main")
         var processedItems = 0
@@ -501,10 +448,10 @@ class SyncManager @Inject constructor(
         try {
             syncTimeLogger.startProcess("library_get_shelves")
             val shelvesStartTime = SystemClock.elapsedRealtime()
-            val shelvesWithData = getShelvesWithDataBatchOptimized()
+            val shelvesWithData = syncRepository.getShelvesWithData()
             val shelvesDuration = SystemClock.elapsedRealtime() - shelvesStartTime
             syncTimeLogger.endProcess("library_get_shelves", shelvesWithData.size)
-            Log.d("SyncPerf", "    Library: Found ${shelvesWithData.size} shelves with data in ${shelvesDuration}ms")
+            syncPerf { "    Library: Found ${shelvesWithData.size} shelves with data in ${shelvesDuration}ms" }
 
             if (shelvesWithData.isEmpty()) {
                 syncTimeLogger.logDetail("library_sync", "No shelves with data found, skipping library sync")
@@ -546,12 +493,14 @@ class SyncManager @Inject constructor(
             syncTimeLogger.endProcess("library_sync_main", processedItems)
 
             val totalDuration = SystemClock.elapsedRealtime() - librarySyncStartTime
-            Log.d("SyncPerf", "  ✓ Library sync completed: ${totalDuration}ms - $processedItems items from ${shelvesWithData.size} shelves")
+            syncPerf { "  ✓ Library sync completed: ${totalDuration}ms - $processedItems items from ${shelvesWithData.size} shelves" }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("SyncManager", "Library sync failed", e)
             syncTimeLogger.endProcess("library_sync_main", processedItems)
             val failDuration = SystemClock.elapsedRealtime() - librarySyncStartTime
-            Log.d("SyncPerf", "  ✗ Library sync failed after ${failDuration}ms: ${e.message}")
+            syncPerf { "  ✗ Library sync failed after ${failDuration}ms: ${e.message}" }
         }
     }
 }

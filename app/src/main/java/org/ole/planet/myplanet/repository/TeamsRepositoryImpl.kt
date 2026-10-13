@@ -4,22 +4,20 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
 import android.text.TextUtils
+import android.util.Log
 import androidx.core.net.toUri
 import androidx.room.withTransaction
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Date
 import java.util.LinkedHashSet
-import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
@@ -55,15 +53,15 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
-import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toSyncDocuments
 
 @Singleton
 class TeamsRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val activitiesRepository: ActivitiesRepository,
     private val userSessionManager: UserSessionManager,
     private val uploadManager: UploadManager,
     private val gson: Gson,
@@ -73,7 +71,6 @@ class TeamsRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val userRepository: UserRepository,
     private val resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository>,
-    private val timeProvider: TimeProvider,
     private val teamLogDao: TeamLogDao,
     private val teamTaskDao: TeamTaskDao,
     private val myLibraryDao: MyLibraryDao,
@@ -87,6 +84,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getTeamsForUpload(): List<TeamUploadData> {
+        refileMisfiledRequests()
         val teams = teamDao.getUpdatedTeams()
         val courseIds = teams.flatMap { it.courses.orEmpty() }.filter { it.isNotBlank() }.distinct()
         val courses = getCoursesForSerialization(courseIds)
@@ -106,6 +104,23 @@ class TeamsRepositoryImpl @Inject constructor(
                 imageName = team.imageName
             )
         }
+    }
+
+    private suspend fun refileMisfiledRequests() {
+        val requests = teamDao.getMisfiledRequests()
+        val teamIds = requests.mapNotNull { it.teamId }.filter { it.isNotBlank() }.distinct()
+        if (teamIds.isEmpty()) return
+        val teams = teamIds.chunked(500).flatMap { teamDao.getByIds(it) }.associateBy { it._id }
+        val refiled = requests.mapNotNull { request ->
+            val team = teams[request.teamId] ?: return@mapNotNull null
+            if (team.teamPlanetCode.isNullOrBlank() || request.teamPlanetCode == team.teamPlanetCode) return@mapNotNull null
+            request.apply {
+                teamPlanetCode = team.teamPlanetCode
+                teamType = team.teamType
+                updated = true
+            }
+        }
+        if (refiled.isNotEmpty()) teamDao.upsertAll(refiled)
     }
 
     override suspend fun deleteLocalTeamRecord(teamId: String?) {
@@ -131,13 +146,14 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun markTeamsUploaded(uploadedTeams: Map<String, String>) {
         if (uploadedTeams.isEmpty()) return
-        val teamsToUpdate = teamDao.getAll()
-            .filter { (it._id ?: it.id) in uploadedTeams.keys }
+        val teamsToUpdate = uploadedTeams.keys.toList().chunked(500)
+            .flatMap { chunk -> teamDao.getByIds(chunk) }
+            .distinctBy { it._id }
             .map { entity ->
                 entity.apply {
-                    _rev = uploadedTeams[_id ?: entity.id]
+                    _rev = uploadedTeams[_id]
                     updated = false
-                }.requireRoomEntity()
+                }
             }
         if (teamsToUpdate.isNotEmpty()) {
             teamDao.upsertAll(teamsToUpdate)
@@ -167,6 +183,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 userId = user._id
                 parentCode = user.parentCode
                 teamPlanetCode = user.planetCode
+                limit = MyTeam.DEFAULT_MEMBER_LIMIT
                 updated = true
             }
             val membership = MyTeam().apply {
@@ -180,7 +197,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 teamType = request.teamType
                 updated = true
             }
-            teamDao.upsertAll(listOf(team.requireRoomEntity(), membership.requireRoomEntity()))
+            teamDao.upsertAll(listOf(team, membership))
             teamId
         }
     }
@@ -219,37 +236,31 @@ class TeamsRepositoryImpl @Inject constructor(
             .toHashSet()
     }
 
-    private suspend fun getShareableTeams(userId: String?): List<MyTeam> {
-        return if (userId.isNullOrBlank()) {
-            teamDao.getRootTeamsByType("team")
-        } else {
-            val memberIds = getMemberTeamIds(userId)
-            if (memberIds.isEmpty()) {
-                emptyList()
-            } else {
-                teamDao.getRootTeamsByTypeAndIds("team", memberIds)
-            }
+    private suspend fun getShareableRootTeams(type: String, userId: String?): List<MyTeam> {
+        if (userId.isNullOrBlank()) {
+            return teamDao.getRootTeamsByType(type)
         }
+        val memberIds = getMemberTeamIds(userId)
+        if (memberIds.isEmpty()) {
+            return emptyList()
+        }
+        return teamDao.getRootTeamsByTypeAndIds(type, memberIds)
     }
 
     override suspend fun getTeamSummaries(userId: String?): List<TeamSummary> {
-        return getShareableTeams(userId).mapNotNull { it.toSummary() }
-    }
-
-    private suspend fun getShareableEnterprises(): List<MyTeam> {
-        return teamDao.getRootTeamsByType("enterprise")
+        return getShareableRootTeams("team", userId).map { it.toSummary() }
     }
 
     private suspend fun mapToTeamDetails(teams: List<MyTeam>, userId: String?): List<TeamDetails> {
-        val validTeams = teams.filter { !it._id.isNullOrBlank() && it.status != "archived" }
+        val validTeams = teams.filter { it._id.isNotBlank() && it.status != "archived" }
         if (validTeams.isEmpty()) return emptyList()
 
-        val teamIds = validTeams.mapNotNull { it._id }
+        val teamIds = validTeams.map { it._id }
         val visitCounts = getRecentVisitCounts(teamIds)
         val memberStatuses = getTeamMemberStatuses(userId, teamIds)
 
         return validTeams.map { team ->
-            val teamId = team._id ?: ""
+            val teamId = team._id
             val status = memberStatuses[teamId]
             TeamDetails(
                 _id = team._id,
@@ -318,17 +329,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getShareableEnterpriseSummaries(userId: String?): List<TeamSummary> {
-        val filtered = if (userId.isNullOrBlank()) {
-            getShareableEnterprises()
-        } else {
-            val memberIds = getMemberTeamIds(userId)
-            if (memberIds.isEmpty()) {
-                emptyList()
-            } else {
-                teamDao.getRootTeamsByTypeAndIds("enterprise", memberIds)
-            }
-        }
-        return filtered.mapNotNull { it.toSummary() }
+        return getShareableRootTeams("enterprise", userId).map { it.toSummary() }
     }
 
     override suspend fun getTeamResources(teamId: String): List<MyLibrary> {
@@ -392,7 +393,7 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun getTeamLabelInfo(teamId: String): TeamLabelInfo? {
         val team = teamDao.getById(teamId) ?: return null
         return TeamLabelInfo(
-            teamId = team._id ?: "",
+            teamId = team._id,
             name = team.name ?: "",
             type = team.type ?: ""
         )
@@ -402,7 +403,7 @@ class TeamsRepositoryImpl @Inject constructor(
         if (requestId.isNullOrEmpty()) return null
         val req = teamDao.getById(requestId) ?: return null
         return JoinRequestInfo(
-            id = req._id ?: "",
+            id = req._id,
             teamId = req.teamId ?: "",
             userId = req.userId ?: ""
         )
@@ -412,10 +413,10 @@ class TeamsRepositoryImpl @Inject constructor(
         if (requestIds.isEmpty()) return emptyList()
         return requestIds.chunked(500)
             .flatMap { chunk -> teamDao.getByIds(chunk) }
-            .distinctBy { it._id ?: it.id }
+            .distinctBy { it._id }
             .map { entity ->
                 JoinRequestInfo(
-                    id = entity._id ?: entity.id,
+                    id = entity._id,
                     teamId = entity.teamId ?: "",
                     userId = entity.userId ?: ""
                 )
@@ -430,8 +431,24 @@ class TeamsRepositoryImpl @Inject constructor(
         if (ids.isEmpty()) return emptyMap()
         return ids.chunked(500)
             .flatMap { chunk -> teamDao.getByIds(chunk) }
-            .distinctBy { it._id ?: it.id }
-            .associateBy({ it._id ?: it.id }, { it.name ?: "Unknown Team" })
+            .distinctBy { it._id }
+            .associateBy({ it._id }, { it.name ?: "Unknown Team" })
+    }
+
+    override suspend fun getTaskById(taskId: String): TeamTask? {
+        return teamTaskDao.getById(taskId)
+    }
+
+    override suspend fun getTasksByIds(taskIds: List<String>): List<TeamTask> {
+        return teamTaskDao.getByIds(taskIds)
+    }
+
+    override suspend fun getTasksByTitles(titles: List<String>): List<TeamTask> {
+        return teamTaskDao.getByTitles(titles)
+    }
+
+    override suspend fun getTasksForUserBetween(userId: String, start: Long, end: Long): List<TeamTask> {
+        return teamTaskDao.getTasksForUserBetween(userId, start, end)
     }
 
     override suspend fun getJoinRequestTeamId(requestId: String): String? {
@@ -476,7 +493,7 @@ class TeamsRepositoryImpl @Inject constructor(
         val transactionDataList = mutableListOf<Transaction>()
         var balance = 0
         for (team in transactions) {
-            val id = team._id ?: continue
+            val id = team._id
             balance += if ("debit".equals(team.type, ignoreCase = true)) -team.amount else team.amount
             transactionDataList.add(
                 Transaction(
@@ -523,7 +540,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 docType = "transaction"
                 updated = true
             }
-            teamDao.upsert(transaction.requireRoomEntity())
+            teamDao.upsert(transaction)
             if (imageName != null && imageData != null) {
                 attachTeamImage(transactionId, imageName, imageData)
             }
@@ -557,7 +574,12 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun hasPendingRequest(teamId: String, userId: String?): Boolean {
         if (teamId.isBlank() || userId.isNullOrBlank()) return false
-        return teamDao.getByTeamIdUserIdAndDocType(teamId, userId, "request") != null
+        return findPendingRequest(teamId, userId) != null
+    }
+
+    private suspend fun findPendingRequest(teamId: String, userId: String): MyTeam? {
+        return teamDao.getByTeamIdAndDocType(teamId, "request")
+            .firstOrNull { it.userId == userId && !it.isDeletePending }
     }
 
     private suspend fun getTeamMemberStatuses(
@@ -587,7 +609,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 if (entry.isLeader) {
                     leaderSet.add(teamId)
                 }
-            } else if (entry.docType == "request") {
+            } else if (entry.docType == "request" && !entry.isDeletePending) {
                 pendingRequestSet.add(teamId)
             }
         }
@@ -624,22 +646,24 @@ class TeamsRepositoryImpl @Inject constructor(
                 isDeletePending = false
                 updated = false
             }
-            teamDao.upsert(updatedMembership.requireRoomEntity())
+            teamDao.upsert(updatedMembership)
             return
         }
+        if (hasPendingRequest(teamId, userId)) return
 
+        val team = teamDao.getById(teamId)
         val request = MyTeam().apply {
             _id = AndroidDecrypter.generateIv()
             docType = "request"
             createdDate = Date().time
-            this.teamType = teamType
+            this.teamType = team?.teamType ?: teamType
             this.userId = userId
             this.teamId = teamId
             updated = true
-            teamPlanetCode = userPlanetCode
+            teamPlanetCode = team?.teamPlanetCode ?: userPlanetCode
             this.userPlanetCode = userPlanetCode
         }
-        teamDao.upsert(request.requireRoomEntity())
+        teamDao.upsert(request)
     }
 
     override suspend fun respondToMemberRequest(
@@ -652,17 +676,28 @@ class TeamsRepositoryImpl @Inject constructor(
         }
 
         return runCatching {
-            val request = teamDao.getByTeamIdUserIdAndDocType(teamId, userId, "request")
-                ?: throw IllegalStateException("Request not found for user $userId")
+            appDatabase.withTransaction {
+                val request = findPendingRequest(teamId, userId)
+                    ?: throw IllegalStateException("Request not found for user $userId")
 
-            if (accept) {
-                val accepted = request.apply {
-                    docType = "membership"
-                    updated = true
+                if (accept) {
+                    val limit = getTeamMemberLimit(teamId)
+                    if (limit > 0 && getMemberCountTowardLimit(teamId) >= limit) {
+                        throw IllegalStateException("Team $teamId is full")
+                    }
+                    val accepted = request.apply {
+                        docType = "membership"
+                        updated = true
+                    }
+                    teamDao.upsert(accepted)
+                } else if (request._rev.isNullOrBlank()) {
+                    teamDao.deleteById(request._id)
+                } else {
+                    teamDao.upsert(request.apply {
+                        isDeletePending = true
+                        updated = true
+                    })
                 }
-                teamDao.upsert(accepted.requireRoomEntity())
-            } else {
-                teamDao.deleteById(request._id ?: request.id)
             }
         }
     }
@@ -685,7 +720,8 @@ class TeamsRepositoryImpl @Inject constructor(
         if (teamId.isBlank() || resources.isEmpty() || userId.isNullOrBlank()) return
 
         val user = userRepository.getUserById(userId) ?: return
-        val teamResources = resources.mapNotNull { resource ->
+        val team = teamDao.getById(teamId)
+        val teamResources = resources.map { resource ->
             MyTeam().apply {
                 _id = UUID.randomUUID().toString()
                 this.teamId = teamId
@@ -694,8 +730,8 @@ class TeamsRepositoryImpl @Inject constructor(
                 resourceId = resource.resourceId
                 docType = "resourceLink"
                 updated = true
-                teamType = "local"
-                teamPlanetCode = user.planetCode
+                teamType = team?.teamType ?: "local"
+                teamPlanetCode = team?.teamPlanetCode ?: user.planetCode
                 userPlanetCode = user.planetCode
             }
         }
@@ -712,7 +748,7 @@ class TeamsRepositoryImpl @Inject constructor(
             this.resourceId = ""
             updated = true
         }
-        teamDao.upsert(updatedResource.requireRoomEntity())
+        teamDao.upsert(updatedResource)
     }
 
     override suspend fun createLocalResourceLink(
@@ -735,7 +771,7 @@ class TeamsRepositoryImpl @Inject constructor(
             docType = "resourceLink"
             updated = true
         }
-        teamDao.upsert(resourceLink.requireRoomEntity())
+        teamDao.upsert(resourceLink)
     }
 
     override suspend fun getPendingTasksForUser(
@@ -880,7 +916,7 @@ class TeamsRepositoryImpl @Inject constructor(
             updatedBy?.let { team.createdBy = it }
             team.limit = 12
             team.updated = true
-            teamDao.upsert(team.requireRoomEntity())
+            teamDao.upsert(team)
             true
         }
     }
@@ -905,7 +941,7 @@ class TeamsRepositoryImpl @Inject constructor(
         team.isPublic = isPublic
         team.createdBy = createdBy.takeIf { it.isNotBlank() } ?: team.createdBy
         team.updated = true
-        teamDao.upsert(team.requireRoomEntity())
+        teamDao.upsert(team)
         return true
     }
 
@@ -939,8 +975,10 @@ class TeamsRepositoryImpl @Inject constructor(
                 uploadManager.uploadTeams()
                 uploadManager.uploadTeamActivities()
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "uploadTeamActivities failed", e)
         }
     }
 
@@ -973,24 +1011,21 @@ class TeamsRepositoryImpl @Inject constructor(
             .filter { !it.isDeletePending } // Filter so only the not pending members get query
             .mapNotNull { it.userId }
             .distinct()
-        if (teamMembers.isEmpty()) return emptyList()
-        val users = userRepository.getUsersByIds(teamMembers)
+        return mapUsersByAnyId(teamMembers)
+    }
+    
+    private suspend fun mapUsersByAnyId(ids: List<String>): List<UserEntity> {
+        if (ids.isEmpty()) return emptyList()
+        val users = userRepository.getUsersByIds(ids)
         val userMap = HashMap<String, UserEntity>(users.size * 2)
         users.forEach { user ->
             userMap[user.id] = user
             user._id?.let { userMap[it] = user }
         }
-        return teamMembers.mapNotNull { userMap[it] }
+        return ids.mapNotNull { userMap[it] }
     }
 
     override suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData> {
-        data class MemberStats(
-            val member: UserEntity,
-            val visitCount: Long,
-            val lastVisitTimestamp: Long?,
-            val isLeader: Boolean,
-        )
-
         val members = getJoinedMembers(teamId).toMutableList()
         val communityLeadersJson = sharedPrefManager.getCommunityLeaders()
 
@@ -1037,46 +1072,50 @@ class TeamsRepositoryImpl @Inject constructor(
             emptyList()
         }
 
-        val visitCounts = logs.groupingBy { it.user }.eachCount()
-        val lastVisits = logs.groupBy { it.user }.mapValues { (_, userLogs) -> userLogs.maxOfOrNull { it.time ?: 0 } }
+        data class VisitStats(
+            var count: Long = 0L,
+            var latestVisit: Long? = null,
+        )
+
+        val visitStatsMap = HashMap<String?, VisitStats>()
+        for (log in logs) {
+            val stats = visitStatsMap.getOrPut(log.user) { VisitStats() }
+            stats.count++
+            val logTime = log.time ?: 0L
+            stats.latestVisit = stats.latestVisit?.let { maxOf(it, logTime) } ?: logTime
+        }
 
         return orderedMembers.map { member ->
-            val visitCount = visitCounts[member.name]?.toLong() ?: 0L
-            val lastVisitTimestamp = lastVisits[member.name]
-            val lastLogoutTimestamp = activitiesRepository.getLastVisit(member.name ?: "")
-            val profileLastVisit = if (lastLogoutTimestamp != null) {
-                DATE_TIME_FORMATTER.format(Instant.ofEpochMilli(lastLogoutTimestamp))
-            } else {
-                "No logout record found"
-            }
-            val offlineVisits = "${member.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0}"
+            val stats = visitStatsMap[member.name]
             JoinedMemberData(
                 user = member,
-                visitCount = visitCount,
-                lastVisitDate = lastVisitTimestamp,
-                offlineVisits = offlineVisits,
-                profileLastVisit = profileLastVisit,
+                visitCount = stats?.count ?: 0L,
+                lastVisitDate = stats?.latestVisit,
                 isLeader = member.id in leaderIds
             )
         }
+    }
+
+    override suspend fun getTeamMemberLimit(teamId: String): Int {
+        if (teamId.isBlank()) return 0
+        return teamDao.getById(teamId)?.limit ?: 0
     }
 
     override suspend fun getJoinedMemberCount(teamId: String): Int {
         return teamDao.countByTeamIdAndDocType(teamId, "membership")
     }
 
+    override suspend fun getMemberCountTowardLimit(teamId: String): Int {
+        if (teamId.isBlank()) return 0
+        return teamDao.countActiveMembershipsByTeamId(teamId)
+    }
+
     override suspend fun getRequestedMembers(teamId: String): List<UserEntity> {
         val requestedMemberIds = teamDao.getByTeamIdAndDocType(teamId, "request")
+            .filterNot { it.isDeletePending }
             .mapNotNull { it.userId }
             .distinct()
-        if (requestedMemberIds.isEmpty()) return emptyList()
-        val users = userRepository.getUsersByIds(requestedMemberIds)
-        val userMap = HashMap<String, UserEntity>(users.size * 2)
-        users.forEach { user ->
-            userMap[user.id] = user
-            user._id?.let { userMap[it] = user }
-        }
-        return requestedMemberIds.mapNotNull { userMap[it] }
+        return mapUsersByAnyId(requestedMemberIds)
     }
 
     override suspend fun isTeamNameExists(name: String, type: String, excludeTeamId: String?): Boolean {
@@ -1154,18 +1193,18 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     private fun teamLogFromJson(json: JsonObject): TeamLog {
-        val remoteId = JsonUtils.getString("_id", json)
+        val remoteId = GsonUtils.getString("_id", json)
         return TeamLog().apply {
             id = remoteId
-            _rev = JsonUtils.getString("_rev", json)
+            _rev = GsonUtils.getString("_rev", json)
             _id = remoteId
-            type = JsonUtils.getString("type", json)
-            user = JsonUtils.getString("user", json)
-            createdOn = JsonUtils.getString("createdOn", json)
-            parentCode = JsonUtils.getString("parentCode", json)
-            time = JsonUtils.getLong("time", json)
-            teamId = JsonUtils.getString("teamId", json)
-            teamType = JsonUtils.getString("teamType", json)
+            type = GsonUtils.getString("type", json)
+            user = GsonUtils.getString("user", json)
+            createdOn = GsonUtils.getString("createdOn", json)
+            parentCode = GsonUtils.getString("parentCode", json)
+            time = GsonUtils.getLong("time", json)
+            teamId = GsonUtils.getString("teamId", json)
+            teamType = GsonUtils.getString("teamType", json)
         }
     }
 
@@ -1178,7 +1217,7 @@ class TeamsRepositoryImpl @Inject constructor(
         ob.addProperty("teamType", log.teamType)
         ob.addProperty("time", log.time)
         ob.addProperty("teamId", log.teamId)
-        ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+        ob.addDocumentOrigin()
         ob.addProperty("deviceName", NetworkUtils.getDeviceName())
         ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
         if (!TextUtils.isEmpty(log._rev)) {
@@ -1203,25 +1242,31 @@ class TeamsRepositoryImpl @Inject constructor(
         var processedCount = 0
         try {
             val validDocuments = documents.filter { doc ->
-                val id = JsonUtils.getString("_id", doc)
+                val id = GsonUtils.getString("_id", doc)
                 id.isNotEmpty() && !id.startsWith("_design")
             }
-            val ids = validDocuments.map { JsonUtils.getString("_id", it) }
-            val existingTeams = teamDao.getAll()
-                .filter { (it._id ?: it.id) in ids }
-                .associateBy { it._id ?: it.id }
+            if (validDocuments.isEmpty()) return 0
+            val ids = validDocuments.map { GsonUtils.getString("_id", it) }
+            val existingTeams = ids.chunked(500)
+                .flatMap { chunk -> teamDao.getByIds(chunk) }
+                .distinctBy { it._id }
+                .associateBy { it._id }
                 .toMutableMap()
 
             validDocuments.forEach { doc ->
                 try {
                     insertMyTeam(doc, existingTeams)
                     processedCount++
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Failed to insert team document", e)
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "batchInsertMyTeams failed", e)
         }
         return processedCount
     }
@@ -1231,15 +1276,15 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     private suspend fun insertMyTeam(doc: JsonObject, existingTeams: MutableMap<String, MyTeam>?) {
-        val status = JsonUtils.getString("status", doc)
+        val status = GsonUtils.getString("status", doc)
         if (status == "archived") return
 
-        val teamId = JsonUtils.getString("_id", doc)
+        val teamId = GsonUtils.getString("_id", doc)
         if (teamId.isBlank()) return
 
-        val docType = JsonUtils.getString("docType", doc)
-        val userId = JsonUtils.getString("userId", doc)
-        val teamIdField = JsonUtils.getString("teamId", doc)
+        val docType = GsonUtils.getString("docType", doc)
+        val userId = GsonUtils.getString("userId", doc)
+        val teamIdField = GsonUtils.getString("teamId", doc)
 
         if (docType == "membership" && userId.isNotBlank() && teamIdField.isNotBlank()) {
             teamDao.deleteByTeamIdUserIdAndDocType(teamIdField, userId, "request")
@@ -1252,61 +1297,59 @@ class TeamsRepositoryImpl @Inject constructor(
         val model = existingTeam ?: MyTeam().apply { _id = teamId }
         MyTeam.populateTeamFields(doc, model, true)
         processDescription(model.description)
-        val entity = model.requireRoomEntity()
-        teamDao.upsert(entity)
-        existingTeams?.put(teamId, entity)
+        teamDao.upsert(model)
+        existingTeams?.put(teamId, model)
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
-        val ids = mutableListOf<String>()
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-                ids.add(id)
-            }
-        }
-        val existingTeams = teamDao.getAll()
-            .filter { (it._id ?: it.id) in ids }
-            .associateBy { it._id ?: it.id }
+        val syncDocs = jsonArray.toSyncDocuments()
+        if (syncDocs.isEmpty()) return
+        val ids = syncDocs.map { it.first }
+        val existingTeams = ids.chunked(500)
+            .flatMap { chunk -> teamDao.getByIds(chunk) }
+            .distinctBy { it._id }
+            .associateBy { it._id }
             .toMutableMap()
         // Wrap the whole batch in a single Room transaction. insertMyTeam upserts one row at a
         // time (it also runs per-doc membership/request dedup deletes), so without this each of
         // the ~1000 docs in a heavy-table sync page would commit — and fsync — on its own,
         // turning one page into minutes of work. One transaction => one commit for the page.
         appDatabase.withTransaction {
-            documentList.forEach { jsonDoc ->
+            syncDocs.forEach { (_, jsonDoc) ->
                 insertMyTeam(jsonDoc, existingTeams)
             }
         }
     }
 
     override suspend fun bulkInsertTasksFromSync(jsonArray: JsonArray) {
-        val tasks = ArrayList<TeamTask>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                tasks.add(TeamTask.fromJson(jsonDoc))
+        val tasks = jsonArray.toSyncDocuments().map { (_, doc) -> TeamTask.fromJson(doc) }
+        appDatabase.withTransaction {
+            val localIdByRemoteId = teamTaskDao.getByRemoteIds(tasks.mapNotNull { it._id?.takeIf(String::isNotBlank) })
+                .filter { it._id != null && it.id != it._id }
+                .associate { it._id!! to it.id }
+            val duplicateIds = mutableListOf<String>()
+            tasks.forEach { task ->
+                localIdByRemoteId[task._id]?.let { localId ->
+                    duplicateIds += task.id
+                    task.id = localId
+                }
             }
+            val existingById = teamTaskDao.getByIds(tasks.map { it.id }).associateBy { it.id }
+            val toSave = tasks.map { task ->
+                val existing = existingById[task.id] ?: return@map task
+                if (existing.isUpdated) {
+                    existing.apply { _rev = task._rev }
+                } else {
+                    task.apply { isNotified = existing.isNotified && existing.deadline == deadline }
+                }
+            }
+            teamTaskDao.deleteByIds(duplicateIds)
+            teamTaskDao.upsertAll(toSave)
         }
-        teamTaskDao.upsertAll(tasks)
     }
 
     override suspend fun bulkInsertTeamActivitiesFromSync(jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
-        }
+        val documentList = jsonArray.toSyncDocuments().map { it.second }
         insertTeamLogs(documentList)
     }
 
@@ -1326,9 +1369,8 @@ class TeamsRepositoryImpl @Inject constructor(
 
     private suspend fun updateTeamEntityById(id: String, updater: (MyTeam) -> Unit): Boolean {
         val entity = teamDao.getById(id) ?: return false
-        val model = entity
-        updater(model)
-        teamDao.upsert(model.requireRoomEntity())
+        updater(entity)
+        teamDao.upsert(entity)
         return true
     }
 
@@ -1337,23 +1379,19 @@ class TeamsRepositoryImpl @Inject constructor(
             .filter { it.userId == userId }
         memberships.forEach { membership ->
             if (membership._rev.isNullOrBlank()) {
-                teamDao.deleteById(membership._id ?: membership.id)
+                teamDao.deleteById(membership._id)
             } else {
                 val updatedMembership = membership.apply {
                     isDeletePending = true
                     updated = true
                 }
-                teamDao.upsert(updatedMembership.requireRoomEntity())
+                teamDao.upsert(updatedMembership)
             }
         }
     }
 
-    private fun MyTeam.requireRoomEntity(): MyTeam {
-        return this
-    }
-
-    private fun MyTeam.toSummary(): TeamSummary? {
-        val id = _id ?: return null
+    private fun MyTeam.toSummary(): TeamSummary {
+        val id = _id
         return TeamSummary(
             _id = id,
             name = name ?: "",
@@ -1395,6 +1433,6 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     companion object {
-        private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("MMMM dd, yyyy hh:mm a", Locale.getDefault()).withZone(ZoneId.systemDefault())
+        private const val TAG = "TeamsRepository"
     }
 }

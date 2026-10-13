@@ -1,11 +1,24 @@
 package org.ole.planet.myplanet.repository
 
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.model.UserEntity
+
+data class CommunityConfiguration(
+    val parentCode: String,
+    val communityName: String,
+    val planetType: String?
+)
+
+sealed interface HealthCheckResult {
+    data object NotConfigured : HealthCheckResult
+    data object Healthy : HealthCheckResult
+    data class Failed(val reason: String) : HealthCheckResult
+    data object InitFailed : HealthCheckResult
+}
 
 interface ConfigurationsRepository {
-    suspend fun checkHealth(): String
-    fun checkVersion(callback: CheckVersionCallback, spm: SharedPrefManager)
+    suspend fun checkHealth(): HealthCheckResult
+    fun checkVersion(callback: CheckVersionCallback)
     suspend fun checkServerAvailability(): Boolean
     suspend fun checkServerAvailability(url: String): Boolean
     suspend fun checkCheckSum(path: String): Boolean
@@ -14,7 +27,9 @@ interface ConfigurationsRepository {
     fun getPlanetType(): String?
     fun getParentCode(): String
     fun getCommunityName(): String
-    fun getCommunityLeaders(): String
+    fun getCommunityConfiguration(): CommunityConfiguration
+    fun getCommunityLeaders(): List<UserEntity>
+    suspend fun syncCommunityLeaders()
     fun clearPreferences()
     suspend fun ensureServerUrlUpdated()
     suspend fun clearFirstRunStorageAndSetFlag(hasWritePermission: Boolean)
@@ -30,4 +45,6 @@ interface ConfigurationsRepository {
         data class Success(val id: String, val code: String, val url: String, val defaultUrl: String, val isAlternativeUrl: Boolean) : ConfigurationResult()
         data class Failure(val errorMessage: String, val url: String) : ConfigurationResult()
     }
+
+    suspend fun clearLocalAppData()
 }

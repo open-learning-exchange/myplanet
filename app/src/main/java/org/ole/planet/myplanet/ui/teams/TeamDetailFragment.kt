@@ -14,14 +14,12 @@ import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.callback.OnChangedListener
-import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
@@ -56,7 +54,6 @@ class TeamDetailFragment : BaseTeamFragment() {
     private var directTeamId: String? = null
     private val teamLastPage = mutableMapOf<String, String>()
     private var pageConfigs: List<TeamPageConfig> = emptyList()
-    private var loadTeamJob: Job? = null
 
     private fun pageIndexById(pageId: String?): Int? {
         pageId ?: return null
@@ -109,50 +106,14 @@ class TeamDetailFragment : BaseTeamFragment() {
 
         renderPlaceholder()
 
-        loadTeamJob?.cancel()
-        loadTeamJob = viewLifecycleOwner.lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val user = userSessionManager.getUserModel()
-            val resolvedTeam = when {
-                shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
-                    teamsRepository.getTeamByIdOrTeamId(teamId)
-                }
-
-                else -> {
-                    val effectiveTeamId = (directTeamId ?: "").ifEmpty { teamId }
-                    if (effectiveTeamId.isNotEmpty()) {
-                        teamsRepository.getTeamById(effectiveTeamId)
-                    } else {
-                        null
-                    }
-                }
-            }
-
-            if (!isAdded) {
-                return@launch
-            }
-
-            if (shouldQueryRealm(teamId) && resolvedTeam == null) {
-                Snackbar.make(
-                    binding.root,
-                    getString(R.string.no_team_available),
-                    Snackbar.LENGTH_LONG
-                ).show()
-                return@launch
-            }
-
-            resolvedTeam?.let { team = it }
-
-            val hasPendingRequest = team?._id?.let {
-                teamsRepository.hasPendingRequest(it, user?.id)
-            } ?: false
-
-            binding.loadingIndicator?.visibility = View.GONE
-            binding.contentLayout?.visibility = View.VISIBLE
-            setupTeamDetails(isMyTeam, user, hasPendingRequest)
-            val targetPageId = arguments?.getString("navigateToPage") ?: team?._id?.let { teamLastPage[it] }
-            setupViewPager(isMyTeam, targetPageId)
-
-            loadTeamJob = null
+            teamViewModel.loadTeamDetail(
+                primaryTeamId = teamId,
+                fallbackTeamId = directTeamId,
+                isMyTeam = isMyTeam,
+                userId = user?.id
+            )
         }
 
         return binding.root
@@ -166,23 +127,14 @@ class TeamDetailFragment : BaseTeamFragment() {
         binding.viewPager2.adapter = null
     }
 
-    private fun setupTeamDetails(isMyTeam: Boolean, user: UserEntity?, hasPendingRequest: Boolean) {
+    private fun setupTeamDetails(isMyTeam: Boolean, user: UserEntity?) {
         binding.title.text = getEffectiveTeamName()
         binding.subtitle.text = getEffectiveTeamType()
 
         if (!isMyTeam) {
-            setupNonMyTeamButtons(user, hasPendingRequest)
+            setupNonMyTeamButtons(user)
         } else {
             setupMyTeamButtons(user)
-        }
-
-        team?._id?.let { id ->
-            viewLifecycleOwner.lifecycleScope.launch {
-                val memberCount = teamsRepository.getJoinedMemberCount(id)
-                if (memberCount <= 1 && isMyTeam) {
-                    binding.btnLeave.visibility = View.GONE
-                }
-            }
         }
     }
 
@@ -230,12 +182,6 @@ class TeamDetailFragment : BaseTeamFragment() {
                             }
                         }
 
-                        val itemId = adapter?.getItemId(position) ?: position.toLong()
-                        val fragmentTag = "f$itemId"
-                        val fragment = childFragmentManager.findFragmentByTag(fragmentTag)
-                        if (fragment is OnTeamPageListener) {
-                            MainApplication.listener = fragment
-                        }
                     }
                 }
             )
@@ -246,7 +192,7 @@ class TeamDetailFragment : BaseTeamFragment() {
         }
     }
 
-    private fun setupNonMyTeamButtons(user: UserEntity?, hasPendingRequest: Boolean) {
+    private fun setupNonMyTeamButtons(user: UserEntity?) {
         binding.btnAddDoc.isEnabled = false
         binding.btnAddDoc.visibility = View.GONE
         binding.btnLeave.isEnabled = true
@@ -256,37 +202,18 @@ class TeamDetailFragment : BaseTeamFragment() {
             binding.btnLeave.isEnabled = false
             binding.btnLeave.visibility = View.GONE
         }
-
-        val teamId = team?._id
-        if (teamId.isNullOrEmpty()) {
-            Utilities.toast(activity, getString(R.string.no_team_available))
-            return
-        }
-
-        if (hasPendingRequest) {
-            binding.btnLeave.text = getString(R.string.requested)
-            binding.btnLeave.isEnabled = false
-        } else {
-            binding.btnLeave.text = getString(R.string.join)
-            binding.btnLeave.setOnClickListener {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    val userId = user?.id
-                    val userPlanetCode = user?.planetCode
-                    val teamType = team?.teamType
-                    teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
-                    binding.btnLeave.text = getString(R.string.requested)
-                    binding.btnLeave.isEnabled = false
-                    teamsRepository.recordTeamActivity()
-                }
-            }
-        }
     }
 
     private fun setupMyTeamButtons(user: UserEntity?) {
         binding.btnAddDoc.isEnabled = true
         binding.btnAddDoc.visibility = View.VISIBLE
         binding.btnLeave.isEnabled = true
-        binding.btnLeave.visibility = View.VISIBLE
+        val memberCount = teamViewModel.memberCount.value
+        binding.btnLeave.visibility = if (memberCount != null && memberCount <= 1) {
+            View.GONE
+        } else {
+            View.VISIBLE
+        }
 
         binding.btnLeave.setOnClickListener {
             MaterialAlertDialogBuilder(requireContext(), R.style.CustomAlertDialog).setMessage(R.string.confirm_exit)
@@ -295,7 +222,7 @@ class TeamDetailFragment : BaseTeamFragment() {
                         user?.let { currentUser ->
                             viewLifecycleOwner.lifecycleScope.launch {
                                 val teamId = currentTeam._id ?: return@launch
-                                teamsRepository.leaveTeam(teamId, currentUser.id)
+                                teamViewModel.leaveTeam(teamId, currentUser.id)
                                 Utilities.toast(activity, getString(R.string.left_team))
                                 val lastPageId =
                                     currentTeam._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
@@ -321,99 +248,145 @@ class TeamDetailFragment : BaseTeamFragment() {
 
             viewLifecycleOwner.lifecycleScope.launch {
                 delay(delayMs)
-                val pageListener = childFragmentManager.fragments.firstOrNull {
-                    it is OnTeamPageListener && it.arguments?.getString("fragmentType") == targetPageId
-                } as? OnTeamPageListener
-                when {
-                    pageListener != null -> {
-                        if (isEnterprise) {
-                            pageListener.onAddDocument()
-                        } else {
-                            pageListener.onAddCourse()
-                        }
-                    }
-                    MainApplication.listener is OnTeamPageListener -> {
-                        if (isEnterprise) {
-                            MainApplication.listener?.onAddDocument()
-                        } else {
-                            MainApplication.listener?.onAddCourse()
-                        }
+                val pageListener = resolveTeamPageListener(childFragmentManager.fragments, targetPageId)
+                if (pageListener != null) {
+                    if (isEnterprise) {
+                        pageListener.onAddDocument()
+                    } else {
+                        pageListener.onAddCourse()
                     }
                 }
             }
         }
     }
 
-    private suspend fun refreshTeamDetails() {
+    private fun refreshTeamDetails() {
         if (!isAdded || requireActivity().isFinishing) return
 
-        try {
-            val primaryTeamId = requireArguments().getString("id") ?: ""
-            val fallbackTeamId = directTeamId ?: ""
-            val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
+        val primaryTeamId = requireArguments().getString("id") ?: ""
+        val fallbackTeamId = directTeamId ?: ""
+        val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
 
-            val updatedTeam = when {
-                primaryTeamId.isNotEmpty() -> teamsRepository.getTeamByIdOrTeamId(primaryTeamId)
-                fallbackTeamId.isNotEmpty() -> teamsRepository.getTeamById(fallbackTeamId)
-                else -> null
-            }
-
-            if (updatedTeam != null) {
-                team = updatedTeam
-
-                // Update arguments and direct variables with new team data
-                directTeamName = updatedTeam.name
-                directTeamType = updatedTeam.type
-                requireArguments().apply {
-                    putString("teamName", updatedTeam.name)
-                    putString("teamType", updatedTeam.type)
-                }
-
-                val lastPageId = team?._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
-                setupViewPager(isMyTeam, lastPageId)
-
-                binding.title.text = updatedTeam.name
-                binding.subtitle.text = updatedTeam.type
-
-                team?._id?.let { id ->
-                    val memberCount = teamsRepository.getJoinedMemberCount(id)
-                    if (memberCount <= 1 && isMyTeam) {
-                        binding.btnLeave.visibility = View.GONE
-                    } else {
-                        binding.btnLeave.visibility = View.VISIBLE
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val user = userSessionManager.getUserModel()
+            teamViewModel.loadTeamDetail(primaryTeamId, fallbackTeamId, isMyTeam, user?.id)
         }
     }
 
     private fun onMemberChanged() {
-        _binding ?: return
-        _binding?.let { binding ->
-            val teamId = team?._id ?: return@let
-            viewLifecycleOwner.lifecycleScope.launch {
-                val joinedCount = teamsRepository.getJoinedMemberCount(teamId)
-                binding.btnLeave.visibility = if (joinedCount <= 1) {
-                    View.GONE
-                } else {
-                    View.VISIBLE
-                }
-            }
-        }
+        refreshTeamDetails()
     }
 
     private fun onTeamDetailsUpdated() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            refreshTeamDetails()
-        }
+        refreshTeamDetails()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        observeViewModel()
         setupRealtimeSync()
         createTeamLog()
+    }
+
+    private fun updateJoinButtonState(state: TeamJoinState, user: UserEntity?) {
+        val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
+        if (isMyTeam) return
+
+        if (state == TeamJoinState.UNKNOWN) return
+
+        if (user?.id?.startsWith("guest") == true) {
+            binding.btnLeave.isEnabled = false
+            binding.btnLeave.visibility = View.GONE
+            return
+        }
+
+        val currentTeam = team ?: (teamViewModel.teamDetailState.value as? TeamDetailState.Success)?.team
+        val teamId = currentTeam?._id
+        if (teamId.isNullOrEmpty()) return
+
+        when (state) {
+            TeamJoinState.PENDING -> {
+                binding.btnLeave.text = getString(R.string.requested)
+                binding.btnLeave.isEnabled = false
+            }
+            TeamJoinState.JOINABLE -> {
+                binding.btnLeave.text = getString(R.string.join)
+                binding.btnLeave.isEnabled = true
+                binding.btnLeave.setOnClickListener {
+                    val userId = user?.id
+                    val userPlanetCode = user?.planetCode
+                    val teamType = currentTeam?.teamType
+                    teamViewModel.requestToJoin(teamId, userId, userPlanetCode, teamType)
+                }
+            }
+            TeamJoinState.LEAVE -> {
+                binding.btnLeave.text = getString(R.string.leave)
+                binding.btnLeave.isEnabled = true
+            }
+            TeamJoinState.UNKNOWN -> {}
+        }
+    }
+
+    private fun observeViewModel() {
+        collectWhenStarted(teamViewModel.teamDetailState) { state ->
+            when (state) {
+                is TeamDetailState.Loading -> {
+                    binding.loadingIndicator?.visibility = View.VISIBLE
+                    binding.contentLayout?.visibility = View.GONE
+                }
+                is TeamDetailState.NotFound -> {
+                    binding.loadingIndicator?.visibility = View.GONE
+                    binding.contentLayout?.visibility = View.VISIBLE
+                    Snackbar.make(
+                        binding.root,
+                        getString(R.string.no_team_available),
+                        Snackbar.LENGTH_LONG
+                    ).show()
+                }
+                is TeamDetailState.Success -> {
+                    val updatedTeam = state.team
+                    val previousTeamId = team?._id
+                    team = updatedTeam
+                    directTeamName = updatedTeam.name
+                    directTeamType = updatedTeam.type
+                    requireArguments().apply {
+                        putString("teamName", updatedTeam.name)
+                        putString("teamType", updatedTeam.type)
+                    }
+
+                    binding.loadingIndicator?.visibility = View.GONE
+                    binding.contentLayout?.visibility = View.VISIBLE
+
+                    val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
+                    val user = userSessionManager.getUserModel()
+                    setupTeamDetails(isMyTeam, user)
+
+                    if (previousTeamId != updatedTeam._id || binding.viewPager2.adapter == null) {
+                        val lastPageId = updatedTeam._id?.let { id -> teamLastPage[id] } ?: arguments?.getString("navigateToPage")
+                        setupViewPager(isMyTeam, lastPageId)
+                    }
+
+                    updateJoinButtonState(teamViewModel.joinState.value, user)
+                }
+            }
+        }
+
+        collectWhenStarted(teamViewModel.memberCount) { count ->
+            if (count == null) return@collectWhenStarted
+            val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
+            if (isMyTeam) {
+                if (count <= 1) {
+                    binding.btnLeave.visibility = View.GONE
+                } else {
+                    binding.btnLeave.visibility = View.VISIBLE
+                }
+            }
+        }
+
+        collectWhenStarted(teamViewModel.joinState) { state ->
+            val user = userSessionManager.getUserModel()
+            updateJoinButtonState(state, user)
+        }
     }
 
     override fun onNewsItemClick(news: News?) {}
@@ -430,7 +403,7 @@ class TeamDetailFragment : BaseTeamFragment() {
             val userPlanetCode = userModel.planetCode
             val userParentCode = userModel.parentCode
             val teamType = getEffectiveTeamType()
-            teamsRepository.logTeamVisit(
+            teamViewModel.logTeamVisit(
                 teamId = getEffectiveTeamId(),
                 userName = userName,
                 userPlanetCode = userPlanetCode,
@@ -455,8 +428,6 @@ class TeamDetailFragment : BaseTeamFragment() {
     }
 
     override fun onDestroyView() {
-        loadTeamJob?.cancel()
-        loadTeamJob = null
         super.onDestroyView()
         _binding = null
     }

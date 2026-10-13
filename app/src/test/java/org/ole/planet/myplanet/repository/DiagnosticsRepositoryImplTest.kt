@@ -1,15 +1,14 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkObject
 import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
 import java.io.File
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -24,16 +23,18 @@ import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.AppVersionProvider
 import org.ole.planet.myplanet.utils.CrashLogStore
-import org.ole.planet.myplanet.utils.VersionUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DiagnosticsRepositoryImplTest {
-    private lateinit var context: Context
     private lateinit var apkLogDao: ApkLogDao
     private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var userRepository: UserRepository
+    private lateinit var appVersionProvider: AppVersionProvider
     private lateinit var repository: DiagnosticsRepositoryImpl
+
+    private val testVersionName = "1.2.3-test"
 
     @After
     fun tearDown() {
@@ -42,18 +43,16 @@ class DiagnosticsRepositoryImplTest {
 
     @Before
     fun setUp() {
-        context = mockk()
         apkLogDao = mockk(relaxed = true)
         sharedPrefManager = mockk()
         userRepository = mockk()
+        appVersionProvider = mockk()
 
         every { sharedPrefManager.getParentCode() } returns "parent-123"
         every { sharedPrefManager.getPlanetCode() } returns "planet-456"
+        every { appVersionProvider.versionName } returns testVersionName
 
-        mockkObject(VersionUtils)
-        every { VersionUtils.getVersionName(any()) } returns "0.63.42"
-
-        repository = DiagnosticsRepositoryImpl(context, apkLogDao, userRepository, sharedPrefManager)
+        repository = DiagnosticsRepositoryImpl(apkLogDao, userRepository, sharedPrefManager, appVersionProvider)
     }
 
     @Test
@@ -74,7 +73,7 @@ class DiagnosticsRepositoryImplTest {
         assertEquals("", log.page)
         assertEquals("parent-123", log.parentCode)
         assertEquals("planet-456", log.createdOn)
-        assertEquals("0.63.42", log.version)
+        assertEquals(testVersionName, log.version)
         assertEquals("user-1", log.userId)
         assertNotNull(log.id)
         assertTrue(log.id.isNotEmpty())
@@ -100,6 +99,31 @@ class DiagnosticsRepositoryImplTest {
 
         assertFalse(result)
         coVerify(exactly = 0) { apkLogDao.insert(any()) }
+    }
+
+    @Test
+    fun `saveLogToRoom returns false when apkLogDao insert throws`() = runTest {
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { apkLogDao.insert(any()) } throws RuntimeException("insert failed")
+
+        val result = repository.saveLogToRoom("crash", "boom", "1700000000000")
+
+        assertFalse(result)
+    }
+
+    @Test(expected = CancellationException::class)
+    fun `saveLogToRoom rethrows CancellationException`() = runTest {
+        coEvery { userRepository.getUserModel() } throws CancellationException("cancelled")
+
+        repository.saveLogToRoom("crash", "boom", "1700000000000")
+    }
+
+    @Test(expected = CancellationException::class)
+    fun `saveLogToRoom rethrows CancellationException when apkLogDao insert throws`() = runTest {
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { apkLogDao.insert(any()) } throws CancellationException("cancelled")
+
+        repository.saveLogToRoom("crash", "boom", "1700000000000")
     }
 
     @Test
@@ -136,7 +160,7 @@ class DiagnosticsRepositoryImplTest {
         assertEquals("", first.page)
         assertEquals("parent-123", first.parentCode)
         assertEquals("planet-456", first.createdOn)
-        assertEquals("0.63.42", first.version)
+        assertEquals(testVersionName, first.version)
         assertEquals("user-1", first.userId)
         assertNotNull(first.id)
         assertTrue(first.id.isNotEmpty())
@@ -152,10 +176,6 @@ class DiagnosticsRepositoryImplTest {
         // Each log gets its own generated id.
         assertFalse(first.id == second.id)
 
-        // The three context lookups are hoisted above the map, so each runs once
-        // for the whole batch regardless of size (VersionUtils.getVersionName is
-        // a PackageManager IPC — the batch path flushes pending logs at startup).
-        verify(exactly = 1) { VersionUtils.getVersionName(any()) }
         verify(exactly = 1) { sharedPrefManager.getParentCode() }
         verify(exactly = 1) { sharedPrefManager.getPlanetCode() }
     }
@@ -187,6 +207,27 @@ class DiagnosticsRepositoryImplTest {
 
         assertFalse(result)
         coVerify(exactly = 0) { apkLogDao.insertAll(any()) }
+    }
+
+    @Test
+    fun `saveLogsToRoom returns false when apkLogDao insertAll throws`() = runTest {
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { apkLogDao.insertAll(any()) } throws RuntimeException("insertAll failed")
+
+        val result = repository.saveLogsToRoom(
+            listOf(CrashLogStore.PendingLog(File("/tmp/a.log"), "crash", "1700000000001", "err1"))
+        )
+
+        assertFalse(result)
+    }
+
+    @Test(expected = CancellationException::class)
+    fun `saveLogsToRoom rethrows CancellationException`() = runTest {
+        coEvery { userRepository.getUserModel() } throws CancellationException("cancelled")
+
+        repository.saveLogsToRoom(
+            listOf(CrashLogStore.PendingLog(File("/tmp/a.log"), "crash", "1700000000001", "err1"))
+        )
     }
 
     @Test
@@ -247,5 +288,31 @@ class DiagnosticsRepositoryImplTest {
         }
         verify(exactly = 0) { sharedPrefManager.getParentCode() }
         verify(exactly = 0) { sharedPrefManager.getPlanetCode() }
+    }
+
+    @Test
+    fun `markApkLogsUploaded returns empty set when updates is empty`() = runTest {
+        val result = repository.markApkLogsUploaded(emptyList())
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { apkLogDao.markUploadedBatch(any()) }
+    }
+
+    @Test
+    fun `markApkLogsUploaded delegates batch updates to apkLogDao`() = runTest {
+        val updates = listOf(
+            ApkLogUpload("log-1", "rev-1"),
+            ApkLogUpload("log-2", "rev-2")
+        )
+        val expectedDaoUpdates = listOf(
+            ApkLogDao.UploadUpdate("log-1", "rev-1"),
+            ApkLogDao.UploadUpdate("log-2", "rev-2")
+        )
+        coEvery { apkLogDao.markUploadedBatch(expectedDaoUpdates) } returns setOf("log-2")
+
+        val unapplied = repository.markApkLogsUploaded(updates)
+
+        assertEquals(setOf("log-2"), unapplied)
+        coVerify(exactly = 1) { apkLogDao.markUploadedBatch(expectedDaoUpdates) }
     }
 }

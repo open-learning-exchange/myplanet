@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
+import org.ole.planet.myplanet.ui.teams.members.MembersDetailInfo
 import org.ole.planet.myplanet.utils.DiffUtils
 
 internal class CommunityLeadersAdapter(
@@ -35,11 +36,10 @@ internal class CommunityLeadersAdapter(
 
     override fun onBindViewHolder(holder: CommunityLeadersViewHolder, position: Int) {
         val leader = getItem(position)
-        if (leader.firstName == null) {
-            holder.title.text = leader.name
-        } else {
-            holder.title.text = context.getString(R.string.message_placeholder, leader)
-        }
+        holder.title.text = listOfNotNull(leader.firstName, leader.middleName, leader.lastName)
+            .filter { it.isNotBlank() }
+            .joinToString(" ")
+            .ifBlank { leader.name }
         holder.tvDescription.text = leader.email
 
         holder.itemView.setOnClickListener {
@@ -51,16 +51,18 @@ internal class CommunityLeadersAdapter(
         val activity = context as? FragmentActivity
         if (activity?.findViewById<View>(R.id.fragment_container) != null) {
             val fragment = MembersDetailFragment.newInstance(
-                name = leader.name ?: "",
-                email = leader.email ?: "",
-                dob = leader.dob ?: "",
-                language = leader.language ?: "",
-                phone = leader.phoneNumber ?: "",
-                visits = "",
-                lastLogin = "",
-                username = leader.name ?: "",
-                memberLevel = leader.level ?: "",
-                imageUrl = null
+                MembersDetailInfo(
+                    id = leader.id,
+                    loginName = leader.name,
+                    name = leader.name ?: "",
+                    email = leader.email ?: "",
+                    dob = leader.dob ?: "",
+                    language = leader.language ?: "",
+                    phone = leader.phoneNumber ?: "",
+                    username = leader.name ?: "",
+                    memberLevel = leader.level ?: "",
+                    imageUrl = null
+                )
             )
             FragmentNavigator.replaceFragment(
                 activity.supportFragmentManager,

@@ -38,12 +38,12 @@ Always import a type and use its simple name. Never reference a class by its ful
 
 ```kotlin
 // Good
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 
-val title = JsonUtils.getString("title", doc)
+val title = GsonUtils.getString("title", doc)
 
 // BAD - inline fully-qualified name
-val title = org.ole.planet.myplanet.utils.JsonUtils.getString("title", doc)
+val title = org.ole.planet.myplanet.utils.GsonUtils.getString("title", doc)
 ```
 
 **On a name collision, use an import alias** instead of falling back to the fully-qualified name:
@@ -124,7 +124,7 @@ when (view.id) {
 
 ### Object Declarations
 
-Use `object` for singletons and utility holders. The codebase uses this extensively for utilities (`DialogUtils`, `JsonUtils`, `Constants`, `Utilities`). Don't create stateless classes where `object` would do.
+Use `object` for singletons and utility holders. The codebase uses this extensively for utilities (`DialogUtils`, `GsonUtils`, `Constants`, `Utilities`). Don't create stateless classes where `object` would do.
 
 ```kotlin
 object DialogUtils {
@@ -210,7 +210,7 @@ companion object {
 | Repository interface | `*Repository.kt` | `CoursesRepository.kt` |
 | Repository implementation | `*RepositoryImpl.kt` | `CoursesRepositoryImpl.kt` |
 | Room entity | plain name in `model/` | `MyCourse.kt`, `Submission.kt`, `UserEntity.kt` |
-| Room DAO | `*Dao.kt` in `data/room/dao/` | `RatingDao.kt` (several small DAOs share `LegacyEntityDaos.kt`) |
+| Room DAO | `*Dao.kt` in `data/room/dao/` | `RatingDao.kt` — one DAO per file (37 interfaces, 37 files) |
 | Worker | `*Worker.kt` | `AutoSyncWorker.kt` |
 | Callback interface | `On` prefix | `OnCourseItemSelectedListener.kt` |
 | DI module | `Module` suffix | `RepositoryModule.kt` |
@@ -401,7 +401,7 @@ For internal-only network calls use `NetworkResult<T>` (the sealed class in `dat
 
 ## Room Database
 
-All local persistence goes through Room: `AppDatabase` (`data/room/AppDatabase.kt`, 37 entities, `version = 6`), DAOs in `data/room/dao/`, and `Converters` (`data/room/Converters.kt`). There is no other local store.
+All local persistence goes through Room: `AppDatabase` (`data/room/AppDatabase.kt`, 38 entities, `version = 12`), DAOs in `data/room/dao/`, and `Converters` (`data/room/Converters.kt`). There is no other local store.
 
 ### Entity Classes
 
@@ -424,7 +424,7 @@ open class MyCourse(
 - `@PrimaryKey` for the key; `indices = [Index(...)]` on `@Entity` for frequently queried columns.
 - `@ColumnInfo(name = "_id")` / `"_rev"` map the CouchDB field names to Kotlin-friendly property names.
 - Non-persisted, computed, or in-memory-only fields use `@Ignore` (often combined with `@Transient`).
-- Multi-valued fields (`List<String>`, nested lists, `Date`) persist via `Converters` — Gson-serialized JSON strings, using the shared `JsonUtils.gson`.
+- Multi-valued fields (`List<String>`, nested lists, `Date`) persist via `Converters` — Gson-serialized JSON strings, using the shared `GsonUtils.gson`.
 
 ### DAOs
 
@@ -518,7 +518,7 @@ If you need a dependency not in an existing entry point, add it there — don't 
 
 ### Existing Qualifiers
 
-`@StandardHttpClient` / `@StandardRetrofit` (NetworkModule), `@ApplicationScope` (ServiceModule), `@AppPreferences` / `@DefaultPreferences` / `@DownloadPreferences` (SharedPreferencesModule). There are no dispatcher qualifiers — dispatchers come from the unqualified `DispatcherProvider`.
+`@StandardHttpClient` / `@ReachabilityHttpClient` / `@StandardRetrofit` / `@PlainGson` (NetworkModule), `@ApplicationScope` (ServiceModule), `@AppPreferences` / `@DefaultPreferences` / `@DownloadPreferences` (SharedPreferencesModule). There are no dispatcher qualifiers — dispatchers come from the unqualified `DispatcherProvider`.
 
 ---
 

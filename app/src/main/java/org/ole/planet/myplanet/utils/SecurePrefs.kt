@@ -27,12 +27,15 @@ object SecurePrefs {
 
     @Volatile private var cachedAead: Aead? = null
     @Volatile private var cachedSecureStore: SharedPreferences? = null
+    @Volatile private var cachedLegacyPrefs: SharedPreferences? = null
+
+    private const val TAG = "SecurePrefs"
 
     init {
         try {
             AeadConfig.register()
         } catch (e: GeneralSecurityException) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to register Tink AeadConfig", e)
         }
     }
 
@@ -89,7 +92,7 @@ object SecurePrefs {
             }
             encryptedPrefs
         } catch (e: Exception) {
-            Log.w("SecurePrefs", "Failed to create EncryptedSharedPreferences, clearing and retrying", e)
+            Log.w(TAG, "Failed to create EncryptedSharedPreferences, clearing and retrying", e)
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     context.deleteSharedPreferences(ENCRYPTED_PREFS_FILE_NAME)
@@ -98,7 +101,7 @@ object SecurePrefs {
                 keyStore.load(null)
                 keyStore.deleteEntry(MasterKey.DEFAULT_MASTER_KEY_ALIAS)
             } catch (cleanupEx: Exception) {
-                Log.w("SecurePrefs", "Cleanup failed", cleanupEx)
+                Log.w(TAG, "Cleanup failed", cleanupEx)
             }
 
             try {
@@ -148,20 +151,35 @@ object SecurePrefs {
 
     @Suppress("DEPRECATION")
     private fun getLegacyEncryptedPrefs(context: Context): SharedPreferences? {
-        return try {
-            val masterKey = MasterKey.Builder(context, MasterKey.DEFAULT_MASTER_KEY_ALIAS)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
-            EncryptedSharedPreferences.create(
-                context,
-                LEGACY_FILE_NAME,
-                masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            )
-        } catch (e: Exception) {
-            // If creation fails, maybe file is corrupted or key is lost.
-            null
+        cachedLegacyPrefs?.let { return it }
+
+        val appContext = context.applicationContext
+        val legacyPrefsFile = File(appContext.applicationInfo.dataDir, "shared_prefs/$LEGACY_FILE_NAME.xml")
+        if (!legacyPrefsFile.exists()) {
+            return null
+        }
+
+        return synchronized(this) {
+            cachedLegacyPrefs ?: try {
+                if (!legacyPrefsFile.exists()) {
+                    null
+                } else {
+                    val masterKey = MasterKey.Builder(appContext, MasterKey.DEFAULT_MASTER_KEY_ALIAS)
+                        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                        .build()
+                    EncryptedSharedPreferences.create(
+                        appContext,
+                        LEGACY_FILE_NAME,
+                        masterKey,
+                        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+                    ).also {
+                        cachedLegacyPrefs = it
+                    }
+                }
+            } catch (e: Exception) {
+                null
+            }
         }
     }
 
@@ -186,7 +204,7 @@ object SecurePrefs {
             val decrypted = aead.decrypt(bytes, null)
             String(decrypted, Charsets.UTF_8)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to decrypt credential value", e)
             null
         }
     }
@@ -212,7 +230,7 @@ object SecurePrefs {
                 remove("loginUserPassword")
              }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to save credentials", e)
         }
 
         plainPrefs.edit {
@@ -241,7 +259,7 @@ object SecurePrefs {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to read user name", e)
         }
 
         if (name.isNullOrEmpty()) {
@@ -253,7 +271,7 @@ object SecurePrefs {
                      store.edit { putString("loginUserName", encrypt(aead, name)) }
                      plainPrefs.edit { remove("loginUserName") }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Failed to migrate user name to secure store", e)
                 }
             }
         }
@@ -280,7 +298,7 @@ object SecurePrefs {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to read password", e)
         }
 
         if (pwd.isNullOrEmpty()) {
@@ -292,7 +310,7 @@ object SecurePrefs {
                      store.edit { putString("loginUserPassword", encrypt(aead, pwd)) }
                      plainPrefs.edit { remove("loginUserPassword") }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Failed to migrate password to secure store", e)
                 }
             }
         }
@@ -311,7 +329,7 @@ object SecurePrefs {
                 remove("loginUserPassword")
             }
         } catch (e: Exception) {
-             e.printStackTrace()
+            Log.e(TAG, "Failed to clear credentials", e)
         }
     }
 }

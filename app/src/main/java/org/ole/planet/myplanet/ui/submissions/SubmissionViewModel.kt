@@ -12,12 +12,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import org.ole.planet.myplanet.model.StepExam
-import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -29,11 +27,6 @@ class SubmissionViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val dispatcherProvider: DispatcherProvider,
 ) : ViewModel() {
-
-    private data class SubmissionViewData(
-        val submission: Submission,
-        val submitterName: String,
-    )
 
     private val _type = MutableStateFlow("")
     private val _query = MutableStateFlow("")
@@ -49,60 +42,26 @@ class SubmissionViewModel @Inject constructor(
         HashMap(submissionsRepository.getExamMap(subs))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), hashMapOf())
 
-    private val filteredSubmissionsRaw = combine(allSubmissionsFlow, _type, _query, exams, userIdFlow) { subs, type, query, examMap, uid ->
-        var filtered = when (type) {
-            "survey" -> subs.filter { it.userId == uid && it.type == "survey" }
-            "survey_submission" -> subs.filter {
-                it.userId == uid && it.type == "survey" && it.status != "pending"
-            }
-            else -> subs.filter { it.userId == uid && it.type != "survey" }
-        }.sortedByDescending { it.lastUpdateTime }
-
-        if (query.isNotEmpty()) {
-            val examIds = examMap.mapNotNullTo(HashSet()) { (id, exam) ->
-                if (exam.name?.contains(query, ignoreCase = true) == true) id else null
-            }
-            filtered = filtered.filter { examIds.contains(it.parentId) }
-        }
-
-        val uniqueRawSubmissions = mutableListOf<Submission>()
-        val submissionCountMap = HashMap<String?, Int>()
-        for (group in filtered.groupBy { it.parentId }.values) {
-            val newest = group.maxByOrNull { it.lastUpdateTime } ?: continue
-            uniqueRawSubmissions.add(newest)
-            submissionCountMap[newest.id] = group.size
-        }
-
-        val userIds = uniqueRawSubmissions.mapNotNull { it.userId }.distinct()
-        val fallbackUsersMap = userRepository.getUsersByIds(userIds).associateBy { it.id }
-
-        val uniqueSubmissions = uniqueRawSubmissions.map { sub ->
-            val name = submissionsRepository.getNormalizedSubmitterName(sub)
-            val fallback = sub.userId?.let { fallbackUsersMap[it]?.name }
-            SubmissionViewData(sub, name ?: fallback ?: "")
-        }.sortedByDescending { it.submission.lastUpdateTime }
-
-        Triple(uniqueSubmissions, submissionCountMap, filtered)
+    private val filteredProjections = combine(allSubmissionsFlow, _type, _query, exams, userIdFlow) { subs, type, query, examMap, uid ->
+        submissionsRepository.getSubmissionProjections(subs, uid, type, query, examMap)
     }.flowOn(dispatcherProvider.io).shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1)
 
-    val submissions: StateFlow<List<SubmissionUiModel>> = combine(filteredSubmissionsRaw, exams) { (uniqueSubmissions, submissionCountMap), examsMap ->
-        uniqueSubmissions.map { viewData ->
-            val examTitle = examsMap[viewData.submission.parentId]?.name ?: "Submissions"
-            val count = submissionCountMap[viewData.submission.id] ?: 1
+    val submissions: StateFlow<List<SubmissionUiModel>> = combine(filteredProjections, exams) { projections, examsMap ->
+        projections.map { projection ->
+            val examTitle = examsMap[projection.submission.parentId]?.name ?: "Submissions"
             SubmissionUiModel(
-                id = viewData.submission.id,
-                status = viewData.submission.status,
-                startTime = viewData.submission.startTime,
-                lastUpdateTime = viewData.submission.lastUpdateTime,
-                parentId = viewData.submission.parentId,
-                userId = viewData.submission.userId,
-                submitterName = viewData.submitterName,
+                id = projection.submission.id,
+                status = projection.submission.status,
+                startTime = projection.submission.startTime,
+                lastUpdateTime = projection.submission.lastUpdateTime,
+                parentId = projection.submission.parentId,
+                userId = projection.submission.userId,
+                submitterName = projection.submitterName,
                 examTitle = examTitle,
-                submissionCount = count
+                submissionCount = projection.submissionCount
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
 
     fun setFilter(type: String, query: String) {
         _type.value = type

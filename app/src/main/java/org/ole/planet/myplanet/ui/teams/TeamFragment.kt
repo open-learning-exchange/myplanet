@@ -7,7 +7,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -23,6 +22,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
 import org.ole.planet.myplanet.model.TeamDetails
@@ -36,9 +36,7 @@ import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
-class TeamFragment : Fragment() {
-    private var _binding: FragmentTeamBinding? = null
-    private val binding get() = _binding!!
+class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBinding::inflate) {
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
     @Inject
     lateinit var userSessionManager: UserSessionManager
@@ -63,7 +61,7 @@ class TeamFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentTeamBinding.inflate(inflater, container, false)
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         binding.addTeam.setOnClickListener { createTeamAlert(null) }
         binding.tvFragmentInfo.text = if (TextUtils.equals(type, "enterprise")) {
             getString(R.string.enterprises)
@@ -72,7 +70,7 @@ class TeamFragment : Fragment() {
         } else {
             getString(R.string.team)
         }
-        return binding.root
+        return view
     }
 
     fun createTeamAlert(team: TeamDetails?) {
@@ -361,7 +359,6 @@ class TeamFragment : Fragment() {
 
     override fun onDestroyView() {
         binding.rvTeamList.adapter = null
-        _binding = null
         super.onDestroyView()
     }
 }

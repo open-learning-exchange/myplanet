@@ -20,7 +20,6 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.model.UserEntity
 
 class UserEntityEncodeImageTest {
 
@@ -67,6 +66,24 @@ class UserEntityEncodeImageTest {
     fun testEncodeImageToBase64NullOrEmpty() {
         assertNull(realmUser.encodeImageToBase64(null))
         assertNull(realmUser.encodeImageToBase64(""))
+    }
+
+    @Test
+    fun testEncodeImageToBase64HttpsUrlReturnsNull() {
+        val url = "https://example.com/_users/123/img.jpg"
+        assertNull(realmUser.encodeImageToBase64(url))
+    }
+
+    @Test
+    fun testEncodeImageToBase64HttpUrlUpperCaseReturnsNull() {
+        val url = "HTTP://EXAMPLE.COM/IMAGE.JPG"
+        assertNull(realmUser.encodeImageToBase64(url))
+    }
+
+    @Test
+    fun testEncodeImageToBase64NonExistentFileReturnsNull() {
+        val nonExistentPath = "/path/to/non_existent_file.jpg"
+        assertNull(realmUser.encodeImageToBase64(nonExistentPath))
     }
 
     @Test

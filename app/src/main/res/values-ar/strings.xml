@@ -277,6 +277,7 @@
     <string name="assign_task_to">المهمة المخصصة لـ</string>
     <string name="leader_selected">القائد المختار</string>
     <string name="remove">إزالة</string>
+    <string name="remove_item_format">إزالة %s</string>
     <string name="make_leader">جعله قائدًا</string>
     <string name="mission"><![CDATA[المهمة والخدمات]]></string>
     <string name="team">الفرق</string>
@@ -551,6 +552,8 @@
     <string name="subject_level">مستوى الموضوع</string>
     <string name="order_by_date">ترتيب حسب التاريخ</string>
     <string name="order_by_title">ترتيب حسب العنوان</string>
+    <string name="sort">فرز</string>
+    <string name="show_n_results">عرض %1$d نتيجة</string>
     <string name="exams">الامتحانات</string>
     <string name="survey">الاستبيان</string>
     <string name="submitted_by">تم الإرسال بواسطة</string>
@@ -605,6 +608,7 @@
     <string name="please_select_starting_date">"يرجى تحديد تاريخ البدء: "</string>
     <string name="read_offline_news_from">"قراءة الأخبار غير المتصلة من: "</string>
     <string name="downloading_started_please_check_notification">بدأ التنزيل، يرجى التحقق من الإشعار…</string>
+    <string name="dictionary_parsing_failed">فشل تحليل القاموس.</string>
     <string name="file_already_exists">الملف موجود بالفعل…</string>
     <string name="feature_not_available">الميزة غير متاحة</string>
     <string name="sync">مزامنة</string>
@@ -914,11 +918,14 @@
     <string name="video_player">مشغل الفيديو</string>
     <string name="video_unavailable">الفيديو غير متاح — الملف غير موجود ولا يمكن الاتصال بالخادم</string>
     <string name="video_playback_error">خطأ في تشغيل الفيديو. حاول مرة أخرى أو تحقق من اتصالك</string>
+    <string name="audio_unavailable">الصوت غير متاح — الملف غير موجود ولا يمكن الاتصال بالخادم</string>
+    <string name="audio_playback_error">خطأ في تشغيل الصوت. حاول مرة أخرى أو تحقق من اتصالك</string>
     <string name="video_loading_checking_server">جارٍ التحقق من توفر الخادم…</string>
     <string name="video_loading_connecting">جارٍ الاتصال بالخادم…</string>
     <string name="video_loading_buffering">جارٍ التخزين المؤقت…</string>
     <string name="video_loading_local">جارٍ تحميل الفيديو…</string>
     <string name="unable_to_play_video">تعذر تشغيل الفيديو</string>
+    <string name="unable_to_play_audio">تعذر تشغيل الصوت</string>
     <string name="go_back">رجوع</string>
     <string name="progress_bar">شريط التقدم</string>
     <string name="web_view">عرض الويب</string>
@@ -984,6 +991,7 @@
     <string name="location_colon">&#160;الموقع:</string>
     <string name="recurring_colon">&#160;متكرر:</string>
     <string name="created_by_colon">&#160;تم إنشاؤه بواسطة:</string>
+    <string name="team_colon">&#160;الفريق:</string>
     <string name="you_want_to_connect_to_a_different_server">تريد الاتصال بخادم مختلف. امسح بيانات التطبيق للمتابعة</string>
     <string name="are_you_sure_you_want_to_clear_data">هل أنت متأكد أنك تريد مسح جميع البيانات؟</string>
     <string name="feedback_list">قائمة التغذية الراجعة</string>
@@ -997,7 +1005,9 @@
     <string name="no_teams">الفرق غير متوفرة</string>
     <string name="no_chats">لا توجد محادثات سابقة</string>
     <string name="no_feedback">لا توجد تعليقات متاحة</string>
+    <string name="medium_html">HTML</string>
     <string name="empty_text" />
+    <string name="filter_header_with_count">%1$s (%2$d)</string>
     <string name="message_placeholder">%s</string>
     <string name="reports">التقارير</string>
     <string name="number_placeholder">%d</string>
@@ -1018,9 +1028,10 @@
     <string name="user_name">%1$s (%2$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
-    <string name="member_description"><![CDATA[(\u200E%2$d زيارة) \u200E%1$s]]></string>
+    <string name="member_description"><![CDATA[(\u200E%2$d زيارة للفريق) \u200E%1$s]]></string>
     <string name="last_visit">الزيارة الأخيرة: %1$s</string>
     <string name="no_visit">لا زيارة</string>
+    <string name="no_logout_record_found">لم يتم العثور على سجل تسجيل خروج</string>
     <string name="dark_mode">الوضع الداكن</string>
     <string name="dark_mode_off">إيقاف</string>
     <string name="dark_mode_on">تشغيل</string>
@@ -1124,6 +1135,9 @@
     <string name="user_verification_in_progress">جارٍ التحقق من المستخدم. يرجى الانتظار أثناء معالجة البيانات.</string>
     <string name="go_to_mylibrary">انتقل إلى مكتبتي</string>
     <string name="choose_an_option">اختر خيارًا</string>
+    <string name="profile_guest_banner_message">ضيف — سجّل الدخول لحفظ ملفك الشخصي</string>
+    <string name="profile_label_level">المستوى</string>
+    <string name="profile_activity_section">النشاط</string>
     <string name="welcome">%1$s بعودتك</string>
     <string name="edit_plan">تعديل الخطة</string>
     <string name="show_additional_fields">عرض الحقول الإضافية</string>
@@ -1324,7 +1338,7 @@
     <string name="download_pdf">تحميل PDF</string>
     <string name="label_answer">الإجابة:</string>
     <string name="label_link">الرابط: </string>
-    <string name="number_of_visits">عدد الزيارات</string>
+    <string name="number_of_visits">إجمالي الزيارات</string>
     <string name="label_name_with_colon">الاسم:</string>
     <string name="label_relationship">العلاقة:</string>
     <string name="label_phone_no">رقم الهاتف:</string>
@@ -1407,4 +1421,6 @@
         <item>لم يتم التنزيل</item>
     </string-array>
 
+    <string name="playback_speed">سرعة التشغيل</string>
+    <string name="playback_speed_format">%1$sx</string>
 </resources>

@@ -4,12 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsMembersRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -17,8 +21,30 @@ import org.ole.planet.myplanet.repository.UserRepository
 data class RequestsUiState(
     val members: List<UserEntity> = emptyList(),
     val isLeader: Boolean = false,
-    val memberCount: Int = 0
+    val memberCount: Int = 0,
+    val memberLimit: Int = 0,
+    val currentUser: UserEntity = UserEntity()
 )
+
+data class MembersUiState(
+    val members: List<JoinedMemberData> = emptyList(),
+    val currentUserId: String? = null,
+    val isLeader: Boolean = false
+)
+
+enum class MemberAction {
+    LEAVE_TEAM,
+    REMOVE_MEMBER,
+    MAKE_LEADER
+}
+
+sealed interface MemberActionResult {
+    data object LeftTeam : MemberActionResult
+    data object MemberRemoved : MemberActionResult
+    data object CannotRemoveLastLeader : MemberActionResult
+    data object LeaderChanged : MemberActionResult
+    data class Failed(val action: MemberAction, val message: String?) : MemberActionResult
+}
 
 @HiltViewModel
 class RequestsViewModel @Inject constructor(
@@ -31,13 +57,92 @@ class RequestsViewModel @Inject constructor(
     private val _successAction = MutableSharedFlow<Unit>()
     val successAction = _successAction.asSharedFlow()
 
+    private val _membersState = MutableStateFlow(MembersUiState())
+    val membersState: StateFlow<MembersUiState> = _membersState.asStateFlow()
+
+    private val _actionResults = MutableSharedFlow<MemberActionResult>()
+    val actionResults: SharedFlow<MemberActionResult> = _actionResults.asSharedFlow()
+
+    fun loadJoinedMembers(teamId: String) {
+        viewModelScope.launch {
+            val members = teamsRepository.getJoinedMembersWithVisitInfo(teamId)
+            val currentUserId = userRepository.getUserModel()?.id
+            _membersState.value = MembersUiState(
+                members = members,
+                currentUserId = currentUserId,
+                isLeader = members.any { it.user.id == currentUserId && it.isLeader }
+            )
+        }
+    }
+
+    private suspend fun handOffLeadership(teamId: String, departingUserId: String?): Boolean {
+        val next = teamsRepository.getNextLeaderCandidate(teamId, departingUserId) ?: return false
+        next.id?.let { teamsRepository.updateTeamLeader(teamId, it) }
+        return true
+    }
+
+    fun leaveTeam(teamId: String) {
+        viewModelScope.launch {
+            try {
+                val currentUserId = userRepository.getUserModel()?.id
+                handOffLeadership(teamId, currentUserId)
+                currentUserId?.let { teamsRepository.removeMember(teamId, it) }
+                loadJoinedMembers(teamId)
+                _actionResults.emit(MemberActionResult.LeftTeam)
+            } catch (e: Exception) {
+                _actionResults.emit(MemberActionResult.Failed(MemberAction.LEAVE_TEAM, e.message))
+            }
+        }
+    }
+
+    fun removeMember(teamId: String, memberId: String) {
+        viewModelScope.launch {
+            try {
+                val currentUserId = userRepository.getUserModel()?.id
+                if (currentUserId == memberId) {
+                    if (!handOffLeadership(teamId, memberId)) {
+                        _actionResults.emit(MemberActionResult.CannotRemoveLastLeader)
+                        return@launch
+                    }
+                }
+                teamsRepository.removeMember(teamId, memberId)
+                loadJoinedMembers(teamId)
+                _actionResults.emit(MemberActionResult.MemberRemoved)
+            } catch (e: Exception) {
+                _actionResults.emit(MemberActionResult.Failed(MemberAction.REMOVE_MEMBER, e.message))
+            }
+        }
+    }
+
+    fun makeLeader(teamId: String, userId: String) {
+        viewModelScope.launch {
+            try {
+                teamsRepository.updateTeamLeader(teamId, userId)
+                loadJoinedMembers(teamId)
+                _actionResults.emit(MemberActionResult.LeaderChanged)
+            } catch (e: Exception) {
+                _actionResults.emit(MemberActionResult.Failed(MemberAction.MAKE_LEADER, e.message))
+            }
+        }
+    }
+
     fun fetchMembers(teamId: String) {
         viewModelScope.launch {
-            val members = teamsRepository.getRequestedMembers(teamId)
-            val memberCount = teamsRepository.getJoinedMemberCount(teamId)
-            val user = userRepository.getUserModel()
-            val isLeader = teamsRepository.isTeamLeader(teamId, user?.id)
-            _uiState.value = RequestsUiState(members, isLeader, memberCount)
+            coroutineScope {
+                val membersDeferred = async { teamsRepository.getRequestedMembers(teamId) }
+                val memberCountDeferred = async { teamsRepository.getMemberCountTowardLimit(teamId) }
+                val memberLimitDeferred = async { teamsRepository.getTeamMemberLimit(teamId) }
+                val userDeferred = async { userRepository.getUserModel() }
+                val user = userDeferred.await()
+                val isLeader = teamsRepository.isTeamLeader(teamId, user?.id)
+                _uiState.value = RequestsUiState(
+                    members = membersDeferred.await(),
+                    isLeader = isLeader,
+                    memberCount = memberCountDeferred.await(),
+                    memberLimit = memberLimitDeferred.await(),
+                    currentUser = user ?: UserEntity()
+                )
+            }
         }
     }
 

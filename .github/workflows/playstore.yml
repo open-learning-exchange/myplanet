@@ -55,6 +55,8 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: .github/scripts
 
       - name: work out what the track still owes
         id: pending

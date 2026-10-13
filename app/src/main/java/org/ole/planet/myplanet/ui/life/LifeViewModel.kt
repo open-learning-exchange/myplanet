@@ -1,56 +1,61 @@
 package org.ole.planet.myplanet.ui.life
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class LifeViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val lifeRepository: LifeRepository,
-    private val userRepository: UserRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _myLifeList = MutableStateFlow<List<MyLife>>(emptyList())
     val myLifeList: StateFlow<List<MyLife>> = _myLifeList.asStateFlow()
 
-    fun loadMyLifeList() {
-        viewModelScope.launch {
-            val list = withContext(dispatcherProvider.io) {
-                val userId = userRepository.getCurrentUserId()
-                lifeRepository.getMyLifeByUserId(userId, MyLife.defaultItems(userId, context::getString))
-            }
-            _myLifeList.value = list
+    private var loadJob: Job? = null
+
+    private suspend fun resolveUserId(): String? {
+        val raw = userRepository.getCurrentUserId().orEmpty()
+            .ifEmpty { userRepository.getUserModel()?.id.orEmpty() }
+        return raw.takeIf { it.isNotBlank() && it != "--" }
+    }
+
+    fun loadMyLifeList(resolveLabel: (Int) -> String) {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            val userId = resolveUserId()
+            val initialList = lifeRepository.getMyLifeByUserId(userId, LifeItemDefaults.forUser(userId, resolveLabel))
+            _myLifeList.value = initialList
+
+            lifeRepository.observeMyLifeByUserId(userId)
+                .distinctUntilChanged()
+                .collect { list ->
+                    _myLifeList.value = list
+                }
         }
     }
 
     fun updateVisibility(isVisible: Boolean, id: String) {
         viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                lifeRepository.updateVisibility(isVisible, id)
-            }
-            loadMyLifeList()
+            lifeRepository.updateVisibility(isVisible, id, resolveUserId())
         }
     }
 
     fun updateMyLifeListOrder(list: List<MyLife>) {
+        _myLifeList.value = list
         viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                lifeRepository.updateMyLifeListOrder(list)
-            }
+            lifeRepository.updateMyLifeListOrder(list, resolveUserId())
         }
     }
 }

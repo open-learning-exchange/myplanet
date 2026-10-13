@@ -19,9 +19,11 @@ class RealtimeSyncManager @Inject constructor() {
     )
     val dataUpdateFlow: SharedFlow<TableDataUpdate> = _dataUpdateFlow.asSharedFlow()
 
-    fun updatesFor(table: String): Flow<TableDataUpdate> {
-        return _dataUpdateFlow.filter { it.table == table }
+    fun updatesFor(tables: Set<String>): Flow<TableDataUpdate> {
+        return _dataUpdateFlow.filter { it.table in tables }
     }
+
+    fun updatesFor(table: String): Flow<TableDataUpdate> = updatesFor(setOf(table))
 
     fun notifyTableUpdated(update: TableDataUpdate) {
         _dataUpdateFlow.tryEmit(update)

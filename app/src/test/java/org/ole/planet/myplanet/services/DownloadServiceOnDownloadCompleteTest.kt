@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.services
 import android.app.NotificationManager
 import android.content.Intent
 import android.content.SharedPreferences
+import android.os.Build
 import androidx.core.app.NotificationCompat
 import io.mockk.Runs
 import io.mockk.coEvery
@@ -16,8 +17,6 @@ import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
-import java.lang.reflect.Field
-import javax.inject.Provider
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CoroutineScope
@@ -33,15 +32,18 @@ import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.util.ReflectionHelpers
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], application = android.app.Application::class)
+@Config(application = android.app.Application::class)
 class DownloadServiceOnDownloadCompleteTest {
 
+    private var originalSdkInt: Int = 0
     private lateinit var mockPreferences: SharedPreferences
 
     @Before
     fun setUp() {
+        originalSdkInt = Build.VERSION.SDK_INT
         mockPreferences = mockk(relaxed = true)
         mockkObject(DownloadUtils)
         mockkObject(FileUtils)
@@ -56,6 +58,7 @@ class DownloadServiceOnDownloadCompleteTest {
     @After
     fun tearDown() {
         unmockkAll()
+        ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", originalSdkInt)
     }
 
     private fun setDeclaredField(fieldName: String, target: Any, value: Any?) {

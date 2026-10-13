@@ -12,13 +12,14 @@ import org.ole.planet.myplanet.repository.ChatRepositoryImpl
 import org.ole.planet.myplanet.repository.ChatSyncWriter
 import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.CommunityRepositoryImpl
-import org.ole.planet.myplanet.repository.CommunitySyncWriter
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepositoryImpl
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.CoursesRepositoryImpl
 import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.repository.DiagnosticsRepositoryImpl
+import org.ole.planet.myplanet.repository.DictionaryFileReader
+import org.ole.planet.myplanet.repository.DictionaryFileReaderImpl
 import org.ole.planet.myplanet.repository.DictionaryRepository
 import org.ole.planet.myplanet.repository.DictionaryRepositoryImpl
 import org.ole.planet.myplanet.repository.DownloadRepository
@@ -45,6 +46,7 @@ import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.RatingsRepositoryImpl
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepositoryImpl
+import org.ole.planet.myplanet.repository.ResourcesSyncWriter
 import org.ole.planet.myplanet.repository.RetryRepository
 import org.ole.planet.myplanet.repository.RetryRepositoryImpl
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -60,14 +62,19 @@ import org.ole.planet.myplanet.repository.TeamsMembersRepository
 import org.ole.planet.myplanet.repository.TeamsNotificationsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsRepositoryImpl
+import org.ole.planet.myplanet.repository.TeamsShareRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UploadRepositoryImpl
+import org.ole.planet.myplanet.repository.UserAchievementsRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.repository.UserSyncRepository
+import org.ole.planet.myplanet.repository.VoicesEditor
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.VoicesRepositoryImpl
+import org.ole.planet.myplanet.repository.VoicesShareRepository
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -80,6 +87,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindDiagnosticsRepository(impl: DiagnosticsRepositoryImpl): DiagnosticsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindDictionaryFileReader(impl: DictionaryFileReaderImpl): DictionaryFileReader
 
     @Binds
     @Singleton
@@ -100,10 +111,6 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindCommunityRepository(impl: CommunityRepositoryImpl): CommunityRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindCommunitySyncWriter(impl: CommunityRepositoryImpl): CommunitySyncWriter
 
     @Binds
     @Singleton
@@ -163,6 +170,10 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindResourcesSyncWriter(impl: ResourcesRepositoryImpl): ResourcesSyncWriter
+
+    @Binds
+    @Singleton
     abstract fun bindRetryRepository(impl: RetryRepositoryImpl): RetryRepository
 
     @Binds
@@ -199,11 +210,23 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindTeamsShareRepository(impl: TeamsRepositoryImpl): TeamsShareRepository
+
+    @Binds
+    @Singleton
     abstract fun bindTeamsSyncRepository(impl: TeamsRepositoryImpl): TeamsSyncRepository
 
     @Binds
     @Singleton
     abstract fun bindUploadRepository(impl: UploadRepositoryImpl): UploadRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUserAchievementsRepository(impl: UserRepositoryImpl): UserAchievementsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUserReadRepository(impl: UserRepositoryImpl): UserReadRepository
 
     @Binds
     @Singleton
@@ -214,6 +237,12 @@ abstract class RepositoryModule {
     abstract fun bindUserSyncRepository(impl: UserRepositoryImpl): UserSyncRepository
 
     @Binds
+    abstract fun bindVoicesEditor(repository: VoicesRepository): VoicesEditor
+
+    @Binds
     @Singleton
     abstract fun bindVoicesRepository(impl: VoicesRepositoryImpl): VoicesRepository
+
+    @Binds
+    abstract fun bindVoicesShareRepository(repository: VoicesRepository): VoicesShareRepository
 }

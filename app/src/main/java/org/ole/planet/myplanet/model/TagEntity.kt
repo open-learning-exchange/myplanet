@@ -4,6 +4,9 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import org.ole.planet.myplanet.utils.toGson
 
 /**
  * Room replacement for the former `TagEntity` model. Synced (read-only from the server).
@@ -11,7 +14,16 @@ import com.google.gson.JsonArray
  * shared [org.ole.planet.myplanet.data.room.Converters]. Persistence goes through
  * [org.ole.planet.myplanet.data.room.dao.TagDao].
  */
-@Entity(tableName = "tag", indices = [Index("name"), Index("tagId"), Index("db")])
+@Entity(
+    tableName = "tag",
+    indices = [
+        Index("name"),
+        Index("tagId"),
+        Index("db"),
+        Index("linkId"),
+        Index(value = ["db", "linkId"])
+    ]
+)
 open class TagEntity {
     // @JvmField on id/_id so Room does not see ambiguous getId/get_id accessors.
     @PrimaryKey
@@ -39,13 +51,19 @@ open class TagEntity {
         )
     }
 
-    companion object {
-        fun getTagsArray(list: List<TagEntity>): JsonArray {
-            val array = JsonArray()
-            for (t in list) {
-                array.add(t._id)
-            }
-            return array
+    fun matches(other: TagEntity): Boolean {
+        return if (id.isNotEmpty() && other.id.isNotEmpty()) {
+            id == other.id
+        } else {
+            !name.isNullOrEmpty() && name == other.name
         }
+    }
+
+    companion object {
+        fun getTagsArray(list: List<TagEntity>): JsonArray = buildJsonArray {
+            for (t in list) {
+                add(t._id)
+            }
+        }.toGson()
     }
 }

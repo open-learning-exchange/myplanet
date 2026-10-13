@@ -9,6 +9,7 @@ import android.provider.Settings
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
+import androidx.annotation.StyleRes
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.CoroutineScope
@@ -17,10 +18,9 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogProgressBinding
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.ui.sync.SyncActivity
-import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
+import org.ole.planet.myplanet.ui.user.LearnerRegistrationActivity
 
 object DialogUtils {
     fun getProgressDialog(context: Context): CustomProgressDialog {
@@ -52,13 +52,50 @@ object DialogUtils {
 
         becomeMember.setOnClickListener {
             val guest = true
-            val intent = Intent(context, BecomeMemberActivity::class.java)
+            val intent = Intent(context, LearnerRegistrationActivity::class.java)
             intent.putExtra("guest", guest)
             context.startActivity(intent)
         }
         cancel.setOnClickListener {
             dialog.dismiss()
         }
+    }
+
+    fun Context.confirmDialog(
+        message: CharSequence,
+        title: CharSequence? = null,
+        @StyleRes styleRes: Int = R.style.AlertDialogTheme,
+        cancelable: Boolean = true,
+        positiveText: CharSequence = getString(R.string.yes),
+        positiveContentDescription: CharSequence = positiveText,
+        onPositive: (() -> Unit)? = null,
+        negativeText: CharSequence = getString(R.string.no),
+        negativeContentDescription: CharSequence = negativeText,
+        onNegative: (() -> Unit)? = null
+    ): AlertDialog {
+        val builder = AlertDialog.Builder(this, styleRes)
+        title?.let { builder.setTitle(it) }
+        builder.setMessage(message)
+        builder.setCancelable(cancelable)
+        builder.setPositiveButton(positiveText, null)
+        builder.setNegativeButton(negativeText, null)
+
+        val dialog = builder.show()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).apply {
+            contentDescription = positiveContentDescription
+            setOnClickListener {
+                dialog.dismiss()
+                onPositive?.invoke()
+            }
+        }
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).apply {
+            contentDescription = negativeContentDescription
+            setOnClickListener {
+                dialog.dismiss()
+                onNegative?.invoke()
+            }
+        }
+        return dialog
     }
 
     fun showError(prgDialog: CustomProgressDialog?, message: String?) {
@@ -152,17 +189,17 @@ object DialogUtils {
         info: MyPlanet?,
         progressDialog: CustomProgressDialog?,
         scope: CoroutineScope,
-        configurationsRepository: ConfigurationsRepository
+        checkCheckSum: suspend (String) -> Boolean
     ): AlertDialog.Builder {
         return AlertDialog.Builder(context, R.style.CustomAlertDialog)
             .setTitle(R.string.new_version_of_my_planet_available)
             .setMessage(R.string.download_first_to_continue)
             .setNeutralButton(R.string.upgrade_local) { _, _ ->
-                startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), progressDialog, scope, configurationsRepository)
+                startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), progressDialog, scope, checkCheckSum)
             }
             .setPositiveButton(R.string.upgrade) { _, _ ->
                 info?.apkpath?.let { path ->
-                    startDownloadUpdate(context, path, progressDialog, scope, configurationsRepository)
+                    startDownloadUpdate(context, path, progressDialog, scope, checkCheckSum)
                 }
             }
     }
@@ -172,10 +209,10 @@ object DialogUtils {
         path: String,
         progressDialog: CustomProgressDialog?,
         scope: CoroutineScope,
-        configurationsRepository: ConfigurationsRepository
+        checkCheckSum: suspend (String) -> Boolean
     ) {
         scope.launch {
-            val checksumMatch = configurationsRepository.checkCheckSum(path)
+            val checksumMatch = checkCheckSum(path)
             if (checksumMatch) {
                 Utilities.toast(context, context.getString(R.string.apk_already_exists))
                 FileUtils.installApk(context, path)

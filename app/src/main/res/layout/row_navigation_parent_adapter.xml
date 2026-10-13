@@ -33,7 +33,7 @@
         android:layout_gravity="center"
         android:focusable="false"
         android:focusableInTouchMode="false"
-        android:tint="#000000"
+        app:tint="@color/daynight_textColor"
         app:srcCompat="@drawable/ic_keyboard_arrow_down_black_24dp" />
     <CheckBox
         android:id="@+id/checkbox"

@@ -6,25 +6,32 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.spyk
+import io.mockk.unmockkObject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.NewsDao
+import org.ole.planet.myplanet.data.room.dao.TeamNewsMembership
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 @ExperimentalCoroutinesApi
 class VoicesRepositoryImplTest {
@@ -57,6 +64,13 @@ class VoicesRepositoryImplTest {
     fun setUp() {
         every { dispatcherProvider.default } returns testDispatcher
         repository = newRepository(gson)
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
+    }
+
+    @After
+    fun tearDown() {
+        unmockkObject(NetworkUtils)
     }
 
     @Test
@@ -120,6 +134,8 @@ class VoicesRepositoryImplTest {
         assertEquals("Hello World", result[0].message)
         assertEquals("Hello World", result[0].newsJson.get("message").asString)
         assertNotNull(result[0].newsJson.get("user"))
+        assertEquals("uniqueIdentifier", result[0].newsJson.get("androidId").asString)
+        assertEquals("myplanet", result[0].newsJson.get("app").asString)
     }
 
     @Test
@@ -253,5 +269,100 @@ class VoicesRepositoryImplTest {
         coVerify(exactly = 1) { newsDao.deleteByIds(capture(idsSlot)) }
         assertEquals(listOf("comm_news_123"), idsSlot.captured)
         coVerify(exactly = 0) { newsDao.upsert(any()) }
+    }
+
+    @Test
+    fun `countTopLevelByTeams fetches membership once and tallies per team`() = testScope.runTest {
+        val teamIds = listOf("teamA", "teamB", "teamC")
+        val rows = listOf(
+            TeamNewsMembership(viewableBy = "teams", viewableId = "teamA", viewIn = null),
+            TeamNewsMembership(viewableBy = null, viewableId = null, viewIn = "[{\"_id\":\"teamA\",\"section\":\"teams\"}]"),
+            TeamNewsMembership(viewableBy = null, viewableId = null, viewIn = "[{\"_id\":\"teamB\",\"section\":\"teams\"}]"),
+            TeamNewsMembership(viewableBy = null, viewableId = null, viewIn = "[{\"_id\":\"teamOther\",\"section\":\"teams\"}]")
+        )
+        coEvery { newsDao.getTopLevelTeamMembership(teamIds) } returns rows
+
+        val counts = repository.countTopLevelByTeams(teamIds)
+
+        assertEquals(2L, counts["teamA"])
+        assertEquals(1L, counts["teamB"])
+        assertEquals(0L, counts["teamC"])
+        coVerify(exactly = 1) { newsDao.getTopLevelTeamMembership(teamIds) }
+    }
+
+    @Test
+    fun `countTopLevelByTeams returns empty map without querying for empty input`() = testScope.runTest {
+        val counts = repository.countTopLevelByTeams(emptyList())
+
+        assertTrue(counts.isEmpty())
+        coVerify(exactly = 0) { newsDao.getTopLevelTeamMembership(any()) }
+    }
+
+    @Test
+    fun `countTopLevelByTeams handles mixed case viewIn and Teams viewableBy correctly`() = testScope.runTest {
+        val teamIds = listOf("team1", "Team2", "team3")
+        val rows = listOf(
+            TeamNewsMembership(
+                viewableBy = "Teams",
+                viewableId = "TEAM1",
+                viewIn = null
+            ),
+            TeamNewsMembership(
+                viewableBy = null,
+                viewableId = null,
+                viewIn = "[{\"_ID\":\"team1\"},{\"_id\":\"TEAM2\"}]"
+            )
+        )
+        coEvery { newsDao.getTopLevelTeamMembership(teamIds) } returns rows
+
+        val counts = repository.countTopLevelByTeams(teamIds)
+
+        val expected = mapOf("team1" to 2L, "Team2" to 1L, "team3" to 0L)
+        assertEquals(expected, counts)
+    }
+
+    @Test
+    fun `createTeamNews propagates CancellationException when newsDao upsert is cancelled`() = testScope.runTest {
+        val user = UserEntity()
+        coEvery { newsDao.upsert(any()) } throws CancellationException("Cancelled")
+
+        try {
+            repository.createTeamNews(hashMapOf("message" to "test"), user, null)
+            fail("Expected CancellationException")
+        } catch (e: CancellationException) {
+            assertEquals("Cancelled", e.message)
+        }
+    }
+
+    @Test
+    fun `createTeamNews returns false on ordinary exception`() = testScope.runTest {
+        val user = UserEntity()
+        coEvery { newsDao.upsert(any()) } throws RuntimeException("Database error")
+
+        val result = repository.createTeamNews(hashMapOf("message" to "test"), user, null)
+
+        assertEquals(false, result)
+    }
+
+    @Test
+    fun `shareNewsToCommunity propagates CancellationException when newsDao throws CancellationException`() = testScope.runTest {
+        coEvery { newsDao.getById("news123") } throws CancellationException("Cancelled")
+
+        try {
+            repository.shareNewsToCommunity("news123", "user1", "planet", "parent", "team")
+            fail("Expected CancellationException")
+        } catch (e: CancellationException) {
+            assertEquals("Cancelled", e.message)
+        }
+    }
+
+    @Test
+    fun `shareNewsToCommunity returns failure Result on ordinary exception`() = testScope.runTest {
+        coEvery { newsDao.getById("news123") } throws RuntimeException("Database error")
+
+        val result = repository.shareNewsToCommunity("news123", "user1", "planet", "parent", "team")
+
+        assertTrue(result.isFailure)
+        assertEquals("Database error", result.exceptionOrNull()?.message)
     }
 }

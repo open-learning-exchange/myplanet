@@ -5,7 +5,9 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.runBlocking
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -113,6 +115,21 @@ class UserDaoTest {
     }
 
     @Test
+    fun search_escapesWildcardsCorrectly() = runBlocking {
+        userDao.upsert(createUser("u1", "r1", "50%off"))
+        userDao.upsert(createUser("u2", "r2", "a_b"))
+        userDao.upsert(createUser("u3", "r3", "john"))
+
+        val percentResults = userDao.search("%\\%%")
+        assertEquals(1, percentResults.size)
+        assertEquals("50%off", percentResults[0].name)
+
+        val underscoreResults = userDao.search("%a\\_b%")
+        assertEquals(1, underscoreResults.size)
+        assertEquals("a_b", underscoreResults[0].name)
+    }
+
+    @Test
     fun getDuplicateUsers_groupsByNullNamesCorrectly() = runBlocking {
         userDao.upsert(createUser("id1", "r1", "John"))
         userDao.upsert(createUser("id2", "r2", "John")) // Duplicate of John
@@ -124,5 +141,17 @@ class UserDaoTest {
         assertEquals(4, result.size) // Both Johns and both Nulls
         assertEquals(2, result.count { it.name == "John" })
         assertEquals(2, result.count { it.name == null })
+    }
+
+    @Test
+    fun deleteByIds_with1200IdsAndDuplicates_deletesAllAndReturnsCount() = runBlocking {
+        val users = (1..1200).map { i -> createUser("user_$i", "remote_$i", "User $i") }
+        userDao.upsertAll(users)
+
+        val deleteIds = (1..1200).map { i -> "user_$i" } + listOf("user_1", "user_100")
+        val deletedCount = userDao.deleteByIds(deleteIds)
+
+        assertEquals(1200, deletedCount)
+        assertEquals(0, userDao.count())
     }
 }

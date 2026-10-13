@@ -1,0 +1,401 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <org.ole.planet.myplanet.ui.components.MaxWidthFrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        app:maxContentWidth="@dimen/profile_dialog_max_width">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/card_bg"
+            app:cardCornerRadius="@dimen/profile_card_radius"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/card_border"
+            app:strokeWidth="@dimen/dashboard_hairline_width">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/profile_dialog_header_padding">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/edit_profile"
+                        android:textColor="@color/daynight_textColor"
+                        android:textSize="@dimen/profile_dialog_title_text_size"
+                        android:textStyle="bold" />
+                    <ImageButton
+                        android:id="@+id/btn_close"
+                        android:layout_width="@dimen/profile_dialog_close_size"
+                        android:layout_height="@dimen/profile_dialog_close_size"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="@string/close"
+                        android:padding="@dimen/padding_normal"
+                        android:src="@drawable/outline_close_24"
+                        app:tint="@color/daynight_textColor" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/dashboard_hairline_width"
+                    android:background="@color/card_border" />
+                <androidx.core.widget.NestedScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:paddingStart="@dimen/profile_dialog_body_padding_horizontal"
+                        android:paddingTop="@dimen/profile_dialog_body_padding_top"
+                        android:paddingEnd="@dimen/profile_dialog_body_padding_horizontal"
+                        android:paddingBottom="@dimen/profile_dialog_body_padding_bottom">
+
+                        <GridLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:columnCount="@integer/profile_dialog_grid_columns">
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                                android:id="@+id/ltFirstName"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_columnWeight="1"
+                                android:layout_gravity="fill_horizontal"
+                                android:layout_marginEnd="@dimen/profile_dialog_field_gap_small"
+                                android:layout_marginBottom="@dimen/profile_dialog_field_gap"
+                                android:hint="@string/first_name"
+                                android:textColorHint="@color/hint_color"
+                                app:hintTextColor="@color/hint_color"
+                                app:boxBackgroundColor="@color/field_fill"
+                                app:boxBackgroundMode="outline"
+                                app:boxCornerRadiusBottomEnd="@dimen/profile_dialog_field_radius"
+                                app:boxCornerRadiusBottomStart="@dimen/profile_dialog_field_radius"
+                                app:boxCornerRadiusTopEnd="@dimen/profile_dialog_field_radius"
+                                app:boxCornerRadiusTopStart="@dimen/profile_dialog_field_radius"
+                                app:boxStrokeColor="@color/colorPrimary"
+                                app:boxStrokeWidth="@dimen/profile_dialog_field_stroke"
+                                app:boxStrokeWidthFocused="@dimen/profile_dialog_field_stroke_focused">
+
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/firstName"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:autofillHints=""
+                                    android:inputType="text"
+                                    android:minHeight="@dimen/profile_dialog_field_min_height"
+                                    android:textColor="@color/daynight_textColor"
+                                    android:textSize="@dimen/profile_detail_text_size" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                                android:id="@+id/ltMiddleName"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_columnWeight="1"
+                                android:layout_gravity="fill_horizontal"
+                                android:layout_marginBottom="@dimen/profile_dialog_field_gap"
+                                android:hint="@string/middle_name"
+                                android:textColorHint="@color/hint_color"
+                                app:hintTextColor="@color/hint_color"
+                                app:boxBackgroundColor="@color/field_fill"
+                                app:boxBackgroundMode="outline"
+                                app:boxCornerRadiusBottomEnd="@dimen/profile_dialog_field_radius"
+                                app:boxCornerRadiusBottomStart="@dimen/profile_dialog_field_radius"
+                                app:boxCornerRadiusTopEnd="@dimen/profile_dialog_field_radius"
+                                app:boxCornerRadiusTopStart="@dimen/profile_dialog_field_radius"
+                                app:boxStrokeColor="@color/colorPrimary"
+                                app:boxStrokeWidth="@dimen/profile_dialog_field_stroke"
+                                app:boxStrokeWidthFocused="@dimen/profile_dialog_field_stroke_focused">
+
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/middleName"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:autofillHints=""
+                                    android:inputType="text"
+                                    android:minHeight="@dimen/profile_dialog_field_min_height"
+                                    android:textColor="@color/daynight_textColor"
+                                    android:textSize="@dimen/profile_detail_text_size" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                                android:id="@+id/ltLastName"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_columnWeight="1"
+                                android:layout_gravity="fill_horizontal"
+                                android:layout_marginEnd="@dimen/profile_dialog_field_gap_small"
+                                android:layout_marginBottom="@dimen/profile_dialog_field_gap"
+                                android:hint="@string/last_name"
+                                android:textColorHint="@color/hint_color"
+                                app:hintTextColor="@color/hint_color"
+                                app:boxBackgroundColor="@color/field_fill"
+                                app:boxBackgroundMode="outline"
+                                app:boxCornerRadiusBottomEnd="@dimen/profile_dialog_field_radius"
+                                app:boxCornerRadiusBottomStart="@dimen/profile_dialog_field_radius"
+                                app:boxCornerRadiusTopEnd="@dimen/profile_dialog_field_radius"
+                                app:boxCornerRadiusTopStart="@dimen/profile_dialog_field_radius"
+                                app:boxStrokeColor="@color/colorPrimary"
+                                app:boxStrokeWidth="@dimen/profile_dialog_field_stroke"
+                                app:boxStrokeWidthFocused="@dimen/profile_dialog_field_stroke_focused">
+
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/lastName"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:autofillHints=""
+                                    android:inputType="text"
+                                    android:minHeight="@dimen/profile_dialog_field_min_height"
+                                    android:textColor="@color/daynight_textColor"
+                                    android:textSize="@dimen/profile_detail_text_size" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                                android:id="@+id/ltEmail"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_columnWeight="1"
+                                android:layout_gravity="fill_horizontal"
+                                android:layout_marginBottom="@dimen/profile_dialog_field_gap"
+                                android:hint="@string/email"
+                                android:textColorHint="@color/hint_color"
+                                app:hintTextColor="@color/hint_color"
+                                app:boxBackgroundColor="@color/field_fill"
+                                app:boxBackgroundMode="outline"
+                                app:boxCornerRadiusBottomEnd="@dimen/profile_dialog_field_radius"
+                                app:boxCornerRadiusBottomStart="@dimen/profile_dialog_field_radius"
+                                app:boxCornerRadiusTopEnd="@dimen/profile_dialog_field_radius"
+                                app:boxCornerRadiusTopStart="@dimen/profile_dialog_field_radius"
+                                app:boxStrokeColor="@color/colorPrimary"
+                                app:boxStrokeWidth="@dimen/profile_dialog_field_stroke"
+                                app:boxStrokeWidthFocused="@dimen/profile_dialog_field_stroke_focused">
+
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/email"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:autofillHints=""
+                                    android:inputType="textEmailAddress"
+                                    android:minHeight="@dimen/profile_dialog_field_min_height"
+                                    android:textColor="@color/daynight_textColor"
+                                    android:textSize="@dimen/profile_detail_text_size" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                                android:id="@+id/ltPhoneNumber"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_columnWeight="1"
+                                android:layout_gravity="fill_horizontal"
+                                android:layout_marginEnd="@dimen/profile_dialog_field_gap_small"
+                                android:layout_marginBottom="@dimen/profile_dialog_field_gap"
+                                android:hint="@string/phone_number"
+                                android:textColorHint="@color/hint_color"
+                                app:hintTextColor="@color/hint_color"
+                                app:boxBackgroundColor="@color/field_fill"
+                                app:boxBackgroundMode="outline"
+                                app:boxCornerRadiusBottomEnd="@dimen/profile_dialog_field_radius"
+                                app:boxCornerRadiusBottomStart="@dimen/profile_dialog_field_radius"
+                                app:boxCornerRadiusTopEnd="@dimen/profile_dialog_field_radius"
+                                app:boxCornerRadiusTopStart="@dimen/profile_dialog_field_radius"
+                                app:boxStrokeColor="@color/colorPrimary"
+                                app:boxStrokeWidth="@dimen/profile_dialog_field_stroke"
+                                app:boxStrokeWidthFocused="@dimen/profile_dialog_field_stroke_focused">
+
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/phoneNumber"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:autofillHints=""
+                                    android:inputType="phone"
+                                    android:minHeight="@dimen/profile_dialog_field_min_height"
+                                    android:textColor="@color/daynight_textColor"
+                                    android:textSize="@dimen/profile_detail_text_size" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                                android:id="@+id/ltInputName"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_columnWeight="1"
+                                android:layout_gravity="fill_horizontal"
+                                android:layout_marginBottom="@dimen/profile_dialog_field_gap"
+                                android:hint="@string/birth_date"
+                                android:textColorHint="@color/hint_color"
+                                app:hintTextColor="@color/hint_color"
+                                app:boxBackgroundColor="@color/field_fill"
+                                app:boxBackgroundMode="outline"
+                                app:boxCornerRadiusBottomEnd="@dimen/profile_dialog_field_radius"
+                                app:boxCornerRadiusBottomStart="@dimen/profile_dialog_field_radius"
+                                app:boxCornerRadiusTopEnd="@dimen/profile_dialog_field_radius"
+                                app:boxCornerRadiusTopStart="@dimen/profile_dialog_field_radius"
+                                app:boxStrokeColor="@color/colorPrimary"
+                                app:boxStrokeWidth="@dimen/profile_dialog_field_stroke"
+                                app:boxStrokeWidthFocused="@dimen/profile_dialog_field_stroke_focused">
+
+                                <TextView
+                                    android:id="@+id/dateOfBirth"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center_vertical"
+                                    android:hint="@string/birth_date"
+                                    android:minHeight="@dimen/profile_dialog_field_min_height"
+                                    android:textColor="@color/daynight_textColor"
+                                    android:textSize="@dimen/profile_detail_text_size"
+                                    app:drawableRightCompat="@drawable/ic_date"
+                                    app:drawableTint="@color/daynight_textColor" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_columnWeight="1"
+                                android:layout_gravity="fill_horizontal"
+                                android:layout_marginEnd="@dimen/profile_dialog_field_gap_small"
+                                android:layout_marginBottom="@dimen/profile_dialog_field_gap"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginBottom="@dimen/padding_small"
+                                    android:text="@string/language"
+                                    android:textColor="@color/hint_color"
+                                    android:textSize="@dimen/profile_dialog_label_text_size" />
+                                <Spinner
+                                    android:id="@+id/language"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="@dimen/profile_dialog_field_min_height"
+                                    android:background="@drawable/bg_profile_field"
+                                    android:minHeight="@dimen/profile_dialog_field_min_height"
+                                    android:paddingStart="@dimen/padding_large"
+                                    android:paddingEnd="@dimen/padding_large"
+                                    android:popupBackground="@color/secondary_bg" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_columnWeight="1"
+                                android:layout_gravity="fill_horizontal"
+                                android:layout_marginBottom="@dimen/profile_dialog_field_gap"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginBottom="@dimen/padding_small"
+                                    android:text="@string/profile_label_level"
+                                    android:textColor="@color/hint_color"
+                                    android:textSize="@dimen/profile_dialog_label_text_size" />
+                                <Spinner
+                                    android:id="@+id/level"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="@dimen/profile_dialog_field_min_height"
+                                    android:background="@drawable/bg_profile_field"
+                                    android:minHeight="@dimen/profile_dialog_field_min_height"
+                                    android:paddingStart="@dimen/padding_large"
+                                    android:paddingEnd="@dimen/padding_large"
+                                    android:popupBackground="@color/secondary_bg" />
+                            </LinearLayout>
+                        </GridLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/padding_small"
+                            android:text="@string/gender"
+                            android:textColor="@color/hint_color"
+                            android:textSize="@dimen/profile_dialog_label_text_size" />
+                        <RadioGroup
+                            android:id="@+id/rdGender"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:minHeight="@dimen/profile_dialog_gender_row_height"
+                            android:orientation="horizontal">
+
+                            <RadioButton
+                                android:id="@+id/rbMale"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="@dimen/padding_large"
+                                android:buttonTint="@color/colorPrimary"
+                                android:text="@string/male"
+                                android:textColor="@color/daynight_textColor"
+                                android:textSize="@dimen/profile_detail_text_size" />
+                            <RadioButton
+                                android:id="@+id/rbFemale"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:buttonTint="@color/colorPrimary"
+                                android:text="@string/female"
+                                android:textColor="@color/daynight_textColor"
+                                android:textSize="@dimen/profile_detail_text_size" />
+                        </RadioGroup>
+                    </LinearLayout>
+                </androidx.core.widget.NestedScrollView>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/dashboard_hairline_width"
+                    android:background="@color/card_border" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="end|center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/profile_dialog_footer_padding">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCancel"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minHeight="@dimen/profile_touch_target_min"
+                        android:text="@string/cancel"
+                        android:textAllCaps="false"
+                        android:textColor="@color/colorAccent" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSave"
+                        style="@style/Widget.MaterialComponents.Button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/padding_normal"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:minHeight="@dimen/profile_touch_target_min"
+                        android:paddingStart="@dimen/padding_large"
+                        android:paddingEnd="@dimen/padding_large"
+                        android:backgroundTint="@color/colorPrimary"
+                        android:text="@string/save"
+                        android:textAllCaps="false"
+                        android:textColor="@color/md_white_1000"
+                        app:cornerRadius="@dimen/profile_button_radius" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+    </org.ole.planet.myplanet.ui.components.MaxWidthFrameLayout>
+</FrameLayout>

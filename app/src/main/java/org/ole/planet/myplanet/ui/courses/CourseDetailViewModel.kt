@@ -9,13 +9,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.RatingSummary
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.utils.MarkdownUtils
+import org.ole.planet.myplanet.utils.StoragePathResolver
 
 sealed interface CourseDetailUiState {
     object Loading : CourseDetailUiState
@@ -33,8 +35,9 @@ sealed interface CourseDetailUiState {
 
 @HiltViewModel
 class CourseDetailViewModel @Inject constructor(
-    private val courseDetailProvider: CourseDetailProvider,
-    private val ratingSummaryProvider: RatingSummaryProvider
+    private val storagePathResolver: StoragePathResolver,
+    private val coursesRepository: CoursesRepository,
+    private val ratingsRepository: RatingsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<CourseDetailUiState>(CourseDetailUiState.Loading)
@@ -50,7 +53,7 @@ class CourseDetailViewModel @Inject constructor(
         loadJob = viewModelScope.launch {
             _uiState.value = CourseDetailUiState.Loading
 
-            courseDetailProvider(courseId)
+            coursesRepository.getCourseDetailModel(courseId)
                 .catch { e ->
                     _uiState.value = CourseDetailUiState.Error(e.message ?: "An error occurred")
                 }
@@ -64,7 +67,7 @@ class CourseDetailViewModel @Inject constructor(
 
                     val markdownDescription = MarkdownUtils.prependBaseUrlToImages(
                         courseDetail.course.description,
-                        "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
+                        "file://${storagePathResolver.resolveExternalFilesDir()}/ole/",
                         600, 350
                     )
 
@@ -99,7 +102,7 @@ class CourseDetailViewModel @Inject constructor(
                     val user = currentState.user
                     val userId = user?.id?.takeIf { it.isNotBlank() } ?: user?._id
                     if (userId != null) {
-                        val summary = ratingSummaryProvider(courseId, userId)
+                        val summary = ratingsRepository.getRatingSummary("course", courseId, userId)
                         _uiState.value = currentState.copy(
                             ratingSummary = summary
                         )

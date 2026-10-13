@@ -1,12 +1,10 @@
 package org.ole.planet.myplanet.base
 
-import android.app.DatePickerDialog
 import android.content.Intent
 import android.graphics.Typeface
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.DatePicker
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -18,7 +16,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Calendar
 import javax.inject.Inject
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -43,7 +40,7 @@ import org.ole.planet.myplanet.ui.life.LifeFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
-import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
+import org.ole.planet.myplanet.ui.user.LearnerRegistrationActivity
 import org.ole.planet.myplanet.ui.user.UserProfileFragment
 import org.ole.planet.myplanet.ui.voices.NewsViewModel
 import org.ole.planet.myplanet.utils.DialogUtils
@@ -60,14 +57,14 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     protected var userCourses: List<MyCourse> = emptyList()
     protected var userTeams: List<MyTeam> = emptyList()
     private var fullName: String? = null
-    private val params: FlexboxLayout.LayoutParams by lazy {
+    private fun createChipLayoutParams(): FlexboxLayout.LayoutParams =
         FlexboxLayout.LayoutParams(
             resources.getDimensionPixelSize(R.dimen.dashboard_chip_width),
             ViewGroup.LayoutParams.MATCH_PARENT
         ).apply {
+            flexShrink = 0f
             marginEnd = resources.getDimensionPixelSize(R.dimen.dashboard_chip_gap)
         }
-    }
     private var di: DialogUtils.CustomProgressDialog? = null
 
     @Inject
@@ -76,6 +73,22 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     fun onLoaded(v: View) {
         val llPrompt = v.findViewById<LinearLayout>(R.id.ll_prompt)
         val icClose = v.findViewById<ImageView>(R.id.ic_close)
+
+        icClose.setOnClickListener {
+            llPrompt.visibility = View.GONE
+        }
+
+        childFragmentManager.setFragmentResultListener(
+            UserInformationFragment.PROFILE_UPDATE_REQUEST_KEY, viewLifecycleOwner
+        ) { _, _ ->
+            refreshProfilePrompt(v)
+        }
+
+        refreshProfilePrompt(v)
+    }
+
+    private fun refreshProfilePrompt(v: View) {
+        val llPrompt = v.findViewById<LinearLayout>(R.id.ll_prompt)
         val imageView = v.findViewById<ImageView>(R.id.imageView)
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -93,27 +106,11 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
             } else {
                 llPrompt.visibility = View.GONE
             }
-            icClose.setOnClickListener {
-                llPrompt.visibility = View.GONE
-            }
             ImageUtils.loadProfileImage(model?.userImage, imageView, 200)
 
             v.findViewById<TextView>(R.id.txtRole).text =
                 getString(R.string.user_role, model?.getRoleAsString())
         }
-    }
-
-    fun forceDownloadNewsImages() {
-        Utilities.toast(activity, getString(R.string.please_select_starting_date))
-        val now = Calendar.getInstance()
-        val dpd = DatePickerDialog(requireActivity(), { _: DatePicker?, i: Int, i1: Int, i2: Int ->
-            now[Calendar.YEAR] = i
-            now[Calendar.MONTH] = i1
-            now[Calendar.DAY_OF_MONTH] = i2
-            newsViewModel.getPrivateImageUrlsCreatedAfter(now.timeInMillis)
-        }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH])
-        dpd.setTitle(getString(R.string.read_offline_news_from))
-        dpd.show()
     }
 
     private fun observeUiState() {
@@ -157,7 +154,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         if (onClick != null) {
             v.setOnClickListener { onClick() }
         }
-        flexboxLayout.addView(v, params)
+        flexboxLayout.addView(v, createChipLayoutParams())
     }
 
     private fun renderMyLibrary(dbMylibrary: List<MyLibrary>) {
@@ -195,7 +192,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
             }
 
             myLibraryItemClickAction(itemLibraryHomeBinding.title, items)
-            flexboxLayout?.addView(v, params)
+            flexboxLayout?.addView(v, createChipLayoutParams())
         }
     }
 
@@ -217,7 +214,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         }
         for (items in filteredCourses) {
             val dashboardItem = DashboardItem(items.courseId, items.courseTitle, null, ItemType.COURSE)
-            flexboxLayout.addView(createCourseChip(dashboardItem), params)
+            flexboxLayout.addView(createCourseChip(dashboardItem), createChipLayoutParams())
         }
     }
 
@@ -242,7 +239,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
             handleClick(ob._id, ob.name, TeamDetailFragment(), name)
             name.text = ob.name
             v.tag = ob._id
-            flexboxLayout.addView(v, params)
+            flexboxLayout.addView(v, createChipLayoutParams())
         }
 
         val userId = userRepository.getUserModel()?.id
@@ -255,15 +252,15 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         }
     }
 
-    private fun updateTeamNotifications(flexboxLayout: FlexboxLayout, notificationInfoMap: Map<String, TeamNotificationInfo>) {
+    private fun updateTeamNotifications(
+        flexboxLayout: FlexboxLayout,
+        notificationInfoMap: Map<String, TeamNotificationInfo>
+    ) {
         for (i in 0 until flexboxLayout.childCount) {
-            val teamView = flexboxLayout.getChildAt(i)
-            val teamId = teamView.tag as? String
-            teamId?.let { id ->
-                notificationInfoMap[id]?.let { info ->
-                    showNotificationIcons(teamView, info)
-                }
-            }
+            val child = flexboxLayout.getChildAt(i)
+            val teamId = child.tag as? String ?: continue
+            val info = notificationInfoMap[teamId] ?: continue
+            showNotificationIcons(child, info)
         }
     }
 
@@ -299,7 +296,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         }
         for (items in visibleItems) {
             val dashboardItem = DashboardItem(items._id, items.title, items.imageId, ItemType.LIFE)
-            flexboxLayout.addView(getLayout(dashboardItem, 0), params)
+            flexboxLayout.addView(getLayout(dashboardItem, 0), createChipLayoutParams())
         }
         updateMyLifeSurveyCount()
     }
@@ -348,10 +345,9 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         viewModel.loadUserContent(userId)
         observeUiState()
 
-        view.findViewById<FlexboxLayout>(R.id.flexboxLayoutCourse).flexDirection = FlexDirection.ROW
-        view.findViewById<FlexboxLayout>(R.id.flexboxLayoutTeams).flexDirection = FlexDirection.ROW
-        val myLifeFlex = view.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife)
-        myLifeFlex.flexDirection = FlexDirection.ROW
+        view.findViewById<FlexboxLayout>(R.id.flexboxLayoutCourse)?.flexDirection = FlexDirection.ROW
+        view.findViewById<FlexboxLayout>(R.id.flexboxLayoutTeams)?.flexDirection = FlexDirection.ROW
+        view.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife)?.flexDirection = FlexDirection.ROW
 
         collectWhenStarted(viewModel.syncKeyIdEvent) { state ->
             when (state) {
@@ -360,14 +356,6 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
                 is SyncUiState.Error -> onSyncFailed(state.message)
                 else -> {}
             }
-        }
-    }
-
-    fun showResourceDownloadDialog() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val userId = prefData.getUserId().ifEmpty { "--" }
-            val libraryList = viewModel.getLibraryListForUser(userId)
-            showDownloadDialog(libraryList)
         }
     }
 
@@ -381,7 +369,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         alertHealthListBinding.list.visibility = View.GONE
 
         alertHealthListBinding.btnAddMember.setOnClickListener {
-            startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
+            startActivity(Intent(requireContext(), LearnerRegistrationActivity::class.java))
         }
 
         val dialog = AlertDialog.Builder(requireActivity())

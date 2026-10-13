@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utils
 
+import java.net.HttpURLConnection
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -7,18 +8,17 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import org.ole.planet.myplanet.di.StandardHttpClient
+import org.ole.planet.myplanet.di.ReachabilityHttpClient
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 
 @Singleton
 class ServerReachabilityProvider @Inject constructor(
-    @StandardHttpClient private val okHttpClient: OkHttpClient,
+    @ReachabilityHttpClient private val okHttpClient: OkHttpClient,
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider
 ) {
     private val reachabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
-    private val REACHABILITY_CACHE_TTL_MS = 30_000L
 
     suspend fun isServerReachable(urlString: String): Boolean {
         if (urlString.isBlank()) return false
@@ -56,13 +56,30 @@ class ServerReachabilityProvider @Inject constructor(
             } else {
                 urlString
             }
-            val request = Request.Builder().url(formattedUrl).head().build()
-            okHttpClient.newCall(request).execute().use { response ->
-                response.isSuccessful
+            val (successful, code) = probe(formattedUrl, useHead = true)
+            when {
+                successful -> true
+                // Servers that refuse HEAD are still reachable, so confirm with a GET.
+                code == HttpURLConnection.HTTP_BAD_METHOD || code == HttpURLConnection.HTTP_NOT_IMPLEMENTED ->
+                    probe(formattedUrl, useHead = false).first
+                else -> false
             }
         } catch (e: Exception) {
             if (e is CancellationException) throw e
             false
         }
+    }
+
+    private fun probe(urlString: String, useHead: Boolean): Pair<Boolean, Int> {
+        val request = Request.Builder().url(urlString).apply {
+            if (useHead) head() else get()
+        }.build()
+        return okHttpClient.newCall(request).execute().use { response ->
+            response.isSuccessful to response.code
+        }
+    }
+
+    private companion object {
+        const val REACHABILITY_CACHE_TTL_MS = 30_000L
     }
 }

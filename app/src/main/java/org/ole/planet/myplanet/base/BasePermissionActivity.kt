@@ -6,7 +6,6 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
@@ -15,7 +14,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import javax.inject.Inject
 import kotlinx.coroutines.launch
@@ -24,8 +22,10 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.IntentUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.hasPermission
 
 abstract class BasePermissionActivity : AppCompatActivity() {
     @Inject
@@ -35,10 +35,8 @@ abstract class BasePermissionActivity : AppCompatActivity() {
     @Inject
     open lateinit var timeProvider: TimeProvider
 
-    fun checkPermission(strPermission: String?): Boolean {
-        val result = strPermission?.let { ContextCompat.checkSelfPermission(this, it) }
-        return result == PackageManager.PERMISSION_GRANTED
-    }
+    fun checkPermission(strPermission: String?): Boolean =
+        strPermission?.let { hasPermission(it) } == true
 
     fun checkUsagesPermission() {
         if (!getUsagesPermission(this)) {
@@ -115,14 +113,19 @@ abstract class BasePermissionActivity : AppCompatActivity() {
         }
     }
 
+    private var declaredPermissions: Set<String>? = null
+
     private fun isPermissionDeclaredInManifest(permission: String): Boolean {
-        return try {
-            val packageInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS)
-            packageInfo.requestedPermissions?.contains(permission) == true
-        } catch (e: Exception) {
-            Log.e("BasePermissionActivity", "Error checking if permission is declared in manifest", e)
-            false
+        if (declaredPermissions == null) {
+            try {
+                val packageInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS)
+                declaredPermissions = packageInfo.requestedPermissions?.toHashSet() ?: emptySet()
+            } catch (e: Exception) {
+                Log.e("BasePermissionActivity", "Error checking if permission is declared in manifest", e)
+                return false
+            }
         }
+        return declaredPermissions?.contains(permission) == true
     }
 
     fun requestMediaPermissions() {
@@ -334,7 +337,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
                 onMediaPermissionsDenied(deniedPermissions)
             }
             .setNeutralButton("Settings") { _, _ ->
-                openAppSettings()
+                IntentUtils.openAppSettings(this)
             }
             .show()
     }
@@ -349,18 +352,6 @@ abstract class BasePermissionActivity : AppCompatActivity() {
         } catch (e: ActivityNotFoundException) {
             startActivity(Intent(Settings.ACTION_SETTINGS))
             Log.e("BasePermissionActivity", "ActivityNotFoundException for notification settings", e)
-        }
-    }
-
-    fun openAppSettings() {
-        try {
-            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                data = Uri.fromParts("package", packageName, null)
-            }
-            startActivity(intent)
-        } catch (e: ActivityNotFoundException) {
-            startActivity(Intent(Settings.ACTION_SETTINGS))
-            Log.e("BasePermissionActivity", "ActivityNotFoundException for app settings", e)
         }
     }
 

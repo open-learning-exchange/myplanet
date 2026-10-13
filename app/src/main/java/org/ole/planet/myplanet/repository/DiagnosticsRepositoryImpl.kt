@@ -1,30 +1,31 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
-import dagger.hilt.android.qualifiers.ApplicationContext
+import android.util.Log
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.AppVersionProvider
 import org.ole.planet.myplanet.utils.CrashLogStore
-import org.ole.planet.myplanet.utils.VersionUtils
 
 class DiagnosticsRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val apkLogDao: ApkLogDao,
-    private val userRepository: UserRepository,
-    private val sharedPrefManager: SharedPrefManager
+    private val userRepository: UserReadRepository,
+    private val sharedPrefManager: SharedPrefManager,
+    private val appVersionProvider: AppVersionProvider
 ) : DiagnosticsRepository {
 
     override suspend fun getPendingApkLogs(): List<ApkLog> {
         return apkLogDao.getPending()
     }
 
-    override suspend fun markApkLogUploaded(localId: String, rev: String): Boolean {
-        return apkLogDao.markUploaded(localId, rev) != 0
+    override suspend fun markApkLogsUploaded(updates: List<ApkLogUpload>): Set<String> {
+        if (updates.isEmpty()) return emptySet()
+        val daoUpdates = updates.map { ApkLogDao.UploadUpdate(it.id, it.rev) }
+        return apkLogDao.markUploadedBatch(daoUpdates)
     }
 
     private fun buildApkLog(
@@ -63,7 +64,7 @@ class DiagnosticsRepositoryImpl @Inject constructor(
             val log = buildApkLog(
                 resolveParentCode(model),
                 resolvePlanetCode(model),
-                VersionUtils.getVersionName(context),
+                appVersionProvider.versionName,
                 model?.id,
                 time,
                 type,
@@ -71,8 +72,10 @@ class DiagnosticsRepositoryImpl @Inject constructor(
             )
             apkLogDao.insert(log)
             true
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "saveLogToRoom failed", e)
             false
         }
     }
@@ -81,7 +84,7 @@ class DiagnosticsRepositoryImpl @Inject constructor(
         if (pendingLogs.isEmpty()) return true
         return try {
             val model = userRepository.getUserModel()
-            val versionName = VersionUtils.getVersionName(context)
+            val versionName = appVersionProvider.versionName
             val parentCode = resolveParentCode(model)
             val planetCode = resolvePlanetCode(model)
 
@@ -90,9 +93,15 @@ class DiagnosticsRepositoryImpl @Inject constructor(
             }
             apkLogDao.insertAll(logsToInsert)
             true
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "saveLogsToRoom failed", e)
             false
         }
+    }
+
+    companion object {
+        private const val TAG = "DiagnosticsRepository"
     }
 }

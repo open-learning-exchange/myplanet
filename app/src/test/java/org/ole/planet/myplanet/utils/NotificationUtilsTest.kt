@@ -184,6 +184,18 @@ class NotificationUtilsTest {
 
         NotificationUtils.create(spyContext, 123, "Test Title", "Test Text")
 
-        verify { manager.notify(111, any()) }
+        verify { manager.notify(NotificationUtils.RECORDING_NOTIFICATION_ID, any()) }
+    }
+
+    @Test
+    fun cancelRecordingNotification_leavesOtherNotificationsPosted() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        NotificationUtils.create(context, android.R.drawable.ic_btn_speak_now, "Recording Audio", "recording")
+        manager.notify(42, NotificationCompat.Builder(context, "11").setSmallIcon(android.R.drawable.ic_dialog_info).build())
+
+        NotificationUtils.cancel(context, NotificationUtils.RECORDING_NOTIFICATION_ID)
+
+        assertEquals(listOf(42), manager.activeNotifications.map { it.id })
     }
 }

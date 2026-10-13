@@ -5,11 +5,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.callback.OnPersonalSelectedListener
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentMyPersonalsBinding
@@ -17,13 +17,12 @@ import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.repository.PersonalUpdate
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
-class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
-    private var _binding: FragmentMyPersonalsBinding? = null
-    private val binding get() = _binding!!
+class PersonalsFragment : BaseBindingFragment<FragmentMyPersonalsBinding>(FragmentMyPersonalsBinding::inflate), OnPersonalSelectedListener {
     private lateinit var pg: DialogUtils.CustomProgressDialog
     private var addResourceFragment: AddResourceFragment? = null
     private var personalAdapter: PersonalsAdapter? = null
@@ -31,9 +30,10 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
     private val viewModel: PersonalsViewModel by viewModels()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentMyPersonalsBinding.inflate(inflater, container, false)
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         pg = DialogUtils.getCustomProgressDialog(requireContext())
         binding.rvMypersonal.layoutManager = LinearLayoutManager(activity)
+        binding.rvMypersonal.setHasFixedSize(true)
         binding.addMyPersonal.setOnClickListener {
             addResourceFragment = AddResourceFragment()
             val b = Bundle()
@@ -41,7 +41,7 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
             addResourceFragment?.arguments = b
             addResourceFragment?.show(childFragmentManager, getString(R.string.add_resource))
         }
-        return binding.root
+        return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -91,11 +91,6 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
         }
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-    }
-
     override fun onUpload(personal: Personal?) {
         if (personal != null) {
             viewModel.uploadPersonal(personal)
@@ -121,28 +116,23 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
                     Utilities.toast(requireContext(), getString(R.string.please_enter_title))
                     return@setPositiveButton
                 }
-                val id = personal.id ?: personal._id
-                if (id != null) {
-                    viewModel.updatePersonalResource(
-                        id,
-                        PersonalUpdate(title = title, description = desc)
-                    )
-                }
+                viewModel.updatePersonalResource(
+                    personal.id,
+                    PersonalUpdate(title = title, description = desc)
+                )
             }
             .setNegativeButton(R.string.cancel, null)
             .show()
     }
 
     override fun onDeletePersonal(personal: Personal) {
-        AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-            .setMessage(R.string.delete_record)
-            .setPositiveButton(R.string.ok) { _, _ ->
-                val id = personal.id ?: personal._id
-                if (id != null) {
-                    viewModel.deletePersonalResource(id)
-                }
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
+        requireContext().confirmDialog(
+            message = getString(R.string.delete_record),
+            positiveText = getString(R.string.ok),
+            onPositive = {
+                viewModel.deletePersonalResource(personal.id)
+            },
+            negativeText = getString(R.string.cancel)
+        )
     }
 }
