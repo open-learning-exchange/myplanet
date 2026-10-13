@@ -63,6 +63,7 @@ open class News {
     var chat: Boolean = false
     var isEdited: Boolean = false
     var reactions: String? = null
+    var pendingReactions: String? = null
     var editedTime: Long = 0
     var sharedBy: String? = null
 
@@ -140,21 +141,43 @@ open class News {
             }.toMap()
         }
 
+    @get:Ignore
+    val pendingReactionsMap: Map<String, String>
+        get() = try {
+            pendingReactions?.let { GsonUtils.gson.fromJson(it, JsonObject::class.java) }
+                ?.entrySet()
+                ?.filter { it.value.isJsonPrimitive }
+                ?.associate { it.key to it.value.asString }
+                .orEmpty()
+        } catch (_: Exception) {
+            emptyMap()
+        }
+
     fun updateReaction(emoji: String, userId: String) {
+        val target = if (reactionsMap[emoji]?.contains(userId) == true) "" else emoji
+        setReaction(userId, target)
+        val pending = JsonObject()
+        pendingReactionsMap.forEach { (u, e) -> pending.addProperty(u, e) }
+        pending.addProperty(userId, target)
+        pendingReactions = GsonUtils.gson.toJson(pending)
+    }
+
+    fun applyPendingReactions() {
+        pendingReactionsMap.forEach { (userId, emoji) -> setReaction(userId, emoji) }
+    }
+
+    private fun setReaction(userId: String, emoji: String) {
         val currentMap = linkedMapOf<String, MutableList<String>>()
         reactionsMap.forEach { (e, users) -> currentMap[e] = users.toMutableList() }
 
-        val existingEmoji = currentMap.entries.find { it.value.contains(userId) }?.key
-        if (existingEmoji != null) {
-            currentMap[existingEmoji]?.remove(userId)
-            if (currentMap[existingEmoji].isNullOrEmpty()) currentMap.remove(existingEmoji)
-        }
-        if (existingEmoji != emoji) {
-            currentMap.getOrPut(emoji) { mutableListOf() }.add(userId)
+        currentMap.forEach { (e, users) -> if (e != emoji) users.remove(userId) }
+        if (emoji.isNotEmpty()) {
+            val users = currentMap.getOrPut(emoji) { mutableListOf() }
+            if (userId !in users) users.add(userId)
         }
 
         val obj = JsonObject()
-        currentMap.forEach { (e, users) ->
+        currentMap.filterValues { it.isNotEmpty() }.forEach { (e, users) ->
             val arr = JsonArray()
             users.forEach { arr.add(it) }
             obj.add(e, arr)

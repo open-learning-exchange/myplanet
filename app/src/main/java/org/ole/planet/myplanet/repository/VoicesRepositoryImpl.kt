@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import java.util.Calendar
 import java.util.HashMap
@@ -43,7 +44,8 @@ class VoicesRepositoryImpl @Inject constructor(
                     _id = news._id,
                     message = news.message,
                     imageUrls = news.imageUrls?.toList() ?: emptyList(),
-                    newsJson = serializeNews(news)
+                    newsJson = serializeNews(news),
+                    pendingReactions = news.pendingReactions
                 )
             }
     }
@@ -60,6 +62,7 @@ class VoicesRepositoryImpl @Inject constructor(
                     news._id = update._id
                     news._rev = update._rev
                     news.images = gson.toJson(update.imagesArray)
+                    if (news.pendingReactions == update.pendingReactions) news.pendingReactions = null
                     toUpdate.add(news)
                 }
             }
@@ -153,7 +156,8 @@ class VoicesRepositoryImpl @Inject constructor(
                             o.viewIn == n.viewIn &&
                             o.viewableBy == n.viewableBy &&
                             o.viewableId == n.viewableId &&
-                            o.sharedBy == n.sharedBy
+                            o.sharedBy == n.sharedBy &&
+                            o.reactions == n.reactions
                 }
             }
             .map { allNews ->
@@ -186,7 +190,8 @@ class VoicesRepositoryImpl @Inject constructor(
                             o.viewIn == n.viewIn &&
                             o.viewableBy == n.viewableBy &&
                             o.viewableId == n.viewableId &&
-                            o.sharedBy == n.sharedBy
+                            o.sharedBy == n.sharedBy &&
+                            o.reactions == n.reactions
                 }
             }
             .flowOn(dispatcherProvider.default)
@@ -297,8 +302,8 @@ class VoicesRepositoryImpl @Inject constructor(
         newsDao.upsert(news)
     }
 
-    override suspend fun saveReactions(newsId: String, reactions: String?) {
-        newsDao.updateReactions(newsId, reactions)
+    override suspend fun toggleReaction(newsId: String, emoji: String, userId: String) {
+        newsDao.toggleReaction(newsId, emoji, userId)
     }
 
     override suspend fun removeLabel(newsId: String, label: String) {
@@ -417,8 +422,8 @@ class VoicesRepositoryImpl @Inject constructor(
         news.viewIn = plainGson.toJson(GsonUtils.getJsonArray("viewIn", doc))
         news.setLabels(labels)
         news.chat = GsonUtils.getBoolean("chat", doc)
-        val reactions = doc.get("reactions")
-        news.reactions = if (reactions != null && reactions.isJsonObject) plainGson.toJson(reactions) else null
+        news.reactions = parseReactions(doc.get("reactions"))
+        news.applyPendingReactions()
 
         val newsObj = GsonUtils.getJsonObject("news", doc)
         news.newsId = GsonUtils.getString("_id", newsObj)
@@ -431,6 +436,17 @@ class VoicesRepositoryImpl @Inject constructor(
         news.newsUpdatedDate = GsonUtils.getLong("updatedDate", newsObj)
         news.sharedBy = GsonUtils.getString("sharedBy", newsObj)
         return news
+    }
+
+    private fun parseReactions(element: JsonElement?): String? = when {
+        element == null || element.isJsonNull -> null
+        element.isJsonObject -> plainGson.toJson(element)
+        element.isJsonPrimitive && element.asJsonPrimitive.isString -> try {
+            plainGson.fromJson(element.asString, JsonObject::class.java)?.let { plainGson.toJson(it) }
+        } catch (_: Exception) {
+            null
+        }
+        else -> null
     }
 
     private fun serializeNews(news: News): JsonObject {

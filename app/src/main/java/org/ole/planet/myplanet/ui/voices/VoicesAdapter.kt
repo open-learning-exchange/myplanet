@@ -820,20 +820,28 @@ class VoicesAdapter(
         } else {
             binding.flReactions.visibility = View.VISIBLE
             reactionsMap.forEach { (emoji, users) ->
+                val isOwn = users.contains(userId)
+                val chipPaddingH = context.resources.getDimensionPixelSize(R.dimen.padding_normal)
+                val chipPaddingV = context.resources.getDimensionPixelSize(R.dimen.padding_small)
+                val chipMargin = context.resources.getDimensionPixelSize(R.dimen._2dp)
                 val chip = TextView(context).apply {
                     text = "$emoji ${users.size}"
                     textSize = 14f
-                    setTextColor(ContextCompat.getColor(context, R.color.daynight_textColor))
-                    setPadding(16, 8, 16, 8)
+                    setTextColor(
+                        ContextCompat.getColor(context, if (isOwn) R.color.chip_selected_text else R.color.daynight_textColor)
+                    )
+                    setPadding(chipPaddingH, chipPaddingV, chipPaddingH, chipPaddingV)
                     setBackgroundResource(
-                        if (users.contains(userId)) R.drawable.reaction_chip_active
+                        if (isOwn) R.drawable.reaction_chip_active
                         else R.drawable.reaction_chip_inactive
                     )
+                    isSelected = isOwn
+                    contentDescription = context.getString(R.string.reaction_chip_description, emoji, users.size)
                     val params = ViewGroup.MarginLayoutParams(
                         ViewGroup.LayoutParams.WRAP_CONTENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT
                     )
-                    params.setMargins(4, 4, 4, 4)
+                    params.setMargins(chipMargin, chipMargin, chipMargin, chipMargin)
                     layoutParams = params
                     if (userId != null) {
                         setOnClickListener { react(news, emoji, userId) }
@@ -856,8 +864,7 @@ class VoicesAdapter(
     private fun react(news: News, emoji: String, userId: String) {
         news.updateReaction(emoji, userId)
         safeNotifyItemChanged(currentList.indexOfFirst { it.id == news.id }, PAYLOAD_REACTIONS_CHANGED)
-        val reactions = news.reactions
-        onEditAction { voicesEditor.saveReactions(news.id, reactions) }
+        onEditAction { voicesEditor.toggleReaction(news.id, emoji, userId) }
     }
 
     private fun showEmojiPicker(news: News, userId: String, anchorView: View) {
@@ -892,6 +899,7 @@ class VoicesAdapter(
         // Add + button at the end
         val plusBtn = TextView(context).apply {
             text = "+"
+            contentDescription = context.getString(R.string.more_reactions)
             textSize = context.resources.getDimension(R.dimen.text_size_large) / context.resources.displayMetrics.scaledDensity
             setTextColor(ContextCompat.getColor(context, R.color.daynight_textColor))
             setPadding(

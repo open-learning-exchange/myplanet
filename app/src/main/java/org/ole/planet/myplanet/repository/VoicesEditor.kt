@@ -7,5 +7,5 @@ interface VoicesEditor {
     suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: List<String>?): News?
     suspend fun postReply(message: String, news: News, currentUser: UserEntity, imageList: List<String>?)
     suspend fun getNewsById(id: String): News?
-    suspend fun saveReactions(newsId: String, reactions: String?)
+    suspend fun toggleReaction(newsId: String, emoji: String, userId: String)
 }

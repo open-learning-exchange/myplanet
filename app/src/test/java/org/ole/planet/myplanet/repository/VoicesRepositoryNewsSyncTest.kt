@@ -9,16 +9,22 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.NewsDao
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -175,17 +181,107 @@ class VoicesRepositoryNewsSyncTest {
     }
 
     @Test
-    fun `saveReactions is pushed in the upload payload as a reactions object`() = runBlocking {
+    fun `toggleReaction is pushed in the upload payload as a reactions object`() = runBlocking {
         repository.insertNewsList(listOf(messageDoc("n1", "Hello")))
         val news = newsDao.getByUnderscoreId("n1")!!
-        news.updateReaction("❤️", "org.couchdb.user:alice")
 
-        repository.saveReactions(news.id, news.reactions)
+        repository.toggleReaction(news.id, "❤️", "org.couchdb.user:alice")
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "test-device"
 
         val payload = repository.getNewsForUpload().single { it._id == "n1" }.newsJson
         val reactions = payload.getAsJsonObject("reactions")
         assertEquals("org.couchdb.user:alice", reactions.getAsJsonArray("❤️")[0].asString)
+    }
+
+    @Test
+    fun `pull after a conflicting reaction keeps the unsynced local reaction`() = runBlocking {
+        repository.insertNewsList(listOf(messageDoc("n1", "Hello")))
+        val id = newsDao.getByUnderscoreId("n1")!!.id
+        repository.toggleReaction(id, "👍", "org.couchdb.user:alice")
+
+        // Someone else reacted on Planet meanwhile; the server copy doesn't know about alice yet.
+        val serverDoc = messageDoc("n1", "Hello").apply {
+            addProperty("_rev", "2-n1")
+            add("reactions", reactionsOf("🎉" to listOf("org.couchdb.user:bob")))
+        }
+        repository.insertNewsList(listOf(serverDoc))
+
+        val merged = newsDao.getByUnderscoreId("n1")!!
+        assertEquals("2-n1", merged._rev)
+        assertEquals(
+            mapOf("🎉" to listOf("org.couchdb.user:bob"), "👍" to listOf("org.couchdb.user:alice")),
+            merged.reactionsMap
+        )
+    }
+
+    @Test
+    fun `pending removal survives a pull that still has the reaction`() = runBlocking {
+        val doc = messageDoc("n1", "Hello").apply {
+            add("reactions", reactionsOf("👍" to listOf("org.couchdb.user:alice")))
+        }
+        repository.insertNewsList(listOf(doc))
+        val id = newsDao.getByUnderscoreId("n1")!!.id
+        repository.toggleReaction(id, "👍", "org.couchdb.user:alice")
+
+        repository.insertNewsList(listOf(doc))
+
+        assertTrue(newsDao.getByUnderscoreId("n1")!!.reactionsMap.isEmpty())
+    }
+
+    @Test
+    fun `markNewsUploaded clears only the pending reactions that were sent`() = runBlocking {
+        repository.insertNewsList(listOf(messageDoc("n1", "Hello")))
+        val id = newsDao.getByUnderscoreId("n1")!!.id
+        repository.toggleReaction(id, "👍", "org.couchdb.user:alice")
+        val sent = newsDao.getById(id)!!.pendingReactions
+        assertNotNull(sent)
+
+        repository.markNewsUploaded(listOf(NewsUpdateData(id, "n1", "2-n1", JsonArray(), sent)))
+        assertNull(newsDao.getById(id)!!.pendingReactions)
+
+        repository.toggleReaction(id, "🎉", "org.couchdb.user:bob")
+        // An upload that started before bob's tap must not discard it.
+        repository.markNewsUploaded(listOf(NewsUpdateData(id, "n1", "3-n1", JsonArray(), null)))
+        assertEquals(mapOf("org.couchdb.user:bob" to "🎉"), newsDao.getById(id)!!.pendingReactionsMap)
+    }
+
+    @Test
+    fun `insertNewsList accepts reactions encoded as a JSON string`() = runBlocking {
+        val doc = messageDoc("n1", "Hello").apply {
+            addProperty("reactions", """{"👍":["org.couchdb.user:bob"]}""")
+        }
+
+        repository.insertNewsList(listOf(doc))
+
+        assertEquals(mapOf("👍" to listOf("org.couchdb.user:bob")), newsDao.getByUnderscoreId("n1")?.reactionsMap)
+    }
+
+    @Test
+    fun `getCommunityNews re-emits when a pull changes only reactions`() = runBlocking {
+        val dispatchers = mockk<DispatcherProvider> { every { default } returns Dispatchers.Unconfined }
+        val flowRepository = VoicesRepositoryImpl(
+            dispatchers, Gson(), Gson(), sharedPrefManager, newsDao,
+            mockk<org.ole.planet.myplanet.data.room.dao.NewsLogDao>(relaxed = true)
+        )
+        val doc = messageDoc("n1", "Hello").apply { addProperty("viewableBy", "community") }
+        repository.insertNewsList(listOf(doc))
+
+        val emissions = Channel<List<News>>(Channel.UNLIMITED)
+        val job = launch(Dispatchers.Default) {
+            flowRepository.getCommunityNews("").collect { emissions.send(it) }
+        }
+        try {
+            assertNull(withTimeout(5_000) { emissions.receive() }.single().reactions)
+
+            repository.insertNewsList(listOf(doc.deepCopy().apply {
+                add("reactions", reactionsOf("👍" to listOf("org.couchdb.user:bob")))
+            }))
+
+            val updated = withTimeout(5_000) { emissions.receive() }
+            assertEquals(mapOf("👍" to listOf("org.couchdb.user:bob")), updated.single().reactionsMap)
+        } finally {
+            job.cancel()
+        }
     }
 }

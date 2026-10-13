@@ -160,6 +160,8 @@
     <string name="add_resource">Kudar Ilaha:</string>
     <string name="reply">jawaab</string>
     <string name="react">Falcel</string>
+    <string name="reaction_chip_description">Falcelin %1$s, tirada %2$d</string>
+    <string name="more_reactions">Falcelino dheeraad ah</string>
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">muujinaya jawaabta:</string>

@@ -12,14 +12,16 @@ data class NewsUploadData(
     val _id: String?,
     val message: String?,
     val imageUrls: List<String>,
-    val newsJson: JsonObject
+    val newsJson: JsonObject,
+    val pendingReactions: String? = null
 )
 
 data class NewsUpdateData(
     val id: String?,
     val _id: String?,
     val _rev: String?,
-    val imagesArray: JsonArray
+    val imagesArray: JsonArray,
+    val pendingReactions: String? = null
 )
 
 interface VoicesRepository : VoicesEditor {

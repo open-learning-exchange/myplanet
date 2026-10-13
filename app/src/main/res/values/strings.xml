@@ -160,6 +160,8 @@
     <string name="add_resource">Add Resource:</string>
     <string name="reply">Reply</string>
     <string name="react">React</string>
+    <string name="reaction_chip_description">%1$s reaction, count %2$d</string>
+    <string name="more_reactions">More reactions</string>
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">Showing reply of:</string>
