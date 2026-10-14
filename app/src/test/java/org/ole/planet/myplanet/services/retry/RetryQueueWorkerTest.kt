@@ -53,9 +53,6 @@ class RetryQueueWorkerTest {
     lateinit var workerParams: WorkerParameters
 
     @MockK
-    lateinit var retryQueue: RetryQueue
-
-    @MockK
     lateinit var retryRepository: RetryRepository
 
     @MockK
@@ -98,7 +95,7 @@ class RetryQueueWorkerTest {
 
         every { syncManager.isMainSyncActive() } returns false
 
-        worker = RetryQueueWorker(context, workerParams, retryQueue, retryRepository, syncManager)
+        worker = RetryQueueWorker(context, workerParams, retryRepository, syncManager)
     }
 
     @After
@@ -155,8 +152,8 @@ class RetryQueueWorkerTest {
         val result = worker.doWork()
 
         assertEquals(Result.success(), result)
-        coVerify(exactly = 0) { retryQueue.tryStartProcessing() }
-        coVerify(exactly = 0) { retryQueue.finishProcessing() }
+        coVerify(exactly = 0) { retryRepository.tryStartProcessing() }
+        coVerify(exactly = 0) { retryRepository.finishProcessing() }
     }
 
     @Test
@@ -167,59 +164,59 @@ class RetryQueueWorkerTest {
         val result = worker.doWork()
 
         assertEquals(Result.success(), result)
-        coVerify(exactly = 0) { retryQueue.tryStartProcessing() }
-        coVerify(exactly = 0) { retryQueue.finishProcessing() }
+        coVerify(exactly = 0) { retryRepository.tryStartProcessing() }
+        coVerify(exactly = 0) { retryRepository.finishProcessing() }
     }
 
     @Test
     fun doWork_returnsSuccessImmediately_whenQueueIsProcessing() = runTest {
         MainApplication.isSyncRunning.set(false)
-        coEvery { retryQueue.tryStartProcessing() } returns false
+        coEvery { retryRepository.tryStartProcessing() } returns false
 
         val result = worker.doWork()
 
         assertEquals(Result.success(), result)
-        coVerify(exactly = 0) { retryQueue.getPendingOperations() }
-        coVerify(exactly = 0) { retryQueue.finishProcessing() }
+        coVerify(exactly = 0) { retryRepository.getPending() }
+        coVerify(exactly = 0) { retryRepository.finishProcessing() }
     }
 
     @Test
     fun doWork_callsCleanup_afterProcessingNonEmptyQueue() = runTest {
         MainApplication.isSyncRunning.set(false)
-        coEvery { retryQueue.tryStartProcessing() } returns true
-        coEvery { retryQueue.finishProcessing() } returns Unit
-        coEvery { retryQueue.cleanup() } returns Unit
+        coEvery { retryRepository.tryStartProcessing() } returns true
+        coEvery { retryRepository.finishProcessing() } returns Unit
+        coEvery { retryRepository.cleanup() } returns Unit
 
         val operation = RetryOperation().apply { id = "testId" }
-        coEvery { retryQueue.getPendingOperations() } returns listOf(operation)
+        coEvery { retryRepository.getPending() } returns listOf(operation)
         coEvery { retryRepository.executeOperation(operation) } returns RetryOperationResult.Success
 
         val result = worker.doWork()
 
         assertEquals(Result.success(), result)
-        coVerify(exactly = 1) { retryQueue.cleanup() }
-        coVerify(exactly = 1) { retryQueue.finishProcessing() }
+        coVerify(exactly = 1) { retryRepository.cleanup() }
+        coVerify(exactly = 1) { retryRepository.finishProcessing() }
     }
 
     @Test
     fun doWork_returnsRetry_onUnexpectedException() = runTest {
         MainApplication.isSyncRunning.set(false)
         val e = Exception("Unexpected error")
-        coEvery { retryQueue.tryStartProcessing() } returns true
-        coEvery { retryQueue.getPendingOperations() } throws e
+        coEvery { retryRepository.tryStartProcessing() } returns true
+        coEvery { retryRepository.getPending() } throws e
 
         val result = worker.doWork()
 
         assertEquals(Result.retry(), result)
-        coVerify(exactly = 1) { retryQueue.finishProcessing() }
+        coVerify(exactly = 1) { retryRepository.finishProcessing() }
     }
 
     @Test
     fun doWork_processesOperationsConcurrentlyBoundedToMax6() = runTest {
         MainApplication.isSyncRunning.set(false)
-        coEvery { retryQueue.tryStartProcessing() } returns true
-        coEvery { retryQueue.finishProcessing() } returns Unit
-        coEvery { retryQueue.cleanup() } returns Unit
+        coEvery { retryRepository.tryStartProcessing() } returns true
+        coEvery { retryRepository.finishProcessing() } returns Unit
+        coEvery { retryRepository.cleanup() } returns Unit
 
         val operations = (1..10).map { index ->
             RetryOperation().apply {
@@ -228,7 +225,7 @@ class RetryQueueWorkerTest {
                 endpoint = "test"
             }
         }
-        coEvery { retryQueue.getPendingOperations() } returns operations
+        coEvery { retryRepository.getPending() } returns operations
 
         val activeRequests = AtomicInteger(0)
         var maxConcurrent = 0
@@ -250,15 +247,15 @@ class RetryQueueWorkerTest {
         assertEquals(Result.success(), result)
         assertEquals(6, maxConcurrent)
         coVerify(exactly = 10) { retryRepository.executeOperation(any()) }
-        coVerify(exactly = 1) { retryQueue.finishProcessing() }
+        coVerify(exactly = 1) { retryRepository.finishProcessing() }
     }
 
     @Test
     fun doWork_accuratelyCountsSuccessesAndFailuresAndIsolatesSiblingFailures() = runTest {
         MainApplication.isSyncRunning.set(false)
-        coEvery { retryQueue.tryStartProcessing() } returns true
-        coEvery { retryQueue.finishProcessing() } returns Unit
-        coEvery { retryQueue.cleanup() } returns Unit
+        coEvery { retryRepository.tryStartProcessing() } returns true
+        coEvery { retryRepository.finishProcessing() } returns Unit
+        coEvery { retryRepository.cleanup() } returns Unit
 
         val ops = (1..5).map { index ->
             RetryOperation().apply {
@@ -268,7 +265,7 @@ class RetryQueueWorkerTest {
                 endpoint = "test"
             }
         }
-        coEvery { retryQueue.getPendingOperations() } returns ops
+        coEvery { retryRepository.getPending() } returns ops
 
         coEvery { retryRepository.executeOperation(any()) } coAnswers {
             val op = firstArg<RetryOperation>()
@@ -283,15 +280,15 @@ class RetryQueueWorkerTest {
 
         assertEquals(Result.success(), result)
         coVerify(exactly = 5) { retryRepository.executeOperation(any()) }
-        coVerify(exactly = 1) { retryQueue.finishProcessing() }
+        coVerify(exactly = 1) { retryRepository.finishProcessing() }
     }
 
     @Test
     fun doWork_pausesRetryProcessingBetweenBatchesWhenSyncStarts() = runTest {
         MainApplication.isSyncRunning.set(false)
-        coEvery { retryQueue.tryStartProcessing() } returns true
-        coEvery { retryQueue.finishProcessing() } returns Unit
-        coEvery { retryQueue.cleanup() } returns Unit
+        coEvery { retryRepository.tryStartProcessing() } returns true
+        coEvery { retryRepository.finishProcessing() } returns Unit
+        coEvery { retryRepository.cleanup() } returns Unit
 
         // Create 60 items so BATCH_SIZE (50) splits into 2 batches (50 and 10)
         val ops = (1..60).map { index ->
@@ -301,7 +298,7 @@ class RetryQueueWorkerTest {
                 endpoint = "test"
             }
         }
-        coEvery { retryQueue.getPendingOperations() } returns ops
+        coEvery { retryRepository.getPending() } returns ops
 
         coEvery { retryRepository.executeOperation(any()) } coAnswers {
             // When processing batch 1, set isSyncRunning = true so second batch won't run
@@ -314,14 +311,14 @@ class RetryQueueWorkerTest {
         assertEquals(Result.success(), result)
         // Only first batch of 50 operations should have completed
         coVerify(exactly = 50) { retryRepository.executeOperation(any()) }
-        coVerify(exactly = 1) { retryQueue.finishProcessing() }
+        coVerify(exactly = 1) { retryRepository.finishProcessing() }
     }
 
     @Test
     fun doWork_rethrowsCancellationException_whenWorkerIsCancelled() = runTest {
         MainApplication.isSyncRunning.set(false)
-        coEvery { retryQueue.tryStartProcessing() } returns true
-        coEvery { retryQueue.getPendingOperations() } throws CancellationException("Worker stopped")
+        coEvery { retryRepository.tryStartProcessing() } returns true
+        coEvery { retryRepository.getPending() } throws CancellationException("Worker stopped")
 
         var exceptionThrown = false
         try {
@@ -332,19 +329,19 @@ class RetryQueueWorkerTest {
         }
 
         assertEquals(true, exceptionThrown)
-        coVerify(exactly = 1) { retryQueue.finishProcessing() }
+        coVerify(exactly = 1) { retryRepository.finishProcessing() }
     }
 
     @Test
     fun doWork_returnsSuccess_onTimeoutCancellationException() = runTest {
         MainApplication.isSyncRunning.set(false)
-        coEvery { retryQueue.tryStartProcessing() } returns true
-        coEvery { retryQueue.getPendingOperations() } throws mockk<TimeoutCancellationException>(relaxed = true)
+        coEvery { retryRepository.tryStartProcessing() } returns true
+        coEvery { retryRepository.getPending() } throws mockk<TimeoutCancellationException>(relaxed = true)
 
         val result = worker.doWork()
 
         assertEquals(Result.success(), result)
-        coVerify(exactly = 1) { retryQueue.finishProcessing() }
+        coVerify(exactly = 1) { retryRepository.finishProcessing() }
     }
 
     @Test
@@ -352,15 +349,15 @@ class RetryQueueWorkerTest {
         MainApplication.isSyncRunning.set(false)
         val mockRepo = mockk<RetryRepository>(relaxed = true)
 
-        val customWorker = RetryQueueWorker(context, workerParams, retryQueue, mockRepo, syncManager)
+        val customWorker = RetryQueueWorker(context, workerParams, mockRepo, syncManager)
 
-        coEvery { retryQueue.tryStartProcessing() } returns true
+        coEvery { mockRepo.tryStartProcessing() } returns true
         val operation = RetryOperation().apply {
             id = "op_cancelled"
             serializedPayload = "{}"
             endpoint = "test"
         }
-        coEvery { retryQueue.getPendingOperations() } returns listOf(operation)
+        coEvery { mockRepo.getPending() } returns listOf(operation)
         coEvery { mockRepo.executeOperation(operation) } throws CancellationException("Worker cancelled")
 
         try {
@@ -370,7 +367,7 @@ class RetryQueueWorkerTest {
         }
 
         coVerify(exactly = 0) { mockRepo.markFailed(any(), any(), any()) }
-        coVerify(exactly = 0) { retryQueue.markFailed(any(), any(), any()) }
-        coVerify(exactly = 1) { retryQueue.finishProcessing() }
+        coVerify(exactly = 1) { mockRepo.executeOperation(operation) }
+        coVerify(exactly = 1) { mockRepo.finishProcessing() }
     }
 }

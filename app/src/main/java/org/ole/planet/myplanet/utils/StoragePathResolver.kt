@@ -10,6 +10,7 @@ class StoragePathResolver @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     fun resolveFileFromUrl(url: String?): File = FileUtils.getSDPathFromUrl(context, url)
+    fun resolveExternalFilesDir(): File? = FileUtils.getExternalFilesDir(context)
     fun resolveOleDirectory(): File = File(FileUtils.getOlePath(context))
 
     fun resolveTeamAttachment(teamId: String?, imageName: String?): File? =

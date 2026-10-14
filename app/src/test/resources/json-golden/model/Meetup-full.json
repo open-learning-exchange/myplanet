@@ -16,7 +16,10 @@
   "createdDate": 1,
   "recurringNumber": 3,
   "sourcePlanet": "planet",
-  "sync": "{\"type\":\"local\",\"planetCode\":\"planet\"}",
+  "sync": {
+    "type": "local",
+    "planetCode": "planet"
+  },
   "link": {
     "teams": "team",
     "n": 1.0

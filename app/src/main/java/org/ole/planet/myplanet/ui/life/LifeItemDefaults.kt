@@ -4,6 +4,16 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.MyLife
 
 object LifeItemDefaults {
+    val knownDrawables: Map<String, Int> = mapOf(
+        "ic_myhealth" to R.drawable.ic_myhealth,
+        "my_achievement" to R.drawable.my_achievement,
+        "ic_submissions" to R.drawable.ic_submissions,
+        "ic_my_survey" to R.drawable.ic_my_survey,
+        "ic_references" to R.drawable.ic_references,
+        "ic_calendar" to R.drawable.ic_calendar,
+        "ic_mypersonals" to R.drawable.ic_mypersonals
+    )
+
     private val itemPairs = listOf(
         "ic_myhealth" to R.string.myhealth,
         "my_achievement" to R.string.achievements,

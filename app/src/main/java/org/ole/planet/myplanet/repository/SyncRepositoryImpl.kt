@@ -15,9 +15,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.Rows
@@ -132,9 +132,7 @@ class SyncRepositoryImpl @Inject constructor(
                 val batch = validIds.subList(i, end)
                 i = end
 
-                val keysObject = buildJsonObject {
-                    put("keys", JsonArray(batch.map { JsonPrimitive(it) }))
-                }
+                val keysBody = buildJsonObject { putJsonArray("keys") { batch.forEach { add(it) } } }
 
                 // API call
                 val apiStartTime = timeProvider.elapsedRealtime()
@@ -144,7 +142,7 @@ class SyncRepositoryImpl @Inject constructor(
                         UrlUtils.header,
                         "application/json",
                         "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true",
-                        keysObject
+                        keysBody
                     )
                 }?.let {
                     response = it.body()?.withGsonBridgedNumbers()

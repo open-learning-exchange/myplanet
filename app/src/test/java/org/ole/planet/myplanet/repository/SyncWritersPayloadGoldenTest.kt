@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.app.Application
+import android.content.Context
 import android.content.SharedPreferences
 import dagger.Lazy
 import io.mockk.coEvery
@@ -26,6 +27,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
@@ -37,8 +39,8 @@ import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
-import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.Answer
+import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.Community
 import org.ole.planet.myplanet.model.CourseProgress
 import org.ole.planet.myplanet.model.CourseStep
@@ -56,7 +58,6 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
-import org.ole.planet.myplanet.utils.AppVersionProvider
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.GoldenFixtures
@@ -447,7 +448,7 @@ class SyncWritersPayloadGoldenTest {
         every { serverUrlMapper.processUrl(any()) } answers { ServerUrlMapper.UrlMapping(firstArg()) }
         return relaxedInstance<ConfigurationsRepositoryImpl>(
             api, scope, sharedPrefManager, serverUrlMapper, TestDispatcherProvider(UnconfinedTestDispatcher(scope.testScheduler)), time,
-            mockk<AppVersionProvider> { every { versionName } returns "0.70.64" },
+            mockk<Context>(relaxed = true) { every { getString(R.string.app_version) } returns "0.70.64" },
         )
     }
 

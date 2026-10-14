@@ -39,7 +39,6 @@ import org.ole.planet.myplanet.services.sync.SyncManager
 class RetryQueueWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
-    private val retryQueue: RetryQueue,
     private val retryRepository: RetryRepository,
     private val syncManager: SyncManager
 ) : CoroutineWorker(context, workerParams) {
@@ -109,13 +108,13 @@ class RetryQueueWorker @AssistedInject constructor(
         }
 
         // Check if already processing
-        if (!retryQueue.tryStartProcessing()) {
+        if (!retryRepository.tryStartProcessing()) {
             Log.d(TAG, "Retry queue is already being processed, skipping")
             return Result.success()
         }
 
         return try {
-            val pendingOperations = retryQueue.getPendingOperations()
+            val pendingOperations = retryRepository.getPending()
 
             if (pendingOperations.isEmpty()) {
                 Log.d(TAG, "No pending retry operations")
@@ -156,7 +155,7 @@ class RetryQueueWorker @AssistedInject constructor(
 
             Log.i(TAG, "RETRY_QUEUE: Complete - $successCount succeeded, $failureCount failed")
 
-            retryQueue.cleanup()
+            retryRepository.cleanup()
 
             Result.success()
         } catch (_: TimeoutCancellationException) {
@@ -168,7 +167,7 @@ class RetryQueueWorker @AssistedInject constructor(
             Log.e(TAG, "Error during retry processing", e)
             Result.retry()
         } finally {
-            retryQueue.finishProcessing()
+            retryRepository.finishProcessing()
         }
     }
 

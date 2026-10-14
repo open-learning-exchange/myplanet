@@ -49,7 +49,8 @@ class LifeAdapter(
         if (holder is LifeViewHolder) {
             holder.title.text = myLife.title
             myLife.imageId?.let { imgId ->
-                val resId = drawableCache.getOrPut(imgId) {
+                // Keep drawableCache and getIdentifier fallback for names outside the seven known defaults (legacy or unknown rows)
+                val resId = LifeItemDefaults.knownDrawables[imgId] ?: drawableCache.getOrPut(imgId) {
                     context.resources.getIdentifier(imgId, "drawable", context.packageName)
                 }
                 holder.imageView.setImageResource(resId)

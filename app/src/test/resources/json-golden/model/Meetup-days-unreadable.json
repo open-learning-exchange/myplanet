@@ -1,0 +1,25 @@
+{
+  "_id": "meetup-3",
+  "title": null,
+  "description": null,
+  "startDate": 0,
+  "endDate": 0,
+  "startTime": null,
+  "endTime": null,
+  "recurring": "none",
+  "meetupLocation": null,
+  "meetupLink": null,
+  "createdBy": null,
+  "teamId": null,
+  "category": null,
+  "createdDate": 0,
+  "recurringNumber": 10,
+  "sourcePlanet": null,
+  "sync": {
+    "type": "local",
+    "n": 1.5,
+    "e": 100
+  },
+  "androidId": "golden-android-id",
+  "app": "myplanet"
+}

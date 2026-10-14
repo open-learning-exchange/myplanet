@@ -5,7 +5,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -78,8 +77,7 @@ class EnterprisesRepositoryImpl @Inject constructor(
     }
 
     override fun getReportsFlow(teamId: String): Flow<List<FinanceReport>> {
-        return teamDao.observeNonArchivedReportsByTeamId(teamId)
-            .map { list -> list.map { it.toFinanceReport() } }
+        return teamDao.observeNonArchivedFinanceReportsByTeamId(teamId)
             .distinctUntilChanged()
             .flowOn(dispatcherProvider.default)
     }
@@ -120,24 +118,4 @@ class EnterprisesRepositoryImpl @Inject constructor(
         teamDao.setImageNameById(teamId, imageName)
     }
 
-}
-
-private fun MyTeam.toFinanceReport(): FinanceReport {
-    return FinanceReport(
-        _id = _id,
-        _rev = _rev,
-        status = status,
-        description = description,
-        beginningBalance = beginningBalance,
-        sales = sales,
-        otherIncome = otherIncome,
-        wages = wages,
-        otherExpenses = otherExpenses,
-        startDate = startDate,
-        endDate = endDate,
-        createdDate = createdDate,
-        updatedDate = updatedDate,
-        updated = updated,
-        imageName = imageName,
-    )
 }

@@ -211,6 +211,29 @@ class ModelPayloadGoldenTest {
     }
 
     @Test
+    fun `Meetup serialize recurring days and plain sync`() {
+        val days = Meetup().apply {
+            meetupId = "meetup-2"
+            recurring = "weekly"
+            day = """["Monday","Wednesday",1.50]"""
+            sync = "synced"
+        }
+        golden("Meetup-days", Meetup.serialize(days))
+        val unreadable = Meetup().apply {
+            meetupId = "meetup-3"
+            day = "Monday"
+            sync = """{"type":"local","n":1.50,"e":1e2}"""
+        }
+        golden("Meetup-days-unreadable", Meetup.serialize(unreadable))
+        val notArrays = Meetup().apply {
+            meetupId = "meetup-4"
+            day = """{"d":"Monday"}"""
+            sync = """["local"]"""
+        }
+        golden("Meetup-days-not-array", Meetup.serialize(notArrays))
+    }
+
+    @Test
     fun `TeamTask serialize`() {
         val full = TeamTask().apply {
             _id = "task-1"

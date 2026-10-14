@@ -25,6 +25,19 @@ interface RetryDao {
     )
     suspend fun getPending(now: Long): List<RetryOperation>
 
+    @Query(
+        "SELECT * FROM retry_operation WHERE status = 'pending' " +
+            "AND nextRetryTime <= :now AND attemptCount < maxAttempts " +
+            "ORDER BY nextRetryTime ASC, id ASC LIMIT :limit"
+    )
+    suspend fun getPendingPreview(now: Long, limit: Int): List<RetryOperation>
+
+    @Query(
+        "SELECT COUNT(*) FROM retry_operation WHERE status = 'pending' " +
+            "AND nextRetryTime <= :now AND attemptCount < maxAttempts"
+    )
+    suspend fun getPendingDueCount(now: Long): Long
+
     @Query("SELECT COUNT(*) FROM retry_operation WHERE status = 'pending' OR status = 'in_progress'")
     suspend fun getActiveCount(): Long
 

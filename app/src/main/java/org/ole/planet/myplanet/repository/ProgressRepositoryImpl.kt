@@ -99,9 +99,9 @@ class ProgressRepositoryImpl @Inject constructor(
             val submissions = submissionsByCourseId[course.courseId].orEmpty()
 
             val exams = examsByCourseId[course.courseId] ?: emptyList()
-            val examIds: List<String> = exams.mapNotNull { it.id }
+            val examIds: List<String> = exams.map { it.id }
 
-            if (!submissions.isNullOrEmpty()) {
+            if (submissions.isNotEmpty()) {
                 submissionMap(submissions, examIds, obj)
             }
             arr.add(JsonObject(obj))
@@ -182,7 +182,7 @@ class ProgressRepositoryImpl @Inject constructor(
             }
         }
 
-        val submissionIds = submissions.mapNotNull { it.id }
+        val submissionIds = submissions.map { it.id }
         val allAnswers = if (submissionIds.isEmpty()) emptyList() else submissionsRepositoryLazy.get().getAnswersBySubmissionIds(submissionIds)
 
         val questionIds = allAnswers.mapNotNull { it.questionId }.distinct()
@@ -192,9 +192,9 @@ class ProgressRepositoryImpl @Inject constructor(
         val answersBySubmissionId = allAnswers.groupBy { it.submissionId }
 
         var totalMistakes = 0
+        val mistakesMap = HashMap<String, Int>()
         submissions.forEach { submission ->
             val answers = answersBySubmissionId[submission.id] ?: emptyList()
-            val mistakesMap = HashMap<String, Int>()
             answers.forEach { r ->
                 r.questionId?.let { questionId ->
                     val question = questionsMap[questionId]
@@ -207,6 +207,8 @@ class ProgressRepositoryImpl @Inject constructor(
                     }
                 }
             }
+        }
+        if (submissions.isNotEmpty()) {
             // In the map's own order, as Gson's toJsonTree wrote it.
             obj["stepMistake"] = JsonObject(mistakesMap.mapValues { (_, count) -> JsonPrimitive(count) })
             obj["mistakes"] = JsonPrimitive(totalMistakes)
@@ -292,7 +294,7 @@ class ProgressRepositoryImpl @Inject constructor(
         courseProgress.id = docId
         courseProgress._id = docId
         courseProgress._rev = KJson.getString("_rev", act)
-        if (courseProgress.passed != true) {
+        if (!courseProgress.passed) {
             courseProgress.passed = KJson.getBoolean("passed", act) || localPassed
         }
         courseProgress.stepNum = KJson.getInt("stepNum", act)

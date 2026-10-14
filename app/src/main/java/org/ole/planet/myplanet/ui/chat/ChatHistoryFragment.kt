@@ -131,6 +131,11 @@ class ChatHistoryFragment : BaseBindingFragment<FragmentChatHistoryBinding>(Frag
         }
     }
 
+    override fun onViewStateRestored(savedInstanceState: Bundle?) {
+        super.onViewStateRestored(savedInstanceState)
+        sharedViewModel.searchChats(binding.searchBar.text.toString(), isFullSearch, isQuestion)
+    }
+
     fun refreshChatHistory() {
         sharedViewModel.loadChatHistoryScreenData(
             sharedPrefManager.getUserId()

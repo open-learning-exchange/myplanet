@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.services.retry
 
 import android.util.Log
-import kotlinx.serialization.json.JsonObject
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -11,6 +10,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Before

@@ -65,6 +65,8 @@ open class MyTeam(
         set(value) { _id = value }
 
     companion object {
+        const val DEFAULT_MEMBER_LIMIT = 12
+
         /** Like Gson's `getAsJsonObject("_attachments")`, a present non-object value (even `null`) throws. */
         fun getFirstAttachmentName(doc: JsonObject): String? {
             val attachments = when (val value = doc["_attachments"]) {
@@ -156,7 +158,13 @@ open class MyTeam(
                     if (!team._id.isNullOrEmpty()) put("_id", team._id)
                     if (!team._rev.isNullOrEmpty()) put("_rev", team._rev)
                     put("_deleted", true)
-                }
+                    if (!team.teamId.isNullOrEmpty()) put("teamId", team.teamId)
+                    put("userId", team.userId)
+                    put("userPlanetCode", team.userPlanetCode)
+                    put("teamPlanetCode", team.teamPlanetCode)
+                    put("teamType", team.teamType)
+                    put("docType", team.docType)
+                }.withoutNulls()
             }
 
             if (team.docType == "resourceLink") {
@@ -179,14 +187,14 @@ open class MyTeam(
                 put("name", team.name)
                 put("userId", team.userId)
                 if (team.docType != "report" && team.docType != "request") {
-                    put("limit", team.limit)
+                    if (team.limit > 0) put("limit", team.limit)
                     put("amount", team.amount)
                     put("date", team.date)
                     put("public", team.isPublic)
                     put("isLeader", team.isLeader)
                 }
+                if (team.docType != "request" || team.createdDate > 0) put("createdDate", team.createdDate)
                 if (team.docType != "request") {
-                    put("createdDate", team.createdDate)
                     put("description", team.description)
                     put("beginningBalance", team.beginningBalance)
                     put("sales", team.sales)

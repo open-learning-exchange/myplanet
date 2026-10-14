@@ -111,6 +111,8 @@ class SubmissionsFragment : BaseBindingFragment<FragmentMySubmissionBinding>(Fra
                 binding.title.visibility = View.VISIBLE
                 binding.tlSearch.visibility = View.VISIBLE
             }
+        } else {
+            showNoData(binding.tvMessage, itemCount, "submissions_filtered")
         }
     }
 

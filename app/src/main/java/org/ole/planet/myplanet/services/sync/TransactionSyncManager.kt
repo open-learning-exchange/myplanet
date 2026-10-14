@@ -56,9 +56,9 @@ import org.ole.planet.myplanet.utils.KJson.getJsonArray
 import org.ole.planet.myplanet.utils.KJson.getJsonObject
 import org.ole.planet.myplanet.utils.KJson.getString
 import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.utils.StringUtils
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.withGsonBridgedNumbers
 
 @Singleton
@@ -171,7 +171,7 @@ class TransactionSyncManager @Inject constructor(
 
     private suspend fun syncHealthData(userModel: UserEntity, header: String) {
         val table =
-            "userdb-${userModel.planetCode?.let { Utilities.toHex(it) }}-${userModel.name?.let { Utilities.toHex(it) }}"
+            "userdb-${userModel.planetCode?.let { StringUtils.toHex(it) }}-${userModel.name?.let { StringUtils.toHex(it) }}"
         try {
             val response =
                 apiInterface.getDocuments(header, "${UrlUtils.getUrl()}/$table/_all_docs")

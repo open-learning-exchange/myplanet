@@ -56,8 +56,24 @@ interface TeamTaskDao {
         return titles.distinct().chunked(900).flatMap { getByTitlesInternal(it) }
     }
 
-    @Query("SELECT * FROM team_tasks WHERE assignee = :userId AND deadline BETWEEN :start AND :end")
+    @Query("SELECT * FROM team_tasks WHERE assignee = :userId AND completed = 0 AND (status IS NULL OR status != 'archived') AND deadline BETWEEN :start AND :end")
     suspend fun getTasksForUserBetween(userId: String, start: Long, end: Long): List<TeamTask>
+
+    @Query("SELECT * FROM team_tasks WHERE _id IN (:remoteIds)")
+    suspend fun getByRemoteIdsInternal(remoteIds: List<String>): List<TeamTask>
+
+    suspend fun getByRemoteIds(remoteIds: List<String>): List<TeamTask> {
+        if (remoteIds.isEmpty()) return emptyList()
+        return remoteIds.distinct().chunked(900).flatMap { getByRemoteIdsInternal(it) }
+    }
+
+    @Query("DELETE FROM team_tasks WHERE id IN (:taskIds)")
+    suspend fun deleteByIdsInternal(taskIds: List<String>)
+
+    suspend fun deleteByIds(taskIds: List<String>) {
+        if (taskIds.isEmpty()) return
+        taskIds.distinct().chunked(900).forEach { deleteByIdsInternal(it) }
+    }
 
     @Query("UPDATE team_tasks SET _id = :remoteId, _rev = :remoteRev, isUpdated = 0 WHERE id = :localId")
     suspend fun markUploaded(localId: String, remoteId: String?, remoteRev: String?): Int

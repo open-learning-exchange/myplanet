@@ -75,4 +75,88 @@ class TTSManagerTest {
         val expected = "Row 1. Name: John, column 2: 30, column 3: New York"
         assertEquals(expected, TTSManager.formatCsvForSpeech(rows))
     }
+
+    @Test
+    fun testFormatCsvTextForSpeech_parsesQuotedFields() {
+        val csv = "Name,City\nJohn,\"New York, NY\"\n"
+        assertEquals("Row 1. Name: John, City: New York, NY", TTSManager.formatCsvTextForSpeech(csv))
+    }
+
+    @Test
+    fun testFormatCsvTextForSpeech_empty() {
+        assertEquals("", TTSManager.formatCsvTextForSpeech(""))
+    }
+
+    @Test
+    fun testStripMarkdown_plainTextTrimmed() {
+        val input = "   hello world   "
+        val expected = "hello world"
+        assertEquals(expected, TTSManager.stripMarkdown(input))
+    }
+
+    @Test
+    fun testStripMarkdown_regexFamilyBypassFastPath() {
+        // inline code
+        assertEquals("a  c", TTSManager.stripMarkdown("a `b` c"))
+        // numbered list
+        assertEquals("item", TTSManager.stripMarkdown("1. item"))
+        // table
+        assertEquals("a b", TTSManager.stripMarkdown("a|b"))
+        // blockquote
+        assertEquals("q", TTSManager.stripMarkdown("> q"))
+        // rule
+        assertEquals("", TTSManager.stripMarkdown("---"))
+        // + list item
+        assertEquals("item", TTSManager.stripMarkdown("+ item"))
+    }
+
+    @Test
+    fun testStripMarkdown_propertyCheckEqualsFullChain() {
+        val testInputs = listOf(
+            "Plain text with no markdown",
+            "   leading and trailing spaces   ",
+            "# Header test",
+            "**Bold** and *Italic*",
+            "Here is `inline code` and ```block code```",
+            "[Link](https://example.com)",
+            "- Bullet 1\n* Bullet 2\n+ Bullet 3",
+            "1. First item\n2. Second item",
+            "> Quote here",
+            "---\n***\n___",
+            "col1|col2|col3",
+            "Mixed text with 123 numbers and regular words"
+        )
+
+        for (input in testInputs) {
+            val expected = fullChainStripMarkdown(input)
+            val actual = TTSManager.stripMarkdown(input)
+            assertEquals("Failed for input: $input", expected, actual)
+        }
+    }
+
+    private fun fullChainStripMarkdown(text: String): String {
+        val codeBlockRegex = Regex("```[\\s\\S]*?```")
+        val inlineCodeRegex = Regex("`[^`]*`")
+        val headerRegex = Regex("^#{1,6}\\s+", RegexOption.MULTILINE)
+        val linkRegex = Regex("!?\\[([^]]*)]\\([^)]*\\)")
+        val boldItalicRegex = Regex("[*_]{1,3}([^*_]+)[*_]{1,3}")
+        val listItemRegex = Regex("^[-*+]\\s+", RegexOption.MULTILINE)
+        val numberedListRegex = Regex("^\\d+\\.\\s+", RegexOption.MULTILINE)
+        val blockquoteRegex = Regex("^>+\\s?", RegexOption.MULTILINE)
+        val horizontalRuleRegex = Regex("[-]{3,}|[*]{3,}|[_]{3,}")
+        val tablePipeRegex = Regex("\\|")
+
+        return text
+            .replace(codeBlockRegex, "")
+            .replace(inlineCodeRegex, "")
+            .replace(headerRegex, "")
+            .replace(linkRegex, "$1")
+            .replace(boldItalicRegex, "$1")
+            .replace(listItemRegex, "")
+            .replace(numberedListRegex, "")
+            .replace(blockquoteRegex, "")
+            .replace(horizontalRuleRegex, "")
+            .replace(tablePipeRegex, " ")
+            .trim()
+    }
 }

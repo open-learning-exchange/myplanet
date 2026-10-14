@@ -64,8 +64,8 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.KJson
 import org.ole.planet.myplanet.utils.RetryUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.utils.StringUtils
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toSyncDocuments
@@ -649,7 +649,7 @@ class UserRepositoryImpl @Inject constructor(
 
 
     override suspend fun changeUserSecurity(model: UserEntity, obj: JsonObject) {
-        val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
+        val table = "userdb-${StringUtils.toHex(model.planetCode)}-${StringUtils.toHex(model.name)}"
         val header = UrlUtils.basicAuthHeader(KJson.gsonAsString(obj["name"]), KJson.gsonAsString(obj["password"]))
         try {
             val response = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")
@@ -672,7 +672,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveKeyIv(model: UserEntity, obj: JsonObject) {
-        val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
+        val table = "userdb-${StringUtils.toHex(model.planetCode)}-${StringUtils.toHex(model.name)}"
         val header = UrlUtils.basicAuthHeader(KJson.gsonAsString(obj["name"]), KJson.gsonAsString(obj["password"]))
         var keyString = AndroidDecrypter.generateKey()
         var iv: String? = AndroidDecrypter.generateIv()

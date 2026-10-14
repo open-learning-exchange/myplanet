@@ -47,6 +47,32 @@ class CollectionsFragmentTest {
     }
 
     @Test
+    fun `expanding a parent keeps the search filter applied`() {
+        val parents = listOf(tag("p1", "Math"), tag("p2", "Science"))
+        val fragment = newFragment(parents, childMap = mapOf("p1" to listOf(tag("c1", "Algebra"))))
+        setField(fragment, "adapter", io.mockk.mockk<ResourcesTagsAdapter>(relaxed = true))
+        val filterTags = CollectionsFragment::class.java.getDeclaredMethod("filterTags", String::class.java)
+        filterTags.isAccessible = true
+
+        filterTags.invoke(fragment, "mat")
+        @Suppress("UNCHECKED_CAST")
+        val filtered = findField(CollectionsFragment::class.java, "currentTagDataList")
+            .apply { isAccessible = true }.get(fragment) as List<TagData>
+        fragment.onParentTagClicked(filtered[0] as TagData.Parent)
+
+        @Suppress("UNCHECKED_CAST")
+        val afterExpand = findField(CollectionsFragment::class.java, "currentTagDataList")
+            .apply { isAccessible = true }.get(fragment) as List<TagData>
+        // Math and its child; Science stays filtered out
+        assertEquals(listOf("p1", "c1"), afterExpand.map {
+            when (it) {
+                is TagData.Parent -> it.tag.id
+                is TagData.Child -> it.tag.id
+            }
+        })
+    }
+
+    @Test
     fun `buildTagDataList returns a plain List of parents`() {
         val parents = listOf(tag("p1", "Math"), tag("p2", "Science"))
         val fragment = newFragment(parents)

@@ -221,6 +221,35 @@ class MyLibraryDaoTest {
     }
 
     @Test
+    fun markAsNotOfflineByResourceIds_and_getResourceTitlesByResourceIds_deduplicateAcrossChunkBoundary() = runBlocking {
+        val count = 1000
+        val items = (1..count).map { i ->
+            MyLibrary().apply {
+                id = "off_id_$i"
+                _id = "off_doc_$i"
+                resourceId = "off_res_$i"
+                title = "Title $i"
+                resourceOffline = true
+            }
+        }
+        myLibraryDao.upsertAll(items)
+
+        val idsWithDuplicate = items.map { it.resourceId!! } + "off_res_1"
+        assertEquals(1001, idsWithDuplicate.size)
+
+        val titles = myLibraryDao.getResourceTitlesByResourceIds(idsWithDuplicate)
+        assertEquals(1000, titles.size)
+
+        myLibraryDao.markAsNotOfflineByResourceIds(idsWithDuplicate)
+
+        val allItems = myLibraryDao.getPublic()
+        assertEquals(count, allItems.size)
+        allItems.forEach { item ->
+            assertEquals(false, item.resourceOffline)
+        }
+    }
+
+    @Test
     fun getResourceTitlesByResourceIds_returnsTitlesOrderedByRowidAndHandlesMoreThan900Ids() = runBlocking {
         val dup1 = MyLibrary().apply {
             id = "pk1"

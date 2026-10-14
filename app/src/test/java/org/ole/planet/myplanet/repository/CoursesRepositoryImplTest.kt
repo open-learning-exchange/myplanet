@@ -35,7 +35,7 @@ import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.StringUtils
 import org.ole.planet.myplanet.utils.toKotlinx
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -103,12 +103,12 @@ class CoursesRepositoryImplTest {
 
     @Test
     fun testNormalizeText() {
-        assertEquals("hello world", Utilities.normalizeText("HELLO World"))
-        assertEquals("cafe", Utilities.normalizeText("Café"))
-        assertEquals("nino", Utilities.normalizeText("Niño"))
-        assertEquals("a e i o u", Utilities.normalizeText("á é í ó ú"))
-        assertEquals("c", Utilities.normalizeText("ç"))
-        assertEquals("aeiou", Utilities.normalizeText("äëïöü"))
+        assertEquals("hello world", StringUtils.normalizeText("HELLO World"))
+        assertEquals("cafe", StringUtils.normalizeText("Café"))
+        assertEquals("nino", StringUtils.normalizeText("Niño"))
+        assertEquals("a e i o u", StringUtils.normalizeText("á é í ó ú"))
+        assertEquals("c", StringUtils.normalizeText("ç"))
+        assertEquals("aeiou", StringUtils.normalizeText("äëïöü"))
     }
 
     @Test
@@ -526,6 +526,7 @@ class CoursesRepositoryImplTest {
         val expectedStepId = java.util.Base64.getEncoder().encodeToString(stepElement.toString().toByteArray())
         assertEquals("eyJzdGVwVGl0bGUiOiJTdGVwIDEiLCJkZXNjcmlwdGlvbiI6IkRlc2MgMSJ9", expectedStepId)
         assertEquals(expectedStepId, capturedSteps.captured.first().id)
+        coVerify(exactly = 1) { courseStepDao.deleteStaleSteps("course_101", listOf(expectedStepId)) }
 
         io.mockk.unmockkStatic("androidx.room.RoomDatabaseKt")
     }

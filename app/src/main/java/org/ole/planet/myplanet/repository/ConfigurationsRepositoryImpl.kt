@@ -37,7 +37,6 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.utils.AppVersionProvider
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.KJson
@@ -59,8 +58,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider,
-    private val storagePathResolver: StoragePathResolver,
-    private val appVersionProvider: AppVersionProvider
+    private val storagePathResolver: StoragePathResolver
 ) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
@@ -302,8 +300,8 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 }
                 is UrlCheckResult.Failure -> {
                     val errorMessage = when (NetworkUtils.extractProtocol(url)) {
-                        Constants.HTTP_PROTOCOL -> context.getString(R.string.device_couldn_t_reach_local_server)
-                        Constants.HTTPS_PROTOCOL -> context.getString(R.string.device_couldn_t_reach_nation_server)
+                        context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
+                        context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
                         else -> context.getString(R.string.device_couldn_t_reach_local_server)
                     }
                     ConfigurationsRepository.ConfigurationResult.Failure(errorMessage, url)
@@ -326,7 +324,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             if (versionsResponse.isSuccessful) {
                 val jsonObject = versionsResponse.body()
                 val minApkVersion = jsonObject?.get("minapk")?.let { KJson.gsonAsString(it) }
-                val currentVersion = appVersionProvider.versionName
+                val currentVersion = context.getString(R.string.app_version)
 
                 if (minApkVersion != null && VersionUtils.isVersionAllowed(currentVersion, minApkVersion)) {
                     val couchdbURL = buildCouchdbUrl(currentUrl, pin)

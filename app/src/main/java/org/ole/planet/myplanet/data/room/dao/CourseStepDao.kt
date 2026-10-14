@@ -15,4 +15,10 @@ interface CourseStepDao {
     }
     @Query("SELECT * FROM course_steps WHERE id = :id LIMIT 1") suspend fun getById(id: String): CourseStep?
     @Upsert suspend fun upsertAll(items: List<CourseStep>)
+    @Query("DELETE FROM course_steps WHERE courseId = :courseId AND id NOT IN (:keepIds)") suspend fun deleteStaleInternal(courseId: String, keepIds: List<String>)
+    @Query("DELETE FROM course_steps WHERE courseId = :courseId") suspend fun deleteByCourseId(courseId: String)
+
+    suspend fun deleteStaleSteps(courseId: String, keepIds: List<String>) {
+        if (keepIds.isEmpty()) deleteByCourseId(courseId) else deleteStaleInternal(courseId, keepIds.distinct())
+    }
 }

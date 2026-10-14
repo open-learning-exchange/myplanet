@@ -10,17 +10,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class LifeViewModel @Inject constructor(
     private val lifeRepository: LifeRepository,
-    private val userRepository: UserRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _myLifeList = MutableStateFlow<List<MyLife>>(emptyList())
@@ -37,12 +34,8 @@ class LifeViewModel @Inject constructor(
     fun loadMyLifeList(resolveLabel: (Int) -> String) {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
-            val userId = withContext(dispatcherProvider.io) {
-                resolveUserId()
-            }
-            val initialList = withContext(dispatcherProvider.io) {
-                lifeRepository.getMyLifeByUserId(userId, LifeItemDefaults.forUser(userId, resolveLabel))
-            }
+            val userId = resolveUserId()
+            val initialList = lifeRepository.getMyLifeByUserId(userId, LifeItemDefaults.forUser(userId, resolveLabel))
             _myLifeList.value = initialList
 
             lifeRepository.observeMyLifeByUserId(userId)
@@ -55,18 +48,14 @@ class LifeViewModel @Inject constructor(
 
     fun updateVisibility(isVisible: Boolean, id: String) {
         viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                lifeRepository.updateVisibility(isVisible, id, resolveUserId())
-            }
+            lifeRepository.updateVisibility(isVisible, id, resolveUserId())
         }
     }
 
     fun updateMyLifeListOrder(list: List<MyLife>) {
         _myLifeList.value = list
         viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                lifeRepository.updateMyLifeListOrder(list, resolveUserId())
-            }
+            lifeRepository.updateMyLifeListOrder(list, resolveUserId())
         }
     }
 }

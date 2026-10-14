@@ -53,14 +53,14 @@ class HealthExamination {
     }
 
     companion object {
-        fun formatConditions(conditions: String?): String {
+        fun formatConditions(conditions: String?, labelFor: (String) -> String = { it }): String {
             if (conditions.isNullOrBlank()) return ""
             return try {
                 val conditionsMap = KJson.parseObjectOrNull(conditions)
                 if (conditionsMap != null) {
                     conditionsMap.keys
                         .filter { KJson.getBoolean(it, conditionsMap) }
-                        .joinToString(", ")
+                        .joinToString(", ") { labelFor(it) }
                 } else {
                     ""
                 }

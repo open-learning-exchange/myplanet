@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.repository
 
-import kotlinx.serialization.json.JsonObject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.json.JsonObject
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.OfflineActivity
 import org.ole.planet.myplanet.model.ResourceActivity
