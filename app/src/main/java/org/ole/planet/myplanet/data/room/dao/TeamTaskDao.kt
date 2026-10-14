@@ -11,7 +11,7 @@ interface TeamTaskDao {
     @Query("SELECT * FROM team_tasks WHERE (status IS NULL OR status != 'archived') AND completed = 0 AND assignee IS :userId")
     fun getOpenTasksForUser(userId: String?): Flow<List<TeamTask>>
 
-    @Query("SELECT * FROM team_tasks WHERE completed = 0 AND assignee = :userId AND isNotified = 0 AND deadline BETWEEN :start AND :end")
+    @Query("SELECT * FROM team_tasks WHERE completed = 0 AND (status IS NULL OR status != 'archived') AND assignee = :userId AND isNotified = 0 AND deadline BETWEEN :start AND :end")
     suspend fun getPendingTasksForUser(userId: String, start: Long, end: Long): List<TeamTask>
 
     @Query("UPDATE team_tasks SET isNotified = 1 WHERE id IN (:taskIds)")
