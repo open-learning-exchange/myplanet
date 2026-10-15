@@ -76,6 +76,7 @@ class TeamTask {
                 put("description", task.description)
                 put("completed", task.completed)
                 put("completedTime", task.completedTime)
+                put("status", if (task.status == ARCHIVED_STATUS) ARCHIVED_STATUS else task.effectiveStatus())
                 if (user != null) put("assignee", user.serialize().toKotlinx()) else put("assignee", "")
                 put("sync", syncJson?.toKotlinx() ?: JsonNull)
                 put("link", linkJson?.toKotlinx() ?: JsonNull)
@@ -84,4 +85,27 @@ class TeamTask {
             return `object`
         }
     }
+}
+
+enum class TaskStatus(val value: String) {
+    TODO("to_do"),
+    IN_PROGRESS("in_progress"),
+    COMPLETED("completed");
+
+    companion object {
+        fun fromValue(value: String?): TaskStatus = when (value) {
+            COMPLETED.value -> COMPLETED
+            IN_PROGRESS.value -> IN_PROGRESS
+            else -> TODO
+        }
+    }
+}
+
+private const val ARCHIVED_STATUS = "archived"
+
+// `completed` wins over `status`: older Planet builds untick a task by clearing `completed` without touching `status`.
+fun TeamTask.effectiveStatus(): String = when {
+    completed -> TaskStatus.COMPLETED.value
+    status == TaskStatus.IN_PROGRESS.value -> TaskStatus.IN_PROGRESS.value
+    else -> TaskStatus.TODO.value
 }

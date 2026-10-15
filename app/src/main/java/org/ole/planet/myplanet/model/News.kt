@@ -62,6 +62,8 @@ open class News {
     var newsUpdatedDate: Long = 0
     var chat: Boolean = false
     var isEdited: Boolean = false
+    var reactions: String? = null
+    var pendingReactions: String? = null
     var editedTime: Long = 0
     var sharedBy: String? = null
 
@@ -101,7 +103,7 @@ open class News {
             } else {
                 try {
                     GsonUtils.gson.fromJson(currentImages, JsonArray::class.java) ?: JsonArray()
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     JsonArray()
                 }
             }
@@ -116,6 +118,72 @@ open class News {
                 add(s)
             }
         }.toGson()
+
+    @get:Ignore
+    val reactionsJson: JsonObject
+        get() = try {
+            reactions?.let { GsonUtils.gson.fromJson(it, JsonObject::class.java) } ?: JsonObject()
+        } catch (_: Exception) {
+            JsonObject()
+        }
+
+    @get:Ignore
+    val reactionsMap: Map<String, List<String>>
+        get() {
+            val obj = reactionsJson
+            return obj.keySet().mapNotNull { emoji ->
+                val users = obj.get(emoji)
+                    ?.takeIf { it.isJsonArray }
+                    ?.asJsonArray
+                    ?.mapNotNull { if (it.isJsonPrimitive) it.asString else null }
+                    .orEmpty()
+                if (users.isEmpty()) null else emoji to users
+            }.toMap()
+        }
+
+    @get:Ignore
+    val pendingReactionsMap: Map<String, String>
+        get() = try {
+            pendingReactions?.let { GsonUtils.gson.fromJson(it, JsonObject::class.java) }
+                ?.entrySet()
+                ?.filter { it.value.isJsonPrimitive }
+                ?.associate { it.key to it.value.asString }
+                .orEmpty()
+        } catch (_: Exception) {
+            emptyMap()
+        }
+
+    fun updateReaction(emoji: String, userId: String) {
+        val target = if (reactionsMap[emoji]?.contains(userId) == true) "" else emoji
+        setReaction(userId, target)
+        val pending = JsonObject()
+        pendingReactionsMap.forEach { (u, e) -> pending.addProperty(u, e) }
+        pending.addProperty(userId, target)
+        pendingReactions = GsonUtils.gson.toJson(pending)
+    }
+
+    fun applyPendingReactions() {
+        pendingReactionsMap.forEach { (userId, emoji) -> setReaction(userId, emoji) }
+    }
+
+    private fun setReaction(userId: String, emoji: String) {
+        val currentMap = linkedMapOf<String, MutableList<String>>()
+        reactionsMap.forEach { (e, users) -> currentMap[e] = users.toMutableList() }
+
+        currentMap.forEach { (e, users) -> if (e != emoji) users.remove(userId) }
+        if (emoji.isNotEmpty()) {
+            val users = currentMap.getOrPut(emoji) { mutableListOf() }
+            if (userId !in users) users.add(userId)
+        }
+
+        val obj = JsonObject()
+        currentMap.filterValues { it.isNotEmpty() }.forEach { (e, users) ->
+            val arr = JsonArray()
+            users.forEach { arr.add(it) }
+            obj.add(e, arr)
+        }
+        reactions = GsonUtils.gson.toJson(obj)
+    }
 
     fun updateMessage(newMessage: String) {
         this.message = newMessage
@@ -226,7 +294,7 @@ open class News {
                             val conversationsString = conversationsElement.asString
                             try {
                                 val conversationsArray = GsonUtils.gson.fromJson(conversationsString, JsonArray::class.java)
-                                if (!conversationsArray.isEmpty()) {
+                                if (!conversationsArray.isEmpty) {
                                     val conversationsList = ArrayList<HashMap<String, String>>()
                                     conversationsArray.forEach { conversationElement ->
                                         val conversationObj = conversationElement.asJsonObject
