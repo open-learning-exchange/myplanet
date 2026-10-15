@@ -62,6 +62,7 @@ class VoicesRepositoryImpl @Inject constructor(
                     news._id = update._id
                     news._rev = update._rev
                     news.images = gson.toJson(update.imagesArray)
+                    update.message?.let { news.message = it }
                     if (news.pendingReactions == update.pendingReactions) news.pendingReactions = null
                     toUpdate.add(news)
                 }
