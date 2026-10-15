@@ -6,12 +6,12 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.Examination
@@ -49,8 +49,8 @@ class HealthExaminationViewModel @Inject constructor(
     private val _isSaving = MutableStateFlow(false)
     val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
 
-    private val _saveResult = MutableSharedFlow<Boolean>()
-    val saveResult: SharedFlow<Boolean> = _saveResult.asSharedFlow()
+    private val _saveResult = Channel<Boolean>(Channel.BUFFERED)
+    val saveResult: Flow<Boolean> = _saveResult.receiveAsFlow()
 
     fun loadData(userId: String?, examinationId: String?) {
         viewModelScope.launch {
@@ -115,10 +115,10 @@ class HealthExaminationViewModel @Inject constructor(
                     encryptSign(examination, user, sign)
                     healthRepository.saveExamination(examination, pojo, user)
                 }
-                _saveResult.emit(true)
+                _saveResult.send(true)
             } catch (e: Exception) {
                 e.printStackTrace()
-                _saveResult.emit(false)
+                _saveResult.send(false)
             } finally {
                 _isSaving.value = false
             }

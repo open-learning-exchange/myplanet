@@ -11,7 +11,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.RadioButton
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -30,6 +29,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.SubmissionsUploader
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.ui.courses.CoursesFilterFragment
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -250,7 +250,8 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
         var level = ""
         if (fragmentUserInformationBinding.llLevel.isVisible) {
-            level = fragmentUserInformationBinding.spnLevel.selectedItem.toString()
+            level = CoursesFilterFragment.englishValues(requireContext(), R.array.level)
+                .getOrElse(fragmentUserInformationBinding.spnLevel.selectedItemPosition) { "" }
         }
 
         var gender = ""

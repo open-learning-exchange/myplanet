@@ -65,6 +65,25 @@ class TimeUtilsTest {
     }
 
     @Test
+    fun testGetFormattedDate_localMidnightInUtcPlusZoneShowsThatDay() {
+        TimeZone.setDefault(TimeZone.getTimeZone("Africa/Nairobi"))
+        val pickedMidnight = java.time.LocalDate.of(2024, 3, 11)
+            .atStartOfDay(ZoneId.of("Africa/Nairobi")).toInstant().toEpochMilli()
+
+        assertEquals("Monday, Mar 11, 2024", TimeUtils.getFormattedDate(pickedMidnight))
+    }
+
+    @Test
+    fun testGetFormattedDate_dobStringKeepsItsCalendarDayInUtcMinusZone() {
+        TimeZone.setDefault(TimeZone.getTimeZone("America/New_York"))
+
+        assertEquals(
+            "Monday, Jan 01, 1990",
+            TimeUtils.getFormattedDate("1990-01-01T00:00:00.000Z", "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        )
+    }
+
+    @Test
     fun testGetFormattedDate_epoch() {
         // 0 timestamp is Jan 01, 1970 UTC. To avoid Locale flakiness with TimeUtils object initialization,
         // we assert against the dynamically formatted expected value instead of hardcoding English locale.
