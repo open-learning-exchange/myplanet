@@ -4,6 +4,7 @@
     android:layout_height="wrap_content"
     android:background="@color/card_bg"
     android:padding="@dimen/padding_normal">
+
     <LinearLayout
         android:id="@+id/ll_emoji_container"
         android:layout_width="wrap_content"
