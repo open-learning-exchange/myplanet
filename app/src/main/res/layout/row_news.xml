@@ -141,7 +141,6 @@
             android:padding="@dimen/padding_normal"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/linearLayout5" />
-
         <com.google.android.flexbox.FlexboxLayout
             android:id="@+id/fl_reactions"
             android:layout_width="match_parent"
@@ -153,7 +152,6 @@
             app:justifyContent="flex_start"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/fb_chips" />
-
         <com.google.android.flexbox.FlexboxLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -171,7 +169,6 @@
                 android:text="@string/reply"
                 android:textColor="@color/daynight_textColor"
                 android:theme="@style/PrimaryFlatButton" />
-
             <Button
                 android:id="@+id/btn_react"
                 android:minWidth="0dp"
@@ -180,7 +177,6 @@
                 android:text="@string/react"
                 android:textColor="@color/daynight_textColor"
                 android:theme="@style/PrimaryFlatButton" />
-
             <Button
                 android:id="@+id/btn_show_reply"
                 android:layout_width="wrap_content"
@@ -193,7 +189,6 @@
                 android:drawableTint="@color/daynight_textColor"
                 android:textColor="@color/daynight_textColor"
                 android:theme="@style/PrimaryFlatButton" />
-
             <Button
                 android:id="@+id/btn_add_label"
                 android:minWidth="0dp"
@@ -202,7 +197,6 @@
                 android:text="@string/add_label"
                 android:textColor="@color/daynight_textColor"
                 android:theme="@style/PrimaryFlatButton" />
-
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -219,7 +213,6 @@
                     android:src="@drawable/baseline_share_24"
                     android:theme="@style/PrimaryFlatButton"
                     app:tint="@color/daynight_textColor" />
-
                 <LinearLayout
                     android:id="@+id/ll_edit_delete"
                     android:layout_width="wrap_content"
@@ -235,7 +228,6 @@
                         android:visibility="visible"
                         app:srcCompat="@drawable/ic_edit"
                         app:tint="@color/daynight_textColor" />
-
                     <ImageView
                         android:id="@+id/img_delete"
                         android:layout_width="@dimen/_24dp"
@@ -247,8 +239,6 @@
                         app:tint="@color/daynight_textColor" />
                 </LinearLayout>
             </LinearLayout>
-
         </com.google.android.flexbox.FlexboxLayout>
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>
