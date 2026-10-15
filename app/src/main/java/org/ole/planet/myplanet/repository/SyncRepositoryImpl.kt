@@ -106,6 +106,7 @@ class SyncRepositoryImpl @Inject constructor(
             throw e
         } catch (e: Exception) {
             Log.e("SyncRepositoryImpl", "Error in processShelfParallel", e)
+            syncTimeLogger.logDetail("shelf_sync", "Shelf $shelfId processing failed: ${e.javaClass.simpleName}")
         }
 
         return processedItems

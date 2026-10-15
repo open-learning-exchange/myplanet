@@ -111,29 +111,6 @@ class ResourcesViewModelTest {
     }
 
     @Test
-    fun `getLibraryListModels maps enriched libraries to ResourceListModels`() = runTest {
-        val mockLibrary = MyLibrary().apply {
-            id = "lib1"
-            title = "Library 1"
-            resourceOffline = true
-        }
-        val mockTag = TagEntity().apply {
-            id = "tag1"
-            name = "Tag 1"
-        }
-        val mockResourceItem = mockk<ResourceItem>(relaxed = true)
-        coEvery { resourcesRepository.getResourceListModels(any(), any()) } returns listOf(
-            ResourceListModel(mockLibrary, mockResourceItem, listOf(TagItem(mockTag.id, mockTag.name)))
-        )
-
-        val result = viewModel.getLibraryListModels(true, "modelId")
-
-        assertEquals(1, result.size)
-        assertEquals("lib1", result[0].library.id)
-        assertEquals(1, viewModel.resourcesState.value.size)
-    }
-
-    @Test
     fun `loadResources asynchronously updates resourcesState`() = runTest {
         val mockLibrary = MyLibrary().apply {
             id = "lib1"

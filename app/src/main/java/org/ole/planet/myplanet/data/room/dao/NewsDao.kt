@@ -48,9 +48,6 @@ interface NewsDao {
     fun getTopLevelByTeamFlow(teamId: String, teamPattern: String): Flow<List<News>>
 
     @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND docType = 'message' COLLATE NOCASE ORDER BY time DESC")
-    suspend fun getTopLevelMessages(): List<News>
-
-    @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND docType = 'message' COLLATE NOCASE ORDER BY time DESC")
     fun getTopLevelMessagesFlow(): Flow<List<News>>
 
     @Query("SELECT * FROM news WHERE replyTo = :newsId COLLATE NOCASE ORDER BY time DESC")
@@ -98,6 +95,17 @@ interface NewsDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(news: News)
+
+    @Query("UPDATE news SET reactions = :reactions, pendingReactions = :pendingReactions WHERE id = :id")
+    suspend fun updateReactions(id: String, reactions: String?, pendingReactions: String?)
+
+    @Transaction
+    suspend fun toggleReaction(id: String, emoji: String, userId: String): News? {
+        val news = getById(id) ?: return null
+        news.updateReaction(emoji, userId)
+        updateReactions(id, news.reactions, news.pendingReactions)
+        return news
+    }
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(news: List<News>)

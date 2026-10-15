@@ -217,4 +217,31 @@ class VoicesUploaderTest {
         assertEquals(listOf("old-res", "new-res"), update.imagesArray.map { it.asJsonObject["resourceId"].asString })
         assertEquals("Hello\n![](resources/new-res/new.png)", update.message)
     }
+
+    @Test
+    fun `uploadNews does not queue a stale-rev retry for a conflicted doc`() = testScope.runTest {
+        val conflicted = NewsUploadData("n1", "n1_id", "Hi", emptyList(), JsonObject(), """{"u":"👍"}""")
+        val other = NewsUploadData("n2", "n2_id", "Hey", emptyList(), JsonObject())
+        coEvery { voicesRepository.getNewsForUpload() } returns listOf(conflicted, other)
+        coEvery { userRepository.getUserModel() } returns null
+        val bulkResponse = JsonArray().apply {
+            add(JsonObject().apply {
+                addProperty("id", "n1_id")
+                addProperty("error", "conflict")
+                addProperty("reason", "Document update conflict.")
+            })
+            add(JsonObject().apply {
+                addProperty("id", "n2_id")
+                addProperty("error", "forbidden")
+            })
+        }
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns Response.success(bulkResponse)
+
+        voicesUploader.uploadNews()
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { retryQueue.queueFailedOperation(any(), match { it.itemId == "n1" }, any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 1) { retryQueue.queueFailedOperation(any(), match { it.itemId == "n2" }, any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { voicesRepository.markNewsUploaded(any()) }
+    }
 }

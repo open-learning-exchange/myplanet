@@ -262,10 +262,6 @@ class CoursesRepositoryImpl @Inject constructor(
         return myLibraryDao.getCourseResources(courseId, isOffline)
     }
 
-    internal fun matchesAllParts(title: String, parts: List<String>): Boolean {
-        return parts.all { title.contains(it) }
-    }
-
     override suspend fun search(query: String): List<MyCourse> {
         if (query.isEmpty()) {
             return mapCourses(courseDao.getAll())

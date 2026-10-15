@@ -5,6 +5,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -135,6 +136,20 @@ class HealthExaminationViewModelTest {
         assertFalse(viewModel.isSaving.value)
 
         job.cancel()
+    }
+
+    @Test
+    fun saveExamination_resultIsKeptUntilCollected() = runTest {
+        val examination = HealthExamination()
+        val pojo = HealthExamination()
+        val user = UserEntity()
+        val sign = Examination()
+        coEvery { healthRepository.saveExamination(examination, pojo, user) } returns Unit
+
+        viewModel.saveExamination(examination, pojo, user, sign)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.saveResult.first())
     }
 
     @Test

@@ -12,7 +12,8 @@ data class NewsUploadData(
     val _id: String?,
     val message: String?,
     val imageUrls: List<String>,
-    val newsJson: JsonObject
+    val newsJson: JsonObject,
+    val pendingReactions: String? = null
 )
 
 data class NewsUpdateData(
@@ -20,6 +21,7 @@ data class NewsUpdateData(
     val _id: String?,
     val _rev: String?,
     val imagesArray: JsonArray,
+    val pendingReactions: String? = null,
     val message: String? = null
 )
 
