@@ -104,9 +104,9 @@ class TeamsTasksViewModel @Inject constructor(
         }
     }
 
-    fun setTaskCompletion(taskId: String, completed: Boolean) {
+    fun setTaskStatus(taskId: String, status: String) {
         viewModelScope.launch {
-            teamsRepository.setTaskCompletion(taskId, completed)
+            teamsRepository.setTaskStatus(taskId, status)
         }
     }
 
