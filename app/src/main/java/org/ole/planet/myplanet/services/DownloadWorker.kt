@@ -7,6 +7,7 @@ import android.content.SharedPreferences
 import android.content.pm.ServiceInfo
 import android.os.SystemClock
 import android.util.Log
+import androidx.core.content.edit
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
@@ -31,7 +32,6 @@ import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utils.UrlUtils
-import androidx.core.content.edit
 
 @HiltWorker
 class DownloadWorker @AssistedInject constructor(

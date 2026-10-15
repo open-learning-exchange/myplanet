@@ -83,4 +83,18 @@ class TeamTaskDaoTest {
         assertEquals(1200, fetchedTasks.size)
         assertTrue(fetchedTasks.all { it.isNotified })
     }
+
+    @Test
+    fun getTasksForUserBetween_returnsOnlyOpenTasks() = runBlocking {
+        teamTaskDao.upsertAll(listOf(
+            TeamTask().apply { id = "open"; assignee = "u1"; deadline = 500L },
+            TeamTask().apply { id = "done"; assignee = "u1"; deadline = 500L; completed = true },
+            TeamTask().apply { id = "archived"; assignee = "u1"; deadline = 500L; status = "archived" },
+            TeamTask().apply { id = "active"; assignee = "u1"; deadline = 500L; status = "active" }
+        ))
+
+        val ids = teamTaskDao.getTasksForUserBetween("u1", 0L, 1000L).map { it.id }.toSet()
+
+        assertEquals(setOf("open", "active"), ids)
+    }
 }

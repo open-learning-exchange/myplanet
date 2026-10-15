@@ -87,6 +87,28 @@ class AnswerDaoTest {
     }
 
     @Test
+    fun chunkedOperations_deduplicateRepeatedIdsAcrossChunkBoundary() = runBlocking {
+        val answers = (1..1000).map { i ->
+            createAnswer("ans_$i", "sub_$i")
+        }
+        answerDao.upsertAll(answers)
+
+        // Create a list of 1001 submissionIds where "sub_1" appears at index 0 (chunk 1) and index 1000 (chunk 2)
+        val submissionIdsWithDuplicate = answers.map { it.submissionId!! } + "sub_1"
+        assertEquals(1001, submissionIdsWithDuplicate.size)
+
+        val results = answerDao.getBySubmissionIds(submissionIdsWithDuplicate)
+        assertEquals(1000, results.size)
+        assertEquals(answers.map { it.id }.toSet(), results.map { it.id }.toSet())
+
+        val deleteCount = answerDao.deleteBySubmissionIds(submissionIdsWithDuplicate)
+        assertEquals(1000, deleteCount)
+
+        val remaining = answerDao.getBySubmissionIds(submissionIdsWithDuplicate)
+        assertTrue(remaining.isEmpty())
+    }
+
+    @Test
     fun getBySubmissionIds_and_deleteBySubmissionIds_withMixedList_handlesExistingAndNonExistingIds() = runBlocking {
         val answers = (1..5).map { i ->
             createAnswer("ans_$i", "sub_$i")

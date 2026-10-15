@@ -92,6 +92,25 @@ class OfflineActivityDaoTest {
     }
 
     @Test
+    fun chunkedQueries_deduplicateRepeatedIdsAcrossChunkBoundary() = runBlocking {
+        val manyUserNames = (1..950).map { "user_$it" }
+        val manyUserIds = (1..950).map { "id_$it" }
+
+        offlineActivityDao.insert(createActivity("act1", "id_1", "user_1", UserSessionManager.KEY_LOGIN, 12345L))
+
+        val namesWithDuplicate = manyUserNames + "user_1"
+        val idsWithDuplicate = manyUserIds + "id_1"
+
+        val visits = offlineActivityDao.getLastVisits(namesWithDuplicate)
+        val counts = offlineActivityDao.countByUserIdsAndType(idsWithDuplicate, UserSessionManager.KEY_LOGIN)
+
+        assertEquals(1, visits.size)
+        assertEquals(12345L, visits.first().lastVisit)
+        assertEquals(1, counts.size)
+        assertEquals(1, counts.first().count)
+    }
+
+    @Test
     fun chunkedQueries_handlesEmptyListsAndLargeLists() = runBlocking {
         assertTrue(offlineActivityDao.getLastVisits(emptyList()).isEmpty())
         assertTrue(offlineActivityDao.countByUserIdsAndType(emptyList(), UserSessionManager.KEY_LOGIN).isEmpty())

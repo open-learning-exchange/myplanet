@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DownloadUtils
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -155,5 +156,25 @@ class ResourceDownloadCoordinatorTest {
         verify(exactly = 1) { DownloadUtils.openDownloadService(context, queuedLinks, true) }
         coVerify(exactly = 0) { resourcesRepository.getAllLibrariesToSync() }
         verify(exactly = 0) { DownloadUtils.downloadAllFiles(any()) }
+    }
+
+    @Test
+    fun `downloadIfMissing opens download service when file is not on disk`() = runTest(testDispatcher) {
+        mockkObject(FileUtils)
+        every { FileUtils.checkFileExist(context, "http://host/a.pdf") } returns false
+
+        coordinator.downloadIfMissing("http://host/a.pdf")
+
+        verify(exactly = 1) { DownloadUtils.openDownloadService(context, arrayListOf("http://host/a.pdf"), false) }
+    }
+
+    @Test
+    fun `downloadIfMissing skips download service when file is already on disk`() = runTest(testDispatcher) {
+        mockkObject(FileUtils)
+        every { FileUtils.checkFileExist(context, "http://host/a.pdf") } returns true
+
+        coordinator.downloadIfMissing("http://host/a.pdf")
+
+        verify(exactly = 0) { DownloadUtils.openDownloadService(any(), any(), any()) }
     }
 }

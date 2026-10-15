@@ -39,12 +39,12 @@ interface OfflineActivityDao {
 
     suspend fun getLastVisits(userNames: List<String>): List<UserLastVisit> {
         if (userNames.isEmpty()) return emptyList()
-        return userNames.chunked(900).flatMap { getLastVisitsInternal(it) }
+        return userNames.distinct().chunked(900).flatMap { getLastVisitsInternal(it) }
     }
 
     suspend fun countByUserIdsAndType(userIds: List<String>, type: String): List<UserCount> {
         if (userIds.isEmpty()) return emptyList()
-        return userIds.chunked(899).flatMap { countByUserIdsAndTypeInternal(it, type) }
+        return userIds.distinct().chunked(899).flatMap { countByUserIdsAndTypeInternal(it, type) }
     }
 
     @Query("SELECT * FROM offline_activity WHERE type = :type ORDER BY loginTime DESC LIMIT 1")

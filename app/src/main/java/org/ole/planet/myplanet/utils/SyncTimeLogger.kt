@@ -5,9 +5,9 @@ import androidx.core.net.toUri
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Collections
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
@@ -34,8 +34,8 @@ class SyncTimeLogger @Inject constructor(
 
     private val processTimes = ConcurrentHashMap<String, Long>()
     private val processItemCounts = ConcurrentHashMap<String, Int>()
-    private val apiCallTimes = ConcurrentHashMap<String, MutableList<ApiCallLog>>()
-    private val dbOperationTimes = ConcurrentHashMap<String, MutableList<DbOperationLog>>()
+    private val apiCallTimes = ConcurrentHashMap<String, ConcurrentLinkedQueue<ApiCallLog>>()
+    private val dbOperationTimes = ConcurrentHashMap<String, ConcurrentLinkedQueue<DbOperationLog>>()
     @Volatile
     private var startTime: Long = 0
     @Volatile
@@ -174,7 +174,7 @@ class SyncTimeLogger @Inject constructor(
         val processName = extractProcessName(endpoint)
 
         val log = ApiCallLog(endpoint, duration, timestamp, success, itemsReturned)
-        apiCallTimes.computeIfAbsent(processName) { Collections.synchronizedList(mutableListOf()) }.add(log)
+        apiCallTimes.computeIfAbsent(processName) { ConcurrentLinkedQueue() }.add(log)
 
         if (isVerbose) {
             val elapsed = timestamp - startTime
@@ -191,7 +191,7 @@ class SyncTimeLogger @Inject constructor(
         val opNum = dbOpCounter.incrementAndGet()
 
         val log = DbOperationLog(operation, model, duration, itemCount, timestamp)
-        dbOperationTimes.computeIfAbsent(model) { Collections.synchronizedList(mutableListOf()) }.add(log)
+        dbOperationTimes.computeIfAbsent(model) { ConcurrentLinkedQueue() }.add(log)
 
         if (isVerbose) {
             val elapsed = timestamp - startTime
@@ -232,23 +232,23 @@ class SyncTimeLogger @Inject constructor(
 
     internal fun generateSummary(): String {
         val apiAggs = apiCallTimes.entries.map { (endpoint, logs) ->
-            endpoint to synchronized(logs) {
+            endpoint to logs.toList().let { snapshot ->
                 Agg(
-                    count = logs.size,
-                    success = logs.count { it.success },
-                    totalTime = logs.sumOf { it.duration },
-                    totalItems = logs.sumOf { it.itemsReturned }
+                    count = snapshot.size,
+                    success = snapshot.count { it.success },
+                    totalTime = snapshot.sumOf { it.duration },
+                    totalItems = snapshot.sumOf { it.itemsReturned }
                 )
             }
         }
 
         val dbAggs = dbOperationTimes.entries.map { (model, logs) ->
-            model to synchronized(logs) {
+            model to logs.toList().let { snapshot ->
                 Agg(
-                    count = logs.size,
+                    count = snapshot.size,
                     success = 0,
-                    totalTime = logs.sumOf { it.duration },
-                    totalItems = logs.sumOf { it.itemCount }
+                    totalTime = snapshot.sumOf { it.duration },
+                    totalItems = snapshot.sumOf { it.itemCount }
                 )
             }
         }

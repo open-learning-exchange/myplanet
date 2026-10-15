@@ -38,7 +38,8 @@ class RequestsFragment : BaseMemberFragment() {
             (adapter as? RequestsAdapter)?.setData(
                 uiState.members,
                 uiState.isLeader,
-                uiState.memberCount
+                uiState.memberCount,
+                uiState.memberLimit
             )
             showNoData(binding.tvNodata, uiState.members.size, "members")
         }

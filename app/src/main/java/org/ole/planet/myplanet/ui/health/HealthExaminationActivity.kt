@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.health
 
+import android.content.Context
+import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
 import android.view.ContextThemeWrapper
@@ -15,6 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.chip.Chip
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
+import java.util.Locale
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -191,13 +194,18 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     }
     
     private fun seedSavedConditions() {
-        val standardConditions = resources.getStringArray(R.array.diagnosis_list).toHashSet()
-        mapConditions?.putAll(conditionsMap.filterKeys { it in standardConditions })
+        val keys = diagnosisKeys(this)
+        val labels = resources.getStringArray(R.array.diagnosis_list)
+        keys.forEachIndexed { i, key ->
+            savedCondition(key, labels[i])?.let { mapConditions?.set(key, it) }
+        }
     }
 
+    private fun savedCondition(key: String, label: String): Boolean? = conditionsMap[key] ?: conditionsMap[label]
+
     private fun preloadCustomDiagnosis() {
-        val arr = resources.getStringArray(R.array.diagnosis_list)
-        val mainList = arr.toHashSet()
+        val mainList = diagnosisKeys(this).toHashSet() +
+            resources.getStringArray(R.array.diagnosis_list)
         if (customDiag?.isEmpty() == true && examination != null) {
             for ((s, value) in conditionsMap) {
                 if (!mainList.contains(s) && value) {
@@ -208,22 +216,23 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     }
 
     private fun showCheckbox(examination: HealthExamination?) {
-        val arr = resources.getStringArray(R.array.diagnosis_list)
+        val keys = diagnosisKeys(this)
+        val labels = resources.getStringArray(R.array.diagnosis_list)
         binding.containerCheckbox.removeAllViews()
         val textColorStateList = ContextCompat.getColorStateList(this, R.color.daynight_textColor)
         val textColor = ContextCompat.getColor(this, R.color.daynight_textColor)
         val padding = dpToPx(8)
-        for (s in arr) {
+        keys.forEachIndexed { i, key ->
             val c = CheckBox(this)
             c.buttonTintList = textColorStateList
             c.setTextColor(textColor)
 
             if (examination != null) {
-                c.isChecked = conditionsMap[s] ?: false
+                c.isChecked = savedCondition(key, labels[i]) ?: false
             }
             c.setPadding(padding, padding, padding, padding)
-            c.text = s
-            c.tag = s
+            c.text = labels[i]
+            c.tag = key
             c.setOnCheckedChangeListener(this)
             binding.containerCheckbox.addView(c)
         }
@@ -237,7 +246,6 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         }
 
     private fun saveData() {
-        // Prepare data synchronously (or in a lightweight way)
         try {
             createPojo()
             if (examination == null) {
@@ -278,7 +286,6 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             examination?.isHasInfo = hasInfo
             pojo?.isUpdated = true
 
-            // Delegate save to ViewModel
             viewModel.saveExamination(examination, pojo, user, sign)
 
         } catch (e: Exception) {
@@ -391,8 +398,8 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     }
 
     override fun onCheckedChanged(compoundButton: CompoundButton, b: Boolean) {
-        val text = "${compoundButton.text}".trim { it <= ' ' }
-        mapConditions?.set(text, b)
+        val key = compoundButton.tag as? String ?: "${compoundButton.text}".trim { it <= ' ' }
+        mapConditions?.set(key, b)
     }
 
     override fun onDestroy() {
@@ -408,5 +415,10 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
 
     companion object {
         private const val TAG = "HealthExaminationActivity"
+
+        fun diagnosisKeys(context: Context): Array<String> {
+            val english = Configuration(context.resources.configuration).apply { setLocale(Locale.ENGLISH) }
+            return context.createConfigurationContext(english).resources.getStringArray(R.array.diagnosis_list)
+        }
     }
 }

@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.ui.courses
 
-import android.content.Context
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
+import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
@@ -41,7 +42,7 @@ class CoursesStepsViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
-    private val context: Context = mockk(relaxed = true)
+    private val storagePathResolver: StoragePathResolver = mockk()
     private val coursesRepository: CoursesRepository = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
@@ -55,12 +56,12 @@ class CoursesStepsViewModelTest {
 
     @Before
     fun setUp() {
-        every { context.getExternalFilesDir(null) } returns null
+        every { storagePathResolver.resolveExternalFilesDir() } returns null
         every { sharedPrefManager.getCouchdbUrl() } returns "http://localhost:5984"
         UrlUtils.init(sharedPrefManager)
 
         viewModel = CoursesStepsViewModel(
-            context,
+            storagePathResolver,
             coursesRepository,
             userRepository,
             resourcesRepository,
@@ -74,6 +75,54 @@ class CoursesStepsViewModelTest {
     @After
     fun tearDown() {
         UrlUtils.resetForTesting()
+    }
+
+    @Test
+    fun loadStep_whenResolverReturnsFile_buildsMarkdownDescriptionWithLocalOlePath() = runTest {
+        every { storagePathResolver.resolveExternalFilesDir() } returns File("/x")
+        val stepId = "step_1"
+        val stepData = CourseStepData(
+            step = CourseStep().apply { id = stepId; description = "![image](img.png)" },
+            resources = emptyList(),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = false,
+            hasExam = false,
+            hasSurvey = false
+        )
+
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { coursesRepository.getCourseStepData(stepId, null) } returns stepData
+
+        viewModel.loadStep(stepId, null)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.markdownDescription.contains("file:///x/ole/"))
+    }
+
+    @Test
+    fun loadStep_whenResolverReturnsNull_keepsFileNullOlePathInMarkdownDescription() = runTest {
+        every { storagePathResolver.resolveExternalFilesDir() } returns null
+        val stepId = "step_1"
+        val stepData = CourseStepData(
+            step = CourseStep().apply { id = stepId; description = "![image](img.png)" },
+            resources = emptyList(),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = false,
+            hasExam = false,
+            hasSurvey = false
+        )
+
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { coursesRepository.getCourseStepData(stepId, null) } returns stepData
+
+        viewModel.loadStep(stepId, null)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.markdownDescription.contains("file://null/ole/"))
     }
 
     @Test

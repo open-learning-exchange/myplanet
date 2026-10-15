@@ -418,6 +418,41 @@ class ProgressRepositoryImplTest {
     }
 
     @Test
+    fun testFetchCourseData_stepMistakesCoverEverySubmission() = testScope.runTest {
+        coEvery { mockCoursesRepository.getMyCourses(any()) } returns listOf(
+            MyCourse().apply { courseId = "course1"; courseTitle = "Test Course" }
+        )
+        coEvery { courseStepDao.getByCourseIds(listOf("course1")) } returns listOf(
+            CourseStep(id = "step0", courseId = "course1"), CourseStep(id = "step1", courseId = "course1")
+        )
+        coEvery { courseProgressDao.getByUserAndCourseIds("user1", listOf("course1")) } returns emptyList()
+        coEvery { examDao.getByCourseIds(listOf("course1")) } returns listOf(
+            StepExam(id = "exam1", courseId = "course1"), StepExam(id = "exam2", courseId = "course1")
+        )
+        // One submission per step's exam
+        coEvery { mockSubmissionsRepository.getExamSubmissionsByUser("user1") } returns listOf(
+            Submission(id = "sub1", parentId = "course1", userId = "user1", type = "exam"),
+            Submission(id = "sub2", parentId = "course1", userId = "user1", type = "exam")
+        )
+        coEvery { mockSubmissionsRepository.getAnswersBySubmissionIds(listOf("sub1", "sub2")) } returns listOf(
+            org.ole.planet.myplanet.model.Answer(id = "a1", questionId = "q1", submissionId = "sub1", mistakes = 2),
+            org.ole.planet.myplanet.model.Answer(id = "a2", questionId = "q2", submissionId = "sub2", mistakes = 3)
+        )
+        coEvery { questionDao.getByIds(listOf("q1", "q2")) } returns listOf(
+            org.ole.planet.myplanet.model.ExamQuestion(id = "q1", examId = "exam1"),
+            org.ole.planet.myplanet.model.ExamQuestion(id = "q2", examId = "exam2")
+        )
+
+        val obj = repository.fetchCourseData("user1")[0].asJsonObject
+        advanceUntilIdle()
+
+        assertEquals(5, obj.get("mistakes").asInt)
+        val stepMistake = obj.get("stepMistake").asJsonObject
+        assertEquals(2, stepMistake.get("0").asInt)
+        assertEquals(3, stepMistake.get("1").asInt)
+    }
+
+    @Test
     fun testGetCourseProgress() = testScope.runTest {
         val courseIds = listOf("course1", "course2")
         val steps1 = listOf(CourseStep().apply { courseId = "course1" })

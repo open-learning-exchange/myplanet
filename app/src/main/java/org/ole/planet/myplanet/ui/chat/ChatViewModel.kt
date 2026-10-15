@@ -27,9 +27,9 @@ import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.ChatResult
 import org.ole.planet.myplanet.repository.ChatSearchMode
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
-import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.TeamsShareRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.repository.VoicesShareRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.ChatSearch
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -48,8 +48,8 @@ data class ChatUiState(
 class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
     private val userRepository: UserRepository,
-    private val teamsRepository: TeamsRepository,
-    private val voicesRepository: VoicesRepository,
+    private val teamsRepository: TeamsShareRepository,
+    private val voicesRepository: VoicesShareRepository,
     private val dispatcherProvider: DispatcherProvider,
     private val realtimeSyncManager: RealtimeSyncManager,
     private val configurationsRepository: ConfigurationsRepository
@@ -79,6 +79,9 @@ class ChatViewModel @Inject constructor(
     }
     private var loadDataJob: kotlinx.coroutines.Job? = null
     private var searchJob: kotlinx.coroutines.Job? = null
+    private var lastQuery = ""
+    private var lastFullSearch = false
+    private var lastQuestion = false
     sealed class ShareChatResult {
         object AlreadyShared : ShareChatResult()
         data class Shared(val news: News, val chatId: String) : ShareChatResult()
@@ -142,27 +145,34 @@ class ChatViewModel @Inject constructor(
             }
             result?.let { data ->
                 _screenData.value = data
-                _filteredChats.value = allChats
+                applySearch()
             }
         }
     }
     fun searchChats(query: String, isFullSearch: Boolean, isQuestion: Boolean) {
-        if (query.isBlank()) {
+        lastQuery = query
+        lastFullSearch = isFullSearch
+        lastQuestion = isQuestion
+        applySearch()
+    }
+
+    private fun applySearch() {
+        searchJob?.cancel()
+        if (lastQuery.isBlank()) {
             _filteredChats.value = allChats
             return
         }
-        searchJob?.cancel()
+        val query = lastQuery
+        val mode = if (!lastFullSearch) {
+            ChatSearchMode.TITLE
+        } else if (lastQuestion) {
+            ChatSearchMode.QUESTION
+        } else {
+            ChatSearchMode.RESPONSE
+        }
         searchJob = viewModelScope.launch {
-            val mode = if (!isFullSearch) {
-                ChatSearchMode.TITLE
-            } else if (isQuestion) {
-                ChatSearchMode.QUESTION
-            } else {
-                ChatSearchMode.RESPONSE
-            }
             val index = searchIndex ?: ChatSearch.Index(allChats).also { searchIndex = it }
-            val results = ChatSearch.search(query, mode, index, dispatcherProvider.default)
-            _filteredChats.value = results
+            _filteredChats.value = ChatSearch.search(query, mode, index, dispatcherProvider.default)
         }
     }
     private suspend fun loadCurrentUser(userId: String?): UserEntity? {
