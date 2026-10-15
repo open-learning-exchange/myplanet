@@ -686,13 +686,23 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         upsertRoomSubmissionsFromSync(listOf(submission))
     }
 
-    private fun upsertRoomSubmissionsFromSync(documentList: List<JsonObject>) {
+    private suspend fun upsertRoomSubmissionsFromSync(documentList: List<JsonObject>) {
         val submissions = ArrayList<Submission>(documentList.size)
         val answers = ArrayList<Answer>()
+        
+        val docs = documentList.filterNot { it.has("_attachments") }
+        val existingRows = submissionDao.getByRemoteIds(docs.map { GsonUtils.getString("_id", it) }.filter { it.isNotBlank() })
+        val localIdByRemoteId = existingRows.filter { it.id != it._id }
+            .groupBy { it._id.orEmpty() }
+            .mapValues { (_, rows) -> rows.first().id }
+        val duplicateIds = existingRows.filter { it.id == it._id && localIdByRemoteId.containsKey(it.id) }.map { it.id }
+        val localAnswersByKey = answerDao.getBySubmissionIds(localIdByRemoteId.values.toList())
+            .associateBy { "${it.submissionId}|${it.questionId}" }
 
-        documentList.filterNot { it.has("_attachments") }.forEach { submission ->
-            val id = GsonUtils.getString("_id", submission)
-            if (id.isBlank()) return@forEach
+        docs.forEach { submission ->
+            val remoteId = GsonUtils.getString("_id", submission)
+            if (remoteId.isBlank()) return@forEach
+            val id = localIdByRemoteId[remoteId] ?: remoteId
             val serverStatus = GsonUtils.getString("status", submission)
             val rev = GsonUtils.getString("_rev", submission)
             val parentId = GsonUtils.getString("parentId", submission)
@@ -704,7 +714,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             submissions.add(
                 Submission(
                     id = id,
-                    _id = id,
+                    _id = remoteId,
                     _rev = rev,
                     parentId = parentId,
                     type = GsonUtils.getString("type", submission),
@@ -734,9 +744,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 } else {
                     null
                 }
+                val questionId = GsonUtils.getString("questionId", answerJson).ifBlank { "$examIdPart-$i" }
                 answers.add(
                     Answer(
-                        id = "$id-$i",
+                        id = localAnswersByKey["$id|$questionId"]?.id ?: "$remoteId-$i",
                         value = valueElement?.let {
                             when {
                                 it.isJsonNull || it.isJsonArray -> null
@@ -748,13 +759,17 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                         mistakes = GsonUtils.getInt("mistakes", answerJson),
                         isPassed = GsonUtils.getBoolean("passed", answerJson),
                         examId = parentId,
-                        questionId = GsonUtils.getString("questionId", answerJson).ifBlank { "$examIdPart-$i" },
+                        questionId = questionId,
                         submissionId = id,
                     )
                 )
             }
         }
 
+        if (duplicateIds.isNotEmpty()) {
+            answerDao.deleteBySubmissionIds(duplicateIds)
+            duplicateIds.chunked(900).forEach { submissionDao.deleteByIds(it) }
+        }
         if (submissions.isEmpty() && answers.isEmpty()) return
 
         if (submissions.isNotEmpty()) submissionDao.upsertAllBlocking(submissions)
