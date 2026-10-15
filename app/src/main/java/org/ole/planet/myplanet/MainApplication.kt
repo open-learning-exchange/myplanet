@@ -361,7 +361,9 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             val savedThemeMode = withContext(dispatcherProvider.io) {
                 getCurrentThemeMode()
             }
-            applyThemeMode(savedThemeMode)
+            withContext(dispatcherProvider.main) {
+                applyThemeMode(savedThemeMode)
+            }
         } finally {
             // success
         }
