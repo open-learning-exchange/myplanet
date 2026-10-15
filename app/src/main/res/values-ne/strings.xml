@@ -159,6 +159,9 @@
     <string name="select_gallery">ग्यालरीबाट छान्नुहोस्</string>
     <string name="add_resource">स्रोत थप्नुहोस्:</string>
     <string name="reply">उत्तर दिनुहोस्</string>
+    <string name="react">प्रतिक्रिया</string>
+    <string name="reaction_chip_description">%1$s प्रतिक्रिया, सङ्ख्या %2$d</string>
+    <string name="more_reactions">थप प्रतिक्रियाहरू</string>
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">उत्तर देखाउँदै:</string>
@@ -1286,6 +1289,7 @@
     <string name="warning_icon">चेतावनी आइकन</string>
     <string name="close_banner">चेतावनी ब्यानर बन्द गर्नुहोस्</string>
     <string name="status_not_started">सुरु भएको छैन</string>
+    <string name="status_todo">गर्नुपर्ने</string>
     <string name="status_in_progress">प्रगतिमा छ</string>
     <string name="status_completed">पूरा भयो</string>
     <string name="read_aloud">स्वरमा पढ्नुहोस्</string>

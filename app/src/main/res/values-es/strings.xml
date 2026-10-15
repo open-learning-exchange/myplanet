@@ -159,6 +159,9 @@
     <string name="select_gallery">Seleccionar de la galería</string>
     <string name="add_resource">Agregar recurso:</string>
     <string name="reply">Responder</string>
+    <string name="react">Reaccionar</string>
+    <string name="reaction_chip_description">Reacción %1$s, total %2$d</string>
+    <string name="more_reactions">Más reacciones</string>
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">mostrando la respuesta de:</string>
@@ -1289,6 +1292,7 @@
     <string name="warning_icon">Icono de advertencia</string>
     <string name="close_banner">Cerrar banner de advertencia</string>
     <string name="status_not_started">No iniciado</string>
+    <string name="status_todo">Por hacer</string>
     <string name="status_in_progress">En progreso</string>
     <string name="status_completed">Completado</string>
     <string name="read_aloud">Leer en voz alta</string>

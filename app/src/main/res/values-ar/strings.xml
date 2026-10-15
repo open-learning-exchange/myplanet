@@ -159,6 +159,9 @@
     <string name="select_gallery">اختيار من المعرض</string>
     <string name="add_resource">إضافة مصدر:</string>
     <string name="reply">الرد</string>
+    <string name="react">تفاعل</string>
+    <string name="reaction_chip_description">تفاعل %1$s، العدد %2$d</string>
+    <string name="more_reactions">المزيد من التفاعلات</string>
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">عرض الرد على:</string>
@@ -1302,6 +1305,7 @@
     <string name="warning_icon">أيقونة التحذير</string>
     <string name="close_banner">إغلاق لافتة التحذير</string>
     <string name="status_not_started">لم يبدأ</string>
+    <string name="status_todo">المهام المطلوبة</string>
     <string name="status_in_progress">قيد التنفيذ</string>
     <string name="status_completed">مكتمل</string>
     <string name="read_aloud">اقرأ بصوت عالٍ</string>

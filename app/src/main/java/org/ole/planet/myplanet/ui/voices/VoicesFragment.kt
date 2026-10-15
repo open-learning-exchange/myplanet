@@ -32,7 +32,6 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
-import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
@@ -264,13 +263,7 @@ class VoicesFragment : BaseVoicesFragment() {
 
             val chatDetailFragment = ChatDetailFragment()
             chatDetailFragment.arguments = bundle
-
-            FragmentNavigator.replaceFragment(
-                parentFragmentManager,
-                R.id.fragment_container,
-                chatDetailFragment,
-                addToBackStack = true
-            )
+            homeItemClickListener?.openCallFragment(chatDetailFragment)
         }
     }
 
