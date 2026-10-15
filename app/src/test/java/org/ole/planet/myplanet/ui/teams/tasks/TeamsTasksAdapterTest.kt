@@ -80,7 +80,7 @@ class TeamsTasksAdapterTest {
         assertEquals(android.view.View.VISIBLE, holder.binding.editTask.visibility)
         assertEquals(android.view.View.VISIBLE, holder.binding.deleteTask.visibility)
         assertEquals(android.view.View.VISIBLE, holder.binding.icMore.visibility)
-        assertEquals(true, holder.binding.checkbox.isClickable)
+        assertEquals(true, holder.binding.statusBadge.isClickable)
     }
 
     @Test
