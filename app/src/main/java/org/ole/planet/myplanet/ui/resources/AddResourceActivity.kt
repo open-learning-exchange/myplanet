@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
 import android.widget.EditText
+import android.widget.Spinner
 import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
@@ -24,6 +25,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.LocalResourceRequest
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
+import org.ole.planet.myplanet.ui.courses.CoursesFilterFragment
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
@@ -95,13 +97,13 @@ class AddResourceActivity : AppCompatActivity() {
         etYear.setText(currentYear.toString())
         binding.fileUrl.text = getString(R.string.file, resourceUrl)
         binding.tvLevels.setOnClickListener { view: View ->
-            showMultiSelectList(resources.getStringArray(R.array.array_levels), levels, view,getString(R.string.levels))
+            showMultiSelectList(R.array.array_levels, levels, view,getString(R.string.levels))
         }
         binding.tvSubject.setOnClickListener { view: View ->
-            showMultiSelectList(resources.getStringArray(R.array.array_subjects), subjects, view,getString(R.string.subject))
+            showMultiSelectList(R.array.array_subjects, subjects, view,getString(R.string.subject))
         }
         binding.tvResourceFor.setOnClickListener { view: View ->
-            showMultiSelectList(resources.getStringArray(R.array.array_resource_for), resourceFor, view,getString(R.string.resource_for))
+            showMultiSelectList(R.array.array_resource_for, resourceFor, view,getString(R.string.resource_for))
         }
         binding.spnLang.setupHintSpinner(getString(R.string.language), resources.getStringArray(R.array.language))
         binding.spnOpenWith.setupHintSpinner(getString(R.string.select_open_with), resources.getStringArray(R.array.open_With))
@@ -135,9 +137,9 @@ class AddResourceActivity : AppCompatActivity() {
         resource.subject?.forEach { subjects?.add(it) }
         resource.level?.forEach { levels?.add(it) }
 
-        binding.tvSubject.text = resource.subject?.joinToString(", ")
+        binding.tvSubject.text = resource.subject?.joinToString(", ") { labelFor(R.array.array_subjects, it) }
             ?.takeIf { it.isNotEmpty() } ?: getString(R.string.subject)
-        binding.tvLevels.text = resource.level?.joinToString(", ")
+        binding.tvLevels.text = resource.level?.joinToString(", ") { labelFor(R.array.array_levels, it) }
             ?.takeIf { it.isNotEmpty() } ?: getString(R.string.levels)
     }
 
@@ -192,10 +194,10 @@ class AddResourceActivity : AppCompatActivity() {
             description = binding.etDescription.text.toString().trim { it <= ' ' },
             publisher = binding.etPublisher.text.toString().trim { it <= ' ' },
             linkToLicense = binding.etLinkToLicense.text.toString().trim { it <= ' ' },
-            openWith = if (binding.spnOpenWith.selectedItemPosition > 0) binding.spnOpenWith.selectedItem.toString() else "",
-            language = if (binding.spnLang.selectedItemPosition > 0) binding.spnLang.selectedItem.toString() else "",
-            mediaType = if (binding.spnMedia.selectedItemPosition > 0) binding.spnMedia.selectedItem.toString() else "",
-            resourceType = if (binding.spnResourceType.selectedItemPosition > 0) binding.spnResourceType.selectedItem.toString() else "",
+            openWith = spinnerValue(binding.spnOpenWith, R.array.open_With),
+            language = spinnerValue(binding.spnLang, R.array.language),
+            mediaType = spinnerValue(binding.spnMedia, R.array.media),
+            resourceType = spinnerValue(binding.spnResourceType, R.array.resource_type),
             subjects = subjects,
             levels = levels,
             resourceFor = resourceFor,
@@ -242,13 +244,28 @@ class AddResourceActivity : AppCompatActivity() {
         }
         return true
     }
-    private fun showMultiSelectList(list: Array<String>, items: MutableList<String>?, view: View, title: String) {
+
+    private fun englishValues(arrayRes: Int): Array<String> = CoursesFilterFragment.englishValues(this, arrayRes)
+
+    private fun spinnerValue(spinner: Spinner, arrayRes: Int): String {
+        val position = spinner.selectedItemPosition
+        return if (position > 0) englishValues(arrayRes).getOrElse(position - 1) { "" } else ""
+    }
+    
+    private fun labelFor(arrayRes: Int, value: String): String {
+        val index = englishValues(arrayRes).indexOf(value)
+        return if (index >= 0) resources.getStringArray(arrayRes).getOrElse(index) { value } else value
+    }
+
+    private fun showMultiSelectList(arrayRes: Int, items: MutableList<String>?, view: View, title: String) {
+        val list = resources.getStringArray(arrayRes)
+        val keys = englishValues(arrayRes)
         val listView = RecyclerView(this)
         listView.layoutManager = LinearLayoutManager(this)
 
         val initialSelectedIndices = mutableListOf<Int>()
         items?.forEach { selectedItem ->
-            val index = list.indexOf(selectedItem)
+            val index = keys.indexOf(selectedItem).takeIf { it >= 0 } ?: list.indexOf(selectedItem)
             if (index >= 0) {
                 initialSelectedIndices.add(index)
             }
@@ -263,9 +280,8 @@ class AddResourceActivity : AppCompatActivity() {
             items?.clear()
             val selectionList = mutableListOf<String>()
             for (i in selected) {
-                val s = list[i]
-                selectionList.add(s)
-                items?.add(s)
+                selectionList.add(list[i])
+                items?.add(keys.getOrElse(i) { list[i] })
             }
             val selection = selectionList.joinToString(", ")
             if (selection.isEmpty()) {

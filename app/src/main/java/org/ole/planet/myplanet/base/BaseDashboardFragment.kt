@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
 import org.ole.planet.myplanet.ui.dashboard.ItemType
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.life.LifeFragment
+import org.ole.planet.myplanet.ui.health.HealthUsersAdapter
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
@@ -237,7 +238,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         }
 
         val userId = userRepository.getUserModel()?.id
-        val teamIds = teams.mapNotNull { it._id }
+        val teamIds = teams.map { it._id }
         if (userId != null && teamIds.isNotEmpty()) {
             viewLifecycleOwner.lifecycleScope.launch {
                 val notificationInfoMap = viewModel.getTeamNotifications(teamIds, userId)
