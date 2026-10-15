@@ -340,6 +340,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     var date = ""
     private fun showAddAchievementAlert(`object`: JsonObject?) {
+        date = ""
         alertAddAttachmentBinding = AlertAddAttachmentBinding.inflate(LayoutInflater.from(activity))
         alertAddAttachmentBinding.tvDate.setOnClickListener {
             val now = Calendar.getInstance()
