@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.teams.tasks
 
 import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
