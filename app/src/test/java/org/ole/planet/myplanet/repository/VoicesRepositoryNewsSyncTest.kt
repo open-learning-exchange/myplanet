@@ -149,6 +149,25 @@ class VoicesRepositoryNewsSyncTest {
         assertNotNull(blankNews)
         assertEquals("Blank id message", blankNews?.message)
     }
+    @Test
+    fun `markNewsUploaded keeps the uploaded images and their markdown`() = runBlocking {
+        newsDao.upsert(News().apply {
+            id = "local-1"
+            message = "Hello"
+            imageUrls = listOf("{\"imageUrl\":\"/sdcard/new.png\"}")
+        })
+        val images = JsonArray().apply {
+            add(JsonObject().apply { addProperty("resourceId", "new-res"); addProperty("filename", "new.png") })
+        }
+
+        repository.markNewsUploaded(listOf(NewsUpdateData("local-1", "server-1", "1-abc", images, message = "Hello\n![](resources/new-res/new.png)")))
+
+        val saved = newsDao.getById("local-1")!!
+        assertEquals("server-1", saved._id)
+        assertEquals(images, saved.imagesArray)
+        assertEquals("Hello\n![](resources/new-res/new.png)", saved.message)
+        assertEquals(emptyList<String>(), saved.imageUrls)
+    }
 
     private suspend fun storeLocalPost(id: String, remoteId: String? = null) = newsDao.upsert(News().apply {
         this.id = id
