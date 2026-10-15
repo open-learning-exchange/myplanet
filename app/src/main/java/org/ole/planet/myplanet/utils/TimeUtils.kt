@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
 object TimeUtils {
     private const val TAG = "TimeUtils"
     const val DATE_FORMAT = "dd MMM yyyy"
+    private const val DEFAULT_DATE_PATTERN = "EEEE, MMM dd, yyyy"
 
     private val defaultLocale: Locale
         get() = Locale.getDefault()
@@ -43,10 +44,10 @@ object TimeUtils {
             if (zone != null) formatter.withZone(zone) else formatter
         }
     }
+    
+    private fun defaultDateFormatter() = formatterFor(DEFAULT_DATE_PATTERN, ZoneId.systemDefault())
 
-    private val defaultDateFormatter by lazy {
-        DateTimeFormatter.ofPattern("EEEE, MMM dd, yyyy", defaultLocale).withZone(utcZone)
-    }
+    private fun utcDateFormatter() = formatterFor(DEFAULT_DATE_PATTERN, utcZone)
 
     private fun dateTimeFormatter() =
         formatterFor("EEE dd, MMMM yyyy, hh:mm a", ZoneId.systemDefault())
@@ -84,7 +85,7 @@ object TimeUtils {
 
     fun getFormattedDate(date: Long?): String {
         val instant = date?.let { Instant.ofEpochMilli(it) } ?: Instant.now()
-        return formatInstant(instant, "N/A") { defaultDateFormatter }
+        return formatInstant(instant, "N/A") { defaultDateFormatter() }
     }
 
     fun getFormattedShortDate(date: Long): String =
@@ -132,7 +133,7 @@ object TimeUtils {
                 val dateOnlyFormatter = formatterFor("yyyy-MM-dd")
                 LocalDate.parse(stringDate, dateOnlyFormatter).atStartOfDay(utcZone).toInstant()
             }
-            getFormattedDate(instant.toEpochMilli())
+            formatInstant(instant, "N/A") { utcDateFormatter() }
         } catch (e: Exception) {
             Log.w(TAG, "getFormattedDate failed", e)
             "N/A"
