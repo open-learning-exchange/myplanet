@@ -795,7 +795,14 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteTask(taskId: String) {
-        teamTaskDao.deleteById(taskId)
+        val task = teamTaskDao.getById(taskId) ?: return
+        if (task._id.isNullOrBlank()) {
+            teamTaskDao.deleteById(taskId)
+            return
+        }
+        task.status = "archived"
+        task.isUpdated = true
+        teamTaskDao.upsert(task)
     }
 
     private suspend fun upsertTask(task: TeamTask) {
