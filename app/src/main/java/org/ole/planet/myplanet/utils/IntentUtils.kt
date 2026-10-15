@@ -6,7 +6,6 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import android.util.Log
-import androidx.core.net.toUri
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 
@@ -19,22 +18,6 @@ object IntentUtils {
             putExtra("resourceType", ResourceViewerFragment.ResourceType.AUDIO.name)
         }
         context.startActivity(intent)
-    }
-
-    fun openPlayStore(context: Context) {
-        val appPackageName = context.packageName
-        val intent = Intent(Intent.ACTION_VIEW, "market://details?id=$appPackageName".toUri()).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        try {
-            context.startActivity(intent)
-        } catch (e: ActivityNotFoundException) {
-            val webIntent = Intent(
-                Intent.ACTION_VIEW,
-                "https://play.google.com/store/apps/details?id=$appPackageName".toUri(),
-            ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-            context.startActivity(webIntent)
-        }
     }
 
     fun openAppSettings(context: Context) {

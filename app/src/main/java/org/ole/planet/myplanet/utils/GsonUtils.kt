@@ -124,10 +124,6 @@ object GsonUtils {
             if (!el.isJsonPrimitive) false else el.asBoolean
         }
 
-    fun addJson(`object`: JsonObject, fieldName: String, value: JsonObject?) {
-        if (value != null && value.keySet().isNotEmpty()) `object`.add(fieldName, value)
-    }
-
     fun getInt(fieldName: String, jsonObject: JsonObject?): Int =
         getPrimitive(0, { fieldElement(fieldName, jsonObject) }) { el ->
             if (!el.isJsonPrimitive) 0 else el.asJsonPrimitive.let { primitive ->

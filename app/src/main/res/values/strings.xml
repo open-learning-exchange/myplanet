@@ -588,7 +588,6 @@
     <string name="format_removed_from_mylibrary">%1$s removed from myLibrary</string>
     <string name="added_to_my_courses">added to myCourses</string>
     <string name="do_you_want_to_stay_online">Do you want to stay online?</string>
-    <string name="device_not_connected_to_planet">Device not connected to planet.</string>
     <string name="all_files_downloaded_successfully">All files downloaded successfully</string>
     <string name="removed_from_mylibrary">Removed from myLibrary</string>
     <string name="removed_from_mycourse">Removed from myCourse</string>

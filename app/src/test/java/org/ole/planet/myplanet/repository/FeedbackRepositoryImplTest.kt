@@ -81,13 +81,13 @@ class FeedbackRepositoryImplTest {
     }
 
     @Test
-    fun insertFromJson_withPendingLocalReply_preservesLocalMessagesAndPendingState() = runTest {
+    fun insertFeedbackList_withPendingLocalReply_preservesLocalMessagesAndPendingState() = runTest {
         val existing = Feedback().apply {
             id = "fb1"
             isUploaded = false
             messages = "[{\"message\":\"local unsynced reply\"}]"
         }
-        coEvery { feedbackDao.findById("fb1") } returns existing
+        coEvery { feedbackDao.getByIds(listOf("fb1")) } returns listOf(existing)
 
         val serverDoc = JsonObject().apply {
             addProperty("_id", "fb1")
@@ -95,25 +95,25 @@ class FeedbackRepositoryImplTest {
             add("messages", JsonArray().apply { add(JsonObject().apply { addProperty("message", "server reply") } ) })
         }
 
-        val saved = slot<Feedback>()
-        coEvery { feedbackDao.upsert(capture(saved)) } returns Unit
+        val saved = slot<List<Feedback>>()
+        coEvery { feedbackDao.upsertAll(capture(saved)) } returns Unit
 
-        repository.insertFromJson(serverDoc)
+        repository.insertFeedbackList(listOf(serverDoc))
 
-        assertEquals("Closed", saved.captured.status)
-        assertFalse(saved.captured.isUploaded)
-        assertEquals(existing.messages, saved.captured.messages)
+        assertEquals("Closed", saved.captured.single().status)
+        assertFalse(saved.captured.single().isUploaded)
+        assertEquals(existing.messages, saved.captured.single().messages)
     }
 
     @Test
-    fun insertFromJson_withPendingLocalClose_keepsClosedStatus() = runTest {
+    fun insertFeedbackList_withPendingLocalClose_keepsClosedStatus() = runTest {
         val existing = Feedback().apply {
             id = "fb1"
             status = "Closed"
             isUploaded = false
             messages = "[]"
         }
-        coEvery { feedbackDao.findById("fb1") } returns existing
+        coEvery { feedbackDao.getByIds(listOf("fb1")) } returns listOf(existing)
 
         val serverDoc = JsonObject().apply {
             addProperty("_id", "fb1")
@@ -121,18 +121,18 @@ class FeedbackRepositoryImplTest {
             add("messages", JsonArray())
         }
 
-        val saved = slot<Feedback>()
-        coEvery { feedbackDao.upsert(capture(saved)) } returns Unit
+        val saved = slot<List<Feedback>>()
+        coEvery { feedbackDao.upsertAll(capture(saved)) } returns Unit
 
-        repository.insertFromJson(serverDoc)
+        repository.insertFeedbackList(listOf(serverDoc))
 
-        assertEquals("Closed", saved.captured.status)
-        assertFalse(saved.captured.isUploaded)
+        assertEquals("Closed", saved.captured.single().status)
+        assertFalse(saved.captured.single().isUploaded)
     }
 
     @Test
-    fun insertFromJson_withNoPendingLocalChanges_overwritesFromServer() = runTest {
-        coEvery { feedbackDao.findById("fb1") } returns null
+    fun insertFeedbackList_withNoPendingLocalChanges_overwritesFromServer() = runTest {
+        coEvery { feedbackDao.getByIds(listOf("fb1")) } returns emptyList()
 
         val serverDoc = JsonObject().apply {
             addProperty("_id", "fb1")
@@ -140,13 +140,13 @@ class FeedbackRepositoryImplTest {
             add("messages", JsonArray().apply { add(JsonObject().apply { addProperty("message", "server reply") } ) })
         }
 
-        val saved = slot<Feedback>()
-        coEvery { feedbackDao.upsert(capture(saved)) } returns Unit
+        val saved = slot<List<Feedback>>()
+        coEvery { feedbackDao.upsertAll(capture(saved)) } returns Unit
 
-        repository.insertFromJson(serverDoc)
+        repository.insertFeedbackList(listOf(serverDoc))
 
-        assertTrue(saved.captured.isUploaded)
-        val messages = Gson().fromJson(saved.captured.messages, JsonArray::class.java)
+        assertTrue(saved.captured.single().isUploaded)
+        val messages = Gson().fromJson(saved.captured.single().messages, JsonArray::class.java)
         assertEquals("server reply", messages[0].asJsonObject["message"].asString)
     }
 

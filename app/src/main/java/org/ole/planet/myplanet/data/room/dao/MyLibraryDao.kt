@@ -187,9 +187,6 @@ interface MyLibraryDao {
     @Query("SELECT id FROM my_library WHERE userId LIKE :userPattern ESCAPE '\\'")
     suspend fun getIdsForUserPattern(userPattern: String): List<String>
 
-    @Query("SELECT resourceId, title FROM my_library WHERE resourceId IS NOT NULL")
-    suspend fun getResourceTitles(): List<ResourceTitleProjection>
-
     @Query("SELECT id, title FROM my_library")
     suspend fun getLibraryTitles(): List<LibraryTitleProjection>
 
