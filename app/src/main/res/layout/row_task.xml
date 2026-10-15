@@ -33,7 +33,6 @@
                     android:textColor="@color/daynight_textColor"
                     android:textSize="18sp"
                     android:textStyle="bold" />
-
                 <TextView
                     android:id="@+id/status_badge"
                     android:layout_width="wrap_content"
@@ -55,7 +54,6 @@
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
                 android:textColor="@color/hint_color" />
-
             <TextView
                 android:id="@+id/assignee"
                 android:layout_width="match_parent"
