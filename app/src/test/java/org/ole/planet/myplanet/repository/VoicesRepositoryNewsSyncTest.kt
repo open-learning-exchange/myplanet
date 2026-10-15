@@ -11,6 +11,7 @@ import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -112,7 +113,7 @@ class VoicesRepositoryNewsSyncTest {
         assertEquals("Bob", newsDao.getByUnderscoreId("n2")?.userName)
 
         // Top-level messages exclude the reply; the reply is reachable via getReplies.
-        assertEquals(setOf("n1", "n2"), newsDao.getTopLevelMessages().map { it._id }.toSet())
+        assertEquals(setOf("n1", "n2"), newsDao.getTopLevelMessagesFlow().first().map { it._id }.toSet())
         assertEquals(listOf("r1"), newsDao.getReplies("n1").map { it._id })
     }
 

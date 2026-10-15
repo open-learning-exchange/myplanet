@@ -48,9 +48,6 @@ interface NewsDao {
     fun getTopLevelByTeamFlow(teamId: String, teamPattern: String): Flow<List<News>>
 
     @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND docType = 'message' COLLATE NOCASE ORDER BY time DESC")
-    suspend fun getTopLevelMessages(): List<News>
-
-    @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND docType = 'message' COLLATE NOCASE ORDER BY time DESC")
     fun getTopLevelMessagesFlow(): Flow<List<News>>
 
     @Query("SELECT * FROM news WHERE replyTo = :newsId COLLATE NOCASE ORDER BY time DESC")

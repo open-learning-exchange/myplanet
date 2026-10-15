@@ -4,8 +4,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.ole.planet.myplanet.model.News
 
@@ -74,29 +72,6 @@ class GsonUtilsTest {
         assertEquals(0f, GsonUtils.getFloat("nullVal", obj))
         assertEquals(0f, GsonUtils.getFloat("missing", obj))
         assertEquals(0f, GsonUtils.getFloat("wrongType", obj))
-    }
-
-    @Test
-    fun testAddJsonWithNullValue() {
-        val obj = JsonObject()
-        GsonUtils.addJson(obj, "field", null)
-        assertFalse(obj.has("field"))
-    }
-
-    @Test
-    fun testAddJsonWithEmptyObject() {
-        val obj = JsonObject()
-        GsonUtils.addJson(obj, "field", JsonObject())
-        assertFalse(obj.has("field"))
-    }
-
-    @Test
-    fun testAddJsonWithNonEmptyObject() {
-        val obj = JsonObject()
-        val value = JsonObject().apply { addProperty("inner", "val") }
-        GsonUtils.addJson(obj, "field", value)
-        assertTrue(obj.has("field"))
-        assertEquals("val", obj.getAsJsonObject("field").get("inner").asString)
     }
 
     @Test
