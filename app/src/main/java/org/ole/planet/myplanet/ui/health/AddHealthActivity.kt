@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.health
 
 import android.app.DatePickerDialog
+import android.content.Context
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
@@ -67,7 +69,7 @@ class AddHealthActivity : AppCompatActivity() {
         val phone = "${binding.etPhone.editText?.text}".trim { ch -> ch <= ' ' }
         val emergencyName = "${binding.etEmergency.editText?.text}".trim { ch -> ch <= ' ' }
         val emergencyContact = "${binding.etContact.editText?.text}".trim { ch -> ch <= ' ' }
-        val emergencyType = "${binding.spnContactType.selectedItem}".trim { ch -> ch <= ' ' }
+        val emergencyType = contactTypeKeys(this).getOrElse(binding.spnContactType.selectedItemPosition) { "" }
         val specialNeeds = "${binding.etSpecialNeed.editText?.text}".trim { ch -> ch <= ' ' }
         val otherNeed = "${binding.etOtherNeed.editText?.text}".trim { ch -> ch <= ' ' }
 
@@ -113,10 +115,10 @@ class AddHealthActivity : AppCompatActivity() {
 
                 binding.etEmergency.editText?.setText(health?.emergencyContactName)
                 binding.etContact.editText?.setText(health?.emergencyContact)
-                val contactTypes = resources.getStringArray(R.array.contact_type)
                 val contactType = health?.emergencyContactType
                 if (!contactType.isNullOrEmpty()) {
-                    val index = contactTypes.indexOf(contactType)
+                    val index = contactTypeKeys(this@AddHealthActivity).indexOf(contactType)
+                        .takeIf { it >= 0 } ?: resources.getStringArray(R.array.contact_type).indexOf(contactType)
                     if (index >= 0) {
                         binding.spnContactType.setSelection(index)
                     }
@@ -152,4 +154,15 @@ class AddHealthActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
+    companion object {
+        fun contactTypeKeys(context: Context): Array<String> {
+            val english = Configuration(context.resources.configuration).apply { setLocale(Locale.ENGLISH) }
+            return context.createConfigurationContext(english).resources.getStringArray(R.array.contact_type)
+        }
+        
+        fun contactTypeLabel(context: Context, value: String?): String? {
+            val index = contactTypeKeys(context).indexOf(value)
+            return if (index >= 0) context.resources.getStringArray(R.array.contact_type).getOrNull(index) ?: value else value
+        }
+    }
 }

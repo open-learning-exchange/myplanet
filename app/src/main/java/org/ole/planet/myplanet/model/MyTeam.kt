@@ -65,6 +65,7 @@ open class MyTeam(
         set(value) { _id = value }
 
     companion object {
+        const val DEFAULT_MEMBER_LIMIT = 12
         fun getFirstAttachmentName(doc: JsonObject): String? {
             val attachments = doc.getAsJsonObject("_attachments") ?: return null
             return attachments.keySet().firstOrNull()
@@ -148,11 +149,21 @@ open class MyTeam(
 
         fun serialize(team: MyTeam): JsonObject {
             if (team.isDeletePending) {
-                return buildJsonObject {
+                val `object` = buildJsonObject {
                     if (!team._id.isNullOrEmpty()) put("_id", team._id)
                     if (!team._rev.isNullOrEmpty()) put("_rev", team._rev)
                     put("_deleted", true)
+                    if (!team.teamId.isNullOrEmpty()) put("teamId", team.teamId)
+                    put("userId", team.userId)
+                    put("userPlanetCode", team.userPlanetCode)
+                    put("teamPlanetCode", team.teamPlanetCode)
+                    put("teamType", team.teamType)
+                    put("docType", team.docType)
                 }.toGson()
+
+                val keysToRemove = `object`.keySet().filter { `object`.get(it).isJsonNull }
+                keysToRemove.forEach { `object`.remove(it) }
+                return `object`
             }
 
             if (team.docType == "resourceLink") {
@@ -179,14 +190,14 @@ open class MyTeam(
                 put("name", team.name)
                 put("userId", team.userId)
                 if (team.docType != "report" && team.docType != "request") {
-                    put("limit", team.limit)
+                    if (team.limit > 0) put("limit", team.limit)
                     put("amount", team.amount)
                     put("date", team.date)
                     put("public", team.isPublic)
                     put("isLeader", team.isLeader)
                 }
+                if (team.docType != "request" || team.createdDate > 0) put("createdDate", team.createdDate)
                 if (team.docType != "request") {
-                    put("createdDate", team.createdDate)
                     put("description", team.description)
                     put("beginningBalance", team.beginningBalance)
                     put("sales", team.sales)

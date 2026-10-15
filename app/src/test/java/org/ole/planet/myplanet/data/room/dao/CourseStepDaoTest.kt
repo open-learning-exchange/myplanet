@@ -77,4 +77,25 @@ class CourseStepDaoTest {
         assertEquals(1, results.size)
         assertEquals("step_1", results[0].id)
     }
+
+    @Test
+    fun deleteStaleSteps_removesOnlyThatCoursesOldSteps() = runBlocking {
+        courseStepDao.upsertAll(listOf(
+            createStep("old", "c1"), createStep("kept", "c1"), createStep("other", "c2")
+        ))
+
+        courseStepDao.deleteStaleSteps("c1", listOf("kept"))
+
+        assertEquals(listOf("kept"), courseStepDao.getByCourseId("c1").map { it.id })
+        assertEquals(listOf("other"), courseStepDao.getByCourseId("c2").map { it.id })
+    }
+
+    @Test
+    fun deleteStaleSteps_withNoStepsLeft_clearsTheCourse() = runBlocking {
+        courseStepDao.upsertAll(listOf(createStep("a", "c1"), createStep("b", "c1")))
+
+        courseStepDao.deleteStaleSteps("c1", emptyList())
+
+        assertEquals(emptyList<String>(), courseStepDao.getByCourseId("c1").map { it.id })
+    }
 }

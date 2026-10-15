@@ -12,9 +12,9 @@ object ChatSearch {
             chats.map { chat ->
                 val conversations = chat.conversations
                 if (!conversations.isNullOrEmpty()) {
-                    conversations[0].query?.let { Utilities.normalizeText(it) }
+                    conversations[0].query?.let { StringUtils.normalizeText(it) }
                 } else {
-                    chat.title?.let { Utilities.normalizeText(it) }
+                    chat.title?.let { StringUtils.normalizeText(it) }
                 }
             }
         }
@@ -22,7 +22,7 @@ object ChatSearch {
         val questions: List<List<String?>> by lazy {
             chats.map { chat ->
                 chat.conversations?.map { convo ->
-                    convo.query?.let { Utilities.normalizeText(it) }
+                    convo.query?.let { StringUtils.normalizeText(it) }
                 } ?: emptyList()
             }
         }
@@ -30,7 +30,7 @@ object ChatSearch {
         val responses: List<List<String?>> by lazy {
             chats.map { chat ->
                 chat.conversations?.map { convo ->
-                    convo.response?.let { Utilities.normalizeText(it) }
+                    convo.response?.let { StringUtils.normalizeText(it) }
                 } ?: emptyList()
             }
         }
@@ -63,8 +63,8 @@ object ChatSearch {
     ): List<ChatHistory> {
         val convoList = if (isQuestion) index.questions else index.responses
         var conversation: String?
-        val normalizedQueryParts = s.split(" ").filterNot { it.isEmpty() }.map { Utilities.normalizeText(it) }
-        val normalizedQuery = Utilities.normalizeText(s)
+        val normalizedQueryParts = s.split(" ").filterNot { it.isEmpty() }.map { StringUtils.normalizeText(it) }
+        val normalizedQuery = StringUtils.normalizeText(s)
         val inTitleStartQuery = mutableListOf<ChatHistory>()
         val inTitleContainsQuery = mutableListOf<ChatHistory>()
         val startsWithQuery = mutableListOf<ChatHistory>()
@@ -94,8 +94,8 @@ object ChatSearch {
         index: Index
     ): List<ChatHistory> {
         var title: String?
-        val normalizedQueryParts = s.split(" ").filterNot { it.isEmpty() }.map { Utilities.normalizeText(it) }
-        val normalizedQuery = Utilities.normalizeText(s)
+        val normalizedQueryParts = s.split(" ").filterNot { it.isEmpty() }.map { StringUtils.normalizeText(it) }
+        val normalizedQuery = StringUtils.normalizeText(s)
         val startsWithQuery = mutableListOf<ChatHistory>()
         val containsQuery = mutableListOf<ChatHistory>()
 

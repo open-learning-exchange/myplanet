@@ -20,7 +20,7 @@ import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.StringUtils
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
@@ -210,7 +210,7 @@ open class MyLibrary {
                 this.resourceId = resourceId
                 val titleString = JsonUtils.getString("title", kDoc)
                 title = titleString
-                titleNormal = Utilities.normalizeText(titleString)
+                titleNormal = StringUtils.normalizeText(titleString)
                 description = JsonUtils.getString("description", kDoc)
                 if (kDoc.containsKey("_attachments")) {
                     val attachmentsObj = kDoc.getValue("_attachments").jsonObject

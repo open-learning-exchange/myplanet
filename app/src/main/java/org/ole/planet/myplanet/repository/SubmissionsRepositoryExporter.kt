@@ -44,6 +44,9 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
         private const val LINE_HEIGHT = 20f
     }
 
+    internal fun generatedLine(): String =
+        "Generated: ${dateFormatter.format(Instant.ofEpochMilli(timeProvider.now()))}"
+
     suspend fun generateSubmissionPdf(
         submissionId: String
     ): File? {
@@ -175,7 +178,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
 
                 canvas.drawText("Total Submissions: ${submissions.size}", MARGIN, yPosition, normalPaint)
                 yPosition += LINE_HEIGHT
-                canvas.drawText("Generated: ${dateFormatter.format(Instant.now())}", MARGIN, yPosition, normalPaint)
+                canvas.drawText(generatedLine(), MARGIN, yPosition, normalPaint)
                 yPosition += LINE_HEIGHT * 3
 
                 val examId = getExamId(submissions.firstOrNull()?.parentId)

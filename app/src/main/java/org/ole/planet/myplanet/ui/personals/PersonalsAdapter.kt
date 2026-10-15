@@ -28,15 +28,7 @@ class PersonalsAdapter(private val context: Context) : ListAdapter<Personal, Per
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PersonalsViewHolder {
         val binding = RowMyPersonalBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return PersonalsViewHolder(binding)
-    }
-
-    override fun onBindViewHolder(holder: PersonalsViewHolder, position: Int) {
-        val binding = holder.binding
-        val item = getItem(position)
-        binding.title.text = item.title
-        binding.description.text = item.description
-        binding.date.text = dateCache.getOrPut(item.date) { getFormattedDate(item.date) }
+        val holder = PersonalsViewHolder(binding)
         binding.imgDelete.setOnClickListener {
             val adapterPosition = holder.bindingAdapterPosition
             if (adapterPosition != RecyclerView.NO_POSITION) {
@@ -61,6 +53,15 @@ class PersonalsAdapter(private val context: Context) : ListAdapter<Personal, Per
                 listener?.onUpload(getItem(adapterPosition))
             }
         }
+        return holder
+    }
+
+    override fun onBindViewHolder(holder: PersonalsViewHolder, position: Int) {
+        val binding = holder.binding
+        val item = getItem(position)
+        binding.title.text = item.title
+        binding.description.text = item.description
+        binding.date.text = dateCache.getOrPut(item.date) { getFormattedDate(item.date) }
     }
 
     private fun openResource(path: String?) {

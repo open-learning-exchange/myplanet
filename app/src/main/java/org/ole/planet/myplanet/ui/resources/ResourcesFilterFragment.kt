@@ -120,8 +120,9 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
             selectedLang = selectedFilter?.get("languages")?.toMutableSet() ?: selectedLang
             setAdapter(binding.listLevel, levels, selectedLvls)
             setAdapter(binding.listLang, languages, selectedLang)
-            setAdapter(binding.listMedium, mediums, selectedMeds, ::getMediumDisplayName)
+            setAdapter(binding.listMedium, mediums, selectedMeds) { ResourcesMediaType.displayName(requireContext(), it) }
             setAdapter(binding.listSub, subjects, selectedSubs)
+            updateHeaderLabels()
             updateResultCount()
         }
     }
@@ -164,6 +165,7 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
                 R.id.list_level -> addToList(s, selectedLvls)
                 R.id.list_medium -> addToList(s, selectedMeds)
             }
+            updateHeaderLabels()
             val count = filterListener?.filter(selectedSubs, selectedLang, selectedMeds, selectedLvls) ?: 0
             showResultCount(count)
         }
@@ -226,7 +228,16 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
         textView.setCompoundDrawablesWithIntrinsicBounds(0, 0, drawableRes, 0)
     }
 
-    fun getMediumDisplayName(medium: String): String {
-        return ResourcesMediaType.displayName(requireContext(), medium)
+    private fun updateHeaderLabels() {
+        if (_binding == null) return
+        binding.subjectsLayout.text = getHeaderText(getString(R.string.subjects), selectedSubs.size)
+        binding.languagesLayout.text = getHeaderText(getString(R.string.languages), selectedLang.size)
+        binding.mediumsLayout.text = getHeaderText(getString(R.string.mediums), selectedMeds.size)
+        binding.levelsLayout.text = getHeaderText(getString(R.string.levels), selectedLvls.size)
+    }
+
+    private fun getHeaderText(baseTitle: String, count: Int): String {
+        val cleanTitle = baseTitle.replace("*", "").trim()
+        return if (count > 0) getString(R.string.filter_header_with_count, cleanTitle, count) else cleanTitle
     }
 }

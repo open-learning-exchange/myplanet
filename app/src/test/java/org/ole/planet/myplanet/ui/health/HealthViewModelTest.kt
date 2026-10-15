@@ -44,7 +44,7 @@ class HealthViewModelTest {
         val record = HealthRecord(
             mockk(), mockk(), emptyList(), emptyMap()
         )
-        coEvery { healthRepository.getPatientById("1") } returns user
+        coEvery { userRepository.getUserById("1") } returns user
         coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
 
         viewModel.selectPatient("1")
@@ -60,7 +60,7 @@ class HealthViewModelTest {
     fun `selectPatient called repeatedly for same patient returns early and does not re-query`() = runTest {
         val user = UserEntity().apply { id = "1"; name = "Test Patient" }
         val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
-        coEvery { healthRepository.getPatientById("1") } returns user
+        coEvery { userRepository.getUserById("1") } returns user
         coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
 
         viewModel.selectPatient("1")
@@ -69,7 +69,7 @@ class HealthViewModelTest {
         viewModel.selectPatient("1")
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { healthRepository.getPatientById("1") }
+        coVerify(exactly = 1) { userRepository.getUserById("1") }
     }
 
     @Test
@@ -78,11 +78,11 @@ class HealthViewModelTest {
         val user2 = UserEntity().apply { id = "2"; name = "Patient 2" }
         val record2 = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
 
-        coEvery { healthRepository.getPatientById("1") } coAnswers {
+        coEvery { userRepository.getUserById("1") } coAnswers {
             delay(1000)
             user1
         }
-        coEvery { healthRepository.getPatientById("2") } coAnswers {
+        coEvery { userRepository.getUserById("2") } coAnswers {
             delay(1000)
             user2
         }
@@ -108,7 +108,7 @@ class HealthViewModelTest {
         val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
 
         coEvery { userRepository.getUserModel() } returns currentUser
-        coEvery { healthRepository.getPatientById("user1") } returns currentUser
+        coEvery { userRepository.getUserById("user1") } returns currentUser
         coEvery { healthRepository.getPatientHealthRecords("user1", currentUser) } returns record
 
         viewModel.refreshSelectedPatient()
@@ -121,7 +121,7 @@ class HealthViewModelTest {
     fun `refreshSelectedPatient forces re-query for current patient`() = runTest {
         val user = UserEntity().apply { id = "1"; name = "Test Patient" }
         val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
-        coEvery { healthRepository.getPatientById("1") } returns user
+        coEvery { userRepository.getUserById("1") } returns user
         coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
 
         viewModel.selectPatient("1")
@@ -130,7 +130,7 @@ class HealthViewModelTest {
         viewModel.refreshSelectedPatient()
         advanceUntilIdle()
 
-        coVerify(exactly = 2) { healthRepository.getPatientById("1") }
+        coVerify(exactly = 2) { userRepository.getUserById("1") }
     }
 
     @Test
@@ -140,9 +140,9 @@ class HealthViewModelTest {
         val record1 = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
         val record2 = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
 
-        coEvery { healthRepository.getPatientById("1") } returns user1
+        coEvery { userRepository.getUserById("1") } returns user1
         coEvery { healthRepository.getPatientHealthRecords("1", user1) } returns record1
-        coEvery { healthRepository.getPatientById("2") } returns user2
+        coEvery { userRepository.getUserById("2") } returns user2
         coEvery { healthRepository.getPatientHealthRecords("2", user2) } returns record2
 
         viewModel.selectPatient("1")
@@ -151,8 +151,8 @@ class HealthViewModelTest {
         viewModel.selectPatient("2")
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { healthRepository.getPatientById("1") }
-        coVerify(exactly = 1) { healthRepository.getPatientById("2") }
+        coVerify(exactly = 1) { userRepository.getUserById("1") }
+        coVerify(exactly = 1) { userRepository.getUserById("2") }
 
         val state = viewModel.patientDetailState.first()
         assertEquals(user2, state.user)
@@ -160,7 +160,7 @@ class HealthViewModelTest {
 
     @Test
     fun `selectPatient handles non-cancellation exception gracefully leaving state empty`() = runTest {
-        coEvery { healthRepository.getPatientById("1") } throws RuntimeException("Database error")
+        coEvery { userRepository.getUserById("1") } throws RuntimeException("Database error")
 
         viewModel.selectPatient("1")
         advanceUntilIdle()
@@ -176,20 +176,20 @@ class HealthViewModelTest {
         val user = UserEntity().apply { id = "1"; name = "Test Patient" }
         val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
 
-        coEvery { healthRepository.getPatientById("1") } returns null
+        coEvery { userRepository.getUserById("1") } returns null
 
         viewModel.selectPatient("1")
         advanceUntilIdle()
 
         assertNull(viewModel.patientDetailState.first().user)
 
-        coEvery { healthRepository.getPatientById("1") } returns user
+        coEvery { userRepository.getUserById("1") } returns user
         coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
 
         viewModel.selectPatient("1")
         advanceUntilIdle()
 
-        coVerify(exactly = 2) { healthRepository.getPatientById("1") }
+        coVerify(exactly = 2) { userRepository.getUserById("1") }
         assertEquals(user, viewModel.patientDetailState.first().user)
     }
 
@@ -197,7 +197,7 @@ class HealthViewModelTest {
     fun `searchPatients updates patientList`() = runTest {
         val query = "John"
         val patients = listOf(UserEntity().apply { id = "2"; name = "John Doe" })
-        coEvery { healthRepository.searchPatients(query, "joinDate", true) } returns patients
+        coEvery { userRepository.searchUsers(query, "joinDate", true) } returns patients
 
         viewModel.searchPatients(query)
         advanceUntilIdle()
@@ -207,9 +207,36 @@ class HealthViewModelTest {
     }
 
     @Test
+    fun `searchPatients with whitespace query calls getUsersSortedBy once and searchUsers zero times`() = runTest {
+        val patients = listOf(UserEntity().apply { id = "1"; name = "Test User" })
+        coEvery { userRepository.getUsersSortedBy("joinDate", true) } returns patients
+
+        viewModel.searchPatients("   ")
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { userRepository.getUsersSortedBy("joinDate", true) }
+        coVerify(exactly = 0) { userRepository.searchUsers(any(), any(), any()) }
+        assertEquals(patients, viewModel.patientList.first())
+    }
+
+    @Test
+    fun `searchPatients with non-blank query calls searchUsers once and getUsersSortedBy zero times`() = runTest {
+        val query = "John"
+        val patients = listOf(UserEntity().apply { id = "2"; name = "John Doe" })
+        coEvery { userRepository.searchUsers("John", "joinDate", true) } returns patients
+
+        viewModel.searchPatients("John")
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { userRepository.searchUsers("John", "joinDate", true) }
+        coVerify(exactly = 0) { userRepository.getUsersSortedBy(any(), any()) }
+        assertEquals(patients, viewModel.patientList.first())
+    }
+
+    @Test
     fun `loadPatients updates patientList`() = runTest {
         val patients = listOf(UserEntity().apply { id = "1"; name = "Test Patient" })
-        coEvery { healthRepository.getPatientsSortedBy("joinDate", true) } returns patients
+        coEvery { userRepository.getUsersSortedBy("joinDate", true) } returns patients
 
         viewModel.loadPatients()
         advanceUntilIdle()
@@ -221,7 +248,7 @@ class HealthViewModelTest {
     fun `failing refresh leaves currentPatientId and displayed patient intact`() = runTest {
         val user = UserEntity().apply { id = "1"; name = "Test Patient" }
         val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
-        coEvery { healthRepository.getPatientById("1") } returns user
+        coEvery { userRepository.getUserById("1") } returns user
         coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
 
         viewModel.selectPatient("1")
@@ -241,14 +268,14 @@ class HealthViewModelTest {
         viewModel.refreshSelectedPatient()
         advanceUntilIdle()
 
-        coVerify(exactly = 3) { healthRepository.getPatientById("1") }
+        coVerify(exactly = 3) { userRepository.getUserById("1") }
     }
 
     @Test
     fun `failed load for a different patient clears the displayed one`() = runTest {
         val displayed = UserEntity().apply { id = "1"; name = "Displayed Patient" }
         val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
-        coEvery { healthRepository.getPatientById("1") } returns displayed
+        coEvery { userRepository.getUserById("1") } returns displayed
         coEvery { healthRepository.getPatientHealthRecords("1", displayed) } returns record
 
         viewModel.selectPatient("1")
@@ -256,7 +283,7 @@ class HealthViewModelTest {
 
         assertEquals(displayed, viewModel.patientDetailState.first().user)
 
-        coEvery { healthRepository.getPatientById("2") } throws RuntimeException("Transient network error")
+        coEvery { userRepository.getUserById("2") } throws RuntimeException("Transient network error")
 
         viewModel.selectPatient("2")
         advanceUntilIdle()
@@ -274,16 +301,14 @@ class HealthViewModelTest {
         val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
 
         var reads = 0
-        coEvery { healthRepository.getPatientById("1") } coAnswers {
+        coEvery { userRepository.getUserById("1") } coAnswers {
             reads++
             delay(500)
             if (reads == 1) staleUser else freshUser
         }
         coEvery { healthRepository.getPatientHealthRecords("1", any()) } returns record
 
-        backgroundScope.launch {
-            customViewModel.healthSyncUpdates.collect { customViewModel.refreshSelectedPatient() }
-        }
+        customViewModel.setSyncActive(true)
         testScheduler.runCurrent()
 
         customViewModel.selectPatient("1")
@@ -293,7 +318,7 @@ class HealthViewModelTest {
 
         advanceUntilIdle()
 
-        coVerify(exactly = 2) { healthRepository.getPatientById("1") }
+        coVerify(exactly = 2) { userRepository.getUserById("1") }
         assertEquals(freshUser, customViewModel.patientDetailState.first().user)
         assertEquals(false, customViewModel.isLoading.value)
     }
@@ -305,15 +330,13 @@ class HealthViewModelTest {
         val user = UserEntity().apply { id = "1"; name = "Test Patient" }
         val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
 
-        coEvery { healthRepository.getPatientById("1") } coAnswers {
+        coEvery { userRepository.getUserById("1") } coAnswers {
             delay(500)
             user
         }
         coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
 
-        backgroundScope.launch {
-            customViewModel.healthSyncUpdates.collect { customViewModel.refreshSelectedPatient() }
-        }
+        customViewModel.setSyncActive(true)
         testScheduler.runCurrent()
 
         customViewModel.selectPatient("1")
@@ -324,7 +347,7 @@ class HealthViewModelTest {
 
         advanceUntilIdle()
 
-        coVerify(exactly = 2) { healthRepository.getPatientById("1") }
+        coVerify(exactly = 2) { userRepository.getUserById("1") }
         assertEquals(user, customViewModel.patientDetailState.first().user)
     }
 
@@ -335,7 +358,7 @@ class HealthViewModelTest {
         val user = UserEntity().apply { id = "1"; name = "Test Patient" }
         val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
 
-        coEvery { healthRepository.getPatientById("1") } returns user
+        coEvery { userRepository.getUserById("1") } returns user
         coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
 
         customViewModel.selectPatient("1")
@@ -344,7 +367,32 @@ class HealthViewModelTest {
         realtimeSyncManager.notifyTableUpdated(TableDataUpdate("health", 1, 0, true))
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { healthRepository.getPatientById("1") }
+        coVerify(exactly = 1) { userRepository.getUserById("1") }
+    }
+
+    @Test
+    fun `after setSyncActive(true) then setSyncActive(false), a health event causes no re-query`() = runTest {
+        val realtimeSyncManager = RealtimeSyncManager()
+        val customViewModel = HealthViewModel(userRepository, healthRepository, realtimeSyncManager)
+        val user = UserEntity().apply { id = "1"; name = "Test Patient" }
+        val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
+
+        coEvery { userRepository.getUserById("1") } returns user
+        coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
+
+        customViewModel.setSyncActive(true)
+        testScheduler.runCurrent()
+
+        customViewModel.selectPatient("1")
+        advanceUntilIdle()
+
+        customViewModel.setSyncActive(false)
+        testScheduler.runCurrent()
+
+        realtimeSyncManager.notifyTableUpdated(TableDataUpdate("health", 1, 0, true))
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { userRepository.getUserById("1") }
     }
 
     @Test
@@ -354,12 +402,10 @@ class HealthViewModelTest {
         val user = UserEntity().apply { id = "1"; name = "Test Patient" }
         val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
 
-        coEvery { healthRepository.getPatientById("1") } returns user
+        coEvery { userRepository.getUserById("1") } returns user
         coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
 
-        backgroundScope.launch {
-            customViewModel.healthSyncUpdates.collect { customViewModel.refreshSelectedPatient() }
-        }
+        customViewModel.setSyncActive(true)
         testScheduler.runCurrent()
 
         customViewModel.selectPatient("1")
@@ -369,7 +415,7 @@ class HealthViewModelTest {
         realtimeSyncManager.notifyTableUpdated(TableDataUpdate("health", 1, 0, false))
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { healthRepository.getPatientById("1") }
+        coVerify(exactly = 1) { userRepository.getUserById("1") }
     }
 
     @Test

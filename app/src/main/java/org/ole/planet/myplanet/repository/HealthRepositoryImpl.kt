@@ -38,13 +38,6 @@ class HealthRepositoryImpl @Inject constructor(
     private val userRepository: Lazy<UserRepository>,
     @PlainGson private val gson: Gson
 ) : HealthRepository {
-    override suspend fun getHealthEntry(userId: String): Pair<UserEntity?, HealthExamination?> {
-        val userCopy = userRepository.get().getUserById(userId)
-        val pojoCopy = healthExaminationDao.getByIdOrUserId(userId)
-
-        return Pair(userCopy, pojoCopy)
-    }
-
     override suspend fun getExaminationById(id: String): HealthExamination? {
         return healthExaminationDao.getById(id)
     }
@@ -109,7 +102,7 @@ class HealthRepositoryImpl @Inject constructor(
                         result[key] = value != null && !value.isJsonNull && value.isJsonPrimitive && value.asBoolean
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e("HealthRepository", "Failed to parse examination conditions", e)
                 }
             }
             result
@@ -163,21 +156,6 @@ class HealthRepositoryImpl @Inject constructor(
         healthExaminationDao.upsert(examination)
     }
 
-    override suspend fun getPatientById(id: String): UserEntity? {
-        return userRepository.get().getUserById(id)
-    }
-
-    override suspend fun getPatientsSortedBy(fieldName: String, descending: Boolean): List<UserEntity> {
-        return userRepository.get().getUsersSortedBy(fieldName, descending)
-    }
-
-    override suspend fun searchPatients(query: String, sortField: String, descending: Boolean): List<UserEntity> {
-        return if (query.isBlank()) {
-            userRepository.get().getUsersSortedBy(sortField, descending)
-        } else {
-            userRepository.get().searchUsers(query, sortField, descending)
-        }
-    }
 
     private fun decodeHealth(healthPojo: HealthExamination?, userModel: UserEntity?): MyHealth? {
         val data = healthPojo?.data
@@ -186,7 +164,7 @@ class HealthRepositoryImpl @Inject constructor(
             val decrypted = AndroidDecrypter.decrypt(data, userModel?.key, userModel?.iv)
             gson.fromJson(decrypted, MyHealth::class.java)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("HealthRepository", "Failed to decode health data", e)
             null
         }
     }
@@ -268,7 +246,7 @@ class HealthRepositoryImpl @Inject constructor(
             try {
                 gson.fromJson(json, MyHealth::class.java)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("HealthRepository", "Failed to parse health record JSON", e)
                 null
             }
         } ?: return null

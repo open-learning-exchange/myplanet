@@ -80,7 +80,7 @@ class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
 
-        binding.btnMarkAllAsRead.setOnClickListener { viewModel.markAllAsRead(userId) }
+        binding.btnMarkAllAsRead.setOnClickListener { viewModel.markAllAsRead(userId, isAdmin) }
         binding.btnBulkMarkAsRead.setOnClickListener { viewModel.markSelectedAsRead() }
         binding.btnBulkDelete.setOnClickListener { viewModel.deleteSelected() }
         binding.btnCancelSelection.setOnClickListener { viewModel.clearSelection() }

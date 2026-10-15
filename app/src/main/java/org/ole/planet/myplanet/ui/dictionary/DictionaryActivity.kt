@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.viewModels
 import androidx.core.text.HtmlCompat
 import dagger.hilt.android.AndroidEntryPoint
@@ -89,6 +90,7 @@ class DictionaryActivity : BaseActivity() {
                 DownloadUtils.openDownloadService(this@DictionaryActivity, list, false)
             }
             is DictionaryLoadState.Failed -> {
+                Log.e("DictionaryActivity", "Failed to load dictionary data", state.cause)
                 Utilities.toast(
                     this@DictionaryActivity,
                     getString(R.string.dictionary_parsing_failed)

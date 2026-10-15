@@ -51,7 +51,7 @@ class ServerAddressAdapterTest {
         adapter.submitList(listOf(address))
 
         val parent = LinearLayout(context)
-        val holder = adapter.onCreateViewHolder(parent, 0) as ServerAddressAdapter.ViewHolder
+        val holder = adapter.onCreateViewHolder(parent, 0)
         adapter.onBindViewHolder(holder, 0)
 
         assertEquals("Planet Learning", holder.binding.btnServerAddress.text.toString())
@@ -62,7 +62,7 @@ class ServerAddressAdapterTest {
         val address = ServerAddress(name = "Server", url = "https://server")
         adapter.submitList(listOf(address))
         val parent = LinearLayout(context)
-        val holder = adapter.onCreateViewHolder(parent, 0) as ServerAddressAdapter.ViewHolder
+        val holder = adapter.onCreateViewHolder(parent, 0)
         adapter.onBindViewHolder(holder, 0)
 
         holder.updateSelectionState(true)

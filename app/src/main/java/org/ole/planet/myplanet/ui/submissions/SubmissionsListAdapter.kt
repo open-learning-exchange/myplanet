@@ -30,20 +30,26 @@ class SubmissionsListAdapter(
     }
 
     inner class ViewHolder(private val binding: ItemSubmissionBinding) : RecyclerView.ViewHolder(binding.root) {
+        init {
+            binding.btnViewDetails.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                openSubmissionDetail(getItem(pos).id)
+            }
+
+            binding.btnDownloadPdf.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                onGeneratePdf(getItem(pos).id)
+            }
+        }
+
         fun bind(submission: SubmissionItem, number: Int) {
             binding.tvSubmissionNumber.text = "#$number"
             binding.tvSubmissionDate.text = TimeUtils.getFormattedDateWithTime(submission.lastUpdateTime)
             binding.tvSubmissionStatus.text = submission.status
 
             binding.tvSyncStatus.text = if (submission.uploaded) "✅" else "❌"
-
-            binding.btnViewDetails.setOnClickListener {
-                openSubmissionDetail(submission.id)
-            }
-
-            binding.btnDownloadPdf.setOnClickListener {
-                onGeneratePdf(submission.id)
-            }
         }
 
         private fun openSubmissionDetail(id: String?) {

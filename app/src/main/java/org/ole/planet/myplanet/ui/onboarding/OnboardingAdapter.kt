@@ -11,6 +11,8 @@ import org.ole.planet.myplanet.model.OnboardingItem
 
 class OnboardingAdapter(private val mContext: Context, private val onBoardItems: ArrayList<OnboardingItem>) : PagerAdapter() {
 
+    private val textColor = mContext.getColor(R.color.daynight_textColor)
+
     override fun getCount(): Int {
         return onBoardItems.size
     }
@@ -25,9 +27,9 @@ class OnboardingAdapter(private val mContext: Context, private val onBoardItems:
         val item = onBoardItems[position]
         binding.ivOnboard.setImageResource(item.imageID)
         binding.tvHeader.text = item.title
-        binding.tvHeader.setTextColor(mContext.getColor(R.color.daynight_textColor))
+        binding.tvHeader.setTextColor(textColor)
         binding.tvDesc.text = item.description
-        binding.tvDesc.setTextColor(mContext.getColor(R.color.daynight_textColor))
+        binding.tvDesc.setTextColor(textColor)
         container.addView(binding.root)
 
         return binding.root

@@ -112,4 +112,29 @@ class HealthExaminationActivityTest {
         assertEquals(false, mapConditions[standard[1]])
         assertFalse(mapConditions.containsKey("Custom Condition"))
     }
+
+    @Test
+    @Config(qualifiers = "fr")
+    fun conditions_showFrenchLabelsButSaveEnglishKeys_andConvertOlderFrenchEntries() {
+        val activity = Robolectric.buildActivity(HealthExaminationActivity::class.java).create().get()
+        val keys = HealthExaminationActivity.diagnosisKeys(activity)
+        val labels = activity.resources.getStringArray(R.array.diagnosis_list)
+        assertEquals("Acute Otitis Media", keys[0])
+        assertEquals("Otite moyenne aiguë", labels[0])
+        val cls = HealthExaminationActivity::class.java
+        cls.getDeclaredField("conditionsMap").apply { isAccessible = true }
+            .set(activity, mapOf(labels[0] to true))
+
+        cls.getDeclaredMethod("seedSavedConditions").apply { isAccessible = true }.invoke(activity)
+        val checkbox = android.widget.CheckBox(activity).apply { text = labels[1]; tag = keys[1] }
+        activity.onCheckedChanged(checkbox, true)
+
+        @Suppress("UNCHECKED_CAST")
+        val mapConditions = cls.getDeclaredField("mapConditions").apply { isAccessible = true }
+            .get(activity) as Map<String?, Boolean>
+        assertEquals(true, mapConditions[keys[0]])
+        assertEquals(true, mapConditions[keys[1]])
+        assertFalse(mapConditions.containsKey(labels[0]))
+        assertFalse(mapConditions.containsKey(labels[1]))
+    }
 }

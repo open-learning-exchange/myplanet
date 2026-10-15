@@ -107,6 +107,58 @@ class MeetupTest {
     }
 
     @Test
+    fun `fromJson reads planet metadata from the server document over the local row`() {
+        val meetupDoc = JsonObject().apply {
+            addProperty("_id", "meetup1")
+            addProperty("createdDate", 777L)
+            addProperty("recurringNumber", 4)
+            addProperty("sourcePlanet", "earth")
+            add("sync", JsonObject().apply {
+                addProperty("type", "sync")
+                addProperty("planetCode", "earth")
+            })
+        }
+        val existingMeetup = Meetup().apply {
+            createdDate = 12345L
+            recurringNumber = 10
+            sync = null
+            sourcePlanet = null
+        }
+
+        val meetup = Meetup.fromJson(meetupDoc, "", existingMeetup)
+
+        assertEquals(777L, meetup.createdDate)
+        assertEquals(4, meetup.recurringNumber)
+        assertEquals("earth", meetup.sourcePlanet)
+        assertEquals("""{"type":"sync","planetCode":"earth"}""", meetup.sync)
+    }
+
+    @Test
+    fun `planet meetup survives a fromJson then serialize round trip`() {
+        val meetupDoc = JsonObject().apply {
+            addProperty("_id", "meetup1")
+            addProperty("_rev", "rev1")
+            addProperty("recurring", "weekly")
+            add("day", JsonArray().apply { add("Monday"); add("Wednesday") })
+            addProperty("createdDate", 777L)
+            addProperty("recurringNumber", 4)
+            addProperty("sourcePlanet", "earth")
+            add("sync", JsonObject().apply {
+                addProperty("type", "local")
+                addProperty("planetCode", "earth")
+            })
+        }
+
+        val jsonObject = Meetup.serialize(Meetup.fromJson(meetupDoc, "", null))
+
+        assertEquals(meetupDoc.get("day"), jsonObject.get("day"))
+        assertEquals(777L, jsonObject.get("createdDate").asLong)
+        assertEquals(4, jsonObject.get("recurringNumber").asInt)
+        assertEquals("earth", jsonObject.get("sourcePlanet").asString)
+        assertEquals(meetupDoc.get("sync"), jsonObject.get("sync"))
+    }
+
+    @Test
     fun `fromJson without userId uses empty string`() {
         val meetupDoc = JsonObject().apply {
             addProperty("_id", "meetup1")

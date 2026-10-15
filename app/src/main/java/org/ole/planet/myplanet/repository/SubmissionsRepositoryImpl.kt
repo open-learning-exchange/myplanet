@@ -9,7 +9,6 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Provider
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
@@ -24,7 +23,6 @@ import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
-import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.MembershipDoc
 import org.ole.planet.myplanet.model.QuestionAnswer
 import org.ole.planet.myplanet.model.StepExam
@@ -40,7 +38,6 @@ import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
-import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
@@ -63,10 +60,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
     override suspend fun generateMultipleSubmissionsPdf(submissionIds: List<String>, examTitle: String): File? {
         return exporter.generateMultipleSubmissionsPdf(submissionIds, examTitle)
-    }
-
-    private fun Submission.examIdFromParentId(): String? {
-        return parentId?.substringBefore("@")
     }
 
     private suspend fun hydrateSubmissions(rows: List<Submission>): List<Submission> {
@@ -693,13 +686,23 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         upsertRoomSubmissionsFromSync(listOf(submission))
     }
 
-    private fun upsertRoomSubmissionsFromSync(documentList: List<JsonObject>) {
+    private suspend fun upsertRoomSubmissionsFromSync(documentList: List<JsonObject>) {
         val submissions = ArrayList<Submission>(documentList.size)
         val answers = ArrayList<Answer>()
+        
+        val docs = documentList.filterNot { it.has("_attachments") }
+        val existingRows = submissionDao.getByRemoteIds(docs.map { GsonUtils.getString("_id", it) }.filter { it.isNotBlank() })
+        val localIdByRemoteId = existingRows.filter { it.id != it._id }
+            .groupBy { it._id.orEmpty() }
+            .mapValues { (_, rows) -> rows.first().id }
+        val duplicateIds = existingRows.filter { it.id == it._id && localIdByRemoteId.containsKey(it.id) }.map { it.id }
+        val localAnswersByKey = answerDao.getBySubmissionIds(localIdByRemoteId.values.toList())
+            .associateBy { "${it.submissionId}|${it.questionId}" }
 
-        documentList.filterNot { it.has("_attachments") }.forEach { submission ->
-            val id = GsonUtils.getString("_id", submission)
-            if (id.isBlank()) return@forEach
+        docs.forEach { submission ->
+            val remoteId = GsonUtils.getString("_id", submission)
+            if (remoteId.isBlank()) return@forEach
+            val id = localIdByRemoteId[remoteId] ?: remoteId
             val serverStatus = GsonUtils.getString("status", submission)
             val rev = GsonUtils.getString("_rev", submission)
             val parentId = GsonUtils.getString("parentId", submission)
@@ -711,7 +714,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             submissions.add(
                 Submission(
                     id = id,
-                    _id = id,
+                    _id = remoteId,
                     _rev = rev,
                     parentId = parentId,
                     type = GsonUtils.getString("type", submission),
@@ -741,9 +744,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 } else {
                     null
                 }
+                val questionId = GsonUtils.getString("questionId", answerJson).ifBlank { "$examIdPart-$i" }
                 answers.add(
                     Answer(
-                        id = "$id-$i",
+                        id = localAnswersByKey["$id|$questionId"]?.id ?: "$remoteId-$i",
                         value = valueElement?.let {
                             when {
                                 it.isJsonNull || it.isJsonArray -> null
@@ -755,13 +759,17 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                         mistakes = GsonUtils.getInt("mistakes", answerJson),
                         isPassed = GsonUtils.getBoolean("passed", answerJson),
                         examId = parentId,
-                        questionId = GsonUtils.getString("questionId", answerJson).ifBlank { "$examIdPart-$i" },
+                        questionId = questionId,
                         submissionId = id,
                     )
                 )
             }
         }
 
+        if (duplicateIds.isNotEmpty()) {
+            answerDao.deleteBySubmissionIds(duplicateIds)
+            duplicateIds.chunked(900).forEach { submissionDao.deleteByIds(it) }
+        }
         if (submissions.isEmpty() && answers.isEmpty()) return
 
         if (submissions.isNotEmpty()) submissionDao.upsertAllBlocking(submissions)
@@ -777,138 +785,23 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
-    private data class PayloadData(
-        val user: UserEntity?,
-        val exam: StepExam?,
-        val questions: List<ExamQuestion>
+    private val payloadBuilder = SubmissionsPayloadBuilder(
+        teamsRepositoryProvider,
+        sharedPrefManager,
+        examDao,
+        questionDao,
+        gson,
+        deviceNameProvider
     )
 
-    private suspend fun getPayloadData(submission: Submission, user: UserEntity?): PayloadData {
-        val examId = submission.examIdFromParentId()
-        val exam = examId?.let { examDao.getById(it) }
-        val questions = exam?.id?.let { questionDao.getByExamId(it) } ?: emptyList()
-        return PayloadData(user, exam, questions)
-    }
+    private suspend fun getTeamByIdOrNull(teamId: String) = payloadBuilder.getTeamByIdOrNull(teamId)
 
     override suspend fun getExamUploadPayload(submission: Submission, user: UserEntity?): JsonObject {
-        val `object` = JsonObject()
-        val payloadData = getPayloadData(submission, user)
-        val resolvedUser = payloadData.user
-        val exam = payloadData.exam
-
-        if (!submission._id.isNullOrEmpty()) {
-            `object`.addProperty("_id", submission._id)
-        }
-        if (!submission._rev.isNullOrEmpty()) {
-            `object`.addProperty("_rev", submission._rev)
-        }
-        `object`.addProperty("parentId", submission.parentId)
-        `object`.addProperty("type", submission.type)
-
-        resolveTeamJson(submission)?.let { `object`.add("team", it) }
-
-        `object`.addProperty("grade", submission.grade)
-        `object`.addProperty("startTime", submission.startTime)
-        `object`.addProperty("lastUpdateTime", submission.lastUpdateTime)
-        `object`.addProperty("status", submission.status)
-        `object`.addDocumentOrigin()
-        `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
-        `object`.addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
-        `object`.addProperty("sender", submission.sender)
-        `object`.addProperty("source", sharedPrefManager.getPlanetCode())
-        `object`.addProperty("parentCode", sharedPrefManager.getParentCode())
-        `object`.add("answers", Answer.serializeAnswer(submission.answers ?: mutableListOf()))
-        if (exam != null) {
-            `object`.add("parent", StepExam.serializeExam(exam, payloadData.questions))
-        } else {
-            val parent = gson.fromJson(submission.parent, JsonObject::class.java)
-            `object`.add("parent", parent)
-        }
-        val freshUser = resolvedUser?.serialize()
-        when {
-            freshUser != null -> `object`.add("user", freshUser)
-            !submission.user.isNullOrEmpty() -> `object`.add("user", JsonParser.parseString(submission.user))
-        }
-        return `object`
-    }
-
-    private suspend fun resolveTeamJson(submission: Submission): JsonObject? {
-        val teamRef = submission.teamObject
-        val teamId = teamRef?._id?.takeIf { it.isNotBlank() }
-            ?: submission.teamId?.takeIf { it.isNotBlank() }
-            ?: return null
-
-        val teamName = teamRef?.name?.takeIf { it.isNotBlank() }
-        val teamType = teamRef?.type?.takeIf { it.isNotBlank() }
-        val localTeam = if (teamName == null || teamType == null) {
-            getTeamByIdOrNull(teamId)
-        } else {
-            null
-        }
-
-        return JsonObject().apply {
-            addProperty("_id", teamId)
-            (teamName ?: localTeam?.name?.takeIf { it.isNotBlank() })?.let { addProperty("name", it) }
-            (teamType ?: localTeam?.type?.takeIf { it.isNotBlank() })?.let { addProperty("type", it) }
-        }
-    }
-
-    private suspend fun getTeamByIdOrNull(teamId: String) = try {
-        teamsRepositoryProvider.get().getTeamById(teamId)
-    } catch (e: CancellationException) {
-        throw e
-    } catch (_: Exception) {
-        null
+        return payloadBuilder.examUploadPayload(submission, user)
     }
 
     override suspend fun serializeSubmission(submission: Submission, source: String, parentCode: String, user: UserEntity?): JsonObject {
-        val jsonObject = JsonObject()
-
-        try {
-            val payloadData = getPayloadData(submission, user)
-            val exam = payloadData.exam
-
-            if (!submission._id.isNullOrEmpty()) {
-                jsonObject.addProperty("_id", submission._id)
-            }
-            if (!submission._rev.isNullOrEmpty()) {
-                jsonObject.addProperty("_rev", submission._rev)
-            }
-
-            jsonObject.addProperty("parentId", submission.parentId ?: "")
-            jsonObject.addProperty("type", submission.type ?: "survey")
-            resolveTeamJson(submission)?.let { jsonObject.add("team", it) }
-            jsonObject.addProperty("grade", submission.grade)
-            jsonObject.addProperty("startTime", submission.startTime)
-            jsonObject.addProperty("lastUpdateTime", submission.lastUpdateTime)
-            jsonObject.addProperty("status", submission.status ?: "pending")
-            jsonObject.addDocumentOrigin()
-            jsonObject.addProperty("deviceName", NetworkUtils.getDeviceName())
-            jsonObject.addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
-            jsonObject.addProperty("sender", submission.sender)
-            jsonObject.addProperty("source", source)
-            jsonObject.addProperty("parentCode", parentCode)
-            jsonObject.add("answers", Answer.serializeAnswer(submission.answers ?: mutableListOf()))
-            if (exam != null) {
-                jsonObject.add("parent", StepExam.serializeExam(exam, payloadData.questions))
-            } else if (!submission.parent.isNullOrEmpty()) {
-                jsonObject.add("parent", JsonParser.parseString(submission.parent))
-            }
-
-            val userJson = payloadData.user?.serialize()
-                ?: submission.user?.takeIf { it.isNotEmpty() }?.let { JsonParser.parseString(it).asJsonObject }
-            if (userJson != null) {
-                if (submission.membershipDoc != null) {
-                    val membershipJson = JsonObject()
-                    membershipJson.addProperty("teamId", submission.membershipDoc?.teamId ?: "")
-                    userJson.add("membershipDoc", membershipJson)
-                }
-                jsonObject.add("user", userJson)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return jsonObject
+        return payloadBuilder.submissionPayload(submission, source, parentCode, user)
     }
 
     override suspend fun getPendingExamResults(): List<Submission> {

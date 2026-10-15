@@ -50,13 +50,7 @@ class RetryRepositoryImplTest {
     fun setUp() {
         MockKAnnotations.init(this, relaxed = true)
         mockkStatic(Log::class)
-        every { Log.d(any<String>(), any<String>()) } returns 0
-        every { Log.d(any<String>(), any<String>(), any<Throwable>()) } returns 0
-        every { Log.i(any<String>(), any<String>()) } returns 0
-        every { Log.i(any<String>(), any<String>(), any<Throwable>()) } returns 0
-        every { Log.w(any<String>(), any<String>()) } returns 0
         every { Log.w(any<String>(), any<String>(), any<Throwable>()) } returns 0
-        every { Log.e(any<String>(), any<String>()) } returns 0
         every { Log.e(any<String>(), any<String>(), any<Throwable>()) } returns 0
 
         retryDao = mockk(relaxed = true)
@@ -195,6 +189,7 @@ class RetryRepositoryImplTest {
         assertTrue(result is RetryOperationResult.Success)
         coVerify { retryDao.markInProgress("op1") }
         coVerify { retryDao.markCompleted("op1", timeProvider.now()) }
+        coVerify(exactly = 0) { retryDao.recordFailedAttempt(any(), any(), any(), any()) }
     }
 
     @Test
@@ -352,7 +347,8 @@ class RetryRepositoryImplTest {
     fun `getRetryQueueSnapshot returns snapshot with active count and pending ops`() = runTest {
         val op1 = RetryOperation().apply { id = "op1"; attemptCount = 1; maxAttempts = 5 }
         coEvery { retryDao.getActiveCount() } returns 10L
-        coEvery { retryDao.getPending(timeProvider.now()) } returns listOf(op1)
+        coEvery { retryDao.getPendingPreview(timeProvider.now(), 10) } returns listOf(op1)
+        coEvery { retryDao.getPendingDueCount(timeProvider.now()) } returns 15L
 
         val snapshot = repository.getRetryQueueSnapshot()
 
@@ -360,6 +356,9 @@ class RetryRepositoryImplTest {
         assertEquals(1, snapshot.pendingOps.size)
         assertEquals(op1, snapshot.pendingOps[0])
         assertEquals(false, snapshot.isProcessing)
+        assertEquals(15L, snapshot.pendingDueCount)
+
+        coVerify(exactly = 0) { retryDao.getPending(any()) }
     }
 
     @Test

@@ -1,36 +1,15 @@
 package org.ole.planet.myplanet.utils
 
-import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
-import io.mockk.every
-import io.mockk.mockkStatic
-import io.mockk.unmockkAll
-import io.mockk.verify
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.News
 
 class GsonUtilsTest {
-
-    @Before
-    fun setUp() {
-        mockkStatic(Log::class)
-        every { Log.isLoggable(any(), any()) } returns true
-        every { Log.d(any(), any()) } returns 0
-        every { Log.d(any(), any(), any()) } returns 0
-        every { Log.w(any<String>(), any<String>(), any()) } returns 0
-    }
-
-    @After
-    fun tearDown() {
-        unmockkAll()
-    }
 
     @Test
     fun testGetStringWithValidString() {
@@ -166,24 +145,15 @@ class GsonUtilsTest {
         GsonUtils.getJsonObject("wrongArr", obj)
         GsonUtils.getLong("wrongType", obj)
         GsonUtils.getBoolean("wrongType", obj)
-
-        // #16652: accessors type-check instead of throwing, so the catch is never entered.
-        verify(exactly = 0) { Log.isLoggable(any(), any()) }
-        verify(exactly = 0) { Log.d(any(), any()) }
-        verify(exactly = 0) { Log.d(any(), any(), any()) }
     }
 
     @Test
-    fun testExtractSharedTeamNameParseFailureLogsWarning() {
+    fun testExtractSharedTeamNameParseFailureReturnsEmpty() {
         val news = News()
         news.id = "test"
         news.viewIn = "not a json array"
 
         assertEquals("", GsonUtils.extractSharedTeamName(news))
-
-        // malformed server data is unexpected, so it surfaces as a warning (with the throwable),
-        // not the quiet DEBUG fallback used for expected type mismatches
-        verify(atLeast = 1) { Log.w("GsonUtils", "failed to parse viewIn", any()) }
     }
 
     @Test

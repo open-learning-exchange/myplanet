@@ -9,6 +9,7 @@ import androidx.sqlite.db.SimpleSQLiteQuery
 import androidx.sqlite.db.SupportSQLiteQuery
 import java.util.Date
 import org.ole.planet.myplanet.model.AppNotification
+import org.ole.planet.myplanet.model.NotificationPayload
 
 @Dao
 interface NotificationDao {
@@ -34,14 +35,14 @@ interface NotificationDao {
     suspend fun deleteById(id: String): Int
 
     @Query("SELECT * FROM notifications WHERE (userId = :userId OR (:isAdmin = 1 AND userId = 'SYSTEM')) AND message != 'INVALID' AND message != '' AND (:filter = '' OR (:filter = 'read' AND isRead = 1) OR (:filter = 'unread' AND isRead = 0)) ORDER BY isRead ASC, createdAt DESC")
-    suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean): List<AppNotification>
+    suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean): List<NotificationPayload>
 
     @Query("SELECT * FROM notifications WHERE id IN (:ids)")
     suspend fun getByIdsInternal(ids: List<String>): List<AppNotification>
 
     suspend fun getByIds(ids: List<String>): List<AppNotification> {
         if (ids.isEmpty()) return emptyList()
-        return ids.chunked(900).flatMap { chunk -> getByIdsInternal(chunk) }
+        return ids.distinct().chunked(900).flatMap { chunk -> getByIdsInternal(chunk) }
     }
 
     @Query("SELECT id FROM notifications WHERE id IN (:ids)")
@@ -49,11 +50,11 @@ interface NotificationDao {
 
     suspend fun getIdsByIds(ids: List<String>): List<String> {
         if (ids.isEmpty()) return emptyList()
-        return ids.chunked(900).flatMap { chunk -> getIdsByIdsInternal(chunk) }
+        return ids.distinct().chunked(900).flatMap { chunk -> getIdsByIdsInternal(chunk) }
     }
 
-    @Query("SELECT id FROM notifications WHERE userId = :userId AND isRead = 0")
-    suspend fun getUnreadIds(userId: String): List<String>
+    @Query("SELECT id FROM notifications WHERE (userId = :userId OR (:isAdmin = 1 AND userId = 'SYSTEM')) AND isRead = 0")
+    suspend fun getUnreadIds(userId: String, isAdmin: Boolean = false): List<String>
 
     @Query("UPDATE notifications SET isRead = 1, createdAt = :createdAt, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE id IN (:ids)")
     suspend fun markAsReadInternal(ids: List<String>, createdAt: Date): Int
@@ -61,11 +62,11 @@ interface NotificationDao {
     @Transaction
     suspend fun markAsRead(ids: List<String>, createdAt: Date): Int {
         if (ids.isEmpty()) return 0
-        return ids.chunked(900).sumOf { chunk -> markAsReadInternal(chunk, createdAt) }
+        return ids.distinct().chunked(900).sumOf { chunk -> markAsReadInternal(chunk, createdAt) }
     }
 
-    @Query("UPDATE notifications SET isRead = 1, createdAt = :createdAt, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE userId = :userId AND isRead = 0")
-    suspend fun markAllUnreadAsRead(userId: String, createdAt: Date): Int
+    @Query("UPDATE notifications SET isRead = 1, createdAt = :createdAt, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE (userId = :userId OR (:isAdmin = 1 AND userId = 'SYSTEM')) AND isRead = 0")
+    suspend fun markAllUnreadAsRead(userId: String, createdAt: Date, isAdmin: Boolean = false): Int
 
     @Query("SELECT * FROM notifications WHERE needsSync = 1 AND rev IS NOT NULL")
     suspend fun getPendingSyncNotifications(): List<AppNotification>
@@ -121,7 +122,7 @@ interface NotificationDao {
     @Transaction
     suspend fun deleteByIds(ids: List<String>): Int {
         if (ids.isEmpty()) return 0
-        return ids.chunked(900).sumOf { chunk -> deleteByIdsInternal(chunk) }
+        return ids.distinct().chunked(900).sumOf { chunk -> deleteByIdsInternal(chunk) }
     }
 
     @Transaction
@@ -153,10 +154,10 @@ interface NotificationDao {
     }
 
     @Transaction
-    suspend fun markAllUnreadAsReadReturningIds(userId: String, createdAt: Date): List<String> {
-        val unreadIds = getUnreadIds(userId)
+    suspend fun markAllUnreadAsReadReturningIds(userId: String, createdAt: Date, isAdmin: Boolean = false): List<String> {
+        val unreadIds = getUnreadIds(userId, isAdmin)
         if (unreadIds.isNotEmpty()) {
-            markAllUnreadAsRead(userId, createdAt)
+            markAllUnreadAsRead(userId, createdAt, isAdmin)
         }
         return unreadIds
     }

@@ -132,8 +132,8 @@ class SettingsActivity : AppCompatActivity() {
                             }
                             appendLine("$statusIcon ${op.uploadType}: ${op.status} (${op.attemptCount}/${op.maxAttempts})")
                         }
-                        if (pendingOps.size > 10) {
-                            appendLine("... and ${pendingOps.size - 10} more")
+                        if (detailsData.pendingDueCount > pendingOps.size) {
+                            appendLine("... and ${detailsData.pendingDueCount - pendingOps.size} more")
                         }
                     } else {
                         appendLine("No pending operations")

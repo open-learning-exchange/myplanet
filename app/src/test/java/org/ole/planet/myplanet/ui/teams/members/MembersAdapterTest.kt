@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.teams.members
 
 import android.view.View
 import android.widget.FrameLayout
+import androidx.appcompat.app.AppCompatActivity
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.mockk
@@ -275,5 +276,45 @@ class MembersAdapterTest {
             verify(exactly = 1) { spyContext.getString(org.ole.planet.myplanet.R.string.team_leader) }
             verify(exactly = 1) { spyContext.getString(org.ole.planet.myplanet.R.string.no_visit) }
         }
+    }
+
+    @Test
+    fun removeFromMenu_afterEarlierRowRemoved_actsOnTheMemberShownInThatRow() {
+        val activity = org.robolectric.Robolectric.buildActivity(AppCompatActivity::class.java).setup().get()
+        val leaderAdapter = MembersAdapter(activity, currentUserId, actionListener)
+        val recyclerView = androidx.recyclerview.widget.RecyclerView(activity).apply {
+            layoutManager = androidx.recyclerview.widget.LinearLayoutManager(activity)
+            adapter = leaderAdapter
+        }
+        activity.setContentView(recyclerView)
+        val me = JoinedMemberData(UserEntity(id = "user1", name = "Me"), 0, null, true)
+        val bob = JoinedMemberData(UserEntity(id = "bob", name = "Bob"), 0, null, false)
+        val carol = JoinedMemberData(UserEntity(id = "carol", name = "Carol"), 0, null, false)
+
+        fun submitAndLayout(list: List<JoinedMemberData>) {
+            var done = false
+            leaderAdapter.updateData(list, true)
+            leaderAdapter.submitList(list) { done = true }
+            while (!done) org.robolectric.shadows.ShadowLooper.idleMainLooper()
+            recyclerView.measure(
+                View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY)
+            )
+            recyclerView.layout(0, 0, 1080, 1920)
+            org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        }
+
+        submitAndLayout(listOf(me, bob, carol))
+        val carolRow = recyclerView.findViewHolderForAdapterPosition(2) as MembersAdapter.MembersViewHolder
+
+        // Bob is removed; Carol's row moves up to position 1 without being rebound
+        submitAndLayout(listOf(me, carol))
+        assertEquals(1, carolRow.bindingAdapterPosition)
+
+        carolRow.binding.icMore.performClick()
+        val dialog = org.robolectric.shadows.ShadowDialog.getLatestDialog() as androidx.appcompat.app.AlertDialog
+        dialog.listView.performItemClick(null, 0, 0)
+
+        verify { actionListener.onRemoveMember(carol, 1) }
     }
 }

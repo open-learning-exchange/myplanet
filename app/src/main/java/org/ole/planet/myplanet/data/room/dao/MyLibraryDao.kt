@@ -175,7 +175,7 @@ interface MyLibraryDao {
     @Transaction
     suspend fun markAsNotOfflineByResourceIds(ids: List<String>) {
         if (ids.isEmpty()) return
-        ids.chunked(900).forEach { markAsNotOfflineByResourceIdsInternal(it) }
+        ids.distinct().chunked(900).forEach { markAsNotOfflineByResourceIdsInternal(it) }
     }
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -213,7 +213,7 @@ interface MyLibraryDao {
 
     suspend fun getResourceTitlesByResourceIds(resourceIds: List<String>): List<ResourceTitleProjection> {
         if (resourceIds.isEmpty()) return emptyList()
-        return resourceIds.chunked(900).flatMap { getResourceTitlesByResourceIdsInternal(it) }
+        return resourceIds.distinct().chunked(900).flatMap { getResourceTitlesByResourceIdsInternal(it) }
     }
 }
 
