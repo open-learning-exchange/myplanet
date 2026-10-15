@@ -15,6 +15,12 @@ interface SubmissionDao {
         if (ids.isEmpty()) return emptyList()
         return ids.distinct().chunked(900).flatMap { getByIdsInternal(it) }
     }
+    @Query("SELECT * FROM submissions WHERE _id IN (:remoteIds)") suspend fun getByRemoteIdsInternal(remoteIds: List<String>): List<Submission>
+
+    suspend fun getByRemoteIds(remoteIds: List<String>): List<Submission> {
+        if (remoteIds.isEmpty()) return emptyList()
+        return remoteIds.distinct().chunked(900).flatMap { getByRemoteIdsInternal(it) }
+    }
     @Query("SELECT * FROM submissions WHERE userId = :userId AND teamId = :teamId") suspend fun getByUserIdAndTeamId(userId: String, teamId: String): List<Submission>
     @Query("SELECT * FROM submissions WHERE userId = :userId AND teamId IS NULL") suspend fun getByUserIdWithoutTeam(userId: String): List<Submission>
     @Query("SELECT * FROM submissions WHERE userId IS :userId AND type = 'exam'") suspend fun getExamSubmissionsByUser(userId: String?): List<Submission>
@@ -53,5 +59,6 @@ interface SubmissionDao {
     @Query("SELECT * FROM submissions WHERE status = 'complete' AND (isUpdated = 1 OR _id IS NULL OR _id = '')") suspend fun getPendingSubmissions(): List<Submission>
     @Upsert suspend fun upsertAll(items: List<Submission>)
     @Upsert fun upsertAllBlocking(items: List<Submission>)
+    @Query("UPDATE submissions SET _rev = :rev WHERE id = :id") suspend fun updateRev(id: String, rev: String): Int
     @Query("UPDATE submissions SET _id = :remoteId, _rev = :remoteRev, isUpdated = 0 WHERE id = :localId") suspend fun markUploaded(localId: String, remoteId: String?, remoteRev: String?): Int
 }

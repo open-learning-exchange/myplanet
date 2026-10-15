@@ -159,6 +159,9 @@
     <string name="select_gallery">Select From Gallery</string>
     <string name="add_resource">Add Resource:</string>
     <string name="reply">Reply</string>
+    <string name="react">React</string>
+    <string name="reaction_chip_description">%1$s reaction, count %2$d</string>
+    <string name="more_reactions">More reactions</string>
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">Showing reply of:</string>
@@ -585,7 +588,6 @@
     <string name="format_removed_from_mylibrary">%1$s removed from myLibrary</string>
     <string name="added_to_my_courses">added to myCourses</string>
     <string name="do_you_want_to_stay_online">Do you want to stay online?</string>
-    <string name="device_not_connected_to_planet">Device not connected to planet.</string>
     <string name="all_files_downloaded_successfully">All files downloaded successfully</string>
     <string name="removed_from_mylibrary">Removed from myLibrary</string>
     <string name="removed_from_mycourse">Removed from myCourse</string>
@@ -1295,8 +1297,10 @@
     <string name="load_earlier_messages">Load earlier messages</string>
     <string name="already_shared">Already shared</string>
     <string name="status_not_started">Not Started</string>
+    <string name="status_todo">To Do</string>
     <string name="status_in_progress">In Progress</string>
     <string name="status_completed">Completed</string>
+    <string name="status_dropdown" translatable="false">%1$s ▾</string>
     <string name="read_aloud">Read aloud</string>
     <string name="stop_reading">Stop reading</string>
     <string name="tts_not_available">Text-to-speech is not available on this device</string>

@@ -49,7 +49,6 @@ class VoicesAdapterImagesTest {
             labelManager = io.mockk.mockk(relaxed = true),
             voicesEditor = io.mockk.mockk<VoicesEditor>(relaxed = true),
             leadersList = emptyList(),
-            setRepliedNewsIdFn = { },
         )
     }
 

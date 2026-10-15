@@ -159,6 +159,9 @@
     <string name="select_gallery">Sélectionner depuis la galerie</string>
     <string name="add_resource">Ajouter une ressource :</string>
     <string name="reply">Répondre</string>
+    <string name="react">Réagir</string>
+    <string name="reaction_chip_description">Réaction %1$s, total %2$d</string>
+    <string name="more_reactions">Plus de réactions</string>
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">Affichage de la réponse de :</string>
@@ -585,7 +588,6 @@
     <string name="format_removed_from_mylibrary">%1$s retiré de myLibrary</string>
     <string name="added_to_my_courses">ajouté à myCourses</string>
     <string name="do_you_want_to_stay_online">Voulez-vous rester en ligne ?</string>
-    <string name="device_not_connected_to_planet">Appareil non connecté à la planète.</string>
     <string name="all_files_downloaded_successfully">Tous les fichiers ont été téléchargés avec succès</string>
     <string name="removed_from_mylibrary">Supprimé de ma bibliothèque</string>
     <string name="removed_from_mycourse">Supprimé de mon cours</string>
@@ -1291,6 +1293,7 @@
     <string name="warning_icon">Icône d\'avertissement</string>
     <string name="close_banner">Fermer la bannière d\'avertissement</string>
     <string name="status_not_started">Non commencé</string>
+    <string name="status_todo">À faire</string>
     <string name="status_in_progress">En cours</string>
     <string name="status_completed">Terminé</string>
     <string name="read_aloud">Lire à haute voix</string>

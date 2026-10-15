@@ -26,7 +26,6 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.toVoicePostingPolicy
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
-import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.ui.voices.VoicesAdapterHelper
 import org.ole.planet.myplanet.utils.FileUtils
@@ -165,13 +164,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
 
         val chatDetailFragment = ChatDetailFragment()
         chatDetailFragment.arguments = bundle
-
-        FragmentNavigator.replaceFragment(
-            parentFragmentManager,
-            R.id.fragment_container,
-            chatDetailFragment,
-            addToBackStack = true
-        )
+        homeItemClickListener?.openCallFragment(chatDetailFragment)
     }
 
     override fun clearImages() {
@@ -253,8 +246,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope, dispatcherProvider),
                     labelManager = labelManager,
                     voicesEditor = voicesRepository,
-                    leadersList = viewModel.getCommunityLeaders(),
-                    setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
+                    leadersList = viewModel.getCommunityLeaders()
                 )
             }
             adapterNews?.setListener(this)

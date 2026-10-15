@@ -6,10 +6,9 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.FinanceReport
@@ -32,8 +31,8 @@ class EnterprisesViewModel @Inject constructor(
     private val attachmentReader: AttachmentReader
 ) : ViewModel() {
 
-    private val _reportEvent = MutableSharedFlow<ReportEvent>()
-    val reportEvent: SharedFlow<ReportEvent> = _reportEvent.asSharedFlow()
+    private val _reportEvent = Channel<ReportEvent>(Channel.BUFFERED)
+    val reportEvent: Flow<ReportEvent> = _reportEvent.receiveAsFlow()
 
     fun addReport(
         description: String,
@@ -64,9 +63,9 @@ class EnterprisesViewModel @Inject constructor(
                     resolvedName, resolvedData
                 )
                 enterprisesRepository.addReport(params)
-                _reportEvent.emit(ReportEvent.ReportAdded)
+                _reportEvent.send(ReportEvent.ReportAdded)
             } catch (e: Exception) {
-                _reportEvent.emit(ReportEvent.Error("Failed to add report. Please try again."))
+                _reportEvent.send(ReportEvent.Error("Failed to add report. Please try again."))
             }
         }
     }
@@ -98,9 +97,9 @@ class EnterprisesViewModel @Inject constructor(
                     resolvedName, resolvedData
                 )
                 enterprisesRepository.updateReport(reportId, params)
-                _reportEvent.emit(ReportEvent.ReportUpdated)
+                _reportEvent.send(ReportEvent.ReportUpdated)
             } catch (e: Exception) {
-                _reportEvent.emit(ReportEvent.Error("Failed to update report. Please try again."))
+                _reportEvent.send(ReportEvent.Error("Failed to update report. Please try again."))
             }
         }
     }
@@ -109,9 +108,9 @@ class EnterprisesViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 enterprisesRepository.archiveReport(reportId)
-                _reportEvent.emit(ReportEvent.ReportArchived)
+                _reportEvent.send(ReportEvent.ReportArchived)
             } catch (e: Exception) {
-                _reportEvent.emit(ReportEvent.Error("Failed to delete report."))
+                _reportEvent.send(ReportEvent.Error("Failed to delete report."))
             }
         }
     }

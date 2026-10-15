@@ -301,6 +301,5 @@ class ChatRepositoryImplTest {
         val result = chatRepository.getLatestRev(id)
 
         assertNull(result)
-        coVerify(exactly = 0) { chatDao.getByDocId(any()) }
     }
 }

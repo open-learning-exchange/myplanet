@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.UserEntity
 
@@ -51,9 +52,23 @@ interface MeetupDao {
     )
     suspend fun getPendingUploads(): List<Meetup>
 
+    @Query("DELETE FROM meetup WHERE id IN (:ids)")
+    suspend fun deleteByIdsInternal(ids: List<String>)
+
+    suspend fun deleteByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        ids.distinct().chunked(900).forEach { deleteByIdsInternal(it) }
+    }
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(item: Meetup)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<Meetup>)
+
+    @Transaction
+    suspend fun replaceSyncedMeetups(duplicateIds: List<String>, items: List<Meetup>) {
+        deleteByIds(duplicateIds)
+        if (items.isNotEmpty()) upsertAll(items)
+    }
 }
