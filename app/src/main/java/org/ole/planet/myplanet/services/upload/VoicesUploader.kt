@@ -135,12 +135,14 @@ class VoicesUploader @Inject constructor(
                                     id = news.id,
                                     _id = getString("id", outcome.element),
                                     _rev = getString("rev", outcome.element),
-                                    imagesArray = imagesArray
+                                    imagesArray = imagesArray,
+                                    pendingReactions = news.pendingReactions
                                 )
                             )
                         }
                         is BulkDocsUploader.Outcome.Rejected -> {
                             val errorReason = outcome.element.get("error").asString
+                            if (errorReason == "conflict") return@upload
                             queueNewsRetry(news, news.newsJson, null, if (isCreate) "POST" else "PUT", Exception("Bulk upload error: $errorReason"))
                         }
                         is BulkDocsUploader.Outcome.RequestFailed -> {
