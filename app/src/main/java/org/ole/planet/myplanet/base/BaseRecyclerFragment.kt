@@ -240,10 +240,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         selectedItems?.clear()
     }
 
-    fun countSelected(): Int {
-        return selectedItems?.size ?: 0
-    }
-
     override fun onDestroyView() {
         super.onDestroyView()
         if (::recyclerView.isInitialized) {

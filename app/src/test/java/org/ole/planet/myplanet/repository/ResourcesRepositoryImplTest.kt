@@ -937,22 +937,6 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
-    fun `getResourceTitlesMap calls getResourceTitles and returns mapped titles`() = runTest {
-        val projections = listOf(
-            ResourceTitleProjection("res1", "Title 1"),
-            ResourceTitleProjection("res2", "Title 2")
-        )
-        coEvery { myLibraryDao.getResourceTitles() } returns projections
-
-        val result = repository.getResourceTitlesMap()
-
-        coVerify(exactly = 1) { myLibraryDao.getResourceTitles() }
-        assertEquals(2, result.size)
-        assertEquals("Title 1", result["res1"])
-        assertEquals("Title 2", result["res2"])
-    }
-
-    @Test
     fun `markResourceUploaded calls createLocalResourceLink when resource is private`() = runTest {
         val localId = "local1"
         val remoteId = "remote1"

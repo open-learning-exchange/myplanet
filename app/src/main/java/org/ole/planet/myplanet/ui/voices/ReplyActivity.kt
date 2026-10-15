@@ -30,7 +30,6 @@ import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.VoicesEditor
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
@@ -56,8 +55,6 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
-    @Inject
-    lateinit var sharedPrefManager: SharedPrefManager
     @Inject
     lateinit var voicesEditor: VoicesEditor
 
@@ -145,8 +142,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(lifecycleScope, dispatcherProvider),
                     labelManager = labelManager,
                     voicesEditor = voicesEditor,
-                    leadersList = voicesViewModel.getCommunityLeaders(),
-                    setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
+                    leadersList = voicesViewModel.getCommunityLeaders()
                 )
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))

@@ -82,13 +82,6 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    internal fun showNotConnectedToast() {
-        if (isFragmentActive()) {
-            Utilities.toast(requireActivity(),
-                getString(R.string.device_not_connected_to_planet))
-        }
-    }
-
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val pendingResult = goAsync()
