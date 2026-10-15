@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.model.RetryFailure
+import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.repository.RetryRepository
 import org.ole.planet.myplanet.services.upload.UploadError
 
@@ -36,6 +37,10 @@ class RetryQueue @Inject constructor(
     ) {
         if (!error.retryable) {
             Log.d(TAG, "Skipping non-retryable error for item ${error.itemId}: ${error.message}")
+            return
+        }
+        if (RetryOperation.createsDocument(httpMethod, dbId)) {
+            Log.d(TAG, "Skipping create for item ${error.itemId}; the next upload re-sends it")
             return
         }
 
