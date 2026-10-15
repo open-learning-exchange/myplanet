@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -13,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.AiProvider
@@ -86,8 +89,8 @@ class ChatViewModel @Inject constructor(
         object AlreadyShared : ShareChatResult()
         data class Shared(val news: News, val chatId: String) : ShareChatResult()
     }
-    private val _shareResult = MutableSharedFlow<ShareChatResult>()
-    val shareResult: SharedFlow<ShareChatResult> = _shareResult.asSharedFlow()
+    private val _shareResult = Channel<ShareChatResult>(Channel.BUFFERED)
+    val shareResult: Flow<ShareChatResult> = _shareResult.receiveAsFlow()
     private val _screenData = MutableStateFlow<ChatHistoryScreenData?>(null)
     val screenData: StateFlow<ChatHistoryScreenData?> = _screenData.asStateFlow()
     private val _filteredChats = MutableStateFlow<List<ChatHistory>>(emptyList())
@@ -243,10 +246,10 @@ class ChatViewModel @Inject constructor(
     fun shareChatToVoices(chatId: String, viewInId: String, payload: HashMap<String?, String>) {
         viewModelScope.launch {
             if (voicesRepository.isAlreadyShared(chatId, viewInId)) {
-                _shareResult.emit(ShareChatResult.AlreadyShared)
+                _shareResult.send(ShareChatResult.AlreadyShared)
             } else {
                 val news = voicesRepository.createNews(payload, cachedUser, null)
-                _shareResult.emit(ShareChatResult.Shared(news, chatId))
+                _shareResult.send(ShareChatResult.Shared(news, chatId))
             }
         }
     }

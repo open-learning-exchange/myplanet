@@ -4,12 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
@@ -23,8 +23,8 @@ class TeamCalendarViewModel @Inject constructor(
     private val _meetups = MutableStateFlow<List<Meetup>>(emptyList())
     val meetups: StateFlow<List<Meetup>> = _meetups.asStateFlow()
 
-    private val _createMeetupResult = MutableSharedFlow<Boolean>()
-    val createMeetupResult: SharedFlow<Boolean> = _createMeetupResult.asSharedFlow()
+    private val _createMeetupResult = Channel<Boolean>(Channel.BUFFERED)
+    val createMeetupResult: Flow<Boolean> = _createMeetupResult.receiveAsFlow()
 
     fun fetchMeetups(teamId: String) {
         if (teamId.isEmpty()) return
@@ -39,7 +39,7 @@ class TeamCalendarViewModel @Inject constructor(
             if (success) {
                 fetchMeetups(params.teamId)
             }
-            _createMeetupResult.emit(success)
+            _createMeetupResult.send(success)
         }
     }
 
