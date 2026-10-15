@@ -15,6 +15,12 @@ interface SubmissionDao {
         if (ids.isEmpty()) return emptyList()
         return ids.distinct().chunked(900).flatMap { getByIdsInternal(it) }
     }
+    @Query("SELECT * FROM submissions WHERE _id IN (:remoteIds)") suspend fun getByRemoteIdsInternal(remoteIds: List<String>): List<Submission>
+
+    suspend fun getByRemoteIds(remoteIds: List<String>): List<Submission> {
+        if (remoteIds.isEmpty()) return emptyList()
+        return remoteIds.distinct().chunked(900).flatMap { getByRemoteIdsInternal(it) }
+    }
     @Query("SELECT * FROM submissions WHERE userId = :userId AND teamId = :teamId") suspend fun getByUserIdAndTeamId(userId: String, teamId: String): List<Submission>
     @Query("SELECT * FROM submissions WHERE userId = :userId AND teamId IS NULL") suspend fun getByUserIdWithoutTeam(userId: String): List<Submission>
     @Query("SELECT * FROM submissions WHERE userId IS :userId AND type = 'exam'") suspend fun getExamSubmissionsByUser(userId: String?): List<Submission>
