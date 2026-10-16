@@ -251,4 +251,56 @@ class FreeSpaceWorkerTest {
         assertEquals(25, batches[0].size)
         assertEquals(expectedIds, batches[0])
     }
+
+    @Test
+    fun `doWork with frozen clock throttles progress updates to first deletion and final update`() = runTest(testDispatcher) {
+        worker.elapsedMs = { 1000L }
+        (0 until 50).forEach { i -> addResource("res$i", "file$i.txt") }
+
+        val result = worker.doWork()
+        advanceUntilIdle()
+
+        assertTrue(result is Result.Success)
+        coVerify(exactly = 2) {
+            worker.setProgress(match { "deletedFiles" in it.keyValueMap })
+        }
+    }
+
+    @Test
+    fun `doWork with advancing clock emits progress updates on intervals`() = runTest(testDispatcher) {
+        var simulatedTime = 1000L
+        worker.elapsedMs = {
+            val time = simulatedTime
+            simulatedTime += 600L
+            time
+        }
+        (0 until 5).forEach { i -> addResource("res$i", "file$i.txt") }
+
+        val result = worker.doWork()
+        advanceUntilIdle()
+
+        assertTrue(result is Result.Success)
+        coVerify(atLeast = 3) {
+            worker.setProgress(match { "deletedFiles" in it.keyValueMap })
+        }
+    }
+
+    @Test
+    fun `doWork when stopped does not emit final progress update`() = runTest(testDispatcher) {
+        worker.elapsedMs = { 1000L }
+        addResource("res1", "file1.txt")
+        addResource("res2", "file2.txt")
+
+        coEvery { worker.setProgress(match { "deletedFiles" in it.keyValueMap }) } answers {
+            every { worker.isStopped } returns true
+        }
+
+        val result = worker.doWork()
+        advanceUntilIdle()
+
+        assertTrue(result is Result.Success)
+        coVerify(exactly = 1) {
+            worker.setProgress(match { "deletedFiles" in it.keyValueMap })
+        }
+    }
 }
