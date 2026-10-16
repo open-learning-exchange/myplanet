@@ -149,4 +149,30 @@ class ChatHistoryAdapterTest {
         assertEquals("", holder.rowChatHistoryBinding.chatTitle.text.toString())
         assertNull(holder.rowChatHistoryBinding.chatTitle.contentDescription)
     }
+
+    @Test
+    fun `each card announces its own title after a later row binds`() {
+        val first = ChatHistory().apply {
+            id = "7"
+            _id = "7"
+            conversations = listOf(Conversation().apply { query = "first chat" })
+        }
+        val second = ChatHistory().apply {
+            id = "8"
+            _id = "8"
+            title = "second chat"
+            conversations = null
+        }
+        adapter.submitList(listOf(first, second))
+        waitForList(adapter, 2)
+        val parent = LinearLayout(context)
+        val firstHolder = adapter.onCreateViewHolder(parent, adapter.getItemViewType(0))
+        val secondHolder = adapter.onCreateViewHolder(parent, adapter.getItemViewType(1))
+
+        adapter.onBindViewHolder(firstHolder, 0)
+        adapter.onBindViewHolder(secondHolder, 1)
+
+        assertEquals("first chat", firstHolder.rowChatHistoryBinding.chatCardView.contentDescription)
+        assertEquals("second chat", secondHolder.rowChatHistoryBinding.chatCardView.contentDescription)
+    }
 }
