@@ -42,32 +42,44 @@ class AnswerDaoTest {
 
     @Test
     fun getBySubmissionIds_with1200SubmissionIds_returnsAllAnswersWithoutThrowing() = runBlocking {
-        val answers = (1..1200).map { i ->
-            createAnswer("ans_$i", "sub_$i")
-        }
-        answerDao.upsertAll(answers)
+        val seededAnswers = listOf(
+            createAnswer("ans_1", "sub_1"),
+            createAnswer("ans_900", "sub_900"),
+            createAnswer("ans_901", "sub_901"),
+            createAnswer("ans_1200", "sub_1200"),
+            createAnswer("ans_survivor", "sub_survivor")
+        )
+        answerDao.upsertAll(seededAnswers)
 
-        val allSubmissionIds = answers.map { it.submissionId!! }
+        val allSubmissionIds = (1..1200).map { "sub_$it" }
         val results = answerDao.getBySubmissionIds(allSubmissionIds)
 
-        assertEquals(1200, results.size)
-        assertEquals(answers.map { it.id }.toSet(), results.map { it.id }.toSet())
+        assertEquals(4, results.size)
+        assertEquals(setOf("ans_1", "ans_900", "ans_901", "ans_1200"), results.map { it.id }.toSet())
     }
 
     @Test
     fun deleteBySubmissionIds_with1200SubmissionIds_deletesAllAndReturnsTotalCount() = runBlocking {
-        val answers = (1..1200).map { i ->
-            createAnswer("ans_$i", "sub_$i")
-        }
-        answerDao.upsertAll(answers)
+        val seededAnswers = listOf(
+            createAnswer("ans_1", "sub_1"),
+            createAnswer("ans_900", "sub_900"),
+            createAnswer("ans_901", "sub_901"),
+            createAnswer("ans_1200", "sub_1200"),
+            createAnswer("ans_survivor", "sub_survivor")
+        )
+        answerDao.upsertAll(seededAnswers)
 
-        val allSubmissionIds = answers.map { it.submissionId!! }
+        val allSubmissionIds = (1..1200).map { "sub_$it" }
         val deletedCount = answerDao.deleteBySubmissionIds(allSubmissionIds)
 
-        assertEquals(1200, deletedCount)
+        assertEquals(4, deletedCount)
 
         val remainingAnswers = answerDao.getBySubmissionIds(allSubmissionIds)
         assertTrue(remainingAnswers.isEmpty())
+
+        val survivor = answerDao.getBySubmissionId("sub_survivor")
+        assertEquals(1, survivor.size)
+        assertEquals("ans_survivor", survivor.first().id)
     }
 
     @Test
@@ -88,24 +100,32 @@ class AnswerDaoTest {
 
     @Test
     fun chunkedOperations_deduplicateRepeatedIdsAcrossChunkBoundary() = runBlocking {
-        val answers = (1..1000).map { i ->
-            createAnswer("ans_$i", "sub_$i")
-        }
-        answerDao.upsertAll(answers)
+        val seededAnswers = listOf(
+            createAnswer("ans_1", "sub_1"),
+            createAnswer("ans_900", "sub_900"),
+            createAnswer("ans_901", "sub_901"),
+            createAnswer("ans_1000", "sub_1000"),
+            createAnswer("ans_survivor", "sub_survivor")
+        )
+        answerDao.upsertAll(seededAnswers)
 
         // Create a list of 1001 submissionIds where "sub_1" appears at index 0 (chunk 1) and index 1000 (chunk 2)
-        val submissionIdsWithDuplicate = answers.map { it.submissionId!! } + "sub_1"
+        val submissionIdsWithDuplicate = (1..1000).map { "sub_$it" } + "sub_1"
         assertEquals(1001, submissionIdsWithDuplicate.size)
 
         val results = answerDao.getBySubmissionIds(submissionIdsWithDuplicate)
-        assertEquals(1000, results.size)
-        assertEquals(answers.map { it.id }.toSet(), results.map { it.id }.toSet())
+        assertEquals(4, results.size)
+        assertEquals(setOf("ans_1", "ans_900", "ans_901", "ans_1000"), results.map { it.id }.toSet())
 
         val deleteCount = answerDao.deleteBySubmissionIds(submissionIdsWithDuplicate)
-        assertEquals(1000, deleteCount)
+        assertEquals(4, deleteCount)
 
         val remaining = answerDao.getBySubmissionIds(submissionIdsWithDuplicate)
         assertTrue(remaining.isEmpty())
+
+        val survivor = answerDao.getBySubmissionId("sub_survivor")
+        assertEquals(1, survivor.size)
+        assertEquals("ans_survivor", survivor.first().id)
     }
 
     @Test
