@@ -50,7 +50,7 @@ class ProgressGridAdapter(private val context: Context) :
         }
     }
 
-    inner class ViewHolderMyProgress(rowMyProgressGridBinding: RowMyProgressGridBinding) :
+    class ViewHolderMyProgress(rowMyProgressGridBinding: RowMyProgressGridBinding) :
         RecyclerView.ViewHolder(rowMyProgressGridBinding.root) {
         var tvProgress = rowMyProgressGridBinding.tvProgress
     }

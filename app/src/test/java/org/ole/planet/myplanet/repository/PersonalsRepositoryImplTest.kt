@@ -320,7 +320,7 @@ class PersonalsRepositoryImplTest {
     @Test
     fun `uploadPersonalDocument returns null when response body is null`() = runTest {
         val personal = Personal().apply { id = "test-id" }
-        coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success<JsonObject>(null)
+        coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success(null)
 
         val result = repository.uploadPersonalDocument(personal)
 

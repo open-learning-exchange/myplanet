@@ -42,7 +42,6 @@ class VoicesRepositoryImplTest {
     private val testScope = TestScope(testDispatcher)
     private val gson: Gson = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
-    private val userRepository: UserRepository = mockk(relaxed = true)
     private val newsDao: NewsDao = mockk(relaxed = true)
     private val newsLogDao: org.ole.planet.myplanet.data.room.dao.NewsLogDao = mockk(relaxed = true)
 
@@ -154,10 +153,6 @@ class VoicesRepositoryImplTest {
         val news1 = News().apply {
             viewableBy = "teams"
             viewableId = "team1"
-        }
-        val news2 = News().apply {
-            viewableBy = "other"
-            viewIn = "[{\"_id\":\"team2\"}]"
         }
         coEvery { newsDao.getTopLevelByTeam(any(), any()) } returns listOf(news1)
 

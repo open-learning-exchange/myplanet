@@ -12,7 +12,6 @@ import javax.inject.Provider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
@@ -41,9 +40,9 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
-    private val teamsRepositoryProvider: Provider<TeamsRepository>,
+    teamsRepositoryProvider: Provider<TeamsRepository>,
     private val userRepository: UserRepository,
-    private val sharedPrefManager: SharedPrefManager,
+    sharedPrefManager: SharedPrefManager,
     private val exporter: SubmissionsRepositoryExporter,
     private val submitPhotosDao: SubmitPhotosDao,
     private val submissionDao: SubmissionDao,
@@ -51,7 +50,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     private val examDao: ExamDao,
     private val questionDao: QuestionDao,
     @PlainGson private val gson: Gson,
-    private val deviceNameProvider: DeviceNameProvider
+    deviceNameProvider: DeviceNameProvider
 ) : SubmissionsRepository {
 
     override suspend fun generateSubmissionPdf(submissionId: String): File? {
@@ -278,7 +277,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             ?: hydrateSubmission(submissionDao.getFirstByParentIdContaining(submissionId))
     }
 
-    override suspend fun getSubmissionDetail(submission: Submission, user: UserEntity?): SubmissionDetail? {
+    override suspend fun getSubmissionDetail(submission: Submission, user: UserEntity?): SubmissionDetail {
         val examId = submission.parentId?.substringBefore('@')
         val exam = examId?.let { getExamById(it) }
 

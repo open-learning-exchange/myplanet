@@ -11,5 +11,4 @@ open class CourseStep(
     var stepTitle: String? = null,
     var description: String? = null,
     var noOfResources: Int? = null
-) {
-}
+)

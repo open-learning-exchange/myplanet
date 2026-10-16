@@ -22,7 +22,6 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
@@ -139,12 +138,6 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
             if (intent?.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY) {
                 exoPlayer?.pause()
             }
-        }
-    }
-
-    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        if (!isGranted) {
-            Utilities.toast(requireContext(), getString(R.string.microphone_permission_required))
         }
     }
 
