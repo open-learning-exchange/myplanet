@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.SearchActivity
@@ -49,7 +48,6 @@ class CoursesRepositoryImplTest {
     private val courseStepDao: CourseStepDao = mockk(relaxed = true)
     private val examDao: ExamDao = mockk(relaxed = true)
     private val questionDao: QuestionDao = mockk(relaxed = true)
-    private val tagDao: TagDao = mockk(relaxed = true)
     private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
     private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
     private val removedLogDao: RemovedLogDao = mockk(relaxed = true)
@@ -390,7 +388,6 @@ class CoursesRepositoryImplTest {
     @Test
     fun getCourseDetailModel_whenCourseExists_returnsAggregatedData() = runTest {
         val course = MyCourse().apply { courseId = "course_id" }
-        val step = org.ole.planet.myplanet.model.CourseStep().apply { id = "step_1"; stepTitle = "Title" }
         val user = org.ole.planet.myplanet.model.UserEntity().apply { id = "user_1" }
 
         coEvery { courseDao.observeByCourseId("course_id") } returns kotlinx.coroutines.flow.flowOf(course)

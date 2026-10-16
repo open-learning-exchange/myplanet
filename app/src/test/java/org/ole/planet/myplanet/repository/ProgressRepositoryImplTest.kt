@@ -51,9 +51,9 @@ class ProgressRepositoryImplTest {
         repository = spyk(
             ProgressRepositoryImpl(
                 dispatcherProvider,
-                dagger.Lazy { mockCoursesRepository },
-                dagger.Lazy { mockk(relaxed = true) },
-                dagger.Lazy { mockSubmissionsRepository },
+                { mockCoursesRepository },
+                { mockk(relaxed = true) },
+                { mockSubmissionsRepository },
                 courseProgressDao,
                 courseStepDao,
                 examDao,
@@ -532,9 +532,9 @@ class ProgressRepositoryImplTest {
         val activitiesRepo = mockk<ActivitiesRepository>()
         val localRepository = ProgressRepositoryImpl(
             dispatcherProvider,
-            dagger.Lazy { mockCoursesRepository },
-            dagger.Lazy { activitiesRepo },
-            dagger.Lazy { mockSubmissionsRepository },
+            { mockCoursesRepository },
+            { activitiesRepo },
+            { mockSubmissionsRepository },
             courseProgressDao,
             courseStepDao,
             examDao,

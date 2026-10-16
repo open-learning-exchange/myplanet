@@ -159,8 +159,8 @@ class TeamDetailFragment : BaseTeamFragment() {
         } else {
             binding.viewPager2.adapter = TeamPagerAdapter(
                 this, pageConfigs, team?._id,
-                OnChangedListener { onMemberChanged() },
-                OnChangedListener { onTeamDetailsUpdated() }
+                { onMemberChanged() },
+                { onTeamDetailsUpdated() }
             )
             binding.tabLayout.tabMode = TabLayout.MODE_SCROLLABLE
             binding.tabLayout.isInlineLabel = true

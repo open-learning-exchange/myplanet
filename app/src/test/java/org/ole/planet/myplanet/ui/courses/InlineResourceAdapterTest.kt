@@ -57,7 +57,7 @@ class InlineResourceAdapterTest {
 
     @Before
     fun setUp() {
-        context = ApplicationProvider.getApplicationContext<Context>()
+        context = ApplicationProvider.getApplicationContext()
         context.setTheme(com.google.android.material.R.style.Theme_MaterialComponents)
 
         mockkObject(UrlUtils)

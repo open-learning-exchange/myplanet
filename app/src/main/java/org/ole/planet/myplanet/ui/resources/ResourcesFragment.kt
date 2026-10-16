@@ -96,7 +96,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal var selectedDownloadFilterIndex: Int = 0   // 0 = All
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
-    private var refreshJob: Job? = null
     private var searchJob: Job? = null
 
     private var viewModeController: ViewModeToggleController? = null
@@ -230,7 +229,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         super.onViewCreated(view, savedInstanceState)
         toggleGridButton = view.findViewById(R.id.toggle_grid)
         toggleListButton = view.findViewById(R.id.toggle_list)
-        layoutViewToggle = view.findViewById<View>(R.id.layout_view_toggle) ?: (toggleGridButton?.parent as? View)
+        layoutViewToggle = view.findViewById(R.id.layout_view_toggle) ?: (toggleGridButton?.parent as? View)
         isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
 
         initializeViews()
@@ -770,16 +769,19 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val f = ResourcesSortFragment()
         f.setCurrentMode(viewModel.currentSortMode)
         f.setCurrentDirection(viewModel.isDateSortAscending, viewModel.isTitleSortAscending)
-        f.setListener(ResourcesSortFragment.SortSelectionListener { mode ->
+        f.setListener { mode ->
             viewLifecycleOwner.lifecycleScope.launch {
                 allResourceModels = when (mode) {
                     ResourcesViewModel.SortMode.DATE -> viewModel.toggleSortOrder(allResourceModels)
-                    ResourcesViewModel.SortMode.TITLE -> viewModel.toggleTitleSortOrder(allResourceModels)
+                    ResourcesViewModel.SortMode.TITLE -> viewModel.toggleTitleSortOrder(
+                        allResourceModels
+                    )
+
                     ResourcesViewModel.SortMode.NONE -> allResourceModels
                 }
                 applyFiltersAndUpdateUI(scrollToTop = true, forceUpdate = true)
             }
-        })
+        }
         f.show(childFragmentManager, "resources_sort")
     }
 

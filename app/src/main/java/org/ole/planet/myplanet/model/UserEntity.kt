@@ -229,4 +229,4 @@ open class UserEntity(
     }
 }
 
-val UserEntity.effectiveId: String? get() = _id?.takeIf { it.isNotEmpty() } ?: id
+val UserEntity.effectiveId: String get() = _id?.takeIf { it.isNotEmpty() } ?: id

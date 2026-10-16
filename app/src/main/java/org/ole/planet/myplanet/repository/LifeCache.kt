@@ -6,7 +6,6 @@ import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.MyLife

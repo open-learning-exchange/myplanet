@@ -67,7 +67,7 @@ class FeedbackAdapter :
         val formattedDate = dateCache.getOrPut(feedback.openTime) { getFormattedDate(feedback.openTime) }
         val contentDescription = "${feedback.title}, ${type}, " +
                 "${statusText}: ${feedback.status}, ${priorityText}: ${priority}, " +
-                "${openDateText}: ${formattedDate}"
+                "${openDateText}: $formattedDate"
         binding.feedbackCardView.contentDescription = contentDescription
 
         ViewCompat.setBackgroundTintList(

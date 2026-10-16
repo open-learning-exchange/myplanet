@@ -394,7 +394,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getPlanetType(): String? {
+    override fun getPlanetType(): String {
         return sharedPrefManager.getRawString("planetType")
     }
 

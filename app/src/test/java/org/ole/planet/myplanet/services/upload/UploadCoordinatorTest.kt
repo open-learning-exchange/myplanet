@@ -14,7 +14,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -567,7 +566,7 @@ class UploadCoordinatorTest {
     private fun errorResponse(code: Int): Response<JsonObject> =
         Response.error(code, "error".toResponseBody(null))
 
-    private fun roomConfig(items: List<SampleItem>) = RoomUploadConfig<SampleItem>(
+    private fun roomConfig(items: List<SampleItem>) = RoomUploadConfig(
         endpoint = "samples",
         modelClassName = "SampleItem",
         fetchPendingItems = { items },
@@ -577,7 +576,7 @@ class UploadCoordinatorTest {
         markUploaded = { _: List<UploadedItemResult> -> emptyList() }
     )
 
-    private fun submissionConfig(items: List<Submission>) = UploadConfig<Submission>(
+    private fun submissionConfig(items: List<Submission>) = UploadConfig(
         modelClass = Submission::class,
         endpoint = "submissions",
         fetchPendingItems = { items },

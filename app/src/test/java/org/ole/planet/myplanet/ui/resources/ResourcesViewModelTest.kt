@@ -252,7 +252,7 @@ class ResourcesViewModelTest {
             uploadDate = null,
             filename = null
         )
-        return ResourceListModel(library, item, emptyList<TagItem>())
+        return ResourceListModel(library, item, emptyList())
     }
 
     @Test

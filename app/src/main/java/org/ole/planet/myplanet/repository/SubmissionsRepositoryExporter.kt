@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.MembershipDoc
-import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 
@@ -159,10 +158,6 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
 
                 val titlePaint = Paint().apply {
                     textSize = 20f
-                    isFakeBoldText = true
-                }
-                val headerPaint = Paint().apply {
-                    textSize = 16f
                     isFakeBoldText = true
                 }
                 val subHeaderPaint = Paint().apply {
