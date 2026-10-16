@@ -73,7 +73,7 @@ internal class CommunityLeadersAdapter(
         }
     }
 
-    internal inner class CommunityLeadersViewHolder(rowJoinedUserBinding: RowJoinedUserBinding) : RecyclerView.ViewHolder(rowJoinedUserBinding.root) {
+    internal class CommunityLeadersViewHolder(rowJoinedUserBinding: RowJoinedUserBinding) : RecyclerView.ViewHolder(rowJoinedUserBinding.root) {
         var title = rowJoinedUserBinding.tvTitle
         var tvDescription = rowJoinedUserBinding.tvDescription
         var icon = rowJoinedUserBinding.icMore

@@ -43,7 +43,7 @@ class ChatHistoryAdapterTest {
             context = context,
             chatHistoryList = emptyList(),
             currentUser = UserEntity(),
-            newsList = emptyList<News>(),
+            newsList = emptyList(),
             cachedSharedViewInIds = emptyMap(),
             shareTargets = ChatShareTargets(null, emptyList(), emptyList()),
             diffConfig = testDiffConfig,

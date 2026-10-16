@@ -34,13 +34,6 @@ class RatingsViewModelTest {
     fun setup() {
         ratingsRepository = mockk()
         userRepository = mockk()
-        val testDispatcherProvider = object : DispatcherProvider {
-            override val main = Dispatchers.Unconfined
-            override val mainImmediate = Dispatchers.Unconfined
-            override val io = Dispatchers.Unconfined
-            override val default = Dispatchers.Unconfined
-            override val unconfined = Dispatchers.Unconfined
-        }
         viewModel = RatingsViewModel(ratingsRepository, userRepository)
     }
 

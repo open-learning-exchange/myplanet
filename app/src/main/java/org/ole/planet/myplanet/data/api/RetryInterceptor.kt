@@ -34,7 +34,7 @@ class RetryInterceptor @Inject constructor(
         val retryAllowed = isRetrySafe(request)
         var tryCount = 0
         var response: Response? = null
-        var lastError: IOException? = null
+        var lastError: IOException?
 
         while (true) {
             response?.close()

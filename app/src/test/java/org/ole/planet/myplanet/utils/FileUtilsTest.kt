@@ -269,8 +269,6 @@ class FileUtilsTest {
 
     @Test
     fun findHtmlCoverImage_preservesWalkOrderTieBreakingForLargestFileFallback() {
-        val file1 = File(tempDir, "a_image.jpg").apply { writeBytes(ByteArray(100)) }
-        val file2 = File(tempDir, "b_image.jpg").apply { writeBytes(ByteArray(100)) }
 
         val expectedFirstInWalk = tempDir.walkTopDown()
             .maxDepth(4)

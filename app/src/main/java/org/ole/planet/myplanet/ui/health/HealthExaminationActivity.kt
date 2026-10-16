@@ -317,7 +317,6 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
                 "${binding.etXray.text}".isNotBlank()
     private val isValidInput: Boolean
         get() {
-            val scrollView = binding.rootScrollView
 
             val isValidTemp = (parseVitalReading("${binding.etTemperature.text}".trim { it <= ' ' }) in 30.0..40.0 ||
                         parseVitalReading("${binding.etTemperature.text}".trim { it <= ' ' }) == 0f) &&

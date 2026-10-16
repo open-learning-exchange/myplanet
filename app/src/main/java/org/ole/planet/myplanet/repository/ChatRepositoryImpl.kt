@@ -224,7 +224,7 @@ class ChatRepositoryImpl @Inject constructor(
                             }
                             list
                         } catch (_: Exception) {
-                            emptyList<String>()
+                            emptyList()
                         }
                     }.toSet()
                     newsId to ids

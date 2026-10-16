@@ -198,7 +198,7 @@ class InlineResourceAdapter(
         })
     }
 
-    private suspend fun showImagePreview(binding: ItemInlineResourceBinding, context: Context, file: File, exists: Boolean) {
+    private fun showImagePreview(binding: ItemInlineResourceBinding, context: Context, file: File, exists: Boolean) {
         if (exists) {
             val (widthPx, heightPx) = getPreviewDimensions(context)
             binding.ivResourcePreview.visibility = View.VISIBLE
@@ -213,7 +213,7 @@ class InlineResourceAdapter(
         }
     }
 
-    private suspend fun showVideoPreview(binding: ItemInlineResourceBinding, context: Context, file: File, exists: Boolean) {
+    private fun showVideoPreview(binding: ItemInlineResourceBinding, context: Context, file: File, exists: Boolean) {
         binding.videoThumbnailContainer.visibility = View.VISIBLE
         if (exists) {
             val (widthPx, heightPx) = getPreviewDimensions(context)

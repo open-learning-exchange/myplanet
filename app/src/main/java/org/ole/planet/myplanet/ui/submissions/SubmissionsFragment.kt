@@ -63,11 +63,6 @@ class SubmissionsFragment : BaseBindingFragment<FragmentMySubmissionBinding>(Fra
         showHideRadioButton()
     }
 
-    override fun onResume() {
-        super.onResume()
-        // Filter is already set in onViewCreated and maintained by ViewModel
-    }
-
     private fun showHideRadioButton() {
         if (type != "survey") {
             binding.rbExam.isChecked = true

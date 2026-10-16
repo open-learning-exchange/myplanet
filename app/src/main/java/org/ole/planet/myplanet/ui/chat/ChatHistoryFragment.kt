@@ -47,10 +47,6 @@ class ChatHistoryFragment : BaseBindingFragment<FragmentChatHistoryBinding>(Frag
     private val serverUrl: String
         get() = sharedPrefManager.getServerUrl()
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val slidingPaneLayout = binding.slidingPaneLayout

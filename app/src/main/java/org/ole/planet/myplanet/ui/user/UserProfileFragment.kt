@@ -153,7 +153,7 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
             viewModel.lastVisit,
             viewModel.numberOfResourceOpen,
             viewModel.connectedCommunityCode
-        ) { _, _, _, _, _ -> Unit }
+        ) { _, _, _, _, _ -> }
 
         collectWhenStarted(combinedFlow) {
             if (isAdded) {
@@ -466,7 +466,7 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
         binding.guestPill.visibility = if (isGuest) View.VISIBLE else View.GONE
     }
 
-    private fun communityCode(): String? {
+    private fun communityCode(): String {
         return model?.planetCode?.takeIf { it.isNotBlank() } ?: viewModel.connectedCommunityCode.value
     }
 

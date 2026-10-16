@@ -146,8 +146,6 @@ class ServerConfigUtilsTest {
         val url = "demo.ole.org"
         val password = "testPassword"
 
-        val result = ServerConfigUtils.saveAlternativeUrl(url, password, mockSharedPrefManager)
-
         verify {
             mockSharedPrefManager.saveAlternativeServerConfig(
                 serverPin = password,

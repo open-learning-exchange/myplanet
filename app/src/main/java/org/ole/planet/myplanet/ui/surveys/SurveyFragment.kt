@@ -31,7 +31,6 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener 
     private var _binding: FragmentSurveyBinding? = null
     private val binding get() = _binding!!
     private var adapter: SurveysAdapter? = null
-    private val mutex = Mutex()
     private var isTeam: Boolean = false
     private var teamId: String? = null
     private val viewModel: SurveysViewModel by viewModels()

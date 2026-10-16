@@ -197,18 +197,8 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     teamName = effectiveTeamName,
                     teamId = teamId,
                     isTeamLeaderFn = { onResult ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch {
-                            val result = kotlinx.coroutines.withTimeoutOrNull(2000.milliseconds) {
-                                viewModel.isTeamLeader(teamId, user?._id)
-                            }
-                            onResult(result ?: false)
-                        }
                     },
                     getUserFn = { userId, onResult ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch {
-                            val result = viewModel.getUserById(userId)
-                            onResult(result)
-                        }
                     },
                     getReplyCountFn = { newsId, onResult ->
                         val job = viewLifecycleOwner.lifecycleScope.launch {
@@ -236,10 +226,6 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                         }
                     },
                     getLibraryResourceFn = { resourceId, onResult ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch {
-                            val result = viewModel.getLibraryResource(resourceId)
-                            onResult(result)
-                        }
                     },
                     onEditAction = { action ->
                         viewLifecycleOwner.lifecycleScope.launch { action() }

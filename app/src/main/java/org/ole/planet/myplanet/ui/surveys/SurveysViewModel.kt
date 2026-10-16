@@ -53,10 +53,8 @@ class SurveysViewModel @Inject constructor(
     private val _surveys = MutableStateFlow<List<StepExam>>(emptyList())
 
     private val _surveyInfos = MutableStateFlow<Map<String, SurveyInfo>>(emptyMap())
-    val surveyInfos: StateFlow<Map<String, SurveyInfo>> = _surveyInfos.asStateFlow()
 
     private val _bindingData = MutableStateFlow<Map<String, SurveyFormState>>(emptyMap())
-    val bindingData: StateFlow<Map<String, SurveyFormState>> = _bindingData.asStateFlow()
 
     val surveys: StateFlow<List<SurveyRow>> = combine(_surveys, _surveyInfos, _bindingData) { surveys, infos, bindingData ->
         surveys.map { exam ->
@@ -113,30 +111,30 @@ class SurveysViewModel @Inject constructor(
         _isLoading.value = true
         _isTeamShareAllowed.value = isTeamShareAllowed
 
-        val capturedIsTeam = isTeam
-        val capturedTeamId = teamId
         val capturedIsTeamShareAllowed = isTeamShareAllowed
 
         loadJob = viewModelScope.launch {
             try {
                 val currentSurveysList = when {
-                    capturedIsTeam && capturedIsTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(capturedTeamId)
-                    capturedIsTeam -> surveysRepository.getTeamOwnedSurveys(capturedTeamId)
+                    isTeam && capturedIsTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(
+                        teamId
+                    )
+                    isTeam -> surveysRepository.getTeamOwnedSurveys(teamId)
                     else -> surveysRepository.getIndividualSurveys()
                 }
 
                 val userModel = userRepository.getUserModel()
                 val surveyInfos = surveysRepository.getSurveyInfos(
-                    capturedIsTeam,
-                    capturedTeamId,
+                    isTeam,
+                    teamId,
                     userModel?.id,
                     currentSurveysList
                 )
-                val bindingData = surveysRepository.getSurveyFormState(currentSurveysList, capturedTeamId)
+                val bindingData = surveysRepository.getSurveyFormState(currentSurveysList, teamId)
 
                 if (!coroutineContext[Job]!!.isCancelled &&
-                    this@SurveysViewModel.isTeam == capturedIsTeam &&
-                    this@SurveysViewModel.teamId == capturedTeamId &&
+                    this@SurveysViewModel.isTeam == isTeam &&
+                    this@SurveysViewModel.teamId == teamId &&
                     _isTeamShareAllowed.value == capturedIsTeamShareAllowed
                 ) {
                     _surveyInfos.value = surveyInfos

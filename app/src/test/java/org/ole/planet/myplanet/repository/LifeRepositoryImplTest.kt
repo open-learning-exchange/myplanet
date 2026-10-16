@@ -8,9 +8,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import java.util.logging.Level
 import java.util.logging.Logger
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -27,7 +25,6 @@ class LifeRepositoryImplTest {
     private lateinit var json: Json
     private lateinit var lifeCache: LifeCache
     private lateinit var repository: LifeRepositoryImpl
-    private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setUp() {
