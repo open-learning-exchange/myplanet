@@ -160,4 +160,52 @@ class MyLifeDaoTest {
         assertEquals(3, result.size)
         assertEquals(listOf("1", "2", "3"), result.map { it._id })
     }
+
+    @Test
+    fun updateVisibility_exactIdHit_updatesOnlyThatRow() = runBlocking {
+        val target = MyLife("img1", "user1", "Health").apply { _id = "1"; isVisible = true }
+        val sameAlias = MyLife("img1", "user2", "Health").apply { _id = "2"; isVisible = true }
+        myLifeDao.insertAll(listOf(target, sameAlias))
+
+        myLifeDao.updateVisibility("1", false)
+
+        val rows = myLifeDao.getByIds(listOf("1", "2")).associateBy { it._id }
+        assertEquals(false, rows["1"]?.isVisible)
+        assertEquals(true, rows["2"]?.isVisible)
+    }
+
+    @Test
+    fun updateVisibility_aliasSharedAcrossUsers_changesNoRow() = runBlocking {
+        val user1Row = MyLife("ic_health", "user1", "Health").apply { _id = "1"; isVisible = true }
+        val user2Row = MyLife("ic_health", "user2", "Health").apply { _id = "2"; isVisible = true }
+        myLifeDao.insertAll(listOf(user1Row, user2Row))
+
+        myLifeDao.updateVisibility("Health", false)
+        myLifeDao.updateVisibility("ic_health", false)
+
+        assertTrue(myLifeDao.getByIds(listOf("1", "2")).all { it.isVisible })
+    }
+
+    @Test
+    fun updateVisibility_uniqueAlias_updatesThatRow() = runBlocking {
+        val target = MyLife("ic_survey", "user1", "Surveys").apply { _id = "1"; isVisible = true }
+        val other = MyLife("ic_health", "user1", "Health").apply { _id = "2"; isVisible = true }
+        myLifeDao.insertAll(listOf(target, other))
+
+        myLifeDao.updateVisibility("Surveys", false)
+
+        val rows = myLifeDao.getByIds(listOf("1", "2")).associateBy { it._id }
+        assertEquals(false, rows["1"]?.isVisible)
+        assertEquals(true, rows["2"]?.isVisible)
+    }
+
+    @Test
+    fun updateVisibility_unknownId_changesNoRow() = runBlocking {
+        val row = MyLife("img1", "user1", "Health").apply { _id = "1"; isVisible = true }
+        myLifeDao.insertAll(listOf(row))
+
+        myLifeDao.updateVisibility("missing", false)
+
+        assertTrue(myLifeDao.getByIds(listOf("1")).single().isVisible)
+    }
 }

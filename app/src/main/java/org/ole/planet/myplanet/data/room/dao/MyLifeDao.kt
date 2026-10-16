@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.MyLife
@@ -30,8 +31,19 @@ interface MyLifeDao {
         return ids.distinct().chunked(900).flatMap { getByIdsInternal(it) }
     }
 
-    @Query("UPDATE my_life SET isVisible = :isVisible WHERE _id = :id OR imageId = :id OR title = :id")
-    suspend fun updateVisibility(id: String, isVisible: Boolean)
+    @Query("UPDATE my_life SET isVisible = :isVisible WHERE _id = :id")
+    suspend fun updateVisibilityById(id: String, isVisible: Boolean): Int
+
+    @Query("SELECT _id FROM my_life WHERE imageId = :alias OR title = :alias LIMIT 2")
+    suspend fun getIdsByAlias(alias: String): List<String>
+
+    // Exact _id first; an imageId/title alias only counts when it names a single row,
+    // so a tile label shared across users never flips another user's row.
+    @Transaction
+    suspend fun updateVisibility(id: String, isVisible: Boolean) {
+        if (updateVisibilityById(id, isVisible) > 0) return
+        getIdsByAlias(id).singleOrNull()?.let { updateVisibilityById(it, isVisible) }
+    }
 
     @Update
     suspend fun update(items: List<MyLife>)
