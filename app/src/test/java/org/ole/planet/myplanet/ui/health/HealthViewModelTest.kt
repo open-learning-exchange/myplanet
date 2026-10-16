@@ -234,14 +234,22 @@ class HealthViewModelTest {
     }
 
     @Test
-    fun `loadPatients updates patientList`() = runTest {
-        val patients = listOf(UserEntity().apply { id = "1"; name = "Test Patient" })
-        coEvery { userRepository.getUsersSortedBy("joinDate", true) } returns patients
+    fun `newer searchPatients wins over a slower earlier load`() = runTest {
+        val stale = listOf(UserEntity().apply { id = "1"; name = "Stale Order" })
+        val fresh = listOf(UserEntity().apply { id = "2"; name = "Fresh Order" })
+        coEvery { userRepository.getUsersSortedBy("joinDate", true) } coAnswers {
+            delay(1000)
+            stale
+        }
+        coEvery { userRepository.getUsersSortedBy("joinDate", false) } returns fresh
 
-        viewModel.loadPatients()
+        viewModel.searchPatients("", "joinDate", true)
+        testScheduler.advanceTimeBy(500)
+        viewModel.searchPatients("", "joinDate", false)
         advanceUntilIdle()
 
-        assertEquals(patients, viewModel.patientList.first())
+        assertEquals(fresh, viewModel.patientList.first())
+        assertEquals(false, viewModel.isListLoading.first())
     }
 
     @Test
