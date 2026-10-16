@@ -251,7 +251,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
     private fun drawMultilineText(canvas: Canvas, text: String, x: Float, y: Float, paint: Paint, maxWidth: Float): Float {
         var currentY = y
         val words = text.split(" ")
-        val line = java.lang.StringBuilder()
+        val line = StringBuilder()
         var lineWidth = 0f
 
         words.forEach { word ->
