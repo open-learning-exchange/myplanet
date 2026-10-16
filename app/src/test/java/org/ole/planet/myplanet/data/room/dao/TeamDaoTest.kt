@@ -319,6 +319,41 @@ class TeamDaoTest {
     }
 
     @Test
+    fun observeAll_returnsOnlyMembershipRowsAndRootTeamRows() = runBlocking {
+        val reportRow = MyTeam().apply { _id = "report1"; teamId = "team123"; docType = "report" }
+        val linkRow = MyTeam().apply { _id = "link1"; teamId = "team123"; docType = "resourceLink" }
+        val requestRow = MyTeam().apply { _id = "req1"; teamId = "team123"; docType = "request" }
+
+        val membershipRow = MyTeam().apply { _id = "mem1"; teamId = "team123"; docType = "membership" }
+
+        val rootNull = MyTeam().apply { _id = "root_null"; teamId = null; docType = "team" }
+        val rootEmpty = MyTeam().apply { _id = "root_empty"; teamId = ""; docType = "team" }
+        val rootSpace = MyTeam().apply { _id = "root_space"; teamId = " "; docType = "team" }
+        val rootFormFeed = MyTeam().apply { _id = "root_ff"; teamId = "\u000C"; docType = "team" }
+
+        teamDao.upsertAll(
+            listOf(
+                reportRow,
+                linkRow,
+                requestRow,
+                membershipRow,
+                rootNull,
+                rootEmpty,
+                rootSpace,
+                rootFormFeed
+            )
+        )
+
+        val result = teamDao.observeAll().first()
+        val resultIds = result.map { it._id }.toSet()
+
+        assertEquals(
+            setOf("mem1", "root_null", "root_empty", "root_space", "root_ff"),
+            resultIds
+        )
+    }
+
+    @Test
     fun getRootTeamsByTypeAndIds_handlesLargeInputAndDeduplicates() = runBlocking {
         val team1 = MyTeam().apply {
             _id = "team_0"
