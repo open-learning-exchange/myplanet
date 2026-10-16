@@ -149,4 +149,32 @@ class ChatHistoryAdapterTest {
         assertEquals("", holder.rowChatHistoryBinding.chatTitle.text.toString())
         assertNull(holder.rowChatHistoryBinding.chatTitle.contentDescription)
     }
+
+    @Test
+    fun `clicking earlier row sets card contentDescription from its own title when another row is bound later`() {
+        val item1 = ChatHistory().apply {
+            id = "10"
+            _id = "10"
+            title = "Title A"
+        }
+        val item2 = ChatHistory().apply {
+            id = "20"
+            _id = "20"
+            title = "Title B"
+        }
+
+        adapter.submitList(listOf(item1, item2))
+        waitForList(adapter, 2)
+
+        val parent = LinearLayout(context)
+        val holder1 = adapter.onCreateViewHolder(parent, adapter.getItemViewType(0))
+        adapter.onBindViewHolder(holder1, 0)
+
+        val holder2 = adapter.onCreateViewHolder(parent, adapter.getItemViewType(1))
+        adapter.onBindViewHolder(holder2, 1)
+
+        holder1.rowChatHistoryBinding.root.performClick()
+
+        assertEquals("Title A", holder1.rowChatHistoryBinding.chatCardView.contentDescription)
+    }
 }
