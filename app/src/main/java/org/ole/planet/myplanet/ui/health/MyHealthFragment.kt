@@ -24,6 +24,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.debounce
@@ -311,7 +312,7 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
         memberQuery = ""
         searchJob = etSearch.textChanges()
             .drop(1)
-            .debounce(SEARCH_DEBOUNCE_MS)
+            .debounce(SEARCH_DEBOUNCE_MS.milliseconds)
             .distinctUntilChanged()
             .onEach { query ->
                 memberQuery = query?.toString().orEmpty()

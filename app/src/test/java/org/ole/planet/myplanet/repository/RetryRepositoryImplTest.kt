@@ -12,6 +12,7 @@ import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.unmockkAll
 import java.io.IOException
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -108,7 +109,7 @@ class RetryRepositoryImplTest {
         var existingOpId: String? = null
         coEvery { retryDao.findExistingId("item1", "type1") } coAnswers {
             val result = existingOpId
-            delay(10)
+            delay(10.milliseconds)
             result
         }
         coEvery { retryDao.insert(any()) } answers {

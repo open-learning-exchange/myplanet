@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.voices
 
 import android.content.Context
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -21,7 +22,7 @@ object VoicesAdapterHelper {
                     if (!isActive) return@launch
                     onUpdate(response.substring(0, currentIndex + 1))
                     currentIndex++
-                    delay(10L)
+                    delay(10.milliseconds)
                 }
                 onComplete()
             }
