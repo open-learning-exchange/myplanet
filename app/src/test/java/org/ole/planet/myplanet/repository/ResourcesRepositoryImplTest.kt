@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.LibraryTitle
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DeviceNameProvider
@@ -385,6 +386,7 @@ class ResourcesRepositoryImplTest {
     @Test
     fun `search with query filters by title`() = runTest {
         val mathBook = MyLibrary().apply { title = "Math Book"; titleNormal = "math book" }
+        val scienceBook = MyLibrary().apply { title = "Science Book"; titleNormal = "science book" }
 
         val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
         coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns listOf(mathBook)
@@ -436,6 +438,7 @@ class ResourcesRepositoryImplTest {
     fun `search filters query parts and sorts startsWith before contains`() = runTest {
         val startsWithLib = MyLibrary().apply { title = "Ápple Tree"; titleNormal = "apple tree" }
         val containsLib = MyLibrary().apply { title = "Green Ápple"; titleNormal = "green apple" }
+        val notMatchLib = MyLibrary().apply { title = "Banana"; titleNormal = "banana" }
 
         val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
         coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns listOf(startsWithLib, containsLib)
@@ -453,6 +456,7 @@ class ResourcesRepositoryImplTest {
     @Test
     fun `search multi word matches all parts`() = runTest {
         val matchLib = MyLibrary().apply { title = "The Apple Tree"; titleNormal = "the apple tree" }
+        val notMatchLib = MyLibrary().apply { title = "The Orange Tree"; titleNormal = "the orange tree" }
 
         val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
         coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns listOf(matchLib)
@@ -1451,15 +1455,22 @@ class ResourcesRepositoryImplTest {
 
         // Create test files
         // Videos (Index 0): mp4 (100 bytes), MKV (uppercase, 200 bytes)
+        val file1 = File(rootDir, "video1.mp4").apply { writeBytes(ByteArray(100)) }
+        val file2 = File(rootDir, "video2.MKV").apply { writeBytes(ByteArray(200)) }
 
         // Audio (Index 1): MP3 (uppercase, 50 bytes)
         val subDir = File(rootDir, "audio_folder").apply { mkdirs() }
+        val file3 = File(subDir, "song.MP3").apply { writeBytes(ByteArray(50)) }
 
         // PDFs (Index 2): pdf (300 bytes)
+        val file4 = File(rootDir, "document.pdf").apply { writeBytes(ByteArray(300)) }
 
         // Images (Index 3): PNG (uppercase, 40 bytes)
+        val file5 = File(rootDir, "image.PNG").apply { writeBytes(ByteArray(40)) }
 
         // Other (Index 4): txt (unknown extension, 80 bytes), no extension (20 bytes)
+        val file6 = File(rootDir, "notes.txt").apply { writeBytes(ByteArray(80)) }
+        val file7 = File(rootDir, "README").apply { writeBytes(ByteArray(20)) }
 
         val result = repository.getStorageBreakdown(rootDir)
 
@@ -1508,6 +1519,7 @@ class ResourcesRepositoryImplTest {
 
         val file1 = File(res1Dir, "a.mp4").apply { writeText("12345") } // 5 bytes
         val file2 = File(res1Dir, "b.mp4").apply { writeText("1234567890") } // 10 bytes
+        val file3 = File(res2Dir, "c.pdf").apply { writeText("123") } // 3 bytes
         val file4 = File(res2Dir, "d.txt").apply { writeText("1") } // 1 byte
 
         val projections = listOf(
