@@ -914,7 +914,7 @@ class VoicesAdapter(
                     override fun getCount() = moreEmojis.size
                     override fun getItem(p: Int) = moreEmojis[p]
                     override fun getItemId(p: Int) = p.toLong()
-                    override fun getView(p: Int, v: android.view.View?, parent: android.view.ViewGroup): android.view.View {
+                    override fun getView(p: Int, v: View?, parent: ViewGroup): View {
                         val tv = TextView(context)
                         tv.text = moreEmojis[p]
                         tv.textSize = context.resources.getDimension(R.dimen.text_size_large) / context.resources.displayMetrics.scaledDensity

@@ -214,7 +214,7 @@ class VoicesViewModelTest {
         viewModel.observeCommunityNews("test_user")
         advanceUntilIdle()
 
-        val expectedDisplayName = org.ole.planet.myplanet.services.VoicesLabelManager.formatLabelValue(customLabelValue)
+        val expectedDisplayName = VoicesLabelManager.formatLabelValue(customLabelValue)
         viewModel.updateSelectedLabel(expectedDisplayName)
         advanceUntilIdle()
 

@@ -390,7 +390,7 @@ class CoursesRepositoryImplTest {
     @Test
     fun getCourseDetailModel_whenCourseExists_returnsAggregatedData() = runTest {
         val course = MyCourse().apply { courseId = "course_id" }
-        val step = org.ole.planet.myplanet.model.CourseStep().apply { id = "step_1"; stepTitle = "Title" }
+        val step = CourseStep().apply { id = "step_1"; stepTitle = "Title" }
         val user = org.ole.planet.myplanet.model.UserEntity().apply { id = "user_1" }
 
         coEvery { courseDao.observeByCourseId("course_id") } returns kotlinx.coroutines.flow.flowOf(course)
@@ -398,7 +398,7 @@ class CoursesRepositoryImplTest {
         coEvery { examDao.countByCourseIdAndType("course_id", "courses") } returns 5
         coEvery { myLibraryDao.getCourseResources("course_id", false) } returns emptyList()
         coEvery { myLibraryDao.getCourseResources("course_id", true) } returns emptyList()
-        coEvery { courseStepDao.getByCourseId("course_id") } returns listOf(org.ole.planet.myplanet.model.CourseStep().apply { id = "step_1"; stepTitle = "Title" })
+        coEvery { courseStepDao.getByCourseId("course_id") } returns listOf(CourseStep().apply { id = "step_1"; stepTitle = "Title" })
         coEvery { examDao.getByStepIds(listOf("step_1")) } returns listOf(org.ole.planet.myplanet.model.StepExam().apply { stepId = "step_1"; noOfQuestions = 3 })
 
         coEvery { ratingsRepository.getRatingSummary("course", "course_id", "user_1") } returns RatingSummary(
