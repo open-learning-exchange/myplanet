@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.SimpleItemAnimator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.OptIn
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -316,7 +317,7 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
     private fun setupTextWatcher() {
         binding.etSearch.textChanges()
             .drop(1)
-            .debounce(300)
+            .debounce(300.milliseconds)
             .distinctUntilChanged()
             .onEach { text -> viewModel.searchTeams(text?.toString() ?: "") }
             .launchIn(viewLifecycleOwner.lifecycleScope)

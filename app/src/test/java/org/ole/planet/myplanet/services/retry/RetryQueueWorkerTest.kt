@@ -23,6 +23,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
@@ -237,7 +238,7 @@ class RetryQueueWorkerTest {
                     maxConcurrent = current
                 }
             }
-            delay(50)
+            delay(50.milliseconds)
             activeRequests.decrementAndGet()
             RetryOperationResult.Success
         }

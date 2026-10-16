@@ -13,6 +13,7 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
@@ -313,7 +314,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         return try {
             val versionsUrl = "$currentUrl/versions"
 
-            val versionsResponse = withTimeout(15_000) {
+            val versionsResponse = withTimeout(15_000.milliseconds) {
                 apiInterface.getConfiguration(versionsUrl)
             }
 
@@ -343,7 +344,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     private suspend fun fetchConfiguration(couchdbURL: String): Pair<String, String>? {
         return try {
             val configUrl = "${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true"
-            val configResponse = withTimeout(15_000) {
+            val configResponse = withTimeout(15_000.milliseconds) {
                 apiInterface.getConfiguration(configUrl)
             }
 
