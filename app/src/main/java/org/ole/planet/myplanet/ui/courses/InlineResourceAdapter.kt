@@ -119,19 +119,14 @@ class InlineResourceAdapter(
         val resource = getItem(position)
         val context = holder.itemView.context
 
-        payloads.forEach { payloadList ->
-            if (payloadList is List<*>) {
-                payloadList.forEach { payload ->
-                    when (payload) {
-                        PAYLOAD_TITLE -> holder.binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
-                        PAYLOAD_ADDRESS -> {
-                            holder.binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
-                            updateStatusAndPreview(holder, context, resource)
-                        }
-                        PAYLOAD_STATUS -> updateStatusAndPreview(holder, context, resource)
-                    }
-                }
-            }
+        val flatPayloads = payloads.filterIsInstance<List<*>>().flatten().toSet()
+
+        if (PAYLOAD_TITLE in flatPayloads || PAYLOAD_ADDRESS in flatPayloads) {
+            holder.binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
+        }
+
+        if (PAYLOAD_ADDRESS in flatPayloads || PAYLOAD_STATUS in flatPayloads) {
+            updateStatusAndPreview(holder, context, resource)
         }
 
         holder.binding.cardResource.setOnClickListener {
