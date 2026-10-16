@@ -21,6 +21,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.noties.markwon.editor.MarkwonEditor
 import io.noties.markwon.editor.MarkwonEditorTextWatcher
 import java.util.Date
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -59,8 +61,19 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var teamId: String? = null
     internal var answerTextWatcher: TextWatcher? = null
     private var currentAnswerEditText: EditText? = null
+    private var markwonExecutor: ExecutorService? = null
     private val markwon by lazy(LazyThreadSafetyMode.NONE) { MarkdownUtils.create(requireActivity()) }
     private val markwonEditor by lazy(LazyThreadSafetyMode.NONE) { MarkwonEditor.create(markwon) }
+
+    private fun getMarkwonExecutor(): ExecutorService {
+        val executor = markwonExecutor
+        if (executor == null || executor.isShutdown) {
+            val newExecutor = Executors.newSingleThreadExecutor()
+            markwonExecutor = newExecutor
+            return newExecutor
+        }
+        return executor
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -188,7 +201,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         currentAnswerEditText = etAnswer
         etAnswer.visibility = View.VISIBLE
         if (type.equals("textarea", ignoreCase = true)) {
-            answerTextWatcher = MarkwonEditorTextWatcher.withProcess(markwonEditor)
+            answerTextWatcher = MarkwonEditorTextWatcher.withPreRender(markwonEditor, getMarkwonExecutor(), etAnswer)
             etAnswer.addTextChangedListener(answerTextWatcher)
         } else {
             answerTextWatcher = object : TextWatcher {
@@ -210,6 +223,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     override fun onDestroy() {
+        markwonExecutor?.shutdown()
+        markwonExecutor = null
         CameraUtils.release()
         super.onDestroy()
     }
