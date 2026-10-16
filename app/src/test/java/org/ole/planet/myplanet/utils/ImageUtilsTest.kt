@@ -3,6 +3,15 @@ package org.ole.planet.myplanet.utils
 import android.app.Application
 import android.content.Context
 import android.widget.ImageView
+import com.bumptech.glide.Glide
+import com.bumptech.glide.RequestManager
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.spyk
+import io.mockk.unmockkStatic
+import io.mockk.verify
+import io.mockk.verifyOrder
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
@@ -130,5 +139,38 @@ class ImageUtilsTest {
         assertNotNull(drawable)
         val shadowDrawable = shadowOf(drawable)
         assertEquals(R.drawable.profile, shadowDrawable.createdFromResId)
+    }
+
+    @Test
+    fun testLoadProfileImage_WithEmptyUrl_clearsPendingRequestBeforePlaceholder() {
+        assertClearedBeforePlaceholder(R.drawable.profile) { view ->
+            ImageUtils.loadProfileImage(null, view, 200)
+        }
+    }
+
+    @Test
+    fun testLoadImage_WithEmptyUrl_clearsPendingRequestBeforePlaceholder() {
+        assertClearedBeforePlaceholder(R.drawable.ole_logo) { view ->
+            ImageUtils.loadImage("", view)
+        }
+    }
+
+    private fun assertClearedBeforePlaceholder(placeholder: Int, load: (ImageView) -> Unit) {
+        val view = spyk(ImageView(context))
+        val requestManager = mockk<RequestManager>(relaxed = true)
+        mockkStatic(Glide::class)
+        try {
+            every { Glide.with(any<Context>()) } returns requestManager
+
+            load(view)
+
+            verifyOrder {
+                requestManager.clear(view)
+                view.setImageResource(placeholder)
+            }
+            verify(exactly = 0) { requestManager.load(any<String>()) }
+        } finally {
+            unmockkStatic(Glide::class)
+        }
     }
 }
