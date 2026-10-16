@@ -393,7 +393,7 @@ class TransactionSyncManager @Inject constructor(
 
     private suspend fun downloadCourseCover(docId: String, coverFileName: String, destFile: File) {
         try {
-            val encodedName = android.net.Uri.encode(coverFileName)
+            val encodedName = Uri.encode(coverFileName)
             val url = "${UrlUtils.getUrl()}/courses/$docId/$encodedName"
             val response = apiInterface.downloadFile(UrlUtils.header, url)
             if (response.isSuccessful) {
