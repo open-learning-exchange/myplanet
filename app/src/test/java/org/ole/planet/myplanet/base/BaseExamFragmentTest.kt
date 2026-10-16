@@ -16,7 +16,11 @@ import io.mockk.verify
 import io.noties.markwon.Markwon
 import io.noties.markwon.editor.MarkwonEditor
 import io.noties.markwon.editor.MarkwonEditorTextWatcher
+import java.util.concurrent.ExecutorService
 import org.junit.After
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -49,7 +53,7 @@ class BaseExamFragmentTest {
 
         every { MarkdownUtils.create(any<Context>()) } returns markwon
         every { MarkwonEditor.create(markwon) } returns editor
-        every { MarkwonEditorTextWatcher.withProcess(editor) } returns markwonEditorTextWatcher
+        every { MarkwonEditorTextWatcher.withPreRender(any(), any(), any()) } returns markwonEditorTextWatcher
 
         // We use a mock fragment to avoid Realm constructor issues but call the real method
         fragment = spyk(TestBaseExamFragment())
@@ -84,7 +88,7 @@ class BaseExamFragmentTest {
 
         verify { editText.visibility = View.VISIBLE }
         verify(exactly = 1) { MarkdownUtils.create(activity) }
-        verify { MarkwonEditorTextWatcher.withProcess(any()) }
+        verify { MarkwonEditorTextWatcher.withPreRender(any(), any(), any()) }
         verify { editText.addTextChangedListener(any<MarkwonEditorTextWatcher>()) }
         verify { editText.setText("test textarea answer") }
 
@@ -93,6 +97,41 @@ class BaseExamFragmentTest {
         watcherField.isAccessible = true
         val watcher = watcherField.get(fragment)
         assertTrue(watcher is MarkwonEditorTextWatcher)
+    }
+
+    @Test
+    fun testSetMarkdownViewAndShowInput_callingTwiceLeavesOneExecutor() {
+        fragment.setMarkdownViewAndShowInput(editText, "textarea", "test 1")
+        val executorField = BaseExamFragment::class.java.getDeclaredField("markwonExecutor")
+        executorField.isAccessible = true
+        val executor1 = executorField.get(fragment) as? ExecutorService
+
+        assertNotNull(executor1)
+        assertFalse(executor1!!.isShutdown)
+
+        fragment.setMarkdownViewAndShowInput(editText, "textarea", "test 2")
+        val executor2 = executorField.get(fragment) as? ExecutorService
+
+        assertSame(executor1, executor2)
+    }
+
+    @Test
+    fun testDestroyThenRebindDoesNotThrow() {
+        fragment.setMarkdownViewAndShowInput(editText, "textarea", "test 1")
+        val executorField = BaseExamFragment::class.java.getDeclaredField("markwonExecutor")
+        executorField.isAccessible = true
+        val executor1 = executorField.get(fragment) as? ExecutorService
+        assertNotNull(executor1)
+
+        fragment.onDestroyView()
+        fragment.onDestroy()
+        assertTrue(executor1!!.isShutdown)
+
+        fragment.setMarkdownViewAndShowInput(editText, "textarea", "test 2")
+        val executor2 = executorField.get(fragment) as? ExecutorService
+        assertNotNull(executor2)
+        assertFalse(executor2!!.isShutdown)
+        verify { MarkwonEditorTextWatcher.withPreRender(any(), any(), any()) }
     }
 
     @Test
