@@ -6,6 +6,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
+import java.util.Locale
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.CoroutineDispatcher
@@ -16,8 +17,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RatingAggregate
 import org.ole.planet.myplanet.data.room.dao.RatingDao
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -26,6 +29,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 class RatingsRepositoryImplTest {
 
     private lateinit var ratingDao: RatingDao
+    private lateinit var myLibraryDao: MyLibraryDao
     private lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var gson: Gson
     private lateinit var repository: RatingsRepositoryImpl
@@ -34,6 +38,7 @@ class RatingsRepositoryImplTest {
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
         ratingDao = mockk(relaxed = true)
+        myLibraryDao = mockk(relaxed = true)
         val testDispatcher = StandardTestDispatcher()
         dispatcherProvider = object : DispatcherProvider {
             override val main: CoroutineDispatcher = testDispatcher
@@ -43,7 +48,7 @@ class RatingsRepositoryImplTest {
         }
         gson = Gson()
 
-        repository = RatingsRepositoryImpl(gson, ratingDao)
+        repository = RatingsRepositoryImpl(gson, ratingDao, myLibraryDao)
     }
 
     @Test
@@ -139,6 +144,32 @@ class RatingsRepositoryImplTest {
         assertEquals(1, summary.totalRatings)
         assertEquals(5.0f, summary.averageRating)
         assertEquals(5, summary.userRating)
+    }
+
+    @Test
+    fun `submitRating on a resource refreshes the cached library rating`() = runTest {
+        val testUser = UserEntity(id = "user1", _id = "user1", parentCode = "parent", planetCode = "planet")
+        val library = MyLibrary().apply { id = "lib1"; resourceId = "res1"; timesRated = 0; averageRating = null }
+        coEvery { ratingDao.findByTypeUserItem("resource", "user1", "res1") } returns null
+        coEvery { ratingDao.getAggregate("resource", "res1") } returns RatingAggregate(2, 4.5)
+        coEvery { myLibraryDao.getByResourceId("res1") } returns library
+
+        repository.submitRating("resource", "res1", "Book", testUser, 5f, "Good")
+
+        assertEquals(2, library.timesRated)
+        assertEquals(String.format(Locale.getDefault(), "%.2f", 4.5f), library.averageRating)
+        coVerify { myLibraryDao.upsert(library) }
+    }
+
+    @Test
+    fun `submitRating on a course leaves library untouched`() = runTest {
+        val testUser = UserEntity(id = "user1", _id = "user1", parentCode = "parent", planetCode = "planet")
+        coEvery { ratingDao.findByTypeUserItem("course", "user1", "course1") } returns null
+        coEvery { ratingDao.getAggregate("course", "course1") } returns RatingAggregate(1, 4.0)
+
+        repository.submitRating("course", "course1", "Good", testUser, 4f, "Nice")
+
+        coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
     }
 
     @Test(expected = IllegalArgumentException::class)
