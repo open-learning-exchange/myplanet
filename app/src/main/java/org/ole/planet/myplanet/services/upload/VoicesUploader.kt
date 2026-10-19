@@ -71,8 +71,7 @@ class VoicesUploader @Inject constructor(
 
                 batch.forEach { news ->
                     try {
-                        // Upload images first and collect metadata
-                        val imagesArray = JsonArray()
+                        val imagesArray = (news.newsJson.get("images") as? JsonArray)?.deepCopy() ?: JsonArray()
                         val messageWithImages = StringBuilder(news.message ?: "")
 
                         news.imageUrls.forEach { imageUrl ->
@@ -136,7 +135,8 @@ class VoicesUploader @Inject constructor(
                                     _id = getString("id", outcome.element),
                                     _rev = getString("rev", outcome.element),
                                     imagesArray = imagesArray,
-                                    pendingReactions = news.pendingReactions
+                                    pendingReactions = news.pendingReactions,
+                                    message = getString("message", news.newsJson)
                                 )
                             )
                         }

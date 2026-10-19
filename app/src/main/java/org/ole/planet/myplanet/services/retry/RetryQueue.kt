@@ -5,7 +5,6 @@ import com.google.gson.JsonObject
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.model.RetryFailure
-import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.repository.RetryRepository
 import org.ole.planet.myplanet.services.upload.UploadError
 
@@ -46,10 +45,6 @@ class RetryQueue @Inject constructor(
             httpMethod, dbId, modelClassName, userId
         )
         Log.i(TAG, "RETRY_QUEUE: Recorded failure - type=$uploadType, itemId=${error.itemId}, error=${error.message}")
-    }
-
-    suspend fun getPendingOperations(): List<RetryOperation> {
-        return retryRepository.getPending()
     }
 
     suspend fun markInProgress(operationId: String) {

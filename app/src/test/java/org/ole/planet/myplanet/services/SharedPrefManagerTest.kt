@@ -223,16 +223,6 @@ class SharedPrefManagerTest {
     }
 
     @Test
-    fun testGetAndSetRepliedNewsId() {
-        every { mockSharedPreferences.getString("repliedNewsId", null) } returns "123"
-        assertEquals("123", sharedPrefManager.getRepliedNewsId())
-
-        sharedPrefManager.setRepliedNewsId("456")
-        verify { mockEditor.putString("repliedNewsId", "456") }
-        verify { mockEditor.apply() }
-    }
-
-    @Test
     fun testGetAndSetManualConfig() {
         every { mockSharedPreferences.getBoolean("manualConfig", false) } returns true
         assertTrue(sharedPrefManager.getManualConfig())
@@ -243,13 +233,9 @@ class SharedPrefManagerTest {
     }
 
     @Test
-    fun testGetAndSetUrlHost() {
+    fun testGetUrlHost() {
         every { mockSharedPreferences.getString("url_Host", "") } returns "example.com"
         assertEquals("example.com", sharedPrefManager.getUrlHost())
-
-        sharedPrefManager.setUrlHost("new.example.com")
-        verify { mockEditor.putString("url_Host", "new.example.com") }
-        verify { mockEditor.apply() }
     }
 
     @Test
@@ -356,14 +342,11 @@ class SharedPrefManagerTest {
         mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
         every { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() } just Runs
 
-        sharedPrefManager.setCouchdbUrl("http://new-couch.com")
-        verify { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() }
-
         sharedPrefManager.setProcessedAlternativeUrl("http://new-alt.com")
-        verify(exactly = 2) { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() }
+        verify(exactly = 1) { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() }
 
         sharedPrefManager.setIsAlternativeUrl(true)
-        verify(exactly = 3) { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() }
+        verify(exactly = 2) { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() }
 
         unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
     }

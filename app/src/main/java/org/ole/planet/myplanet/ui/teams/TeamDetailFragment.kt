@@ -423,10 +423,6 @@ class TeamDetailFragment : BaseTeamFragment() {
         }
     }
 
-    private fun shouldQueryRealm(teamId: String): Boolean {
-        return teamId.isNotEmpty()
-    }
-
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
