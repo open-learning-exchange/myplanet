@@ -66,6 +66,7 @@ open class News {
     var pendingReactions: String? = null
     var editedTime: Long = 0
     var sharedBy: String? = null
+    var isUpdated: Boolean = false
 
     @Ignore
     var sortDate: Long = 0

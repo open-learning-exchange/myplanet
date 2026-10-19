@@ -33,6 +33,9 @@ interface NewsDao {
     @Query("SELECT * FROM news")
     suspend fun getAll(): List<News>
 
+    @Query("SELECT * FROM news WHERE _id IS NULL OR _id = '' OR isUpdated = 1 OR pendingReactions IS NOT NULL OR (imageUrls IS NOT NULL AND imageUrls != '[]')")
+    suspend fun getPendingUploads(): List<News>
+
     @Query("SELECT * FROM news WHERE id IN (:ids)")
     suspend fun getByIdsInternal(ids: List<String>): List<News>
 
