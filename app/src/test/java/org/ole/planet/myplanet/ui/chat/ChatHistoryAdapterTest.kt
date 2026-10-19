@@ -2,9 +2,13 @@ package org.ole.planet.myplanet.ui.chat
 
 import android.app.Application
 import android.content.Context
+import android.view.View
 import android.widget.LinearLayout
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -166,12 +170,18 @@ class ChatHistoryAdapterTest {
         adapter.submitList(listOf(item1, item2))
         waitForList(adapter, 2)
 
-        val parent = LinearLayout(context)
-        val holder1 = adapter.onCreateViewHolder(parent, adapter.getItemViewType(0))
-        adapter.onBindViewHolder(holder1, 0)
+        val recyclerView = RecyclerView(context).apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = this@ChatHistoryAdapterTest.adapter
+        }
+        recyclerView.measure(
+            View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY)
+        )
+        recyclerView.layout(0, 0, 1080, 1920)
 
-        val holder2 = adapter.onCreateViewHolder(parent, adapter.getItemViewType(1))
-        adapter.onBindViewHolder(holder2, 1)
+        val holder1 = recyclerView.findViewHolderForAdapterPosition(0) as ChatHistoryAdapter.ViewHolderChat
+        assertNotNull(recyclerView.findViewHolderForAdapterPosition(1))
 
         holder1.rowChatHistoryBinding.root.performClick()
 
