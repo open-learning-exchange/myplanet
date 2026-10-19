@@ -109,7 +109,7 @@ myplanet/
 | `ui/chat/` | 8 | ChatDetailFragment, ChatHistoryFragment, ChatViewModel |
 | `ui/community/` | 9 | CommunityTabFragment, LeadersFragment |
 | `ui/components/` | 8 | CustomSpinner, MarkdownDialogFragment, FragmentNavigator |
-| `ui/courses/` | 23 | CourseDetailFragment, TakeCourseFragment, ProgressViewModel |
+| `ui/courses/` | 23 | CourseDetailFragment, TakeCourseFragment, CoursesProgressViewModel |
 | `ui/dashboard/` | 13 | DashboardActivity, DashboardViewModel, BellDashboardViewModel |
 | `ui/dictionary/` | 2 | DictionaryActivity |
 | `ui/enterprises/` | 6 | EnterprisesViewModel, FinancesFragment, ReportsFragment |

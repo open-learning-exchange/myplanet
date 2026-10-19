@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 @AndroidEntryPoint
 class CourseProgressActivity : BaseActivity() {
     private lateinit var binding: ActivityCourseProgressBinding
-    private val viewModel: CoursesProgressViewModel by viewModels()
+    private val viewModel: CourseProgressViewModel by viewModels()
     lateinit var courseId: String
 
     override fun onCreate(savedInstanceState: Bundle?) {

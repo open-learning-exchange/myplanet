@@ -11,7 +11,7 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class CoursesProgressFragment : BaseBindingFragment<FragmentCoursesProgressBinding>(FragmentCoursesProgressBinding::inflate) {
-    private val progressViewModel: ProgressViewModel by viewModels()
+    private val progressViewModel: CoursesProgressViewModel by viewModels()
     private lateinit var progressAdapter: CoursesProgressAdapter
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
