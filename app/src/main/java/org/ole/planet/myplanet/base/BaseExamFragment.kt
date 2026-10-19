@@ -3,9 +3,7 @@ package org.ole.planet.myplanet.base
 import android.content.DialogInterface
 import android.graphics.Typeface
 import android.os.Bundle
-import android.text.Editable
 import android.text.TextUtils
-import android.text.TextWatcher
 import android.view.Gravity
 import android.view.View
 import android.widget.EditText
@@ -59,8 +57,9 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var submitId = ""
     var isTeam: Boolean = false
     var teamId: String? = null
-    internal var answerTextWatcher: TextWatcher? = null
+    private var answerTextWatcher: MarkwonEditorTextWatcher? = null
     private var currentAnswerEditText: EditText? = null
+    private var isAnswerTextWatcherAttached = false
     private var markwonExecutor: ExecutorService? = null
     private val markwon by lazy(LazyThreadSafetyMode.NONE) { MarkdownUtils.create(requireActivity()) }
     private val markwonEditor by lazy(LazyThreadSafetyMode.NONE) { MarkwonEditor.create(markwon) }
@@ -197,22 +196,25 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     fun setMarkdownViewAndShowInput(etAnswer: EditText, type: String, oldAnswer: String?) {
-        currentAnswerEditText?.removeTextChangedListener(answerTextWatcher)
-        currentAnswerEditText = etAnswer
+        if (currentAnswerEditText !== etAnswer) {
+            currentAnswerEditText?.removeTextChangedListener(answerTextWatcher)
+            answerTextWatcher = null
+            isAnswerTextWatcherAttached = false
+            currentAnswerEditText = etAnswer
+        }
         etAnswer.visibility = View.VISIBLE
-        if (type.equals("textarea", ignoreCase = true)) {
-            answerTextWatcher = MarkwonEditorTextWatcher.withPreRender(markwonEditor, getMarkwonExecutor(), etAnswer)
-            etAnswer.addTextChangedListener(answerTextWatcher)
-        } else {
-            answerTextWatcher = object : TextWatcher {
-                @Suppress("EmptyMethod")
-                override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-                @Suppress("EmptyMethod")
-                override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-                @Suppress("EmptyMethod")
-                override fun afterTextChanged(editable: Editable) {}
-            }
-            etAnswer.addTextChangedListener(answerTextWatcher)
+        // Reuse one pre-render watcher per EditText: a fresh one per question would let the previous
+        // watcher's in-flight render post its stale spans onto the next answer.
+        val isMarkdown = type.equals("textarea", ignoreCase = true)
+        if (isMarkdown && !isAnswerTextWatcherAttached) {
+            val watcher = answerTextWatcher
+                ?: MarkwonEditorTextWatcher.withPreRender(markwonEditor, getMarkwonExecutor(), etAnswer)
+                    .also { answerTextWatcher = it }
+            etAnswer.addTextChangedListener(watcher)
+            isAnswerTextWatcherAttached = true
+        } else if (!isMarkdown && isAnswerTextWatcherAttached) {
+            etAnswer.removeTextChangedListener(answerTextWatcher)
+            isAnswerTextWatcherAttached = false
         }
         etAnswer.setText(oldAnswer)
     }
@@ -220,6 +222,9 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     override fun onDestroyView() {
         super.onDestroyView()
         currentAnswerEditText?.removeTextChangedListener(answerTextWatcher)
+        answerTextWatcher = null
+        isAnswerTextWatcherAttached = false
+        currentAnswerEditText = null
     }
 
     override fun onDestroy() {

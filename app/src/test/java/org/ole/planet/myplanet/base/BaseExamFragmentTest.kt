@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutorService
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -80,23 +81,54 @@ class BaseExamFragmentTest {
         unmockkStatic(MarkwonEditorTextWatcher::class)
     }
 
+    private fun answerTextWatcher(): Any? {
+        val watcherField = BaseExamFragment::class.java.getDeclaredField("answerTextWatcher")
+        watcherField.isAccessible = true
+        return watcherField.get(fragment)
+    }
+
     @Test
     fun testSetMarkdownViewAndShowInput_textarea() {
-        // Need to set currentAnswerEditText indirectly if needed, but it starts as null
         fragment.setMarkdownViewAndShowInput(editText, "textarea", "test textarea answer")
         fragment.setMarkdownViewAndShowInput(editText, "textarea", "test textarea answer 2")
 
         verify { editText.visibility = View.VISIBLE }
         verify(exactly = 1) { MarkdownUtils.create(activity) }
-        verify { MarkwonEditorTextWatcher.withPreRender(any(), any(), any()) }
-        verify { editText.addTextChangedListener(any<MarkwonEditorTextWatcher>()) }
+        verify(exactly = 1) { MarkwonEditorTextWatcher.withPreRender(any(), any(), editText) }
+        verify(exactly = 1) { editText.addTextChangedListener(any<MarkwonEditorTextWatcher>()) }
+        verify(exactly = 0) { editText.removeTextChangedListener(any()) }
         verify { editText.setText("test textarea answer") }
+        verify { editText.setText("test textarea answer 2") }
+        assertTrue(answerTextWatcher() is MarkwonEditorTextWatcher)
+    }
 
-        // Assert field states via reflection
-        val watcherField = BaseExamFragment::class.java.getDeclaredField("answerTextWatcher")
-        watcherField.isAccessible = true
-        val watcher = watcherField.get(fragment)
-        assertTrue(watcher is MarkwonEditorTextWatcher)
+    @Test
+    fun testSetMarkdownViewAndShowInput_reusesWatcherAcrossQuestionTypes() {
+        fragment.setMarkdownViewAndShowInput(editText, "textarea", "first")
+        val watcher = answerTextWatcher() as TextWatcher
+        fragment.setMarkdownViewAndShowInput(editText, "text", "second")
+        fragment.setMarkdownViewAndShowInput(editText, "textarea", "third")
+
+        verify(exactly = 1) { MarkwonEditorTextWatcher.withPreRender(any(), any(), any()) }
+        verify(exactly = 1) { editText.removeTextChangedListener(watcher) }
+        verify(exactly = 2) { editText.addTextChangedListener(watcher) }
+        assertSame(watcher, answerTextWatcher())
+
+        fragment.onDestroyView()
+        verify(exactly = 2) { editText.removeTextChangedListener(watcher) }
+        assertNull(answerTextWatcher())
+    }
+
+    @Test
+    fun testSetMarkdownViewAndShowInput_newEditTextGetsNewWatcher() {
+        val otherEditText = mockk<EditText>(relaxed = true)
+        fragment.setMarkdownViewAndShowInput(editText, "textarea", "first")
+        val watcher = answerTextWatcher() as TextWatcher
+        fragment.setMarkdownViewAndShowInput(otherEditText, "textarea", "second")
+
+        verify(exactly = 1) { editText.removeTextChangedListener(watcher) }
+        verify(exactly = 1) { MarkwonEditorTextWatcher.withPreRender(any(), any(), editText) }
+        verify(exactly = 1) { MarkwonEditorTextWatcher.withPreRender(any(), any(), otherEditText) }
     }
 
     @Test
@@ -140,13 +172,8 @@ class BaseExamFragmentTest {
 
         verify { editText.visibility = View.VISIBLE }
         verify(exactly = 0) { MarkdownUtils.create(activity) }
-        verify { editText.addTextChangedListener(any<TextWatcher>()) }
+        verify(exactly = 0) { editText.addTextChangedListener(any<TextWatcher>()) }
         verify { editText.setText("test text answer") }
-
-        val watcherField = BaseExamFragment::class.java.getDeclaredField("answerTextWatcher")
-        watcherField.isAccessible = true
-        val watcher = watcherField.get(fragment)
-        assertTrue(watcher !is MarkwonEditorTextWatcher)
-        assertTrue(watcher is TextWatcher)
+        assertNull(answerTextWatcher())
     }
 }
