@@ -60,6 +60,7 @@ class ChatHistoryAdapterTest {
             org.robolectric.shadows.ShadowLooper.idleMainLooper()
             attempts++
         }
+
         assertEquals(size, adapter.currentList.size)
     }
 
