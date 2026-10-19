@@ -154,17 +154,17 @@ The suite therefore needs sandboxes at 26, 27, 28 and the default 36.
 
 Mock the repository/manager dependencies with MockK, install `MainDispatcherRule`, construct the ViewModel directly (no Hilt needed), and assert on the exposed `StateFlow` value.
 
-Reference: `ui/courses/ProgressViewModelTest.kt`
+Reference: `ui/courses/CourseProgressViewModelTest.kt`
 
 ```kotlin
-class ProgressViewModelTest {
+class CourseProgressViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
     private val coursesRepository = mockk<CoursesRepository>()
     private val userSessionManager = mockk<UserSessionManager>()
-    private val viewModel = ProgressViewModel(coursesRepository, userSessionManager)
+    private val viewModel = CourseProgressViewModel(coursesRepository, userSessionManager)
 
     @Test
     fun `courseProgress value is null before any call`() {
@@ -416,10 +416,10 @@ Test class names always match `{ClassUnderTest}Test.kt` (e.g. `CoursesRepository
 ./gradlew testDefaultDebugUnitTest
 
 # Run a single test class
-./gradlew testDefaultDebugUnitTest --tests "org.ole.planet.myplanet.ui.courses.ProgressViewModelTest"
+./gradlew testDefaultDebugUnitTest --tests "org.ole.planet.myplanet.ui.courses.CourseProgressViewModelTest"
 
 # Run a single test method
-./gradlew testDefaultDebugUnitTest --tests "org.ole.planet.myplanet.ui.courses.ProgressViewModelTest.loadProgress sets courseProgress value correctly"
+./gradlew testDefaultDebugUnitTest --tests "org.ole.planet.myplanet.ui.courses.CourseProgressViewModelTest.loadProgress sets courseProgress value correctly"
 
 # Lite flavor (NOT covered by CI — run locally when touching flavor-specific code)
 ./gradlew testLiteDebugUnitTest
@@ -443,7 +443,7 @@ The workflow also fails the job if a jar turns up in Robolectric's own runtime c
 
 | You're testing a... | Copy the shape of | Key technique |
 |---|---|---|
-| ViewModel with `StateFlow` | `ui/courses/ProgressViewModelTest.kt` | `MainDispatcherRule` + `mockk()` + `coEvery`/`coVerify` |
+| ViewModel with `StateFlow` | `ui/courses/CourseProgressViewModelTest.kt` | `MainDispatcherRule` + `mockk()` + `coEvery`/`coVerify` |
 | Repository (DAO-backed) | `repository/CoursesRepositoryImplTest.kt` | `mockk(relaxed = true)` for every DAO/collaborator |
 | Real SQL / Converters / transactions | `data/room/AppDatabaseRoundTripTest.kt`, `data/room/dao/NewsDaoTest.kt` | Robolectric + `Room.inMemoryDatabaseBuilder` |
 | Transaction atomicity in a repository | `repository/TeamsRepositoryBulkInsertTransactionTest.kt` | In-memory Room + `withTransaction` verification |

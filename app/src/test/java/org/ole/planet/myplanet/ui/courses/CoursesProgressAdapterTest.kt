@@ -113,7 +113,7 @@ class CoursesProgressAdapterTest {
     }
 
     @Test
-    fun `click row with progress launches ProgressActivity`() {
+    fun `click row with progress launches CourseProgressActivity`() {
         val withProgressItem = CoursesProgressRow(
             courseId = "course123",
             courseName = "Course 1",
@@ -134,7 +134,7 @@ class CoursesProgressAdapterTest {
 
         val nextStartedActivity = shadowOf(activity).nextStartedActivity
         assertNotEquals(null, nextStartedActivity)
-        assertEquals(ProgressActivity::class.java.name, nextStartedActivity.component?.className)
+        assertEquals(CourseProgressActivity::class.java.name, nextStartedActivity.component?.className)
         assertEquals("course123", nextStartedActivity.getStringExtra("courseId"))
     }
 

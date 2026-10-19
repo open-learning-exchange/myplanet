@@ -1,68 +1,63 @@
 package org.ole.planet.myplanet.ui.courses
 
 import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.model.CourseProgressData
+import org.ole.planet.myplanet.model.CoursesProgressRow
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ProgressViewModelTest {
 
+    private val testDispatcher = StandardTestDispatcher()
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule()
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
-    private val coursesRepository = mockk<CoursesRepository>()
-    private val userRepository = mockk<UserRepository>()
-    private val viewModel = ProgressViewModel(coursesRepository, userRepository)
+    private lateinit var viewModel: ProgressViewModel
+    private val progressRepository: ProgressRepository = mockk()
+    private val userRepository: UserRepository = mockk()
 
-    @Test
-    fun `courseProgress value is null before any call`() {
-        assertNull(viewModel.courseProgress.value)
+    @Before
+    fun setUp() {
+        viewModel = ProgressViewModel(progressRepository, userRepository)
     }
 
     @Test
-    fun `loadProgress sets courseProgress value correctly`() = runTest {
-        val courseId = "id"
-        val userId = "userId"
-        val user = UserEntity()
-        user._id = userId
+    fun loadCourseData_updatesCourseData() = runTest {
+        val user = UserEntity().apply { id = "user_123" }
         coEvery { userRepository.getUserModel() } returns user
 
-        val expectedProgressData = mockk<CourseProgressData>()
-        coEvery { coursesRepository.getCourseProgress(courseId, userId) } returns expectedProgressData
+        val expectedList = listOf(
+            CoursesProgressRow(
+                courseId = "course1",
+                courseName = "Course Name 1",
+                progressCurrent = null,
+                progressMax = null,
+                mistakes = null,
+                stepMistake = null
+            )
+        )
+        coEvery { progressRepository.getCourseProgressRows(user.id) } returns expectedList
 
-        viewModel.loadProgress(courseId)
+        assertTrue(viewModel.courseData.value.isEmpty())
 
-        assertEquals(expectedProgressData, viewModel.courseProgress.value)
-    }
+        viewModel.loadCourseData()
 
-    @Test
-    fun `calling loadProgress twice only invokes coursesRepository once`() = runTest {
-        val courseId = "id"
-        val userId = "userId"
-        val user = UserEntity()
-        user._id = userId
-        coEvery { userRepository.getUserModel() } returns user
+        advanceUntilIdle()
 
-        val expectedProgressData = mockk<CourseProgressData>()
-        coEvery { coursesRepository.getCourseProgress(courseId, userId) } returns expectedProgressData
+        io.mockk.coVerify { progressRepository.getCourseProgressRows("user_123") }
 
-        // Call loadProgress for the first time
-        viewModel.loadProgress(courseId)
-        assertEquals(expectedProgressData, viewModel.courseProgress.value)
-
-        // Call loadProgress for the second time
-        viewModel.loadProgress(courseId)
-
-        // Verify repository method is called only once
-        coVerify(exactly = 1) { coursesRepository.getCourseProgress(courseId, userId) }
+        assertEquals(expectedList, viewModel.courseData.value)
     }
 }
