@@ -12,7 +12,7 @@ import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.UserReadRepository
 
 @HiltViewModel
-class CourseProgressViewModel @Inject constructor(
+class ProgressViewModel @Inject constructor(
     private val coursesRepository: CoursesRepository,
     private val userRepository: UserReadRepository
 ) : ViewModel() {

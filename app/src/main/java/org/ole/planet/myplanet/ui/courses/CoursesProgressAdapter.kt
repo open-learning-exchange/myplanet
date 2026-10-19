@@ -105,7 +105,7 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<Courses
                 if (position != RecyclerView.NO_POSITION) {
                     val item = getItem(position)
                     if (item.progressCurrent != null && item.progressMax != null) {
-                        context.startActivity(Intent(context, CourseProgressActivity::class.java).putExtra("courseId", item.courseId))
+                        context.startActivity(Intent(context, ProgressActivity::class.java).putExtra("courseId", item.courseId))
                     }
                 }
             }
