@@ -173,12 +173,6 @@ class ResourcesViewModel @Inject constructor(
         return resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
     }
 
-    suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> = withContext(dispatcherProvider.io) {
-        applyCurrentSort(resourcesRepository.getResourceListModels(isMyCourseLib, modelId)).also {
-            _resourcesState.value = it
-        }
-    }
-
     suspend fun toggleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
         sortMode = SortMode.DATE
         isAscending = !isAscending

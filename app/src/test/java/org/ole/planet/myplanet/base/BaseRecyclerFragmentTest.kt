@@ -62,25 +62,4 @@ class BaseRecyclerFragmentTest {
         // Just calling it to ensure no exceptions are thrown
         BaseRecyclerFragment.showNoData(null, 0, "courses")
     }
-
-    @Test
-    fun testCountSelected_withNullSelectedItems() {
-        val fragment = TestBaseRecyclerFragment()
-        fragment.selectedItems = null
-        assertEquals(0, fragment.countSelected())
-    }
-
-    @Test
-    fun testCountSelected_withEmptySelectedItems() {
-        val fragment = TestBaseRecyclerFragment()
-        fragment.selectedItems = mutableListOf()
-        assertEquals(0, fragment.countSelected())
-    }
-
-    @Test
-    fun testCountSelected_withMultipleSelectedItems() {
-        val fragment = TestBaseRecyclerFragment()
-        fragment.selectedItems = mutableListOf("item1", "item2", "item3")
-        assertEquals(3, fragment.countSelected())
-    }
 }

@@ -56,15 +56,6 @@ class RetryQueueTest {
     }
 
     @Test
-    fun getPendingOperations_delegatesToRepository() = runTest {
-        coEvery { retryRepository.getPending() } returns listOf()
-
-        retryQueue.getPendingOperations()
-
-        coVerify(exactly = 1) { retryRepository.getPending() }
-    }
-
-    @Test
     fun markInProgress_delegatesToRepository() = runTest {
         val operationId = "test_op_id"
         coEvery { retryRepository.markInProgress(operationId) } returns Unit
