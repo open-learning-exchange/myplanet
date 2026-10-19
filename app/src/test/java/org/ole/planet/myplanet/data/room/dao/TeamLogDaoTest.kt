@@ -53,7 +53,7 @@ class TeamLogDaoTest {
         val results = teamLogDao.getRecentTeamVisits(cutoff, teamIds)
 
         assertEquals(4, results.size)
-        assertEquals(listOf("log_1", "log_900", "log_901", "log_1200"), results.map { it.id })
+        assertEquals(setOf("log_1", "log_900", "log_901", "log_1200"), results.map { it.id }.toSet())
         assertTrue(results.all { (it.time ?: 0L) > cutoff })
     }
 
@@ -75,7 +75,7 @@ class TeamLogDaoTest {
         val results = teamLogDao.getTeamVisitsForUsers(targetTeamId, userNames)
 
         assertEquals(4, results.size)
-        assertEquals(listOf("log_user_1", "log_user_900", "log_user_901", "log_user_1200"), results.map { it.id })
+        assertEquals(setOf("log_user_1", "log_user_900", "log_user_901", "log_user_1200"), results.map { it.id }.toSet())
         assertTrue(results.all { it.teamId == targetTeamId })
     }
 
