@@ -15,8 +15,12 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
+// Keep: on the default SDK, ParcelFileDescriptor.open throws NoSuchMethodError from libcore IoUtils,
+// an Error that PdfThumbnailLoader's catch (Exception) does not swallow.
+@Config(sdk = [28])
 class PdfThumbnailLoaderTest {
 
     @Before
