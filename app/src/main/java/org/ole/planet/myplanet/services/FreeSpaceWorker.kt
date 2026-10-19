@@ -14,19 +14,19 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @HiltWorker
 class FreeSpaceWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted workerParams: WorkerParameters,
     private val resourcesRepository: ResourcesRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val timeProvider: TimeProvider
 ) : CoroutineWorker(context, workerParams) {
 
     private var deletedFiles = 0
     private var freedBytes = 0L
-
-    internal var elapsedMs: () -> Long = { System.nanoTime() / 1_000_000 }
 
     private var lastEmitTimeMs = -PROGRESS_INTERVAL_MS
     private var lastEmittedDeletedFiles = 0
@@ -87,7 +87,7 @@ class FreeSpaceWorker @AssistedInject constructor(
                 deletedFiles++
                 freedBytes += length
 
-                val now = elapsedMs()
+                val now = timeProvider.elapsedRealtime()
                 if (now - lastEmitTimeMs >= PROGRESS_INTERVAL_MS) {
                     setProgress(workDataOf(
                         "deletedFiles" to deletedFiles,

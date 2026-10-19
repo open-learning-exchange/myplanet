@@ -29,6 +29,8 @@ import org.junit.Test
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.TestTimeProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FreeSpaceWorkerTest {
@@ -37,6 +39,7 @@ class FreeSpaceWorkerTest {
     private lateinit var workerParams: WorkerParameters
     private lateinit var resourcesRepository: ResourcesRepository
     private lateinit var dispatcherProvider: DispatcherProvider
+    private lateinit var timeProvider: TestTimeProvider
     private lateinit var oleDir: File
 
     private val testDispatcher = StandardTestDispatcher()
@@ -53,10 +56,8 @@ class FreeSpaceWorkerTest {
         every { dispatcherProvider.default } returns testDispatcher
         every { dispatcherProvider.unconfined } returns testDispatcher
 
-        worker = spyk(FreeSpaceWorker(context, workerParams, resourcesRepository, dispatcherProvider))
-
-        // Mock setProgress
-        coEvery { worker.setProgress(any()) } returns Unit
+        timeProvider = TestTimeProvider(currentTime = 1000L)
+        worker = createWorker(timeProvider)
 
         oleDir = Files.createTempDirectory("ole-test").toFile()
         mockkObject(FileUtils)
@@ -75,6 +76,11 @@ class FreeSpaceWorkerTest {
         clearAllMocks()
         unmockkAll()
     }
+
+    private fun createWorker(timeProvider: TimeProvider): FreeSpaceWorker =
+        spyk(FreeSpaceWorker(context, workerParams, resourcesRepository, dispatcherProvider, timeProvider)).also {
+            coEvery { it.setProgress(any()) } returns Unit
+        }
 
     private fun addResource(id: String, fileName: String, content: String = "data"): File {
         val dir = File(oleDir, id).apply { mkdirs() }
@@ -254,7 +260,6 @@ class FreeSpaceWorkerTest {
 
     @Test
     fun `doWork with frozen clock throttles progress updates to first deletion and final update`() = runTest(testDispatcher) {
-        worker.elapsedMs = { 1000L }
         (0 until 50).forEach { i -> addResource("res$i", "file$i.txt") }
 
         val result = worker.doWork()
@@ -268,12 +273,9 @@ class FreeSpaceWorkerTest {
 
     @Test
     fun `doWork with advancing clock emits progress updates on intervals`() = runTest(testDispatcher) {
-        var simulatedTime = 1000L
-        worker.elapsedMs = {
-            val time = simulatedTime
-            simulatedTime += 600L
-            time
-        }
+        worker = createWorker(object : TimeProvider by timeProvider {
+            override fun elapsedRealtime(): Long = timeProvider.elapsedRealtime().also { timeProvider.advanceBy(600L) }
+        })
         (0 until 5).forEach { i -> addResource("res$i", "file$i.txt") }
 
         val result = worker.doWork()
@@ -287,7 +289,6 @@ class FreeSpaceWorkerTest {
 
     @Test
     fun `doWork when stopped does not emit final progress update`() = runTest(testDispatcher) {
-        worker.elapsedMs = { 1000L }
         addResource("res1", "file1.txt")
         addResource("res2", "file2.txt")
 
