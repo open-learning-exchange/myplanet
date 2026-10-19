@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.databinding.ActivityLearnerRegistrationBinding
 import org.ole.planet.myplanet.model.LearnerRegistrationInfo
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.ui.courses.CoursesFilterFragment
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -75,7 +76,7 @@ class LearnerRegistrationActivity : BaseActivity() {
             binding.etMname.text.toString(),
             binding.etEmail.text.toString(),
             binding.spnLang.selectedItem.toString(),
-            binding.spnLevel.selectedItem.toString(),
+            CoursesFilterFragment.englishValues(this, R.array.level).getOrElse(binding.spnLevel.selectedItemPosition) { "" },
             binding.etPhone.text.toString(),
             dob,
             selectedGender()
