@@ -14,6 +14,7 @@ import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -60,6 +61,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
             marginEnd = resources.getDimensionPixelSize(R.dimen.dashboard_chip_gap)
         }
     private var di: DialogUtils.CustomProgressDialog? = null
+    private var myLifeJob: Job? = null
 
     @Inject
     lateinit var lifeRepository: LifeRepository
@@ -273,15 +275,16 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     protected fun refreshMyLifeList(view: View? = this.view) {
         val v = view ?: return
         val myLifeFlex = v.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife) ?: return
-        viewLifecycleOwner.lifecycleScope.launch {
+        myLifeJob?.cancel()
+        myLifeJob = viewLifecycleOwner.lifecycleScope.launch {
             myLifeListInit(myLifeFlex)
         }
     }
 
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        flexboxLayout.removeAllViews()
         val userId = prefData.getUserId().ifEmpty { "--" }
         val visibleItems = lifeRepository.getMyLifeForDashboard(userId, getMyLifeListBase(userId))
+        flexboxLayout.removeAllViews()
         if (visibleItems.isEmpty()) {
             renderPlaceholder(flexboxLayout, getString(R.string.no_data_available)) {
                 homeItemClickListener?.openCallFragment(org.ole.planet.myplanet.ui.life.LifeFragment())
