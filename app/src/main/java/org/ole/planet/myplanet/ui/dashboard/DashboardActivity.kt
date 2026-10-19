@@ -608,7 +608,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val timeText = if (lastSyncMillis <= 0L) {
             getString(R.string.last_synced_never)
         } else {
-            TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
+            TimeUtils.getRelativeTime(this, lastSyncMillis, timeProvider)
         }
         binding.dashboardLastSyncStatus.text = getString(R.string.dashboard_sync_status, timeText)
     }
