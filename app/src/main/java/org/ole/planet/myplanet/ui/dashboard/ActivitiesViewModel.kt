@@ -25,7 +25,15 @@ class ActivitiesViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val endMillis = Calendar.getInstance().timeInMillis
-    private val startMillis = Calendar.getInstance().apply { add(Calendar.YEAR, -1) }.timeInMillis
+    // Start of the month eleven months back, so the window holds twelve distinct calendar months
+    private val startMillis = Calendar.getInstance().apply {
+        add(Calendar.MONTH, -11)
+        set(Calendar.DAY_OF_MONTH, 1)
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
 
     val offlineLogins: StateFlow<List<OfflineActivity>> = flow {
         val userName = userRepository.getUserModel()?.name ?: return@flow
@@ -36,6 +44,7 @@ class ActivitiesViewModel @Inject constructor(
         .map { computeMonthlyCounts(it, startMillis, endMillis) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
+    // Keys are year * 12 + month, so the same month of different years stays apart and sorts chronologically
     internal suspend fun computeMonthlyCounts(
         logins: List<OfflineActivity>,
         startMillis: Long,
@@ -46,7 +55,7 @@ class ActivitiesViewModel @Inject constructor(
             val loginTime = activity.loginTime
             if (loginTime != null && loginTime in startMillis..endMillis) {
                 calendar.timeInMillis = loginTime
-                val month = calendar.get(Calendar.MONTH)
+                val month = calendar.get(Calendar.YEAR) * 12 + calendar.get(Calendar.MONTH)
                 acc[month] = (acc[month] ?: 0) + 1
             }
             acc
