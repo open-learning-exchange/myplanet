@@ -6,7 +6,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
-import org.ole.planet.myplanet.databinding.ActivityCourseProgressBinding
+import org.ole.planet.myplanet.databinding.ActivityProgressBinding
 import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.toStepCells
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
@@ -14,13 +14,13 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class ProgressActivity : BaseActivity() {
-    private lateinit var binding: ActivityCourseProgressBinding
+    private lateinit var binding: ActivityProgressBinding
     private val viewModel: ProgressViewModel by viewModels()
     lateinit var courseId: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityCourseProgressBinding.inflate(layoutInflater)
+        binding = ActivityProgressBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         initActionBar()
