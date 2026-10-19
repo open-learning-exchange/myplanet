@@ -220,7 +220,7 @@ class ExamDaoTest {
         }
         examDao.upsertAll(exams)
 
-        val queryStepIds = (1..1200).map { i -> "step_$i" } + listOf("step_10")
+        val queryStepIds = (1..1200).map { i -> "step_$i" } + listOf("step_1")
         val results = examDao.getByStepIds(queryStepIds)
 
         assertEquals(4, results.size)
@@ -238,7 +238,7 @@ class ExamDaoTest {
         }
         examDao.upsertAll(exams)
 
-        val queryCourseIds = (1..1200).map { i -> "course_$i" } + listOf("course_5")
+        val queryCourseIds = (1..1200).map { i -> "course_$i" } + listOf("course_1")
         val results = examDao.getByCourseIds(queryCourseIds)
 
         assertEquals(4, results.size)
