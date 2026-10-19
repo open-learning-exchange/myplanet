@@ -37,6 +37,9 @@ interface RatingDao {
     suspend fun getPendingUploads(): List<Rating>
 
     /** Returns the number of rows updated (0 means the local row was gone). */
+    @Query("SELECT id FROM rating WHERE isUpdated = 1")
+    suspend fun getUpdatedIds(): List<String>
+
     @Query("UPDATE rating SET isUpdated = 0 WHERE id = :id")
     suspend fun markUploaded(id: String): Int
 

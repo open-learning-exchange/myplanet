@@ -78,7 +78,9 @@ class RatingsRepositoryImpl @Inject constructor(
 
     override suspend fun insertRatingsFromSync(documentList: List<JsonObject>) {
         if (documentList.isEmpty()) return
-        val entities = documentList.map { act ->
+        // Rows edited locally but not yet uploaded keep their local values instead of the server copy
+        val locallyUpdatedIds = ratingDao.getUpdatedIds().toHashSet()
+        val entities = documentList.filterNot { GsonUtils.getString("_id", it) in locallyUpdatedIds }.map { act ->
             // The embedded user object can carry base64 `_attachments` (e.g. a profile photo)
             // that bloat the stored blob past SQLite's ~2MB CursorWindow limit, crashing later
             // `SELECT *` reads with SQLiteBlobTooBigException. Attachments aren't needed to
