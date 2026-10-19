@@ -319,38 +319,37 @@ class TeamDaoTest {
     }
 
     @Test
-    fun observeAll_returnsOnlyMembershipRowsAndRootTeamRows() = runBlocking {
-        val reportRow = MyTeam().apply { _id = "report1"; teamId = "team123"; docType = "report" }
-        val linkRow = MyTeam().apply { _id = "link1"; teamId = "team123"; docType = "resourceLink" }
-        val requestRow = MyTeam().apply { _id = "req1"; teamId = "team123"; docType = "request" }
-
-        val membershipRow = MyTeam().apply { _id = "mem1"; teamId = "team123"; docType = "membership" }
-
+    fun observeMemberTeams_returnsOnlyRootTeamsWithActiveMembershipOfUser() = runBlocking {
         val rootNull = MyTeam().apply { _id = "root_null"; teamId = null; docType = "team" }
         val rootEmpty = MyTeam().apply { _id = "root_empty"; teamId = ""; docType = "team" }
         val rootSpace = MyTeam().apply { _id = "root_space"; teamId = " "; docType = "team" }
         val rootFormFeed = MyTeam().apply { _id = "root_ff"; teamId = "\u000C"; docType = "team" }
+        val notJoined = MyTeam().apply { _id = "not_joined"; teamId = null; docType = "team" }
+        val otherUsersTeam = MyTeam().apply { _id = "other_team"; teamId = null; docType = "team" }
+        val pendingTeam = MyTeam().apply { _id = "pending_team"; teamId = null; docType = "team" }
+        val childRow = MyTeam().apply { _id = "child1"; teamId = "root_null"; docType = "report" }
+        val reportForUser = MyTeam().apply { _id = "report1"; teamId = "not_joined"; userId = "user1"; docType = "report" }
+
+        fun membership(id: String, user: String, team: String, pending: Boolean = false) = MyTeam().apply {
+            _id = id; userId = user; teamId = team; docType = "membership"; isDeletePending = pending
+        }
 
         teamDao.upsertAll(
             listOf(
-                reportRow,
-                linkRow,
-                requestRow,
-                membershipRow,
-                rootNull,
-                rootEmpty,
-                rootSpace,
-                rootFormFeed
+                rootNull, rootEmpty, rootSpace, rootFormFeed, notJoined, otherUsersTeam, pendingTeam, childRow, reportForUser,
+                membership("m1", "user1", "root_null"),
+                membership("m2", "user1", "root_empty"),
+                membership("m3", "user1", "root_space"),
+                membership("m4", "user1", "root_ff"),
+                membership("m5", "user1", "child1"),
+                membership("m6", "user1", "pending_team", pending = true),
+                membership("m7", "user2", "other_team")
             )
         )
 
-        val result = teamDao.observeAll().first()
-        val resultIds = result.map { it._id }.toSet()
+        val resultIds = teamDao.observeMemberTeams("user1").first().map { it._id }.toSet()
 
-        assertEquals(
-            setOf("mem1", "root_null", "root_empty", "root_space", "root_ff"),
-            resultIds
-        )
+        assertEquals(setOf("root_null", "root_empty", "root_space", "root_ff"), resultIds)
     }
 
     @Test
