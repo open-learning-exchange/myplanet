@@ -117,6 +117,40 @@ class ChatViewModelTest {
     }
 
     @Test
+    fun `chats update reloads the chat history list`() = runTest {
+        val user = UserEntity(_id = "user123", planetCode = "planet1", name = "Test User")
+        val firstChat = ChatHistory().apply {
+            _id = "chat1"
+            createdDate = "1"
+            updatedDate = "1"
+        }
+        val secondChat = ChatHistory().apply {
+            _id = "chat2"
+            createdDate = "2"
+            updatedDate = "2"
+        }
+        coEvery { userRepository.getUserById("user123") } returns user
+        coEvery { chatRepository.getChatHistoryForUser("Test User") } returnsMany listOf(
+            listOf(firstChat),
+            listOf(firstChat, secondChat)
+        )
+
+        // Same wiring as ChatHistoryFragment.setupRealtimeSync: every signal reloads the list
+        val job = launch(testDispatcher) {
+            viewModel.refreshChatSignal.collect { viewModel.loadChatHistoryScreenData("user123") }
+        }
+        testScheduler.advanceUntilIdle()
+        assertEquals(listOf(firstChat), viewModel.screenData.value?.chatHistory)
+
+        dataUpdateFlow.emit(TableDataUpdate("chats", 1, 0))
+        testScheduler.advanceUntilIdle()
+
+        coVerify(exactly = 2) { chatRepository.getChatHistoryForUser("Test User") }
+        assertEquals(listOf(firstChat, secondChat), viewModel.screenData.value?.chatHistory)
+        job.cancel()
+    }
+
+    @Test
     fun `refreshChatSignal delivers a missed update to a subscriber that attaches after the emit`() = runTest {
         testScheduler.advanceUntilIdle()
 

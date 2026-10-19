@@ -16,7 +16,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
@@ -204,10 +203,8 @@ class ChatHistoryFragment : BaseBindingFragment<FragmentChatHistoryBinding>(Frag
     }
 
     private fun setupRealtimeSync() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            sharedViewModel.refreshChatSignal.collect {
-                refreshChatHistory()
-            }
+        collectWhenStarted(sharedViewModel.refreshChatSignal) {
+            refreshChatHistory()
         }
         collectWhenStarted(sharedViewModel.shareResult) { result ->
             when (result) {
