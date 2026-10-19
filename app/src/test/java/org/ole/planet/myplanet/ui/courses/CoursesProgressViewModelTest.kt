@@ -14,14 +14,14 @@ import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
-class CourseProgressViewModelTest {
+class CoursesProgressViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
     private val coursesRepository = mockk<CoursesRepository>()
     private val userRepository = mockk<UserRepository>()
-    private val viewModel = CourseProgressViewModel(coursesRepository, userRepository)
+    private val viewModel = CoursesProgressViewModel(coursesRepository, userRepository)
 
     @Test
     fun `courseProgress value is null before any call`() {
