@@ -1040,6 +1040,24 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `getSubmissionProjections ignores surrounding whitespace in query`() = runTest {
+        val s1 = Submission().apply { id = "1"; parentId = "p1"; type = "exam"; status = "complete"; lastUpdateTime = 100L; userId = "user1" }
+        val s2 = Submission().apply { id = "2"; parentId = "p2"; type = "exam"; status = "complete"; lastUpdateTime = 200L; userId = "user1" }
+
+        val examMap = mapOf<String?, StepExam>(
+            "p1" to StepExam().apply { name = "Math Quiz" },
+            "p2" to StepExam().apply { name = "Science Test" }
+        )
+
+        coEvery { userRepository.getUsersByIds(any()) } returns emptyList()
+
+        val projections = repository.getSubmissionProjections(listOf(s1, s2), "user1", "exam", " Math ", examMap)
+
+        assertEquals(1, projections.size)
+        assertEquals("1", projections[0].submission.id)
+    }
+
+    @Test
     fun `getNormalizedSubmitterName returns null when user is blank`() {
         val submission = Submission().apply {
             user = "   "

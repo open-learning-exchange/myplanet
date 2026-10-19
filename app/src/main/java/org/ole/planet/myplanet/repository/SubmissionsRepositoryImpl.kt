@@ -98,9 +98,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             else -> submissions.filter { it.userId == userId && it.type != "survey" }
         }.sortedByDescending { it.lastUpdateTime }
 
-        if (query.isNotEmpty()) {
+        val searchQuery = query.trim()
+        if (searchQuery.isNotEmpty()) {
             val examIds = examMap.mapNotNullTo(HashSet()) { (id, exam) ->
-                if (exam.name?.contains(query, ignoreCase = true) == true) id else null
+                if (exam.name?.contains(searchQuery, ignoreCase = true) == true) id else null
             }
             filtered = filtered.filter { examIds.contains(it.parentId) }
         }
