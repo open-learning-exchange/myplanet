@@ -15,17 +15,18 @@ import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.noties.markwon.Markwon
 import io.noties.markwon.editor.MarkwonEditor
-import io.noties.markwon.editor.MarkwonEditorTextWatcher
 import java.util.concurrent.ExecutorService
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.utils.MarkdownPreRenderTextWatcher
 import org.ole.planet.myplanet.utils.MarkdownUtils
 
 class BaseExamFragmentTest {
@@ -43,18 +44,15 @@ class BaseExamFragmentTest {
     fun setUp() {
         mockkObject(MarkdownUtils)
         mockkStatic(MarkwonEditor::class)
-        mockkStatic(MarkwonEditorTextWatcher::class)
 
         activity = mockk(relaxed = true)
         editText = mockk(relaxed = true)
 
         val markwon = mockk<Markwon>(relaxed = true)
         val editor = mockk<MarkwonEditor>(relaxed = true)
-        val markwonEditorTextWatcher = mockk<MarkwonEditorTextWatcher>(relaxed = true)
 
         every { MarkdownUtils.create(any<Context>()) } returns markwon
         every { MarkwonEditor.create(markwon) } returns editor
-        every { MarkwonEditorTextWatcher.withPreRender(any(), any(), any()) } returns markwonEditorTextWatcher
 
         // We use a mock fragment to avoid Realm constructor issues but call the real method
         fragment = spyk(TestBaseExamFragment())
@@ -78,7 +76,6 @@ class BaseExamFragmentTest {
     fun tearDown() {
         unmockkObject(MarkdownUtils)
         unmockkStatic(MarkwonEditor::class)
-        unmockkStatic(MarkwonEditorTextWatcher::class)
     }
 
     private fun answerTextWatcher(): Any? {
@@ -90,32 +87,37 @@ class BaseExamFragmentTest {
     @Test
     fun testSetMarkdownViewAndShowInput_textarea() {
         fragment.setMarkdownViewAndShowInput(editText, "textarea", "test textarea answer")
+        val watcher = answerTextWatcher() as MarkdownPreRenderTextWatcher
         fragment.setMarkdownViewAndShowInput(editText, "textarea", "test textarea answer 2")
 
         verify { editText.visibility = View.VISIBLE }
         verify(exactly = 1) { MarkdownUtils.create(activity) }
-        verify(exactly = 1) { MarkwonEditorTextWatcher.withPreRender(any(), any(), editText) }
-        verify(exactly = 1) { editText.addTextChangedListener(any<MarkwonEditorTextWatcher>()) }
+        verify(exactly = 1) { editText.addTextChangedListener(any()) }
         verify(exactly = 0) { editText.removeTextChangedListener(any()) }
         verify { editText.setText("test textarea answer") }
         verify { editText.setText("test textarea answer 2") }
-        assertTrue(answerTextWatcher() is MarkwonEditorTextWatcher)
+        assertSame(watcher, answerTextWatcher())
+        assertTrue(watcher.isRenderingEnabled)
     }
 
     @Test
-    fun testSetMarkdownViewAndShowInput_reusesWatcherAcrossQuestionTypes() {
+    fun testSetMarkdownViewAndShowInput_keepsWatcherAttachedAcrossQuestionTypes() {
         fragment.setMarkdownViewAndShowInput(editText, "textarea", "first")
-        val watcher = answerTextWatcher() as TextWatcher
-        fragment.setMarkdownViewAndShowInput(editText, "text", "second")
-        fragment.setMarkdownViewAndShowInput(editText, "textarea", "third")
+        val watcher = answerTextWatcher() as MarkdownPreRenderTextWatcher
 
-        verify(exactly = 1) { MarkwonEditorTextWatcher.withPreRender(any(), any(), any()) }
-        verify(exactly = 1) { editText.removeTextChangedListener(watcher) }
-        verify(exactly = 2) { editText.addTextChangedListener(watcher) }
+        fragment.setMarkdownViewAndShowInput(editText, "text", "second")
         assertSame(watcher, answerTextWatcher())
+        assertFalse(watcher.isRenderingEnabled)
+
+        fragment.setMarkdownViewAndShowInput(editText, "textarea", "third")
+        assertSame(watcher, answerTextWatcher())
+        assertTrue(watcher.isRenderingEnabled)
+
+        verify(exactly = 1) { editText.addTextChangedListener(watcher) }
+        verify(exactly = 0) { editText.removeTextChangedListener(any()) }
 
         fragment.onDestroyView()
-        verify(exactly = 2) { editText.removeTextChangedListener(watcher) }
+        verify(exactly = 1) { editText.removeTextChangedListener(watcher) }
         assertNull(answerTextWatcher())
     }
 
@@ -127,8 +129,9 @@ class BaseExamFragmentTest {
         fragment.setMarkdownViewAndShowInput(otherEditText, "textarea", "second")
 
         verify(exactly = 1) { editText.removeTextChangedListener(watcher) }
-        verify(exactly = 1) { MarkwonEditorTextWatcher.withPreRender(any(), any(), editText) }
-        verify(exactly = 1) { MarkwonEditorTextWatcher.withPreRender(any(), any(), otherEditText) }
+        val otherWatcher = answerTextWatcher() as TextWatcher
+        assertNotSame(watcher, otherWatcher)
+        verify(exactly = 1) { otherEditText.addTextChangedListener(otherWatcher) }
     }
 
     @Test
@@ -163,7 +166,7 @@ class BaseExamFragmentTest {
         val executor2 = executorField.get(fragment) as? ExecutorService
         assertNotNull(executor2)
         assertFalse(executor2!!.isShutdown)
-        verify { MarkwonEditorTextWatcher.withPreRender(any(), any(), any()) }
+        assertTrue(answerTextWatcher() is MarkdownPreRenderTextWatcher)
     }
 
     @Test

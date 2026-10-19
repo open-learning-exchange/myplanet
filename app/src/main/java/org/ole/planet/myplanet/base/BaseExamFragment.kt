@@ -17,7 +17,6 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import io.noties.markwon.editor.MarkwonEditor
-import io.noties.markwon.editor.MarkwonEditorTextWatcher
 import java.util.Date
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -34,6 +33,7 @@ import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.surveys.SurveyFragment
 import org.ole.planet.myplanet.utils.CameraUtils
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
+import org.ole.planet.myplanet.utils.MarkdownPreRenderTextWatcher
 import org.ole.planet.myplanet.utils.MarkdownUtils
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -57,9 +57,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var submitId = ""
     var isTeam: Boolean = false
     var teamId: String? = null
-    private var answerTextWatcher: MarkwonEditorTextWatcher? = null
+    private var answerTextWatcher: MarkdownPreRenderTextWatcher? = null
     private var currentAnswerEditText: EditText? = null
-    private var isAnswerTextWatcherAttached = false
     private var markwonExecutor: ExecutorService? = null
     private val markwon by lazy(LazyThreadSafetyMode.NONE) { MarkdownUtils.create(requireActivity()) }
     private val markwonEditor by lazy(LazyThreadSafetyMode.NONE) { MarkwonEditor.create(markwon) }
@@ -197,33 +196,34 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
 
     fun setMarkdownViewAndShowInput(etAnswer: EditText, type: String, oldAnswer: String?) {
         if (currentAnswerEditText !== etAnswer) {
-            currentAnswerEditText?.removeTextChangedListener(answerTextWatcher)
-            answerTextWatcher = null
-            isAnswerTextWatcherAttached = false
+            releaseAnswerTextWatcher()
             currentAnswerEditText = etAnswer
         }
         etAnswer.visibility = View.VISIBLE
-        // Reuse one pre-render watcher per EditText: a fresh one per question would let the previous
-        // watcher's in-flight render post its stale spans onto the next answer.
+        // One watcher per EditText, attached until onDestroyView: it has to see every setText, plain-text
+        // questions included, or a render still in flight from the last textarea lands on the new answer.
         val isMarkdown = type.equals("textarea", ignoreCase = true)
-        if (isMarkdown && !isAnswerTextWatcherAttached) {
-            val watcher = answerTextWatcher
-                ?: MarkwonEditorTextWatcher.withPreRender(markwonEditor, getMarkwonExecutor(), etAnswer)
-                    .also { answerTextWatcher = it }
-            etAnswer.addTextChangedListener(watcher)
-            isAnswerTextWatcherAttached = true
-        } else if (!isMarkdown && isAnswerTextWatcherAttached) {
-            etAnswer.removeTextChangedListener(answerTextWatcher)
-            isAnswerTextWatcherAttached = false
+        val watcher = answerTextWatcher
+        if (watcher != null) {
+            watcher.isRenderingEnabled = isMarkdown
+        } else if (isMarkdown) {
+            answerTextWatcher = MarkdownPreRenderTextWatcher(markwonEditor, getMarkwonExecutor(), etAnswer)
+                .also { etAnswer.addTextChangedListener(it) }
         }
         etAnswer.setText(oldAnswer)
     }
 
+    private fun releaseAnswerTextWatcher() {
+        answerTextWatcher?.let {
+            it.cancel()
+            currentAnswerEditText?.removeTextChangedListener(it)
+        }
+        answerTextWatcher = null
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
-        currentAnswerEditText?.removeTextChangedListener(answerTextWatcher)
-        answerTextWatcher = null
-        isAnswerTextWatcherAttached = false
+        releaseAnswerTextWatcher()
         currentAnswerEditText = null
     }
 
