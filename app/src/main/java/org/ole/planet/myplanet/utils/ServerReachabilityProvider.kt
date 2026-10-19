@@ -5,8 +5,10 @@ import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.Call
@@ -66,6 +68,7 @@ class ServerReachabilityProvider @Inject constructor(
                     if (result) {
                         reachable = true
                         trackers.forEach { it.cancelIfInFlight() }
+                        coroutineContext.cancelChildren()
                         break
                     }
                 }
@@ -96,8 +99,10 @@ class ServerReachabilityProvider @Inject constructor(
                 when {
                     successful -> true
                     // Servers that refuse HEAD are still reachable, so confirm with a GET.
-                    code == HttpURLConnection.HTTP_BAD_METHOD || code == HttpURLConnection.HTTP_NOT_IMPLEMENTED ->
+                    code == HttpURLConnection.HTTP_BAD_METHOD || code == HttpURLConnection.HTTP_NOT_IMPLEMENTED -> {
+                        ensureActive()
                         probe(formattedUrl, useHead = false, tracker = tracker).first
+                    }
                     else -> false
                 }
             } catch (e: Exception) {
@@ -130,8 +135,13 @@ class ServerReachabilityProvider @Inject constructor(
         var currentCall: Call? = null
             private set
 
+        @Volatile
+        private var isCancelled: Boolean = false
+
         fun onCallStarted(call: Call) {
             currentCall = call
+            // A cancel that landed before this call existed must still stop it.
+            if (isCancelled) call.cancel()
         }
 
         fun onCallFinished() {
@@ -143,13 +153,13 @@ class ServerReachabilityProvider @Inject constructor(
         }
 
         fun cancelIfInFlight() {
-            if (!isFinished) {
-                val call = currentCall
-                if (call != null && !isFinished) {
-                    try {
-                        call.cancel()
-                    } catch (_: Exception) {
-                    }
+            if (isFinished) return
+            isCancelled = true
+            val call = currentCall
+            if (call != null && !isFinished) {
+                try {
+                    call.cancel()
+                } catch (_: Exception) {
                 }
             }
         }
