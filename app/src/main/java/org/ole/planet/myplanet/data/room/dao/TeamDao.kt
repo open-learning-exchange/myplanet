@@ -16,10 +16,6 @@ interface TeamDao {
     @Query("SELECT * FROM teams WHERE _id = :id LIMIT 1") suspend fun getById(id: String): MyTeam?
     @Query("SELECT * FROM teams WHERE userId = :userId") suspend fun getByUserId(userId: String): List<MyTeam>
     @Query("SELECT * FROM teams WHERE teamId = :teamId") suspend fun getAllByTeamId(teamId: String): List<MyTeam>
-    /**
-     * Observes the root-team rows [userId] holds a non-pending membership in.
-     * The root check here is a superset of `teamId.isNullOrBlank()`, so callers still apply it in Kotlin.
-     */
     @Query("SELECT * FROM teams WHERE (teamId IS NULL OR teamId NOT GLOB '*[0-9A-Za-z]*') AND _id IN (SELECT teamId FROM teams WHERE userId = :userId AND docType = 'membership' AND isDeletePending = 0)")
     fun observeMemberTeams(userId: String): Flow<List<MyTeam>>
     @Query("SELECT * FROM teams WHERE docType = :docType") suspend fun getByDocType(docType: String): List<MyTeam>
