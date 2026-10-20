@@ -51,7 +51,6 @@ class ChatHistoryAdapter(
     )
 ) {
     private var chatHistoryItemClickListener: OnChatHistoryItemClickListener? = null
-    private var chatTitle: String? = ""
     private lateinit var shareTargetAdapter: ChatShareTargetAdapter
 
     private val daynightGreyColor by lazy { ContextCompat.getColor(context, R.color.daynight_grey) }
@@ -98,7 +97,7 @@ class ChatHistoryAdapter(
             val pos = holder.bindingAdapterPosition
             if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
             val item = getItem(pos)
-            holder.rowChatHistoryBinding.chatCardView.contentDescription = chatTitle
+            holder.rowChatHistoryBinding.chatCardView.contentDescription = getChatTitle(item)
             chatHistoryItemClickListener?.onChatHistoryItemClicked(
                 item.conversations?.toList(),
                 "${item._id}",
@@ -130,17 +129,13 @@ class ChatHistoryAdapter(
 
     override fun onBindViewHolder(holder: ViewHolderChat, position: Int) {
         val item = getItem(position)
-        val firstQuery = item.conversations?.getOrNull(0)?.query
-        if (firstQuery != null) {
-            holder.rowChatHistoryBinding.chatTitle.text = firstQuery
-            holder.rowChatHistoryBinding.chatTitle.contentDescription = firstQuery
-            chatTitle = firstQuery
-        } else {
-            holder.rowChatHistoryBinding.chatTitle.text = item.title
-            holder.rowChatHistoryBinding.chatTitle.contentDescription = item.title
-            chatTitle = item.title
-        }
+        val title = getChatTitle(item)
+        holder.rowChatHistoryBinding.chatTitle.text = title
+        holder.rowChatHistoryBinding.chatTitle.contentDescription = title
     }
+
+    private fun getChatTitle(item: ChatHistory): String? =
+        item.conversations?.getOrNull(0)?.query ?: item.title
 
     private fun showShareDialog(item: ChatHistory) {
         val chatShareDialogBinding = ChatShareDialogBinding.inflate(LayoutInflater.from(context))

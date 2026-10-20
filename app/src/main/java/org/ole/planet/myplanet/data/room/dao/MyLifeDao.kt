@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.MyLife
@@ -30,8 +31,27 @@ interface MyLifeDao {
         return ids.distinct().chunked(900).flatMap { getByIdsInternal(it) }
     }
 
-    @Query("UPDATE my_life SET isVisible = :isVisible WHERE _id = :id OR imageId = :id OR title = :id")
-    suspend fun updateVisibility(id: String, isVisible: Boolean)
+    @Query("SELECT _id FROM my_life WHERE _id = :id")
+    suspend fun getIdsByIdInternal(id: String): List<String>
+
+    @Query("SELECT _id FROM my_life WHERE imageId = :id OR title = :id")
+    suspend fun getIdsByAliasInternal(id: String): List<String>
+
+    @Query("UPDATE my_life SET isVisible = :isVisible WHERE _id = :id")
+    suspend fun updateVisibilityByIdInternal(id: String, isVisible: Boolean)
+
+    @Transaction
+    suspend fun updateVisibility(id: String, isVisible: Boolean) {
+        val exactMatches = getIdsByIdInternal(id)
+        if (exactMatches.isNotEmpty()) {
+            updateVisibilityByIdInternal(id, isVisible)
+            return
+        }
+        val aliasMatches = getIdsByAliasInternal(id)
+        if (aliasMatches.size == 1) {
+            updateVisibilityByIdInternal(aliasMatches[0], isVisible)
+        }
+    }
 
     @Update
     suspend fun update(items: List<MyLife>)
