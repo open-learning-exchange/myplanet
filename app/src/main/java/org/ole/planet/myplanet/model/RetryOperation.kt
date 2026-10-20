@@ -100,6 +100,9 @@ open class RetryOperation {
             }
         }
 
+        fun createsDocument(httpMethod: String, dbId: String?): Boolean =
+            httpMethod != "PUT" || dbId.isNullOrEmpty()
+
         fun calculateNextRetryTime(attemptCount: Int, currentTime: Long = System.currentTimeMillis()): Long {
             val delay = minOf(BASE_DELAY_MS * (1L shl attemptCount), MAX_DELAY_MS)
             return currentTime + delay
