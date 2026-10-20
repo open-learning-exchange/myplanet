@@ -180,7 +180,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         dialogAddReportBinding.startDate.text = firstDayOfMonth
         dialogAddReportBinding.endDate.text = lastDayOfMonth
 
-        setupDatePickers(dialogAddReportBinding, calendar, true)
+        setupDatePickers(dialogAddReportBinding, calendar)
 
         submit?.setOnClickListener {
             if (isReportSaving) return@setOnClickListener
@@ -259,13 +259,13 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         dialogAddReportBinding.startDate.text = getString(R.string.message_placeholder, TimeUtils.formatDate(currentReport.startDate, " MMM dd, yyyy"))
         dialogAddReportBinding.endDate.text = getString(R.string.message_placeholder, TimeUtils.formatDate(currentReport.endDate, " MMM dd, yyyy"))
         dialogAddReportBinding.summary.setText(getString(R.string.message_placeholder, currentReport.description))
-        dialogAddReportBinding.beginningBalance.setText(getString(R.string.number_placeholder, currentReport.beginningBalance))
-        dialogAddReportBinding.sales.setText(getString(R.string.number_placeholder, currentReport.sales))
-        dialogAddReportBinding.otherIncome.setText(getString(R.string.number_placeholder, currentReport.otherIncome))
-        dialogAddReportBinding.personnel.setText(getString(R.string.number_placeholder, currentReport.wages))
-        dialogAddReportBinding.nonPersonnel.setText(getString(R.string.number_placeholder, currentReport.otherExpenses))
+        dialogAddReportBinding.beginningBalance.setText(currentReport.beginningBalance.toString())
+        dialogAddReportBinding.sales.setText(currentReport.sales.toString())
+        dialogAddReportBinding.otherIncome.setText(currentReport.otherIncome.toString())
+        dialogAddReportBinding.personnel.setText(currentReport.wages.toString())
+        dialogAddReportBinding.nonPersonnel.setText(currentReport.otherExpenses.toString())
 
-        setupDatePickers(dialogAddReportBinding, calendar, false)
+        setupDatePickers(dialogAddReportBinding, calendar)
 
         submit?.setOnClickListener {
             if (isReportSaving) return@setOnClickListener
@@ -327,11 +327,11 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         }
     }
 
-    private fun setupDatePickers(dialogAddReportBinding: DialogAddReportBinding, calendar: Calendar, isAdd: Boolean) {
+    private fun setupDatePickers(dialogAddReportBinding: DialogAddReportBinding, calendar: Calendar) {
         dialogAddReportBinding.ltStartDate.setOnClickListener {
             showDatePickerDialog(calendar) { timeInMillis, formattedDate ->
                 dialogAddReportBinding.startDate.text = formattedDate
-                startTimeStamp = if (isAdd) "$timeInMillis" else getString(R.string.number_placeholder, timeInMillis)
+                startTimeStamp = "$timeInMillis"
             }
         }
 
