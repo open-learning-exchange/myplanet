@@ -19,19 +19,25 @@ object KeyboardUtils {
 
     fun setupUI(v: View, activity: Activity) {
         // Set up touch listener for non-text box views to hide keyboard.
-        val onTouchListener = View.OnTouchListener { _: View?, _: MotionEvent? ->
-            hideSoftKeyboard(activity)
+        val onTouchListener = View.OnTouchListener { _: View?, event: MotionEvent? ->
+            if (event?.actionMasked == MotionEvent.ACTION_DOWN) {
+                hideSoftKeyboard(activity)
+            }
             false
         }
+        setupUIInternal(v, onTouchListener)
+    }
+
+    private fun setupUIInternal(v: View, onTouchListener: View.OnTouchListener) {
         if (v !is EditText) {
             v.setOnTouchListener(onTouchListener)
         }
 
-        //If a layout container, iterate over children and seed recursion.
+        // If a layout container, iterate over children and seed recursion.
         if (v is ViewGroup) {
             for (i in 0 until v.childCount) {
                 val innerView = v.getChildAt(i)
-                setupUI(innerView, activity)
+                setupUIInternal(innerView, onTouchListener)
             }
         }
     }
