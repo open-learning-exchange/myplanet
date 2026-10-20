@@ -48,12 +48,7 @@ class ServerUrlMapperReachabilityTest {
 
     @Test
     fun `isUrlDirectlyReachable returns false for closed port without throwing`() = runTest(testDispatcher) {
-        // Create server to bind a free port, then stop it immediately to get a closed port
-        val dummyServer = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
-        val closedPort = dummyServer.address.port
-        dummyServer.stop(0)
-
-        val result = serverUrlMapper.isUrlDirectlyReachable("http://127.0.0.1:$closedPort")
+        val result = serverUrlMapper.isUrlDirectlyReachable("http://127.0.0.1:1")
         assertFalse(result)
     }
 
