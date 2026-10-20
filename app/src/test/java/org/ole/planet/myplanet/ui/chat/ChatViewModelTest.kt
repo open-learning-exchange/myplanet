@@ -5,6 +5,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -112,6 +113,40 @@ class ChatViewModelTest {
         testScheduler.advanceUntilIdle()
 
         assertEquals(1, signals.size)
+        job.cancel()
+    }
+
+    @Test
+    fun `chats update reloads the chat history list`() = runTest {
+        val user = UserEntity(_id = "user123", planetCode = "planet1", name = "Test User")
+        val firstChat = ChatHistory().apply {
+            _id = "chat1"
+            createdDate = "1"
+            updatedDate = "1"
+        }
+        val secondChat = ChatHistory().apply {
+            _id = "chat2"
+            createdDate = "2"
+            updatedDate = "2"
+        }
+        coEvery { userRepository.getUserById("user123") } returns user
+        coEvery { chatRepository.getChatHistoryForUser("Test User") } returnsMany listOf(
+            listOf(firstChat),
+            listOf(firstChat, secondChat)
+        )
+
+        // Same wiring as ChatHistoryFragment.setupRealtimeSync: every signal reloads the list
+        val job = launch(testDispatcher) {
+            viewModel.refreshChatSignal.collect { viewModel.loadChatHistoryScreenData("user123") }
+        }
+        testScheduler.advanceUntilIdle()
+        assertEquals(listOf(firstChat), viewModel.screenData.value?.chatHistory)
+
+        dataUpdateFlow.emit(TableDataUpdate("chats", 1, 0))
+        testScheduler.advanceUntilIdle()
+
+        coVerify(exactly = 2) { chatRepository.getChatHistoryForUser("Test User") }
+        assertEquals(listOf(firstChat, secondChat), viewModel.screenData.value?.chatHistory)
         job.cancel()
     }
 
@@ -525,5 +560,69 @@ class ChatViewModelTest {
         assertEquals(true, currentState.aiProvidersError)
 
         job.cancel()
+    }
+
+    @Test
+    fun `both news and chat history reads start concurrently before either completes`() = runTest {
+        val user = UserEntity(_id = "user123", planetCode = "planet1", name = "Test User")
+        coEvery { userRepository.getUserById("user123") } returns user
+        every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("parent1", "community1", null)
+
+        val newsGate = CompletableDeferred<List<News>>()
+        val historyGate = CompletableDeferred<List<ChatHistory>>()
+
+        var newsStarted = false
+        var historyStarted = false
+
+        coEvery { voicesRepository.getPlanetNewsMessages("planet1") } coAnswers {
+            newsStarted = true
+            newsGate.await()
+        }
+        coEvery { chatRepository.getChatHistoryForUser("Test User") } coAnswers {
+            historyStarted = true
+            historyGate.await()
+        }
+
+        viewModel.loadChatHistoryScreenData("user123")
+        testScheduler.advanceUntilIdle()
+
+        assertTrue(newsStarted)
+        assertTrue(historyStarted)
+
+        newsGate.complete(emptyList())
+        historyGate.complete(emptyList())
+        testScheduler.advanceUntilIdle()
+
+        org.junit.Assert.assertNotNull(viewModel.screenData.value)
+    }
+
+    @Test
+    fun `exception in one read is retried by RetryUtils and does not cancel viewModelScope`() = runTest {
+        val user = UserEntity(_id = "user123", planetCode = "planet1", name = "Test User")
+        coEvery { userRepository.getUserById("user123") } returns user
+        every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("parent1", "community1", null)
+
+        var attemptCount = 0
+        coEvery { voicesRepository.getPlanetNewsMessages("planet1") } coAnswers {
+            attemptCount++
+            if (attemptCount <= 3) {
+                throw RuntimeException("Temporary read failure")
+            } else {
+                emptyList()
+            }
+        }
+        coEvery { chatRepository.getChatHistoryForUser("Test User") } returns emptyList()
+
+        viewModel.loadChatHistoryScreenData("user123")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(3, attemptCount)
+        assertNull(viewModel.screenData.value)
+
+        viewModel.loadChatHistoryScreenData("user123")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(4, attemptCount)
+        org.junit.Assert.assertNotNull(viewModel.screenData.value)
     }
 }
