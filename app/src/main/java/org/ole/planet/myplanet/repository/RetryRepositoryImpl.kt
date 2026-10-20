@@ -67,6 +67,10 @@ class RetryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun executeOperation(operation: RetryOperation): RetryOperationResult {
+        if (RetryOperation.createsDocument(operation.httpMethod, operation.dbId)) {
+            markCompleted(operation.id)
+            return RetryOperationResult.Success
+        }
         markInProgress(operation.id)
 
         return try {
