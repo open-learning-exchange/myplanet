@@ -4,6 +4,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.util.UUID
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -38,7 +39,7 @@ class ResourceActivityDaoTest {
     private fun createActivity(
         userName: String,
         type: String,
-        resId: String,
+        resId: String?,
         titleName: String?
     ): ResourceActivity {
         return ResourceActivity().apply {
@@ -110,5 +111,22 @@ class ResourceActivityDaoTest {
         assertNotNull(result2)
         assertEquals("Alpha Title", result2?.title)
         assertEquals(3, result2?.openCount)
+    }
+
+    @Test
+    fun observeByUserAndType_groupsByResourceIdAndFiltersNullAndUserAndType() = runBlocking {
+        dao.insert(createActivity("john", "resource_opened", "A", "Title A"))
+        dao.insert(createActivity("john", "resource_opened", "A", "Title A"))
+        dao.insert(createActivity("john", "resource_opened", "A", "Title A"))
+        dao.insert(createActivity("john", "resource_opened", "B", "Title B"))
+        dao.insert(createActivity("john", "resource_opened", null, "Title Null"))
+        dao.insert(createActivity("jane", "resource_opened", "C", "Title C"))
+        dao.insert(createActivity("john", "other_type", "D", "Title D"))
+
+        val result = dao.observeByUserAndType("john", "resource_opened").first()
+        val ids = result.mapNotNull { it.resourceId }.toSet()
+
+        assertEquals(2, result.size)
+        assertEquals(setOf("A", "B"), ids)
     }
 }

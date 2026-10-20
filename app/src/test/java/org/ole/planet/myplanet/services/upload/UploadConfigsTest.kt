@@ -4,14 +4,17 @@ import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.clearAllMocks
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.unmockkAll
+import io.mockk.unmockkObject
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.CourseActivity
@@ -41,12 +44,27 @@ class UploadConfigsTest {
     private val surveysRepository: SurveysRepository = mockk(relaxed = true)
     private lateinit var uploadConfigs: UploadConfigs
 
+    companion object {
+        @JvmStatic
+        @BeforeClass
+        fun setupClass() {
+            mockkObject(VersionUtils)
+            mockkObject(NetworkUtils)
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun tearDownClass() {
+            unmockkObject(VersionUtils)
+            unmockkObject(NetworkUtils)
+        }
+    }
+
     @Before
     fun setup() {
-        mockkObject(VersionUtils)
-        every { VersionUtils.getAndroidId(any()) } returns "test-android-id"
+        clearAllMocks()
 
-        mockkObject(NetworkUtils)
+        every { VersionUtils.getAndroidId(any()) } returns "test-android-id"
         every { NetworkUtils.getDeviceName() } returns "test-device-name"
         every { NetworkUtils.getUniqueIdentifier() } returns "test-unique-id"
 
@@ -72,7 +90,7 @@ class UploadConfigsTest {
 
     @After
     fun tearDown() {
-        unmockkAll()
+        clearAllMocks()
     }
 
     @Test
