@@ -307,7 +307,7 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
     private fun observeTeamData() {
         collectLatestWhenStarted(viewModel.teamData) { teamDataList ->
             teamListAdapter.submitList(teamDataList)
-            showNoResultsMessage(teamDataList.isEmpty())
+            showNoResultsMessage(teamDataList.isEmpty(), binding.etSearch.text?.toString().orEmpty().trim())
             listContentDescription(conditionApplied)
         }
     }

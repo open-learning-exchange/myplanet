@@ -441,4 +441,30 @@ class HealthViewModelTest {
         assertFalse(viewModel.isSaved.value)
         job.cancel()
     }
+
+    @Test
+    fun `suspended first load superseded by searchPatients does not overwrite patientList and ends loading false`() = runTest {
+        val deferred1 = kotlinx.coroutines.CompletableDeferred<List<UserEntity>>()
+        val patients2 = listOf(UserEntity().apply { id = "2"; name = "Patient 2" })
+
+        coEvery { userRepository.getUsersSortedBy("joinDate", true) } coAnswers {
+            deferred1.await()
+        }
+        coEvery { userRepository.searchUsers("John", "joinDate", true) } returns patients2
+
+        viewModel.loadPatients("joinDate", true)
+        testScheduler.runCurrent()
+
+        viewModel.searchPatients("John", "joinDate", true)
+        advanceUntilIdle()
+
+        assertEquals(patients2, viewModel.patientList.first())
+        assertEquals(false, viewModel.isListLoading.first())
+
+        deferred1.complete(listOf(UserEntity().apply { id = "1"; name = "Patient 1" }))
+        advanceUntilIdle()
+
+        assertEquals(patients2, viewModel.patientList.first())
+        assertEquals(false, viewModel.isListLoading.first())
+    }
 }
