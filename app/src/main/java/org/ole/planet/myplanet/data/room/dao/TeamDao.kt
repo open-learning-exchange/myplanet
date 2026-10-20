@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.data.room.dao
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.EnterpriseReportCsvProjection
@@ -10,7 +11,12 @@ import org.ole.planet.myplanet.model.MyTeam
 
 @Dao
 interface TeamDao {
-    @Query("SELECT * FROM teams WHERE _id IN (:ids)") suspend fun getByIds(ids: List<String>): List<MyTeam>
+    @Query("SELECT * FROM teams WHERE _id IN (:ids)") suspend fun getByIdsInternal(ids: List<String>): List<MyTeam>
+
+    suspend fun getByIds(ids: List<String>): List<MyTeam> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.distinct().chunked(900).flatMap { getByIdsInternal(it) }
+    }
     @Query("SELECT resourceId FROM teams WHERE teamId = :teamId AND resourceId IS NOT NULL AND TRIM(resourceId) != '' AND (docType IS NULL OR TRIM(docType) = '' OR docType = 'resourceLink' OR docType = 'link')") suspend fun getResourceIdsByTeamId(teamId: String): List<String>
     @Query("SELECT * FROM teams WHERE _id = :teamId OR teamId = :teamId LIMIT 1") suspend fun getByTeamId(teamId: String): MyTeam?
     @Query("SELECT * FROM teams WHERE _id = :id LIMIT 1") suspend fun getById(id: String): MyTeam?
@@ -33,7 +39,13 @@ interface TeamDao {
     @Query("UPDATE teams SET status = 'archived', isUpdated = 1 WHERE _id = :id") suspend fun archiveById(id: String): Int
     @Query("UPDATE teams SET imageName = :imageName, isUpdated = 1 WHERE _id = :id") suspend fun setImageNameById(id: String, imageName: String): Int
     @Query("DELETE FROM teams WHERE _id = :id") suspend fun deleteById(id: String): Int
-    @Query("DELETE FROM teams WHERE _id IN (:ids)") suspend fun deleteByIds(ids: List<String>): Int
+    @Query("DELETE FROM teams WHERE _id IN (:ids)") suspend fun deleteByIdsInternal(ids: List<String>): Int
+
+    @Transaction
+    suspend fun deleteByIds(ids: List<String>): Int {
+        if (ids.isEmpty()) return 0
+        return ids.distinct().chunked(900).sumOf { deleteByIdsInternal(it) }
+    }
     @Query("DELETE FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType") suspend fun deleteByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): Int
     @Upsert suspend fun upsertAll(items: List<MyTeam>)
     @Upsert suspend fun upsert(item: MyTeam)

@@ -375,4 +375,55 @@ class TeamDaoTest {
         assertTrue(result.any { it._id == "team_0" })
         assertTrue(result.any { it._id == "team_1000" })
     }
+
+    @Test
+    fun getByIds_with1200IdsAndDuplicates_returnsAllWithoutDuplicates() = runBlocking {
+        val teams = (1..1200).map { i ->
+            MyTeam().apply {
+                _id = "team_$i"
+                name = "Team $i"
+            }
+        }
+        teamDao.upsertAll(teams)
+
+        val queryIds = (1..1200).map { i -> "team_$i" } + listOf("team_1", "team_500", "unknown_team")
+        val results = teamDao.getByIds(queryIds)
+
+        assertEquals(1200, results.size)
+        assertEquals((1..1200).map { i -> "team_$i" }.toSet(), results.map { it._id }.toSet())
+    }
+
+    @Test
+    fun deleteByIds_with1201IdsDuplicatesAndUnknowns_returnsDeletedCountAndLeavesUnrelatedRow() = runBlocking {
+        val teamsToDelete = (1..1200).map { i ->
+            MyTeam().apply {
+                _id = "team_$i"
+            }
+        }
+        val survivor = MyTeam().apply {
+            _id = "survivor_team"
+        }
+        teamDao.upsertAll(teamsToDelete + survivor)
+
+        val queryIds = (1..1200).map { i -> "team_$i" } + listOf("team_1", "team_900", "unknown_team_1", "unknown_team_2")
+        val deletedCount = teamDao.deleteByIds(queryIds)
+
+        assertEquals(1200, deletedCount)
+        assertEquals(null, teamDao.getById("team_1"))
+        assertEquals(null, teamDao.getById("team_1200"))
+        val fetchedSurvivor = teamDao.getById("survivor_team")
+        assertEquals("survivor_team", fetchedSurvivor?._id)
+    }
+
+    @Test
+    fun emptyList_getByIdsReturnsEmpty_deleteByIdsReturnsZero() = runBlocking {
+        teamDao.upsert(MyTeam().apply { _id = "team_1" })
+
+        val getResult = teamDao.getByIds(emptyList())
+        val deleteResult = teamDao.deleteByIds(emptyList())
+
+        assertTrue(getResult.isEmpty())
+        assertEquals(0, deleteResult)
+        assertEquals("team_1", teamDao.getById("team_1")?._id)
+    }
 }

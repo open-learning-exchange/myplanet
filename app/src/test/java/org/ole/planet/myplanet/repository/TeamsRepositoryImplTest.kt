@@ -207,6 +207,27 @@ class TeamsRepositoryImplTest {
     }
 
     @Test
+    fun `deleteTask archives a synced task so the deletion uploads`() = runTest(testDispatcher) {
+        val task = TeamTask().apply { id = "task_1"; _id = "task_1"; status = "to_do" }
+        coEvery { teamTaskDao.getById("task_1") } returns task
+
+        teamsRepository.deleteTask("task_1")
+
+        coVerify(exactly = 1) { teamTaskDao.upsert(match { it.status == "archived" && it.isUpdated }) }
+        coVerify(exactly = 0) { teamTaskDao.deleteById(any()) }
+    }
+
+    @Test
+    fun `deleteTask hard-deletes a task that was never uploaded`() = runTest(testDispatcher) {
+        coEvery { teamTaskDao.getById("local_1") } returns TeamTask().apply { id = "local_1" }
+
+        teamsRepository.deleteTask("local_1")
+
+        coVerify(exactly = 1) { teamTaskDao.deleteById("local_1") }
+        coVerify(exactly = 0) { teamTaskDao.upsert(any()) }
+    }
+
+    @Test
     fun `test getTasksByIds delegates to teamTaskDao`() = runTest(testDispatcher) {
         val taskIds = listOf("task_1", "task_2")
         val mockTasks = listOf(TeamTask().apply { id = "task_1" })
