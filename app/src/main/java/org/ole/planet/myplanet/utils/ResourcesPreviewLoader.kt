@@ -63,8 +63,8 @@ class ResourcesPreviewLoader(private val dispatcherProvider: DispatcherProvider)
                     .withCSVParser(CSVParserBuilder().withSeparator(',').withQuoteChar('"').build())
                     .build().use { reader ->
                         var count = 0
-                        for (row in reader) {
-                            if (count >= 5) break
+                        while (count < 5) {
+                            val row = reader.readNext() ?: break
                             sb.appendLine(row.joinToString("  |  "))
                             count++
                         }
