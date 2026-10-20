@@ -207,24 +207,12 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getMyTeamsFlow(userId: String): Flow<List<MyTeam>> {
-        return teamDao.observeAll().map { entities ->
-            val teamIds = entities.filter {
-                it.userId == userId &&
-                    it.docType == "membership" &&
+        return teamDao.observeMemberTeams(userId).map { teams ->
+            teams.filter {
+                it.status != "archived" &&
                     !it.isDeletePending &&
-                    !it.teamId.isNullOrBlank()
-            }.mapNotNull { it.teamId }.toSet()
-
-            if (teamIds.isEmpty()) {
-                emptyList()
-            } else {
-                entities.filter {
-                    it._id in teamIds &&
-                        it.status != "archived" &&
-                        !it.isDeletePending &&
-                        it.isRootTeam() &&
-                        (it.type == "team" || it.type.isNullOrBlank())
-                }.map { it }
+                    it.isRootTeam() &&
+                    (it.type == "team" || it.type.isNullOrBlank())
             }
         }.flowOn(dispatcherProvider.default)
     }
@@ -295,24 +283,12 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override fun getMyTeamDetailsFlow(userId: String, type: String?): Flow<List<TeamDetails>> {
         val targetType = type ?: "team"
-        return teamDao.observeAll().map { entities ->
-            val teamIds = entities.filter {
-                it.userId == userId &&
-                    it.docType == "membership" &&
+        return teamDao.observeMemberTeams(userId).map { memberTeams ->
+            val teams = memberTeams.filter {
+                it.isRootTeam() &&
+                    it.status != "archived" &&
                     !it.isDeletePending &&
-                    !it.teamId.isNullOrBlank()
-            }.mapNotNull { it.teamId }.toSet()
-
-            val teams = if (teamIds.isEmpty()) {
-                emptyList()
-            } else {
-                entities.filter {
-                    it.isRootTeam() &&
-                        it._id in teamIds &&
-                        it.status != "archived" &&
-                        !it.isDeletePending &&
-                        (if (targetType == "enterprise") it.type == "enterprise" else (it.type == "team" || it.type.isNullOrBlank()))
-                }.map { it }
+                    (if (targetType == "enterprise") it.type == "enterprise" else (it.type == "team" || it.type.isNullOrBlank()))
             }
             mapToTeamDetails(teams, userId)
         }.flowOn(dispatcherProvider.default).distinctUntilChanged()

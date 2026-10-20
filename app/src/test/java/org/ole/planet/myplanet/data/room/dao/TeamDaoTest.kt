@@ -319,6 +319,40 @@ class TeamDaoTest {
     }
 
     @Test
+    fun observeMemberTeams_returnsOnlyRootTeamsWithActiveMembershipOfUser() = runBlocking {
+        val rootNull = MyTeam().apply { _id = "root_null"; teamId = null; docType = "team" }
+        val rootEmpty = MyTeam().apply { _id = "root_empty"; teamId = ""; docType = "team" }
+        val rootSpace = MyTeam().apply { _id = "root_space"; teamId = " "; docType = "team" }
+        val rootFormFeed = MyTeam().apply { _id = "root_ff"; teamId = "\u000C"; docType = "team" }
+        val notJoined = MyTeam().apply { _id = "not_joined"; teamId = null; docType = "team" }
+        val otherUsersTeam = MyTeam().apply { _id = "other_team"; teamId = null; docType = "team" }
+        val pendingTeam = MyTeam().apply { _id = "pending_team"; teamId = null; docType = "team" }
+        val childRow = MyTeam().apply { _id = "child1"; teamId = "root_null"; docType = "report" }
+        val reportForUser = MyTeam().apply { _id = "report1"; teamId = "not_joined"; userId = "user1"; docType = "report" }
+
+        fun membership(id: String, user: String, team: String, pending: Boolean = false) = MyTeam().apply {
+            _id = id; userId = user; teamId = team; docType = "membership"; isDeletePending = pending
+        }
+
+        teamDao.upsertAll(
+            listOf(
+                rootNull, rootEmpty, rootSpace, rootFormFeed, notJoined, otherUsersTeam, pendingTeam, childRow, reportForUser,
+                membership("m1", "user1", "root_null"),
+                membership("m2", "user1", "root_empty"),
+                membership("m3", "user1", "root_space"),
+                membership("m4", "user1", "root_ff"),
+                membership("m5", "user1", "child1"),
+                membership("m6", "user1", "pending_team", pending = true),
+                membership("m7", "user2", "other_team")
+            )
+        )
+
+        val resultIds = teamDao.observeMemberTeams("user1").first().map { it._id }.toSet()
+
+        assertEquals(setOf("root_null", "root_empty", "root_space", "root_ff"), resultIds)
+    }
+
+    @Test
     fun getRootTeamsByTypeAndIds_handlesLargeInputAndDeduplicates() = runBlocking {
         val team1 = MyTeam().apply {
             _id = "team_0"
