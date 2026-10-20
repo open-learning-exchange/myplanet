@@ -14,6 +14,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.Configuration as WorkManagerConfiguration
@@ -296,7 +297,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     }
 
     private suspend fun setupAnrWatchdog() {
-        withContext(dispatcherProvider.default) {
+        withContext(dispatcherProvider.main) {
             anrWatchdog = ANRWatchdog(
                 scope = applicationScope,
                 timeout = 5000L,
@@ -308,7 +309,9 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 },
                 dispatcherProvider = dispatcherProvider
             )
-            anrWatchdog.start()
+            if (ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+                anrWatchdog.start()
+            }
         }
     }
 
@@ -350,7 +353,16 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     private fun setupLifecycleCallbacks() {
         ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
+                if (::anrWatchdog.isInitialized) {
+                    anrWatchdog.start()
+                }
                 onAppForegrounded()
+            }
+
+            override fun onStop(owner: LifecycleOwner) {
+                if (::anrWatchdog.isInitialized) {
+                    anrWatchdog.stop()
+                }
             }
         })
         onAppStarted()
