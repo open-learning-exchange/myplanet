@@ -304,7 +304,9 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it.id },
         dbIdExtractor = { it._id }, // Enables POST/PUT logic
         markUploaded = { results ->
-            results.filter { result -> !ratingsRepository.markRatingUploaded(result.localId) }
+            results.filter { result ->
+                !ratingsRepository.markRatingUploaded(result.localId, result.remoteId, result.remoteRev)
+            }
         }
     )
 }

@@ -319,6 +319,40 @@ class TeamDaoTest {
     }
 
     @Test
+    fun observeMemberTeams_returnsOnlyRootTeamsWithActiveMembershipOfUser() = runBlocking {
+        val rootNull = MyTeam().apply { _id = "root_null"; teamId = null; docType = "team" }
+        val rootEmpty = MyTeam().apply { _id = "root_empty"; teamId = ""; docType = "team" }
+        val rootSpace = MyTeam().apply { _id = "root_space"; teamId = " "; docType = "team" }
+        val rootFormFeed = MyTeam().apply { _id = "root_ff"; teamId = "\u000C"; docType = "team" }
+        val notJoined = MyTeam().apply { _id = "not_joined"; teamId = null; docType = "team" }
+        val otherUsersTeam = MyTeam().apply { _id = "other_team"; teamId = null; docType = "team" }
+        val pendingTeam = MyTeam().apply { _id = "pending_team"; teamId = null; docType = "team" }
+        val childRow = MyTeam().apply { _id = "child1"; teamId = "root_null"; docType = "report" }
+        val reportForUser = MyTeam().apply { _id = "report1"; teamId = "not_joined"; userId = "user1"; docType = "report" }
+
+        fun membership(id: String, user: String, team: String, pending: Boolean = false) = MyTeam().apply {
+            _id = id; userId = user; teamId = team; docType = "membership"; isDeletePending = pending
+        }
+
+        teamDao.upsertAll(
+            listOf(
+                rootNull, rootEmpty, rootSpace, rootFormFeed, notJoined, otherUsersTeam, pendingTeam, childRow, reportForUser,
+                membership("m1", "user1", "root_null"),
+                membership("m2", "user1", "root_empty"),
+                membership("m3", "user1", "root_space"),
+                membership("m4", "user1", "root_ff"),
+                membership("m5", "user1", "child1"),
+                membership("m6", "user1", "pending_team", pending = true),
+                membership("m7", "user2", "other_team")
+            )
+        )
+
+        val resultIds = teamDao.observeMemberTeams("user1").first().map { it._id }.toSet()
+
+        assertEquals(setOf("root_null", "root_empty", "root_space", "root_ff"), resultIds)
+    }
+
+    @Test
     fun getRootTeamsByTypeAndIds_handlesLargeInputAndDeduplicates() = runBlocking {
         val team1 = MyTeam().apply {
             _id = "team_0"
@@ -340,5 +374,56 @@ class TeamDaoTest {
         assertEquals(2, result.size)
         assertTrue(result.any { it._id == "team_0" })
         assertTrue(result.any { it._id == "team_1000" })
+    }
+
+    @Test
+    fun getByIds_with1200IdsAndDuplicates_returnsAllWithoutDuplicates() = runBlocking {
+        val teams = (1..1200).map { i ->
+            MyTeam().apply {
+                _id = "team_$i"
+                name = "Team $i"
+            }
+        }
+        teamDao.upsertAll(teams)
+
+        val queryIds = (1..1200).map { i -> "team_$i" } + listOf("team_1", "team_500", "unknown_team")
+        val results = teamDao.getByIds(queryIds)
+
+        assertEquals(1200, results.size)
+        assertEquals((1..1200).map { i -> "team_$i" }.toSet(), results.map { it._id }.toSet())
+    }
+
+    @Test
+    fun deleteByIds_with1201IdsDuplicatesAndUnknowns_returnsDeletedCountAndLeavesUnrelatedRow() = runBlocking {
+        val teamsToDelete = (1..1200).map { i ->
+            MyTeam().apply {
+                _id = "team_$i"
+            }
+        }
+        val survivor = MyTeam().apply {
+            _id = "survivor_team"
+        }
+        teamDao.upsertAll(teamsToDelete + survivor)
+
+        val queryIds = (1..1200).map { i -> "team_$i" } + listOf("team_1", "team_900", "unknown_team_1", "unknown_team_2")
+        val deletedCount = teamDao.deleteByIds(queryIds)
+
+        assertEquals(1200, deletedCount)
+        assertEquals(null, teamDao.getById("team_1"))
+        assertEquals(null, teamDao.getById("team_1200"))
+        val fetchedSurvivor = teamDao.getById("survivor_team")
+        assertEquals("survivor_team", fetchedSurvivor?._id)
+    }
+
+    @Test
+    fun emptyList_getByIdsReturnsEmpty_deleteByIdsReturnsZero() = runBlocking {
+        teamDao.upsert(MyTeam().apply { _id = "team_1" })
+
+        val getResult = teamDao.getByIds(emptyList())
+        val deleteResult = teamDao.deleteByIds(emptyList())
+
+        assertTrue(getResult.isEmpty())
+        assertEquals(0, deleteResult)
+        assertEquals("team_1", teamDao.getById("team_1")?._id)
     }
 }
