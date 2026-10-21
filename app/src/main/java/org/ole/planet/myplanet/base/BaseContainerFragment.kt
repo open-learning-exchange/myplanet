@@ -6,6 +6,7 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -170,9 +171,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 prgDialog.dismiss()
             }
         } catch (e: UninitializedPropertyAccessException) {
-            e.printStackTrace()
+            Log.e(TAG, "dismissProgressDialog failed", e)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "dismissProgressDialog failed", e)
         }
     }
 
@@ -372,5 +373,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     override fun onDestroy() {
         dismissProgressDialog()
         super.onDestroy()
+    }
+
+    private companion object {
+        const val TAG = "BaseContainerFragment"
     }
 }

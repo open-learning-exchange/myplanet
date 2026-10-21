@@ -8,6 +8,7 @@ import org.ole.planet.myplanet.R
 object ImageUtils {
     fun loadProfileImage(image: String?, imageView: ImageView, sizePx: Int) {
         if (image.isNullOrEmpty()) {
+            Glide.with(imageView.context).clear(imageView)
             imageView.setImageResource(R.drawable.profile)
             return
         }
@@ -36,6 +37,7 @@ object ImageUtils {
                 .error(R.drawable.profile)
                 .into(imageView)
         } else {
+            Glide.with(imageView.context).clear(imageView)
             imageView.setImageResource(R.drawable.ole_logo)
         }
     }
