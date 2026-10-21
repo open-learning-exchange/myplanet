@@ -26,7 +26,7 @@ interface ResourceActivityDao {
     @Query("SELECT MIN(title) AS title, COUNT(*) AS openCount FROM resource_activity WHERE user = :userName AND type = :type AND title IS NOT NULL AND TRIM(title) != '' GROUP BY resourceId ORDER BY openCount DESC, title ASC LIMIT 1")
     suspend fun getMostOpenedResource(userName: String, type: String): ResourceOpenCount?
 
-    @Query("SELECT * FROM resource_activity WHERE user = :userName AND type = :type")
+    @Query("SELECT * FROM resource_activity WHERE user = :userName AND type = :type AND resourceId IS NOT NULL GROUP BY resourceId")
     fun observeByUserAndType(userName: String, type: String): Flow<List<ResourceActivity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
