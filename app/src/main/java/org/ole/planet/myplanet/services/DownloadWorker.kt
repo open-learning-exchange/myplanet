@@ -15,6 +15,7 @@ import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.io.File
+import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
@@ -145,6 +146,30 @@ class DownloadWorker @AssistedInject constructor(
         val fileSize = body.contentLength()
         val outputFile: File = FileUtils.getSDPathFromUrl(context, url)
         outputFile.parentFile?.mkdirs()
+        val partFile = File(outputFile.parentFile, "${outputFile.name}.part")
+        try {
+            val totalBytes = writeBody(body, partFile, fileSize, url, index, total)
+            if (fileSize > 0 && totalBytes != fileSize) {
+                throw IOException("Incomplete download: $totalBytes of $fileSize bytes")
+            }
+            if (!partFile.renameTo(outputFile)) {
+                partFile.copyTo(outputFile, overwrite = true)
+            }
+        } finally {
+            partFile.delete()
+        }
+        try {
+            resourcesRepository.markResourceOfflineByUrl(url)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to mark downloaded resource offline: ${UrlUtils.redactForLog(url)}", e)
+        }
+    }
+
+    private suspend fun writeBody(
+        body: ResponseBody, outputFile: File, fileSize: Long, url: String, index: Int, total: Int
+    ): Long {
         var totalBytes: Long = 0
         var lastUpdateTime = 0L
 
@@ -169,13 +194,7 @@ class DownloadWorker @AssistedInject constructor(
                 sink.flush()
             }
         }
-        try {
-            resourcesRepository.markResourceOfflineByUrl(url)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to mark downloaded resource offline: ${UrlUtils.redactForLog(url)}", e)
-        }
+        return totalBytes
     }
 
     private suspend fun showProgressNotification(current: Int, total: Int, fileName: String, fileProgress: Int = -1) {
