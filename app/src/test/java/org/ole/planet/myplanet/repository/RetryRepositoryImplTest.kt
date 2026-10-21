@@ -180,9 +180,10 @@ class RetryRepositoryImplTest {
             id = "op1"
             serializedPayload = "{}"
             endpoint = "test"
-            httpMethod = "POST"
+            httpMethod = "PUT"
+            dbId = "doc1"
         }
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } returns Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
 
         val result = repository.executeOperation(op)
 
@@ -198,9 +199,10 @@ class RetryRepositoryImplTest {
             id = "op1"
             serializedPayload = "{}"
             endpoint = "test"
-            httpMethod = "POST"
+            httpMethod = "PUT"
+            dbId = "doc1"
         }
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns Response.error(409, "Conflict".toResponseBody(null))
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } returns Response.error(409, "Conflict".toResponseBody(null))
 
         val result = repository.executeOperation(op)
 
@@ -215,9 +217,10 @@ class RetryRepositoryImplTest {
             id = "op1"
             serializedPayload = "{}"
             endpoint = "test"
-            httpMethod = "POST"
+            httpMethod = "PUT"
+            dbId = "doc1"
         }
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns Response.error(500, "Server Error".toResponseBody(null))
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } returns Response.error(500, "Server Error".toResponseBody(null))
 
         val result = repository.executeOperation(op)
 
@@ -232,9 +235,10 @@ class RetryRepositoryImplTest {
             id = "op1"
             serializedPayload = "{}"
             endpoint = "test"
-            httpMethod = "POST"
+            httpMethod = "PUT"
+            dbId = "doc1"
         }
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } throws IOException("Connection failed")
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } throws IOException("Connection failed")
 
         val result = repository.executeOperation(op)
 
@@ -249,9 +253,10 @@ class RetryRepositoryImplTest {
             id = "op1"
             serializedPayload = "{}"
             endpoint = "test"
-            httpMethod = "POST"
+            httpMethod = "PUT"
+            dbId = "doc1"
         }
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns Response.error(400, "Bad Request".toResponseBody(null))
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } returns Response.error(400, "Bad Request".toResponseBody(null))
 
         val result = repository.executeOperation(op)
 
@@ -266,7 +271,8 @@ class RetryRepositoryImplTest {
             id = "op1"
             serializedPayload = "invalid-json"
             endpoint = "test"
-            httpMethod = "POST"
+            httpMethod = "PUT"
+            dbId = "doc1"
         }
 
         val result = repository.executeOperation(op)
@@ -282,7 +288,8 @@ class RetryRepositoryImplTest {
             id = "op1"
             serializedPayload = "[1,2]"
             endpoint = "test"
-            httpMethod = "POST"
+            httpMethod = "PUT"
+            dbId = "doc1"
         }
 
         val result = repository.executeOperation(op)
@@ -300,10 +307,11 @@ class RetryRepositoryImplTest {
             id = "op1"
             serializedPayload = payloadJson
             endpoint = "test"
-            httpMethod = "POST"
+            httpMethod = "PUT"
+            dbId = "doc1"
         }
         val payloadSlot = slot<kotlinx.serialization.json.JsonObject>()
-        coEvery { apiInterface.postDoc(any(), any(), any(), capture(payloadSlot)) } returns Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
+        coEvery { apiInterface.putDoc(any(), any(), any(), capture(payloadSlot)) } returns Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
 
         val result = repository.executeOperation(op)
 
@@ -317,9 +325,10 @@ class RetryRepositoryImplTest {
             id = "op1"
             serializedPayload = "{}"
             endpoint = "test"
-            httpMethod = "POST"
+            httpMethod = "PUT"
+            dbId = "doc1"
         }
-        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } throws CancellationException("Job cancelled")
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } throws CancellationException("Job cancelled")
 
         try {
             repository.executeOperation(op)
@@ -330,6 +339,23 @@ class RetryRepositoryImplTest {
 
         coVerify(exactly = 0) { retryDao.recordFailedAttempt(any(), any(), any(), any()) }
         coVerify(exactly = 0) { retryDao.markCompleted(any(), any()) }
+    }
+
+    @Test
+    fun `executeOperation create is completed without being sent`() = runTest {
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = "{}"
+            endpoint = "test"
+            httpMethod = "POST"
+        }
+
+        val result = repository.executeOperation(op)
+
+        assertTrue(result is RetryOperationResult.Success)
+        coVerify { retryDao.markCompleted("op1", timeProvider.now()) }
+        coVerify(exactly = 0) { apiInterface.postDoc(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { retryDao.markInProgress(any()) }
     }
 
     @Test

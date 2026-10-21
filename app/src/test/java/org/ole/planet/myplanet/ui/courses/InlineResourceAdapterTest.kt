@@ -223,4 +223,58 @@ class InlineResourceAdapterTest {
         ioTestDispatcher.scheduler.advanceUntilIdle()
         coVerify(exactly = 1) { UrlUtils.getUrl(resource) }
     }
+
+    @Test
+    fun `combined address and status payload triggers exactly one UrlUtils getUrl evaluation`() = runTest {
+        val resource = MyLibrary().apply {
+            id = "res5"
+            resourceLocalAddress = "sample.pdf"
+            resourceOffline = false
+        }
+
+        adapter.submitList(listOf(resource))
+        mainTestDispatcher.scheduler.advanceUntilIdle()
+
+        val parent = LinearLayout(context)
+        val holder = adapter.onCreateViewHolder(parent, 0)
+
+        val payloads = mutableListOf<Any>(
+            listOf(InlineResourceAdapter.PAYLOAD_ADDRESS, InlineResourceAdapter.PAYLOAD_STATUS)
+        )
+
+        adapter.onBindViewHolder(holder, 0, payloads)
+
+        mainTestDispatcher.scheduler.advanceUntilIdle()
+        ioTestDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { UrlUtils.getUrl(resource) }
+    }
+
+    @Test
+    fun `title-only payload triggers no previewLoader or UrlUtils getUrl evaluation`() = runTest {
+        val resource = MyLibrary().apply {
+            id = "res6"
+            title = "New Title"
+            resourceLocalAddress = "sample.pdf"
+            resourceOffline = false
+        }
+
+        adapter.submitList(listOf(resource))
+        mainTestDispatcher.scheduler.advanceUntilIdle()
+
+        val parent = LinearLayout(context)
+        val holder = adapter.onCreateViewHolder(parent, 0)
+
+        val payloads = mutableListOf<Any>(
+            listOf(InlineResourceAdapter.PAYLOAD_TITLE)
+        )
+
+        adapter.onBindViewHolder(holder, 0, payloads)
+
+        mainTestDispatcher.scheduler.advanceUntilIdle()
+        ioTestDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("New Title", holder.binding.tvResourceTitle.text.toString())
+        coVerify(exactly = 0) { UrlUtils.getUrl(any()) }
+    }
 }

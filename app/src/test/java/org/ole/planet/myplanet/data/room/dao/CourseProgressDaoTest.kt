@@ -89,9 +89,12 @@ class CourseProgressDaoTest {
 
     @Test
     fun getByCourseUsersAndSteps_handlesLargeTupleChunking() = runBlocking {
-        val items = (1..300).map { i ->
-            createProgress("id_$i", "course_$i", "user_$i", i)
-        }
+        val items = listOf(
+            createProgress("id_1", "course_1", "user_1", 1),
+            createProgress("id_250", "course_250", "user_250", 250),
+            createProgress("id_251", "course_251", "user_251", 251),
+            createProgress("id_300", "course_300", "user_300", 300)
+        )
         courseProgressDao.upsertAll(items)
 
         val requestedTuples = (1..300).map { i ->
@@ -100,32 +103,52 @@ class CourseProgressDaoTest {
 
         val results = courseProgressDao.getByCourseUsersAndSteps(requestedTuples)
 
-        assertEquals(300, results.size)
+        assertEquals(4, results.size)
+        assertEquals(
+            setOf("id_1", "id_250", "id_251", "id_300"),
+            results.map { it.id }.toSet()
+        )
     }
 
     @Test
     fun getByUserAndCourseIds_handles1200CoursesWithNonNullUserId() = runBlocking {
-        val items = (1..1200).map { i ->
-            createProgress("id_$i", "course_$i", "user_1")
-        }
+        val items = listOf(
+            createProgress("id_1", "course_1", "user_1"),
+            createProgress("id_899", "course_899", "user_1"),
+            createProgress("id_900", "course_900", "user_1"),
+            createProgress("id_1200", "course_1200", "user_1"),
+            createProgress("id_wrong_user", "course_1", "user_2")
+        )
         courseProgressDao.upsertAll(items)
 
         val courseIds = (1..1200).map { "course_$it" }
         val results = courseProgressDao.getByUserAndCourseIds("user_1", courseIds)
 
-        assertEquals(1200, results.size)
+        assertEquals(4, results.size)
+        assertEquals(
+            setOf("id_1", "id_899", "id_900", "id_1200"),
+            results.map { it.id }.toSet()
+        )
     }
 
     @Test
     fun getByUserAndCourseIds_handles1200CoursesWithNullUserId() = runBlocking {
-        val items = (1..1200).map { i ->
-            createProgress("id_$i", "course_$i", null)
-        }
+        val items = listOf(
+            createProgress("id_1", "course_1", null),
+            createProgress("id_899", "course_899", null),
+            createProgress("id_900", "course_900", null),
+            createProgress("id_1200", "course_1200", null),
+            createProgress("id_user_1_control", "course_1", "user_1")
+        )
         courseProgressDao.upsertAll(items)
 
         val courseIds = (1..1200).map { "course_$it" }
         val results = courseProgressDao.getByUserAndCourseIds(null, courseIds)
 
-        assertEquals(1200, results.size)
+        assertEquals(4, results.size)
+        assertEquals(
+            setOf("id_1", "id_899", "id_900", "id_1200"),
+            results.map { it.id }.toSet()
+        )
     }
 }

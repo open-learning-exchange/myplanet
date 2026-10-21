@@ -6,6 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -34,7 +35,7 @@ class TeamTaskDaoTest {
 
     @Test
     fun getByIds_with1200IdsAndDuplicates_returnsAllWithoutDuplicates() = runBlocking {
-        val tasks = (1..1200).map { i ->
+        val tasks = listOf(1, 900, 901, 1200).map { i ->
             TeamTask().apply {
                 id = "task_$i"
                 title = "Title $i"
@@ -45,13 +46,13 @@ class TeamTaskDaoTest {
         val queryIds = (1..1200).map { i -> "task_$i" } + listOf("task_1", "task_500")
         val results = teamTaskDao.getByIds(queryIds)
 
-        assertEquals(1200, results.size)
-        assertEquals((1..1200).map { i -> "task_$i" }.toSet(), results.map { it.id }.toSet())
+        assertEquals(4, results.size)
+        assertEquals(setOf("task_1", "task_900", "task_901", "task_1200"), results.map { it.id }.toSet())
     }
 
     @Test
     fun getByTitles_with1200TitlesAndDuplicates_returnsAllWithoutDuplicates() = runBlocking {
-        val tasks = (1..1200).map { i ->
+        val tasks = listOf(1, 900, 901, 1200).map { i ->
             TeamTask().apply {
                 id = "task_$i"
                 title = "Title_$i"
@@ -62,17 +63,20 @@ class TeamTaskDaoTest {
         val queryTitles = (1..1200).map { i -> "Title_$i" } + listOf("Title_1", "Title_200")
         val results = teamTaskDao.getByTitles(queryTitles)
 
-        assertEquals(1200, results.size)
-        assertEquals((1..1200).map { i -> "Title_$i" }.toSet(), results.map { it.title }.toSet())
+        assertEquals(4, results.size)
+        assertEquals(setOf("Title_1", "Title_900", "Title_901", "Title_1200"), results.map { it.title }.toSet())
     }
 
     @Test
     fun markTasksNotified_with1200IdsAndDuplicates_updatesAll() = runBlocking {
-        val tasks = (1..1200).map { i ->
+        val tasks = listOf(1, 900, 901, 1200).map { i ->
             TeamTask().apply {
                 id = "task_$i"
                 isNotified = false
             }
+        } + TeamTask().apply {
+            id = "task_control"
+            isNotified = false
         }
         teamTaskDao.upsertAll(tasks)
 
@@ -80,8 +84,12 @@ class TeamTaskDaoTest {
         teamTaskDao.markTasksNotified(queryIds)
 
         val fetchedTasks = teamTaskDao.getByIds((1..1200).map { i -> "task_$i" })
-        assertEquals(1200, fetchedTasks.size)
+        assertEquals(4, fetchedTasks.size)
         assertTrue(fetchedTasks.all { it.isNotified })
+        assertEquals(setOf("task_1", "task_900", "task_901", "task_1200"), fetchedTasks.map { it.id }.toSet())
+
+        val controlTask = teamTaskDao.getById("task_control")
+        assertFalse(controlTask!!.isNotified)
     }
 
     @Test

@@ -8,11 +8,11 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 
 @HiltViewModel
 class ResourceDetailViewModel @Inject constructor(
-    private val userRepository: UserRepository,
+    private val userRepository: UserReadRepository,
     private val resourcesRepository: ResourcesRepository,
     private val ratingsRepository: RatingsRepository
 ) : ViewModel() {
