@@ -97,7 +97,6 @@ class ChatHistoryAdapter(
             val pos = holder.bindingAdapterPosition
             if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
             val item = getItem(pos)
-            holder.rowChatHistoryBinding.chatCardView.contentDescription = getChatTitle(item)
             chatHistoryItemClickListener?.onChatHistoryItemClicked(
                 item.conversations?.toList(),
                 "${item._id}",
@@ -132,6 +131,7 @@ class ChatHistoryAdapter(
         val title = getChatTitle(item)
         holder.rowChatHistoryBinding.chatTitle.text = title
         holder.rowChatHistoryBinding.chatTitle.contentDescription = title
+        holder.rowChatHistoryBinding.chatCardView.contentDescription = title
     }
 
     private fun getChatTitle(item: ChatHistory): String? =
