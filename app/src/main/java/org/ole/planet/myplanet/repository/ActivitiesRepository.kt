@@ -49,4 +49,6 @@ interface ActivitiesRepository {
     suspend fun getPendingResourceActivityUploads(): List<ResourceActivity>
     suspend fun getPendingResourceActivitySyncUploads(): List<ResourceActivity>
     suspend fun markResourceActivityUploaded(localId: String, remoteId: String, rev: String): Boolean
+    suspend fun recordSearchActivity(activity: SearchActivity)
+    suspend fun getRemovedDocIds(type: String, userId: String?): List<String>
 }
