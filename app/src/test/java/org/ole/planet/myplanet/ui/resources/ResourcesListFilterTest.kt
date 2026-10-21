@@ -355,4 +355,40 @@ class ResourcesListFilterTest {
             filter.countMatching(models, criteria, locallyOfflineIds)
         )
     }
+
+    @Test
+    fun `mixed-case medium aliases agree between apply and countMatching`() {
+        val pdfModel = model(id = "1", title = "PDF Doc", mediaType = "pdf", localAddress = "doc.pdf")
+        val videoModel = model(id = "2", title = "Video Clip", mediaType = "video", localAddress = "clip.mp4")
+        val audioModel = model(id = "3", title = "Audio Track", mediaType = "mp3", localAddress = "track.mp3")
+        val bookModel = model(id = "4", title = "Book", mediaType = "book", localAddress = "book.epub")
+
+        val filter = ResourcesListFilter()
+        val criteria = noFilters.copy(mediums = setOf("PDF", "Videos", "mp3"))
+
+        val models = listOf(pdfModel, videoModel, audioModel, bookModel)
+        val applied = filter.apply(models, criteria, emptySet())
+        val count = filter.countMatching(models, criteria, emptySet())
+
+        assertEquals(3, applied.size)
+        assertEquals(applied.size, count)
+        assertEquals(setOf("1", "2", "3"), applied.map { it.item.id }.toSet())
+    }
+
+    @Test
+    fun `non-target custom medium matches on canonical mediaType`() {
+        val customModel = model(id = "1", title = "Custom Resource", mediaType = "InteractiveApp")
+        val otherModel = model(id = "2", title = "Other Resource", mediaType = "Document")
+
+        val filter = ResourcesListFilter()
+        val criteria = noFilters.copy(mediums = setOf("interactiveapp"))
+
+        val models = listOf(customModel, otherModel)
+        val applied = filter.apply(models, criteria, emptySet())
+        val count = filter.countMatching(models, criteria, emptySet())
+
+        assertEquals(1, applied.size)
+        assertEquals("1", applied[0].item.id)
+        assertEquals(applied.size, count)
+    }
 }

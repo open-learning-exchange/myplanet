@@ -4,8 +4,10 @@ import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.every
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import org.ole.planet.myplanet.utils.FileUtils
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -250,5 +252,32 @@ class NewsTest {
 
         news.reactions = "not json"
         assertTrue(news.reactionsMap.isEmpty())
+    }
+
+    @Test
+    fun `createImageListEntry yields imageUrl and fileName`() {
+        mockkObject(FileUtils)
+        every { FileUtils.getFileNameFromUrl("/path/to/image.jpg") } returns "image.jpg"
+
+        val jsonResult = News.createImageListEntry("/path/to/image.jpg")
+
+        assertTrue(jsonResult.contains(""""imageUrl":"/path/to/image.jpg""""))
+        assertTrue(jsonResult.contains(""""fileName":"image.jpg""""))
+    }
+
+    @Test
+    fun `containsImagePath returns true for matching imageUrl and false otherwise`() {
+        mockkObject(FileUtils)
+        every { FileUtils.getFileNameFromUrl(any()) } answers { firstArg<String>().substringAfterLast('/') }
+
+        val entry1 = News.createImageListEntry("/path/to/image1.jpg")
+        val entry2 = News.createImageListEntry("/path/to/image2.jpg")
+        val invalidEntry = "invalid json"
+
+        val imageList = listOf(entry1, entry2, invalidEntry)
+
+        assertTrue(News.containsImagePath(imageList, "/path/to/image1.jpg"))
+        assertTrue(News.containsImagePath(imageList, "/path/to/image2.jpg"))
+        assertFalse(News.containsImagePath(imageList, "/path/to/image3.jpg"))
     }
 }

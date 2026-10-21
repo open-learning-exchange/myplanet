@@ -95,9 +95,10 @@ class ResourcesViewModel @Inject constructor(
     }
 
     fun loadResources(isMyCourseLib: Boolean, modelId: String?) {
-        val cached = getCachedResources(isMyCourseLib, modelId)
-        if (cached != null && _resourcesState.value.isEmpty()) {
-            _resourcesState.value = cached
+        if (_resourcesState.value.isEmpty()) {
+            getCachedResources(isMyCourseLib, modelId)?.let {
+                _resourcesState.value = it
+            }
         }
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
