@@ -797,9 +797,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
     }
 
-    private fun topBarVisible(){
+    private fun topBarVisible() {
+        val tabLayout = tl ?: return
         val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
 
         tabLayout.visibility = if (isLandscape) {
             View.VISIBLE
