@@ -4,20 +4,43 @@ import android.util.Log
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.clearAllMocks
 import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.ole.planet.myplanet.services.UploadManager
 
 class SyncTimeLoggerTest {
 
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkStatic(Log::class)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkStatic(Log::class)
+        }
+    }
+
+    @Before
+    fun setUp() {
+        clearAllMocks()
+    }
+
     @Test
     fun testGenerateSummary() {
-        mockkStatic(Log::class)
         every { Log.isLoggable(any(), any()) } returns true
         every { Log.d(any(), any()) } returns 0
 
@@ -67,7 +90,6 @@ class SyncTimeLoggerTest {
 
     @Test
     fun testEndProcess() {
-        mockkStatic(Log::class)
         every { Log.isLoggable(any(), any()) } returns false
 
         var currentTime = 1000L
@@ -109,7 +131,6 @@ class SyncTimeLoggerTest {
 
     @Test
     fun testWhenTagNotLoggableNoPerEventLogOutput() {
-        mockkStatic(Log::class)
         every { Log.isLoggable("SyncPerf", Log.DEBUG) } returns false
         every { Log.d(any(), any()) } returns 0
 
@@ -170,7 +191,6 @@ class SyncTimeLoggerTest {
 
     @Test
     fun testGenerateSummaryMultipleKeysAndLogs() {
-        mockkStatic(Log::class)
         every { Log.isLoggable(any(), any()) } returns true
         every { Log.d(any(), any()) } returns 0
 
@@ -221,7 +241,6 @@ class SyncTimeLoggerTest {
 
     @Test
     fun testGenerateSummaryGolden() {
-        mockkStatic(Log::class)
         every { Log.isLoggable(any(), any()) } returns true
         every { Log.d(any(), any()) } returns 0
 
@@ -290,7 +309,6 @@ class SyncTimeLoggerTest {
 
     @Test
     fun testThreeApiCallsOneEndpointTwoAnotherTwoDbOps() {
-        mockkStatic(Log::class)
         every { Log.isLoggable(any(), any()) } returns true
         every { Log.d(any(), any()) } returns 0
 
@@ -339,7 +357,6 @@ class SyncTimeLoggerTest {
 
     @Test
     fun testStopLoggingWhenUploadCrashLogThrows() {
-        mockkStatic(Log::class)
         every { Log.isLoggable(any(), any()) } returns false
         every { Log.e(any(), any(), any()) } returns 0
 
