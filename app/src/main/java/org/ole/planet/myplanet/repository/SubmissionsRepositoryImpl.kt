@@ -520,6 +520,12 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         saveSubmission(submission)
         return submission
     }
+    
+    private fun choiceJson(id: String, text: String): String =
+        JsonObject().apply {
+            addProperty("id", id)
+            addProperty("text", text)
+        }.toString()
 
     override suspend fun saveExamAnswer(answerData: ExamAnswerData): Boolean {
         val (submission, question, ans, listAns, otherText, otherVisible, type, index, total, isExplicitSubmission, userId) = answerData
@@ -550,11 +556,11 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             if (question.type.equals("select", ignoreCase = true)) {
                 if (otherVisible && !otherText.isNullOrEmpty()) {
                     value = otherText
-                    valueChoices = listOf("""{"id":"other","text":"$otherText"}""")
+                    valueChoices = listOf(choiceJson("other", otherText))
                 } else {
                     value = ansForCheck
                     valueChoices = if (ans.isNotEmpty()) {
-                        listOf("""{"id":"$ans","text":"$ansForCheck"}""")
+                        listOf(choiceJson(ans, ansForCheck))
                     } else {
                         emptyList()
                     }
@@ -563,9 +569,9 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 value = ""
                 valueChoices = listAns?.map { (text, id) ->
                     if (id == "other" && otherVisible && !otherText.isNullOrEmpty()) {
-                        """{"id":"other","text":"$otherText"}"""
+                        choiceJson("other", otherText)
                     } else {
-                        """{"id":"$id","text":"$text"}"""
+                        choiceJson(id, text)
                     }
                 }
             } else {
