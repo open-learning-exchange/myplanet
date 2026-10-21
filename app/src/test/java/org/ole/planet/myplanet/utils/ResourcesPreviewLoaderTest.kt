@@ -68,6 +68,18 @@ class ResourcesPreviewLoaderTest {
     }
 
     @Test
+    fun `getCsvPreview returns five row preview when sixth record has unterminated quote`() = runTest {
+        val file = tempFolder.newFile("malformed_sixth.csv")
+        val fiveValidRows = (1..5).joinToString("\n") { "A$it,B$it,C$it" }
+        file.writeText("$fiveValidRows\n\"unterminated quote")
+
+        val preview = previewLoader.getCsvPreview(file)
+
+        val expected = (1..5).joinToString("\n") { "A$it  |  B$it  |  C$it" }
+        assertEquals(expected, preview)
+    }
+
+    @Test
     fun `getCsvPreview returns null for invalid file`() = runTest {
         val file = File(tempFolder.root, "does_not_exist.csv")
         val preview = previewLoader.getCsvPreview(file)

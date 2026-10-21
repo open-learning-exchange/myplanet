@@ -333,7 +333,7 @@ class SettingsActivity : AppCompatActivity() {
             if (lastSynced == 0L) {
                 lastSyncDate?.setTitle(R.string.last_synced_never)
             } else if (lastSyncDate != null) {
-                lastSyncDate.title = getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSynced, timeProvider)
+                lastSyncDate.title = getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(requireContext(), lastSynced, timeProvider)
             }
         }
 

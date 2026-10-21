@@ -2,6 +2,9 @@ package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
 import dagger.Lazy
+import java.io.File
+import java.io.IOException
+import java.nio.file.Files
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -11,6 +14,13 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import okhttp3.MediaType
+import okhttp3.ResponseBody
+import okhttp3.ResponseBody.Companion.toResponseBody
+import okio.Buffer
+import okio.BufferedSource
+import okio.ForwardingSource
+import okio.buffer
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -104,6 +114,62 @@ class TransactionSyncManagerTest {
     @After
     fun tearDown() {
         unmockkObject(UrlUtils)
+    }
+
+    @Test
+    fun `downloadAttachment moves a complete download into place without leaving a part file`() = testScope.runTest {
+        val dir = Files.createTempDirectory("attachments").toFile()
+        val destFile = File(dir, "cover.png")
+        val bytes = ByteArray(512) { it.toByte() }
+        coEvery { apiInterface.downloadFile(any(), any()) } returns Response.success(bytes.toResponseBody(null))
+
+        transactionSyncManager.downloadAttachment("http://mockurl/courses/c1/cover.png", destFile)
+
+        assertTrue(destFile.readBytes().contentEquals(bytes))
+        assertFalse(File(dir, "cover.png.part").exists())
+        dir.deleteRecursively()
+    }
+
+    @Test
+    fun `downloadAttachment leaves no file behind when the body is truncated`() = testScope.runTest {
+        val dir = Files.createTempDirectory("attachments").toFile()
+        val destFile = File(dir, "resume.pdf")
+        val truncatedBody = object : ResponseBody() {
+            override fun contentType(): MediaType? = null
+            override fun contentLength(): Long = 4096
+            override fun source(): BufferedSource = Buffer().write(ByteArray(1024))
+        }
+        coEvery { apiInterface.downloadFile(any(), any()) } returns Response.success(truncatedBody)
+
+        transactionSyncManager.downloadAttachment("http://mockurl/achievements/a1/resume.pdf", destFile)
+
+        assertFalse(destFile.exists())
+        assertFalse(File(dir, "resume.pdf.part").exists())
+        dir.deleteRecursively()
+    }
+
+    @Test
+    fun `downloadAttachment leaves no file behind when the download fails midway`() = testScope.runTest {
+        val dir = Files.createTempDirectory("attachments").toFile()
+        val destFile = File(dir, "team.png")
+        val failingBody = object : ResponseBody() {
+            override fun contentType(): MediaType? = null
+            override fun contentLength(): Long = -1
+            override fun source(): BufferedSource = object : ForwardingSource(Buffer().write(ByteArray(1024))) {
+                private var reads = 0
+                override fun read(sink: Buffer, byteCount: Long): Long {
+                    if (reads++ > 0) throw IOException("connection reset")
+                    return super.read(sink, byteCount)
+                }
+            }.buffer()
+        }
+        coEvery { apiInterface.downloadFile(any(), any()) } returns Response.success(failingBody)
+
+        transactionSyncManager.downloadAttachment("http://mockurl/teams/t1/team.png", destFile)
+
+        assertFalse(destFile.exists())
+        assertFalse(File(dir, "team.png.part").exists())
+        dir.deleteRecursively()
     }
 
     @Test

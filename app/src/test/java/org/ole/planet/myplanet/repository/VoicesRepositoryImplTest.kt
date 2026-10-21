@@ -125,7 +125,8 @@ class VoicesRepositoryImplTest {
             user = "{}"
             conversations = "[]"
         }
-        coEvery { newsDao.getAll() } returns listOf(guestNews, validNews)
+        coEvery { newsDao.getPendingUploads() } returns listOf(guestNews, validNews)
+        coEvery { newsDao.getByIds(any()) } returns emptyList()
 
         val result = repoWithRealGson.getNewsForUpload()
 
@@ -136,6 +137,36 @@ class VoicesRepositoryImplTest {
         assertNotNull(result[0].newsJson.get("user"))
         assertEquals("uniqueIdentifier", result[0].newsJson.get("androidId").asString)
         assertEquals("myplanet", result[0].newsJson.get("app").asString)
+    }
+
+    @Test
+    fun `getNewsForUpload resolves reply parent outside the pending set`() = testScope.runTest {
+        mockkStatic(TextUtils::class)
+        every { TextUtils.isEmpty(any()) } answers { firstArg<CharSequence?>().isNullOrEmpty() }
+
+        val repoWithRealGson = newRepository(Gson())
+
+        val parent = News().apply {
+            id = "parent_local"
+            _id = "parent_remote"
+            userId = "user_123"
+        }
+        val reply = News().apply {
+            id = "reply_local"
+            userId = "user_123"
+            replyTo = "parent_local"
+            message = "Reply"
+            user = "{}"
+            conversations = "[]"
+        }
+        coEvery { newsDao.getPendingUploads() } returns listOf(reply)
+        coEvery { newsDao.getByIds(listOf("parent_local")) } returns listOf(parent)
+
+        val result = repoWithRealGson.getNewsForUpload()
+
+        assertEquals(1, result.size)
+        assertEquals("parent_remote", result[0].newsJson.get("replyTo").asString)
+        coVerify(exactly = 0) { newsDao.getAll() }
     }
 
     @Test
@@ -181,6 +212,7 @@ class VoicesRepositoryImplTest {
         coVerify(exactly = 1) { newsDao.upsert(capture(slot)) }
         assertTrue(slot.captured.labels!!.contains("testLabel"))
         assertTrue(slot.captured.labels!!.contains("existing"))
+        assertTrue(slot.captured.isUpdated)
     }
 
     @Test
@@ -196,6 +228,7 @@ class VoicesRepositoryImplTest {
         val slot = slot<News>()
         coVerify(exactly = 1) { newsDao.upsert(capture(slot)) }
         assertEquals(listOf("keep"), slot.captured.labels)
+        assertTrue(slot.captured.isUpdated)
     }
 
     @Test
