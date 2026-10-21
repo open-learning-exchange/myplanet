@@ -62,14 +62,15 @@ open class Meetup {
         /**
          * Builds an unmanaged meetup from a CouchDB document. Created date, recurring number and
          * sync/source metadata come from the document; [existingMeetup] only fills them in when the
-         * document lacks them, and carries over the local `updated` flag.
+         * document lacks them, and carries over the local `updated` flag. A blank [userId] keeps
+         * the existing row's attendance, since sync pulls carry no user and would otherwise undo a join.
          */
         fun fromJson(meetupDoc: JsonObject, userId: String?, existingMeetup: Meetup?): Meetup {
             val kDoc = meetupDoc.toKotlinx().jsonObject
             val meetup = Meetup()
             meetup.id = JsonUtils.getString("_id", kDoc)
             meetup.meetupId = JsonUtils.getString("_id", kDoc)
-            meetup.userId = userId
+            meetup.userId = userId?.takeIf { it.isNotEmpty() } ?: existingMeetup?.userId ?: userId
             meetup.meetupIdRev = JsonUtils.getString("_rev", kDoc)
             meetup.title = JsonUtils.getString("title", kDoc)
             meetup.description = JsonUtils.getString("description", kDoc)
