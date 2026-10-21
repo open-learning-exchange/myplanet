@@ -252,7 +252,7 @@ object FileUtils {
             copyUriToFile(context, uri, destinationFile)
             destinationFile.absolutePath
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "resolveUriToPath failed", e)
             null
         }
     }
