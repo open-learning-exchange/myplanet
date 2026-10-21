@@ -36,7 +36,7 @@ class MyLibraryDaoTest {
 
     @Test
     fun getByIds_handles1200Ids() = runBlocking {
-        val libraries = (1..1200).map { i ->
+        val libraries = listOf(1, 900, 901, 1200).map { i ->
             MyLibrary().apply {
                 id = "pk_$i"
                 title = "Library $i"
@@ -47,8 +47,8 @@ class MyLibraryDaoTest {
         val queryIds = (1..1200).map { "pk_$it" } + listOf("pk_1", "pk_1200")
         val results = myLibraryDao.getByIds(queryIds)
 
-        assertEquals(1200, results.size)
-        assertEquals(1200, results.map { it.id }.distinct().size)
+        assertEquals(4, results.size)
+        assertEquals(setOf("pk_1", "pk_900", "pk_901", "pk_1200"), results.map { it.id }.toSet())
 
         val emptyResult = myLibraryDao.getByIds(emptyList())
         assertTrue(emptyResult.isEmpty())
@@ -56,7 +56,7 @@ class MyLibraryDaoTest {
 
     @Test
     fun getByResourceIds_handles1200Ids() = runBlocking {
-        val libraries = (1..1200).map { i ->
+        val libraries = listOf(1, 900, 901, 1200).map { i ->
             MyLibrary().apply {
                 id = "pk_$i"
                 resourceId = "res_$i"
@@ -68,8 +68,8 @@ class MyLibraryDaoTest {
         val resourceIds = (1..1200).map { "res_$it" } + listOf("res_1", "res_1200")
         val results = myLibraryDao.getByResourceIds(resourceIds)
 
-        assertEquals(1200, results.size)
-        assertEquals(1200, results.map { it.resourceId }.distinct().size)
+        assertEquals(4, results.size)
+        assertEquals(setOf("res_1", "res_900", "res_901", "res_1200"), results.map { it.resourceId }.toSet())
 
         val emptyResult = myLibraryDao.getByResourceIds(emptyList())
         assertTrue(emptyResult.isEmpty())
@@ -78,7 +78,7 @@ class MyLibraryDaoTest {
     @Test
     fun getByResourceIdsNotUserPattern_handles1200Ids_andExcludesUser() = runBlocking {
         val userPattern = "%\"user_123\"%"
-        val libraries = (1..1200).map { i ->
+        val libraries = listOf(1, 2, 900, 901, 1200).map { i ->
             MyLibrary().apply {
                 id = "pk_$i"
                 resourceId = "res_$i"
@@ -91,7 +91,8 @@ class MyLibraryDaoTest {
         val resourceIds = (1..1200).map { "res_$it" } + listOf("res_1", "res_2")
         val results = myLibraryDao.getByResourceIdsNotUserPattern(resourceIds, userPattern)
 
-        assertEquals(600, results.size)
+        assertEquals(2, results.size)
+        assertEquals(setOf("pk_1", "pk_901"), results.map { it.id }.toSet())
         assertTrue(results.all { it.userId == listOf("user_456") })
 
         val emptyResult = myLibraryDao.getByResourceIdsNotUserPattern(emptyList(), userPattern)
@@ -100,18 +101,22 @@ class MyLibraryDaoTest {
 
     @Test
     fun getByCourseIds_handles1200Courses() = runBlocking {
-        val libraries = (1..1200).map { i ->
+        val libraries = listOf(1, 900, 901, 1200).map { i ->
             MyLibrary().apply {
                 id = "lib_$i"
                 courseId = "course_$i"
             }
+        } + MyLibrary().apply {
+            id = "lib_9999"
+            courseId = "course_9999"
         }
         myLibraryDao.upsertAll(libraries)
 
         val courseIds = (1..1200).map { "course_$it" }
         val results = myLibraryDao.getByCourseIds(courseIds)
 
-        assertEquals(1200, results.size)
+        assertEquals(4, results.size)
+        assertFalse(results.any { it.courseId == "course_9999" })
     }
 
     @Test
@@ -203,27 +208,25 @@ class MyLibraryDaoTest {
 
     @Test
     fun getByResourceIdsByRowid_handles1200Ids() = runBlocking {
-        val items = (1..1200).map { i ->
+        val items = listOf(1, 900, 901, 1200).map { i ->
             MyLibrary().apply {
                 id = "pk_$i"
                 resourceId = "res_$i"
                 title = "Resource $i"
             }
         }
-        myLibraryDao.upsertAll(items)
+        items.forEach { myLibraryDao.upsert(it) }
 
-        val searchIds = items.map { it.resourceId!! }
+        val searchIds = (1..1200).map { "res_$it" }
         val results = myLibraryDao.getByResourceIdsByRowid(searchIds)
 
-        assertEquals(1200, results.size)
-        assertEquals("pk_1", results.first().id)
-        assertEquals("pk_1200", results.last().id)
+        assertEquals(4, results.size)
+        assertEquals(listOf("pk_1", "pk_900", "pk_901", "pk_1200"), results.map { it.id })
     }
 
     @Test
     fun markAsNotOfflineByResourceIds_and_getResourceTitlesByResourceIds_deduplicateAcrossChunkBoundary() = runBlocking {
-        val count = 1000
-        val items = (1..count).map { i ->
+        val items = listOf(1, 900, 901, 1000).map { i ->
             MyLibrary().apply {
                 id = "off_id_$i"
                 _id = "off_doc_$i"
@@ -231,22 +234,32 @@ class MyLibraryDaoTest {
                 title = "Title $i"
                 resourceOffline = true
             }
+        } + MyLibrary().apply {
+            id = "off_id_ctrl"
+            _id = "off_doc_ctrl"
+            resourceId = "off_res_ctrl"
+            title = "Control Title"
+            resourceOffline = true
         }
         myLibraryDao.upsertAll(items)
 
-        val idsWithDuplicate = items.map { it.resourceId!! } + "off_res_1"
+        val idsWithDuplicate = (1..1000).map { "off_res_$it" } + "off_res_1"
         assertEquals(1001, idsWithDuplicate.size)
 
         val titles = myLibraryDao.getResourceTitlesByResourceIds(idsWithDuplicate)
-        assertEquals(1000, titles.size)
+        assertEquals(4, titles.size)
 
         myLibraryDao.markAsNotOfflineByResourceIds(idsWithDuplicate)
 
         val allItems = myLibraryDao.getPublic()
-        assertEquals(count, allItems.size)
-        allItems.forEach { item ->
+        val targetItems = allItems.filter { it.resourceId != "off_res_ctrl" }
+        assertEquals(4, targetItems.size)
+        targetItems.forEach { item ->
             assertEquals(false, item.resourceOffline)
         }
+        val control = allItems.find { it.resourceId == "off_res_ctrl" }
+        assertNotNull(control)
+        assertEquals(true, control?.resourceOffline)
     }
 
     @Test
@@ -380,25 +393,33 @@ class MyLibraryDaoTest {
 
     @Test
     fun markAsNotOfflineByResourceIds_clearsResourceOfflineStatusForGivenIds() = runBlocking {
-        val count = 1200
-        val items = (1..count).map { i ->
+        val items = listOf(1, 900, 901, 1200).map { i ->
             MyLibrary().apply {
                 id = "off_id_$i"
                 _id = "off_doc_$i"
                 resourceId = "off_res_$i"
                 resourceOffline = true
             }
+        } + MyLibrary().apply {
+            id = "off_id_ctrl"
+            _id = "off_doc_ctrl"
+            resourceId = "off_res_ctrl"
+            resourceOffline = true
         }
         myLibraryDao.upsertAll(items)
 
-        val idsToMark = items.map { it.resourceId!! }
+        val idsToMark = (1..1200).map { "off_res_$it" }
         myLibraryDao.markAsNotOfflineByResourceIds(idsToMark)
 
         val allItems = myLibraryDao.getPublic()
-        assertEquals(count, allItems.size)
-        allItems.forEach { item ->
+        val targetItems = allItems.filter { it.resourceId != "off_res_ctrl" }
+        assertEquals(4, targetItems.size)
+        targetItems.forEach { item ->
             assertEquals(false, item.resourceOffline)
         }
+        val control = allItems.find { it.resourceId == "off_res_ctrl" }
+        assertNotNull(control)
+        assertEquals(true, control?.resourceOffline)
     }
 
     @Test

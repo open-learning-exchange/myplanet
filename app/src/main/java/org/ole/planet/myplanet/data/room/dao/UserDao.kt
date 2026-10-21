@@ -11,7 +11,12 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE id = :id OR _id = :id LIMIT 1")
     suspend fun getById(id: String): UserEntity?
     @Query("SELECT * FROM users WHERE id IN (:userIds) OR _id IN (:userIds)")
-    suspend fun getUsersByAnyIds(userIds: List<String>): List<UserEntity>
+    suspend fun getUsersByAnyIdsInternal(userIds: List<String>): List<UserEntity>
+
+    suspend fun getUsersByAnyIds(userIds: List<String>): List<UserEntity> {
+        if (userIds.isEmpty()) return emptyList()
+        return userIds.distinct().chunked(450).flatMap { getUsersByAnyIdsInternal(it) }.distinctBy { it.id }
+    }
     @Query("SELECT * FROM users") suspend fun getAll(): List<UserEntity>
     @Query("SELECT * FROM users WHERE name = :name LIMIT 1") suspend fun getByName(name: String): UserEntity?
     @Query("SELECT * FROM users WHERE name = :name COLLATE NOCASE LIMIT 1") suspend fun getByNameIgnoreCase(name: String): UserEntity?
@@ -43,7 +48,12 @@ interface UserDao {
     suspend fun getGuestUserByName(name: String): UserEntity?
 
     @Query("SELECT * FROM users WHERE name IN (:names) AND SUBSTR(_id, 1, 6) = 'guest_'")
-    suspend fun getGuestUsersByNames(names: List<String>): List<UserEntity>
+    suspend fun getGuestUsersByNamesInternal(names: List<String>): List<UserEntity>
+
+    suspend fun getGuestUsersByNames(names: List<String>): List<UserEntity> {
+        if (names.isEmpty()) return emptyList()
+        return names.distinct().chunked(900).flatMap { getGuestUsersByNamesInternal(it) }.distinctBy { it.id }
+    }
 
     @Query("""
         SELECT * FROM users

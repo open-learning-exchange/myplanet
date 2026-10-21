@@ -43,6 +43,8 @@ jobs:
         with:
           path: |
             app/build
+            !app/build/test-results/**
+            !app/build/reports/**
             .gradle/*
             !.gradle/configuration-cache
           key: build-dir-build-${{ matrix.build }}-${{ github.sha }}
@@ -50,6 +52,7 @@ jobs:
             build-dir-build-${{ matrix.build }}-
 
       - name: build debug as test
+        shell: bash
         env:
           GRADLE_BUILD_CACHE_URL: ${{ secrets.GRADLE_BUILD_CACHE_URL }}
           GRADLE_BUILD_CACHE_USER: ${{ secrets.GRADLE_BUILD_CACHE_USER }}
@@ -57,4 +60,11 @@ jobs:
           GRADLE_BUILD_CACHE_PUSH: 'true'
         run: |
           FLAVOR=${{ matrix.build }}
-          ./gradlew assemble${FLAVOR^}Debug --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4
+          args=(assemble${FLAVOR^}Debug --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4)
+          log="$RUNNER_TEMP/gradle-build.log"
+          if ! ./gradlew "${args[@]}" 2>&1 | tee "$log"; then
+            grep -q "Incremental compilation failed" "$log" || exit 1
+            echo "::warning::stale Kotlin incremental caches in the restored build dir; retrying without them"
+            rm -rf app/build/kotlin
+            ./gradlew "${args[@]}"
+          fi
