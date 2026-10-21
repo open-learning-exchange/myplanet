@@ -25,7 +25,7 @@ class ActivitiesViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val endMillis = Calendar.getInstance().timeInMillis
-    // Start of the month eleven months back, so the window holds twelve distinct calendar months
+
     private val startMillis = Calendar.getInstance().apply {
         add(Calendar.MONTH, -11)
         set(Calendar.DAY_OF_MONTH, 1)
@@ -44,7 +44,6 @@ class ActivitiesViewModel @Inject constructor(
         .map { computeMonthlyCounts(it, startMillis, endMillis) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
-    // Keys are year * 12 + month, so the same month of different years stays apart and sorts chronologically
     internal suspend fun computeMonthlyCounts(
         logins: List<OfflineActivity>,
         startMillis: Long,
