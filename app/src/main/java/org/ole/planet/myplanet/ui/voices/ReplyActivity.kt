@@ -30,13 +30,11 @@ import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.VoicesEditor
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utils.FileUtils.resolveUriToPath
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.GsonUtils.getString
@@ -56,8 +54,6 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
-    @Inject
-    lateinit var sharedPrefManager: SharedPrefManager
     @Inject
     lateinit var voicesEditor: VoicesEditor
 
@@ -145,8 +141,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(lifecycleScope, dispatcherProvider),
                     labelManager = labelManager,
                     voicesEditor = voicesEditor,
-                    leadersList = voicesViewModel.getCommunityLeaders(),
-                    setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
+                    leadersList = voicesViewModel.getCommunityLeaders()
                 )
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
@@ -218,31 +213,17 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
             return
         }
 
-        if (isImageAlreadyAdded(path)) {
+        if (News.containsImagePath(imageList, path)) {
             Toast.makeText(this, R.string.image_already_added, Toast.LENGTH_SHORT).show()
             return
         }
 
-        val jsonObject = JsonObject()
-        jsonObject.addProperty("imageUrl", path)
-        jsonObject.addProperty("fileName", getFileNameFromUrl(path))
-        imageList.add(GsonUtils.gson.toJson(jsonObject))
+        imageList.add(News.createImageListEntry(path))
 
         try {
             showSelectedImages()
         } catch (e: Exception) {
             Log.w(TAG, "handleImageSelection failed", e)
-        }
-    }
-
-    private fun isImageAlreadyAdded(path: String): Boolean {
-        return imageList.any { imageJson ->
-            try {
-                val imgObject = GsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
-                getString("imageUrl", imgObject) == path
-            } catch (e: Exception) {
-                false
-            }
         }
     }
 

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.base
 
-import android.content.Intent
 import android.graphics.Typeface
 import android.view.LayoutInflater
 import android.view.View
@@ -8,20 +7,18 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
@@ -35,11 +32,10 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardPluginFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
 import org.ole.planet.myplanet.ui.dashboard.ItemType
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
-import org.ole.planet.myplanet.ui.health.HealthUsersAdapter
+import org.ole.planet.myplanet.ui.life.LifeFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
-import org.ole.planet.myplanet.ui.user.LearnerRegistrationActivity
 import org.ole.planet.myplanet.ui.user.UserProfileFragment
 import org.ole.planet.myplanet.ui.voices.NewsViewModel
 import org.ole.planet.myplanet.utils.DialogUtils
@@ -65,6 +61,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
             marginEnd = resources.getDimensionPixelSize(R.dimen.dashboard_chip_gap)
         }
     private var di: DialogUtils.CustomProgressDialog? = null
+    private var myLifeJob: Job? = null
 
     @Inject
     lateinit var lifeRepository: LifeRepository
@@ -278,15 +275,16 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     protected fun refreshMyLifeList(view: View? = this.view) {
         val v = view ?: return
         val myLifeFlex = v.findViewById<FlexboxLayout>(R.id.flexboxLayoutMyLife) ?: return
-        viewLifecycleOwner.lifecycleScope.launch {
+        myLifeJob?.cancel()
+        myLifeJob = viewLifecycleOwner.lifecycleScope.launch {
             myLifeListInit(myLifeFlex)
         }
     }
 
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        flexboxLayout.removeAllViews()
         val userId = prefData.getUserId().ifEmpty { "--" }
         val visibleItems = lifeRepository.getMyLifeForDashboard(userId, getMyLifeListBase(userId))
+        flexboxLayout.removeAllViews()
         if (visibleItems.isEmpty()) {
             renderPlaceholder(flexboxLayout, getString(R.string.no_data_available)) {
                 homeItemClickListener?.openCallFragment(org.ole.planet.myplanet.ui.life.LifeFragment())
@@ -356,56 +354,6 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
                 else -> {}
             }
         }
-    }
-
-    fun showUserResourceDialog() {
-        viewModel.loadUsers()
-
-        val alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(activity))
-        alertHealthListBinding.etSearch.visibility = View.GONE
-        alertHealthListBinding.spnSort.visibility = View.GONE
-        alertHealthListBinding.loading.visibility = View.VISIBLE
-        alertHealthListBinding.list.visibility = View.GONE
-
-        alertHealthListBinding.btnAddMember.setOnClickListener {
-            startActivity(Intent(requireContext(), LearnerRegistrationActivity::class.java))
-        }
-
-        val dialog = AlertDialog.Builder(requireActivity())
-            .setTitle(getString(R.string.select_member))
-            .setView(alertHealthListBinding.root)
-            .setCancelable(false)
-            .setNegativeButton(R.string.dismiss, null)
-            .create()
-
-        val adapter = HealthUsersAdapter { selected ->
-            selected._id?.let { userId ->
-                viewLifecycleOwner.lifecycleScope.launch {
-                    val libraryList = viewModel.getLibraryListForUser(userId)
-                    showDownloadDialog(libraryList)
-                }
-            }
-            dialog.dismiss()
-        }
-        alertHealthListBinding.list.layoutManager = LinearLayoutManager(requireActivity())
-        alertHealthListBinding.list.adapter = adapter
-
-        val job = viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.uiState.collect {
-                if (dialog.isShowing) {
-                    if (it.users.isNotEmpty()) {
-                        adapter.submitList(it.users)
-                        alertHealthListBinding.list.visibility = View.VISIBLE
-                    } else {
-                        alertHealthListBinding.list.visibility = View.GONE
-                    }
-                    alertHealthListBinding.loading.visibility = View.GONE
-                }
-            }
-        }
-
-        dialog.setOnDismissListener { job.cancel() }
-        dialog.show()
     }
 
     fun syncKeyId() {

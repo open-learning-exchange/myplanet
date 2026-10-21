@@ -56,15 +56,6 @@ class RetryQueueTest {
     }
 
     @Test
-    fun getPendingOperations_delegatesToRepository() = runTest {
-        coEvery { retryRepository.getPending() } returns listOf()
-
-        retryQueue.getPendingOperations()
-
-        coVerify(exactly = 1) { retryRepository.getPending() }
-    }
-
-    @Test
     fun markInProgress_delegatesToRepository() = runTest {
         val operationId = "test_op_id"
         coEvery { retryRepository.markInProgress(operationId) } returns Unit
@@ -98,7 +89,7 @@ class RetryQueueTest {
         val payload = JsonObject()
         coEvery { retryRepository.recordFailure(any(), any(), any(), any(), any(), any(), any(), any()) } returns Unit
 
-        retryQueue.queueFailedOperation("type", error, payload, "endpoint", modelClassName = "Model")
+        retryQueue.queueFailedOperation("type", error, payload, "endpoint", "PUT", "doc1", modelClassName = "Model")
 
         coVerify(exactly = 1) {
             retryRepository.recordFailure(
@@ -106,12 +97,22 @@ class RetryQueueTest {
                 RetryFailure(error.itemId, error.message, error.httpCode),
                 payload.toString(),
                 "endpoint",
-                "POST",
-                null,
+                "PUT",
+                "doc1",
                 "Model",
                 null
             )
         }
+    }
+
+    @Test
+    fun queueFailedOperation_create_isNotRecorded() = runTest {
+        val error = UploadError("item1", Exception("fail"), retryable = true)
+
+        retryQueue.queueFailedOperation("type", error, JsonObject(), "endpoint", modelClassName = "Model")
+        retryQueue.queueFailedOperation("type", error, JsonObject(), "endpoint", "PUT", null, modelClassName = "Model")
+
+        coVerify(exactly = 0) { retryRepository.recordFailure(any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
 

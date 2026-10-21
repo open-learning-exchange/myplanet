@@ -99,20 +99,6 @@ object NotificationUtils {
         ).notificationManager()
     }
 
-    fun createSurveyNotification(surveyId: String, surveyTitle: String): NotificationConfig {
-        return NotificationConfig(
-            id = surveyId,
-            type = TYPE_SURVEY,
-            title = "📋 New Survey Available",
-            message = surveyTitle,
-            priority = NotificationCompat.PRIORITY_HIGH,
-            category = NotificationCompat.CATEGORY_REMINDER,
-            actionable = true,
-            extras = mapOf("surveyId" to surveyId),
-            relatedId = surveyId
-        )
-    }
-
     fun createTaskNotification(taskId: String, taskTitle: String, deadline: String, timeProvider: TimeProvider): NotificationConfig {
         val priority = if (isTaskUrgent(deadline, timeProvider)) {
             NotificationCompat.PRIORITY_HIGH
@@ -131,108 +117,6 @@ object NotificationUtils {
             extras = mapOf("taskId" to taskId),
             relatedId = taskId
         )
-    }
-
-    fun createJoinRequestNotification(requestId: String, requesterName: String, teamName: String): NotificationConfig {
-        return NotificationConfig(
-            id = requestId,
-            type = TYPE_JOIN_REQUEST,
-            title = "👥 Team Join Request",
-            message = "$requesterName wants to join $teamName",
-            priority = NotificationCompat.PRIORITY_DEFAULT,
-            category = NotificationCompat.CATEGORY_SOCIAL,
-            actionable = true,
-            extras = mapOf("requestId" to requestId, "teamName" to teamName),
-            relatedId = requestId
-        )
-    }
-
-    fun createStorageWarningNotification(storagePercentage: Int, customId: String): NotificationConfig {
-        val priority = if (storagePercentage > 95) {
-            NotificationCompat.PRIORITY_HIGH
-        } else {
-            NotificationCompat.PRIORITY_DEFAULT
-        }
-
-        return NotificationConfig(
-            id = customId,
-            type = TYPE_STORAGE,
-            title = "⚠️ Storage Warning",
-            message = "Device storage is at $storagePercentage%. Consider freeing up space.",
-            priority = priority,
-            category = NotificationCompat.CATEGORY_STATUS,
-            actionable = true,
-            relatedId = "storage"
-        )
-    }
-
-    fun createResourceNotification(notificationId: String, resourceCount: Int): NotificationConfig {
-        return NotificationConfig(
-            id = notificationId,
-            type = TYPE_RESOURCE,
-            title = "📚 New Resources Available",
-            message = "$resourceCount new resources have been added",
-            priority = NotificationCompat.PRIORITY_DEFAULT,
-            category = NotificationCompat.CATEGORY_RECOMMENDATION,
-            actionable = true,
-            extras = mapOf("resourceCount" to resourceCount.toString()),
-            relatedId = notificationId
-        )
-    }
-
-    fun createSummaryNotification(type: String, count: Int): NotificationConfig {
-        val summaryId = "summary_${type}"
-
-        return when (type) {
-            "survey" -> NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "📋 New Surveys Available",
-                message = "$count new surveys are waiting for you",
-                priority = NotificationCompat.PRIORITY_HIGH,
-                category = NotificationCompat.CATEGORY_REMINDER
-            )
-            "task" -> NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "✅ New Tasks Assigned",
-                message = "$count new tasks have been assigned to you",
-                priority = NotificationCompat.PRIORITY_HIGH,
-                category = NotificationCompat.CATEGORY_REMINDER
-            )
-            "join_request" -> NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "👥 Team Join Requests",
-                message = "$count new team join requests to review",
-                priority = NotificationCompat.PRIORITY_DEFAULT,
-                category = NotificationCompat.CATEGORY_SOCIAL
-            )
-            "resource" -> NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "📚 New Resources Available",
-                message = "$count new resources have been added",
-                priority = NotificationCompat.PRIORITY_DEFAULT,
-                category = NotificationCompat.CATEGORY_RECOMMENDATION
-            )
-            "storage" -> NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "⚠️ Storage Warnings",
-                message = "$count storage warnings need attention",
-                priority = NotificationCompat.PRIORITY_DEFAULT,
-                category = NotificationCompat.CATEGORY_STATUS
-            )
-            else -> NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "📱 App Notifications",
-                message = "$count new notifications",
-                priority = NotificationCompat.PRIORITY_DEFAULT,
-                category = NotificationCompat.CATEGORY_MESSAGE
-            )
-        }
     }
 
     private fun isTaskUrgent(deadline: String, timeProvider: TimeProvider): Boolean {

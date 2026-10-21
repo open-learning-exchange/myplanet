@@ -12,7 +12,6 @@ import javax.inject.Provider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
@@ -41,9 +40,9 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
-    private val teamsRepositoryProvider: Provider<TeamsRepository>,
+    teamsRepositoryProvider: Provider<TeamsRepository>,
     private val userRepository: UserRepository,
-    private val sharedPrefManager: SharedPrefManager,
+    sharedPrefManager: SharedPrefManager,
     private val exporter: SubmissionsRepositoryExporter,
     private val submitPhotosDao: SubmitPhotosDao,
     private val submissionDao: SubmissionDao,
@@ -51,7 +50,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     private val examDao: ExamDao,
     private val questionDao: QuestionDao,
     @PlainGson private val gson: Gson,
-    private val deviceNameProvider: DeviceNameProvider
+    deviceNameProvider: DeviceNameProvider
 ) : SubmissionsRepository {
 
     override suspend fun generateSubmissionPdf(submissionId: String): File? {
@@ -278,7 +277,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             ?: hydrateSubmission(submissionDao.getFirstByParentIdContaining(submissionId))
     }
 
-    override suspend fun getSubmissionDetail(submission: Submission, user: UserEntity?): SubmissionDetail? {
+    override suspend fun getSubmissionDetail(submission: Submission, user: UserEntity?): SubmissionDetail {
         val examId = submission.parentId?.substringBefore('@')
         val exam = examId?.let { getExamById(it) }
 
@@ -381,12 +380,12 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         } else {
             examId
         }
-        val submissions = submissionDao.getByParentUserAndStatus(parentIdToSearch, userId, null)
+        val submissions = submissionDao.getByParentUserAndStatus(parentIdToSearch, userId, "pending")
         val submissionIds = submissions.map { it.id }
         if (submissionIds.isNotEmpty()) {
             answerDao.deleteBySubmissionIds(submissionIds)
+            submissionDao.deleteByIds(submissionIds)
         }
-        submissionDao.deleteByParentAndUser(parentIdToSearch, userId)
     }
 
     override suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
@@ -530,13 +529,13 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             ?: run {
                 val parentId = question.examId?.let { eId ->
                     val exam = examDao.getById(eId)
-                    if (!exam?.courseId.isNullOrEmpty()) "$eId@${exam?.courseId}" else eId
+                    if (!exam?.courseId.isNullOrEmpty()) "$eId@${exam.courseId}" else eId
                 }
                 if (parentId != null) {
-                    hydrateSubmission(fetchPendingByUserAndParent(parentId, userId ?: submission?.userId))
+                    hydrateSubmission(fetchPendingByUserAndParent(parentId, userId))
                 } else null
             }
-            ?: submissionDao.getLatestPendingByUser(userId ?: submission?.userId)
+            ?: submissionDao.getLatestPendingByUser(userId)
         val submissionId = submissionRow?.id
         val questionId = question.id
         
@@ -600,7 +599,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             answerDao.upsertAll(listOf(answer))
             submissionDao.updateStatusAndLastUpdate(submissionRow.id, newStatus, now)
 
-            if (newStatus == "complete" && type == "survey") {
+            if (newStatus == "complete") {
                 submissionDao.deletePendingSurveyOrphans(submissionRow.parentId, submissionRow.userId)
             }
         }
@@ -650,7 +649,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return submitPhotosDao.markUploaded(localId, rev, remoteId) != 0
     }
 
-
     override suspend fun getPhotosByIds(ids: Array<String>): List<SubmitPhotos> {
         if (ids.isEmpty()) return emptyList()
         return submitPhotosDao.getByIds(ids)
@@ -692,19 +690,25 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         
         val docs = documentList.filterNot { it.has("_attachments") }
         val existingRows = submissionDao.getByRemoteIds(docs.map { GsonUtils.getString("_id", it) }.filter { it.isNotBlank() })
-        val localIdByRemoteId = existingRows.filter { it.id != it._id }
-            .groupBy { it._id.orEmpty() }
-            .mapValues { (_, rows) -> rows.first().id }
-        val duplicateIds = existingRows.filter { it.id == it._id && localIdByRemoteId.containsKey(it.id) }.map { it.id }
-        val localAnswersByKey = answerDao.getBySubmissionIds(localIdByRemoteId.values.toList())
+        val existingByRemoteId = existingRows.groupBy { it._id.orEmpty() }
+            .mapValues { (_, rows) -> rows.firstOrNull { it.isUpdated } ?: rows.firstOrNull { it.id != it._id } ?: rows.first() }
+        val duplicateIds = existingRows.filter { !it.isUpdated && it.id != existingByRemoteId[it._id.orEmpty()]?.id }.map { it.id }
+        val pendingIdsByRemoteId = existingRows.filter { it.isUpdated }.groupBy({ it._id.orEmpty() }, { it.id })
+        val localAnswersByKey = answerDao.getBySubmissionIds(existingByRemoteId.values.map { it.id })
             .associateBy { "${it.submissionId}|${it.questionId}" }
+        val revUpdates = ArrayList<Pair<String, String>>()
 
         docs.forEach { submission ->
             val remoteId = GsonUtils.getString("_id", submission)
             if (remoteId.isBlank()) return@forEach
-            val id = localIdByRemoteId[remoteId] ?: remoteId
-            val serverStatus = GsonUtils.getString("status", submission)
+            val existing = existingByRemoteId[remoteId]
+            val id = existing?.id ?: remoteId
             val rev = GsonUtils.getString("_rev", submission)
+            if (existing?.isUpdated == true) {
+                if (rev.isNotEmpty()) pendingIdsByRemoteId[remoteId].orEmpty().forEach { revUpdates.add(it to rev) }
+                return@forEach
+            }
+            val serverStatus = GsonUtils.getString("status", submission)
             val parentId = GsonUtils.getString("parentId", submission)
             val userJson = GsonUtils.getJsonObject("user", submission)
             val membershipJson = GsonUtils.getJsonObject("membershipDoc", userJson)
@@ -770,6 +774,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             answerDao.deleteBySubmissionIds(duplicateIds)
             duplicateIds.chunked(900).forEach { submissionDao.deleteByIds(it) }
         }
+        revUpdates.forEach { (id, rev) -> submissionDao.updateRev(id, rev) }
         if (submissions.isEmpty() && answers.isEmpty()) return
 
         if (submissions.isNotEmpty()) submissionDao.upsertAllBlocking(submissions)
@@ -786,12 +791,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     private val payloadBuilder = SubmissionsPayloadBuilder(
-        teamsRepositoryProvider,
-        sharedPrefManager,
-        examDao,
-        questionDao,
-        gson,
-        deviceNameProvider
+        teamsRepositoryProvider, sharedPrefManager, examDao, questionDao, gson, deviceNameProvider
     )
 
     private suspend fun getTeamByIdOrNull(teamId: String) = payloadBuilder.getTeamByIdOrNull(teamId)

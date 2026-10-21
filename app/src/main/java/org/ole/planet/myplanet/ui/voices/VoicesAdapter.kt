@@ -12,8 +12,8 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
@@ -65,8 +65,7 @@ class VoicesAdapter(
     private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit),
     private val labelManager: VoicesLabelManager,
     private val voicesEditor: VoicesEditor,
-    private val leadersList: List<UserEntity>,
-    private val setRepliedNewsIdFn: (String?) -> Unit
+    private val leadersList: List<UserEntity>
 ) : ListAdapter<News, RecyclerView.ViewHolder>(
     DiffUtils.itemCallback<News>(
         areItemsTheSame = { oldItem, newItem ->
@@ -799,7 +798,6 @@ class VoicesAdapter(
         updateReplyCount(viewHolder, finalNews, position)
 
         viewHolder.binding.btnShowReply.setOnClickListener {
-            setRepliedNewsIdFn(finalNews?.id)
             listener?.showReply(finalNews, fromLogin, nonTeamMember)
         }
     }
@@ -1003,6 +1001,7 @@ class VoicesAdapter(
         super.onViewRecycled(holder)
         if (holder is VoicesViewHolder) {
             holder.cancelJob?.invoke()
+            holder.binding.llNewsImages.tag = null
         }
     }
 
@@ -1014,6 +1013,9 @@ class VoicesAdapter(
         binding.imgNews.visibility = View.GONE
         binding.llNewsImages.visibility = View.GONE
         binding.llNewsImages.removeAllViews()
+        
+        val imageBindToken = Any()
+        binding.llNewsImages.tag = imageBindToken
 
         val parsedImageUrls = getParsedImageUrls(news)
 
@@ -1041,13 +1043,13 @@ class VoicesAdapter(
                 if (size == 1) {
                     val ob = imagesArray[0]?.asJsonObject
                     val resourceId = GsonUtils.getString("resourceId", ob)
-                    loadLibraryImage(binding, resourceId)
+                    loadLibraryImage(binding, resourceId, imageBindToken)
                 } else {
                     binding.llNewsImages.visibility = View.VISIBLE
                     for (i in 0 until size) {
                         val ob = imagesArray[i]?.asJsonObject
                         val resourceId = GsonUtils.getString("resourceId", ob)
-                        addLibraryImageToContainer(binding, resourceId)
+                        addLibraryImageToContainer(binding, resourceId, imageBindToken)
                     }
                 }
             }
@@ -1103,9 +1105,10 @@ class VoicesAdapter(
         binding.llNewsImages.addView(imageView)
     }
 
-    private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?) {
+    private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?, imageBindToken: Any) {
         if (resourceId == null) return
         getLibraryResourceFn(resourceId) { library ->
+            if (binding.llNewsImages.tag !== imageBindToken) return@getLibraryResourceFn
             val basePath = externalFilesDir
             if (library != null && basePath != null) {
                 val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
@@ -1119,9 +1122,10 @@ class VoicesAdapter(
         }
     }
 
-    private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?) {
+    private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?, imageBindToken: Any) {
         if (resourceId == null) return
         getLibraryResourceFn(resourceId) { library ->
+            if (binding.llNewsImages.tag !== imageBindToken) return@getLibraryResourceFn
             val basePath = externalFilesDir
             if (library != null && basePath != null) {
                 val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")

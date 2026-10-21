@@ -112,4 +112,64 @@ class SubmissionsRepositorySyncTest {
         assertEquals(listOf("server-2"), submissionDao.getByRemoteIds(listOf("server-2")).map { it.id })
         assertEquals(listOf("server-2-0", "server-2-1"), answerDao.getBySubmissionId("server-2").map { it.id }.sorted())
     }
+    @Test
+    fun `pulling doesn't revert a survey completed offline back to pending`() = runBlocking {
+        // A survey pulled from the server, then completed here but not yet uploaded
+        submissionDao.upsertAll(listOf(Submission(id = "server-3", _id = "server-3", _rev = "1-abc", parentId = "exam1@course1", type = "survey", status = "pending")))
+        answerDao.upsertAll(listOf(Answer(id = "ans-local", value = "Mine", questionId = "q1", submissionId = "server-3")))
+        submissionDao.markComplete("server-3", "{}")
+
+        repository.insertSubmission(pulledSubmission("server-3", status = "pending"))
+
+        val row = submissionDao.getByIdOrRemoteId("server-3")!!
+        assertEquals("complete", row.status)
+        assertEquals(true, row.isUpdated)
+        assertEquals("2-abc", row._rev)
+        assertEquals(listOf("Mine"), answerDao.getBySubmissionId("server-3").map { it.value })
+        assertEquals(listOf("server-3"), submissionDao.getPendingSubmissions().map { it.id })
+    }
+
+    @Test
+    fun `pulling doesn't overwrite unsynced changes on an uploaded local submission`() = runBlocking {
+        storeUploadedLocalSubmission()
+        submissionDao.updateStatus("local-uuid", "requires grading")
+
+        repository.insertSubmission(pulledSubmission("server-1", status = "pending"))
+
+        val row = submissionDao.getByIdOrRemoteId("local-uuid")!!
+        assertEquals("requires grading", row.status)
+        assertEquals(true, row.isUpdated)
+        assertEquals("2-abc", row._rev)
+    }
+
+    @Test
+    fun `pulling keeps a duplicate completed offline instead of deleting it`() = runBlocking {
+        storeUploadedLocalSubmission()
+        submissionDao.upsertAll(listOf(Submission(id = "server-1", _id = "server-1", _rev = "1-abc", parentId = "exam1@course1", type = "survey", status = "pending")))
+        answerDao.upsertAll(listOf(Answer(id = "ans-offline", value = "Mine", questionId = "q1", submissionId = "server-1")))
+        submissionDao.markComplete("server-1", "{}")
+
+        repository.insertSubmission(pulledSubmission("server-1", status = "pending"))
+
+        val row = submissionDao.getByIdOrRemoteId("server-1")!!
+        assertEquals("server-1", row.id)
+        assertEquals("complete", row.status)
+        assertEquals(true, row.isUpdated)
+        assertEquals("2-abc", row._rev)
+        assertEquals(listOf("Mine"), answerDao.getBySubmissionId("server-1").map { it.value })
+        assertEquals(listOf("server-1"), submissionDao.getPendingSubmissions().map { it.id })
+        assertEquals(listOf("server-1"), submissionDao.getByRemoteIds(listOf("server-1")).map { it.id })
+        assertEquals(emptyList<Answer>(), answerDao.getBySubmissionId("local-uuid"))
+    }
+
+    @Test
+    fun `pulling still applies server changes to a synced submission`() = runBlocking {
+        submissionDao.upsertAll(listOf(Submission(id = "server-4", _id = "server-4", _rev = "1-abc", type = "exam", status = "requires grading")))
+
+        repository.insertSubmission(pulledSubmission("server-4", status = "graded"))
+
+        val row = submissionDao.getByIdOrRemoteId("server-4")!!
+        assertEquals("graded", row.status)
+        assertEquals("2-abc", row._rev)
+    }
 }

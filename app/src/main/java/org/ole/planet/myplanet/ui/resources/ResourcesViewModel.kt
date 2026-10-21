@@ -95,9 +95,10 @@ class ResourcesViewModel @Inject constructor(
     }
 
     fun loadResources(isMyCourseLib: Boolean, modelId: String?) {
-        val cached = getCachedResources(isMyCourseLib, modelId)
-        if (cached != null && _resourcesState.value.isEmpty()) {
-            _resourcesState.value = cached
+        if (_resourcesState.value.isEmpty()) {
+            getCachedResources(isMyCourseLib, modelId)?.let {
+                _resourcesState.value = it
+            }
         }
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
@@ -171,12 +172,6 @@ class ResourcesViewModel @Inject constructor(
 
     suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit> {
         return resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
-    }
-
-    suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> = withContext(dispatcherProvider.io) {
-        applyCurrentSort(resourcesRepository.getResourceListModels(isMyCourseLib, modelId)).also {
-            _resourcesState.value = it
-        }
     }
 
     suspend fun toggleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {

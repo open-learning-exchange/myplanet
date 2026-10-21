@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.ui.resources
 
+import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -108,29 +110,6 @@ class ResourcesViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(setOf("res1", "res2"), viewModel.openedResourceIds.value)
-    }
-
-    @Test
-    fun `getLibraryListModels maps enriched libraries to ResourceListModels`() = runTest {
-        val mockLibrary = MyLibrary().apply {
-            id = "lib1"
-            title = "Library 1"
-            resourceOffline = true
-        }
-        val mockTag = TagEntity().apply {
-            id = "tag1"
-            name = "Tag 1"
-        }
-        val mockResourceItem = mockk<ResourceItem>(relaxed = true)
-        coEvery { resourcesRepository.getResourceListModels(any(), any()) } returns listOf(
-            ResourceListModel(mockLibrary, mockResourceItem, listOf(TagItem(mockTag.id, mockTag.name)))
-        )
-
-        val result = viewModel.getLibraryListModels(true, "modelId")
-
-        assertEquals(1, result.size)
-        assertEquals("lib1", result[0].library.id)
-        assertEquals(1, viewModel.resourcesState.value.size)
     }
 
     @Test
@@ -289,5 +268,33 @@ class ResourcesViewModelTest {
 
         assertEquals(1, events.size)
         job.cancel()
+    }
+
+    @Test
+    fun `loadResources with empty state seeds from cache`() = runTest {
+        val cached = listOf(createResourceModel("Cached Item", 100L))
+        every { resourcesRepository.getCachedResourceListModels(true, "modelId") } returns cached
+        coEvery { resourcesRepository.getResourceListModels(true, "modelId") } returns emptyList()
+
+        viewModel.loadResources(true, "modelId")
+
+        assertEquals(cached, viewModel.resourcesState.value)
+        verify(exactly = 1) { resourcesRepository.getCachedResourceListModels(true, "modelId") }
+    }
+
+    @Test
+    fun `loadResources with non-empty state does not call getCachedResourceListModels`() = runTest {
+        val existingModel = createResourceModel("Existing Item", 100L)
+        coEvery { resourcesRepository.getResourceListModels(true, "modelId") } returns listOf(existingModel)
+
+        viewModel.loadResources(true, "modelId")
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.resourcesState.value.size)
+
+        clearMocks(resourcesRepository, verificationMarks = true, answers = false)
+
+        viewModel.loadResources(true, "modelId")
+
+        verify(exactly = 0) { resourcesRepository.getCachedResourceListModels(any(), any()) }
     }
 }

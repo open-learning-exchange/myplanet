@@ -39,6 +39,10 @@ class RetryQueue @Inject constructor(
             Log.d(TAG, "Skipping non-retryable error for item ${error.itemId}: ${error.message}")
             return
         }
+        if (RetryOperation.createsDocument(httpMethod, dbId)) {
+            Log.d(TAG, "Skipping create for item ${error.itemId}; the next upload re-sends it")
+            return
+        }
 
         val failure = RetryFailure(error.itemId, error.message, error.httpCode)
         retryRepository.recordFailure(
@@ -46,10 +50,6 @@ class RetryQueue @Inject constructor(
             httpMethod, dbId, modelClassName, userId
         )
         Log.i(TAG, "RETRY_QUEUE: Recorded failure - type=$uploadType, itemId=${error.itemId}, error=${error.message}")
-    }
-
-    suspend fun getPendingOperations(): List<RetryOperation> {
-        return retryRepository.getPending()
     }
 
     suspend fun markInProgress(operationId: String) {

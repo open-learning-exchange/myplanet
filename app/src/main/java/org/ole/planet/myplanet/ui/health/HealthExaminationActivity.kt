@@ -118,11 +118,11 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
 
     private fun initExamination() {
         if (examination != null) {
-            binding.etTemperature.setText(getString(R.string.float_placeholder, examination?.temperature))
+            binding.etTemperature.setText("%.1f".format(Locale.ROOT, examination?.temperature))
             binding.etPulseRate.setText(getString(R.string.number_placeholder, examination?.pulse))
             binding.etBloodpressure.setText(getString(R.string.message_placeholder, examination?.bp))
-            binding.etHeight.setText(getString(R.string.float_placeholder, examination?.height))
-            binding.etWeight.setText(getString(R.string.float_placeholder, examination?.weight))
+            binding.etHeight.setText("%.1f".format(Locale.ROOT, examination?.height))
+            binding.etWeight.setText("%.1f".format(Locale.ROOT, examination?.weight))
             binding.etVision.setText(examination?.vision)
             binding.etHearing.setText(examination?.hearing)
             val encrypted = user?.let { examination?.getEncryptedDataAsJson(it) }

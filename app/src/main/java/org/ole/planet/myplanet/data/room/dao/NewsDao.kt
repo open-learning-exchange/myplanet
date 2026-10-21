@@ -33,6 +33,9 @@ interface NewsDao {
     @Query("SELECT * FROM news")
     suspend fun getAll(): List<News>
 
+    @Query("SELECT * FROM news WHERE _id IS NULL OR _id = '' OR isUpdated = 1 OR pendingReactions IS NOT NULL OR (imageUrls IS NOT NULL AND imageUrls != '[]')")
+    suspend fun getPendingUploads(): List<News>
+
     @Query("SELECT * FROM news WHERE id IN (:ids)")
     suspend fun getByIdsInternal(ids: List<String>): List<News>
 
@@ -46,9 +49,6 @@ interface NewsDao {
 
     @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND ((viewableBy = 'teams' COLLATE NOCASE AND viewableId = :teamId COLLATE NOCASE) OR viewIn LIKE :teamPattern ESCAPE '\\') ORDER BY time DESC")
     fun getTopLevelByTeamFlow(teamId: String, teamPattern: String): Flow<List<News>>
-
-    @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND docType = 'message' COLLATE NOCASE ORDER BY time DESC")
-    suspend fun getTopLevelMessages(): List<News>
 
     @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND docType = 'message' COLLATE NOCASE ORDER BY time DESC")
     fun getTopLevelMessagesFlow(): Flow<List<News>>

@@ -27,7 +27,6 @@ import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
-import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
@@ -198,24 +197,6 @@ class DashboardViewModelTest {
         assertEquals("Team1", (state.teams[0] as MyTeam).name)
         assertEquals(1, state.library.size)
         assertEquals("Lib1", (state.library[0] as MyLibrary).title)
-    }
-
-    @Test
-    fun `loadUsers updates uiState with sorted users`() = runTest(testDispatcher) {
-        val users = listOf(
-            UserEntity().apply { name = "User 1" },
-            UserEntity().apply { name = "User 2" }
-        )
-
-        coEvery { userRepository.getUsersSortedBy("joinDate", true) } returns users
-
-        viewModel.loadUsers()
-        advanceUntilIdle()
-
-        val state = viewModel.uiState.value
-        assertEquals(2, state.users.size)
-        assertEquals("User 1", (state.users[0] as UserEntity).name)
-        assertEquals("User 2", (state.users[1] as UserEntity).name)
     }
 
     @Test

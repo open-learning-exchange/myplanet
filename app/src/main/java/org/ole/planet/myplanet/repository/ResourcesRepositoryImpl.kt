@@ -832,11 +832,6 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    internal suspend fun getResourceTitlesMap(): Map<String, String> {
-        return myLibraryDao.getResourceTitles()
-            .associate { (it.resourceId ?: "") to (it.title ?: "") }
-    }
-
     override suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>) {
         if (resourceIds.isEmpty()) return
         myLibraryDao.markAsNotOfflineByResourceIds(resourceIds.toList())

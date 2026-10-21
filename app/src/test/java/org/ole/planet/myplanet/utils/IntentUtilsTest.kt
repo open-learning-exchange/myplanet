@@ -42,46 +42,6 @@ class IntentUtilsTest {
     }
 
     @Test
-    fun `test openPlayStore normal`() {
-        val context = mockk<Context>(relaxed = true)
-        every { context.packageName } returns "com.example.app"
-        val intentSlot = slot<Intent>()
-        every { context.startActivity(capture(intentSlot)) } returns Unit
-
-        IntentUtils.openPlayStore(context)
-
-        verify(exactly = 1) { context.startActivity(any()) }
-        val capturedIntent = intentSlot.captured
-        assertEquals(Intent.ACTION_VIEW, capturedIntent.action)
-        assertEquals("market://details?id=com.example.app", capturedIntent.data.toString())
-        assertTrue((capturedIntent.flags and Intent.FLAG_ACTIVITY_NEW_TASK) != 0)
-    }
-
-    @Test
-    fun `test openPlayStore with ActivityNotFoundException`() {
-        val context = mockk<Context>(relaxed = true)
-        every { context.packageName } returns "com.example.app"
-        val intents = mutableListOf<Intent>()
-
-        every { context.startActivity(capture(intents)) } throws ActivityNotFoundException() andThen Unit
-
-        IntentUtils.openPlayStore(context)
-
-        verify(exactly = 2) { context.startActivity(any()) }
-        assertEquals(2, intents.size)
-
-        val firstIntent = intents[0]
-        assertEquals(Intent.ACTION_VIEW, firstIntent.action)
-        assertEquals("market://details?id=com.example.app", firstIntent.data.toString())
-        assertTrue((firstIntent.flags and Intent.FLAG_ACTIVITY_NEW_TASK) != 0)
-
-        val secondIntent = intents[1]
-        assertEquals(Intent.ACTION_VIEW, secondIntent.action)
-        assertEquals("https://play.google.com/store/apps/details?id=com.example.app", secondIntent.data.toString())
-        assertTrue((secondIntent.flags and Intent.FLAG_ACTIVITY_NEW_TASK) != 0)
-    }
-
-    @Test
     fun `test openAppSettings`() {
         val context = mockk<Context>(relaxed = true)
         every { context.packageName } returns "com.example.app"

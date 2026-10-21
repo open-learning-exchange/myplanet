@@ -55,7 +55,7 @@ class ServerConfigUtilsTest {
 
         assertEquals(url, result)
 
-        // Note: The pin uses the provided password parameter, while the URL password ("admin123") is extracted for setUrlPwd.
+        // Note: The pin uses the provided password parameter, while the URL password ("admin123") is extracted as urlPwd.
         verify {
             mockSharedPrefManager.saveAlternativeServerConfig(
                 serverPin = password,
