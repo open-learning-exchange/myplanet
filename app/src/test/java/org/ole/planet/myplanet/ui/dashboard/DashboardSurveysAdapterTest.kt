@@ -13,6 +13,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.ole.planet.myplanet.R
 import org.robolectric.RobolectricTestRunner
@@ -70,5 +71,20 @@ class DashboardSurveysAdapterTest {
 
         assertEquals(0, clickedPosition)
         verify(mockDialog).dismiss()
+    }
+
+    @Test
+    fun `test item click when position is NO_POSITION does not invoke callback or dismiss dialog`() {
+        val adapter = DashboardSurveysAdapter(
+            onItemClick = { position -> clickedPosition = position },
+            dialog = mockDialog
+        )
+        val parent = FrameLayout(context)
+        val viewHolder = adapter.onCreateViewHolder(parent, 0)
+
+        viewHolder.itemView.performClick()
+
+        assertEquals(null, clickedPosition)
+        verify(mockDialog, never()).dismiss()
     }
 }
