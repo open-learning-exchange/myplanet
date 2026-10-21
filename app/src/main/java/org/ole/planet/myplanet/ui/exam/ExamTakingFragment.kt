@@ -139,7 +139,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                                     updateNavButtons()
                                 }
                             } catch (e: Exception) {
-                                e.printStackTrace()
+                                Log.e(TAG, "startExamSession (recreate) failed", e)
                                 withContext(dispatcherProvider.main) {
                                     Utilities.toast(requireContext(), "Failed to start exam session. Please retry.")
                                 }
@@ -174,7 +174,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                             startExam(questions?.get(currentIndex))
                             updateNavButtons()
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            Log.e(TAG, "startExamSession failed", e)
                             Utilities.toast(requireContext(), "Failed to start exam session. Please retry.")
                         }
                     }
@@ -661,7 +661,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 capturePhoto(viewLifecycleOwner.lifecycleScope, this, dispatcherProvider)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "capturePhoto failed", e)
         }
     }
 
@@ -852,5 +852,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         viewLifecycleOwner.lifecycleScope.launch {
             coursesRepository.updateCourseProgress(courseId, stepNum, isGraded, userId)
         }
+    }
+
+    private companion object {
+        const val TAG = "ExamTakingFragment"
     }
 }
