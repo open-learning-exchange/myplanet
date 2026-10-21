@@ -11,6 +11,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.repository.VoicesEditor
 import org.robolectric.RobolectricTestRunner
@@ -23,10 +24,14 @@ class VoicesAdapterImagesTest {
     private lateinit var context: android.content.Context
     private lateinit var adapter: VoicesAdapter
     private val requestedResourceIds = mutableListOf<String>()
+    private val pendingLibraryCallbacks = mutableListOf<(MyLibrary?) -> Unit>()
+    private var deferLibraryCallbacks = false
 
     @Before
     fun setUp() {
         requestedResourceIds.clear()
+        pendingLibraryCallbacks.clear()
+        deferLibraryCallbacks = false
         val base = ApplicationProvider.getApplicationContext<android.content.Context>()
         context = ContextThemeWrapper(base, R.style.MyMaterialTheme)
         adapter = VoicesAdapter(
@@ -42,7 +47,7 @@ class VoicesAdapterImagesTest {
             shareNewsFn = { _, _, _, _, _ -> },
             getLibraryResourceFn = { resourceId, cb ->
                 requestedResourceIds.add(resourceId)
-                cb(null)
+                if (deferLibraryCallbacks) pendingLibraryCallbacks.add(cb) else cb(null)
             },
             onEditAction = { },
             onAnimateTyping = { _, _, _ -> { } },
@@ -104,5 +109,48 @@ class VoicesAdapterImagesTest {
 
         assertEquals(View.VISIBLE, binding.llNewsImages.visibility)
         assertEquals(listOf("res-a", "res-b"), requestedResourceIds)
+    }
+
+    private fun submitAndAwait(news: List<News>) {
+        var committed = false
+        adapter.submitList(news) { committed = true }
+        while (!committed) {
+            org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        }
+    }
+
+    private fun library(id: String) = MyLibrary().apply {
+        this.id = id
+        resourceLocalAddress = "$id.png"
+    }
+
+    @Test
+    fun `library image resolved after the row is rebound to a post without images is ignored`() {
+        deferLibraryCallbacks = true
+        submitAndAwait(listOf(News().apply { id = "n1"; images = imagesJson("res-old") }))
+        val holder = adapter.onCreateViewHolder(LinearLayout(context), 0)
+        adapter.onBindViewHolder(holder, 0, mutableListOf(VoicesAdapter.PAYLOAD_IMAGES_CHANGED))
+
+        submitAndAwait(listOf(News().apply { id = "n2"; images = "[]" }))
+        adapter.onBindViewHolder(holder, 0, mutableListOf(VoicesAdapter.PAYLOAD_IMAGES_CHANGED))
+        pendingLibraryCallbacks.forEach { it(library("res-old")) }
+
+        val binding = (holder as VoicesAdapter.VoicesViewHolder).binding
+        assertEquals(View.GONE, binding.imgNews.visibility)
+    }
+
+    @Test
+    fun `rebinding a multi-image post while images resolve does not duplicate thumbnails`() {
+        deferLibraryCallbacks = true
+        submitAndAwait(listOf(News().apply { id = "n1"; images = imagesJson("res-a", "res-b") }))
+        val holder = adapter.onCreateViewHolder(LinearLayout(context), 0)
+        adapter.onBindViewHolder(holder, 0, mutableListOf(VoicesAdapter.PAYLOAD_IMAGES_CHANGED))
+        adapter.onBindViewHolder(holder, 0, mutableListOf(VoicesAdapter.PAYLOAD_IMAGES_CHANGED))
+
+        pendingLibraryCallbacks.forEachIndexed { i, callback -> callback(library("res-$i")) }
+
+        val binding = (holder as VoicesAdapter.VoicesViewHolder).binding
+        assertEquals(4, pendingLibraryCallbacks.size)
+        assertEquals(2, binding.llNewsImages.childCount)
     }
 }
