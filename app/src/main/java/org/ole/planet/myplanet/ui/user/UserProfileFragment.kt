@@ -473,7 +473,7 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
     private fun createStatsMap(): LinkedHashMap<String, String?> {
         return linkedMapOf(
             getString(R.string.community_name) to StringUtils.checkNA(communityCode()),
-            getString(R.string.last_login) to viewModel.lastVisit.value?.let { TimeUtils.getRelativeTime(it, timeProvider) },
+            getString(R.string.last_login) to viewModel.lastVisit.value?.let { TimeUtils.getRelativeTime(requireContext(), it, timeProvider) },
             getString(R.string.total_visits_overall) to viewModel.offlineVisits.value.toString(),
             getString(R.string.most_opened_resource) to StringUtils.checkNA(viewModel.maxOpenedResource.value),
             getString(R.string.number_of_resources_opened) to StringUtils.checkNA(viewModel.numberOfResourceOpen.value)
