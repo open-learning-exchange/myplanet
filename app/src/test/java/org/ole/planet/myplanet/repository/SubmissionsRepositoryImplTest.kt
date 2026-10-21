@@ -471,13 +471,15 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `deleteExamSubmissions deletes answers and submissions through Room`() = runTest {
-        coEvery { submissionDao.getByParentUserAndStatus("exam@course", "user", null) } returns listOf(Submission(id = "submission1"))
+    fun `deleteExamSubmissions deletes only pending attempts and their answers`() = runTest {
+        coEvery { submissionDao.getByParentUserAndStatus("exam@course", "user", "pending") } returns listOf(Submission(id = "submission1"))
 
         repository.deleteExamSubmissions("exam", "course", "user")
 
         coVerify { answerDao.deleteBySubmissionIds(listOf("submission1")) }
-        coVerify { submissionDao.deleteByParentAndUser("exam@course", "user") }
+        coVerify { submissionDao.deleteByIds(listOf("submission1")) }
+        coVerify(exactly = 0) { submissionDao.getByParentUserAndStatus(any(), any(), null) }
+        coVerify(exactly = 0) { submissionDao.deleteByParentAndUser(any(), any()) }
     }
 
     @Test
@@ -504,7 +506,7 @@ class SubmissionsRepositoryImplTest {
         val result = repository.startExamSession("exam_id", "parentId", "user", request, recreate = true, deleteStale = true)
 
         assertEquals("exam_id@course_id", result.parentId)
-        coVerify { submissionDao.getByParentUserAndStatus("exam_id@course_id", "user", null) }
+        coVerify { submissionDao.getByParentUserAndStatus("exam_id@course_id", "user", "pending") }
         coVerify { submissionDao.upsertAll(match { it.single().parentId == "exam_id@course_id" }) }
     }
 

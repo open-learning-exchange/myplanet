@@ -154,4 +154,28 @@ class UserDaoTest {
         assertEquals(1200, deletedCount)
         assertEquals(0, userDao.count())
     }
+
+    @Test
+    fun getUsersByAnyIds_with1201UsersAndDuplicatesAndMixedIds_returnsAllRowsWithoutDuplicates() = runBlocking {
+        val users = (1..1205).map { i -> createUser("user_$i", "remote_$i", "User $i") }
+        userDao.upsertAll(users)
+
+        val queryIds = (1..600).map { i -> "user_$i" } + (601..1205).map { i -> "remote_$i" } + listOf("user_1", "remote_601", "user_500")
+        val result = userDao.getUsersByAnyIds(queryIds)
+
+        assertEquals(1205, result.size)
+        assertEquals(1205, result.map { it.id }.distinct().size)
+    }
+
+    @Test
+    fun getGuestUsersByNames_with1201GuestsAndDuplicates_returnsAllRowsWithoutDuplicates() = runBlocking {
+        val users = (1..1205).map { i -> createUser("id_$i", "guest_$i", "Guest $i") }
+        userDao.upsertAll(users)
+
+        val queryNames = (1..1205).map { i -> "Guest $i" } + listOf("Guest 1", "Guest 500", "Guest 1205")
+        val result = userDao.getGuestUsersByNames(queryNames)
+
+        assertEquals(1205, result.size)
+        assertEquals(1205, result.map { it.id }.distinct().size)
+    }
 }

@@ -12,8 +12,12 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.spyk
-import io.mockk.unmockkAll
+import io.mockk.clearAllMocks
+import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
 import io.mockk.verify
+import org.junit.AfterClass
+import org.junit.BeforeClass
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -48,8 +52,26 @@ class NotificationActionReceiverTest {
     private var mockDispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private lateinit var mockNotificationUtils: NotificationUtils.NotificationManager
 
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkObject(NotificationUtils)
+            mockkStatic("org.ole.planet.myplanet.di.ServiceDependenciesEntryPointKt")
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkObject(NotificationUtils)
+            unmockkStatic("org.ole.planet.myplanet.di.ServiceDependenciesEntryPointKt")
+        }
+    }
+
     @Before
     fun setUp() {
+        clearAllMocks()
+
         testDispatcher = StandardTestDispatcher()
         testScope = TestScope(testDispatcher)
 
@@ -62,10 +84,8 @@ class NotificationActionReceiverTest {
         every { mockDispatcherProvider.unconfined } returns testDispatcher
 
         mockNotificationUtils = mockk(relaxed = true)
-        mockkObject(NotificationUtils)
         every { NotificationUtils.getInstance(any()) } returns mockNotificationUtils
 
-        mockkStatic("org.ole.planet.myplanet.di.ServiceDependenciesEntryPointKt")
         every { getBroadcastService(any()) } returns mockk(relaxed = true)
 
         receiver = spyk(NotificationActionReceiver().apply {
@@ -80,11 +100,6 @@ class NotificationActionReceiverTest {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-    }
-
-    @After
-    fun tearDown() {
-        unmockkAll()
     }
 
     @Test
@@ -172,18 +187,22 @@ class NotificationActionReceiverTest {
         mockIntent.putExtra(NotificationUtils.EXTRA_NOTIFICATION_ID, notificationId)
 
         mockkStatic(android.util.Log::class)
-        every { android.util.Log.e(any(), any(), any()) } returns 0
+        try {
+            every { android.util.Log.e(any(), any(), any()) } returns 0
 
-        every { mockNotificationUtils.clearNotification(notificationId) } throws RuntimeException("Clear error")
+            every { mockNotificationUtils.clearNotification(notificationId) } throws RuntimeException("Clear error")
 
-        val pendingResult = mockk<BroadcastReceiver.PendingResult>(relaxed = true)
-        every { receiver.goAsync() } returns pendingResult
+            val pendingResult = mockk<BroadcastReceiver.PendingResult>(relaxed = true)
+            every { receiver.goAsync() } returns pendingResult
 
-        receiver.onReceive(mockContext, mockIntent)
-        advanceUntilIdle()
+            receiver.onReceive(mockContext, mockIntent)
+            advanceUntilIdle()
 
-        verify { android.util.Log.e("NotificationActionReceiver", "broadcast work failed", any()) }
-        verify { pendingResult.finish() }
+            verify { android.util.Log.e("NotificationActionReceiver", "broadcast work failed", any()) }
+            verify { pendingResult.finish() }
+        } finally {
+            unmockkStatic(android.util.Log::class)
+        }
     }
 
     @Test

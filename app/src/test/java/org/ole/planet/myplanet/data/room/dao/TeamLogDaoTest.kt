@@ -36,58 +36,46 @@ class TeamLogDaoTest {
     @Test
     fun getRecentTeamVisits_returnsAllRowsAndFiltersByCutoffAcrossLargeChunkedList() = runBlocking {
         val cutoff = 1000L
-        val logs = mutableListOf<TeamLog>()
-
-        // Insert 1,200 team-visit logs with time > cutoff
-        for (i in 1..1200) {
-            logs.add(TeamLog().apply {
-                id = "log_$i"
-                type = "teamVisit"
-                teamId = "team_$i"
-                time = 2000L
-            })
-        }
-
-        // Insert 100 older team-visit logs with time <= cutoff
-        for (i in 1201..1300) {
-            logs.add(TeamLog().apply {
-                id = "log_$i"
-                type = "teamVisit"
-                teamId = "team_$i"
-                time = 500L
-            })
-        }
+        val logs = listOf(
+            TeamLog().apply { id = "log_1"; type = "teamVisit"; teamId = "team_1"; time = 2000L },
+            TeamLog().apply { id = "log_900"; type = "teamVisit"; teamId = "team_900"; time = 2000L },
+            TeamLog().apply { id = "log_901"; type = "teamVisit"; teamId = "team_901"; time = 2000L },
+            TeamLog().apply { id = "log_1200"; type = "teamVisit"; teamId = "team_1200"; time = 2000L },
+            TeamLog().apply { id = "log_1201"; type = "teamVisit"; teamId = "team_1201"; time = 1000L },
+            TeamLog().apply { id = "log_1300"; type = "teamVisit"; teamId = "team_1300"; time = 500L },
+            TeamLog().apply { id = "log_non_visit"; type = "otherType"; teamId = "team_1"; time = 2000L },
+            TeamLog().apply { id = "log_unrequested"; type = "teamVisit"; teamId = "team_1301"; time = 2000L }
+        )
 
         teamLogDao.upsertAll(logs)
 
         val teamIds = (1..1300).map { "team_$it" }
         val results = teamLogDao.getRecentTeamVisits(cutoff, teamIds)
 
-        assertEquals(1200, results.size)
+        assertEquals(4, results.size)
+        assertEquals(setOf("log_1", "log_900", "log_901", "log_1200"), results.map { it.id }.toSet())
         assertTrue(results.all { (it.time ?: 0L) > cutoff })
     }
 
     @Test
     fun getTeamVisitsForUsers_returnsAllRowsAcrossLargeChunkedList() = runBlocking {
         val targetTeamId = "team_main"
-        val logs = mutableListOf<TeamLog>()
-
-        for (i in 1..1200) {
-            logs.add(TeamLog().apply {
-                id = "log_user_$i"
-                type = "teamVisit"
-                teamId = targetTeamId
-                user = "user_$i"
-                time = 1500L
-            })
-        }
+        val logs = listOf(
+            TeamLog().apply { id = "log_user_1"; type = "teamVisit"; teamId = targetTeamId; user = "user_1"; time = 1500L },
+            TeamLog().apply { id = "log_user_900"; type = "teamVisit"; teamId = targetTeamId; user = "user_900"; time = 1500L },
+            TeamLog().apply { id = "log_user_901"; type = "teamVisit"; teamId = targetTeamId; user = "user_901"; time = 1500L },
+            TeamLog().apply { id = "log_user_1200"; type = "teamVisit"; teamId = targetTeamId; user = "user_1200"; time = 1500L },
+            TeamLog().apply { id = "log_user_1301"; type = "teamVisit"; teamId = targetTeamId; user = "user_1301"; time = 1500L },
+            TeamLog().apply { id = "log_user_other_team"; type = "teamVisit"; teamId = "other_team"; user = "user_1"; time = 1500L }
+        )
 
         teamLogDao.upsertAll(logs)
 
-        val userNames = (1..1200).map { "user_$it" }
+        val userNames = (1..1300).map { "user_$it" }
         val results = teamLogDao.getTeamVisitsForUsers(targetTeamId, userNames)
 
-        assertEquals(1200, results.size)
+        assertEquals(4, results.size)
+        assertEquals(setOf("log_user_1", "log_user_900", "log_user_901", "log_user_1200"), results.map { it.id }.toSet())
         assertTrue(results.all { it.teamId == targetTeamId })
     }
 

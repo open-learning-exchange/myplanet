@@ -19,7 +19,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.ListAdapter
-import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.chip.Chip
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
@@ -795,12 +794,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     
     override fun onDataUpdated(table: String, update: TableDataUpdate) {
         refreshResourcesData()
-    }
-
-    override fun shouldAutoRefresh(table: String): Boolean = false
-    
-    override fun getSyncRecyclerView(): RecyclerView? {
-        return if (::recyclerView.isInitialized) recyclerView else null
     }
 
     override fun deleteSelected(deleteProgress: Boolean) {
