@@ -4,9 +4,11 @@ import android.app.Application
 import android.content.Context
 import android.view.LayoutInflater
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import androidx.recyclerview.widget.AsyncDifferConfig
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.gson.JsonObject
+import java.util.concurrent.Executor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Before
@@ -18,6 +20,7 @@ import org.ole.planet.myplanet.ui.user.AchievementsAdapter.Companion.PAYLOAD_EMA
 import org.ole.planet.myplanet.ui.user.AchievementsAdapter.Companion.PAYLOAD_PHONE
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLooper
 
 @RunWith(AndroidJUnit4::class)
 @Config(application = Application::class)
@@ -25,6 +28,10 @@ class AchievementsAdapterTest {
 
     @get:Rule
     val instantTaskExecutorRule = InstantTaskExecutorRule()
+
+    private val testDiffConfig = AsyncDifferConfig.Builder(AchievementsAdapter.DIFF_CALLBACK)
+        .setBackgroundThreadExecutor(Executor { it.run() })
+        .build()
 
     private lateinit var adapter: AchievementsAdapter
     private lateinit var context: Context
@@ -45,7 +52,7 @@ class AchievementsAdapterTest {
 
         val jsonList = listOf(GsonUtils.gson.toJson(ref1), GsonUtils.gson.toJson(ref2))
 
-        adapter = AchievementsAdapter(jsonList)
+        adapter = AchievementsAdapter(jsonList, testDiffConfig)
     }
 
     @Test
@@ -77,14 +84,7 @@ class AchievementsAdapterTest {
 
         adapter.submitJsonList(jsonList)
 
-        // Wait for DiffUtil to compute on the background thread and submit to main
-        org.robolectric.shadows.ShadowLooper.idleMainLooper()
-        var attempts = 0
-        while (adapter.currentList.size != 1 && attempts < 50) {
-            Thread.sleep(10)
-            org.robolectric.shadows.ShadowLooper.idleMainLooper()
-            attempts++
-        }
+        ShadowLooper.idleMainLooper()
 
         // Assert directly
         val list = adapter.currentList
@@ -99,19 +99,12 @@ class AchievementsAdapterTest {
     @Test
     fun testSubmitInvalidJson() {
         // We create a fresh adapter here, avoiding issues with lists merging unpredictably
-        adapter = AchievementsAdapter(listOf())
+        adapter = AchievementsAdapter(listOf(), testDiffConfig)
 
         val invalidJsonList = listOf("invalid json", "{\"name\": \"Bob\"}")
         adapter.submitJsonList(invalidJsonList)
 
-        // Wait for DiffUtil
-        org.robolectric.shadows.ShadowLooper.idleMainLooper()
-        var attempts = 0
-        while (adapter.currentList.size != 2 && attempts < 50) {
-            Thread.sleep(10)
-            org.robolectric.shadows.ShadowLooper.idleMainLooper()
-            attempts++
-        }
+        ShadowLooper.idleMainLooper()
 
         // Assert directly
         val list = adapter.currentList
@@ -129,7 +122,7 @@ class AchievementsAdapterTest {
         ref.addProperty("relationship", "Friend")
         ref.addProperty("phone", "123-456-7890")
         ref.addProperty("email", "john@example.com")
-        adapter = AchievementsAdapter(listOf(GsonUtils.gson.toJson(ref)))
+        adapter = AchievementsAdapter(listOf(GsonUtils.gson.toJson(ref)), testDiffConfig)
 
         val binding = RowOtherInfoBinding.inflate(LayoutInflater.from(context))
         val holder = AchievementsAdapter.AchievementsViewHolder(binding)
@@ -153,7 +146,7 @@ class AchievementsAdapterTest {
         ref.addProperty("relationship", "Friend")
         ref.addProperty("phone", "123-456-7890")
         ref.addProperty("email", "john@example.com")
-        adapter = AchievementsAdapter(listOf(GsonUtils.gson.toJson(ref)))
+        adapter = AchievementsAdapter(listOf(GsonUtils.gson.toJson(ref)), testDiffConfig)
 
         val binding = RowOtherInfoBinding.inflate(LayoutInflater.from(context))
         val holder = AchievementsAdapter.AchievementsViewHolder(binding)
@@ -174,7 +167,7 @@ class AchievementsAdapterTest {
         ref.addProperty("relationship", "Friend")
         ref.addProperty("phone", "123-456-7890")
         ref.addProperty("email", "john@example.com")
-        adapter = AchievementsAdapter(listOf(GsonUtils.gson.toJson(ref)))
+        adapter = AchievementsAdapter(listOf(GsonUtils.gson.toJson(ref)), testDiffConfig)
 
         val binding = RowOtherInfoBinding.inflate(LayoutInflater.from(context))
         val holder = AchievementsAdapter.AchievementsViewHolder(binding)
@@ -192,7 +185,7 @@ class AchievementsAdapterTest {
         ref.addProperty("relationship", "Friend")
         ref.addProperty("phone", "123-456-7890")
         ref.addProperty("email", "john@example.com")
-        adapter = AchievementsAdapter(listOf(GsonUtils.gson.toJson(ref)))
+        adapter = AchievementsAdapter(listOf(GsonUtils.gson.toJson(ref)), testDiffConfig)
 
         val binding = RowOtherInfoBinding.inflate(LayoutInflater.from(context))
         val holder = AchievementsAdapter.AchievementsViewHolder(binding)
@@ -214,7 +207,7 @@ class AchievementsAdapterTest {
         ref.addProperty("relationship", "Friend")
         ref.addProperty("phone", "123-456-7890")
         ref.addProperty("email", "john@example.com")
-        adapter = AchievementsAdapter(listOf(GsonUtils.gson.toJson(ref)))
+        adapter = AchievementsAdapter(listOf(GsonUtils.gson.toJson(ref)), testDiffConfig)
 
         val binding = RowOtherInfoBinding.inflate(LayoutInflater.from(context))
         val holder = AchievementsAdapter.AchievementsViewHolder(binding)
