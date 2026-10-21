@@ -58,6 +58,20 @@ class NewsDaoTest {
     }
 
     @Test
+    fun getPendingUploads_returnsOnlyRowsThatNeedUploading() = runBlocking {
+        val synced = News().apply { id = "synced"; _id = "synced"; imageUrls = emptyList() }
+        val created = News().apply { id = "created" }
+        val edited = News().apply { id = "edited"; _id = "edited"; isUpdated = true }
+        val reacted = News().apply { id = "reacted"; _id = "reacted"; pendingReactions = "{}" }
+        val withImage = News().apply { id = "withImage"; _id = "withImage"; imageUrls = listOf("{}") }
+        newsDao.upsertAll(listOf(synced, created, edited, reacted, withImage))
+
+        val pendingIds = newsDao.getPendingUploads().map { it.id }.toSet()
+
+        assertEquals(setOf("created", "edited", "reacted", "withImage"), pendingIds)
+    }
+
+    @Test
     fun getTopLevelByTeam_filtersCorrectly() = runBlocking {
         val news1 = News().apply {
             id = UUID.randomUUID().toString()
