@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Summarise Gradle unit-test timings as a GitHub Actions step summary.
 
-Usage: test_timing_summary.py <test-results-dir> [--shard N/M] [--warn-over SECONDS] [--warn-class-over SECONDS]
+Usage: test_timing_summary.py <test-results-dir> [--shard N/M] [--warn-over SECONDS] [--warn-class-over SECONDS] [--fail-over SECONDS] [--fail-class-over SECONDS]
 
 Reads the JUnit XML that Gradle writes to app/build/test-results/<task>/ and
 prints a markdown report of:
@@ -26,7 +26,11 @@ sharded run (-PtestShardTotal/-PtestShardIndex). --warn-over prints a loud
 warning when the summed test time exceeds the given seconds, so a suite that
 has grown past what one CI job should carry gets noticed. --warn-class-over
 prints a warning for each test class whose runtime excluding first-test
-excess exceeds the given threshold (default: 15s).
+excess exceeds the given threshold (default: 15s). --fail-over fails the step
+(exit 1) if summed test seconds exceed the given threshold. Note that totals sum
+test seconds across forks and are not job wall time. --fail-class-over fails the
+step (exit 1) if any test class's runtime excluding first-test excess exceeds
+the given threshold.
 """
 import argparse
 import glob
@@ -65,6 +69,10 @@ def main() -> int:
                         help="warn when summed test seconds exceed this")
     parser.add_argument("--warn-class-over", type=float, default=15.0,
                         help="warn for each class whose seconds excluding first-test excess exceed this; <= 0 disables")
+    parser.add_argument("--fail-over", type=float, default=None,
+                        help="fail (exit 1) when summed test seconds exceed this")
+    parser.add_argument("--fail-class-over", type=float, default=None,
+                        help="fail (exit 1) for each class whose seconds excluding first-test excess exceed this; <= 0 disables")
     args = parser.parse_args()
 
     results_dir = args.results_dir
@@ -136,6 +144,7 @@ def main() -> int:
     warmup_total = sum(c[4] for c in classes)
     measured = sum(1 for c in classes if c[2] >= 2)
 
+    failed = False
     shard_suffix = f" (shard {args.shard})" if args.shard else ""
     print(f"## Unit test timing{shard_suffix}")
     print()
@@ -143,6 +152,15 @@ def main() -> int:
     print(f"{warmup_total:.1f}s of that is first-test excess over the median of the remaining tests "
           f"({measured} classes with ≥2 tests measured; single-test classes count as 0).")
     print()
+    if args.fail_over is not None and total > args.fail_over:
+        failed = True
+        subject = f"shard {args.shard}" if args.shard else "the suite"
+        print(f"> 🚨 **FAIL: Slow tests**: {subject} summed {total:.0f}s, over the "
+              f"{args.fail_over:.0f}s threshold. Speed up the slowest classes below "
+              f"(Robolectric classes dominate), or split the run across shards "
+              f"(-PtestShardTotal/-PtestShardIndex, see test.yml) — then update "
+              f"--fail-over in test.yml.")
+        print()
     if args.warn_over is not None and total > args.warn_over:
         subject = f"shard {args.shard}" if args.shard else "the suite"
         print(f"> ⚠️ **Slow tests**: {subject} summed {total:.0f}s, over the "
@@ -151,7 +169,16 @@ def main() -> int:
               f"(-PtestShardTotal/-PtestShardIndex, see test.yml) — then update "
               f"--warn-over in test.yml.")
         print()
-    if args.warn_class_over > 0:
+    if args.fail_class_over is not None and args.fail_class_over > 0:
+        slow_fail = [row for row in classes_by_excl if row[5] > args.fail_class_over]
+        if slow_fail:
+            failed = True
+            print(f"> 🚨 **FAIL: Slow test classes**: {len(slow_fail)} classes over "
+                  f"{args.fail_class_over:.0f}s excluding first-test excess")
+            for elapsed, name, count, median_val, warmup, excl in slow_fail[:TOP_N]:
+                print(f"> - `{name}` {excl:.1f}s ({count} tests)")
+            print()
+    if args.warn_class_over is not None and args.warn_class_over > 0:
         slow = [row for row in classes_by_excl if row[5] > args.warn_class_over]
         if slow:
             print(f"> ⚠️ **Slow test classes**: {len(slow)} classes over "
@@ -188,7 +215,7 @@ def main() -> int:
     for elapsed, name, excess in cases[:TOP_N]:
         excess_cell = f"{excess:.1f}" if excess is not None else ""
         print(f"| `{name}` | {elapsed:.1f} | {excess_cell} |")
-    return 0
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

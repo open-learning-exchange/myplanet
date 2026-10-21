@@ -2,9 +2,13 @@ package org.ole.planet.myplanet.ui.chat
 
 import android.app.Application
 import android.content.Context
+import android.view.View
 import android.widget.LinearLayout
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -56,6 +60,7 @@ class ChatHistoryAdapterTest {
             org.robolectric.shadows.ShadowLooper.idleMainLooper()
             attempts++
         }
+
         assertEquals(size, adapter.currentList.size)
     }
 
@@ -148,5 +153,39 @@ class ChatHistoryAdapterTest {
         val holder = bindRow(item)
         assertEquals("", holder.rowChatHistoryBinding.chatTitle.text.toString())
         assertNull(holder.rowChatHistoryBinding.chatTitle.contentDescription)
+    }
+
+    @Test
+    fun `clicking earlier row sets card contentDescription from its own title when another row is bound later`() {
+        val item1 = ChatHistory().apply {
+            id = "10"
+            _id = "10"
+            title = "Title A"
+        }
+        val item2 = ChatHistory().apply {
+            id = "20"
+            _id = "20"
+            title = "Title B"
+        }
+
+        adapter.submitList(listOf(item1, item2))
+        waitForList(adapter, 2)
+
+        val recyclerView = RecyclerView(context).apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = this@ChatHistoryAdapterTest.adapter
+        }
+        recyclerView.measure(
+            View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY)
+        )
+        recyclerView.layout(0, 0, 1080, 1920)
+
+        val holder1 = recyclerView.findViewHolderForAdapterPosition(0) as ChatHistoryAdapter.ViewHolderChat
+        assertNotNull(recyclerView.findViewHolderForAdapterPosition(1))
+
+        holder1.rowChatHistoryBinding.root.performClick()
+
+        assertEquals("Title A", holder1.rowChatHistoryBinding.chatCardView.contentDescription)
     }
 }
