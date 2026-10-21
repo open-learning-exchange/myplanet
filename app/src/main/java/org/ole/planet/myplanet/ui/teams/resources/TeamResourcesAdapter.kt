@@ -4,6 +4,7 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.AsyncDifferConfig
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import java.io.File
@@ -30,9 +31,26 @@ class TeamResourcesAdapter(
     private val canRemoveResources: Boolean,
     private val updateListener: OnResourcesUpdateListener,
     private val dispatcherProvider: DispatcherProvider,
-
     private val onRemoveResource: (MyLibrary, Int) -> Unit,
-) : ListAdapter<MyLibrary, TeamResourcesAdapter.ViewHolderTeamResources>(ITEM_CALLBACK) {
+    diffConfig: AsyncDifferConfig<MyLibrary>? = null,
+) : ListAdapter<MyLibrary, TeamResourcesAdapter.ViewHolderTeamResources>(
+    diffConfig ?: AsyncDifferConfig.Builder(ITEM_CALLBACK).build()
+) {
+
+    constructor(
+        context: Context,
+        canRemoveResources: Boolean,
+        updateListener: OnResourcesUpdateListener,
+        dispatcherProvider: DispatcherProvider,
+        onRemoveResource: (MyLibrary, Int) -> Unit
+    ) : this(
+        context = context,
+        canRemoveResources = canRemoveResources,
+        updateListener = updateListener,
+        dispatcherProvider = dispatcherProvider,
+        onRemoveResource = onRemoveResource,
+        diffConfig = null
+    )
 
     private var listener: OnHomeItemClickListener? = null
     private val externalFilesDir: File? by lazy { FileUtils.getExternalFilesDir(context) }
@@ -174,7 +192,7 @@ class TeamResourcesAdapter(
 
     companion object {
         private const val COVER_WIDTH_DP = 84
-        private val ITEM_CALLBACK = DiffUtils.itemCallback<MyLibrary>(
+        internal val ITEM_CALLBACK = DiffUtils.itemCallback<MyLibrary>(
             areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
             areContentsTheSame = { oldItem, newItem ->
                 oldItem.title == newItem.title &&

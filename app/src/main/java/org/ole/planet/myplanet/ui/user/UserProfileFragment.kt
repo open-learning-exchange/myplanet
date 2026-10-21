@@ -53,6 +53,7 @@ import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.ui.courses.CoursesFilterFragment
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ImageUtils
@@ -335,19 +336,20 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
     }
 
     private fun setupLevelSpinner(binding: EditProfileDialogBinding) {
-        val levels = resources.getStringArray(subject_level).toMutableList().apply { remove("All") }
-        levels.add(0, getString(R.string.select_level))
-        selectedLevel = StringUtils.checkNA(model?.level)
+        val englishLevels = CoursesFilterFragment.englishValues(requireContext(), subject_level).drop(1)
+        val localizedLevels = resources.getStringArray(subject_level).drop(1)
+        val levels = listOf(getString(R.string.select_level)) + localizedLevels
+        val currentLevel = StringUtils.checkNA(model?.level)
+        val levelIndex = englishLevels.indexOf(currentLevel).takeIf { it >= 0 } ?: localizedLevels.indexOf(currentLevel)
+        selectedLevel = englishLevels.getOrElse(levelIndex) { "" }
         val levelAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item_profile, levels)
         levelAdapter.setDropDownViewResource(R.layout.spinner_item_profile)
         binding.level.adapter = levelAdapter
-
-        val levelPosition = levels.indexOf(selectedLevel)
-        if (levelPosition > 0) binding.level.setSelection(levelPosition) else binding.level.setSelection(0)
+        binding.level.setSelection(levelIndex + 1)
 
         binding.level.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                selectedLevel = if (position == 0) "" else levels[position]
+                selectedLevel = englishLevels.getOrElse(position - 1) { "" }
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -471,7 +473,7 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
     private fun createStatsMap(): LinkedHashMap<String, String?> {
         return linkedMapOf(
             getString(R.string.community_name) to StringUtils.checkNA(communityCode()),
-            getString(R.string.last_login) to viewModel.lastVisit.value?.let { TimeUtils.getRelativeTime(it, timeProvider) },
+            getString(R.string.last_login) to viewModel.lastVisit.value?.let { TimeUtils.getRelativeTime(requireContext(), it, timeProvider) },
             getString(R.string.total_visits_overall) to viewModel.offlineVisits.value.toString(),
             getString(R.string.most_opened_resource) to StringUtils.checkNA(viewModel.maxOpenedResource.value),
             getString(R.string.number_of_resources_opened) to StringUtils.checkNA(viewModel.numberOfResourceOpen.value)
