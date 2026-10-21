@@ -21,7 +21,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.TimeUnit
-import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -32,7 +31,6 @@ import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.life.LifeFragment
@@ -55,9 +53,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private val viewModel: BellDashboardViewModel by viewModels()
     var user: UserEntity? = null
     private var surveyListDialog: AlertDialog? = null
-
-    @Inject
-    lateinit var serverUrlMapper: ServerUrlMapper
 
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -106,27 +101,11 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
-    private suspend fun isServerReachable(mapping: ServerUrlMapper.UrlMapping): Boolean {
-        val primaryAvailable = viewModel.checkServerConnection(mapping.primaryUrl)
-
-        if (primaryAvailable) {
-            return true
-        }
-
-        mapping.alternativeUrl?.let {
-            val alternativeAvailable = viewModel.checkServerConnection(it)
-            return alternativeAvailable
-        }
-
-        return false
-    }
-
     private suspend fun handleConnectingState() {
         setNetworkIndicatorColor(R.color.md_yellow_600)
         val updateUrl = prefData.getServerUrl().ifEmpty { return }
-        val mapping = serverUrlMapper.processUrl(updateUrl)
         try {
-            val reachable = isServerReachable(mapping)
+            val reachable = viewModel.checkServerConnection(updateUrl)
             setNetworkIndicatorColor(if (reachable) R.color.green else R.color.md_yellow_600)
         } catch (e: CancellationException) {
             throw e
