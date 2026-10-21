@@ -3,7 +3,9 @@ package org.ole.planet.myplanet.ui.teams.resources
 import android.app.Application
 import android.content.Context
 import android.widget.FrameLayout
+import androidx.recyclerview.widget.AsyncDifferConfig
 import androidx.test.core.app.ApplicationProvider
+import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -32,6 +34,10 @@ class TeamResourcesAdapterTest {
     private var removedPosition: Int = -1
     private var itemChanged = AtomicBoolean(false)
 
+    private val testDiffConfig = AsyncDifferConfig.Builder(TeamResourcesAdapter.ITEM_CALLBACK)
+        .setBackgroundThreadExecutor(Executor { it.run() })
+        .build()
+
     private val listener = object : OnResourcesUpdateListener {
         override fun onResourceListUpdated() {
             isUpdatedCalled = true
@@ -57,7 +63,8 @@ class TeamResourcesAdapterTest {
             onRemoveResource = { resource, position ->
                 removedResource = resource
                 removedPosition = position
-            }
+            },
+            diffConfig = testDiffConfig
         )
     }
 
@@ -92,21 +99,11 @@ class TeamResourcesAdapterTest {
             removalCompleted.set(true)
         }
 
-        // AsyncListDiffer diffs non-empty lists on a background executor and posts the
-        // commit to the main looper, so a single idle can run before the result arrives.
-        idleMainLooperUntil { removalCompleted.get() }
+        ShadowLooper.idleMainLooper()
         assertTrue(removalCompleted.get())
         assertEquals(1, adapter.currentList.size)
         assertEquals("res_2", adapter.currentList[0].id)
         assertTrue(isUpdatedCalled)
-    }
-
-    private fun idleMainLooperUntil(timeoutMs: Long = 5_000, condition: () -> Boolean) {
-        val deadline = System.currentTimeMillis() + timeoutMs
-        while (!condition() && System.currentTimeMillis() < deadline) {
-            ShadowLooper.idleMainLooper()
-            Thread.sleep(10)
-        }
     }
 
     @Test
@@ -156,7 +153,7 @@ class TeamResourcesAdapterTest {
             commitCompleted.set(true)
         }
 
-        idleMainLooperUntil { commitCompleted.get() }
+        ShadowLooper.idleMainLooper()
         assertTrue(commitCompleted.get())
         assertEquals(
             "/storage/emulated/0/Android/data/org.ole.planet.myplanet/files/res_1.pdf",
