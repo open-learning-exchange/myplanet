@@ -338,18 +338,25 @@ class NewsDaoTest {
         val emptyResult = newsDao.getByUnderscoreIds(emptyList())
         assertTrue(emptyResult.isEmpty())
 
-        val items = (1..1200).map { i ->
+        val requestIds = (1..1200).map { "underscore_id_$it" }
+
+        val seededIndices = listOf(1, 900, 901, 1200)
+        val seededItems = seededIndices.map { i ->
             News().apply {
                 id = "id_$i"
                 _id = "underscore_id_$i"
             }
+        } + News().apply {
+            id = "id_control"
+            _id = "underscore_id_control"
         }
-        newsDao.upsertAll(items)
+        newsDao.upsertAll(seededItems)
 
-        val underscoreIds = items.mapNotNull { it._id }
-        val result = newsDao.getByUnderscoreIds(underscoreIds)
-        assertEquals(1200, result.size)
-        assertEquals(underscoreIds.toSet(), result.mapNotNull { it._id }.toSet())
+        val result = newsDao.getByUnderscoreIds(requestIds)
+        assertEquals(4, result.size)
+        val expectedIds = setOf("underscore_id_1", "underscore_id_900", "underscore_id_901", "underscore_id_1200")
+        assertEquals(expectedIds, result.mapNotNull { it._id }.toSet())
+        assertFalse(result.any { it._id == "underscore_id_control" })
     }
 
     @Test

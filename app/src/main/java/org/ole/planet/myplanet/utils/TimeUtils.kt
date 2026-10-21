@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utils
 
+import android.content.Context
 import android.text.format.DateUtils
 import android.util.Log
 import java.time.Instant
@@ -10,6 +11,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
+import org.ole.planet.myplanet.R
 
 object TimeUtils {
     private const val TAG = "TimeUtils"
@@ -76,11 +78,11 @@ object TimeUtils {
             fallback
         }
 
-    fun getRelativeTime(timestamp: Long, timeProvider: TimeProvider? = null): String {
+    fun getRelativeTime(context: Context, timestamp: Long, timeProvider: TimeProvider? = null): String {
         val timeNow = timeProvider?.now() ?: System.currentTimeMillis()
         return if (timestamp < timeNow) {
             DateUtils.getRelativeTimeSpanString(timestamp, timeNow, 0).toString()
-        } else "Just now"
+        } else context.getString(R.string.just_now)
     }
 
     fun getFormattedDate(date: Long?): String {

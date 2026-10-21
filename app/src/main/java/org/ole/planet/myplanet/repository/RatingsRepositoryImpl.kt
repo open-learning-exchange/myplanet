@@ -103,14 +103,15 @@ class RatingsRepositoryImpl @Inject constructor(
             }
         }
         ratingDao.upsertAll(entities)
+        ratingDao.deleteUploadedWithoutServerId()
     }
 
     override suspend fun getPendingRatingUploads(): List<Rating> {
         return ratingDao.getPendingUploads()
     }
 
-    override suspend fun markRatingUploaded(id: String): Boolean {
-        return ratingDao.markUploaded(id) > 0
+    override suspend fun markRatingUploaded(id: String, remoteId: String?, remoteRev: String?): Boolean {
+        return ratingDao.markUploaded(id, remoteId, remoteRev) > 0
     }
 
     private fun Rating.toRatingEntry(): RatingEntry =
