@@ -338,6 +338,7 @@ class RetryQueueWorkerTest {
         @BeforeClass
         @JvmStatic
         fun setUpClass() {
+            mockkStatic(Log::class)
             mockkStatic(WorkManagerImpl::class)
             mockkStatic(WorkManager::class)
             mockkObject(MainApplication)
@@ -354,6 +355,12 @@ class RetryQueueWorkerTest {
     fun setUp() {
         MockKAnnotations.init(this, relaxed = true)
 
+        every { Log.d(any<String>(), any<String>()) } returns 0
+        every { Log.i(any<String>(), any<String>()) } returns 0
+        every { Log.w(any<String>(), any<String>()) } returns 0
+        every { Log.e(any<String>(), any<String>()) } returns 0
+        every { Log.e(any<String>(), any<String>(), any<Throwable>()) } returns 0
+
         every { context.applicationContext } returns context
         every { WorkManagerImpl.getInstance(any()) } returns workManagerImpl
         every { WorkManager.getInstance(any()) } returns workManagerImpl
@@ -369,20 +376,22 @@ class RetryQueueWorkerTest {
 }
 ```
 
-Because `clearAllMocks()` resets stubs between tests without removing class instrumentation, per-test stubs (like `WorkManager.getInstance`) must be re-installed in `@Before`.
+Understanding `clearAllMocks()` behavior:
+- `clearAllMocks(answers = false)` preserves stubs and only clears recorded call counts, making it safe to run in `@After` without wiping stubs.
+- Default `clearAllMocks()` clears both recorded calls and stubs. When used in `@Before`, any per-test stubs must be re-installed afterwards.
 
-`Log` mocking is not needed to avoid crashes because `returnDefaultValues = true` (`app/build.gradle:22`) makes `android.util.Log` calls return default values on the JVM. Mock `Log` only when the test explicitly asserts a log call (see `services/NotificationActionReceiverTest.kt:189-204` for an example using scoped `mockkStatic(Log::class)` and `verify`).
+Note on `Log`: `Log` mocking is not required to avoid crashes because `returnDefaultValues = true` (`app/build.gradle:22`) makes `android.util.Log` calls return default values on the JVM. Mock `Log` only when the test explicitly asserts a log call (see `services/NotificationActionReceiverTest.kt:189-204` for an example using scoped `mockkStatic(Log::class)` and `verify`).
 
 ### Mock once per class
 
-Calling `mockkStatic` or `mockkObject` inside `@Before` re-instruments the target class before every test method. Prefer mocking static methods and singleton objects once per class using companion `@BeforeClass` and `@AfterClass` methods, clearing recorded calls per test with `clearAllMocks()` in `@After`.
+Calling `mockkStatic` or `mockkObject` inside `@Before` re-instruments the target class before every test method. Prefer mocking static methods and singleton objects once per class using companion `@BeforeClass` and `@AfterClass` methods.
 
 Real codebase examples using this pattern:
-- `services/retry/RetryQueueWorkerTest.kt:63-78` (`@BeforeClass` mocks `WorkManagerImpl`, `WorkManager`, and `MainApplication`; `@AfterClass` calls `unmockkAll()`)
-- `services/DownloadServiceTest.kt:60-76` (`@BeforeClass` mocks `ContextCompat`, `DownloadUtils`, and `Log`), with `clearAllMocks()` at `:83` and stubs re-installed at `:86-90`
-- `services/upload/UploadConfigsTest.kt:47-61` (`@BeforeClass` mocks `VersionUtils` and `NetworkUtils`), with `clearAllMocks()` at `:65`
-- `services/NotificationActionReceiverTest.kt:55-69` (`@BeforeClass` mocks `NotificationUtils` and `ServiceDependenciesEntryPointKt`), with `clearAllMocks()` at `:73`
-- `base/BasePermissionActivityTest.kt:26-40` (`@BeforeClass` mocks `ContextCompat` and `Process`), with `clearAllMocks()` at `:44`
+- `services/retry/RetryQueueWorkerTest.kt:63-78` (`@BeforeClass` mocks `Log`, `WorkManagerImpl`, `WorkManager`, and `MainApplication`; `@AfterClass` calls `unmockkAll()`, and `@After` uses `clearAllMocks(answers = false, childMocks = false)`)
+- `services/DownloadServiceTest.kt:60-76` (`@BeforeClass` mocks `ContextCompat`, `DownloadUtils`, and `Log`), using default `clearAllMocks()` in `@Before` at `:83` and re-installing stubs at `:86-90`
+- `services/upload/UploadConfigsTest.kt:47-61` (`@BeforeClass` mocks `VersionUtils` and `NetworkUtils`), using default `clearAllMocks()` in `@Before` at `:65` and re-installing stubs at `:67-71`
+- `services/NotificationActionReceiverTest.kt:55-69` (`@BeforeClass` mocks `NotificationUtils` and `ServiceDependenciesEntryPointKt`), using default `clearAllMocks()` in `@Before` at `:73`
+- `base/BasePermissionActivityTest.kt:26-40` (`@BeforeClass` mocks `ContextCompat` and `Process`), using default `clearAllMocks()` in `@Before` at `:44` and re-installing stubs at `:45-50`
 
 When a static mock is needed for only a single test method, scope `mockkStatic` inside a `try ... finally` block that calls `unmockkStatic` in `finally`, as shown in `utils/UrlUtilsTest.kt:53`.
 
