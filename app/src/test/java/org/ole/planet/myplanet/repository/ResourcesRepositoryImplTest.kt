@@ -1458,6 +1458,21 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
+    fun `storage listing and breakdown leave out CV and attachment folders`() = runTest {
+        val oleDir = temporaryFolder.newFolder("ole_app_dirs")
+        File(oleDir, "res1/book.pdf").apply { parentFile?.mkdirs(); writeBytes(ByteArray(10)) }
+        File(oleDir, "cv/resume.pdf").apply { parentFile?.mkdirs(); writeBytes(ByteArray(20)) }
+        File(oleDir, "team_attachments/team1/logo.png").apply { parentFile?.mkdirs(); writeBytes(ByteArray(30)) }
+        coEvery { myLibraryDao.getResourceTitlesByResourceIds(any()) } returns listOf(ResourceTitleProjection("res1", "Book"))
+
+        val items = repository.getOfflineResourceItems(oleDir.absolutePath, setOf("pdf"), emptySet())
+        val breakdown = repository.getStorageBreakdown(oleDir)
+
+        assertEquals(listOf("res1"), items.map { it.resourceId })
+        assertEquals(10L, breakdown.totalBytes)
+    }
+
+    @Test
     fun `deleteOfflineResources removes nested empty folders and marks the real resource not offline`() = runTest {
         val oleDir = temporaryFolder.newFolder("ole_delete")
         val html = File(oleDir, "res1/index.html").apply { parentFile?.mkdirs(); writeBytes(ByteArray(10)) }

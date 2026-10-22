@@ -896,6 +896,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                 if (!relative.contains('/')) return@forEach
 
                 val resourceId = relative.substringBefore('/')
+                if (resourceId in NON_RESOURCE_DIRS) return@forEach
                 val accumulator = grouped.getOrPut(resourceId) { ResourceAccumulator() }
                 accumulator.filePaths.add(file.absolutePath)
                 accumulator.totalSize += file.length()
@@ -936,13 +937,16 @@ class ResourcesRepositoryImpl @Inject constructor(
 
         var total = 0L
 
-        oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
-            val index = StorageCategoryType.indexOf(file.extension)
-            val size = file.length()
-            total += size
-            sizes[index] += size
-            counts[index]++
-        }
+        oleDir.walkTopDown()
+            .onEnter { it == oleDir || it.parentFile != oleDir || it.name !in NON_RESOURCE_DIRS }
+            .filter { it.isFile }
+            .forEach { file ->
+                val index = StorageCategoryType.indexOf(file.extension)
+                val size = file.length()
+                total += size
+                sizes[index] += size
+                counts[index]++
+            }
         StorageBreakdown(total, sizes, counts)
     }
 
@@ -985,5 +989,9 @@ class ResourcesRepositoryImpl @Inject constructor(
             addProperty("deviceName", NetworkUtils.getDeviceName())
             addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
         }
+    }
+
+    private companion object {
+        val NON_RESOURCE_DIRS = setOf("cv", "team_attachments", "course_attachments", "userimages")
     }
 }
