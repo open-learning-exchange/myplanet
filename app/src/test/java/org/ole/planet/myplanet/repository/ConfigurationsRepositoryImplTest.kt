@@ -307,9 +307,9 @@ class ConfigurationsRepositoryImplTest {
             latestapkcode = 2
         }
 
-        val responsePlanet = retrofit2.Response.success(myPlanet)
+        val responsePlanet = Response.success(myPlanet)
         val apkStringJson = GsonUtils.gson.toJson("v3")
-        val responseApk = retrofit2.Response.success(apkStringJson.toResponseBody("application/json".toMediaTypeOrNull()))
+        val responseApk = Response.success(apkStringJson.toResponseBody("application/json".toMediaTypeOrNull()))
 
         coEvery { apiInterface.checkVersion(any()) } returns responsePlanet
         coEvery { apiInterface.getApkVersion(any()) } returns responseApk
@@ -565,7 +565,7 @@ class ConfigurationsRepositoryImplTest {
         val response = Response.success(200, mockBody)
         coEvery { apiInterface.getChecksum(any()) } returns response
 
-        val mockFile = mockk<java.io.File>()
+        val mockFile = mockk<File>()
         every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
         every { mockFile.exists() } returns true
 
@@ -596,7 +596,7 @@ class ConfigurationsRepositoryImplTest {
         val response = Response.success(200, mockBody)
         coEvery { apiInterface.getChecksum(any()) } returns response
 
-        val mockFile = mockk<java.io.File>()
+        val mockFile = mockk<File>()
         every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
         every { mockFile.exists() } returns true
 
@@ -625,9 +625,9 @@ class ConfigurationsRepositoryImplTest {
         val response = Response.success(200, mockBody)
         coEvery { apiInterface.getChecksum(any()) } returns response
 
-        every { android.util.Log.w(any(), any<String>()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
 
-        val mockFile = mockk<java.io.File>()
+        val mockFile = mockk<File>()
         every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
         every { mockFile.exists() } returns true
 
@@ -657,7 +657,7 @@ class ConfigurationsRepositoryImplTest {
         val response = Response.success(200, mockBody)
         coEvery { apiInterface.getChecksum(any()) } returns response
 
-        val mockFile = mockk<java.io.File>()
+        val mockFile = mockk<File>()
         every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
         every { mockFile.exists() } returns false
 

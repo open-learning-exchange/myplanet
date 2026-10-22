@@ -106,7 +106,7 @@ class CoursesProgressAdapterTest {
         val holder = adapter.onCreateViewHolder(LinearLayout(activity), 0)
 
         adapter.onBindViewHolder(holder, 0)
-        assertEquals(activity.getString(org.ole.planet.myplanet.R.string.step_progress, 2, 5), holder.binding.tvDescription.text.toString())
+        assertEquals(activity.getString(R.string.step_progress, 2, 5), holder.binding.tvDescription.text.toString())
 
         adapter.onBindViewHolder(holder, 1)
         assertEquals("", holder.binding.tvDescription.text.toString())

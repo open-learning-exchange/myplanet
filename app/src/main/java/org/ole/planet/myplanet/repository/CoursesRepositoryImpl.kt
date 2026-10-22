@@ -664,7 +664,10 @@ class CoursesRepositoryImpl @Inject constructor(
             if (steps.isNotEmpty()) courseStepDao.upsertAll(steps)
             stepIdsByCourse.forEach { (courseId, stepIds) -> courseStepDao.deleteStaleSteps(courseId, stepIds) }
             if (exams.isNotEmpty()) examDao.upsertAll(exams)
-            if (questions.isNotEmpty()) questionDao.upsertAll(questions)
+            if (questions.isNotEmpty()) {
+                questionDao.upsertAll(questions)
+                questionDao.deleteStaleQuestions(questions)
+            }
         }
         return processedCount
     }
