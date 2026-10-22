@@ -134,7 +134,7 @@ class TeamsUploaderTest {
         coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
 
         val errorBody = okhttp3.ResponseBody.create(null, "Error")
-        coEvery { uploadRepository.postUploadArray(any(), any()) } returns retrofit2.Response.error(500, errorBody)
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns Response.error(500, errorBody)
         coEvery { retryQueue.queueFailedOperation(any(), any(), any(), any(), any(), any(), any()) } returns Unit
 
         teamsUploader.uploadTeams()
@@ -152,7 +152,7 @@ class TeamsUploaderTest {
         val mockTeam = TeamUploadData("team1", JsonObject(), false, null)
         coEvery { mockRepo.getTeamsForUpload() } returns listOf(mockTeam)
 
-        coEvery { uploadRepository.postUploadArray(any(), any()) } throws java.io.IOException("Network down")
+        coEvery { uploadRepository.postUploadArray(any(), any()) } throws IOException("Network down")
         coEvery { retryQueue.queueFailedOperation(any(), any(), any(), any(), any(), any(), any()) } returns Unit
 
         teamsUploader.uploadTeams()

@@ -71,15 +71,15 @@ class UserRepositoryImpl @Inject constructor(
     @param:AppPreferences private val settings: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
     private val apiInterface: ApiInterface,
-    private val resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository>,
-    private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>,
+    private val resourcesRepositoryLazy: Lazy<ResourcesRepository>,
+    private val coursesRepositoryLazy: Lazy<CoursesRepository>,
     private val uploadToShelfService: Lazy<UploadToShelfService>,
     @param:ApplicationContext private val context: Context,
     private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val appScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
-    private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>,
-    private val eventsRepositoryLazy: dagger.Lazy<EventsRepository>,
+    private val activitiesRepositoryLazy: Lazy<ActivitiesRepository>,
+    private val eventsRepositoryLazy: Lazy<EventsRepository>,
     private val removedLogDao: RemovedLogDao,
     private val achievementDao: AchievementDao,
     private val userDao: UserDao,
@@ -1217,7 +1217,7 @@ class UserRepositoryImpl @Inject constructor(
 
         val response = org.ole.planet.myplanet.data.api.ApiClient.executeWithRetryAndWrap {
             apiInterface.postDoc(
-                org.ole.planet.myplanet.utils.UrlUtils.header,
+                UrlUtils.header,
                 "application/json",
                 "${org.ole.planet.myplanet.utils.UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true",
                 keysObject.toKotlinx().jsonObject
@@ -1225,12 +1225,12 @@ class UserRepositoryImpl @Inject constructor(
         }?.body()?.toGson()
 
         response?.let { responseBody ->
-            val rows = org.ole.planet.myplanet.utils.GsonUtils.getJsonArray("rows", responseBody)
+            val rows = GsonUtils.getJsonArray("rows", responseBody)
             for (i in 0 until rows.size()) {
                 val row = rows[i].asJsonObject
                 if (row.has("doc")) {
-                    val doc = org.ole.planet.myplanet.utils.GsonUtils.getJsonObject("doc", row)
-                    val shelfId = org.ole.planet.myplanet.utils.GsonUtils.getString("_id", doc)
+                    val doc = GsonUtils.getJsonObject("doc", row)
+                    val shelfId = GsonUtils.getString("_id", doc)
 
                     if (hasShelfDataUltraFast(doc)) {
                         shelvesWithData.add(shelfId)
