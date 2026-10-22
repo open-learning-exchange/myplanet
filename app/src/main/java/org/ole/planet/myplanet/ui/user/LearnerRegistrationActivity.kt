@@ -11,7 +11,6 @@ import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
-import javax.inject.Inject
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -19,22 +18,14 @@ import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.databinding.ActivityLearnerRegistrationBinding
 import org.ole.planet.myplanet.model.LearnerRegistrationInfo
-import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.ui.courses.CoursesFilterFragment
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.DialogUtils.CustomProgressDialog
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class LearnerRegistrationActivity : BaseActivity() {
-
-    @Inject
-    override lateinit var sharedPrefManager: SharedPrefManager
-
-    @Inject
-    override lateinit var dispatcherProvider: DispatcherProvider
-
     private val viewModel: LearnerRegistrationViewModel by viewModels()
 
     private lateinit var binding: ActivityLearnerRegistrationBinding
@@ -67,7 +58,7 @@ class LearnerRegistrationActivity : BaseActivity() {
 
     private fun collectRegistrationInfo(): LearnerRegistrationInfo {
         val info = LearnerRegistrationInfo(
-            binding.etUsername.text.toString(),
+            binding.etUsername.text.toString().lowercase(),
             binding.etPassword.text.toString(),
             binding.etRePassword.text.toString(),
             binding.etFname.text.toString(),
@@ -75,7 +66,7 @@ class LearnerRegistrationActivity : BaseActivity() {
             binding.etMname.text.toString(),
             binding.etEmail.text.toString(),
             binding.spnLang.selectedItem.toString(),
-            binding.spnLevel.selectedItem.toString(),
+            CoursesFilterFragment.englishValues(this, R.array.level).getOrElse(binding.spnLevel.selectedItemPosition) { "" },
             binding.etPhone.text.toString(),
             dob,
             selectedGender()

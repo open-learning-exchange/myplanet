@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -34,7 +35,7 @@ class LearnerRegistrationViewModel @Inject constructor(
     fun onUsernameChanged(input: String) {
         usernameValidationJob?.cancel()
         usernameValidationJob = viewModelScope.launch {
-            delay(300)
+            delay(300.milliseconds)
             _usernameChecks.emit(UsernameCheck(input, userRepository.validateUsername(input)))
         }
     }

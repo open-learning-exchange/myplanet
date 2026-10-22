@@ -2,9 +2,16 @@ package org.ole.planet.myplanet.ui.chat
 
 import android.app.Application
 import android.content.Context
+import android.os.Looper
+import android.view.View
 import android.widget.LinearLayout
+import androidx.recyclerview.widget.AsyncDifferConfig
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ApplicationProvider
+import java.util.concurrent.Executor
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -15,6 +22,7 @@ import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
@@ -23,6 +31,9 @@ class ChatHistoryAdapterTest {
 
     private lateinit var context: Context
     private lateinit var adapter: ChatHistoryAdapter
+    private val testDiffConfig = AsyncDifferConfig.Builder(ChatHistoryAdapter.ITEM_CALLBACK)
+        .setBackgroundThreadExecutor(Executor { it.run() })
+        .build()
 
     @Before
     fun setUp() {
@@ -35,6 +46,7 @@ class ChatHistoryAdapterTest {
             newsList = emptyList<News>(),
             cachedSharedViewInIds = emptyMap(),
             shareTargets = ChatShareTargets(null, emptyList(), emptyList()),
+            diffConfig = testDiffConfig,
             onShareChat = { _, _ -> },
         )
     }
@@ -49,13 +61,7 @@ class ChatHistoryAdapterTest {
     }
 
     private fun waitForList(adapter: ChatHistoryAdapter, size: Int) {
-        org.robolectric.shadows.ShadowLooper.idleMainLooper()
-        var attempts = 0
-        while (adapter.currentList.size != size && attempts < 50) {
-            Thread.sleep(10)
-            org.robolectric.shadows.ShadowLooper.idleMainLooper()
-            attempts++
-        }
+        shadowOf(Looper.getMainLooper()).idle()
         assertEquals(size, adapter.currentList.size)
     }
 
@@ -148,5 +154,75 @@ class ChatHistoryAdapterTest {
         val holder = bindRow(item)
         assertEquals("", holder.rowChatHistoryBinding.chatTitle.text.toString())
         assertNull(holder.rowChatHistoryBinding.chatTitle.contentDescription)
+    }
+
+    @Test
+    fun `clicking earlier row sets card contentDescription from its own title when another row is bound later`() {
+        val item1 = ChatHistory().apply {
+            id = "10"
+            _id = "10"
+            title = "Title A"
+        }
+        val item2 = ChatHistory().apply {
+            id = "20"
+            _id = "20"
+            title = "Title B"
+        }
+
+        adapter.submitList(listOf(item1, item2))
+        waitForList(adapter, 2)
+
+        val recyclerView = RecyclerView(context).apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = this@ChatHistoryAdapterTest.adapter
+        }
+        recyclerView.measure(
+            View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY)
+        )
+        recyclerView.layout(0, 0, 1080, 1920)
+
+        val holder1 = recyclerView.findViewHolderForAdapterPosition(0) as ChatHistoryAdapter.ViewHolderChat
+        assertNotNull(recyclerView.findViewHolderForAdapterPosition(1))
+
+        holder1.rowChatHistoryBinding.root.performClick()
+
+        assertEquals("Title A", holder1.rowChatHistoryBinding.chatCardView.contentDescription)
+    }
+
+    @Test
+    fun `card label is set on bind without a click`() {
+        val item = ChatHistory().apply {
+            id = "7"
+            _id = "7"
+            conversations = listOf(Conversation().apply { query = "never tapped" })
+        }
+        val holder = bindRow(item)
+        assertEquals("never tapped", holder.rowChatHistoryBinding.chatCardView.contentDescription)
+    }
+
+    @Test
+    fun `recycled row takes the card label of its new item`() {
+        val chatA = ChatHistory().apply {
+            id = "a"
+            _id = "a"
+            conversations = listOf(Conversation().apply { query = "chat A" })
+        }
+        val chatC = ChatHistory().apply {
+            id = "c"
+            _id = "c"
+            title = "chat C"
+            conversations = null
+        }
+        adapter.submitList(listOf(chatA, chatC))
+        waitForList(adapter, 2)
+        val holder = adapter.onCreateViewHolder(LinearLayout(context), adapter.getItemViewType(0))
+
+        adapter.onBindViewHolder(holder, 0)
+        holder.rowChatHistoryBinding.root.performClick()
+        adapter.onBindViewHolder(holder, 1)
+
+        assertEquals("chat C", holder.rowChatHistoryBinding.chatTitle.text.toString())
+        assertEquals("chat C", holder.rowChatHistoryBinding.chatCardView.contentDescription)
     }
 }

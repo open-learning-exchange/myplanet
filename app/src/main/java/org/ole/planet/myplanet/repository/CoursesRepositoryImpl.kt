@@ -508,8 +508,7 @@ class CoursesRepositoryImpl @Inject constructor(
                         if (!ob.has("percentage")) ob.addProperty("percentage", 0)
                     } else {
                         ob.addProperty("completed", answers.size == questionCount)
-                        val percentage = (answers.size.toDouble() / questionCount) * 100
-                        ob.addProperty("percentage", percentage)
+                        ob.addProperty("percentage", answers.size * 100 / questionCount)
                     }
                     ob.addProperty("status", submission.status)
                 }
@@ -665,7 +664,10 @@ class CoursesRepositoryImpl @Inject constructor(
             if (steps.isNotEmpty()) courseStepDao.upsertAll(steps)
             stepIdsByCourse.forEach { (courseId, stepIds) -> courseStepDao.deleteStaleSteps(courseId, stepIds) }
             if (exams.isNotEmpty()) examDao.upsertAll(exams)
-            if (questions.isNotEmpty()) questionDao.upsertAll(questions)
+            if (questions.isNotEmpty()) {
+                questionDao.upsertAll(questions)
+                questionDao.deleteStaleQuestions(questions)
+            }
         }
         return processedCount
     }

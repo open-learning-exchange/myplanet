@@ -78,11 +78,8 @@ class RatingsRepositoryImpl @Inject constructor(
 
     override suspend fun insertRatingsFromSync(documentList: List<JsonObject>) {
         if (documentList.isEmpty()) return
-        val entities = documentList.map { act ->
-            // The embedded user object can carry base64 `_attachments` (e.g. a profile photo)
-            // that bloat the stored blob past SQLite's ~2MB CursorWindow limit, crashing later
-            // `SELECT *` reads with SQLiteBlobTooBigException. Attachments aren't needed to
-            // round-trip a rating on upload, so drop them before persisting.
+        val locallyUpdatedIds = ratingDao.getUpdatedIds().toHashSet()
+        val entities = documentList.filterNot { GsonUtils.getString("_id", it) in locallyUpdatedIds }.map { act ->
             val userObject = GsonUtils.getJsonObject("user", act).apply { remove("_attachments") }
             Rating().apply {
                 _rev = GsonUtils.getString("_rev", act)
@@ -103,14 +100,15 @@ class RatingsRepositoryImpl @Inject constructor(
             }
         }
         ratingDao.upsertAll(entities)
+        ratingDao.deleteUploadedWithoutServerId()
     }
 
     override suspend fun getPendingRatingUploads(): List<Rating> {
         return ratingDao.getPendingUploads()
     }
 
-    override suspend fun markRatingUploaded(id: String): Boolean {
-        return ratingDao.markUploaded(id) > 0
+    override suspend fun markRatingUploaded(id: String, remoteId: String?, remoteRev: String?): Boolean {
+        return ratingDao.markUploaded(id, remoteId, remoteRev) > 0
     }
 
     private fun Rating.toRatingEntry(): RatingEntry =

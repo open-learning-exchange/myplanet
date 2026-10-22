@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +20,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatMessage
@@ -31,7 +34,7 @@ import org.ole.planet.myplanet.repository.ChatResult
 import org.ole.planet.myplanet.repository.ChatSearchMode
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.TeamsShareRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 import org.ole.planet.myplanet.repository.VoicesShareRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.ChatSearch
@@ -50,7 +53,7 @@ data class ChatUiState(
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
-    private val userRepository: UserRepository,
+    private val userRepository: UserReadRepository,
     private val teamsRepository: TeamsShareRepository,
     private val voicesRepository: VoicesShareRepository,
     private val dispatcherProvider: DispatcherProvider,
@@ -139,12 +142,18 @@ class ChatViewModel @Inject constructor(
         loadDataJob = viewModelScope.launch {
             val result = RetryUtils.retry(maxAttempts = 3, delayMs = 2000L) {
                 val currentUser = cachedUser ?: loadCurrentUser(userId).also { cachedUser = it }
-                val newsMessages = voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)
-                val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
+                val (newsMessages, chatHistory) = coroutineScope {
+                    val newsDeferred = async { voicesRepository.getPlanetNewsMessages(currentUser?.planetCode) }
+                    val historyDeferred = async { chatRepository.getChatHistoryForUser(currentUser?.name) }
+                    Pair(newsDeferred.await(), historyDeferred.await())
+                }
                 val targets = cachedShareTargets ?: loadShareTargets(config.parentCode, config.communityName, currentUser?._id).also { cachedShareTargets = it }
                 allChats = chatHistory
                 searchIndex = null
-                ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets, chatRepository.extractSharedViewInIds(newsMessages))
+                val sharedViewInIds = withContext(dispatcherProvider.default) {
+                    chatRepository.extractSharedViewInIds(newsMessages)
+                }
+                ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets, sharedViewInIds)
             }
             result?.let { data ->
                 _screenData.value = data

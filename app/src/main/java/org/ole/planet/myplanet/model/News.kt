@@ -13,6 +13,7 @@ import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.toGson
 
@@ -66,6 +67,7 @@ open class News {
     var pendingReactions: String? = null
     var editedTime: Long = 0
     var sharedBy: String? = null
+    var isUpdated: Boolean = false
 
     @Ignore
     var sortDate: Long = 0
@@ -331,6 +333,24 @@ open class News {
                 }
             }
             return viewInArray.toString()
+        }
+
+        fun createImageListEntry(path: String): String {
+            val jsonObject = JsonObject()
+            jsonObject.addProperty("imageUrl", path)
+            jsonObject.addProperty("fileName", FileUtils.getFileNameFromUrl(path))
+            return GsonUtils.gson.toJson(jsonObject)
+        }
+
+        fun containsImagePath(imageList: List<String>, path: String): Boolean {
+            return imageList.any { imageJson ->
+                try {
+                    val imgObject = GsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
+                    GsonUtils.getString("imageUrl", imgObject) == path
+                } catch (_: Exception) {
+                    false
+                }
+            }
         }
     }
 }

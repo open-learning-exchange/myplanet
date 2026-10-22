@@ -914,7 +914,7 @@ class VoicesAdapter(
                     override fun getCount() = moreEmojis.size
                     override fun getItem(p: Int) = moreEmojis[p]
                     override fun getItemId(p: Int) = p.toLong()
-                    override fun getView(p: Int, v: android.view.View?, parent: android.view.ViewGroup): android.view.View {
+                    override fun getView(p: Int, v: View?, parent: ViewGroup): View {
                         val tv = TextView(context)
                         tv.text = moreEmojis[p]
                         tv.textSize = context.resources.getDimension(R.dimen.text_size_large) / context.resources.displayMetrics.scaledDensity
@@ -1001,6 +1001,7 @@ class VoicesAdapter(
         super.onViewRecycled(holder)
         if (holder is VoicesViewHolder) {
             holder.cancelJob?.invoke()
+            holder.binding.llNewsImages.tag = null
         }
     }
 
@@ -1012,6 +1013,9 @@ class VoicesAdapter(
         binding.imgNews.visibility = View.GONE
         binding.llNewsImages.visibility = View.GONE
         binding.llNewsImages.removeAllViews()
+        
+        val imageBindToken = Any()
+        binding.llNewsImages.tag = imageBindToken
 
         val parsedImageUrls = getParsedImageUrls(news)
 
@@ -1039,13 +1043,13 @@ class VoicesAdapter(
                 if (size == 1) {
                     val ob = imagesArray[0]?.asJsonObject
                     val resourceId = GsonUtils.getString("resourceId", ob)
-                    loadLibraryImage(binding, resourceId)
+                    loadLibraryImage(binding, resourceId, imageBindToken)
                 } else {
                     binding.llNewsImages.visibility = View.VISIBLE
                     for (i in 0 until size) {
                         val ob = imagesArray[i]?.asJsonObject
                         val resourceId = GsonUtils.getString("resourceId", ob)
-                        addLibraryImageToContainer(binding, resourceId)
+                        addLibraryImageToContainer(binding, resourceId, imageBindToken)
                     }
                 }
             }
@@ -1101,9 +1105,10 @@ class VoicesAdapter(
         binding.llNewsImages.addView(imageView)
     }
 
-    private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?) {
+    private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?, imageBindToken: Any) {
         if (resourceId == null) return
         getLibraryResourceFn(resourceId) { library ->
+            if (binding.llNewsImages.tag !== imageBindToken) return@getLibraryResourceFn
             val basePath = externalFilesDir
             if (library != null && basePath != null) {
                 val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
@@ -1117,9 +1122,10 @@ class VoicesAdapter(
         }
     }
 
-    private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?) {
+    private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?, imageBindToken: Any) {
         if (resourceId == null) return
         getLibraryResourceFn(resourceId) { library ->
+            if (binding.llNewsImages.tag !== imageBindToken) return@getLibraryResourceFn
             val basePath = externalFilesDir
             if (library != null && basePath != null) {
                 val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")

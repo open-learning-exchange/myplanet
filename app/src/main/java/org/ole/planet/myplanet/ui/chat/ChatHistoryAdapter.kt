@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.annotation.VisibleForTesting
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
+import androidx.recyclerview.widget.AsyncDifferConfig
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -33,25 +34,12 @@ class ChatHistoryAdapter(
     private var newsList: List<News>,
     private var cachedSharedViewInIds: Map<String, Set<String>>,
     private var shareTargets: ChatShareTargets,
+    diffConfig: AsyncDifferConfig<ChatHistory>? = null,
     private val onShareChat: (HashMap<String?, String>, ChatHistory) -> Unit,
 ) : ListAdapter<ChatHistory, ChatHistoryAdapter.ViewHolderChat>(
-    DiffUtils.itemCallback(
-        areItemsTheSame = { oldItem, newItem ->
-            val oldId = oldItem._id
-            val newId = newItem._id
-            oldId != null && newId != null && oldId == newId
-        },
-        areContentsTheSame = { oldItem, newItem ->
-            oldItem._rev == newItem._rev &&
-                oldItem.lastUsed == newItem.lastUsed &&
-                oldItem.title == newItem.title &&
-                oldItem.conversations?.firstOrNull()?.query ==
-                newItem.conversations?.firstOrNull()?.query
-        }
-    )
+    diffConfig ?: AsyncDifferConfig.Builder(ITEM_CALLBACK).build()
 ) {
     private var chatHistoryItemClickListener: OnChatHistoryItemClickListener? = null
-    private var chatTitle: String? = ""
     private lateinit var shareTargetAdapter: ChatShareTargetAdapter
 
     private val daynightGreyColor by lazy { ContextCompat.getColor(context, R.color.daynight_grey) }
@@ -98,7 +86,6 @@ class ChatHistoryAdapter(
             val pos = holder.bindingAdapterPosition
             if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
             val item = getItem(pos)
-            holder.rowChatHistoryBinding.chatCardView.contentDescription = chatTitle
             chatHistoryItemClickListener?.onChatHistoryItemClicked(
                 item.conversations?.toList(),
                 "${item._id}",
@@ -130,17 +117,14 @@ class ChatHistoryAdapter(
 
     override fun onBindViewHolder(holder: ViewHolderChat, position: Int) {
         val item = getItem(position)
-        val firstQuery = item.conversations?.getOrNull(0)?.query
-        if (firstQuery != null) {
-            holder.rowChatHistoryBinding.chatTitle.text = firstQuery
-            holder.rowChatHistoryBinding.chatTitle.contentDescription = firstQuery
-            chatTitle = firstQuery
-        } else {
-            holder.rowChatHistoryBinding.chatTitle.text = item.title
-            holder.rowChatHistoryBinding.chatTitle.contentDescription = item.title
-            chatTitle = item.title
-        }
+        val title = getChatTitle(item)
+        holder.rowChatHistoryBinding.chatTitle.text = title
+        holder.rowChatHistoryBinding.chatTitle.contentDescription = title
+        holder.rowChatHistoryBinding.chatCardView.contentDescription = title
     }
+
+    private fun getChatTitle(item: ChatHistory): String? =
+        item.conversations?.getOrNull(0)?.query ?: item.title
 
     private fun showShareDialog(item: ChatHistory) {
         val chatShareDialogBinding = ChatShareDialogBinding.inflate(LayoutInflater.from(context))
@@ -151,7 +135,7 @@ class ChatHistoryAdapter(
         val sharedChildren = if (isCommunityShared) setOf(context.getString(R.string.community)) else emptySet()
         val dataMap = shareDataMap
 
-        chatShareDialogBinding.listView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
+        chatShareDialogBinding.listView.layoutManager = LinearLayoutManager(context)
         shareTargetAdapter = ChatShareTargetAdapter { clickedItem ->
             if (clickedItem.isGroup) {
                 val currentFlatList = shareTargetAdapter.currentList
@@ -296,5 +280,20 @@ class ChatHistoryAdapter(
 
     companion object {
         const val PAYLOAD_CHAT_SHARED = "PAYLOAD_CHAT_SHARED"
+
+        internal val ITEM_CALLBACK = DiffUtils.itemCallback<ChatHistory>(
+            areItemsTheSame = { oldItem, newItem ->
+                val oldId = oldItem._id
+                val newId = newItem._id
+                oldId != null && newId != null && oldId == newId
+            },
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem._rev == newItem._rev &&
+                    oldItem.lastUsed == newItem.lastUsed &&
+                    oldItem.title == newItem.title &&
+                    oldItem.conversations?.firstOrNull()?.query ==
+                    newItem.conversations?.firstOrNull()?.query
+            }
+        )
     }
 }

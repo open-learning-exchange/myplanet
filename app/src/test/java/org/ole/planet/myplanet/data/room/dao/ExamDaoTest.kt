@@ -34,7 +34,8 @@ class ExamDaoTest {
 
     @Test
     fun getByCourseIds_handles1200Courses() = runBlocking {
-        val exams = (1..1200).map { i ->
+        val seededIndices = listOf(1, 900, 901, 1200, 1201)
+        val exams = seededIndices.map { i ->
             StepExam().apply {
                 id = "exam_$i"
                 courseId = "course_$i"
@@ -45,7 +46,8 @@ class ExamDaoTest {
         val courseIds = (1..1200).map { "course_$it" }
         val results = examDao.getByCourseIds(courseIds)
 
-        assertEquals(1200, results.size)
+        assertEquals(4, results.size)
+        assertEquals(setOf("exam_1", "exam_900", "exam_901", "exam_1200"), results.map { it.id }.toSet())
     }
 
     @Test
@@ -192,7 +194,8 @@ class ExamDaoTest {
 
     @Test
     fun getByIds_with1200IdsAndDuplicates_returnsAllMatchesWithoutDuplicates() = runBlocking {
-        val exams = (1..1200).map { i ->
+        val seededIndices = listOf(1, 900, 901, 1200, 1201)
+        val exams = seededIndices.map { i ->
             StepExam().apply {
                 id = "exam_$i"
             }
@@ -202,13 +205,14 @@ class ExamDaoTest {
         val queryIds = (1..1200).map { i -> "exam_$i" } + listOf("exam_1", "exam_500", "exam_1200")
         val results = examDao.getByIds(queryIds)
 
-        assertEquals(1200, results.size)
-        assertEquals((1..1200).map { i -> "exam_$i" }.toSet(), results.map { it.id }.toSet())
+        assertEquals(4, results.size)
+        assertEquals(setOf("exam_1", "exam_900", "exam_901", "exam_1200"), results.map { it.id }.toSet())
     }
 
     @Test
     fun getByStepIds_with1200Ids_returnsAllMatches() = runBlocking {
-        val exams = (1..1200).map { i ->
+        val seededIndices = listOf(1, 900, 901, 1200, 1201)
+        val exams = seededIndices.map { i ->
             StepExam().apply {
                 id = "exam_$i"
                 stepId = "step_$i"
@@ -216,15 +220,17 @@ class ExamDaoTest {
         }
         examDao.upsertAll(exams)
 
-        val queryStepIds = (1..1200).map { i -> "step_$i" } + listOf("step_10")
+        val queryStepIds = (1..1200).map { i -> "step_$i" } + listOf("step_1")
         val results = examDao.getByStepIds(queryStepIds)
 
-        assertEquals(1200, results.size)
+        assertEquals(4, results.size)
+        assertEquals(setOf("exam_1", "exam_900", "exam_901", "exam_1200"), results.map { it.id }.toSet())
     }
 
     @Test
     fun getByCourseIds_with1200Ids_returnsAllMatches() = runBlocking {
-        val exams = (1..1200).map { i ->
+        val seededIndices = listOf(1, 900, 901, 1200, 1201)
+        val exams = seededIndices.map { i ->
             StepExam().apply {
                 id = "exam_$i"
                 courseId = "course_$i"
@@ -232,10 +238,11 @@ class ExamDaoTest {
         }
         examDao.upsertAll(exams)
 
-        val queryCourseIds = (1..1200).map { i -> "course_$i" } + listOf("course_5")
+        val queryCourseIds = (1..1200).map { i -> "course_$i" } + listOf("course_1")
         val results = examDao.getByCourseIds(queryCourseIds)
 
-        assertEquals(1200, results.size)
+        assertEquals(4, results.size)
+        assertEquals(setOf("exam_1", "exam_900", "exam_901", "exam_1200"), results.map { it.id }.toSet())
     }
 
     @Test
@@ -245,7 +252,8 @@ class ExamDaoTest {
             type = "surveys"
             teamId = "team1"
         }
-        val submissionExams = (1..1200).map { i ->
+        val seededIndices = listOf(1, 900, 901, 1200, 1201)
+        val submissionExams = seededIndices.map { i ->
             StepExam().apply {
                 id = "sub_exam_$i"
                 type = "surveys"
@@ -257,8 +265,8 @@ class ExamDaoTest {
         val querySubmissionIds = (1..1200).map { i -> "sub_exam_$i" } + listOf("sub_exam_1", "sub_exam_100")
         val results = examDao.getTeamOwnedSurveys("team1", querySubmissionIds)
 
-        assertEquals(1201, results.size)
-        assertEquals((setOf("team_exam") + (1..1200).map { i -> "sub_exam_$i" }), results.map { it.id }.toSet())
+        assertEquals(5, results.size)
+        assertEquals(setOf("team_exam", "sub_exam_1", "sub_exam_900", "sub_exam_901", "sub_exam_1200"), results.map { it.id }.toSet())
     }
 
     @Test

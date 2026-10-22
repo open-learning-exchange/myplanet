@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.health
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -79,11 +80,11 @@ class HealthViewModelTest {
         val record2 = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
 
         coEvery { userRepository.getUserById("1") } coAnswers {
-            delay(1000)
+            delay(1000.milliseconds)
             user1
         }
         coEvery { userRepository.getUserById("2") } coAnswers {
-            delay(1000)
+            delay(1000.milliseconds)
             user2
         }
         coEvery { healthRepository.getPatientHealthRecords("2", user2) } returns record2
@@ -303,7 +304,7 @@ class HealthViewModelTest {
         var reads = 0
         coEvery { userRepository.getUserById("1") } coAnswers {
             reads++
-            delay(500)
+            delay(500.milliseconds)
             if (reads == 1) staleUser else freshUser
         }
         coEvery { healthRepository.getPatientHealthRecords("1", any()) } returns record
@@ -331,7 +332,7 @@ class HealthViewModelTest {
         val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
 
         coEvery { userRepository.getUserById("1") } coAnswers {
-            delay(500)
+            delay(500.milliseconds)
             user
         }
         coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
@@ -440,5 +441,31 @@ class HealthViewModelTest {
         assertEquals(1, failures)
         assertFalse(viewModel.isSaved.value)
         job.cancel()
+    }
+
+    @Test
+    fun `suspended first load superseded by searchPatients does not overwrite patientList and ends loading false`() = runTest {
+        val deferred1 = kotlinx.coroutines.CompletableDeferred<List<UserEntity>>()
+        val patients2 = listOf(UserEntity().apply { id = "2"; name = "Patient 2" })
+
+        coEvery { userRepository.getUsersSortedBy("joinDate", true) } coAnswers {
+            deferred1.await()
+        }
+        coEvery { userRepository.searchUsers("John", "joinDate", true) } returns patients2
+
+        viewModel.loadPatients("joinDate", true)
+        testScheduler.runCurrent()
+
+        viewModel.searchPatients("John", "joinDate", true)
+        advanceUntilIdle()
+
+        assertEquals(patients2, viewModel.patientList.first())
+        assertEquals(false, viewModel.isListLoading.first())
+
+        deferred1.complete(listOf(UserEntity().apply { id = "1"; name = "Patient 1" }))
+        advanceUntilIdle()
+
+        assertEquals(patients2, viewModel.patientList.first())
+        assertEquals(false, viewModel.isListLoading.first())
     }
 }

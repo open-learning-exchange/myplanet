@@ -207,6 +207,27 @@ class TeamsRepositoryImplTest {
     }
 
     @Test
+    fun `deleteTask archives a synced task so the deletion uploads`() = runTest(testDispatcher) {
+        val task = TeamTask().apply { id = "task_1"; _id = "task_1"; status = "to_do" }
+        coEvery { teamTaskDao.getById("task_1") } returns task
+
+        teamsRepository.deleteTask("task_1")
+
+        coVerify(exactly = 1) { teamTaskDao.upsert(match { it.status == "archived" && it.isUpdated }) }
+        coVerify(exactly = 0) { teamTaskDao.deleteById(any()) }
+    }
+
+    @Test
+    fun `deleteTask hard-deletes a task that was never uploaded`() = runTest(testDispatcher) {
+        coEvery { teamTaskDao.getById("local_1") } returns TeamTask().apply { id = "local_1" }
+
+        teamsRepository.deleteTask("local_1")
+
+        coVerify(exactly = 1) { teamTaskDao.deleteById("local_1") }
+        coVerify(exactly = 0) { teamTaskDao.upsert(any()) }
+    }
+
+    @Test
     fun `test getTasksByIds delegates to teamTaskDao`() = runTest(testDispatcher) {
         val taskIds = listOf("task_1", "task_2")
         val mockTasks = listOf(TeamTask().apply { id = "task_1" })
@@ -259,14 +280,6 @@ class TeamsRepositoryImplTest {
             this.docType = "membership"
         }
 
-        // Membership for team 2
-        val membership2 = MyTeam().apply {
-            _id = "mem2"
-            this.userId = userId
-            this.teamId = team2Id
-            this.docType = "membership"
-        }
-
         // Root teams
         val team1 = MyTeam().apply {
             _id = team1Id
@@ -282,15 +295,8 @@ class TeamsRepositoryImplTest {
             this.name = "Team 2"
         }
 
-        // Extra team user is not a member of
-        val team3 = MyTeam().apply {
-            _id = "team_id_3"
-            this.teamId = null
-            this.status = "active"
-        }
-
-        val allEntities = listOf(membership1, membership2, team1, team2, team3)
-        every { teamDao.observeAll() } returns kotlinx.coroutines.flow.flowOf(allEntities)
+        // The DAO already restricts to teams the user is a member of, so team3 never reaches the repository
+        every { teamDao.observeMemberTeams(userId) } returns kotlinx.coroutines.flow.flowOf(listOf(team1, team2))
 
         // Mock getRecentVisitCounts behavior via teamLogDao
         coEvery { teamLogDao.getRecentTeamVisits(any(), any()) } returns listOf()
@@ -403,6 +409,52 @@ class TeamsRepositoryImplTest {
     }
 
     @Test
+    fun `updateTeam keeps the team's member limit and creator`() = runTest(testDispatcher) {
+        val team = MyTeam().apply {
+            _id = "team1"
+            name = "Old name"
+            limit = 30
+            createdBy = "founder"
+        }
+        coEvery { teamDao.getById("team1") } returns team
+        coEvery { teamDao.upsert(any()) } returns Unit
+
+        val result = teamsRepository.updateTeam("team1", "New name", "Fixed typo", "services", "rules")
+
+        assertTrue(result.getOrThrow())
+        val saved = slot<MyTeam>()
+        coVerify { teamDao.upsert(capture(saved)) }
+        assertEquals("New name", saved.captured.name)
+        assertEquals("Fixed typo", saved.captured.description)
+        assertEquals(30, saved.captured.limit)
+        assertEquals("founder", saved.captured.createdBy)
+        assertTrue(saved.captured.updated)
+    }
+
+    @Test
+    fun `leaveTeam hands leadership to the remaining member before leaving`() = runTest(testDispatcher) {
+        val leader = MyTeam().apply { _id = "m1"; _rev = "1-a"; teamId = "team1"; userId = "leader"; docType = "membership"; isLeader = true }
+        val member = MyTeam().apply { _id = "m2"; _rev = "1-b"; teamId = "team1"; userId = "member"; docType = "membership" }
+        coEvery { teamDao.getByTeamIdAndDocType("team1", "membership") } returns listOf(leader, member)
+        coEvery { teamDao.getEligibleNextLeaderCandidates("team1", "leader") } returns listOf(member)
+        coEvery { userRepository.getUsersByIds(listOf("member")) } returns listOf(UserEntity(id = "member", name = "member"))
+
+        teamsRepository.leaveTeam("team1", "leader")
+
+        assertTrue(member.isLeader)
+        assertFalse(leader.isLeader)
+        assertTrue(leader.isDeletePending)
+    }
+
+    @Test
+    fun `isTeamLeader is false for a leader whose leave is pending`() = runTest(testDispatcher) {
+        val departed = MyTeam().apply { teamId = "team1"; userId = "leader"; docType = "membership"; isLeader = true; isDeletePending = true }
+        coEvery { teamDao.getByTeamIdAndDocType("team1", "membership") } returns listOf(departed)
+
+        assertFalse(teamsRepository.isTeamLeader("team1", "leader"))
+    }
+
+    @Test
     fun `createLocalResourceLink upserts resourceLink MyTeam row`() = runTest(testDispatcher) {
         val teamId = "team_1"
         val resourceId = "res_1"
@@ -477,71 +529,11 @@ class TeamsRepositoryImplTest {
             teamId = null
             isDeletePending = true
         }
-        val membershipValid1 = MyTeam().apply {
-            _id = "mem1"
-            userId = "user1"
-            teamId = "team1"
-            docType = "membership"
-            isDeletePending = false
-        }
-        val membershipValid2 = MyTeam().apply {
-            _id = "mem2"
-            userId = "user1"
-            teamId = "team2"
-            docType = "membership"
-            isDeletePending = false
-        }
-        val membershipEnt = MyTeam().apply {
-            _id = "mem3"
-            userId = "user1"
-            teamId = "ent1"
-            docType = "membership"
-            isDeletePending = false
-        }
-        val membershipSub = MyTeam().apply {
-            _id = "mem4"
-            userId = "user1"
-            teamId = "sub1"
-            docType = "membership"
-            isDeletePending = false
-        }
-        val membershipArch = MyTeam().apply {
-            _id = "mem5"
-            userId = "user1"
-            teamId = "arch1"
-            docType = "membership"
-            isDeletePending = false
-        }
-        val membershipDel = MyTeam().apply {
-            _id = "mem6"
-            userId = "user1"
-            teamId = "del1"
-            docType = "membership"
-            isDeletePending = false
-        }
-        val deletePendingMembership = MyTeam().apply {
-            _id = "mem7"
-            userId = "user1"
-            teamId = "team_del_mem"
-            docType = "membership"
-            isDeletePending = true
-        }
-        val teamForDeletedMem = MyTeam().apply {
-            _id = "team_del_mem"
-            name = "Deleted Membership Team"
-            type = "team"
-            status = "active"
-            teamId = null
-            isDeletePending = false
-        }
-
-        val allEntities = listOf(
+        val memberTeams = listOf(
             validTeam, nullTypeTeam, enterpriseTeam, nonRootTeam,
-            archivedTeam, deletePendingTeam, teamForDeletedMem,
-            membershipValid1, membershipValid2, membershipEnt,
-            membershipSub, membershipArch, membershipDel, deletePendingMembership
+            archivedTeam, deletePendingTeam
         )
-        every { teamDao.observeAll() } returns flowOf(allEntities)
+        every { teamDao.observeMemberTeams("user1") } returns flowOf(memberTeams)
 
         val result = teamsRepository.getMyTeamsFlow("user1").first()
 
@@ -583,8 +575,7 @@ class TeamsRepositoryImplTest {
             isDeletePending = false
         }
 
-        val allEntities = listOf(validTeam, enterpriseTeam, membershipTeam, membershipEnt)
-        every { teamDao.observeAll() } returns flowOf(allEntities)
+        every { teamDao.observeMemberTeams("user1") } returns flowOf(listOf(validTeam, enterpriseTeam))
         coEvery { teamDao.getByUserId("user1") } returns listOf(membershipTeam, membershipEnt)
 
         val teamResults = teamsRepository.getMyTeamDetailsFlow("user1", "team").first()
@@ -598,15 +589,7 @@ class TeamsRepositoryImplTest {
 
     @Test
     fun `getMyTeamDetailsFlow returns empty list when user has no joined teams`() = runTest(testDispatcher) {
-        val validTeam = MyTeam().apply {
-            _id = "team1"
-            name = "Team 1"
-            type = "team"
-            status = "active"
-            teamId = null
-            isDeletePending = false
-        }
-        every { teamDao.observeAll() } returns flowOf(listOf(validTeam))
+        every { teamDao.observeMemberTeams("user1") } returns flowOf(emptyList())
 
         val result = teamsRepository.getMyTeamDetailsFlow("user1", "team").first()
         assertEquals(0, result.size)

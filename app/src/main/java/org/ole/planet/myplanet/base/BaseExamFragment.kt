@@ -20,6 +20,7 @@ import io.noties.markwon.editor.MarkwonEditor
 import java.util.Date
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -123,7 +124,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             val toast = Toast.makeText(activity, getString(R.string.incorrect_ans), Toast.LENGTH_SHORT)
             toast.show()
             viewLifecycleOwner.lifecycleScope.launch {
-                delay(1000)
+                delay(1000.milliseconds)
                 toast.cancel()
             }
         }

@@ -8,6 +8,7 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
+import android.text.format.DateUtils
 import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
@@ -150,7 +151,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initSyncConfigurationCoordinator()
-        collectWhenStarted(syncManager.syncStatus.sample(SYNC_STATUS_SAMPLE_MS)) { status ->
+        collectWhenStarted(syncManager.syncStatus.sample(SYNC_STATUS_SAMPLE_MS.milliseconds)) { status ->
             if (status == lastSyncStatus) return@collectWhenStarted
             lastSyncStatus = status
             when (status) {
@@ -361,7 +362,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         return if (lastSynced == 0L) {
             " Never Synced"
         } else {
-            TimeUtils.getRelativeTime(lastSynced, timeProvider)
+            TimeUtils.getRelativeTime(this, lastSynced, timeProvider)
         }
     }
 
@@ -372,6 +373,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         val spinnerArrayAdapter = ArrayAdapter(this, R.layout.spinner_item, list)
         spinnerArrayAdapter.setDropDownViewResource(R.layout.spinner_item)
         spinner.adapter = spinnerArrayAdapter
+        spinner.setSelection(syncTimeInterval.indexOf(prefData.getAutoSyncInterval()).coerceAtLeast(0))
     }
 
     private fun saveSyncInfoToPreference() {
@@ -586,10 +588,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 dotSync?.backgroundTintList = ColorStateList.valueOf(0xFFEF4444.toInt())
             } else {
                 val lastSyncMillis = prefData.getLastSync()
-                var relativeTime = TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
-
-                if (relativeTime.matches(secondsAgoRegex)) {
-                    relativeTime = getString(R.string.a_few_seconds_ago)
+                val relativeTime = if (timeProvider.now() - lastSyncMillis in 0 until DateUtils.MINUTE_IN_MILLIS) {
+                    getString(R.string.a_few_seconds_ago)
+                } else {
+                    TimeUtils.getRelativeTime(this, lastSyncMillis, timeProvider)
                 }
 
                 lblLastSyncDate.text = getString(R.string.last_sync, relativeTime)
@@ -695,6 +697,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
         runOnUiThread {
+            saveSyncInfoToPreference()
+            serverDialogBinding?.let { prefData.setCustomDeviceName(it.deviceName.text.toString()) }
             dialog.dismiss()
 
             processedUrl = if (isAlternativeUrl) {
@@ -733,7 +737,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         }
         prefData.setLastUsageUploaded(timeProvider.now())
         if (::lblLastSyncDate.isInitialized) {
-            lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, TimeUtils.getRelativeTime(timeProvider.now(), timeProvider))} >>")
+            lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, TimeUtils.getRelativeTime(this, timeProvider.now(), timeProvider))} >>")
         }
         syncFailed = false
     }
@@ -816,7 +820,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 "$processedUrl/_all_dbs"
             }
         private const val SYNC_STATUS_SAMPLE_MS = 150L
-        private val secondsAgoRegex by lazy { Regex("^\\d{1,2} seconds ago$") }
         private val urlProtocolRegex by lazy { Regex("^https?://") }
         fun restartApp() {
             val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)

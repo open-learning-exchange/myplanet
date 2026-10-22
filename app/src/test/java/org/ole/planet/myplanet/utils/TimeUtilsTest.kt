@@ -1,5 +1,8 @@
 package org.ole.planet.myplanet.utils
 
+import android.content.Context
+import io.mockk.every
+import io.mockk.mockk
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.time.Instant
@@ -16,6 +19,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.R
 
 class TimeUtilsTest {
 
@@ -48,9 +52,11 @@ class TimeUtilsTest {
         // We cannot fully test getRelativeTime because it uses android.text.format.DateUtils
         // which returns null or throws an error in standard JUnit without Robolectric.
         // But we can test the fallback for future time.
+        val context = mockk<Context>()
+        every { context.getString(R.string.just_now) } returns "Justo ahora"
         val futureTime = System.currentTimeMillis() + 100000
-        val relative = TimeUtils.getRelativeTime(futureTime)
-        assertEquals("Just now", relative)
+        val relative = TimeUtils.getRelativeTime(context, futureTime)
+        assertEquals("Justo ahora", relative)
     }
 
     @Test
@@ -67,7 +73,7 @@ class TimeUtilsTest {
     @Test
     fun testGetFormattedDate_localMidnightInUtcPlusZoneShowsThatDay() {
         TimeZone.setDefault(TimeZone.getTimeZone("Africa/Nairobi"))
-        val pickedMidnight = java.time.LocalDate.of(2024, 3, 11)
+        val pickedMidnight = LocalDate.of(2024, 3, 11)
             .atStartOfDay(ZoneId.of("Africa/Nairobi")).toInstant().toEpochMilli()
 
         assertEquals("Monday, Mar 11, 2024", TimeUtils.getFormattedDate(pickedMidnight))

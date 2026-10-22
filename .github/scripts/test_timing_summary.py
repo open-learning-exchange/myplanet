@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Summarise Gradle unit-test timings as a GitHub Actions step summary.
 
-Usage: test_timing_summary.py <test-results-dir> [--shard N/M] [--warn-over SECONDS] [--warn-class-over SECONDS]
+Usage: test_timing_summary.py <test-results-dir> [--shard N/M] [--warn-over SECONDS] [--warn-class-over SECONDS] [--fail-over SECONDS] [--fail-class-over SECONDS] [--test-sources DIR]
 
 Reads the JUnit XML that Gradle writes to app/build/test-results/<task>/ and
 prints a markdown report of:
@@ -9,6 +9,7 @@ prints a markdown report of:
   - The slowest test classes with the first-test excess subtracted
   - The slowest test classes by median test time (for classes with >=3 tests)
   - The slowest individual tests (showing each class's first-test excess)
+  - Possible static-mock churn heuristics when --test-sources DIR is provided
 
 "First-test excess" is how much longer the first <testcase> of a result file
 (document order, which is execution order) took than the median of that
@@ -26,12 +27,19 @@ sharded run (-PtestShardTotal/-PtestShardIndex). --warn-over prints a loud
 warning when the summed test time exceeds the given seconds, so a suite that
 has grown past what one CI job should carry gets noticed. --warn-class-over
 prints a warning for each test class whose runtime excluding first-test
-excess exceeds the given threshold (default: 15s).
+excess exceeds the given threshold (default: 15s). --fail-over fails the step
+(exit 1) if summed test seconds exceed the given threshold. Note that totals sum
+test seconds across forks and are not job wall time. --fail-class-over fails the
+step (exit 1) if any test class's runtime excluding first-test excess exceeds
+the given threshold. --test-sources DIR inspects Kotlin test source files in
+DIR to flag potential static-mock churn in candidates with test count >= 5 and
+median test time >= 0.30s.
 """
 import argparse
 import glob
 import math
 import os
+import re
 import statistics
 import sys
 import xml.etree.ElementTree as ET
@@ -65,6 +73,12 @@ def main() -> int:
                         help="warn when summed test seconds exceed this")
     parser.add_argument("--warn-class-over", type=float, default=15.0,
                         help="warn for each class whose seconds excluding first-test excess exceed this; <= 0 disables")
+    parser.add_argument("--fail-over", type=float, default=None,
+                        help="fail (exit 1) when summed test seconds exceed this")
+    parser.add_argument("--fail-class-over", type=float, default=None,
+                        help="fail (exit 1) for each class whose seconds excluding first-test excess exceed this; <= 0 disables")
+    parser.add_argument("--test-sources", default=None,
+                        help="directory containing test source files to inspect for static-mock churn heuristics")
     args = parser.parse_args()
 
     results_dir = args.results_dir
@@ -136,6 +150,7 @@ def main() -> int:
     warmup_total = sum(c[4] for c in classes)
     measured = sum(1 for c in classes if c[2] >= 2)
 
+    failed = False
     shard_suffix = f" (shard {args.shard})" if args.shard else ""
     print(f"## Unit test timing{shard_suffix}")
     print()
@@ -143,6 +158,15 @@ def main() -> int:
     print(f"{warmup_total:.1f}s of that is first-test excess over the median of the remaining tests "
           f"({measured} classes with ≥2 tests measured; single-test classes count as 0).")
     print()
+    if args.fail_over is not None and total > args.fail_over:
+        failed = True
+        subject = f"shard {args.shard}" if args.shard else "the suite"
+        print(f"> 🚨 **FAIL: Slow tests**: {subject} summed {total:.0f}s, over the "
+              f"{args.fail_over:.0f}s threshold. Speed up the slowest classes below "
+              f"(Robolectric classes dominate), or split the run across shards "
+              f"(-PtestShardTotal/-PtestShardIndex, see test.yml) — then update "
+              f"--fail-over in test.yml.")
+        print()
     if args.warn_over is not None and total > args.warn_over:
         subject = f"shard {args.shard}" if args.shard else "the suite"
         print(f"> ⚠️ **Slow tests**: {subject} summed {total:.0f}s, over the "
@@ -151,7 +175,16 @@ def main() -> int:
               f"(-PtestShardTotal/-PtestShardIndex, see test.yml) — then update "
               f"--warn-over in test.yml.")
         print()
-    if args.warn_class_over > 0:
+    if args.fail_class_over is not None and args.fail_class_over > 0:
+        slow_fail = [row for row in classes_by_excl if row[5] > args.fail_class_over]
+        if slow_fail:
+            failed = True
+            print(f"> 🚨 **FAIL: Slow test classes**: {len(slow_fail)} classes over "
+                  f"{args.fail_class_over:.0f}s excluding first-test excess")
+            for elapsed, name, count, median_val, warmup, excl in slow_fail[:TOP_N]:
+                print(f"> - `{name}` {excl:.1f}s ({count} tests)")
+            print()
+    if args.warn_class_over is not None and args.warn_class_over > 0:
         slow = [row for row in classes_by_excl if row[5] > args.warn_class_over]
         if slow:
             print(f"> ⚠️ **Slow test classes**: {len(slow)} classes over "
@@ -188,7 +221,74 @@ def main() -> int:
     for elapsed, name, excess in cases[:TOP_N]:
         excess_cell = f"{excess:.1f}" if excess is not None else ""
         print(f"| `{name}` | {elapsed:.1f} | {excess_cell} |")
-    return 0
+
+    if args.test_sources is not None:
+        def _extract_bodies(file_content: str, ann_regex: str) -> list[str]:
+            bodies = []
+            for m in re.finditer(ann_regex, file_content, re.MULTILINE):
+                start_pos = m.start()
+                fun_m = re.search(r"^ {4}fun\b|\bfun\b", file_content[start_pos:], re.MULTILINE)
+                if fun_m:
+                    fun_end = start_pos + fun_m.end()
+                    next_m = re.search(r"^ {4}(?:@|fun\b)", file_content[fun_end:], re.MULTILINE)
+                    if next_m:
+                        end_pos = fun_end + next_m.start()
+                    else:
+                        end_pos = len(file_content)
+                else:
+                    end_pos = len(file_content)
+                bodies.append(file_content[start_pos:end_pos])
+            return bodies
+
+        flagged = []
+        for elapsed, name, count, median_val, warmup, excl in classes:
+            if count >= 5 and median_val >= 0.30:
+                simple_name = name.rsplit(".", 1)[-1].split("$")[0]
+                target_file = f"{simple_name}.kt"
+                filepath = None
+                for root_dir, _, files in os.walk(args.test_sources):
+                    if target_file in files:
+                        filepath = os.path.join(root_dir, target_file)
+                        break
+                if not filepath:
+                    continue
+                try:
+                    with open(filepath, "r", encoding="utf-8", errors="replace") as f:
+                        content = f.read()
+                except OSError:
+                    continue
+
+                reasons = []
+                before_bodies = _extract_bodies(content, r"^ {4}@(Before|BeforeEach)\b")
+                has_before_static = any(
+                    ("mockkStatic(" in body or "mockkObject(" in body or "mockkConstructor(" in body)
+                    for body in before_bodies
+                )
+                if has_before_static and ("unmockkAll()" in content):
+                    reasons.append("before-static + unmockkAll")
+
+                test_bodies = _extract_bodies(content, r"^ {4}@Test\b")
+                n_test_static = sum(1 for body in test_bodies if "mockkStatic(" in body)
+                if n_test_static >= 3:
+                    reasons.append(f"mockkStatic in {n_test_static} tests")
+
+                if reasons:
+                    flagged.append((name, median_val, count, ", ".join(reasons)))
+
+        print()
+        print("### Possible static-mock churn (heuristic)")
+        print()
+        if flagged:
+            print("| Class | Median s/test | Tests | Reason |")
+            print("| --- | --- | --- | --- |")
+            for c_name, c_median, c_count, c_reason in flagged:
+                print(f"| `{c_name}` | {c_median:.2f} | {c_count} | {c_reason} |")
+            print()
+            print("*heuristic: regex-level, may false-positive; hoist to @BeforeClass/@afterclass + clearAllMocks() in @before if real*")
+        else:
+            print("None flagged.")
+
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -230,8 +231,8 @@ class SubmissionsRepositoryImplTest {
             StepExam(id = "exam1", name = "Exam 1"),
             StepExam(id = "exam2", name = "Exam 2")
         )
-        val answer1 = org.ole.planet.myplanet.model.Answer(id = "ans1", submissionId = "sub1", value = "ans1_val")
-        val answer3 = org.ole.planet.myplanet.model.Answer(id = "ans3", submissionId = "sub3", value = "ans3_val")
+        val answer1 = Answer(id = "ans1", submissionId = "sub1", value = "ans1_val")
+        val answer3 = Answer(id = "ans3", submissionId = "sub3", value = "ans3_val")
         coEvery { answerDao.getBySubmissionIds(listOf("sub1", "sub3")) } returns listOf(answer1, answer3)
 
         val result = repository.getUniquePendingSurveys("user")
@@ -471,13 +472,15 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `deleteExamSubmissions deletes answers and submissions through Room`() = runTest {
-        coEvery { submissionDao.getByParentUserAndStatus("exam@course", "user", null) } returns listOf(Submission(id = "submission1"))
+    fun `deleteExamSubmissions deletes only pending attempts and their answers`() = runTest {
+        coEvery { submissionDao.getByParentUserAndStatus("exam@course", "user", "pending") } returns listOf(Submission(id = "submission1"))
 
         repository.deleteExamSubmissions("exam", "course", "user")
 
         coVerify { answerDao.deleteBySubmissionIds(listOf("submission1")) }
-        coVerify { submissionDao.deleteByParentAndUser("exam@course", "user") }
+        coVerify { submissionDao.deleteByIds(listOf("submission1")) }
+        coVerify(exactly = 0) { submissionDao.getByParentUserAndStatus(any(), any(), null) }
+        coVerify(exactly = 0) { submissionDao.deleteByParentAndUser(any(), any()) }
     }
 
     @Test
@@ -504,7 +507,7 @@ class SubmissionsRepositoryImplTest {
         val result = repository.startExamSession("exam_id", "parentId", "user", request, recreate = true, deleteStale = true)
 
         assertEquals("exam_id@course_id", result.parentId)
-        coVerify { submissionDao.getByParentUserAndStatus("exam_id@course_id", "user", null) }
+        coVerify { submissionDao.getByParentUserAndStatus("exam_id@course_id", "user", "pending") }
         coVerify { submissionDao.upsertAll(match { it.single().parentId == "exam_id@course_id" }) }
     }
 
@@ -617,6 +620,57 @@ class SubmissionsRepositoryImplTest {
         assertTrue(result)
         coVerify { answerDao.upsertAll(match { it.single().submissionId == "submission1" && it.single().value == "answer text" }) }
         coVerify { submissionDao.updateStatusAndLastUpdate("submission1", "complete", any()) }
+    }
+
+    @Test
+    fun `saveExamAnswer keeps an exam pending when the final answer is wrong`() = runTest {
+        val question = ExamQuestion().apply {
+            id = "question1"; examId = "exam1"; type = "select"
+            choices = """[{"id":"a","text":"Right"},{"id":"b","text":"Wrong"}]"""
+            correctChoiceList = listOf("Right")
+        }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1" }
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1", userId = "user1")
+
+        val result = repository.saveExamAnswer(
+            ExamAnswerData(submission, question, "b", null, null, false, "exam", 0, 1, true, "user1")
+        )
+
+        assertFalse(result)
+        coVerify { submissionDao.updateStatusAndLastUpdate("submission1", "pending", any()) }
+        coVerify(exactly = 0) { submissionDao.updateStatusAndLastUpdate("submission1", "requires grading", any()) }
+    }
+
+    @Test
+    fun `saveExamAnswer keeps choice JSON valid when other text has quotes and backslashes`() = runTest {
+        val question = ExamQuestion().apply { id = "question1"; examId = "exam1"; type = "selectMultiple" }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1" }
+        val otherText = """my "own" answer \ here"""
+        val answerData = ExamAnswerData(
+            submission = submission,
+            question = question,
+            ans = "",
+            listAns = mapOf("Say \"hi\"" to "c1", "Other" to "other"),
+            otherText = otherText,
+            otherVisible = true,
+            type = "survey",
+            index = 0,
+            total = 1,
+            isExplicitSubmission = true,
+            userId = "user1",
+        )
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1", userId = "user1")
+        val saved = slot<List<Answer>>()
+        coEvery { answerDao.upsertAll(capture(saved)) } returns Unit
+
+        repository.saveExamAnswer(answerData)
+
+        val choices = saved.captured.single().valueChoicesArray
+        assertEquals(2, choices.size())
+        assertEquals("c1", choices[0].asJsonObject.get("id").asString)
+        assertEquals("Say \"hi\"", choices[0].asJsonObject.get("text").asString)
+        assertEquals("other", choices[1].asJsonObject.get("id").asString)
+        assertEquals(otherText, choices[1].asJsonObject.get("text").asString)
     }
 
     @Test
@@ -1040,6 +1094,24 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `getSubmissionProjections ignores surrounding whitespace in query`() = runTest {
+        val s1 = Submission().apply { id = "1"; parentId = "p1"; type = "exam"; status = "complete"; lastUpdateTime = 100L; userId = "user1" }
+        val s2 = Submission().apply { id = "2"; parentId = "p2"; type = "exam"; status = "complete"; lastUpdateTime = 200L; userId = "user1" }
+
+        val examMap = mapOf<String?, StepExam>(
+            "p1" to StepExam().apply { name = "Math Quiz" },
+            "p2" to StepExam().apply { name = "Science Test" }
+        )
+
+        coEvery { userRepository.getUsersByIds(any()) } returns emptyList()
+
+        val projections = repository.getSubmissionProjections(listOf(s1, s2), "user1", "exam", " Math ", examMap)
+
+        assertEquals(1, projections.size)
+        assertEquals("1", projections[0].submission.id)
+    }
+
+    @Test
     fun `getNormalizedSubmitterName returns null when user is blank`() {
         val submission = Submission().apply {
             user = "   "
@@ -1195,7 +1267,7 @@ class SubmissionsRepositoryImplTest {
         coEvery { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") } returns 1
 
         val failed = repository.markSubmissionsUploaded(
-            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", com.google.gson.JsonObject()))
+            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", JsonObject()))
         )
 
         assertEquals(emptyList<UploadedItemResult>(), failed)
@@ -1207,7 +1279,7 @@ class SubmissionsRepositoryImplTest {
         coEvery { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") } returns 0
 
         val failed = repository.markSubmissionsUploaded(
-            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", com.google.gson.JsonObject()))
+            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", JsonObject()))
         )
 
         assertEquals(1, failed.size)

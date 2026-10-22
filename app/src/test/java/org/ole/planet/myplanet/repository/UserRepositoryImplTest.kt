@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
 import io.mockk.Runs
@@ -62,13 +63,13 @@ class UserRepositoryImplTest {
     private lateinit var appScope: CoroutineScope
     private lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var activitiesRepository: ActivitiesRepository
-    private lateinit var activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>
+    private lateinit var activitiesRepositoryLazy: Lazy<ActivitiesRepository>
     private lateinit var resourcesRepository: ResourcesRepository
-    private lateinit var resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository>
+    private lateinit var resourcesRepositoryLazy: Lazy<ResourcesRepository>
     private lateinit var coursesRepository: CoursesRepository
-    private lateinit var coursesRepositoryLazy: dagger.Lazy<CoursesRepository>
+    private lateinit var coursesRepositoryLazy: Lazy<CoursesRepository>
     private lateinit var eventsRepository: EventsRepository
-    private lateinit var eventsRepositoryLazy: dagger.Lazy<EventsRepository>
+    private lateinit var eventsRepositoryLazy: Lazy<EventsRepository>
     private lateinit var userDao: UserDao
     private lateinit var deviceNameProvider: DeviceNameProvider
 
@@ -137,7 +138,6 @@ class UserRepositoryImplTest {
             dispatcherProvider,
             activitiesRepositoryLazy,
             eventsRepositoryLazy,
-            mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
             userDao,
@@ -498,13 +498,40 @@ class UserRepositoryImplTest {
             settings, sharedPrefManager, apiInterface, resourcesRepositoryLazy,
             mockk(relaxed = true), uploadToShelfService, context, configurationsRepository,
             appScope, dispatcherProvider, activitiesRepositoryLazy, eventsRepositoryLazy,
-            mockk(relaxed = true), mockk(relaxed = true), achievementDao, userDao,
+            mockk(relaxed = true), achievementDao, userDao,
             mockk(relaxed = true), deviceNameProvider
         )
 
         repo.getAchievementData("user1", "planet1")
 
         coVerify { resourcesRepository.getLibraryItemsByIds(listOf("res1", "res2")) }
+    }
+
+    @Test
+    fun `bulkInsertAchievementsFromSync keeps achievements edited locally but not yet uploaded`() = runTest(testDispatcher) {
+        val achievementDao = mockk<org.ole.planet.myplanet.data.room.dao.AchievementDao>(relaxed = true)
+        coEvery { achievementDao.getUpdatedIds() } returns listOf("user1@planet1")
+
+        val repo = UserRepositoryImpl(
+            settings, sharedPrefManager, apiInterface, resourcesRepositoryLazy,
+            mockk(relaxed = true), uploadToShelfService, context, configurationsRepository,
+            appScope, dispatcherProvider, activitiesRepositoryLazy, eventsRepositoryLazy,
+            mockk(relaxed = true), achievementDao, userDao,
+            mockk(relaxed = true), deviceNameProvider
+        )
+        val jsonArray = JsonArray().apply {
+            listOf("user1@planet1", "user2@planet1").forEach { achievementId ->
+                add(JsonObject().apply {
+                    add("doc", JsonObject().apply { addProperty("_id", achievementId) })
+                })
+            }
+        }
+
+        repo.bulkInsertAchievementsFromSync(jsonArray)
+
+        coVerify(exactly = 1) {
+            achievementDao.upsertAll(match { it.map { achievement -> achievement._id } == listOf("user2@planet1") })
+        }
     }
 
     @Test

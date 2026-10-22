@@ -49,6 +49,7 @@ import dagger.Lazy
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.math.ceil
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -368,7 +369,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         if (isFirstLaunch) {
             lifecycleScope.launch {
-                delay(50)
+                delay(50.milliseconds)
                 val state = dashboardViewModel.getGuestVisitState(user?.id).await()
                 if (state.shouldAutoOpenDrawer &&
                     resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
@@ -608,7 +609,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val timeText = if (lastSyncMillis <= 0L) {
             getString(R.string.last_synced_never)
         } else {
-            TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
+            TimeUtils.getRelativeTime(this, lastSyncMillis, timeProvider)
         }
         binding.dashboardLastSyncStatus.text = getString(R.string.dashboard_sync_status, timeText)
     }
@@ -617,7 +618,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 while (true) {
-                    delay(LAST_SYNC_STATUS_REFRESH_INTERVAL_MS)
+                    delay(LAST_SYNC_STATUS_REFRESH_INTERVAL_MS.milliseconds)
                     updateLastSyncStatus()
                 }
             }
@@ -641,7 +642,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 val pendingResult = goAsync()
                 lifecycleScope.launch {
                     try {
-                        kotlinx.coroutines.withTimeout(10000) {
+                        kotlinx.coroutines.withTimeout(10000.milliseconds) {
                             if (intent?.action == "org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM") {
                                 val userId = user?.id
                                 if (userId != null) {
@@ -653,7 +654,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                             }
                                         }
                                     } else {
-                                        delay(300)
+                                        delay(300.milliseconds)
                                         refreshNotificationsWithRetry(userId)
                                     }
                                 } else {
@@ -701,7 +702,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (fromLogin || !notificationsShownThisSession) {
             notificationsShownThisSession = true
             lifecycleScope.launch {
-                delay(1000)
+                delay(1000.milliseconds)
                 dashboardViewModel.checkAndCreateNewNotifications(user?.id, user?.isManager() == true)
             }
         }
@@ -797,9 +798,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
     }
 
-    private fun topBarVisible(){
+    private fun topBarVisible() {
+        val tabLayout = tl ?: return
         val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
 
         tabLayout.visibility = if (isLandscape) {
             View.VISIBLE

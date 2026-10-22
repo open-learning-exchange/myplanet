@@ -86,8 +86,16 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        initializeExamData()
+        savedInstanceState?.let { currentIndex = it.getInt(KEY_CURRENT_INDEX, currentIndex) }
+        val resumeSubmissionId = savedInstanceState?.getString(KEY_SUBMISSION_ID) ?: sub?.id
+        initializeExamData(resumeSubmissionId)
         setupListeners()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(KEY_SUBMISSION_ID, sub?.id)
+        outState.putInt(KEY_CURRENT_INDEX, currentIndex)
     }
 
     private fun computeParentId(): String? {
@@ -98,7 +106,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
     }
 
-    private fun initializeExamData() {
+    private fun initializeExamData(resumeSubmissionId: String?) {
         viewLifecycleOwner.lifecycleScope.launch {
             user = userSessionManager.getUserModel()
             initExam()
@@ -121,7 +129,16 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             if (!questions.isNullOrEmpty()) {
                 if (type == "exam") {
                     val currentExam = exam
-                    if (currentExam != null) {
+                    val resumed = resumeSubmissionId?.let { submissionsRepository.getSubmissionById(it) }
+                        ?.takeIf { it.status == "pending" }
+                    if (resumed != null) {
+                        sub = resumed
+                        answerCache.clear()
+                        populateCacheFromSavedAnswers(resumed)
+                        currentIndex = currentIndex.coerceIn(0, (questions?.size ?: 1) - 1)
+                        startExam(questions?.get(currentIndex))
+                        updateNavButtons()
+                    } else if (currentExam != null) {
                         viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
                             try {
                                 val request = CreateExamSubmissionRequest(
@@ -139,7 +156,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                                     updateNavButtons()
                                 }
                             } catch (e: Exception) {
-                                e.printStackTrace()
+                                Log.e(TAG, "startExamSession (recreate) failed", e)
                                 withContext(dispatcherProvider.main) {
                                     Utilities.toast(requireContext(), "Failed to start exam session. Please retry.")
                                 }
@@ -174,7 +191,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                             startExam(questions?.get(currentIndex))
                             updateNavButtons()
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            Log.e(TAG, "startExamSession failed", e)
                             Utilities.toast(requireContext(), "Failed to start exam session. Please retry.")
                         }
                     }
@@ -661,7 +678,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 capturePhoto(viewLifecycleOwner.lifecycleScope, this, dispatcherProvider)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "capturePhoto failed", e)
         }
     }
 
@@ -851,5 +868,11 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         viewLifecycleOwner.lifecycleScope.launch {
             coursesRepository.updateCourseProgress(courseId, stepNum, isGraded, userId)
         }
+    }
+
+    private companion object {
+        const val TAG = "ExamTakingFragment"
+        const val KEY_SUBMISSION_ID = "exam_submission_id"
+        const val KEY_CURRENT_INDEX = "exam_current_index"
     }
 }
