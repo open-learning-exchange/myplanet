@@ -3,10 +3,13 @@ package org.ole.planet.myplanet.repository
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
 import java.util.concurrent.TimeUnit
@@ -88,6 +91,29 @@ class SurveysRepositoryImplTest {
     @After
     fun tearDown() {
         unmockkAll()
+    }
+
+    @Test
+    fun `bulkInsertExamsFromSync keeps the course link written by the courses sync`() = runTest {
+        coEvery { examDao.getByIds(listOf("exam1")) } returns listOf(StepExam(id = "exam1", courseId = "course1", stepId = "step1"))
+        val saved = slot<List<StepExam>>()
+        coEvery { examDao.upsertAll(capture(saved)) } returns Unit
+        val jsonArray = JsonArray().apply {
+            add(JsonObject().apply {
+                add("doc", JsonObject().apply {
+                    addProperty("_id", "exam1")
+                    addProperty("name", "Course Test")
+                    addProperty("type", "courses")
+                })
+            })
+        }
+
+        repository.bulkInsertExamsFromSync(jsonArray)
+
+        val exam = saved.captured.single()
+        assertEquals("Course Test", exam.name)
+        assertEquals("course1", exam.courseId)
+        assertEquals("step1", exam.stepId)
     }
 
     @Test
