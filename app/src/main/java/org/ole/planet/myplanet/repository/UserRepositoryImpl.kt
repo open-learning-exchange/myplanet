@@ -18,6 +18,7 @@ import java.util.UUID
 import java.util.regex.Pattern
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -70,15 +71,15 @@ class UserRepositoryImpl @Inject constructor(
     @param:AppPreferences private val settings: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
     private val apiInterface: ApiInterface,
-    private val resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository>,
-    private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>,
+    private val resourcesRepositoryLazy: Lazy<ResourcesRepository>,
+    private val coursesRepositoryLazy: Lazy<CoursesRepository>,
     private val uploadToShelfService: Lazy<UploadToShelfService>,
     @param:ApplicationContext private val context: Context,
     private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val appScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
-    private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>,
-    private val eventsRepositoryLazy: dagger.Lazy<EventsRepository>,
+    private val activitiesRepositoryLazy: Lazy<ActivitiesRepository>,
+    private val eventsRepositoryLazy: Lazy<EventsRepository>,
     private val removedLogDao: RemovedLogDao,
     private val achievementDao: AchievementDao,
     private val userDao: UserDao,
@@ -611,7 +612,7 @@ class UserRepositoryImpl @Inject constructor(
 
     private suspend fun saveUserToDb(id: String, obj: JsonObject): Result<UserEntity?> {
         return try {
-            val userModel = withTimeout(20000) {
+            val userModel = withTimeout(20000.milliseconds) {
                 val response = apiInterface.getJsonObject(
                     UrlUtils.header,
                     "${UrlUtils.getUrl()}/_users/$id"
@@ -639,7 +640,6 @@ class UserRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
-
 
     override suspend fun changeUserSecurity(model: UserEntity, obj: JsonObject) {
         val table = "userdb-${StringUtils.toHex(model.planetCode)}-${StringUtils.toHex(model.name)}"
@@ -1068,7 +1068,10 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertAchievementsFromSync(jsonArray: JsonArray) {
-        val achievements = jsonArray.toSyncDocuments().map { (_, doc) -> Achievement.fromJson(doc) }
+        val locallyUpdatedIds = achievementDao.getUpdatedIds().toHashSet()
+        val achievements = jsonArray.toSyncDocuments()
+            .map { (_, doc) -> Achievement.fromJson(doc) }
+            .filterNot { it._id in locallyUpdatedIds }
         achievementDao.upsertAll(achievements)
     }
 
@@ -1163,7 +1166,6 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-
     override suspend fun uploadAllSyncedUsersToShelf(users: List<UserEntity>): Result<Unit> {
         return try {
             val semaphore = Semaphore(5)
@@ -1215,7 +1217,7 @@ class UserRepositoryImpl @Inject constructor(
 
         val response = org.ole.planet.myplanet.data.api.ApiClient.executeWithRetryAndWrap {
             apiInterface.postDoc(
-                org.ole.planet.myplanet.utils.UrlUtils.header,
+                UrlUtils.header,
                 "application/json",
                 "${org.ole.planet.myplanet.utils.UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true",
                 keysObject.toKotlinx().jsonObject
@@ -1223,12 +1225,12 @@ class UserRepositoryImpl @Inject constructor(
         }?.body()?.toGson()
 
         response?.let { responseBody ->
-            val rows = org.ole.planet.myplanet.utils.GsonUtils.getJsonArray("rows", responseBody)
+            val rows = GsonUtils.getJsonArray("rows", responseBody)
             for (i in 0 until rows.size()) {
                 val row = rows[i].asJsonObject
                 if (row.has("doc")) {
-                    val doc = org.ole.planet.myplanet.utils.GsonUtils.getJsonObject("doc", row)
-                    val shelfId = org.ole.planet.myplanet.utils.GsonUtils.getString("_id", doc)
+                    val doc = GsonUtils.getJsonObject("doc", row)
+                    val shelfId = GsonUtils.getString("_id", doc)
 
                     if (hasShelfDataUltraFast(doc)) {
                         shelvesWithData.add(shelfId)

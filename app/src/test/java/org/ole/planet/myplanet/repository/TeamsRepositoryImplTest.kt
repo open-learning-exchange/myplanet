@@ -409,6 +409,52 @@ class TeamsRepositoryImplTest {
     }
 
     @Test
+    fun `updateTeam keeps the team's member limit and creator`() = runTest(testDispatcher) {
+        val team = MyTeam().apply {
+            _id = "team1"
+            name = "Old name"
+            limit = 30
+            createdBy = "founder"
+        }
+        coEvery { teamDao.getById("team1") } returns team
+        coEvery { teamDao.upsert(any()) } returns Unit
+
+        val result = teamsRepository.updateTeam("team1", "New name", "Fixed typo", "services", "rules")
+
+        assertTrue(result.getOrThrow())
+        val saved = slot<MyTeam>()
+        coVerify { teamDao.upsert(capture(saved)) }
+        assertEquals("New name", saved.captured.name)
+        assertEquals("Fixed typo", saved.captured.description)
+        assertEquals(30, saved.captured.limit)
+        assertEquals("founder", saved.captured.createdBy)
+        assertTrue(saved.captured.updated)
+    }
+
+    @Test
+    fun `leaveTeam hands leadership to the remaining member before leaving`() = runTest(testDispatcher) {
+        val leader = MyTeam().apply { _id = "m1"; _rev = "1-a"; teamId = "team1"; userId = "leader"; docType = "membership"; isLeader = true }
+        val member = MyTeam().apply { _id = "m2"; _rev = "1-b"; teamId = "team1"; userId = "member"; docType = "membership" }
+        coEvery { teamDao.getByTeamIdAndDocType("team1", "membership") } returns listOf(leader, member)
+        coEvery { teamDao.getEligibleNextLeaderCandidates("team1", "leader") } returns listOf(member)
+        coEvery { userRepository.getUsersByIds(listOf("member")) } returns listOf(UserEntity(id = "member", name = "member"))
+
+        teamsRepository.leaveTeam("team1", "leader")
+
+        assertTrue(member.isLeader)
+        assertFalse(leader.isLeader)
+        assertTrue(leader.isDeletePending)
+    }
+
+    @Test
+    fun `isTeamLeader is false for a leader whose leave is pending`() = runTest(testDispatcher) {
+        val departed = MyTeam().apply { teamId = "team1"; userId = "leader"; docType = "membership"; isLeader = true; isDeletePending = true }
+        coEvery { teamDao.getByTeamIdAndDocType("team1", "membership") } returns listOf(departed)
+
+        assertFalse(teamsRepository.isTeamLeader("team1", "leader"))
+    }
+
+    @Test
     fun `createLocalResourceLink upserts resourceLink MyTeam row`() = runTest(testDispatcher) {
         val teamId = "team_1"
         val resourceId = "res_1"

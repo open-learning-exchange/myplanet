@@ -545,7 +545,7 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun isTeamLeader(teamId: String, userId: String?): Boolean {
         if (teamId.isBlank() || userId.isNullOrBlank()) return false
         return teamDao.getByTeamIdAndDocType(teamId, "membership")
-            .any { it.userId == userId && it.isLeader }
+            .any { it.userId == userId && it.isLeader && !it.isDeletePending }
     }
 
     override suspend fun hasPendingRequest(teamId: String, userId: String?): Boolean {
@@ -581,9 +581,9 @@ class TeamsRepositoryImpl @Inject constructor(
             if (entry.docType == "membership") {
                 if (!entry.isDeletePending) {
                     membershipSet.add(teamId)
-                }
-                if (entry.isLeader) {
-                    leaderSet.add(teamId)
+                    if (entry.isLeader) {
+                        leaderSet.add(teamId)
+                    }
                 }
             } else if (entry.docType == "request" && !entry.isDeletePending) {
                 pendingRequestSet.add(teamId)
@@ -680,6 +680,9 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun leaveTeam(teamId: String, userId: String?) {
         if (teamId.isBlank() || userId.isNullOrBlank()) return
+        if (isTeamLeader(teamId, userId)) {
+            getNextLeaderCandidate(teamId, userId)?.id?.let { updateTeamLeader(teamId, it) }
+        }
         markMembershipsForLeave(teamId, userId)
     }
 
@@ -878,7 +881,6 @@ class TeamsRepositoryImpl @Inject constructor(
         description: String,
         services: String,
         rules: String,
-        updatedBy: String?,
     ): Result<Boolean> {
         return runCatching {
             val team = getTeamEntityByAnyId(teamId) ?: return@runCatching false
@@ -886,8 +888,6 @@ class TeamsRepositoryImpl @Inject constructor(
             team.services = services
             team.rules = rules
             team.description = description
-            updatedBy?.let { team.createdBy = it }
-            team.limit = 12
             team.updated = true
             teamDao.upsert(team)
             true

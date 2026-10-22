@@ -17,6 +17,9 @@ interface HealthExaminationDao {
     @Query("SELECT * FROM health_examinations WHERE isUpdated = 1 AND userId != ''")
     suspend fun getUpdated(): List<HealthExamination>
 
+    @Query("SELECT _id FROM health_examinations WHERE isUpdated = 1")
+    suspend fun getUpdatedIds(): List<String>
+
     @Query("SELECT * FROM health_examinations WHERE isUpdated = 1 AND userId = :userId")
     suspend fun getUpdatedForUser(userId: String): List<HealthExamination>
 

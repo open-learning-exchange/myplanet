@@ -46,8 +46,8 @@ class BellDashboardViewModel @Inject constructor(
     val completedCourses: StateFlow<List<CourseCompletion>> = _completedCourses.asStateFlow()
 
 
-    private val _surveyPrompt = kotlinx.coroutines.flow.MutableSharedFlow<SurveyPrompt>(replay = 0)
-    val surveyPrompt: kotlinx.coroutines.flow.SharedFlow<SurveyPrompt> = _surveyPrompt.asSharedFlow()
+    private val _surveyPrompt = MutableSharedFlow<SurveyPrompt>(replay = 0)
+    val surveyPrompt: SharedFlow<SurveyPrompt> = _surveyPrompt.asSharedFlow()
 
     init {
         viewModelScope.launch {

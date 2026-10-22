@@ -21,6 +21,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -260,7 +262,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            delay(2000)
+            delay(2000.milliseconds)
             if (binding.cardProfileBell.progressBarBadges?.visibility == View.VISIBLE) {
                 binding.cardProfileBell.progressBarBadges?.visibility = View.GONE
             }
@@ -363,7 +365,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         lastSyncStatusJob = viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 while (true) {
-                    delay(LAST_SYNC_STATUS_REFRESH_INTERVAL_MS)
+                    delay(LAST_SYNC_STATUS_REFRESH_INTERVAL_MS.milliseconds)
                     updateRailSyncStatus()
                 }
             }

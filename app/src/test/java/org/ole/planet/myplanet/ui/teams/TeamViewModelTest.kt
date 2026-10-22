@@ -88,6 +88,25 @@ class TeamViewModelTest {
         assertEquals("team1", data[0]._id)
     }
     @Test
+    fun `searchTeams ignores trailing whitespace`() = runTest(testDispatcher) {
+        val teams = listOf(
+            TeamDetails(_id = "team1", name = "Alpha", teamType = null, createdDate = null, type = null, status = "active", visitCount = 0L, teamStatus = null, description = null, services = null, rules = null, teamId = null),
+            TeamDetails(_id = "team2", name = "Beta", teamType = null, createdDate = null, type = null, status = "active", visitCount = 0L, teamStatus = null, description = null, services = null, rules = null, teamId = null)
+        )
+
+        coEvery { teamsRepository.getTeamDetails(any()) } returns teams
+
+        viewModel.loadTeams(fromDashboard = false, type = "team", userId = "user1")
+        advanceUntilIdle()
+
+        viewModel.searchTeams("Alpha ")
+        advanceUntilIdle()
+
+        val data = viewModel.teamData.value
+        assertEquals(1, data.size)
+        assertEquals("team1", data[0]._id)
+    }
+    @Test
     fun `loadTeams with empty list returns empty`() = runTest(testDispatcher) {
         coEvery { teamsRepository.getTeamDetails(any()) } returns emptyList()
 
