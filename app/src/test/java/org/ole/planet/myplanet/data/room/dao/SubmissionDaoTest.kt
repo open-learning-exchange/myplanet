@@ -39,6 +39,26 @@ class SubmissionDaoTest {
     }
 
     @Test
+    fun getPendingExamResults_returnsFinishedAttemptsAndChangedUploadsOnly() = runBlocking {
+        fun exam(id: String, status: String, remoteId: String?, updated: Boolean) = Submission(
+            id = id, parentId = "exam1", userId = "user1", type = "exam", status = status, _id = remoteId, isUpdated = updated
+        )
+        submissionDao.upsertAll(
+            listOf(
+                exam("inProgress", "pending", null, true),
+                exam("inProgressUploaded", "pending", "remote0", true),
+                exam("finished", "requires grading", null, true),
+                exam("finishedAfterUpload", "requires grading", "remote1", true),
+                exam("alreadyUploaded", "requires grading", "remote2", false),
+            )
+        )
+
+        val ids = submissionDao.getPendingExamResults().map { it.id }.toSet()
+
+        assertEquals(setOf("finished", "finishedAfterUpload"), ids)
+    }
+
+    @Test
     fun getPendingByUserAndParent_returnsLatestByStartTimeDescNotLastUpdateTime() = runBlocking {
         // sub1: started earliest (100), updated latest (500)
         val sub1 = Submission(id = "sub1", parentId = "parent1", userId = "user1", status = "pending", startTime = 100L, lastUpdateTime = 500L)
