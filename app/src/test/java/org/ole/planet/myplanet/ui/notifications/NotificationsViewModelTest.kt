@@ -8,6 +8,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import io.mockk.verify
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -378,7 +379,7 @@ class NotificationsViewModelTest {
         )
 
         coEvery { repository.getEnrichedNotifications(USER_ID, "filterA", false) } coAnswers {
-            delay(1_000)
+            delay(1_000.milliseconds)
             resultA
         }
         coEvery { repository.getEnrichedNotifications(USER_ID, "filterB", false) } returns resultB

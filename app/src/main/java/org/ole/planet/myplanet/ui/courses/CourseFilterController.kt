@@ -5,6 +5,7 @@ import android.text.TextWatcher
 import android.view.View
 import android.widget.EditText
 import android.widget.TextView
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -115,7 +116,7 @@ class CourseFilterController(
                 if (!etSearch.isFocused) return
                 searchJob?.cancel()
                 searchJob = coroutineScope.launch {
-                    delay(300)
+                    delay(300.milliseconds)
                     _filterState.value = currentState()
                 }
             }
