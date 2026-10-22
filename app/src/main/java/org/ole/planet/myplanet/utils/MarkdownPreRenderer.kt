@@ -16,7 +16,7 @@ import java.util.concurrent.Future
  * lands on whatever text replaced it — and throws from `setSpan` when that text is shorter. This one keeps
  * counting changes while [isRenderingEnabled] is false, so such a result is always dropped.
  */
-class MarkdownPreRenderTextWatcher(
+class MarkdownPreRenderer(
     private val editor: MarkwonEditor,
     private val executor: ExecutorService,
     private val editText: EditText,

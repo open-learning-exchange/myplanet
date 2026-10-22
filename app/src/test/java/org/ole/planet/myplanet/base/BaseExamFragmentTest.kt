@@ -26,7 +26,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.ExamQuestion
-import org.ole.planet.myplanet.utils.MarkdownPreRenderTextWatcher
+import org.ole.planet.myplanet.utils.MarkdownPreRenderer
 import org.ole.planet.myplanet.utils.MarkdownUtils
 
 class BaseExamFragmentTest {
@@ -87,7 +87,7 @@ class BaseExamFragmentTest {
     @Test
     fun testSetMarkdownViewAndShowInput_textarea() {
         fragment.setMarkdownViewAndShowInput(editText, "textarea", "test textarea answer")
-        val watcher = answerTextWatcher() as MarkdownPreRenderTextWatcher
+        val watcher = answerTextWatcher() as MarkdownPreRenderer
         fragment.setMarkdownViewAndShowInput(editText, "textarea", "test textarea answer 2")
 
         verify { editText.visibility = View.VISIBLE }
@@ -103,7 +103,7 @@ class BaseExamFragmentTest {
     @Test
     fun testSetMarkdownViewAndShowInput_keepsWatcherAttachedAcrossQuestionTypes() {
         fragment.setMarkdownViewAndShowInput(editText, "textarea", "first")
-        val watcher = answerTextWatcher() as MarkdownPreRenderTextWatcher
+        val watcher = answerTextWatcher() as MarkdownPreRenderer
 
         fragment.setMarkdownViewAndShowInput(editText, "text", "second")
         assertSame(watcher, answerTextWatcher())
@@ -166,7 +166,7 @@ class BaseExamFragmentTest {
         val executor2 = executorField.get(fragment) as? ExecutorService
         assertNotNull(executor2)
         assertFalse(executor2!!.isShutdown)
-        assertTrue(answerTextWatcher() is MarkdownPreRenderTextWatcher)
+        assertTrue(answerTextWatcher() is MarkdownPreRenderer)
     }
 
     @Test

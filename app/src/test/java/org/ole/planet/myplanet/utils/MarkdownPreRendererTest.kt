@@ -11,7 +11,7 @@ import java.util.concurrent.ExecutorService
 import org.junit.Before
 import org.junit.Test
 
-class MarkdownPreRenderTextWatcherTest {
+class MarkdownPreRendererTest {
 
     private lateinit var editor: MarkwonEditor
     private lateinit var executor: ExecutorService
@@ -20,7 +20,7 @@ class MarkdownPreRenderTextWatcherTest {
     private lateinit var result: MarkwonEditor.PreRenderResult
     private val submitted = mutableListOf<Runnable>()
     private val posted = mutableListOf<Runnable>()
-    private lateinit var watcher: MarkdownPreRenderTextWatcher
+    private lateinit var watcher: MarkdownPreRenderer
 
     @Before
     fun setUp() {
@@ -42,7 +42,7 @@ class MarkdownPreRenderTextWatcherTest {
         }
         every { editText.text } returns fieldText
 
-        watcher = MarkdownPreRenderTextWatcher(editor, executor, editText)
+        watcher = MarkdownPreRenderer(editor, executor, editText)
     }
 
     /** Runs the background render, then the main-thread dispatch it posted. */

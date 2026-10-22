@@ -33,7 +33,7 @@ import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.surveys.SurveyFragment
 import org.ole.planet.myplanet.utils.CameraUtils
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
-import org.ole.planet.myplanet.utils.MarkdownPreRenderTextWatcher
+import org.ole.planet.myplanet.utils.MarkdownPreRenderer
 import org.ole.planet.myplanet.utils.MarkdownUtils
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -57,7 +57,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var submitId = ""
     var isTeam: Boolean = false
     var teamId: String? = null
-    private var answerTextWatcher: MarkdownPreRenderTextWatcher? = null
+    private var answerTextWatcher: MarkdownPreRenderer? = null
     private var currentAnswerEditText: EditText? = null
     private var markwonExecutor: ExecutorService? = null
     private val markwon by lazy(LazyThreadSafetyMode.NONE) { MarkdownUtils.create(requireActivity()) }
@@ -207,7 +207,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         if (watcher != null) {
             watcher.isRenderingEnabled = isMarkdown
         } else if (isMarkdown) {
-            answerTextWatcher = MarkdownPreRenderTextWatcher(markwonEditor, getMarkwonExecutor(), etAnswer)
+            answerTextWatcher = MarkdownPreRenderer(markwonEditor, getMarkwonExecutor(), etAnswer)
                 .also { etAnswer.addTextChangedListener(it) }
         }
         etAnswer.setText(oldAnswer)
