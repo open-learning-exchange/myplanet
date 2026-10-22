@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
 import io.mockk.Runs
@@ -504,6 +505,33 @@ class UserRepositoryImplTest {
         repo.getAchievementData("user1", "planet1")
 
         coVerify { resourcesRepository.getLibraryItemsByIds(listOf("res1", "res2")) }
+    }
+
+    @Test
+    fun `bulkInsertAchievementsFromSync keeps achievements edited locally but not yet uploaded`() = runTest(testDispatcher) {
+        val achievementDao = mockk<org.ole.planet.myplanet.data.room.dao.AchievementDao>(relaxed = true)
+        coEvery { achievementDao.getUpdatedIds() } returns listOf("user1@planet1")
+
+        val repo = UserRepositoryImpl(
+            settings, sharedPrefManager, apiInterface, resourcesRepositoryLazy,
+            mockk(relaxed = true), uploadToShelfService, context, configurationsRepository,
+            appScope, dispatcherProvider, activitiesRepositoryLazy, eventsRepositoryLazy,
+            mockk(relaxed = true), achievementDao, userDao,
+            mockk(relaxed = true), deviceNameProvider
+        )
+        val jsonArray = JsonArray().apply {
+            listOf("user1@planet1", "user2@planet1").forEach { achievementId ->
+                add(JsonObject().apply {
+                    add("doc", JsonObject().apply { addProperty("_id", achievementId) })
+                })
+            }
+        }
+
+        repo.bulkInsertAchievementsFromSync(jsonArray)
+
+        coVerify(exactly = 1) {
+            achievementDao.upsertAll(match { it.map { achievement -> achievement._id } == listOf("user2@planet1") })
+        }
     }
 
     @Test
