@@ -62,13 +62,13 @@ class UserRepositoryImplTest {
     private lateinit var appScope: CoroutineScope
     private lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var activitiesRepository: ActivitiesRepository
-    private lateinit var activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>
+    private lateinit var activitiesRepositoryLazy: Lazy<ActivitiesRepository>
     private lateinit var resourcesRepository: ResourcesRepository
-    private lateinit var resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository>
+    private lateinit var resourcesRepositoryLazy: Lazy<ResourcesRepository>
     private lateinit var coursesRepository: CoursesRepository
-    private lateinit var coursesRepositoryLazy: dagger.Lazy<CoursesRepository>
+    private lateinit var coursesRepositoryLazy: Lazy<CoursesRepository>
     private lateinit var eventsRepository: EventsRepository
-    private lateinit var eventsRepositoryLazy: dagger.Lazy<EventsRepository>
+    private lateinit var eventsRepositoryLazy: Lazy<EventsRepository>
     private lateinit var userDao: UserDao
     private lateinit var deviceNameProvider: DeviceNameProvider
 

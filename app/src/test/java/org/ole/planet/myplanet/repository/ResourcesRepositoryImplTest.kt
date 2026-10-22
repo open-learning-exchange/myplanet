@@ -142,7 +142,7 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `setUserLibrary returns existing library and no-ops when already added`() = runTest {
-        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        val mockUser = UserEntity().apply { id = "user-123" }
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val mockLibrary = MyLibrary().apply {
@@ -160,7 +160,7 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `setUserLibrary returns existing library and no-ops when already removed`() = runTest {
-        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        val mockUser = UserEntity().apply { id = "user-123" }
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val mockLibrary = MyLibrary().apply {
@@ -201,6 +201,30 @@ class ResourcesRepositoryImplTest {
             assertEquals("2-abc", library.downloadedRev)
             assertEquals("index.html", library.resourceLocalAddress)
             coVerify { myLibraryDao.upsert(library) }
+        } finally {
+            unmockkObject(FileUtils)
+        }
+    }
+
+    @Test
+    fun `markResourceOfflineByUrl only marks the downloaded resource among rows sharing a file name`() = runTest {
+        val downloaded = MyLibrary().apply { id = "res1"; resourceId = "res1"; resourceLocalAddress = "video.mp4" }
+        val other = MyLibrary().apply { id = "res2"; resourceId = "res2"; resourceLocalAddress = "video.mp4" }
+        coEvery { myLibraryDao.getByLocalAddress("video.mp4") } returns listOf(downloaded, other)
+        coEvery { myLibraryDao.getByResourceId("res1") } returns downloaded
+
+        val url = "http://example.com/resources/res1/video.mp4"
+        mockkObject(FileUtils)
+        try {
+            every { FileUtils.getFileNameFromUrl(url) } returns "video.mp4"
+            every { FileUtils.getIdFromUrl(url) } returns "res1"
+            every { FileUtils.getResourceRelativePathFromUrl(url) } returns "video.mp4"
+
+            repository.markResourceOfflineByUrl(url)
+
+            assertTrue(downloaded.resourceOffline)
+            assertFalse(other.resourceOffline)
+            coVerify { myLibraryDao.upsertAll(listOf(downloaded)) }
         } finally {
             unmockkObject(FileUtils)
         }
@@ -302,7 +326,7 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `setUserLibrary returns updated library on successful toggle`() = runTest {
-        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        val mockUser = UserEntity().apply { id = "user-123" }
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val mockLibrary = MyLibrary().apply {
