@@ -93,23 +93,29 @@ class HealthViewModel @Inject constructor(
     }
 
     fun loadPatients(sortBy: String = "joinDate", descending: Boolean = true) {
-        viewModelScope.launch {
-            _patientList.value = userRepository.getUsersSortedBy(sortBy, descending)
-        }
+        searchPatients("", sortBy, descending)
     }
 
     fun searchPatients(query: String, sortBy: String = "joinDate", descending: Boolean = true) {
         searchJob?.cancel()
-        searchJob = viewModelScope.launch {
+        var job: Job? = null
+        job = viewModelScope.launch {
             val loadingJob = launch {
                 delay(100)
                 _isListLoading.value = true
             }
-            val result = if (query.isBlank()) userRepository.getUsersSortedBy(sortBy, descending) else userRepository.searchUsers(query, sortBy, descending)
-            loadingJob.cancel()
-            _patientList.value = result
-            _isListLoading.value = false
+            try {
+                val result = if (query.isBlank()) userRepository.getUsersSortedBy(sortBy, descending) else userRepository.searchUsers(query, sortBy, descending)
+                loadingJob.cancel()
+                _patientList.value = result
+            } finally {
+                loadingJob.cancel()
+                if (searchJob === job) {
+                    _isListLoading.value = false
+                }
+            }
         }
+        searchJob = job
     }
 
     fun loadInitialPatient() {

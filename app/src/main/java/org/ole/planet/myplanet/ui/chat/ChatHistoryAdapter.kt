@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.annotation.VisibleForTesting
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
+import androidx.recyclerview.widget.AsyncDifferConfig
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -33,22 +34,10 @@ class ChatHistoryAdapter(
     private var newsList: List<News>,
     private var cachedSharedViewInIds: Map<String, Set<String>>,
     private var shareTargets: ChatShareTargets,
+    diffConfig: AsyncDifferConfig<ChatHistory>? = null,
     private val onShareChat: (HashMap<String?, String>, ChatHistory) -> Unit,
 ) : ListAdapter<ChatHistory, ChatHistoryAdapter.ViewHolderChat>(
-    DiffUtils.itemCallback(
-        areItemsTheSame = { oldItem, newItem ->
-            val oldId = oldItem._id
-            val newId = newItem._id
-            oldId != null && newId != null && oldId == newId
-        },
-        areContentsTheSame = { oldItem, newItem ->
-            oldItem._rev == newItem._rev &&
-                oldItem.lastUsed == newItem.lastUsed &&
-                oldItem.title == newItem.title &&
-                oldItem.conversations?.firstOrNull()?.query ==
-                newItem.conversations?.firstOrNull()?.query
-        }
-    )
+    diffConfig ?: AsyncDifferConfig.Builder(ITEM_CALLBACK).build()
 ) {
     private var chatHistoryItemClickListener: OnChatHistoryItemClickListener? = null
     private lateinit var shareTargetAdapter: ChatShareTargetAdapter
@@ -291,5 +280,20 @@ class ChatHistoryAdapter(
 
     companion object {
         const val PAYLOAD_CHAT_SHARED = "PAYLOAD_CHAT_SHARED"
+
+        internal val ITEM_CALLBACK = DiffUtils.itemCallback<ChatHistory>(
+            areItemsTheSame = { oldItem, newItem ->
+                val oldId = oldItem._id
+                val newId = newItem._id
+                oldId != null && newId != null && oldId == newId
+            },
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem._rev == newItem._rev &&
+                    oldItem.lastUsed == newItem.lastUsed &&
+                    oldItem.title == newItem.title &&
+                    oldItem.conversations?.firstOrNull()?.query ==
+                    newItem.conversations?.firstOrNull()?.query
+            }
+        )
     }
 }
