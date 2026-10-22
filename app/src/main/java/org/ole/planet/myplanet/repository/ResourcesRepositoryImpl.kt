@@ -378,7 +378,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val relativePath = FileUtils.getResourceRelativePathFromUrl(url)
 
         if (localAddress.isNotBlank()) {
-            markResourceOfflineByLocalAddress(localAddress)
+            markResourceOfflineByLocalAddress(localAddress, resourceId)
         }
 
         if (resourceId.isNotBlank()) {
@@ -386,8 +386,9 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun markResourceOfflineByLocalAddress(localAddress: String) {
+    private suspend fun markResourceOfflineByLocalAddress(localAddress: String, resourceId: String) {
         val results = myLibraryDao.getByLocalAddress(localAddress)
+            .filter { resourceId.isBlank() || it.resourceId == resourceId }
         results.forEach { library ->
             library.resourceOffline = true
             library.downloadedRev = library._rev
