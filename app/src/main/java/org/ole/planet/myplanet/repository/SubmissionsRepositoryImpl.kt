@@ -588,7 +588,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             val isFinal = index == total - 1
             val newStatus = when {
                 isFinal && isExplicitSubmission && type == "survey" -> "complete"
-                isFinal && isExplicitSubmission -> "requires grading"
+                isFinal && isExplicitSubmission && isCorrect -> "requires grading"
                 else -> "pending"
             }
             val now = Date().time

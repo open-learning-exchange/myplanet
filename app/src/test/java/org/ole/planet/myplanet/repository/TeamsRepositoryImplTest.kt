@@ -432,6 +432,29 @@ class TeamsRepositoryImplTest {
     }
 
     @Test
+    fun `leaveTeam hands leadership to the remaining member before leaving`() = runTest(testDispatcher) {
+        val leader = MyTeam().apply { _id = "m1"; _rev = "1-a"; teamId = "team1"; userId = "leader"; docType = "membership"; isLeader = true }
+        val member = MyTeam().apply { _id = "m2"; _rev = "1-b"; teamId = "team1"; userId = "member"; docType = "membership" }
+        coEvery { teamDao.getByTeamIdAndDocType("team1", "membership") } returns listOf(leader, member)
+        coEvery { teamDao.getEligibleNextLeaderCandidates("team1", "leader") } returns listOf(member)
+        coEvery { userRepository.getUsersByIds(listOf("member")) } returns listOf(UserEntity(id = "member", name = "member"))
+
+        teamsRepository.leaveTeam("team1", "leader")
+
+        assertTrue(member.isLeader)
+        assertFalse(leader.isLeader)
+        assertTrue(leader.isDeletePending)
+    }
+
+    @Test
+    fun `isTeamLeader is false for a leader whose leave is pending`() = runTest(testDispatcher) {
+        val departed = MyTeam().apply { teamId = "team1"; userId = "leader"; docType = "membership"; isLeader = true; isDeletePending = true }
+        coEvery { teamDao.getByTeamIdAndDocType("team1", "membership") } returns listOf(departed)
+
+        assertFalse(teamsRepository.isTeamLeader("team1", "leader"))
+    }
+
+    @Test
     fun `createLocalResourceLink upserts resourceLink MyTeam row`() = runTest(testDispatcher) {
         val teamId = "team_1"
         val resourceId = "res_1"

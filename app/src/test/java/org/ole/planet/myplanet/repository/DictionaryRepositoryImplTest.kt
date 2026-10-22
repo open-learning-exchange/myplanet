@@ -5,6 +5,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -126,7 +127,7 @@ class DictionaryRepositoryImplTest {
         val inserted = AtomicBoolean(false)
         coEvery { dictionaryDao.count() } answers { if (inserted.get()) 1L else 0L }
         coEvery { dictionaryDao.insertAll(any()) } coAnswers {
-            delay(10)
+            delay(10.milliseconds)
             inserted.set(true)
         }
 
