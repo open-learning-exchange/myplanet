@@ -181,6 +181,18 @@ class MeetupTest {
     }
 
     @Test
+    fun `fromJson without userId keeps the existing row's attendance`() {
+        val meetupDoc = JsonObject().apply {
+            addProperty("_id", "meetup1")
+        }
+        val existingMeetup = Meetup().apply { userId = "user123" }
+
+        val meetup = Meetup.fromJson(meetupDoc, "", existingMeetup)
+
+        assertEquals("user123", meetup.userId)
+    }
+
+    @Test
     fun `getMyMeetUpIds returns json array of ids`() {
         val meetup1 = Meetup().apply { meetupId = "id1" }
         val meetup2 = Meetup().apply { meetupId = "id2" }

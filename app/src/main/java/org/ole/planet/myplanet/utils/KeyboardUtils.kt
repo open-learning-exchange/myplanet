@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utils
 
 import android.app.Activity
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -8,12 +9,14 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 
 object KeyboardUtils {
+    private const val TAG = "KeyboardUtils"
+
     fun hideSoftKeyboard(activity: Activity) {
         try {
             val inputMethodManager = activity.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
             inputMethodManager.hideSoftInputFromWindow(activity.currentFocus?.windowToken, 0)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "hideSoftKeyboard failed", e)
         }
     }
 
