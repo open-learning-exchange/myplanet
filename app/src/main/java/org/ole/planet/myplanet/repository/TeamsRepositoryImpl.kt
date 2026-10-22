@@ -878,7 +878,6 @@ class TeamsRepositoryImpl @Inject constructor(
         description: String,
         services: String,
         rules: String,
-        updatedBy: String?,
     ): Result<Boolean> {
         return runCatching {
             val team = getTeamEntityByAnyId(teamId) ?: return@runCatching false
@@ -886,8 +885,6 @@ class TeamsRepositoryImpl @Inject constructor(
             team.services = services
             team.rules = rules
             team.description = description
-            updatedBy?.let { team.createdBy = it }
-            team.limit = 12
             team.updated = true
             teamDao.upsert(team)
             true
