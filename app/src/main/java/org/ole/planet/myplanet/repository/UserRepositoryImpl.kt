@@ -1067,7 +1067,6 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertAchievementsFromSync(jsonArray: JsonArray) {
-        // Rows edited locally but not yet uploaded keep their local values instead of the server copy
         val locallyUpdatedIds = achievementDao.getUpdatedIds().toHashSet()
         val achievements = jsonArray.toSyncDocuments()
             .map { (_, doc) -> Achievement.fromJson(doc) }
