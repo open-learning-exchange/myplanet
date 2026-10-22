@@ -132,12 +132,14 @@ class ServerReachabilityProviderTest {
         val mockResponseAlt: Response = mockk(relaxed = true)
 
         val primaryLatch = CountDownLatch(1)
+        val primaryStarted = CountDownLatch(1)
 
         every { serverUrlMapper.processUrl(url) } returns ServerUrlMapper.UrlMapping(url, altUrl)
         every { okHttpClient.newCall(match { it.url.toString() == url || it.url.toString() == "$url/" }) } returns mockCallPrimary
         every { okHttpClient.newCall(match { it.url.toString() == altUrl || it.url.toString() == "$altUrl/" }) } returns mockCallAlt
 
         every { mockCallPrimary.execute() } answers {
+            primaryStarted.countDown()
             primaryLatch.await(5, TimeUnit.SECONDS)
             throw java.io.IOException("Canceled")
         }
@@ -145,7 +147,12 @@ class ServerReachabilityProviderTest {
             primaryLatch.countDown()
         }
 
-        every { mockCallAlt.execute() } returns mockResponseAlt
+        // Hold the alternative until the primary is in flight, otherwise it can win before
+        // the primary call exists and the primary is cancelled without ever reaching cancel().
+        every { mockCallAlt.execute() } answers {
+            primaryStarted.await(5, TimeUnit.SECONDS)
+            mockResponseAlt
+        }
         every { mockResponseAlt.isSuccessful } returns true
 
         val providerWithIo = ServerReachabilityProvider(
