@@ -515,7 +515,7 @@ class UserRepositoryImplTest {
             settings, sharedPrefManager, apiInterface, resourcesRepositoryLazy,
             mockk(relaxed = true), uploadToShelfService, context, configurationsRepository,
             appScope, dispatcherProvider, activitiesRepositoryLazy, eventsRepositoryLazy,
-            mockk(relaxed = true), achievementDao, userDao,
+            achievementDao, userDao,
             mockk(relaxed = true), deviceNameProvider
         )
         val jsonArray = JsonArray().apply {
