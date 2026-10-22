@@ -207,6 +207,30 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
+    fun `markResourceOfflineByUrl only marks the downloaded resource among rows sharing a file name`() = runTest {
+        val downloaded = MyLibrary().apply { id = "res1"; resourceId = "res1"; resourceLocalAddress = "video.mp4" }
+        val other = MyLibrary().apply { id = "res2"; resourceId = "res2"; resourceLocalAddress = "video.mp4" }
+        coEvery { myLibraryDao.getByLocalAddress("video.mp4") } returns listOf(downloaded, other)
+        coEvery { myLibraryDao.getByResourceId("res1") } returns downloaded
+
+        val url = "http://example.com/resources/res1/video.mp4"
+        mockkObject(FileUtils)
+        try {
+            every { FileUtils.getFileNameFromUrl(url) } returns "video.mp4"
+            every { FileUtils.getIdFromUrl(url) } returns "res1"
+            every { FileUtils.getResourceRelativePathFromUrl(url) } returns "video.mp4"
+
+            repository.markResourceOfflineByUrl(url)
+
+            assertTrue(downloaded.resourceOffline)
+            assertFalse(other.resourceOffline)
+            coVerify { myLibraryDao.upsertAll(listOf(downloaded)) }
+        } finally {
+            unmockkObject(FileUtils)
+        }
+    }
+
+    @Test
     fun `markResourceOfflineByUrl does not mark offline for a non-entry html asset`() = runTest {
         val library = MyLibrary().apply {
             id = "res1"

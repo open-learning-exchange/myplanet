@@ -231,7 +231,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 resourcesAccessViewModel.findByLocalAddress(it)
             } ?: emptyList()
 
-            val offlineItem = matchingItems.firstOrNull { it.isResourceOffline() }
+            val offlineItem = matchingItems.firstOrNull { it.resourceId == items.resourceId && it.isResourceOffline() }
             if (offlineItem != null) {
                 resourcesAccessViewModel.trackOpen(offlineItem)
                 ResourceOpener.openFileType(requireActivity(), offlineItem, "offline")
