@@ -27,6 +27,11 @@ class ResourcesListFilter {
         val locallyOfflineIds: Set<String>
     )
 
+    private data class MediumCriteria(
+        val canonicalSel: String,
+        val targetType: ResourcesMediaType?
+    )
+
     private var lastSignature: Signature? = null
 
     fun reset() {
@@ -62,50 +67,96 @@ class ResourcesListFilter {
         } else {
             null
         }
+        val precomputedMediums = if (criteria.mediums.isEmpty()) {
+            emptyList()
+        } else {
+            criteria.mediums.map { selected ->
+                val canonicalSel = ResourcesMediaType.canonicalMedium(selected)
+                val targetType = when (canonicalSel) {
+                    "audio" -> ResourcesMediaType.AUDIO
+                    "video" -> ResourcesMediaType.VIDEO
+                    "pdf" -> ResourcesMediaType.PDF
+                    "book" -> ResourcesMediaType.BOOK
+                    else -> null
+                }
+                MediumCriteria(canonicalSel, targetType)
+            }
+        }
         return searched.asSequence()
             .filter { model -> searchTagIds == null || model.tags.any { it.id in searchTagIds } }
-            .filter { model -> matchesFacets(model, criteria) }
+            .filter { model -> matchesFacets(model, criteria, precomputedMediums) }
             .filter { model -> matchesDownloadFilter(model, criteria.downloadFilterIndex, locallyOfflineIds) }
     }
 
-    private fun matchesFacets(model: ResourceListModel, criteria: ResourcesFilterCriteria): Boolean {
+    private fun matchesFacets(
+        model: ResourceListModel,
+        criteria: ResourcesFilterCriteria,
+        precomputedMediums: List<MediumCriteria>
+    ): Boolean {
         val library = model.library
-        val libSubjects = library.subject
-        val libLevels = library.level
-        val subject = criteria.subjects.isEmpty() || (libSubjects != null && criteria.subjects.all { critSub ->
-            libSubjects.any { libSub -> libSub.equals(critSub, ignoreCase = true) }
-        })
-        val level = criteria.levels.isEmpty() || (libLevels != null && criteria.levels.all { critLvl ->
-            libLevels.any { libLvl -> libLvl.equals(critLvl, ignoreCase = true) }
-        })
-        val language = criteria.languages.isEmpty() || criteria.languages.any { it.equals(library.language, ignoreCase = true) }
-        val medium = criteria.mediums.isEmpty() || matchesMedium(library, criteria.mediums)
-        return subject && level && language && medium
+
+        if (criteria.subjects.isNotEmpty()) {
+            val libSubjects = library.subject
+            if (libSubjects == null || !criteria.subjects.all { critSub ->
+                    libSubjects.any { libSub -> libSub.equals(critSub, ignoreCase = true) }
+                }) {
+                return false
+            }
+        }
+
+        if (criteria.levels.isNotEmpty()) {
+            val libLevels = library.level
+            if (libLevels == null || !criteria.levels.all { critLvl ->
+                    libLevels.any { libLvl -> libLvl.equals(critLvl, ignoreCase = true) }
+                }) {
+                return false
+            }
+        }
+
+        if (criteria.languages.isNotEmpty()) {
+            if (!criteria.languages.any { it.equals(library.language, ignoreCase = true) }) {
+                return false
+            }
+        }
+
+        if (precomputedMediums.isNotEmpty()) {
+            if (!matchesMedium(library, precomputedMediums)) {
+                return false
+            }
+        }
+
+        return true
     }
 
-    private fun matchesMedium(library: MyLibrary, selectedMediums: Set<String>): Boolean {
-        val classifiedType = ResourcesMediaType.classify(library)
-        val isNonBook = ResourcesMediaType.isExplicitNonBook(library)
+    private fun matchesMedium(library: MyLibrary, precomputedMediums: List<MediumCriteria>): Boolean {
+        var classifiedType: ResourcesMediaType? = null
+        var isNonBook: Boolean? = null
+        var libCanonical: String? = null
+        var libCanonicalSet = false
 
-        return selectedMediums.any { selected ->
-            val canonicalSel = ResourcesMediaType.canonicalMedium(selected)
-            val targetType = when (canonicalSel) {
-                "audio" -> ResourcesMediaType.AUDIO
-                "video" -> ResourcesMediaType.VIDEO
-                "pdf" -> ResourcesMediaType.PDF
-                "book" -> ResourcesMediaType.BOOK
-                else -> null
+        fun getClassified(): ResourcesMediaType =
+            classifiedType ?: ResourcesMediaType.classify(library).also { classifiedType = it }
+
+        fun getIsNonBook(): Boolean =
+            isNonBook ?: ResourcesMediaType.isExplicitNonBook(library).also { isNonBook = it }
+
+        fun getLibCanonical(): String? {
+            if (!libCanonicalSet) {
+                libCanonical = library.mediaType?.let { ResourcesMediaType.canonicalMedium(it) }
+                libCanonicalSet = true
             }
+            return libCanonical
+        }
 
-            if (targetType != null) {
-                if (targetType == ResourcesMediaType.BOOK) {
-                    classifiedType == ResourcesMediaType.BOOK && !isNonBook
+        return precomputedMediums.any { crit ->
+            if (crit.targetType != null) {
+                if (crit.targetType == ResourcesMediaType.BOOK) {
+                    getClassified() == ResourcesMediaType.BOOK && !getIsNonBook()
                 } else {
-                    classifiedType == targetType
+                    getClassified() == crit.targetType
                 }
             } else {
-                val libCanonical = library.mediaType?.let { ResourcesMediaType.canonicalMedium(it) }
-                libCanonical?.equals(canonicalSel, ignoreCase = true) == true
+                getLibCanonical()?.equals(crit.canonicalSel, ignoreCase = true) == true
             }
         }
     }

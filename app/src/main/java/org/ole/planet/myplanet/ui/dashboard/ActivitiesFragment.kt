@@ -44,7 +44,7 @@ class ActivitiesFragment : BaseBindingFragment<FragmentActivitiesBinding>(Fragme
                 this.textColor = textColor
                 valueFormatter = object : ValueFormatter() {
                     override fun getFormattedValue(value: Float): String {
-                        return getMonth(value.toInt())
+                        return getMonth(value.toInt() % 12)
                     }
                 }
             }

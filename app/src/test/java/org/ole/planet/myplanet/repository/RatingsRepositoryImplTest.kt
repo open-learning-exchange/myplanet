@@ -14,6 +14,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.RatingAggregate
@@ -162,6 +163,7 @@ class RatingsRepositoryImplTest {
         repository.insertRatingsFromSync(docs)
 
         coVerify(exactly = 1) { ratingDao.upsertAll(any()) }
+        coVerify(exactly = 1) { ratingDao.deleteUploadedWithoutServerId() }
         assertEquals(1, savedSlot.captured.size)
         assertEquals("rating1", savedSlot.captured[0].id)
         assertEquals("user1", savedSlot.captured[0].userId)
@@ -208,5 +210,13 @@ class RatingsRepositoryImplTest {
         // CursorWindow limit and crash getByType with SQLiteBlobTooBigException.
         org.junit.Assert.assertFalse(storedUser!!.contains("_attachments"))
         assertEquals("user1", savedSlot.captured[0].userId)
+    }
+
+    @Test
+    fun `markRatingUploaded passes server id and rev to dao`() = runTest {
+        coEvery { ratingDao.markUploaded("local", "server", "1-a") } returns 1
+
+        assertTrue(repository.markRatingUploaded("local", "server", "1-a"))
+        coVerify(exactly = 1) { ratingDao.markUploaded("local", "server", "1-a") }
     }
 }

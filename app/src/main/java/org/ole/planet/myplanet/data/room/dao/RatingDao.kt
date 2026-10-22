@@ -36,12 +36,23 @@ interface RatingDao {
     @Query("SELECT * FROM rating WHERE isUpdated = 1 AND (userId IS NULL OR userId NOT LIKE 'guest%')")
     suspend fun getPendingUploads(): List<Rating>
 
-    /** Returns the number of rows updated (0 means the local row was gone). */
     @Query("SELECT id FROM rating WHERE isUpdated = 1")
     suspend fun getUpdatedIds(): List<String>
 
     @Query("UPDATE rating SET isUpdated = 0 WHERE id = :id")
     suspend fun markUploaded(id: String): Int
+
+    @Query(
+        "UPDATE OR REPLACE rating SET " +
+            "id = COALESCE(NULLIF(:remoteId, ''), id), " +
+            "_id = COALESCE(NULLIF(:remoteId, ''), _id), " +
+            "_rev = COALESCE(NULLIF(:remoteRev, ''), _rev), " +
+            "isUpdated = 0 WHERE id = :id"
+    )
+    suspend fun markUploaded(id: String, remoteId: String?, remoteRev: String?): Int
+    
+    @Query("DELETE FROM rating WHERE _id IS NULL AND isUpdated = 0")
+    suspend fun deleteUploadedWithoutServerId()
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(item: Rating)

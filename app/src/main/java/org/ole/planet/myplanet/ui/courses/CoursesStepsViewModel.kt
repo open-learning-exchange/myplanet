@@ -79,11 +79,26 @@ class CoursesStepsViewModel @Inject constructor(
             )
 
             val notDownloaded = data.resources.filter { !it.isResourceOffline() }
-            var isDownloading = false
+
+            _uiState.value = CourseStepUiState(
+                step = data.step,
+                resources = data.resources,
+                stepExams = data.stepExams,
+                stepSurvey = data.stepSurvey,
+                courseTitle = title,
+                userHasCourse = data.userHasCourse,
+                hasExam = data.hasExam,
+                hasSurvey = data.hasSurvey,
+                markdownDescription = markdownContentWithLocalPaths,
+                user = user,
+                isDownloadingResources = false,
+                isLoading = false
+            )
+
             if (notDownloaded.isNotEmpty()) {
                 val serverAvailable = configurationsRepository.checkServerAvailability()
                 if (serverAvailable) {
-                    isDownloading = true
+                    _uiState.update { if (it.step?.id == data.step.id) it.copy(isDownloadingResources = true) else it }
                     viewModelScope.launch {
                         resourcesRepository.downloadResourcesPriority(notDownloaded)
                     }
@@ -102,21 +117,6 @@ class CoursesStepsViewModel @Inject constructor(
                     }
                 }
             }
-
-            _uiState.value = CourseStepUiState(
-                step = data.step,
-                resources = data.resources,
-                stepExams = data.stepExams,
-                stepSurvey = data.stepSurvey,
-                courseTitle = title,
-                userHasCourse = data.userHasCourse,
-                hasExam = data.hasExam,
-                hasSurvey = data.hasSurvey,
-                markdownDescription = markdownContentWithLocalPaths,
-                user = user,
-                isDownloadingResources = isDownloading,
-                isLoading = false
-            )
         }
     }
 
