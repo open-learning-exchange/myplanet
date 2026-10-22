@@ -302,7 +302,7 @@ object NotificationUtils {
             }
         }
 
-        private fun canShowNotification(type: String): Boolean {
+        fun canShowNotification(type: String): Boolean {
             if (!notificationManager.areNotificationsEnabled() || !preferences.getBoolean(KEY_ENABLED, true)) return false
             return when (type) {
                 TYPE_SURVEY -> preferences.getBoolean(KEY_SURVEY_ENABLED, true)
