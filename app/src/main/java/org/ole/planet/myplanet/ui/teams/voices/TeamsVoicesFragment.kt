@@ -198,7 +198,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     teamId = teamId,
                     isTeamLeaderFn = { onResult ->
                         viewLifecycleOwner.lifecycleScope.launch {
-                            val result = kotlinx.coroutines.withTimeoutOrNull(2000) {
+                            val result = kotlinx.coroutines.withTimeoutOrNull(2000.milliseconds) {
                                 viewModel.isTeamLeader(teamId, user?._id)
                             }
                             onResult(result ?: false)
