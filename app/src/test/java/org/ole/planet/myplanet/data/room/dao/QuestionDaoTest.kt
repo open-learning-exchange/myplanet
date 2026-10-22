@@ -36,6 +36,23 @@ class QuestionDaoTest {
     }
 
     @Test
+    fun deleteStaleQuestions_removesQuestionsNoLongerInTheSyncedExam() = runBlocking {
+        questionDao.upsertAll(
+            listOf(
+                ExamQuestion(id = "q1", examId = "exam1"),
+                ExamQuestion(id = "q2", examId = "exam1"),
+                ExamQuestion(id = "q3", examId = "exam1"),
+                ExamQuestion(id = "other", examId = "exam2"),
+            )
+        )
+
+        questionDao.deleteStaleQuestions(listOf(ExamQuestion(id = "q1", examId = "exam1"), ExamQuestion(id = "q3", examId = "exam1")))
+
+        assertEquals(listOf("q1", "q3"), questionDao.getByExamId("exam1").map { it.id }.sorted())
+        assertEquals(listOf("other"), questionDao.getByExamId("exam2").map { it.id })
+    }
+
+    @Test
     fun getByIds_handlesMoreThan1000IdsAndDuplicates() = runBlocking {
         val questions = (0 until 1200).map { i ->
             ExamQuestion(id = "question_$i", examId = "exam_$i")

@@ -402,6 +402,7 @@ class SurveysRepositoryImpl @Inject constructor(
         }
         if (questions.isNotEmpty()) {
             questionDao.upsertAll(questions.mapNotNull { it })
+            questionDao.deleteStaleQuestions(questions)
         }
     }
 
