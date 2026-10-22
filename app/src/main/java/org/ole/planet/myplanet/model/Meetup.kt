@@ -25,12 +25,6 @@ import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
-/**
- * Room replacement for the former `Meetup` model. Meetups are both synced (pulled from
- * the server) and uploaded (locally created/edited meetups). All fields are simple scalars, so no
- * type converters are required. Persistence goes through
- * [org.ole.planet.myplanet.data.room.dao.MeetupDao].
- */
 @Entity(tableName = "meetup", indices = [Index("meetupId"), Index("teamId"), Index("userId")])
 open class Meetup {
     @PrimaryKey
@@ -59,12 +53,6 @@ open class Meetup {
     var updated: Boolean = false
 
     companion object {
-        /**
-         * Builds an unmanaged meetup from a CouchDB document. Created date, recurring number and
-         * sync/source metadata come from the document; [existingMeetup] only fills them in when the
-         * document lacks them, and carries over the local `updated` flag. A blank [userId] keeps
-         * the existing row's attendance, since sync pulls carry no user and would otherwise undo a join.
-         */
         fun fromJson(meetupDoc: JsonObject, userId: String?, existingMeetup: Meetup?): Meetup {
             val kDoc = meetupDoc.toKotlinx().jsonObject
             val meetup = Meetup()
