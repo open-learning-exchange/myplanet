@@ -180,7 +180,7 @@ class TeamViewModel @Inject constructor(
     }
 
     fun searchTeams(query: String) {
-        currentSearchQuery = query
+        currentSearchQuery = query.trim()
         applyFilters(currentTeamsDetails, currentSearchQuery)
     }
 
