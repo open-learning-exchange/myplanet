@@ -114,8 +114,35 @@ class ActivitiesViewModelTest {
         val result = viewModel.computeMonthlyCounts(logins, startMillis, endMillis)
 
         assertEquals(2, result.size)
-        assertEquals(2, result[Calendar.JANUARY])
-        assertEquals(1, result[Calendar.MARCH])
+        assertEquals(2, result[2026 * 12 + Calendar.JANUARY])
+        assertEquals(1, result[2026 * 12 + Calendar.MARCH])
+    }
+
+    @Test
+    fun computeMonthlyCounts_keepsSameMonthOfDifferentYearsApartInChronologicalOrder() = runTest(testDispatcher) {
+        val calendar = Calendar.getInstance()
+        calendar.set(2025, Calendar.OCTOBER, 25, 12, 0, 0)
+        val lastOctober = calendar.timeInMillis
+        calendar.set(2026, Calendar.JANUARY, 10, 12, 0, 0)
+        val january = calendar.timeInMillis
+        calendar.set(2026, Calendar.OCTOBER, 5, 12, 0, 0)
+        val thisOctober = calendar.timeInMillis
+
+        val logins = listOf(
+            OfflineActivity().apply { id = "1"; userName = "test"; loginTime = thisOctober },
+            OfflineActivity().apply { id = "2"; userName = "test"; loginTime = lastOctober },
+            OfflineActivity().apply { id = "3"; userName = "test"; loginTime = january }
+        )
+
+        val viewModel = ActivitiesViewModel(userRepository, activitiesRepository, dispatcherProvider)
+
+        val result = viewModel.computeMonthlyCounts(logins, lastOctober, thisOctober)
+
+        assertEquals(
+            listOf(2025 * 12 + Calendar.OCTOBER, 2026 * 12 + Calendar.JANUARY, 2026 * 12 + Calendar.OCTOBER),
+            result.keys.toList()
+        )
+        assertTrue(result.values.all { it == 1 })
     }
 
     @Test
@@ -125,7 +152,7 @@ class ActivitiesViewModelTest {
             coEvery { name } returns userName
         }
         val loginTime = Calendar.getInstance().timeInMillis
-        val currentMonth = Calendar.getInstance().get(Calendar.MONTH)
+        val currentMonth = Calendar.getInstance().let { it.get(Calendar.YEAR) * 12 + it.get(Calendar.MONTH) }
         val mockActivities = listOf(
             OfflineActivity().apply { id = "1"; this.userName = userName; this.loginTime = loginTime }
         )

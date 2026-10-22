@@ -84,13 +84,15 @@ class RemovedLogDaoTest {
     @Test
     fun deleteByTypeUserAndDocsChunked_1200Docs_deletesAllAndLeavesOtherTypeAndUser() = runBlocking {
         val docIds = (1..1200).map { "doc_$it" }
-        val logsToDelete = docIds.map { docId ->
+        val targetDocIds = listOf("doc_1", "doc_900", "doc_901", "doc_1200")
+        val logsToDelete = targetDocIds.map { docId ->
             createLog(id = "del_$docId", type = "courses", userId = "user1", docId = docId)
         }
+        val survivorLog = createLog(id = "survivor", type = "courses", userId = "user1", docId = "doc_9999")
         val otherUserLog = createLog(id = "other_user", type = "courses", userId = "user2", docId = "doc_1")
         val otherTypeLog = createLog(id = "other_type", type = "resources", userId = "user1", docId = "doc_1")
 
-        removedLogDao.insertAll(logsToDelete + listOf(otherUserLog, otherTypeLog))
+        removedLogDao.insertAll(logsToDelete + listOf(survivorLog, otherUserLog, otherTypeLog))
 
         removedLogDao.deleteByTypeUserAndDocsChunked("courses", "user1", docIds)
 
@@ -98,7 +100,7 @@ class RemovedLogDaoTest {
         val user2CourseDocs = removedLogDao.getRemovedDocIds("courses", "user2")
         val user1ResourceDocs = removedLogDao.getRemovedDocIds("resources", "user1")
 
-        assertTrue(user1CourseDocs.isEmpty())
+        assertEquals(listOf("doc_9999"), user1CourseDocs)
         assertEquals(listOf("doc_1"), user2CourseDocs)
         assertEquals(listOf("doc_1"), user1ResourceDocs)
     }
@@ -108,10 +110,12 @@ class RemovedLogDaoTest {
         removedLogDao.deleteByTypeUserAndDocsChunked("courses", "user1", emptyList())
 
         val docIds = (1..1000).map { "doc_$it" }
-        val logsToDelete = docIds.map { docId ->
+        val targetDocIds = listOf("doc_1", "doc_900", "doc_901", "doc_1000")
+        val logsToDelete = targetDocIds.map { docId ->
             createLog(id = "del_$docId", type = "courses", userId = "user1", docId = docId)
         }
-        removedLogDao.insertAll(logsToDelete)
+        val survivorLog = createLog(id = "survivor", type = "courses", userId = "user1", docId = "doc_9999")
+        removedLogDao.insertAll(logsToDelete + listOf(survivorLog))
 
         val docIdsWithDuplicate = docIds + "doc_1"
         assertEquals(1001, docIdsWithDuplicate.size)
@@ -119,19 +123,21 @@ class RemovedLogDaoTest {
         removedLogDao.deleteByTypeUserAndDocsChunked("courses", "user1", docIdsWithDuplicate)
 
         val user1CourseDocs = removedLogDao.getRemovedDocIds("courses", "user1")
-        assertTrue(user1CourseDocs.isEmpty())
+        assertEquals(listOf("doc_9999"), user1CourseDocs)
     }
 
     @Test
     fun deleteByTypeUserAndDocsChunked_nullUserId_1200Docs_deletesAllMatchingAndLeavesNonNullUser() = runBlocking {
         val docIds = (1..1200).map { "doc_$it" }
-        val logsToDelete = docIds.map { docId ->
+        val targetDocIds = listOf("doc_1", "doc_900", "doc_901", "doc_1200")
+        val logsToDelete = targetDocIds.map { docId ->
             createLog(id = "del_null_$docId", type = "courses", userId = null, docId = docId)
         }
+        val survivorLog = createLog(id = "survivor", type = "courses", userId = null, docId = "doc_9999")
         val nonNullUserLog = createLog(id = "non_null_user", type = "courses", userId = "user1", docId = "doc_1")
         val otherTypeNullUserLog = createLog(id = "other_type_null", type = "resources", userId = null, docId = "doc_1")
 
-        removedLogDao.insertAll(logsToDelete + listOf(nonNullUserLog, otherTypeNullUserLog))
+        removedLogDao.insertAll(logsToDelete + listOf(survivorLog, nonNullUserLog, otherTypeNullUserLog))
 
         removedLogDao.deleteByTypeUserAndDocsChunked("courses", null, docIds)
 
@@ -139,7 +145,7 @@ class RemovedLogDaoTest {
         val nonNullUserCourseDocs = removedLogDao.getRemovedDocIds("courses", "user1")
         val nullUserResourceDocs = removedLogDao.getRemovedDocIds("resources", null)
 
-        assertTrue(nullUserCourseDocs.isEmpty())
+        assertEquals(listOf("doc_9999"), nullUserCourseDocs)
         assertEquals(listOf("doc_1"), nonNullUserCourseDocs)
         assertEquals(listOf("doc_1"), nullUserResourceDocs)
     }

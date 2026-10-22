@@ -508,8 +508,7 @@ class CoursesRepositoryImpl @Inject constructor(
                         if (!ob.has("percentage")) ob.addProperty("percentage", 0)
                     } else {
                         ob.addProperty("completed", answers.size == questionCount)
-                        val percentage = (answers.size.toDouble() / questionCount) * 100
-                        ob.addProperty("percentage", percentage)
+                        ob.addProperty("percentage", answers.size * 100 / questionCount)
                     }
                     ob.addProperty("status", submission.status)
                 }
