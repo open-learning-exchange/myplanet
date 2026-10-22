@@ -209,7 +209,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         time.setOnClickListener {
             val timePickerDialog = TimePickerDialog(
                 activity, { _, hourOfDay, minute ->
-                    time.text = String.format(Locale.getDefault(), "%02d:%02d", hourOfDay, minute) },
+                    time.text = String.format(Locale.US, "%02d:%02d", hourOfDay, minute) },
                 c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true)
             timePickerDialog.show()
         }

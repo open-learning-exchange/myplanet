@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsMembersRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 
 data class RequestsUiState(
     val members: List<UserEntity> = emptyList(),
@@ -49,7 +49,7 @@ sealed interface MemberActionResult {
 @HiltViewModel
 class RequestsViewModel @Inject constructor(
     private val teamsRepository: TeamsMembersRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserReadRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RequestsUiState())

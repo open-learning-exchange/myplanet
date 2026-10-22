@@ -289,8 +289,7 @@ class TeamViewModel @Inject constructor(
         description: String,
         services: String,
         rules: String,
-        category: String?,
-        updatedBy: String?
+        category: String?
     ): TeamActionResult {
         val teamTypeForValidation = if (category == "enterprise") "enterprise" else "team"
         if (teamsRepository.isTeamNameExists(name, teamTypeForValidation, teamId)) {
@@ -303,7 +302,6 @@ class TeamViewModel @Inject constructor(
             description = description,
             services = services,
             rules = rules,
-            updatedBy = updatedBy,
         ).fold(
             onSuccess = { updated ->
                 if (updated) {

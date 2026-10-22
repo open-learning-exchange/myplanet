@@ -759,7 +759,7 @@
     <string name="deadline_is_required">La date limite est requise</string>
     <string name="updated">mis à jour</string>
     <string name="added">ajouté</string>
-    <string name="task_s_successfully">Tâche %s ajoutée avec succès</string>
+    <string name="task_s_successfully">Tâche %s avec succès</string>
     <string name="task_deleted_successfully">Tâche supprimée avec succès</string>
     <string name="requested">Demandé</string>
     <string name="left_team">A quitté l\'équipe</string>
