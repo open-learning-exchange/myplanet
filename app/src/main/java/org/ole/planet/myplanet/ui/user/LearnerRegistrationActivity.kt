@@ -58,7 +58,7 @@ class LearnerRegistrationActivity : BaseActivity() {
 
     private fun collectRegistrationInfo(): LearnerRegistrationInfo {
         val info = LearnerRegistrationInfo(
-            binding.etUsername.text.toString(),
+            binding.etUsername.text.toString().lowercase(),
             binding.etPassword.text.toString(),
             binding.etRePassword.text.toString(),
             binding.etFname.text.toString(),

@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
@@ -28,7 +29,7 @@ fun LoginActivity.showGuestLoginDialog(viewModel: LoginViewModel) {
                 binding.etUserName.setSelection(lowercaseText.length)
             }
         }
-        .debounce(300)
+        .debounce(300.milliseconds)
         .onEach { s ->
             val input = s?.toString() ?: ""
             lifecycleScope.launch {

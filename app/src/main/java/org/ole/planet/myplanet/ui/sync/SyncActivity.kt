@@ -151,7 +151,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initSyncConfigurationCoordinator()
-        collectWhenStarted(syncManager.syncStatus.sample(SYNC_STATUS_SAMPLE_MS)) { status ->
+        collectWhenStarted(syncManager.syncStatus.sample(SYNC_STATUS_SAMPLE_MS.milliseconds)) { status ->
             if (status == lastSyncStatus) return@collectWhenStarted
             lastSyncStatus = status
             when (status) {
@@ -697,6 +697,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
         runOnUiThread {
+            saveSyncInfoToPreference()
+            serverDialogBinding?.let { prefData.setCustomDeviceName(it.deviceName.text.toString()) }
             dialog.dismiss()
 
             processedUrl = if (isAlternativeUrl) {

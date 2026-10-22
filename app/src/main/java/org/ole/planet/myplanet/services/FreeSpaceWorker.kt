@@ -14,17 +14,23 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @HiltWorker
 class FreeSpaceWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted workerParams: WorkerParameters,
     private val resourcesRepository: ResourcesRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val timeProvider: TimeProvider
 ) : CoroutineWorker(context, workerParams) {
 
     private var deletedFiles = 0
     private var freedBytes = 0L
+
+    private var lastEmitTimeMs = -PROGRESS_INTERVAL_MS
+    private var lastEmittedDeletedFiles = 0
+    private var lastEmittedFreedBytes = 0L
 
     override suspend fun doWork(): Result {
         return try {
@@ -54,6 +60,15 @@ class FreeSpaceWorker @AssistedInject constructor(
                 }
             }
 
+            if (!isStopped && (deletedFiles != lastEmittedDeletedFiles || freedBytes != lastEmittedFreedBytes)) {
+                setProgress(workDataOf(
+                    "deletedFiles" to deletedFiles,
+                    "freedBytes" to freedBytes
+                ))
+                lastEmittedDeletedFiles = deletedFiles
+                lastEmittedFreedBytes = freedBytes
+            }
+
             Result.success(workDataOf("deletedFiles" to deletedFiles, "freedBytes" to freedBytes))
         } catch (e: CancellationException) {
             throw e
@@ -72,12 +87,15 @@ class FreeSpaceWorker @AssistedInject constructor(
                 deletedFiles++
                 freedBytes += length
 
-                // Report progress every 10 files or so to avoid spamming updates
-                if (deletedFiles % 10 == 0) {
-                     setProgress(workDataOf(
-                         "deletedFiles" to deletedFiles,
-                         "freedBytes" to freedBytes
-                     ))
+                val now = timeProvider.elapsedRealtime()
+                if (now - lastEmitTimeMs >= PROGRESS_INTERVAL_MS) {
+                    setProgress(workDataOf(
+                        "deletedFiles" to deletedFiles,
+                        "freedBytes" to freedBytes
+                    ))
+                    lastEmitTimeMs = now
+                    lastEmittedDeletedFiles = deletedFiles
+                    lastEmittedFreedBytes = freedBytes
                 }
             }
         }
@@ -87,5 +105,6 @@ class FreeSpaceWorker @AssistedInject constructor(
         private const val TAG = "FreeSpaceWorker"
         private const val CV_DIR_NAME = "cv"
         private const val MARK_BATCH_SIZE = 25
+        private const val PROGRESS_INTERVAL_MS = 500L
     }
 }
