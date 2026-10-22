@@ -136,7 +136,7 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
                 if (team == null) {
                     createNewTeam(name, description, services, rules, selectedTeamType, userModel, dialog, failureMessage)
                 } else {
-                    updateExistingTeam(team, name, description, services, rules, userModel, dialog, failureMessage)
+                    updateExistingTeam(team, name, description, services, rules, dialog, failureMessage)
                 }
             }
         }
@@ -187,7 +187,7 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
 
     private suspend fun updateExistingTeam(
         team: TeamDetails, name: String, description: String, services: String, rules: String,
-        userModel: UserEntity, dialog: AlertDialog, failureMessage: String
+        dialog: AlertDialog, failureMessage: String
     ) {
         val targetTeamId = team._id ?: team.teamId
         if (targetTeamId.isNullOrBlank()) {
@@ -200,8 +200,7 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
             description = description,
             services = services,
             rules = rules,
-            category = type,
-            updatedBy = userModel._id
+            category = type
         )
         when (result) {
             is TeamActionResult.NameExists -> {

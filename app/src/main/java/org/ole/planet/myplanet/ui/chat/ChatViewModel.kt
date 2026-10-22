@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.repository.ChatResult
 import org.ole.planet.myplanet.repository.ChatSearchMode
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.TeamsShareRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 import org.ole.planet.myplanet.repository.VoicesShareRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.ChatSearch
@@ -53,7 +53,7 @@ data class ChatUiState(
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
-    private val userRepository: UserRepository,
+    private val userRepository: UserReadRepository,
     private val teamsRepository: TeamsShareRepository,
     private val voicesRepository: VoicesShareRepository,
     private val dispatcherProvider: DispatcherProvider,
