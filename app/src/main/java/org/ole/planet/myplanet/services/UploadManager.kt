@@ -118,11 +118,12 @@ class UploadManager @Inject constructor(
     private suspend fun uploadAttachments(items: List<UploadedItem>, listener: OnSuccessListener?) {
         if (items.isEmpty()) return
         val attachmentListener = listener ?: OnSuccessListener { }
-        val libraryIds = items.map { it.localId }
+        
+        val libraryIds = items.flatMap { listOf(it.localId, it.remoteId) }
         val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds)
         val libMap = libraries.associateBy { it.id }
         items.forEach { item ->
-            libMap[item.localId]?.let { library ->
+            (libMap[item.localId] ?: libMap[item.remoteId])?.let { library ->
                 uploadAttachment(item.remoteId, item.remoteRev, library, attachmentListener)
             }
         }
