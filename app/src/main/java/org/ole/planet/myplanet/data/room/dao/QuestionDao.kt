@@ -24,4 +24,11 @@ interface QuestionDao {
     }
     @Query("SELECT COUNT(*) FROM exam_questions WHERE examId = :examId") suspend fun countByExamId(examId: String): Int
     @Upsert suspend fun upsertAll(items: List<ExamQuestion>)
+    @Query("DELETE FROM exam_questions WHERE examId = :examId AND id NOT IN (:keepIds)") suspend fun deleteStaleInternal(examId: String, keepIds: List<String>)
+
+    suspend fun deleteStaleQuestions(questions: List<ExamQuestion>) {
+        questions.groupBy { it.examId }.forEach { (examId, examQuestions) ->
+            if (examId != null) deleteStaleInternal(examId, examQuestions.map { it.id }.distinct())
+        }
+    }
 }
