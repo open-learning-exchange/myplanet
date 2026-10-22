@@ -9,6 +9,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -55,16 +56,11 @@ class SubmissionsFragment : BaseBindingFragment<FragmentMySubmissionBinding>(Fra
 
         binding.etSearch.textChanges()
             .drop(1)
-            .debounce(300)
+            .debounce(300.milliseconds)
             .distinctUntilChanged()
             .onEach { text -> viewModel.setFilter(type ?: "", text?.toString() ?: "") }
             .launchIn(viewLifecycleOwner.lifecycleScope)
         showHideRadioButton()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        // Filter is already set in onViewCreated and maintained by ViewModel
     }
 
     private fun showHideRadioButton() {

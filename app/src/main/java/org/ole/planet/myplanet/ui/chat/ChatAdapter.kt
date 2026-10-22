@@ -210,10 +210,4 @@ class ChatAdapter(
             holder.cancelAnimation?.invoke()
         }
     }
-
-    companion object {
-        const val RESPONSE_SOURCE_SHARED_VIEW_MODEL = ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL
-        const val RESPONSE_SOURCE_NETWORK = ChatMessage.RESPONSE_SOURCE_NETWORK
-        const val RESPONSE_SOURCE_UNKNOWN = ChatMessage.RESPONSE_SOURCE_UNKNOWN
-    }
 }

@@ -27,7 +27,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.CourseDao
 import org.ole.planet.myplanet.data.room.dao.CourseStepDao
@@ -59,7 +58,6 @@ class TeamsRepositoryImplTest {
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = mockk()
-    private val apiInterfaceMock = mockk<ApiInterface>(relaxed = true)
     private val teamLogDao: TeamLogDao = mockk(relaxed = true)
     private val teamTaskDao: TeamTaskDao = mockk(relaxed = true)
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
@@ -96,7 +94,7 @@ class TeamsRepositoryImplTest {
             serverUrlMapper,
             dispatcherProvider,
             userRepository,
-            dagger.Lazy { mockk<ResourcesRepository>(relaxed = true) },
+            { mockk<ResourcesRepository>(relaxed = true) },
             teamLogDao,
             teamTaskDao,
             myLibraryDao,
@@ -144,7 +142,7 @@ class TeamsRepositoryImplTest {
     @Test
     fun `test recordTeamActivity delegates to syncTeamActivities`() = runTest(testDispatcher) {
         io.mockk.mockkObject(org.ole.planet.myplanet.MainApplication.Companion)
-        coEvery { org.ole.planet.myplanet.MainApplication.Companion.isServerReachable(any()) } returns true
+        coEvery { org.ole.planet.myplanet.MainApplication.isServerReachable(any()) } returns true
 
         coEvery { uploadManager.uploadResource(any()) } returns Unit
         coEvery { uploadManager.uploadTeams() } returns Unit
@@ -164,7 +162,7 @@ class TeamsRepositoryImplTest {
     @Test
     fun `test syncTeamActivities uses dispatcherProvider io`() = runTest(testDispatcher) {
         io.mockk.mockkObject(org.ole.planet.myplanet.MainApplication.Companion)
-        coEvery { org.ole.planet.myplanet.MainApplication.Companion.isServerReachable(any()) } returns true
+        coEvery { org.ole.planet.myplanet.MainApplication.isServerReachable(any()) } returns true
 
         coEvery { uploadManager.uploadResource(any()) } returns Unit
         coEvery { uploadManager.uploadTeams() } returns Unit
@@ -331,7 +329,7 @@ class TeamsRepositoryImplTest {
     fun `serializeTeamActivities returns correctly serialized JsonObject`() {
         val mockContext = mockk<android.content.Context>(relaxed = true)
         io.mockk.mockkObject(org.ole.planet.myplanet.MainApplication.Companion)
-        every { org.ole.planet.myplanet.MainApplication.Companion.context } returns mockContext
+        every { org.ole.planet.myplanet.MainApplication.context } returns mockContext
 
         io.mockk.mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "test-android-id"
@@ -380,7 +378,7 @@ class TeamsRepositoryImplTest {
     fun `serializeTeamActivities omits _rev and _id when _rev is empty`() {
         val mockContext = mockk<android.content.Context>(relaxed = true)
         io.mockk.mockkObject(org.ole.planet.myplanet.MainApplication.Companion)
-        every { org.ole.planet.myplanet.MainApplication.Companion.context } returns mockContext
+        every { org.ole.planet.myplanet.MainApplication.context } returns mockContext
 
         io.mockk.mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "test-android-id"
@@ -429,6 +427,29 @@ class TeamsRepositoryImplTest {
         assertEquals(30, saved.captured.limit)
         assertEquals("founder", saved.captured.createdBy)
         assertTrue(saved.captured.updated)
+    }
+
+    @Test
+    fun `leaveTeam hands leadership to the remaining member before leaving`() = runTest(testDispatcher) {
+        val leader = MyTeam().apply { _id = "m1"; _rev = "1-a"; teamId = "team1"; userId = "leader"; docType = "membership"; isLeader = true }
+        val member = MyTeam().apply { _id = "m2"; _rev = "1-b"; teamId = "team1"; userId = "member"; docType = "membership" }
+        coEvery { teamDao.getByTeamIdAndDocType("team1", "membership") } returns listOf(leader, member)
+        coEvery { teamDao.getEligibleNextLeaderCandidates("team1", "leader") } returns listOf(member)
+        coEvery { userRepository.getUsersByIds(listOf("member")) } returns listOf(UserEntity(id = "member", name = "member"))
+
+        teamsRepository.leaveTeam("team1", "leader")
+
+        assertTrue(member.isLeader)
+        assertFalse(leader.isLeader)
+        assertTrue(leader.isDeletePending)
+    }
+
+    @Test
+    fun `isTeamLeader is false for a leader whose leave is pending`() = runTest(testDispatcher) {
+        val departed = MyTeam().apply { teamId = "team1"; userId = "leader"; docType = "membership"; isLeader = true; isDeletePending = true }
+        coEvery { teamDao.getByTeamIdAndDocType("team1", "membership") } returns listOf(departed)
+
+        assertFalse(teamsRepository.isTeamLeader("team1", "leader"))
     }
 
     @Test

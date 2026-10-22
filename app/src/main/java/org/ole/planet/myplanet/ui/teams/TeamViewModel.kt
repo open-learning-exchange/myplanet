@@ -59,7 +59,7 @@ class TeamViewModel @Inject constructor(
     private val _memberCount = MutableStateFlow<Int?>(null)
     val memberCount: StateFlow<Int?> = _memberCount.asStateFlow()
 
-    private val _joinState = MutableStateFlow<TeamJoinState>(TeamJoinState.UNKNOWN)
+    private val _joinState = MutableStateFlow(TeamJoinState.UNKNOWN)
     val joinState: StateFlow<TeamJoinState> = _joinState.asStateFlow()
 
     fun getTeamUpdateFlow() = realtimeSyncManager.updatesFor("teams")

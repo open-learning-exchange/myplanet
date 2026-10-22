@@ -91,14 +91,6 @@ enum class TaskStatus(val value: String) {
     TODO("to_do"),
     IN_PROGRESS("in_progress"),
     COMPLETED("completed");
-
-    companion object {
-        fun fromValue(value: String?): TaskStatus = when (value) {
-            COMPLETED.value -> COMPLETED
-            IN_PROGRESS.value -> IN_PROGRESS
-            else -> TODO
-        }
-    }
 }
 
 private const val ARCHIVED_STATUS = "archived"

@@ -106,9 +106,14 @@ class FeedbackRepositoryImpl @Inject constructor(
 
     override suspend fun insertFeedbackList(jsonObjects: List<JsonObject>) {
         val ids = jsonObjects.map { GsonUtils.getString("_id", it) }
-        val existingById = feedbackDao.getByIds(ids).associateBy { it.id }
+        val rows = (feedbackDao.getByIds(ids) + feedbackDao.getByRemoteIds(ids)).distinctBy { it.id }
+        val existingByRemoteId = rows.groupBy { it._id ?: it.id }.mapValues { (remoteId, matches) ->
+            matches.firstOrNull { !it.isUploaded } ?: matches.firstOrNull { it.id != remoteId } ?: matches.first()
+        }
+        val duplicateIds = rows.filter { it.id != existingByRemoteId[it._id ?: it.id]?.id }.map { it.id }
+        if (duplicateIds.isNotEmpty()) feedbackDao.deleteByIds(duplicateIds)
         feedbackDao.upsertAll(
-            jsonObjects.zip(ids) { json, id -> mapToFeedback(json, existingById[id], id) }
+            jsonObjects.zip(ids) { json, id -> mapToFeedback(json, existingByRemoteId[id], id) }
         )
     }
 
@@ -119,7 +124,7 @@ class FeedbackRepositoryImpl @Inject constructor(
     private fun mapToFeedback(act: JsonObject, existing: Feedback?, idStr: String): Feedback {
         val hasPendingLocalChange = existing?.isUploaded == false
         return Feedback().apply {
-            id = idStr
+            id = existing?.id ?: idStr
             _id = idStr
             title = GsonUtils.getString("title", act)
             source = GsonUtils.getString("source", act)

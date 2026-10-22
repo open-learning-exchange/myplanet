@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.health
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -79,11 +80,11 @@ class HealthViewModelTest {
         val record2 = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
 
         coEvery { userRepository.getUserById("1") } coAnswers {
-            delay(1000)
+            delay(1000.milliseconds)
             user1
         }
         coEvery { userRepository.getUserById("2") } coAnswers {
-            delay(1000)
+            delay(1000.milliseconds)
             user2
         }
         coEvery { healthRepository.getPatientHealthRecords("2", user2) } returns record2
@@ -221,7 +222,6 @@ class HealthViewModelTest {
 
     @Test
     fun `searchPatients with non-blank query calls searchUsers once and getUsersSortedBy zero times`() = runTest {
-        val query = "John"
         val patients = listOf(UserEntity().apply { id = "2"; name = "John Doe" })
         coEvery { userRepository.searchUsers("John", "joinDate", true) } returns patients
 
@@ -303,7 +303,7 @@ class HealthViewModelTest {
         var reads = 0
         coEvery { userRepository.getUserById("1") } coAnswers {
             reads++
-            delay(500)
+            delay(500.milliseconds)
             if (reads == 1) staleUser else freshUser
         }
         coEvery { healthRepository.getPatientHealthRecords("1", any()) } returns record
@@ -331,7 +331,7 @@ class HealthViewModelTest {
         val record = HealthRecord(mockk(), mockk(), emptyList(), emptyMap())
 
         coEvery { userRepository.getUserById("1") } coAnswers {
-            delay(500)
+            delay(500.milliseconds)
             user
         }
         coEvery { healthRepository.getPatientHealthRecords("1", user) } returns record
