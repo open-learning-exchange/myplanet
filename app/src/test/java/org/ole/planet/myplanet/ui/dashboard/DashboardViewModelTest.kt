@@ -6,6 +6,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -95,7 +96,7 @@ class DashboardViewModelTest {
     @Test
     fun testSyncKeyId_preventOverlappingCalls() = runTest {
         coEvery { syncRepository.syncDashboardKeyId(any()) } coAnswers {
-            kotlinx.coroutines.delay(100)
+            kotlinx.coroutines.delay(100.milliseconds)
             SyncUiState.Success(null)
         }
 

@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -619,6 +620,25 @@ class SubmissionsRepositoryImplTest {
         assertTrue(result)
         coVerify { answerDao.upsertAll(match { it.single().submissionId == "submission1" && it.single().value == "answer text" }) }
         coVerify { submissionDao.updateStatusAndLastUpdate("submission1", "complete", any()) }
+    }
+
+    @Test
+    fun `saveExamAnswer keeps an exam pending when the final answer is wrong`() = runTest {
+        val question = ExamQuestion().apply {
+            id = "question1"; examId = "exam1"; type = "select"
+            choices = """[{"id":"a","text":"Right"},{"id":"b","text":"Wrong"}]"""
+            correctChoiceList = listOf("Right")
+        }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1" }
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1", userId = "user1")
+
+        val result = repository.saveExamAnswer(
+            ExamAnswerData(submission, question, "b", null, null, false, "exam", 0, 1, true, "user1")
+        )
+
+        assertFalse(result)
+        coVerify { submissionDao.updateStatusAndLastUpdate("submission1", "pending", any()) }
+        coVerify(exactly = 0) { submissionDao.updateStatusAndLastUpdate("submission1", "requires grading", any()) }
     }
 
     @Test

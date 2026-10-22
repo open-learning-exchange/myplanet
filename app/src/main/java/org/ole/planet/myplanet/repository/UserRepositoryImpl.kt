@@ -18,6 +18,7 @@ import java.util.UUID
 import java.util.regex.Pattern
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -611,7 +612,7 @@ class UserRepositoryImpl @Inject constructor(
 
     private suspend fun saveUserToDb(id: String, obj: JsonObject): Result<UserEntity?> {
         return try {
-            val userModel = withTimeout(20000) {
+            val userModel = withTimeout(20000.milliseconds) {
                 val response = apiInterface.getJsonObject(
                     UrlUtils.header,
                     "${UrlUtils.getUrl()}/_users/$id"
