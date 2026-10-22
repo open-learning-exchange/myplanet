@@ -373,6 +373,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         val spinnerArrayAdapter = ArrayAdapter(this, R.layout.spinner_item, list)
         spinnerArrayAdapter.setDropDownViewResource(R.layout.spinner_item)
         spinner.adapter = spinnerArrayAdapter
+        spinner.setSelection(syncTimeInterval.indexOf(prefData.getAutoSyncInterval()).coerceAtLeast(0))
     }
 
     private fun saveSyncInfoToPreference() {
