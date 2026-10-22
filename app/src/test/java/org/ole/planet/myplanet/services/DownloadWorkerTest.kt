@@ -258,6 +258,61 @@ class DownloadWorkerTest {
     }
 
     @Test
+    fun `complete download is moved into place without leaving a part file`() = runTest(testDispatcher) {
+        val url = "http://example.com/resources/123/file.txt"
+        every { preferences.getStringSet(any(), any()) } returns setOf(url)
+        every { workerParams.inputData.getString("urls_key") } returns "url_list_key"
+        every { workerParams.inputData.getBoolean("fromSync", false) } returns false
+
+        mockkObject(FileUtils)
+        every { FileUtils.checkFileExist(context, url) } returns false
+        val dir = java.nio.file.Files.createTempDirectory("download_worker").toFile()
+        val outputFile = java.io.File(dir, "file.txt")
+        every { FileUtils.getSDPathFromUrl(context, url) } returns outputFile
+
+        val bodyData = ByteArray(1024) { it.toByte() }
+        coEvery { downloadRepository.downloadFileResponse(any(), any()) } returns DownloadResult.Success(bodyData.toResponseBody(null), 200)
+
+        worker.doWork()
+
+        assertTrue(outputFile.readBytes().contentEquals(bodyData))
+        assertTrue(!java.io.File(dir, "file.txt.part").exists())
+
+        dir.deleteRecursively()
+        unmockkObject(FileUtils)
+    }
+
+    @Test
+    fun `truncated download leaves no file behind and is not marked offline`() = runTest(testDispatcher) {
+        val url = "http://example.com/resources/123/file.txt"
+        every { preferences.getStringSet(any(), any()) } returns setOf(url)
+        every { workerParams.inputData.getString("urls_key") } returns "url_list_key"
+        every { workerParams.inputData.getBoolean("fromSync", false) } returns false
+
+        mockkObject(FileUtils)
+        every { FileUtils.checkFileExist(context, url) } returns false
+        val dir = java.nio.file.Files.createTempDirectory("download_worker").toFile()
+        val outputFile = java.io.File(dir, "file.txt")
+        every { FileUtils.getSDPathFromUrl(context, url) } returns outputFile
+
+        val truncatedBody = object : okhttp3.ResponseBody() {
+            override fun contentType(): okhttp3.MediaType? = null
+            override fun contentLength(): Long = 4096
+            override fun source(): okio.BufferedSource = okio.Buffer().write(ByteArray(1024))
+        }
+        coEvery { downloadRepository.downloadFileResponse(any(), any()) } returns DownloadResult.Success(truncatedBody, 200)
+
+        worker.doWork()
+
+        assertTrue(!outputFile.exists())
+        assertTrue(!java.io.File(dir, "file.txt.part").exists())
+        coVerify(exactly = 0) { resourcesRepository.markResourceOfflineByUrl(url) }
+
+        dir.deleteRecursively()
+        unmockkObject(FileUtils)
+    }
+
+    @Test
     fun `successful downloads are removed from the queue and failed ones stay`() = runTest(testDispatcher) {
         val done = "http://example.com/resources/1/done.txt"
         val failed = "http://example.com/resources/2/failed.txt"

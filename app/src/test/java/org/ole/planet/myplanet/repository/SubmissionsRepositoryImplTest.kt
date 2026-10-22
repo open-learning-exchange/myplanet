@@ -622,6 +622,38 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `saveExamAnswer keeps choice JSON valid when other text has quotes and backslashes`() = runTest {
+        val question = ExamQuestion().apply { id = "question1"; examId = "exam1"; type = "selectMultiple" }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1" }
+        val otherText = """my "own" answer \ here"""
+        val answerData = ExamAnswerData(
+            submission = submission,
+            question = question,
+            ans = "",
+            listAns = mapOf("Say \"hi\"" to "c1", "Other" to "other"),
+            otherText = otherText,
+            otherVisible = true,
+            type = "survey",
+            index = 0,
+            total = 1,
+            isExplicitSubmission = true,
+            userId = "user1",
+        )
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1", userId = "user1")
+        val saved = slot<List<Answer>>()
+        coEvery { answerDao.upsertAll(capture(saved)) } returns Unit
+
+        repository.saveExamAnswer(answerData)
+
+        val choices = saved.captured.single().valueChoicesArray
+        assertEquals(2, choices.size())
+        assertEquals("c1", choices[0].asJsonObject.get("id").asString)
+        assertEquals("Say \"hi\"", choices[0].asJsonObject.get("text").asString)
+        assertEquals("other", choices[1].asJsonObject.get("id").asString)
+        assertEquals(otherText, choices[1].asJsonObject.get("text").asString)
+    }
+
+    @Test
     fun `serializeSubmission carries DeviceNameProvider device name`() = runTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
@@ -1036,6 +1068,24 @@ class SubmissionsRepositoryImplTest {
         coEvery { userRepository.getUsersByIds(any()) } returns emptyList()
 
         val projections = repository.getSubmissionProjections(subs, "user1", "exam", "Math", examMap)
+
+        assertEquals(1, projections.size)
+        assertEquals("1", projections[0].submission.id)
+    }
+
+    @Test
+    fun `getSubmissionProjections ignores surrounding whitespace in query`() = runTest {
+        val s1 = Submission().apply { id = "1"; parentId = "p1"; type = "exam"; status = "complete"; lastUpdateTime = 100L; userId = "user1" }
+        val s2 = Submission().apply { id = "2"; parentId = "p2"; type = "exam"; status = "complete"; lastUpdateTime = 200L; userId = "user1" }
+
+        val examMap = mapOf<String?, StepExam>(
+            "p1" to StepExam().apply { name = "Math Quiz" },
+            "p2" to StepExam().apply { name = "Science Test" }
+        )
+
+        coEvery { userRepository.getUsersByIds(any()) } returns emptyList()
+
+        val projections = repository.getSubmissionProjections(listOf(s1, s2), "user1", "exam", " Math ", examMap)
 
         assertEquals(1, projections.size)
         assertEquals("1", projections[0].submission.id)
