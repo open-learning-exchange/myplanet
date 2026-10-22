@@ -640,7 +640,6 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-
     override suspend fun changeUserSecurity(model: UserEntity, obj: JsonObject) {
         val table = "userdb-${StringUtils.toHex(model.planetCode)}-${StringUtils.toHex(model.name)}"
         val header = UrlUtils.basicAuthHeader(obj["name"].asString, obj["password"].asString)
@@ -1166,7 +1165,6 @@ class UserRepositoryImpl @Inject constructor(
             userDao.upsertAll(usersToUpsert.values.toList())
         }
     }
-
 
     override suspend fun uploadAllSyncedUsersToShelf(users: List<UserEntity>): Result<Unit> {
         return try {
