@@ -409,6 +409,29 @@ class TeamsRepositoryImplTest {
     }
 
     @Test
+    fun `updateTeam keeps the team's member limit and creator`() = runTest(testDispatcher) {
+        val team = MyTeam().apply {
+            _id = "team1"
+            name = "Old name"
+            limit = 30
+            createdBy = "founder"
+        }
+        coEvery { teamDao.getById("team1") } returns team
+        coEvery { teamDao.upsert(any()) } returns Unit
+
+        val result = teamsRepository.updateTeam("team1", "New name", "Fixed typo", "services", "rules")
+
+        assertTrue(result.getOrThrow())
+        val saved = slot<MyTeam>()
+        coVerify { teamDao.upsert(capture(saved)) }
+        assertEquals("New name", saved.captured.name)
+        assertEquals("Fixed typo", saved.captured.description)
+        assertEquals(30, saved.captured.limit)
+        assertEquals("founder", saved.captured.createdBy)
+        assertTrue(saved.captured.updated)
+    }
+
+    @Test
     fun `createLocalResourceLink upserts resourceLink MyTeam row`() = runTest(testDispatcher) {
         val teamId = "team_1"
         val resourceId = "res_1"

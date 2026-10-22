@@ -72,7 +72,7 @@ interface TeamsRepository : TeamsFinancesRepository, TeamsMembersRepository, Tea
     )
     suspend fun createTeamAndAddMember(request: CreateTeamRequest, user: UserEntity): Result<String>
     suspend fun updateTeam(teamId: String, name: String, description: String, services: String,
-        rules: String, updatedBy: String?
+        rules: String
     ): Result<Boolean>
     suspend fun updateTeamDetails(
         teamId: String, name: String, description: String, services: String, rules: String,
