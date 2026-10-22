@@ -88,7 +88,10 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
-        val examinations = jsonArray.toSyncDocuments().map { (_, doc) -> HealthExamination.fromJson(doc) }
+        val locallyUpdatedIds = healthExaminationDao.getUpdatedIds().toHashSet()
+        val examinations = jsonArray.toSyncDocuments()
+            .map { (_, doc) -> HealthExamination.fromJson(doc) }
+            .filterNot { it._id in locallyUpdatedIds }
         healthExaminationDao.upsertAll(examinations)
     }
 

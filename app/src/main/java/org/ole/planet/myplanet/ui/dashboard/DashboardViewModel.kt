@@ -350,12 +350,12 @@ class DashboardViewModel @Inject constructor(
             val max = GsonUtils.getInt("max", progress)
             val current = GsonUtils.getInt("current", progress)
             if (current == max) {
-                application.getString(org.ole.planet.myplanet.R.string.course_completed, courseName)
+                application.getString(R.string.course_completed, courseName)
             } else {
-                application.getString(org.ole.planet.myplanet.R.string.course_in_progress, courseName, current, max)
+                application.getString(R.string.course_in_progress, courseName, current, max)
             }
         } else {
-            application.getString(org.ole.planet.myplanet.R.string.course_not_started, courseName)
+            application.getString(R.string.course_not_started, courseName)
         }
     }
 

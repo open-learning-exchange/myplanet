@@ -10,6 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -402,6 +403,7 @@ class SurveysRepositoryImpl @Inject constructor(
         }
         if (questions.isNotEmpty()) {
             questionDao.upsertAll(questions.mapNotNull { it })
+            questionDao.deleteStaleQuestions(questions)
         }
     }
 
@@ -431,7 +433,7 @@ class SurveysRepositoryImpl @Inject constructor(
                     }
                 }
             }
-            delay(60_000)
+            delay(60_000.milliseconds)
         }
     }.flowOn(dispatcherProvider.io)
 

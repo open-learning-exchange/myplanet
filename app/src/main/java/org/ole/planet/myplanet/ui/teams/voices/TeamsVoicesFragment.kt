@@ -13,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -197,7 +198,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     teamId = teamId,
                     isTeamLeaderFn = { onResult ->
                         val job = viewLifecycleOwner.lifecycleScope.launch {
-                            val result = kotlinx.coroutines.withTimeoutOrNull(2000) {
+                            val result = kotlinx.coroutines.withTimeoutOrNull(2000.milliseconds) {
                                 viewModel.isTeamLeader(teamId, user?._id)
                             }
                             onResult(result ?: false)
