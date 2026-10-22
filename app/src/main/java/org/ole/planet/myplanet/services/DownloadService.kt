@@ -169,11 +169,11 @@ class DownloadService : Service() {
     internal data class QueuedUrl(val url: String, val isPriority: Boolean, val priority: Int = 0)
 
     internal fun getNextPriorityUrl(): QueuedUrl? {
-        return Companion.getNextUrl(preferences, PRIORITY_DOWNLOADS_KEY, processedUrls, true)
+        return getNextUrl(preferences, PRIORITY_DOWNLOADS_KEY, processedUrls, true)
     }
 
     internal fun getNextPendingUrl(): QueuedUrl? {
-        return Companion.getNextUrl(preferences, PENDING_DOWNLOADS_KEY, processedUrls, false)
+        return getNextUrl(preferences, PENDING_DOWNLOADS_KEY, processedUrls, false)
     }
 
     private fun getRemainingCount(priorityUrls: Set<String>? = null): Int {

@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.utils.DiffUtils
 
 class CheckboxAdapter(
-    private val initialSelectedItems: List<Int> = emptyList(),
+    initialSelectedItems: List<Int> = emptyList(),
     private val checkChangeListener: CheckChangeListener? = null
 ) : ListAdapter<String, CheckboxAdapter.ViewHolder>(DiffUtils.itemCallback<String>({ old, new -> old == new }, { old, new -> old == new })) {
 

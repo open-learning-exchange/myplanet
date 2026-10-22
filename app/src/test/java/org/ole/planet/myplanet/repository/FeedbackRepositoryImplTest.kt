@@ -151,6 +151,45 @@ class FeedbackRepositoryImplTest {
     }
 
     @Test
+    fun insertFeedbackList_updatesUploadedLocalFeedbackInsteadOfDuplicatingIt() = runTest {
+        val local = Feedback().apply { id = "local-uuid"; _id = "fb1"; isUploaded = true; messages = "[]" }
+        coEvery { feedbackDao.getByIds(listOf("fb1")) } returns emptyList()
+        coEvery { feedbackDao.getByRemoteIds(listOf("fb1")) } returns listOf(local)
+        val serverDoc = JsonObject().apply {
+            addProperty("_id", "fb1")
+            addProperty("status", "Open")
+            add("messages", JsonArray())
+        }
+        val saved = slot<List<Feedback>>()
+        coEvery { feedbackDao.upsertAll(capture(saved)) } returns Unit
+
+        repository.insertFeedbackList(listOf(serverDoc))
+
+        assertEquals("local-uuid", saved.captured.single().id)
+        assertEquals("fb1", saved.captured.single()._id)
+        coVerify(exactly = 0) { feedbackDao.deleteByIds(any()) }
+    }
+
+    @Test
+    fun insertFeedbackList_removesAnEarlierServerKeyedDuplicateOfLocalFeedback() = runTest {
+        val local = Feedback().apply { id = "local-uuid"; _id = "fb1"; isUploaded = true; messages = "[]" }
+        val duplicate = Feedback().apply { id = "fb1"; _id = "fb1"; isUploaded = true; messages = "[]" }
+        coEvery { feedbackDao.getByIds(listOf("fb1")) } returns listOf(duplicate)
+        coEvery { feedbackDao.getByRemoteIds(listOf("fb1")) } returns listOf(local, duplicate)
+        val serverDoc = JsonObject().apply {
+            addProperty("_id", "fb1")
+            add("messages", JsonArray())
+        }
+        val saved = slot<List<Feedback>>()
+        coEvery { feedbackDao.upsertAll(capture(saved)) } returns Unit
+
+        repository.insertFeedbackList(listOf(serverDoc))
+
+        coVerify { feedbackDao.deleteByIds(listOf("fb1")) }
+        assertEquals("local-uuid", saved.captured.single().id)
+    }
+
+    @Test
     fun `getFeedback deduplicates byte-identical flow emissions for manager`() = runTest {
         val user = mockk<UserEntity> {
             every { isManager() } returns true

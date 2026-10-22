@@ -19,7 +19,6 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.add
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before

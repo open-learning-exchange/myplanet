@@ -682,7 +682,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         }
     }
 
-    fun getCustomDeviceName(): String? {
+    fun getCustomDeviceName(): String {
         return prefData.getCustomDeviceName().ifEmpty { NetworkUtils.getDeviceName() }
     }
 

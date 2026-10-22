@@ -290,11 +290,10 @@ class SyncManager @Inject constructor(
 
         try {
             val url = UrlUtils.getUrl()
-            val header = UrlUtils.header
 
             val newIds: MutableList<String> = ArrayList()
-            var totalRows = 0
-            var countKnown = false
+            var totalRows: Int
+            var countKnown: Boolean
             var hadBatchFailure = false
 
             syncTimeLogger.startProcess("resource_get_total_count")
