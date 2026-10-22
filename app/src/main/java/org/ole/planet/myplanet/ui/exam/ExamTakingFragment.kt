@@ -857,7 +857,6 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 updateAnsDb()
             }
         }
-        answerTextWatcher?.let { binding.etAnswer.removeTextChangedListener(it) }
         examTakingTextWatcher?.let { binding.etAnswer.removeTextChangedListener(it) }
         examTakingTextWatcher = null
         selectedRatingButton = null
