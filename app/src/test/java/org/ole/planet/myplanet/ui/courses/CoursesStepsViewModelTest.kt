@@ -5,9 +5,11 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import java.io.File
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -346,5 +348,104 @@ class CoursesStepsViewModelTest {
         assertTrue(state.stepSurvey.isEmpty())
         assertNull(state.courseTitle)
         assertFalse(state.userHasCourse)
+    }
+
+    @Test
+    fun loadStep_whenServerCheckPending_publishesStateImmediatelyThenTriggersDownloadWhenAvailable() = runTest {
+        val stepId = "step_1"
+        val libraryItem = MyLibrary().apply {
+            id = "lib_1"
+            resourceId = "res_1"
+            resourceLocalAddress = "file.pdf"
+        }
+        val stepData = CourseStepData(
+            step = CourseStep().apply { id = stepId; description = "Step 1 Content" },
+            resources = listOf(libraryItem),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = true,
+            hasExam = false,
+            hasSurvey = false
+        )
+
+        val probeDeferred = CompletableDeferred<Boolean>()
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { coursesRepository.getCourseStepData(stepId, null) } returns stepData
+        coEvery { configurationsRepository.checkServerAvailability() } coAnswers { probeDeferred.await() }
+
+        viewModel.loadStep(stepId, null)
+        runCurrent()
+
+        val stateBeforeProbe = viewModel.uiState.value
+        assertEquals(stepData.step, stateBeforeProbe.step)
+        assertFalse(stateBeforeProbe.isLoading)
+        assertTrue(stateBeforeProbe.markdownDescription.contains("Step 1 Content"))
+        assertFalse(stateBeforeProbe.isDownloadingResources)
+
+        probeDeferred.complete(true)
+        advanceUntilIdle()
+
+        val stateAfterProbe = viewModel.uiState.value
+        assertTrue(stateAfterProbe.isDownloadingResources)
+        coVerify(exactly = 1) { resourcesRepository.downloadResourcesPriority(listOf(libraryItem)) }
+    }
+
+    @Test
+    fun loadStep_whenStepChangedWhileProbePending_doesNotUpdateStateOrDownloadForCancelledStep() = runTest {
+        val step1Id = "step_1"
+        val libraryItem1 = MyLibrary().apply {
+            id = "lib_1"
+            resourceId = "res_1"
+            resourceLocalAddress = "file1.pdf"
+        }
+        val step1Data = CourseStepData(
+            step = CourseStep().apply { id = step1Id; description = "Step 1 Content" },
+            resources = listOf(libraryItem1),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = true,
+            hasExam = false,
+            hasSurvey = false
+        )
+
+        val step2Id = "step_2"
+        val libraryItem2 = MyLibrary().apply {
+            id = "lib_2"
+            resourceId = "res_2"
+            resourceLocalAddress = "file2.pdf"
+        }
+        val step2Data = CourseStepData(
+            step = CourseStep().apply { id = step2Id; description = "Step 2 Content" },
+            resources = listOf(libraryItem2),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = true,
+            hasExam = false,
+            hasSurvey = false
+        )
+
+        val step1ProbeDeferred = CompletableDeferred<Boolean>()
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { coursesRepository.getCourseStepData(step1Id, null) } returns step1Data
+        coEvery { coursesRepository.getCourseStepData(step2Id, null) } returns step2Data
+        coEvery { configurationsRepository.checkServerAvailability() } coAnswers { step1ProbeDeferred.await() } andThen false
+
+        viewModel.loadStep(step1Id, null)
+        runCurrent()
+
+        viewModel.loadStep(step2Id, null)
+        advanceUntilIdle()
+
+        val state2BeforeComplete = viewModel.uiState.value
+        assertEquals(step2Data.step, state2BeforeComplete.step)
+        assertFalse(state2BeforeComplete.isDownloadingResources)
+
+        step1ProbeDeferred.complete(true)
+        advanceUntilIdle()
+
+        val state2AfterComplete = viewModel.uiState.value
+        assertEquals(step2Data.step, state2AfterComplete.step)
+        assertFalse(state2AfterComplete.isDownloadingResources)
+        coVerify(exactly = 0) { resourcesRepository.downloadResourcesPriority(listOf(libraryItem1)) }
     }
 }

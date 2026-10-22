@@ -4,13 +4,15 @@ import android.app.Application
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.MockKAnnotations
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.unmockkAll
-import org.junit.After
+import io.mockk.unmockkObject
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -22,16 +24,25 @@ import org.robolectric.annotation.Config
 @Config(application = Application::class)
 class MeetupTest {
 
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkObject(NetworkUtils)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkObject(NetworkUtils)
+        }
+    }
+
     @Before
     fun setup() {
         MockKAnnotations.init(this)
-        mockkObject(NetworkUtils)
+        clearAllMocks(answers = false, childMocks = false)
         every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
-    }
-
-    @After
-    fun tearDown() {
-        unmockkAll()
     }
 
     @Test
@@ -167,6 +178,18 @@ class MeetupTest {
         val meetup = Meetup.fromJson(meetupDoc, "", null)
 
         assertEquals("", meetup.userId)
+    }
+
+    @Test
+    fun `fromJson without userId keeps the existing row's attendance`() {
+        val meetupDoc = JsonObject().apply {
+            addProperty("_id", "meetup1")
+        }
+        val existingMeetup = Meetup().apply { userId = "user123" }
+
+        val meetup = Meetup.fromJson(meetupDoc, "", existingMeetup)
+
+        assertEquals("user123", meetup.userId)
     }
 
     @Test

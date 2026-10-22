@@ -75,6 +75,7 @@ class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(
                 val filter = filterAt(position)
                 if (filter == currentFilter) return
                 currentFilter = filter
+                updateMarkAllAsReadButton(viewModel.unreadCount.value)
                 viewModel.loadNotifications(userId, currentFilter, isAdmin)
             }
             override fun onNothingSelected(parent: AdapterView<*>) {}
@@ -100,8 +101,7 @@ class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(
         }
         collectWhenStarted(viewModel.unreadCount) { count ->
             notificationUpdateListener?.onNotificationCountUpdated(count)
-            val showButton = count > 0 && currentFilter != "read"
-            binding.btnMarkAllAsRead.visibility = if (showButton) View.VISIBLE else View.GONE
+            updateMarkAllAsReadButton(count)
         }
         collectWhenStarted(viewModel.isSelectionMode) { inSelectionMode ->
             binding.ltBulkActionBar.visibility = if (inSelectionMode) View.VISIBLE else View.GONE
@@ -112,6 +112,11 @@ class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(
         }
 
         return view
+    }
+
+    private fun updateMarkAllAsReadButton(unreadCount: Int) {
+        val showButton = unreadCount > 0 && currentFilter != "read"
+        binding.btnMarkAllAsRead.visibility = if (showButton) View.VISIBLE else View.GONE
     }
 
     private fun handleNotificationClick(notification: Notification) {
