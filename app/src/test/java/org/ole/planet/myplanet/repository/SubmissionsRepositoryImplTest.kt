@@ -231,8 +231,8 @@ class SubmissionsRepositoryImplTest {
             StepExam(id = "exam1", name = "Exam 1"),
             StepExam(id = "exam2", name = "Exam 2")
         )
-        val answer1 = org.ole.planet.myplanet.model.Answer(id = "ans1", submissionId = "sub1", value = "ans1_val")
-        val answer3 = org.ole.planet.myplanet.model.Answer(id = "ans3", submissionId = "sub3", value = "ans3_val")
+        val answer1 = Answer(id = "ans1", submissionId = "sub1", value = "ans1_val")
+        val answer3 = Answer(id = "ans3", submissionId = "sub3", value = "ans3_val")
         coEvery { answerDao.getBySubmissionIds(listOf("sub1", "sub3")) } returns listOf(answer1, answer3)
 
         val result = repository.getUniquePendingSurveys("user")
@@ -1267,7 +1267,7 @@ class SubmissionsRepositoryImplTest {
         coEvery { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") } returns 1
 
         val failed = repository.markSubmissionsUploaded(
-            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", com.google.gson.JsonObject()))
+            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", JsonObject()))
         )
 
         assertEquals(emptyList<UploadedItemResult>(), failed)
@@ -1279,7 +1279,7 @@ class SubmissionsRepositoryImplTest {
         coEvery { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") } returns 0
 
         val failed = repository.markSubmissionsUploaded(
-            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", com.google.gson.JsonObject()))
+            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", JsonObject()))
         )
 
         assertEquals(1, failed.size)

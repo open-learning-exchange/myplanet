@@ -135,7 +135,7 @@ class ChatHistoryAdapter(
         val sharedChildren = if (isCommunityShared) setOf(context.getString(R.string.community)) else emptySet()
         val dataMap = shareDataMap
 
-        chatShareDialogBinding.listView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
+        chatShareDialogBinding.listView.layoutManager = LinearLayoutManager(context)
         shareTargetAdapter = ChatShareTargetAdapter { clickedItem ->
             if (clickedItem.isGroup) {
                 val currentFlatList = shareTargetAdapter.currentList

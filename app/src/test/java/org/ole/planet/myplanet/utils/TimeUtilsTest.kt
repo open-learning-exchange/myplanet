@@ -73,7 +73,7 @@ class TimeUtilsTest {
     @Test
     fun testGetFormattedDate_localMidnightInUtcPlusZoneShowsThatDay() {
         TimeZone.setDefault(TimeZone.getTimeZone("Africa/Nairobi"))
-        val pickedMidnight = java.time.LocalDate.of(2024, 3, 11)
+        val pickedMidnight = LocalDate.of(2024, 3, 11)
             .atStartOfDay(ZoneId.of("Africa/Nairobi")).toInstant().toEpochMilli()
 
         assertEquals("Monday, Mar 11, 2024", TimeUtils.getFormattedDate(pickedMidnight))
