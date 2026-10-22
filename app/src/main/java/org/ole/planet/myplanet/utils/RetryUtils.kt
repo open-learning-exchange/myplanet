@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utils
 
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 
 object RetryUtils {
@@ -25,7 +26,7 @@ object RetryUtils {
             }
             attempt++
             if (attempt < maxAttempts) {
-                delay(delayMs)
+                delay(delayMs.milliseconds)
             }
         }
         lastException?.printStackTrace()

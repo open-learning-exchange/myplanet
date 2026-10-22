@@ -10,6 +10,7 @@ import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -21,7 +22,7 @@ import org.ole.planet.myplanet.R
 
 @OptIn(FlowPreview::class)
 fun <T> Flow<T>.debounceDistinct(timeoutMillis: Long): Flow<T> =
-    debounce(timeoutMillis).distinctUntilChanged()
+    debounce(timeoutMillis.milliseconds).distinctUntilChanged()
 
 fun EditText.textChanges(): Flow<CharSequence?> {
     return callbackFlow {

@@ -11,6 +11,7 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -80,7 +81,7 @@ class UploadCoordinatorTest {
             if (current > maxConcurrentRequests) {
                 maxConcurrentRequests = current
             }
-            delay(10)
+            delay(10.milliseconds)
             activeRequests.decrementAndGet()
 
             val url = invocation.args[0] as String
@@ -213,7 +214,7 @@ class UploadCoordinatorTest {
             if (current > maxConcurrentRequests) {
                 maxConcurrentRequests = current
             }
-            delay(10)
+            delay(10.milliseconds)
             activeRequests.decrementAndGet()
 
             val reqBody = invocation.args[1] as JsonObject
@@ -338,7 +339,7 @@ class UploadCoordinatorTest {
         val item = Submission(id = "local-1")
 
         coEvery { uploadRepository.postUpload(any(), any()) } coAnswers {
-            delay(100)
+            delay(100.milliseconds)
             Response.success(JsonObject())
         }
 
@@ -355,7 +356,7 @@ class UploadCoordinatorTest {
             uploadCoordinator.upload(config)
         }
 
-        delay(10)
+        delay(10.milliseconds)
         job.cancel(CancellationException("Test cancellation"))
 
         try {

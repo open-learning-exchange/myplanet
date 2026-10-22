@@ -4,6 +4,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifySequence
 import io.mockk.mockk
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -170,7 +171,7 @@ class RequestsViewModelTest {
 
         val currentUser = UserEntity().apply { id = "currentUser" }
         coEvery { userRepository.getUserModel() } coAnswers {
-            kotlinx.coroutines.delay(100)
+            kotlinx.coroutines.delay(100.milliseconds)
             currentUser
         }
         coEvery { teamsRepository.isTeamLeader(teamId, currentUser.id) } returns true

@@ -5,6 +5,7 @@ import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.mockk
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -66,7 +67,7 @@ class AutoSyncUploadRunnerTest {
         val resourceDone = CompletableDeferred<Unit>()
         var resourceFinishedBeforeTeams = false
         coEvery { uploadManager.uploadResource(listener) } coAnswers {
-            delay(100)
+            delay(100.milliseconds)
             resourceDone.complete(Unit)
             Unit
         }
@@ -108,7 +109,7 @@ class AutoSyncUploadRunnerTest {
         suspend fun simulateWork() {
             val current = activeCount.incrementAndGet()
             maxActiveCount.updateAndGet { maxOf(it, current) }
-            delay(50)
+            delay(50.milliseconds)
             activeCount.decrementAndGet()
         }
 
