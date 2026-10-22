@@ -21,6 +21,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.noties.markwon.editor.MarkwonEditor
 import io.noties.markwon.editor.MarkwonEditorTextWatcher
 import java.util.Date
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -112,7 +113,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             val toast = Toast.makeText(activity, getString(R.string.incorrect_ans), Toast.LENGTH_SHORT)
             toast.show()
             viewLifecycleOwner.lifecycleScope.launch {
-                delay(1000)
+                delay(1000.milliseconds)
                 toast.cancel()
             }
         }

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utils
 
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
@@ -18,7 +19,7 @@ object TextRevealer {
             currentCoroutineContext().ensureActive()
             end = minOf(end + step, text.length)
             onUpdate(text.substring(0, end))
-            delay(TICK_MS * step)
+            delay((TICK_MS * step).milliseconds)
         }
     }
 }
