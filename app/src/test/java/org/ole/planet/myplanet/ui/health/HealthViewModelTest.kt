@@ -222,7 +222,6 @@ class HealthViewModelTest {
 
     @Test
     fun `searchPatients with non-blank query calls searchUsers once and getUsersSortedBy zero times`() = runTest {
-        val query = "John"
         val patients = listOf(UserEntity().apply { id = "2"; name = "John Doe" })
         coEvery { userRepository.searchUsers("John", "joinDate", true) } returns patients
 

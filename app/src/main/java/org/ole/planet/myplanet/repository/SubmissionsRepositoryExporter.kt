@@ -161,10 +161,6 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                     textSize = 20f
                     isFakeBoldText = true
                 }
-                val headerPaint = Paint().apply {
-                    textSize = 16f
-                    isFakeBoldText = true
-                }
                 val subHeaderPaint = Paint().apply {
                     textSize = 14f
                     isFakeBoldText = true

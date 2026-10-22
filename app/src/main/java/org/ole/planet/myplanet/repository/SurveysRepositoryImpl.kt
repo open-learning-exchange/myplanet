@@ -214,7 +214,7 @@ class SurveysRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun createMappedSubmission(
+    private fun createMappedSubmission(
         adoptionId: String,
         examId: String,
         parentJsonString: String,
@@ -224,7 +224,7 @@ class SurveysRepositoryImpl @Inject constructor(
         sParentCode: String,
         isTeam: Boolean,
         teamId: String?
-    ): Submission? {
+    ): Submission {
         val submission = Submission().apply {
             id = adoptionId
             parentId = examId

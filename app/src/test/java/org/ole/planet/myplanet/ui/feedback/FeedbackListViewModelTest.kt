@@ -19,7 +19,6 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
-import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FeedbackListViewModelTest {
@@ -32,7 +31,6 @@ class FeedbackListViewModelTest {
     private lateinit var viewModel: FeedbackListViewModel
     private lateinit var feedbackRepository: FeedbackRepository
     private lateinit var userRepository: UserRepository
-    private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {

@@ -83,7 +83,7 @@ class UserRepositoryImpl @Inject constructor(
     private val removedLogDao: RemovedLogDao,
     private val achievementDao: AchievementDao,
     private val userDao: UserDao,
-    private val realtimeSyncManager: RealtimeSyncManager,
+    realtimeSyncManager: RealtimeSyncManager,
     private val deviceNameProvider: DeviceNameProvider
 ) : UserRepository, UserSyncRepository {
     override val achievementUpdates: Flow<Unit> = realtimeSyncManager.dataUpdateFlow
@@ -911,7 +911,7 @@ class UserRepositoryImpl @Inject constructor(
         return if (userId.isNotEmpty()) hasUserSyncAction(userId) else false
     }
 
-    override suspend fun initializeAchievement(achievementId: String): Achievement? {
+    override suspend fun initializeAchievement(achievementId: String): Achievement {
         val existing = achievementDao.getById(achievementId)
         if (existing != null) return existing
         val achievement = Achievement().apply { _id = achievementId }
@@ -1146,14 +1146,13 @@ class UserRepositoryImpl @Inject constructor(
                     ?: UserEntity().apply { this.id = id }
 
                 applyJsonToUser(jsonDoc, user, settings)
-                val entity = user
 
-                usersToUpsert[entity.id] = entity
+                usersToUpsert[user.id] = user
 
-                usersById[entity.id] = entity
-                if (entity._id != null) usersById[entity._id!!] = entity
-                if (!entity.name.isNullOrEmpty() && entity._id?.startsWith("guest_") == true) {
-                    guestUsersByName[entity.name!!] = entity
+                usersById[user.id] = user
+                if (user._id != null) usersById[user._id!!] = user
+                if (!user.name.isNullOrEmpty() && user._id?.startsWith("guest_") == true) {
+                    guestUsersByName[user.name!!] = user
                 }
             } catch (err: Exception) {
                 Log.w("UserRepositoryImpl", "Failed to parse sync user document", err)

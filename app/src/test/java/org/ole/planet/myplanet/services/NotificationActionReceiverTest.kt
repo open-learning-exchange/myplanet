@@ -75,7 +75,7 @@ class NotificationActionReceiverTest {
         testDispatcher = StandardTestDispatcher()
         testScope = TestScope(testDispatcher)
 
-        mockContext = spyk(ApplicationProvider.getApplicationContext<Context>())
+        mockContext = spyk(ApplicationProvider.getApplicationContext())
         every { mockContext.startActivity(any()) } returns Unit
 
         every { mockDispatcherProvider.main } returns testDispatcher

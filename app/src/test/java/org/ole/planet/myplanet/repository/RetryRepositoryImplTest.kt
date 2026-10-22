@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Log
-import com.google.gson.JsonObject
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
