@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.sync
 
 import androidx.fragment.app.Fragment
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -29,7 +30,7 @@ class RealtimeSyncHelper(
                     old.newItemsCount == new.newItemsCount &&
                     old.updatedItemsCount == new.updatedItemsCount
                 }
-                .debounce(300)
+                .debounce(300.milliseconds)
         ) { update ->
             mixin.onDataUpdated(update.table, update)
         }

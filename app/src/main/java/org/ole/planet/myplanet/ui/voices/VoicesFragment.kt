@@ -17,6 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
@@ -297,7 +298,7 @@ class VoicesFragment : BaseVoicesFragment() {
     @OptIn(FlowPreview::class)
     private fun setupSearchTextListener() {
         etSearch.textChanges()
-            .debounce(300)
+            .debounce(300.milliseconds)
             .onEach { text ->
                 val searchQuery = text.toString().trim()
                 voicesViewModel.updateSearchQuery(searchQuery)

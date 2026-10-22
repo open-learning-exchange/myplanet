@@ -170,6 +170,23 @@ class RatingsRepositoryImplTest {
     }
 
     @Test
+    fun `insertRatingsFromSync keeps ratings edited locally but not yet uploaded`() = runTest {
+        val savedSlot = slot<List<Rating>>()
+        coEvery { ratingDao.getUpdatedIds() } returns listOf("rating1")
+        coEvery { ratingDao.upsertAll(capture(savedSlot)) } returns Unit
+
+        val docs = listOf("rating1", "rating2").map { ratingId ->
+            JsonObject().apply {
+                addProperty("_id", ratingId)
+                add("user", JsonObject().apply { addProperty("_id", "user1") })
+            }
+        }
+        repository.insertRatingsFromSync(docs)
+
+        assertEquals(listOf("rating2"), savedSlot.captured.map { it.id })
+    }
+
+    @Test
     fun `insertRatingsFromSync strips user attachments to avoid oversized rows`() = runTest {
         val savedSlot = slot<List<Rating>>()
         coEvery { ratingDao.upsertAll(capture(savedSlot)) } returns Unit
