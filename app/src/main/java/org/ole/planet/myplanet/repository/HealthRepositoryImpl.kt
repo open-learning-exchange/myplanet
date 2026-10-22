@@ -88,7 +88,6 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
-        // Rows edited locally but not yet uploaded keep their local values instead of the server copy
         val locallyUpdatedIds = healthExaminationDao.getUpdatedIds().toHashSet()
         val examinations = jsonArray.toSyncDocuments()
             .map { (_, doc) -> HealthExamination.fromJson(doc) }
