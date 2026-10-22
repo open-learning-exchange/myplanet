@@ -36,9 +36,10 @@ class VoicesRepositoryImpl @Inject constructor(
     private val concatenatedLinks = ArrayList<String>()
 
     override suspend fun getNewsForUpload(): List<NewsUploadData> {
-        val allNews = newsDao.getAll()
-        val byId = allNews.associateBy { it.id }
-        return allNews
+        val pendingNews = newsDao.getPendingUploads()
+        val parentIds = pendingNews.mapNotNull { news -> news.replyTo?.takeIf { it.isNotEmpty() } }.distinct()
+        val byId = (pendingNews + newsDao.getByIds(parentIds)).associateBy { it.id }
+        return pendingNews
             .mapNotNull { news ->
                 if (news.userId?.startsWith("guest") == true) return@mapNotNull null
                 val parent = news.replyTo?.takeIf { it.isNotEmpty() }?.let { byId[it] }
@@ -70,6 +71,7 @@ class VoicesRepositoryImpl @Inject constructor(
                     news.images = gson.toJson(update.imagesArray)
                     update.message?.let { news.message = it }
                     if (news.pendingReactions == update.pendingReactions) news.pendingReactions = null
+                    news.isUpdated = false
                     toUpdate.add(news)
                 }
             }
@@ -241,6 +243,7 @@ class VoicesRepositoryImpl @Inject constructor(
 
                 news.sharedBy = userId
                 news.viewIn = gson.toJson(array)
+                news.isUpdated = true
                 newsDao.upsert(news)
             }
             Result.success(Unit)
@@ -283,6 +286,7 @@ class VoicesRepositoryImpl @Inject constructor(
             } else {
                 news.viewIn = gson.toJson(filtered)
                 news.sharedBy = ""
+                news.isUpdated = true
                 newsDao.upsert(news)
             }
         }
@@ -306,6 +310,7 @@ class VoicesRepositoryImpl @Inject constructor(
         val labels = news.labels?.toMutableList() ?: mutableListOf()
         labels.add(label)
         news.labels = labels
+        news.isUpdated = true
         newsDao.upsert(news)
     }
 
@@ -318,6 +323,7 @@ class VoicesRepositoryImpl @Inject constructor(
         val labels = news.labels?.toMutableList() ?: return
         labels.remove(label)
         news.labels = labels
+        news.isUpdated = true
         newsDao.upsert(news)
     }
 
@@ -367,6 +373,7 @@ class VoicesRepositoryImpl @Inject constructor(
         newImages?.let { urls.addAll(it) }
         news.imageUrls = urls
         news.updateMessage(message)
+        news.isUpdated = true
         newsDao.upsert(news)
         return newsDao.getById(newsId)
     }

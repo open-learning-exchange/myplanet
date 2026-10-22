@@ -95,9 +95,10 @@ class ResourcesViewModel @Inject constructor(
     }
 
     fun loadResources(isMyCourseLib: Boolean, modelId: String?) {
-        val cached = getCachedResources(isMyCourseLib, modelId)
-        if (cached != null && _resourcesState.value.isEmpty()) {
-            _resourcesState.value = cached
+        if (_resourcesState.value.isEmpty()) {
+            getCachedResources(isMyCourseLib, modelId)?.let {
+                _resourcesState.value = it
+            }
         }
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
@@ -200,9 +201,13 @@ class ResourcesViewModel @Inject constructor(
                 else list.sortedByDescending { it.item.createdDate }
             }
             SortMode.TITLE -> {
-                val withKeys = list.map { it to (it.item.title?.lowercase(Locale.ROOT) ?: "") }
-                if (isTitleAscending) withKeys.sortedBy { it.second }.map { it.first }
-                else withKeys.sortedByDescending { it.second }.map { it.first }
+                val withKeys = list.mapTo(ArrayList(list.size)) { it to (it.item.title?.lowercase(Locale.ROOT) ?: "") }
+                if (isTitleAscending) {
+                    withKeys.sortWith(compareBy { it.second })
+                } else {
+                    withKeys.sortWith(compareByDescending { it.second })
+                }
+                withKeys.map { it.first }
             }
             SortMode.NONE -> list
         }

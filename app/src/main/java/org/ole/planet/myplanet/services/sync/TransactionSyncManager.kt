@@ -392,50 +392,43 @@ class TransactionSyncManager @Inject constructor(
     }
 
     private suspend fun downloadCourseCover(docId: String, coverFileName: String, destFile: File) {
-        try {
-            val encodedName = android.net.Uri.encode(coverFileName)
-            val url = "${UrlUtils.getUrl()}/courses/$docId/$encodedName"
-            val response = apiInterface.downloadFile(UrlUtils.header, url)
-            if (response.isSuccessful) {
-                response.body()?.let { body ->
-                    destFile.parentFile?.mkdirs()
-                    destFile.outputStream().use { out ->
-                        body.byteStream().use { it.copyTo(out) }
-                    }
-                }
-            }
-        } catch (_: Exception) { }
+        val encodedName = Uri.encode(coverFileName)
+        downloadAttachment("${UrlUtils.getUrl()}/courses/$docId/$encodedName", destFile)
     }
 
     private suspend fun downloadTeamAttachment(docId: String, attachmentName: String, destFile: File) {
-        try {
-            val encodedName = Uri.encode(attachmentName)
-            val url = "${UrlUtils.getUrl()}/teams/$docId/$encodedName"
-            val response = apiInterface.downloadFile(UrlUtils.header, url)
-            if (response.isSuccessful) {
-                response.body()?.let { body ->
-                    destFile.parentFile?.mkdirs()
-                    destFile.outputStream().use { out ->
-                        body.byteStream().use { it.copyTo(out) }
-                    }
-                }
-            }
-        } catch (_: Exception) { }
+        val encodedName = Uri.encode(attachmentName)
+        downloadAttachment("${UrlUtils.getUrl()}/teams/$docId/$encodedName", destFile)
     }
 
     private suspend fun downloadCvAttachment(docId: String, destFile: File) {
+        downloadAttachment("${UrlUtils.getUrl()}/achievements/$docId/resume.pdf", destFile)
+    }
+
+    // Writes to a side file and moves it into place only once complete, so an interrupted download never
+    // leaves a truncated file that the destFile.exists() checks would skip on every later sync
+    internal suspend fun downloadAttachment(url: String, destFile: File) {
+        val partFile = File(destFile.parentFile, "${destFile.name}.part")
         try {
-            val url = "${UrlUtils.getUrl()}/achievements/$docId/resume.pdf"
             val response = apiInterface.downloadFile(UrlUtils.header, url)
             if (response.isSuccessful) {
                 response.body()?.let { body ->
                     destFile.parentFile?.mkdirs()
-                    destFile.outputStream().use { out ->
+                    val bytes = partFile.outputStream().use { out ->
                         body.byteStream().use { it.copyTo(out) }
+                    }
+                    if (body.contentLength() > 0 && bytes != body.contentLength()) return
+                    if (!partFile.renameTo(destFile)) {
+                        partFile.copyTo(destFile, overwrite = true)
                     }
                 }
             }
-        } catch (_: Exception) { }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+        } finally {
+            partFile.delete()
+        }
     }
 
     suspend fun syncNotificationReads() = withContext(dispatcherProvider.io) {

@@ -374,7 +374,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val timeText = if (lastSyncMillis <= 0L) {
             getString(R.string.last_synced_never)
         } else {
-            TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
+            TimeUtils.getRelativeTime(requireContext(), lastSyncMillis, timeProvider)
         }
         railSyncStatus.text = getString(R.string.dashboard_sync_status, timeText)
     }
