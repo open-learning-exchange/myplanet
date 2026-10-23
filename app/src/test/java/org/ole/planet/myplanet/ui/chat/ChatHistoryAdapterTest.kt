@@ -19,7 +19,6 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.Conversation
-import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
