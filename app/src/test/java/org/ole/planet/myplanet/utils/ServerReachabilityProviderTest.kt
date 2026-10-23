@@ -64,13 +64,11 @@ class ServerReachabilityProviderTest {
         val firstCall = provider.isServerReachable(url)
         assertTrue(firstCall)
 
-        // Advance time by 10 seconds (within 30s TTL)
         timeProvider.advanceBy(10_000L)
 
         val secondCall = provider.isServerReachable(url)
         assertTrue(secondCall)
 
-        // OkHttpClient call should execute only once due to cache hit
         verify(exactly = 1) { okHttpClient.newCall(any()) }
     }
 
@@ -88,13 +86,11 @@ class ServerReachabilityProviderTest {
         val firstCall = provider.isServerReachable(url)
         assertTrue(firstCall)
 
-        // Advance time beyond 30s TTL (e.g., 30,001 ms)
         timeProvider.advanceBy(30_001L)
 
         val secondCall = provider.isServerReachable(url)
         assertTrue(secondCall)
 
-        // OkHttpClient should be called twice because cache expired
         verify(exactly = 2) { okHttpClient.newCall(any()) }
     }
 
@@ -147,8 +143,6 @@ class ServerReachabilityProviderTest {
             primaryLatch.countDown()
         }
 
-        // Hold the alternative until the primary is in flight, otherwise it can win before
-        // the primary call exists and the primary is cancelled without ever reaching cancel().
         every { mockCallAlt.execute() } answers {
             primaryStarted.await(5, TimeUnit.SECONDS)
             mockResponseAlt
@@ -189,13 +183,11 @@ class ServerReachabilityProviderTest {
         val firstCall = provider.isServerReachable(url)
         assertFalse(firstCall)
 
-        // Advance time by 10 seconds (within 30s TTL)
         timeProvider.advanceBy(10_000L)
 
         val secondCall = provider.isServerReachable(url)
         assertFalse(secondCall)
 
-        // OkHttpClient calls should only execute during the first evaluation
         verify(exactly = 1) { mockCallPrimary.execute() }
         verify(exactly = 1) { mockCallAlt.execute() }
     }
