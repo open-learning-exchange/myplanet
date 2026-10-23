@@ -47,7 +47,7 @@ class UserDataUploadSchedulerTest {
         every { WorkManager.getInstance(any()) } returns workManagerImpl
 
         val operation = mockk<Operation>()
-        val successFuture = Futures.immediateFuture<Operation.State.SUCCESS>(Operation.SUCCESS as Operation.State.SUCCESS)
+        val successFuture = Futures.immediateFuture(Operation.SUCCESS as Operation.State.SUCCESS)
         every { operation.result } returns successFuture
         every { workManagerImpl.enqueueUniqueWork(any<String>(), any<androidx.work.ExistingWorkPolicy>(), any<androidx.work.OneTimeWorkRequest>()) } returns operation
 
@@ -94,7 +94,7 @@ class UserDataUploadSchedulerTest {
     fun enqueueUserDataUpload_emptyListThenEnqueuedReturnsSingleIdle() = runTest {
         val workInfoEnqueued = mockk<WorkInfo> { every { state } returns WorkInfo.State.ENQUEUED }
 
-        val workInfoFlow = flowOf<List<WorkInfo>>(
+        val workInfoFlow = flowOf(
             emptyList(),
             listOf(workInfoEnqueued)
         )

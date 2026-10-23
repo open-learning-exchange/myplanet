@@ -21,7 +21,7 @@ class TeamTaskTest {
 
     @Before
     fun setup() {
-        MainApplication.testContext = ApplicationProvider.getApplicationContext<Context>()
+        MainApplication.testContext = ApplicationProvider.getApplicationContext()
     }
 
     @After
@@ -102,6 +102,19 @@ class TeamTaskTest {
 
         val linkObj = result.getAsJsonObject("link")
         assertEquals("linkValue", linkObj.get("linkKey").asString)
+    }
+
+    @Test
+    fun testSerialize_keepsAssigneeIdWhenUserIsNotOnDevice() {
+        val task = TeamTask().apply {
+            _id = "t1"
+            title = "Assigned Task"
+            assignee = "member_1"
+        }
+
+        val result = TeamTask.serialize(task, null)
+
+        assertEquals("member_1", result.getAsJsonObject("assignee").get("_id").asString)
     }
 
     @Test

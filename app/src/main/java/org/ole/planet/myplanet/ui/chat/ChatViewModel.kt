@@ -60,9 +60,6 @@ class ChatViewModel @Inject constructor(
     private val realtimeSyncManager: RealtimeSyncManager,
     private val configurationsRepository: ConfigurationsRepository
 ) : ViewModel() {
-    companion object {
-        const val PAGE_SIZE = ChatConversationPaginator.PAGE_SIZE
-    }
     private val paginator = ChatConversationPaginator(dispatcherProvider)
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val allConversations: List<Conversation> get() = paginator.allConversations

@@ -8,5 +8,5 @@ data class DashboardItem(
 )
 
 enum class ItemType {
-    LIBRARY, COURSE, MEETUP, LIFE
+    COURSE, LIFE
 }

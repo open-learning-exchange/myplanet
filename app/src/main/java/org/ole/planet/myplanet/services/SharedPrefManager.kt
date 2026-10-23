@@ -110,7 +110,7 @@ class SharedPrefManager @Inject constructor(
         pref.edit { putBoolean(MANUAL_CONFIG, manualConfig) }
     }
 
-    fun getSelectedTeamId(): String? {
+    fun getSelectedTeamId(): String {
         return pref.getString(SELECTED_TEAM_ID, "") ?: ""
     }
 
@@ -126,7 +126,7 @@ class SharedPrefManager @Inject constructor(
         pref.edit { putBoolean(FIRST_LAUNCH, firstLaunch) }
     }
 
-    fun getTeamName(): String? {
+    fun getTeamName(): String {
         return pref.getString(TEAM_NAME, "") ?: ""
     }
 
@@ -271,7 +271,6 @@ class SharedPrefManager @Inject constructor(
     fun setSwitchCloudUrl(value: Boolean) = pref.edit { putBoolean(SWITCH_CLOUD_URL, value) }
 
     fun getUserId(): String = pref.getString(USER_ID, "") ?: ""
-    fun setUserId(id: String) = pref.edit { putString(USER_ID, id) }
 
     fun getParentCode(): String = pref.getString(PARENT_CODE, "") ?: ""
     fun setParentCode(code: String) = pref.edit { putString(PARENT_CODE, code) }

@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.model.TeamTask
 object Constants {
     const val HTTP_PROTOCOL = "http://"
     const val HTTPS_PROTOCOL = "https://"
-    const val KEY_LOGIN = "isLoggedIn"
     const val DICTIONARY_URL = "http://157.245.241.39:8000/output.json"
     var shelfDataList = mutableListOf<ShelfData>()
     const val KEY_MEETUPS = "key_meetup"
@@ -36,8 +35,6 @@ object Constants {
         "Request for advice" to "advice"
     )
     val LABEL_VALUE_TO_NAME: Map<String, String> by lazy { LABELS.entries.associate { it.value to it.key } }
-    const val KEY_NOTIFICATION_SHOWN = "notification_shown"
-    const val SELECTED_LANGUAGE = "app_language"
     const val ACTION_RETRY_EVENT = "ACTION_RETRY_EVENT"
     const val NETWORK_TRAFFIC_TAG = 0x4F_4C_45 // "OLE"
 

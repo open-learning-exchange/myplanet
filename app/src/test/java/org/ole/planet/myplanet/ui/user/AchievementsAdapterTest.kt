@@ -132,7 +132,7 @@ class AchievementsAdapterTest {
         binding.tvRefPhone.text = "stale"
         binding.tvRefEmail.text = "stale"
 
-        adapter.onBindViewHolder(holder, 0, mutableListOf<Any>(PAYLOAD_PHONE))
+        adapter.onBindViewHolder(holder, 0, mutableListOf(PAYLOAD_PHONE))
 
         assertEquals("123-456-7890", binding.tvRefPhone.text.toString())
         assertNotEquals("john@example.com", binding.tvRefEmail.text.toString())
@@ -154,7 +154,7 @@ class AchievementsAdapterTest {
         binding.tvRefPhone.text = "stale"
         binding.tvRefEmail.text = "stale"
 
-        adapter.onBindViewHolder(holder, 0, mutableListOf<Any>(PAYLOAD_EMAIL))
+        adapter.onBindViewHolder(holder, 0, mutableListOf(PAYLOAD_EMAIL))
 
         assertEquals("john@example.com", binding.tvRefEmail.text.toString())
         assertNotEquals("123-456-7890", binding.tvRefPhone.text.toString())
@@ -172,7 +172,7 @@ class AchievementsAdapterTest {
         val binding = RowOtherInfoBinding.inflate(LayoutInflater.from(context))
         val holder = AchievementsAdapter.AchievementsViewHolder(binding)
 
-        adapter.onBindViewHolder(holder, 0, mutableListOf<Any>(PAYLOAD_PHONE, PAYLOAD_EMAIL))
+        adapter.onBindViewHolder(holder, 0, mutableListOf(PAYLOAD_PHONE, PAYLOAD_EMAIL))
 
         assertEquals("123-456-7890", binding.tvRefPhone.text.toString())
         assertEquals("john@example.com", binding.tvRefEmail.text.toString())
@@ -192,7 +192,7 @@ class AchievementsAdapterTest {
 
         binding.tvRefName.text = "stale"
 
-        adapter.onBindViewHolder(holder, 0, mutableListOf<Any>("UNKNOWN_PAYLOAD"))
+        adapter.onBindViewHolder(holder, 0, mutableListOf("UNKNOWN_PAYLOAD"))
 
         assertEquals("John Doe", binding.tvRefName.text.toString())
         assertEquals("Friend", binding.tvRefRelationship.text.toString())
@@ -215,7 +215,7 @@ class AchievementsAdapterTest {
         binding.tvRefPhone.text = "stale"
         binding.tvRefEmail.text = "stale"
 
-        adapter.onBindViewHolder(holder, 0, mutableListOf<Any>(listOf(PAYLOAD_PHONE, PAYLOAD_EMAIL)))
+        adapter.onBindViewHolder(holder, 0, mutableListOf(listOf(PAYLOAD_PHONE, PAYLOAD_EMAIL)))
 
         assertEquals("123-456-7890", binding.tvRefPhone.text.toString())
         assertEquals("john@example.com", binding.tvRefEmail.text.toString())

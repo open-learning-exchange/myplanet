@@ -566,19 +566,19 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
     
-    private suspend fun handleSurveyNavigation(surveyId: String?) {
+    private fun handleSurveyNavigation(surveyId: String?) {
         if (surveyId != null) {
             dashboardViewModel.handleSurveyNavigation(surveyId)
         }
     }
     
-    private suspend fun handleTaskNavigation(taskId: String?) {
+    private fun handleTaskNavigation(taskId: String?) {
         if (taskId != null) {
             dashboardViewModel.handleTaskNavigation(taskId)
         }
     }
 
-    private suspend fun handleJoinRequestNavigation(requestId: String?) {
+    private fun handleJoinRequestNavigation(requestId: String?) {
         if (requestId != null) {
             val actualJoinRequestId = if (requestId.startsWith("join_request_")) {
                 requestId.removePrefix("join_request_")
