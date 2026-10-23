@@ -1267,6 +1267,12 @@ class TeamsRepositoryImpl @Inject constructor(
         }
 
         val existingTeam = existingTeams?.get(teamId) ?: teamDao.getById(teamId)
+        if (existingTeam != null && (existingTeam.updated || existingTeam.isDeletePending)) {
+            existingTeam._rev = GsonUtils.getString("_rev", doc)
+            teamDao.upsert(existingTeam)
+            existingTeams?.put(teamId, existingTeam)
+            return
+        }
         val model = existingTeam ?: MyTeam().apply { _id = teamId }
         MyTeam.populateTeamFields(doc, model, true)
         processDescription(model.description)
