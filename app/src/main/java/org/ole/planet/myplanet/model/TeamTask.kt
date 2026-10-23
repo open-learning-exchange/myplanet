@@ -77,7 +77,11 @@ class TeamTask {
                 put("completed", task.completed)
                 put("completedTime", task.completedTime)
                 put("status", if (task.status == ARCHIVED_STATUS) ARCHIVED_STATUS else task.effectiveStatus())
-                if (user != null) put("assignee", user.serialize().toKotlinx()) else put("assignee", "")
+                when {
+                    user != null -> put("assignee", user.serialize().toKotlinx())
+                    !task.assignee.isNullOrBlank() -> put("assignee", buildJsonObject { put("_id", task.assignee) })
+                    else -> put("assignee", "")
+                }
                 put("sync", syncJson?.toKotlinx() ?: JsonNull)
                 put("link", linkJson?.toKotlinx() ?: JsonNull)
             }.toGson()
