@@ -11,10 +11,10 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -80,7 +80,7 @@ class UploadCoordinatorTest {
             if (current > maxConcurrentRequests) {
                 maxConcurrentRequests = current
             }
-            delay(10)
+            delay(10.milliseconds)
             activeRequests.decrementAndGet()
 
             val url = invocation.args[0] as String
@@ -213,7 +213,7 @@ class UploadCoordinatorTest {
             if (current > maxConcurrentRequests) {
                 maxConcurrentRequests = current
             }
-            delay(10)
+            delay(10.milliseconds)
             activeRequests.decrementAndGet()
 
             val reqBody = invocation.args[1] as JsonObject
@@ -338,7 +338,7 @@ class UploadCoordinatorTest {
         val item = Submission(id = "local-1")
 
         coEvery { uploadRepository.postUpload(any(), any()) } coAnswers {
-            delay(100)
+            delay(100.milliseconds)
             Response.success(JsonObject())
         }
 
@@ -355,7 +355,7 @@ class UploadCoordinatorTest {
             uploadCoordinator.upload(config)
         }
 
-        delay(10)
+        delay(10.milliseconds)
         job.cancel(CancellationException("Test cancellation"))
 
         try {
@@ -567,7 +567,7 @@ class UploadCoordinatorTest {
     private fun errorResponse(code: Int): Response<JsonObject> =
         Response.error(code, "error".toResponseBody(null))
 
-    private fun roomConfig(items: List<SampleItem>) = RoomUploadConfig<SampleItem>(
+    private fun roomConfig(items: List<SampleItem>) = RoomUploadConfig(
         endpoint = "samples",
         modelClassName = "SampleItem",
         fetchPendingItems = { items },
@@ -577,7 +577,7 @@ class UploadCoordinatorTest {
         markUploaded = { _: List<UploadedItemResult> -> emptyList() }
     )
 
-    private fun submissionConfig(items: List<Submission>) = UploadConfig<Submission>(
+    private fun submissionConfig(items: List<Submission>) = UploadConfig(
         modelClass = Submission::class,
         endpoint = "submissions",
         fetchPendingItems = { items },

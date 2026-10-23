@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.utils
 
 import android.app.Activity
-import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
@@ -20,8 +19,6 @@ import org.junit.Before
 import org.junit.Test
 
 class UtilitiesTest {
-
-    private val mockContext = mockk<Context>(relaxed = true)
 
     @Before
     fun setup() {

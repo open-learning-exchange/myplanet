@@ -38,7 +38,6 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.ResourceTitleProjection
-import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.SearchActivity
@@ -64,7 +63,6 @@ class ResourcesRepositoryImplTest {
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val tagsRepository: TagsRepository = mockk(relaxed = true)
-    private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
     private val resourceActivityDao: ResourceActivityDao = mockk(relaxed = true)
     private val removedLogDao: RemovedLogDao = mockk(relaxed = true)
     private val teamsRepositoryLazy: Lazy<TeamsRepository> = mockk(relaxed = true)
@@ -102,7 +100,6 @@ class ResourcesRepositoryImplTest {
             activitiesRepository,
             sharedPrefManager,
             tagsRepository,
-            searchActivityDao,
             resourceActivityDao,
             removedLogDao,
             teamsSyncRepositoryLazy,
@@ -142,7 +139,7 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `setUserLibrary returns existing library and no-ops when already added`() = runTest {
-        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        val mockUser = UserEntity().apply { id = "user-123" }
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val mockLibrary = MyLibrary().apply {
@@ -160,7 +157,7 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `setUserLibrary returns existing library and no-ops when already removed`() = runTest {
-        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        val mockUser = UserEntity().apply { id = "user-123" }
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val mockLibrary = MyLibrary().apply {
@@ -326,7 +323,7 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `setUserLibrary returns updated library on successful toggle`() = runTest {
-        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        val mockUser = UserEntity().apply { id = "user-123" }
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val mockLibrary = MyLibrary().apply {
@@ -575,7 +572,7 @@ class ResourcesRepositoryImplTest {
             mediums = setOf("video")
         )
 
-        coVerify(exactly = 1) { searchActivityDao.insert(capture(savedActivity)) }
+        coVerify(exactly = 1) { activitiesRepository.recordSearchActivity(capture(savedActivity)) }
         assertTrue(savedActivity.captured.id.isNotBlank())
         assertEquals("learner", savedActivity.captured.user)
         assertEquals("planet", savedActivity.captured.createdOn)
@@ -975,6 +972,7 @@ class ResourcesRepositoryImplTest {
 
         val mockTeamsRepository = mockk<TeamsRepository>(relaxed = true)
         every { teamsRepositoryLazy.get() } returns mockTeamsRepository
+        every { storagePathResolver.resolveOleDirectory() } returns kotlin.io.path.createTempDirectory("resources-private-test").toFile()
         coEvery { myLibraryDao.getById(localId) } returns library
         coEvery { myLibraryDao.upsert(any()) } returns Unit
 
@@ -989,6 +987,30 @@ class ResourcesRepositoryImplTest {
                 title = "Private Resource",
                 planetCode = "planet1"
             )
+        }
+    }
+
+    @Test
+    fun `markResourceUploaded re-keys a device-created resource and its folder to the server id`() = runTest {
+        val baseDir = kotlin.io.path.createTempDirectory("resources-rekey-test").toFile()
+        val oleDir = File(baseDir, "ole")
+        File(oleDir, "local-uuid").apply { mkdirs() }
+        File(oleDir, "local-uuid/song.mp3").writeText("audio")
+        every { storagePathResolver.resolveOleDirectory() } returns oleDir
+        val library = MyLibrary().apply { id = "local-uuid"; resourceId = "local-uuid"; resourceLocalAddress = "song.mp3" }
+        coEvery { myLibraryDao.getById("local-uuid") } returns library
+        coEvery { myLibraryDao.upsert(any()) } returns Unit
+
+        try {
+            val result = repository.markResourceUploaded("local-uuid", "remote1", "1-rev", "planet1")
+
+            assertTrue(result)
+            coVerify { myLibraryDao.upsert(match { it.id == "remote1" && it.resourceId == "remote1" && it._rev == "1-rev" }) }
+            coVerify { myLibraryDao.deleteById("local-uuid") }
+            assertTrue(File(oleDir, "remote1/song.mp3").exists())
+            assertFalse(File(oleDir, "local-uuid").exists())
+        } finally {
+            baseDir.deleteRecursively()
         }
     }
 
@@ -1455,6 +1477,21 @@ class ResourcesRepositoryImplTest {
         assertEquals("Sudoku", result[0].title)
         assertEquals(2, result[0].filePaths.size)
         assertEquals(30L, result[0].totalSizeBytes)
+    }
+
+    @Test
+    fun `storage listing and breakdown leave out CV and attachment folders`() = runTest {
+        val oleDir = temporaryFolder.newFolder("ole_app_dirs")
+        File(oleDir, "res1/book.pdf").apply { parentFile?.mkdirs(); writeBytes(ByteArray(10)) }
+        File(oleDir, "cv/resume.pdf").apply { parentFile?.mkdirs(); writeBytes(ByteArray(20)) }
+        File(oleDir, "team_attachments/team1/logo.png").apply { parentFile?.mkdirs(); writeBytes(ByteArray(30)) }
+        coEvery { myLibraryDao.getResourceTitlesByResourceIds(any()) } returns listOf(ResourceTitleProjection("res1", "Book"))
+
+        val items = repository.getOfflineResourceItems(oleDir.absolutePath, setOf("pdf"), emptySet())
+        val breakdown = repository.getStorageBreakdown(oleDir)
+
+        assertEquals(listOf("res1"), items.map { it.resourceId })
+        assertEquals(10L, breakdown.totalBytes)
     }
 
     @Test

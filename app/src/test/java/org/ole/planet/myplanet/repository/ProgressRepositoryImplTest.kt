@@ -51,9 +51,9 @@ class ProgressRepositoryImplTest {
         repository = spyk(
             ProgressRepositoryImpl(
                 dispatcherProvider,
-                dagger.Lazy { mockCoursesRepository },
-                dagger.Lazy { mockk(relaxed = true) },
-                dagger.Lazy { mockSubmissionsRepository },
+                { mockCoursesRepository },
+                { mockk(relaxed = true) },
+                { mockSubmissionsRepository },
                 courseProgressDao,
                 courseStepDao,
                 examDao,
@@ -386,7 +386,7 @@ class ProgressRepositoryImplTest {
         }
 
         coEvery { mockSubmissionsRepository.getAnswersBySubmissionIds(listOf("sub1")) } returns answers.map { answer ->
-            org.ole.planet.myplanet.model.Answer(
+            Answer(
                 id = answer.id ?: "answer",
                 questionId = answer.questionId,
                 submissionId = answer.submissionId,
@@ -395,7 +395,7 @@ class ProgressRepositoryImplTest {
         }
 
         coEvery { questionDao.getByIds(listOf("q1")) } returns listOf(
-            org.ole.planet.myplanet.model.ExamQuestion(id = question.id ?: "q1", examId = question.examId)
+            ExamQuestion(id = question.id ?: "q1", examId = question.examId)
         )
 
         val data = repository.fetchCourseData("user1")
@@ -435,12 +435,12 @@ class ProgressRepositoryImplTest {
             Submission(id = "sub2", parentId = "course1", userId = "user1", type = "exam")
         )
         coEvery { mockSubmissionsRepository.getAnswersBySubmissionIds(listOf("sub1", "sub2")) } returns listOf(
-            org.ole.planet.myplanet.model.Answer(id = "a1", questionId = "q1", submissionId = "sub1", mistakes = 2),
-            org.ole.planet.myplanet.model.Answer(id = "a2", questionId = "q2", submissionId = "sub2", mistakes = 3)
+            Answer(id = "a1", questionId = "q1", submissionId = "sub1", mistakes = 2),
+            Answer(id = "a2", questionId = "q2", submissionId = "sub2", mistakes = 3)
         )
         coEvery { questionDao.getByIds(listOf("q1", "q2")) } returns listOf(
-            org.ole.planet.myplanet.model.ExamQuestion(id = "q1", examId = "exam1"),
-            org.ole.planet.myplanet.model.ExamQuestion(id = "q2", examId = "exam2")
+            ExamQuestion(id = "q1", examId = "exam1"),
+            ExamQuestion(id = "q2", examId = "exam2")
         )
 
         val obj = repository.fetchCourseData("user1")[0].asJsonObject
@@ -532,9 +532,9 @@ class ProgressRepositoryImplTest {
         val activitiesRepo = mockk<ActivitiesRepository>()
         val localRepository = ProgressRepositoryImpl(
             dispatcherProvider,
-            dagger.Lazy { mockCoursesRepository },
-            dagger.Lazy { activitiesRepo },
-            dagger.Lazy { mockSubmissionsRepository },
+            { mockCoursesRepository },
+            { activitiesRepo },
+            { mockSubmissionsRepository },
             courseProgressDao,
             courseStepDao,
             examDao,

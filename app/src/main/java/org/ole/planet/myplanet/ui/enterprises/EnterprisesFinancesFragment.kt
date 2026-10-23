@@ -82,7 +82,6 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                 }
             }
         }
-        date = Calendar.getInstance()
         return binding.root
     }
 
@@ -324,6 +323,9 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     private fun setUpAlertUi(): View {
         addTransactionBinding = DialogAddTransactionBinding.inflate(LayoutInflater.from(activity))
         selectedImageUri = null
+        date = Calendar.getInstance().also { today ->
+            addTransactionBinding.tvSelectDate.text = formatDateTZ(today.timeInMillis)
+        }
         dialogImagePreview = addTransactionBinding.imagePreview
         addTransactionBinding.btnAddImage.setOnClickListener {
             pickImageLauncher.launch("image/*")

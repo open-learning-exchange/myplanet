@@ -9,6 +9,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.first
@@ -347,13 +348,13 @@ class VoicesRepositoryNewsSyncTest {
             flowRepository.getCommunityNews("").collect { emissions.send(it) }
         }
         try {
-            assertNull(withTimeout(5_000) { emissions.receive() }.single().reactions)
+            assertNull(withTimeout(5_000.milliseconds) { emissions.receive() }.single().reactions)
 
             repository.insertNewsList(listOf(doc.deepCopy().apply {
                 add("reactions", reactionsOf("👍" to listOf("org.couchdb.user:bob")))
             }))
 
-            val updated = withTimeout(5_000) { emissions.receive() }
+            val updated = withTimeout(5_000.milliseconds) { emissions.receive() }
             assertEquals(mapOf("👍" to listOf("org.couchdb.user:bob")), updated.single().reactionsMap)
         } finally {
             job.cancel()

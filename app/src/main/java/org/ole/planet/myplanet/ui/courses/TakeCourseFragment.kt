@@ -478,7 +478,6 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
         private const val TAG = "TakeCourseFragment"
         // Special course with mandatory completion survey (e.g. MyPlanet Onboarding course)
         private const val MANDATORY_SURVEY_COURSE_ID = "4e6b78800b6ad18b4e8b0e1e38a98cac"
-        private const val JOIN_DIALOG_FALLBACK_MS = 5000L
 
         fun newInstance(b: Bundle?): TakeCourseFragment {
             val takeCourseFragment = TakeCourseFragment()

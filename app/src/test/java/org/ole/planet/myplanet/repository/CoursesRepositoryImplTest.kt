@@ -28,8 +28,6 @@ import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
-import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.ExamQuestion
@@ -54,8 +52,7 @@ class CoursesRepositoryImplTest {
     private val courseStepDao: CourseStepDao = mockk(relaxed = true)
     private val examDao: ExamDao = mockk(relaxed = true)
     private val questionDao: QuestionDao = mockk(relaxed = true)
-    private val tagDao: TagDao = mockk(relaxed = true)
-    private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
+    private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
     private val removedLogDao: RemovedLogDao = mockk(relaxed = true)
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
@@ -83,7 +80,7 @@ class CoursesRepositoryImplTest {
             courseStepDao,
             examDao,
             questionDao,
-            searchActivityDao,
+            activitiesRepository,
             courseProgressDao,
             removedLogDao,
             myLibraryDao,
@@ -229,7 +226,7 @@ class CoursesRepositoryImplTest {
             subject = "math"
         )
 
-        coVerify(exactly = 1) { searchActivityDao.insert(capture(savedActivity)) }
+        coVerify(exactly = 1) { activitiesRepository.recordSearchActivity(capture(savedActivity)) }
         assertTrue(savedActivity.captured.id.isNotBlank())
         assertEquals("learner", savedActivity.captured.user)
         assertEquals("planet", savedActivity.captured.createdOn)
@@ -395,7 +392,6 @@ class CoursesRepositoryImplTest {
     @Test
     fun getCourseDetailModel_whenCourseExists_returnsAggregatedData() = runTest {
         val course = MyCourse().apply { courseId = "course_id" }
-        val step = org.ole.planet.myplanet.model.CourseStep().apply { id = "step_1"; stepTitle = "Title" }
         val user = org.ole.planet.myplanet.model.UserEntity().apply { id = "user_1" }
 
         coEvery { courseDao.observeByCourseId("course_id") } returns kotlinx.coroutines.flow.flowOf(course)
@@ -403,7 +399,7 @@ class CoursesRepositoryImplTest {
         coEvery { examDao.countByCourseIdAndType("course_id", "courses") } returns 5
         coEvery { myLibraryDao.getCourseResources("course_id", false) } returns emptyList()
         coEvery { myLibraryDao.getCourseResources("course_id", true) } returns emptyList()
-        coEvery { courseStepDao.getByCourseId("course_id") } returns listOf(org.ole.planet.myplanet.model.CourseStep().apply { id = "step_1"; stepTitle = "Title" })
+        coEvery { courseStepDao.getByCourseId("course_id") } returns listOf(CourseStep().apply { id = "step_1"; stepTitle = "Title" })
         coEvery { examDao.getByStepIds(listOf("step_1")) } returns listOf(org.ole.planet.myplanet.model.StepExam().apply { stepId = "step_1"; noOfQuestions = 3 })
 
         coEvery { ratingsRepository.getRatingSummary("course", "course_id", "user_1") } returns RatingSummary(

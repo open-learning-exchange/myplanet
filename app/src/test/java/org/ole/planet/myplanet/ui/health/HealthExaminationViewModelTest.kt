@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.health
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -182,7 +183,7 @@ class HealthExaminationViewModelTest {
         val user = UserEntity()
         val sign = Examination()
 
-        coEvery { healthRepository.saveExamination(examination, pojo, user) } coAnswers { delay(100) }
+        coEvery { healthRepository.saveExamination(examination, pojo, user) } coAnswers { delay(100.milliseconds) }
 
         val results = mutableListOf<Boolean>()
         val job = launch(UnconfinedTestDispatcher(testScheduler)) {

@@ -545,7 +545,7 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun isTeamLeader(teamId: String, userId: String?): Boolean {
         if (teamId.isBlank() || userId.isNullOrBlank()) return false
         return teamDao.getByTeamIdAndDocType(teamId, "membership")
-            .any { it.userId == userId && it.isLeader }
+            .any { it.userId == userId && it.isLeader && !it.isDeletePending }
     }
 
     override suspend fun hasPendingRequest(teamId: String, userId: String?): Boolean {
@@ -581,9 +581,9 @@ class TeamsRepositoryImpl @Inject constructor(
             if (entry.docType == "membership") {
                 if (!entry.isDeletePending) {
                     membershipSet.add(teamId)
-                }
-                if (entry.isLeader) {
-                    leaderSet.add(teamId)
+                    if (entry.isLeader) {
+                        leaderSet.add(teamId)
+                    }
                 }
             } else if (entry.docType == "request" && !entry.isDeletePending) {
                 pendingRequestSet.add(teamId)
@@ -680,6 +680,9 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun leaveTeam(teamId: String, userId: String?) {
         if (teamId.isBlank() || userId.isNullOrBlank()) return
+        if (isTeamLeader(teamId, userId)) {
+            getNextLeaderCandidate(teamId, userId)?.id?.let { updateTeamLeader(teamId, it) }
+        }
         markMembershipsForLeave(teamId, userId)
     }
 

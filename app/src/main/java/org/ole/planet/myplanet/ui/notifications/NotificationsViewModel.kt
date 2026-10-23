@@ -359,7 +359,4 @@ class NotificationsViewModel @Inject constructor(
         return notificationsRepository.getJoinRequestTeamId(relatedId)
     }
 
-    suspend fun getUnreadCount(userId: String): Int {
-        return notificationsRepository.getUnreadCount(userId)
-    }
 }

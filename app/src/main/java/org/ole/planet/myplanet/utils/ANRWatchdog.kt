@@ -4,9 +4,9 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -52,7 +52,7 @@ class ANRWatchdog(
                 val lastTick = tick
                 mainHandler.post(tickUpdater)
 
-                delay(timeout / 2)
+                delay((timeout / 2).milliseconds)
 
                 if (isWatching && lastTick == tick) {
                     val duration = SystemClock.elapsedRealtime() - lastTick
@@ -76,7 +76,7 @@ class ANRWatchdog(
                     }
 
                     listener?.onAppNotResponding(message.toString(), mainThread, duration)
-                    delay(timeout)
+                    delay(timeout.milliseconds)
                 }
             }
         }

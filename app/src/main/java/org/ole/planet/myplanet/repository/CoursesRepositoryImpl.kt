@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
-import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.Certification
 import org.ole.planet.myplanet.model.CourseDetailModel
@@ -64,7 +63,7 @@ class CoursesRepositoryImpl @Inject constructor(
     private val courseStepDao: CourseStepDao,
     private val examDao: ExamDao,
     private val questionDao: QuestionDao,
-    private val searchActivityDao: SearchActivityDao,
+    private val activitiesRepository: ActivitiesRepository,
     private val courseProgressDao: CourseProgressDao,
     private val removedLogDao: RemovedLogDao,
     private val myLibraryDao: MyLibraryDao,
@@ -338,7 +337,7 @@ class CoursesRepositoryImpl @Inject constructor(
             addProperty("doc.gradeLevel", grade)
             addProperty("doc.subjectLevel", subject)
         }
-        searchActivityDao.insert(
+        activitiesRepository.recordSearchActivity(
             SearchActivity(
                 id = UUID.randomUUID().toString(),
                 user = userName,
@@ -664,7 +663,10 @@ class CoursesRepositoryImpl @Inject constructor(
             if (steps.isNotEmpty()) courseStepDao.upsertAll(steps)
             stepIdsByCourse.forEach { (courseId, stepIds) -> courseStepDao.deleteStaleSteps(courseId, stepIds) }
             if (exams.isNotEmpty()) examDao.upsertAll(exams)
-            if (questions.isNotEmpty()) questionDao.upsertAll(questions)
+            if (questions.isNotEmpty()) {
+                questionDao.upsertAll(questions)
+                questionDao.deleteStaleQuestions(questions)
+            }
         }
         return processedCount
     }

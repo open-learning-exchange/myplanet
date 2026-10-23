@@ -2,14 +2,14 @@ package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
 import dagger.Lazy
-import java.io.File
-import java.io.IOException
-import java.nio.file.Files
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
+import java.io.File
+import java.io.IOException
+import java.nio.file.Files
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
