@@ -8,6 +8,7 @@ import androidx.work.Data
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.coroutineScope
@@ -33,7 +34,7 @@ class UserDataWorker @AssistedInject constructor(
                         deferred.complete(success)
                     }
                 })
-                val successMsg = withTimeoutOrNull(30000L) { deferred.await() }
+                val successMsg = withTimeoutOrNull(30000.milliseconds) { deferred.await() }
                 val outputData = Data.Builder().putString(KEY_SUCCESS_MESSAGE, successMsg).build()
                 return@coroutineScope Result.success(outputData)
             } else if (uploadType == UPLOAD_TYPE_BULK) {
@@ -112,7 +113,7 @@ class UserDataWorker @AssistedInject constructor(
     ) {
         val d = CompletableDeferred<Unit>()
         start { d.complete(Unit) }
-        withTimeoutOrNull(timeoutMs) { d.await() }
+        withTimeoutOrNull(timeoutMs.milliseconds) { d.await() }
     }
 
     companion object {

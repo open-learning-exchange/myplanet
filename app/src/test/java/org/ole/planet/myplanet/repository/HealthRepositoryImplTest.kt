@@ -235,6 +235,25 @@ class HealthRepositoryImplTest {
     }
 
     @Test
+    fun bulkInsertFromSync_keeps_examinations_edited_locally_but_not_yet_uploaded() = testScope.runTest {
+        coEvery { healthExaminationDao.getUpdatedIds() } returns listOf("exam1")
+        val jsonArray = JsonArray().apply {
+            listOf("exam1", "exam2").forEach { examId ->
+                add(JsonObject().apply {
+                    add("doc", JsonObject().apply { addProperty("_id", examId) })
+                })
+            }
+        }
+
+        repository.bulkInsertFromSync(jsonArray)
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            healthExaminationDao.upsertAll(match { it.map { exam -> exam._id } == listOf("exam2") })
+        }
+    }
+
+    @Test
     fun uploadHealthData_successful_upload() = testScope.runTest {
         mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
         every { org.ole.planet.myplanet.utils.UrlUtils.header } returns "mock-header"

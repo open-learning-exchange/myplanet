@@ -255,7 +255,7 @@ class MembersAdapterTest {
 
     @Test
     fun testOnBindViewHolder_hoistedStringsResolvedOnceAcrossMultipleBinds() {
-        val spyContext = spyk(ApplicationProvider.getApplicationContext<android.content.Context>())
+        val spyContext = spyk(ApplicationProvider.getApplicationContext())
         val spyAdapter = MembersAdapter(spyContext, currentUserId, actionListener)
 
         val leaderUser = UserEntity(id = "user1", name = "Leader")

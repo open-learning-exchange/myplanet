@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.teams.members
 
-import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
@@ -10,7 +9,6 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.DiffUtils
 
 class RequestsAdapter(
-    private val context: Context,
     private var currentUser: UserEntity,
     private val onAction: (UserEntity, Boolean) -> Unit
 ) : ListAdapter<UserEntity, RequestsAdapter.ViewHolderUser>(DIFF_CALLBACK) {

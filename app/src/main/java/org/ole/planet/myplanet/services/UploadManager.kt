@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 @Singleton
 class UploadManager @Inject constructor(
     private val uploadCoordinator: UploadCoordinator,
-    private val uploadRepository: UploadRepository,
+    uploadRepository: UploadRepository,
     private val userRepository: UserRepository,
     private val uploadConfigs: UploadConfigs,
     private val resourcesRepository: ResourcesRepository,

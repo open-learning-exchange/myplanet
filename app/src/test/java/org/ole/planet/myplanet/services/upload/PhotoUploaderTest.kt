@@ -12,10 +12,10 @@ import io.mockk.slot
 import io.mockk.unmockkAll
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -107,7 +107,7 @@ class PhotoUploaderTest {
             if (current > maxConcurrentRequests) {
                 maxConcurrentRequests = current
             }
-            delay(10)
+            delay(10.milliseconds)
             activeRequests.decrementAndGet()
 
             val reqJson = invocation.args[1] as JsonObject

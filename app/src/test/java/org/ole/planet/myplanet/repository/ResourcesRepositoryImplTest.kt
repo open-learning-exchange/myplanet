@@ -142,7 +142,7 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `setUserLibrary returns existing library and no-ops when already added`() = runTest {
-        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        val mockUser = UserEntity().apply { id = "user-123" }
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val mockLibrary = MyLibrary().apply {
@@ -160,7 +160,7 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `setUserLibrary returns existing library and no-ops when already removed`() = runTest {
-        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        val mockUser = UserEntity().apply { id = "user-123" }
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val mockLibrary = MyLibrary().apply {
@@ -326,7 +326,7 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `setUserLibrary returns updated library on successful toggle`() = runTest {
-        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        val mockUser = UserEntity().apply { id = "user-123" }
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val mockLibrary = MyLibrary().apply {
