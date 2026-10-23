@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.utils
 
 import android.util.Log
+import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.clearAllMocks
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
