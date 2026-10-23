@@ -23,7 +23,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
-import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.OfflineResourceItem
@@ -56,7 +55,6 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val activitiesRepository: ActivitiesRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val tagsRepository: TagsRepository,
-    private val searchActivityDao: SearchActivityDao,
     private val resourceActivityDao: ResourceActivityDao,
     private val removedLogDao: RemovedLogDao,
     private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository>,
@@ -475,7 +473,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
         val filterPayload = GsonUtils.gson.toJson(filter)
 
-        searchActivityDao.insert(
+        activitiesRepository.recordSearchActivity(
             SearchActivity(
                 id = UUID.randomUUID().toString(),
                 user = userName,

@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
-import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.ExamQuestion
@@ -53,7 +52,7 @@ class CoursesRepositoryImplTest {
     private val courseStepDao: CourseStepDao = mockk(relaxed = true)
     private val examDao: ExamDao = mockk(relaxed = true)
     private val questionDao: QuestionDao = mockk(relaxed = true)
-    private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
+    private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
     private val removedLogDao: RemovedLogDao = mockk(relaxed = true)
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
@@ -81,7 +80,7 @@ class CoursesRepositoryImplTest {
             courseStepDao,
             examDao,
             questionDao,
-            searchActivityDao,
+            activitiesRepository,
             courseProgressDao,
             removedLogDao,
             myLibraryDao,
@@ -227,7 +226,7 @@ class CoursesRepositoryImplTest {
             subject = "math"
         )
 
-        coVerify(exactly = 1) { searchActivityDao.insert(capture(savedActivity)) }
+        coVerify(exactly = 1) { activitiesRepository.recordSearchActivity(capture(savedActivity)) }
         assertTrue(savedActivity.captured.id.isNotBlank())
         assertEquals("learner", savedActivity.captured.user)
         assertEquals("planet", savedActivity.captured.createdOn)
