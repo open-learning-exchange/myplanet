@@ -64,6 +64,24 @@ class HealthExaminationActivityTest {
     }
 
     @Test
+    fun removingTheLastCustomDiagnosisChip_keepsItRemoved() {
+        val activity = Robolectric.buildActivity(HealthExaminationActivity::class.java).create().get()
+        val cls = HealthExaminationActivity::class.java
+        cls.getDeclaredField("examination").apply { isAccessible = true }.set(activity, HealthExamination())
+        cls.getDeclaredField("conditionsMap").apply { isAccessible = true }.set(activity, mapOf("Custom Non-Existent Diagnosis" to true))
+        cls.getDeclaredMethod("initExamination").apply { isAccessible = true }.invoke(activity)
+
+        val container = activity.findViewById<android.view.ViewGroup>(R.id.container_other_diagnosis)
+        assertEquals(1, container.childCount)
+        (container.getChildAt(0) as com.google.android.material.chip.Chip).performCloseIconClick()
+
+        assertEquals(0, container.childCount)
+        @Suppress("UNCHECKED_CAST")
+        val customDiag = cls.getDeclaredField("customDiag").apply { isAccessible = true }.get(activity) as Set<String?>
+        assertTrue(customDiag.isEmpty())
+    }
+
+    @Test
     fun initExamination_loadsSavedNotesIntoEveryField() {
         val activity = Robolectric.buildActivity(HealthExaminationActivity::class.java).create().get()
         val key = org.ole.planet.myplanet.utils.AndroidDecrypter.generateKey()
