@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
-import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -64,7 +63,6 @@ class ResourcesRepositoryLibrarySyncTest {
             mockk<ActivitiesRepository>(relaxed = true),
             mockk<SharedPrefManager>(relaxed = true),
             mockk<TagsRepository>(relaxed = true),
-            mockk<SearchActivityDao>(relaxed = true),
             mockk<ResourceActivityDao>(relaxed = true),
             mockk<RemovedLogDao>(relaxed = true),
             mockk<dagger.Lazy<TeamsSyncRepository>>(relaxed = true),

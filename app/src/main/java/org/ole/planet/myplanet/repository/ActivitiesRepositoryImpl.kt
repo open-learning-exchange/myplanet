@@ -450,6 +450,14 @@ class ActivitiesRepositoryImpl @Inject constructor(
         return resourceActivityDao.markUploaded(localId, remoteId, rev) != 0
     }
 
+    override suspend fun recordSearchActivity(activity: SearchActivity) {
+        searchActivityDao.insert(activity)
+    }
+
+    override suspend fun getRemovedDocIds(type: String, userId: String?): List<String> {
+        return removedLogDao.getRemovedDocIds(type, userId)
+    }
+
 
     override suspend fun uploadMyPlanetActivities(userModel: UserEntity) {
         apiInterface.postDoc(

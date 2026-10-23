@@ -64,13 +64,11 @@ class ServerReachabilityProviderTest {
         val firstCall = provider.isServerReachable(url)
         assertTrue(firstCall)
 
-        // Advance time by 10 seconds (within 30s TTL)
         timeProvider.advanceBy(10_000L)
 
         val secondCall = provider.isServerReachable(url)
         assertTrue(secondCall)
 
-        // OkHttpClient call should execute only once due to cache hit
         verify(exactly = 1) { okHttpClient.newCall(any()) }
     }
 
@@ -88,13 +86,11 @@ class ServerReachabilityProviderTest {
         val firstCall = provider.isServerReachable(url)
         assertTrue(firstCall)
 
-        // Advance time beyond 30s TTL (e.g., 30,001 ms)
         timeProvider.advanceBy(30_001L)
 
         val secondCall = provider.isServerReachable(url)
         assertTrue(secondCall)
 
-        // OkHttpClient should be called twice because cache expired
         verify(exactly = 2) { okHttpClient.newCall(any()) }
     }
 
@@ -132,12 +128,14 @@ class ServerReachabilityProviderTest {
         val mockResponseAlt: Response = mockk(relaxed = true)
 
         val primaryLatch = CountDownLatch(1)
+        val primaryStarted = CountDownLatch(1)
 
         every { serverUrlMapper.processUrl(url) } returns ServerUrlMapper.UrlMapping(url, altUrl)
         every { okHttpClient.newCall(match { it.url.toString() == url || it.url.toString() == "$url/" }) } returns mockCallPrimary
         every { okHttpClient.newCall(match { it.url.toString() == altUrl || it.url.toString() == "$altUrl/" }) } returns mockCallAlt
 
         every { mockCallPrimary.execute() } answers {
+            primaryStarted.countDown()
             primaryLatch.await(5, TimeUnit.SECONDS)
             throw java.io.IOException("Canceled")
         }
@@ -145,7 +143,10 @@ class ServerReachabilityProviderTest {
             primaryLatch.countDown()
         }
 
-        every { mockCallAlt.execute() } returns mockResponseAlt
+        every { mockCallAlt.execute() } answers {
+            primaryStarted.await(5, TimeUnit.SECONDS)
+            mockResponseAlt
+        }
         every { mockResponseAlt.isSuccessful } returns true
 
         val providerWithIo = ServerReachabilityProvider(
@@ -182,13 +183,11 @@ class ServerReachabilityProviderTest {
         val firstCall = provider.isServerReachable(url)
         assertFalse(firstCall)
 
-        // Advance time by 10 seconds (within 30s TTL)
         timeProvider.advanceBy(10_000L)
 
         val secondCall = provider.isServerReachable(url)
         assertFalse(secondCall)
 
-        // OkHttpClient calls should only execute during the first evaluation
         verify(exactly = 1) { mockCallPrimary.execute() }
         verify(exactly = 1) { mockCallAlt.execute() }
     }
