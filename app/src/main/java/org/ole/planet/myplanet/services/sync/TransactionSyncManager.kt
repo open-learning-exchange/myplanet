@@ -26,6 +26,7 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.UserEntity
@@ -347,10 +348,9 @@ class TransactionSyncManager @Inject constructor(
             val resumeFileName = getString("resumeFileName", jsonDoc)
             val hasAttachment = jsonDoc.getAsJsonObject("_attachments")?.has("resume.pdf") == true
             if (resumeFileName.isNotEmpty() && hasAttachment) {
-                val destFile = File(
-                    FileUtils.getOlePath(context) + "cv/$resumeFileName"
-                )
-                if (!destFile.exists() && inProgress.add(resumeFileName)) {
+                val cvPath = Achievement.cvRelativePath(docId, resumeFileName)
+                val destFile = File(FileUtils.getOlePath(context) + cvPath)
+                if (!destFile.exists() && inProgress.add(cvPath)) {
                     launch { semaphore.withPermit { downloadCvAttachment(docId, destFile) } }
                 }
             }
