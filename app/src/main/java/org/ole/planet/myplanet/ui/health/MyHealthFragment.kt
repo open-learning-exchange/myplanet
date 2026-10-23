@@ -66,7 +66,6 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
     var userId: String? = null
     var userModel: UserEntity? = null
     var loggedInUser: UserEntity? = null
-    lateinit var userModelList: List<UserEntity>
     lateinit var adapter: HealthUsersAdapter
     private lateinit var healthAdapter: HealthExaminationAdapter
     var dialog: AlertDialog? = null

@@ -6,7 +6,6 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PorterDuff
-import android.net.Uri
 import android.os.Build
 import android.text.TextUtils
 import android.util.Log
@@ -245,10 +244,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     companion object {
         private const val TAG = "ProcessUserDataActivity"
 
-        fun getUserInfo(uri: Uri): Array<String> {
-            val (u, p) = UrlUtils.getUserInfo(uri.userInfo)
-            return arrayOf(u, p)
-        }
     }
 
     fun fetchAndLogUserSecurityData(name: String, securityCallback: OnChangedListener? = null) {

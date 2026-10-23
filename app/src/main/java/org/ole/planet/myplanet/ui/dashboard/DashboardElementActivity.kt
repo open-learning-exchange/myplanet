@@ -32,7 +32,6 @@ import org.ole.planet.myplanet.utils.SecurePrefs
 abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBackStackChangedListener {
     private val dashboardElementViewModel: DashboardElementViewModel by viewModels()
     lateinit var navigationView: BottomNavigationView
-    private lateinit var goOnline: MenuItem
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

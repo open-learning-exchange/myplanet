@@ -852,12 +852,14 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     override fun onDestroyView() {
         super.onDestroyView()
         saveCurrentAnswer()
-        lifecycleScope.launch {
-            withContext(NonCancellable) {
-                updateAnsDb()
+        val hasAnswer = ans.isNotEmpty() || !listAns.isNullOrEmpty() || binding.etAnswer.text.isNotBlank()
+        if (hasAnswer) {
+            lifecycleScope.launch {
+                withContext(NonCancellable) {
+                    updateAnsDb()
+                }
             }
         }
-        answerTextWatcher?.let { binding.etAnswer.removeTextChangedListener(it) }
         examTakingTextWatcher?.let { binding.etAnswer.removeTextChangedListener(it) }
         examTakingTextWatcher = null
         selectedRatingButton = null
