@@ -6,18 +6,16 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
+import io.mockk.clearAllMocks
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.spyk
-import io.mockk.clearAllMocks
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.verify
-import org.junit.AfterClass
-import org.junit.BeforeClass
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -26,9 +24,10 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.di.getBroadcastService
@@ -75,7 +74,7 @@ class NotificationActionReceiverTest {
         testDispatcher = StandardTestDispatcher()
         testScope = TestScope(testDispatcher)
 
-        mockContext = spyk(ApplicationProvider.getApplicationContext<Context>())
+        mockContext = spyk(ApplicationProvider.getApplicationContext())
         every { mockContext.startActivity(any()) } returns Unit
 
         every { mockDispatcherProvider.main } returns testDispatcher

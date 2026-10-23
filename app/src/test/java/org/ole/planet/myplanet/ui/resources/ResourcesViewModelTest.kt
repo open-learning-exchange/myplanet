@@ -5,19 +5,16 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.ResourceItem
@@ -27,6 +24,7 @@ import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -36,21 +34,17 @@ class ResourcesViewModelTest {
     private val resourcesRepository = mockk<ResourcesRepository>(relaxed = true)
     private val userRepository = mockk<UserRepository>(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
     private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
         viewModel = ResourcesViewModel(
             resourcesRepository,
             userRepository,
             dispatcherProvider
         )
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
     }
 
     @Test
@@ -167,6 +161,42 @@ class ResourcesViewModelTest {
     }
 
     @Test
+    fun `toggleTitleSortOrder keeps input order for tied titles when ascending`() = runTest {
+        val item1 = createResourceModel("apple")
+        val item2 = createResourceModel("Apple")
+        val list = listOf(item1, item2)
+
+        val result = viewModel.toggleTitleSortOrder(list)
+        assertEquals(listOf("apple", "Apple"), result.map { it.item.title })
+        assertEquals(listOf(item1, item2), result)
+    }
+
+    @Test
+    fun `toggleTitleSortOrder keeps input order for tied titles when descending`() = runTest {
+        val item1 = createResourceModel("apple")
+        val item2 = createResourceModel("Apple")
+        val list = listOf(item1, item2)
+
+        val firstToggleResult = viewModel.toggleTitleSortOrder(list)
+        val secondToggleResult = viewModel.toggleTitleSortOrder(firstToggleResult)
+        assertEquals(listOf("apple", "Apple"), secondToggleResult.map { it.item.title })
+        assertEquals(listOf(item1, item2), secondToggleResult)
+    }
+
+    @Test
+    fun `toggleTitleSortOrder handles null title as empty string`() = runTest {
+        val itemNull = createResourceModel(null)
+        val itemA = createResourceModel("Banana")
+        val list = listOf(itemA, itemNull)
+
+        val ascendingResult = viewModel.toggleTitleSortOrder(list)
+        assertEquals(listOf(null, "Banana"), ascendingResult.map { it.item.title })
+
+        val descendingResult = viewModel.toggleTitleSortOrder(ascendingResult)
+        assertEquals(listOf("Banana", null), descendingResult.map { it.item.title })
+    }
+
+    @Test
     fun `toggleSortOrder sorts by date descending on first toggle and ascending on second toggle`() = runTest {
         val itemOld = createResourceModel("Old", 100L)
         val itemNew = createResourceModel("New", 300L)
@@ -237,24 +267,24 @@ class ResourcesViewModelTest {
         assertEquals(listOf("b"), afterReset?.map { it.item.id })
     }
 
-    private fun createResourceModel(title: String, createdDate: Long): ResourceListModel {
+    private fun createResourceModel(title: String?, createdDate: Long = 0L): ResourceListModel {
         val library = MyLibrary().apply {
             this.title = title
         }
         val item = ResourceItem(
-            id = title,
+            id = title ?: "null_id",
             title = title,
             description = null,
             createdDate = createdDate,
             averageRating = null,
             timesRated = 0,
-            resourceId = title,
+            resourceId = title ?: "null_id",
             isOffline = false,
             _rev = null,
             uploadDate = null,
             filename = null
         )
-        return ResourceListModel(library, item, emptyList<TagItem>())
+        return ResourceListModel(library, item, emptyList())
     }
 
     @Test

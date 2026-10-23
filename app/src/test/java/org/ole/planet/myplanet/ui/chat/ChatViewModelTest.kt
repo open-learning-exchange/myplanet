@@ -6,20 +6,17 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
@@ -36,6 +33,7 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -48,13 +46,14 @@ class ChatViewModelTest {
     private lateinit var voicesRepository: VoicesRepository
     private lateinit var configurationsRepository: ConfigurationsRepository
     private val testDispatcher = StandardTestDispatcher()
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
     private lateinit var dispatcherProvider: TestDispatcherProvider
     private lateinit var realtimeSyncManager: RealtimeSyncManager
     private val dataUpdateFlow = MutableSharedFlow<TableDataUpdate>()
 
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
         chatRepository = mockk(relaxed = true)
         userRepository = mockk(relaxed = true)
         teamsRepository = mockk(relaxed = true)
@@ -64,11 +63,6 @@ class ChatViewModelTest {
         realtimeSyncManager = mockk(relaxed = true)
         io.mockk.every { realtimeSyncManager.updatesFor("chats") } returns dataUpdateFlow
         viewModel = ChatViewModel(chatRepository, userRepository, teamsRepository, voicesRepository, dispatcherProvider, realtimeSyncManager, configurationsRepository)
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
     }
 
     @Test

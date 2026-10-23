@@ -14,12 +14,12 @@ import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
-import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
@@ -159,8 +159,8 @@ class TeamDetailFragment : BaseTeamFragment() {
         } else {
             binding.viewPager2.adapter = TeamPagerAdapter(
                 this, pageConfigs, team?._id,
-                OnChangedListener { onMemberChanged() },
-                OnChangedListener { onTeamDetailsUpdated() }
+                { onMemberChanged() },
+                { onTeamDetailsUpdated() }
             )
             binding.tabLayout.tabMode = TabLayout.MODE_SCROLLABLE
             binding.tabLayout.isInlineLabel = true
@@ -247,7 +247,7 @@ class TeamDetailFragment : BaseTeamFragment() {
             val delayMs = if (isAlreadyOnTargetPage) 50L else 300L
 
             viewLifecycleOwner.lifecycleScope.launch {
-                delay(delayMs)
+                delay(delayMs.milliseconds)
                 val pageListener = resolveTeamPageListener(childFragmentManager.fragments, targetPageId)
                 if (pageListener != null) {
                     if (isEnterprise) {

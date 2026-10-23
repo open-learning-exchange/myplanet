@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.services.upload
 
 import dagger.Lazy
+import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
-import io.mockk.clearAllMocks
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject

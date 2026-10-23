@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -27,11 +28,13 @@ import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
-import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-import org.ole.planet.myplanet.data.room.dao.TagDao
+import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.SearchActivity
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.StringUtils
 
@@ -49,8 +52,7 @@ class CoursesRepositoryImplTest {
     private val courseStepDao: CourseStepDao = mockk(relaxed = true)
     private val examDao: ExamDao = mockk(relaxed = true)
     private val questionDao: QuestionDao = mockk(relaxed = true)
-    private val tagDao: TagDao = mockk(relaxed = true)
-    private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
+    private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
     private val removedLogDao: RemovedLogDao = mockk(relaxed = true)
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
@@ -78,7 +80,7 @@ class CoursesRepositoryImplTest {
             courseStepDao,
             examDao,
             questionDao,
-            searchActivityDao,
+            activitiesRepository,
             courseProgressDao,
             removedLogDao,
             myLibraryDao,
@@ -224,7 +226,7 @@ class CoursesRepositoryImplTest {
             subject = "math"
         )
 
-        coVerify(exactly = 1) { searchActivityDao.insert(capture(savedActivity)) }
+        coVerify(exactly = 1) { activitiesRepository.recordSearchActivity(capture(savedActivity)) }
         assertTrue(savedActivity.captured.id.isNotBlank())
         assertEquals("learner", savedActivity.captured.user)
         assertEquals("planet", savedActivity.captured.createdOn)
@@ -390,7 +392,6 @@ class CoursesRepositoryImplTest {
     @Test
     fun getCourseDetailModel_whenCourseExists_returnsAggregatedData() = runTest {
         val course = MyCourse().apply { courseId = "course_id" }
-        val step = org.ole.planet.myplanet.model.CourseStep().apply { id = "step_1"; stepTitle = "Title" }
         val user = org.ole.planet.myplanet.model.UserEntity().apply { id = "user_1" }
 
         coEvery { courseDao.observeByCourseId("course_id") } returns kotlinx.coroutines.flow.flowOf(course)
@@ -398,7 +399,7 @@ class CoursesRepositoryImplTest {
         coEvery { examDao.countByCourseIdAndType("course_id", "courses") } returns 5
         coEvery { myLibraryDao.getCourseResources("course_id", false) } returns emptyList()
         coEvery { myLibraryDao.getCourseResources("course_id", true) } returns emptyList()
-        coEvery { courseStepDao.getByCourseId("course_id") } returns listOf(org.ole.planet.myplanet.model.CourseStep().apply { id = "step_1"; stepTitle = "Title" })
+        coEvery { courseStepDao.getByCourseId("course_id") } returns listOf(CourseStep().apply { id = "step_1"; stepTitle = "Title" })
         coEvery { examDao.getByStepIds(listOf("step_1")) } returns listOf(org.ole.planet.myplanet.model.StepExam().apply { stepId = "step_1"; noOfQuestions = 3 })
 
         coEvery { ratingsRepository.getRatingSummary("course", "course_id", "user_1") } returns RatingSummary(
@@ -591,5 +592,22 @@ class CoursesRepositoryImplTest {
 
         coVerify(exactly = 1) { resourcesRepository.reconcileHtmlResourceOffline("res1") }
         coVerify(exactly = 1) { resourcesRepository.reconcileHtmlResourceOffline("res2") }
+    }
+
+    @Test
+    fun getCourseProgress_reportsWholeNumberPercentage() = runTest {
+        coEvery { courseStepDao.getByCourseId("course1") } returns listOf(CourseStep(id = "s1"))
+        coEvery { examDao.getByStepIds(listOf("s1")) } returns listOf(StepExam(id = "e1").apply { stepId = "s1" })
+        coEvery { questionDao.getByExamIds(listOf("e1")) } returns
+            (1..3).map { ExamQuestion(id = "q$it", examId = "e1") }
+        coEvery { submissionsRepository.getExamSubmissionsByUser("user1") } returns
+            listOf(Submission(id = "sub1", parentId = "e1@course1"))
+        coEvery { submissionsRepository.getAnswersBySubmissionIds(listOf("sub1")) } returns
+            (1..2).map { Answer(id = "a$it", submissionId = "sub1") }
+
+        val step = repository.getCourseProgress("course1", "user1").steps[0].asJsonObject
+
+        assertEquals("66", step["percentage"].asString)
+        assertFalse(step["completed"].asBoolean)
     }
 }

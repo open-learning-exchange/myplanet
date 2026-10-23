@@ -22,7 +22,6 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
@@ -139,12 +138,6 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
             if (intent?.action == AudioManager.ACTION_AUDIO_BECOMING_NOISY) {
                 exoPlayer?.pause()
             }
-        }
-    }
-
-    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        if (!isGranted) {
-            Utilities.toast(requireContext(), getString(R.string.microphone_permission_required))
         }
     }
 
@@ -484,11 +477,14 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
 
     private fun resolveAudioPath(originalPath: String?): String {
         if (isFullPath) return originalPath ?: ""
-        val processedPath = originalPath?.let {
-            val matcher = UUID_PATTERN.matcher(it)
-            if (matcher.find()) it.substring(matcher.end()) else it
+        val resolved = File(externalFilesDir, "ole/$originalPath")
+        if (resolved.exists() || originalPath == null) return resolved.absolutePath
+        val matcher = UUID_PATTERN.matcher(originalPath)
+        return if (matcher.find()) {
+            File(externalFilesDir, "ole/${originalPath.substring(matcher.end())}").absolutePath
+        } else {
+            resolved.absolutePath
         }
-        return File(externalFilesDir, "ole/$processedPath").absolutePath
     }
 
     private fun setupPdfViewer() {

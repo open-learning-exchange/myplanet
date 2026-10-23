@@ -30,6 +30,21 @@ interface FeedbackDao {
         return ids.distinct().chunked(900).flatMap { chunk -> getByIdsInternal(chunk) }
     }
 
+    @Query("SELECT * FROM feedback WHERE _id IN (:remoteIds)")
+    suspend fun getByRemoteIdsInternal(remoteIds: List<String>): List<Feedback>
+
+    suspend fun getByRemoteIds(remoteIds: List<String>): List<Feedback> {
+        if (remoteIds.isEmpty()) return emptyList()
+        return remoteIds.distinct().chunked(900).flatMap { chunk -> getByRemoteIdsInternal(chunk) }
+    }
+
+    @Query("DELETE FROM feedback WHERE id IN (:ids)")
+    suspend fun deleteByIdsInternal(ids: List<String>)
+
+    suspend fun deleteByIds(ids: List<String>) {
+        ids.distinct().chunked(900).forEach { chunk -> deleteByIdsInternal(chunk) }
+    }
+
     @Query("UPDATE feedback SET status = 'Closed', isUploaded = 0 WHERE id = :id")
     suspend fun closeById(id: String)
 

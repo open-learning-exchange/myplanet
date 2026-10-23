@@ -7,7 +7,6 @@ import io.mockk.every
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import org.ole.planet.myplanet.utils.FileUtils
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -16,6 +15,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.utils.FileUtils
 
 class NewsTest {
 

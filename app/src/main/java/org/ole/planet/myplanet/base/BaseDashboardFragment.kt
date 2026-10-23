@@ -287,7 +287,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         flexboxLayout.removeAllViews()
         if (visibleItems.isEmpty()) {
             renderPlaceholder(flexboxLayout, getString(R.string.no_data_available)) {
-                homeItemClickListener?.openCallFragment(org.ole.planet.myplanet.ui.life.LifeFragment())
+                homeItemClickListener?.openCallFragment(LifeFragment())
             }
             return
         }

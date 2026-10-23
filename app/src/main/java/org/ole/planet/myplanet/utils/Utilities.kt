@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.utils
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
 import android.util.Patterns
@@ -55,10 +54,6 @@ object Utilities {
         if (visualContext != null && !visualContext.isFinishing && !visualContext.isDestroyed) {
             Toast.makeText(visualContext, message, duration).show()
         }
-    }
-
-    fun getUserName(settings: SharedPreferences): String {
-        return settings.getString("name", "") ?: ""
     }
 
     fun getMimeType(url: String?): String? {

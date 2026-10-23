@@ -41,8 +41,8 @@ class TaskNotificationWorker @AssistedInject constructor(
                 teamsRepository.getPendingTasksForUser(userId, current, tomorrow.timeInMillis)
             }.getOrElse { emptyList() }
 
-            if (tasks.isNotEmpty()) {
-                val notificationManager = NotificationUtils.getInstance(applicationContext)
+            val notificationManager = NotificationUtils.getInstance(applicationContext)
+            if (tasks.isNotEmpty() && notificationManager.canShowNotification(NotificationUtils.TYPE_TASK)) {
                 val taskIds = mutableListOf<String>()
                 tasks.forEach { task ->
                     val config = NotificationUtils.createTaskNotification(

@@ -23,7 +23,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
-import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.OfflineResourceItem
@@ -56,7 +55,6 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val activitiesRepository: ActivitiesRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val tagsRepository: TagsRepository,
-    private val searchActivityDao: SearchActivityDao,
     private val resourceActivityDao: ResourceActivityDao,
     private val removedLogDao: RemovedLogDao,
     private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository>,
@@ -378,7 +376,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val relativePath = FileUtils.getResourceRelativePathFromUrl(url)
 
         if (localAddress.isNotBlank()) {
-            markResourceOfflineByLocalAddress(localAddress)
+            markResourceOfflineByLocalAddress(localAddress, resourceId)
         }
 
         if (resourceId.isNotBlank()) {
@@ -386,8 +384,9 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun markResourceOfflineByLocalAddress(localAddress: String) {
+    private suspend fun markResourceOfflineByLocalAddress(localAddress: String, resourceId: String) {
         val results = myLibraryDao.getByLocalAddress(localAddress)
+            .filter { resourceId.isBlank() || it.resourceId == resourceId }
         results.forEach { library ->
             library.resourceOffline = true
             library.downloadedRev = library._rev
@@ -474,7 +473,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
         val filterPayload = GsonUtils.gson.toJson(filter)
 
-        searchActivityDao.insert(
+        activitiesRepository.recordSearchActivity(
             SearchActivity(
                 id = UUID.randomUUID().toString(),
                 user = userName,
@@ -851,7 +850,14 @@ class ResourcesRepositoryImpl @Inject constructor(
         val library = myLibraryDao.getById(localId) ?: return false
         library._id = remoteId
         library._rev = remoteRev
+
+        val rekey = remoteId.isNotBlank() && library.id != remoteId && moveResourceFolder(localId, remoteId)
+        if (rekey) {
+            library.id = remoteId
+            library.resourceId = remoteId
+        }
         myLibraryDao.upsert(library)
+        if (rekey) myLibraryDao.deleteById(localId)
 
         // Private resources also create a local team-resource link.
         if (library.isPrivate && !library.privateFor.isNullOrBlank()) {
@@ -863,6 +869,17 @@ class ResourcesRepositoryImpl @Inject constructor(
             )
         }
         return true
+    }
+
+    private suspend fun moveResourceFolder(fromId: String, toId: String): Boolean = withContext(dispatcherProvider.io) {
+        val oleDir = storagePathResolver.resolveOleDirectory()
+        val from = File(oleDir, fromId)
+        val to = File(oleDir, toId)
+        when {
+            !from.exists() -> true
+            to.exists() -> false
+            else -> from.renameTo(to)
+        }
     }
 
     override suspend fun trackResourceOpen(item: MyLibrary) {
@@ -895,6 +912,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                 if (!relative.contains('/')) return@forEach
 
                 val resourceId = relative.substringBefore('/')
+                if (resourceId in NON_RESOURCE_DIRS) return@forEach
                 val accumulator = grouped.getOrPut(resourceId) { ResourceAccumulator() }
                 accumulator.filePaths.add(file.absolutePath)
                 accumulator.totalSize += file.length()
@@ -935,13 +953,16 @@ class ResourcesRepositoryImpl @Inject constructor(
 
         var total = 0L
 
-        oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
-            val index = StorageCategoryType.indexOf(file.extension)
-            val size = file.length()
-            total += size
-            sizes[index] += size
-            counts[index]++
-        }
+        oleDir.walkTopDown()
+            .onEnter { it == oleDir || it.parentFile != oleDir || it.name !in NON_RESOURCE_DIRS }
+            .filter { it.isFile }
+            .forEach { file ->
+                val index = StorageCategoryType.indexOf(file.extension)
+                val size = file.length()
+                total += size
+                sizes[index] += size
+                counts[index]++
+            }
         StorageBreakdown(total, sizes, counts)
     }
 
@@ -984,5 +1005,9 @@ class ResourcesRepositoryImpl @Inject constructor(
             addProperty("deviceName", NetworkUtils.getDeviceName())
             addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
         }
+    }
+
+    private companion object {
+        val NON_RESOURCE_DIRS = setOf("cv", "team_attachments", "course_attachments", "userimages")
     }
 }
