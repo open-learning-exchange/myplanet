@@ -9,6 +9,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.mockk.verify
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -275,7 +276,7 @@ class UploadToShelfServiceTest {
     fun `uploadUserData rethrows CancellationException and does not notify listener`() = runTest(testDispatcher) {
         val cancellation = CancellationException("User data sync cancelled")
         coEvery { userRepository.getPendingSyncUsers(100) } coAnswers {
-            delay(1)
+            delay(1.milliseconds)
             throw cancellation
         }
         val listener = mockk<OnSuccessListener>(relaxed = true)
@@ -296,7 +297,7 @@ class UploadToShelfServiceTest {
         coEvery { userRepository.getUserByName(userName) } returns user
         coEvery { userRepository.getSyncedUserByName(userName) } returns user
         coEvery { userSyncRepository.uploadShelfData(user) } coAnswers {
-            delay(1)
+            delay(1.milliseconds)
             throw cancellation
         }
         val listener = mockk<OnSuccessListener>(relaxed = true)
@@ -329,7 +330,7 @@ class UploadToShelfServiceTest {
         val userId = "user123"
         val cancellation = CancellationException("Health sync cancelled")
         coEvery { healthRepository.syncPendingHealthExaminationsForUser(userId) } coAnswers {
-            delay(1)
+            delay(1.milliseconds)
             throw cancellation
         }
         val listener = mockk<OnSuccessListener>(relaxed = true)

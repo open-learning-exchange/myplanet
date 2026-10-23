@@ -49,6 +49,7 @@ import dagger.Lazy
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.math.ceil
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -368,7 +369,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         if (isFirstLaunch) {
             lifecycleScope.launch {
-                delay(50)
+                delay(50.milliseconds)
                 val state = dashboardViewModel.getGuestVisitState(user?.id).await()
                 if (state.shouldAutoOpenDrawer &&
                     resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
@@ -565,19 +566,19 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
     
-    private suspend fun handleSurveyNavigation(surveyId: String?) {
+    private fun handleSurveyNavigation(surveyId: String?) {
         if (surveyId != null) {
             dashboardViewModel.handleSurveyNavigation(surveyId)
         }
     }
     
-    private suspend fun handleTaskNavigation(taskId: String?) {
+    private fun handleTaskNavigation(taskId: String?) {
         if (taskId != null) {
             dashboardViewModel.handleTaskNavigation(taskId)
         }
     }
 
-    private suspend fun handleJoinRequestNavigation(requestId: String?) {
+    private fun handleJoinRequestNavigation(requestId: String?) {
         if (requestId != null) {
             val actualJoinRequestId = if (requestId.startsWith("join_request_")) {
                 requestId.removePrefix("join_request_")
@@ -617,7 +618,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 while (true) {
-                    delay(LAST_SYNC_STATUS_REFRESH_INTERVAL_MS)
+                    delay(LAST_SYNC_STATUS_REFRESH_INTERVAL_MS.milliseconds)
                     updateLastSyncStatus()
                 }
             }
@@ -641,7 +642,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 val pendingResult = goAsync()
                 lifecycleScope.launch {
                     try {
-                        kotlinx.coroutines.withTimeout(10000) {
+                        kotlinx.coroutines.withTimeout(10000.milliseconds) {
                             if (intent?.action == "org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM") {
                                 val userId = user?.id
                                 if (userId != null) {
@@ -653,7 +654,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                             }
                                         }
                                     } else {
-                                        delay(300)
+                                        delay(300.milliseconds)
                                         refreshNotificationsWithRetry(userId)
                                     }
                                 } else {
@@ -701,7 +702,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (fromLogin || !notificationsShownThisSession) {
             notificationsShownThisSession = true
             lifecycleScope.launch {
-                delay(1000)
+                delay(1000.milliseconds)
                 dashboardViewModel.checkAndCreateNewNotifications(user?.id, user?.isManager() == true)
             }
         }

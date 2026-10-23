@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.teams.courses
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -154,7 +155,7 @@ class TeamCoursesViewModelTest {
             MyCourse(id = "c2").apply { courseId = "c2"; courseTitle = "Course 2" }
         )
         coEvery { teamsRepository.getTeamCourseIds("team1") } coAnswers {
-            kotlinx.coroutines.delay(100)
+            kotlinx.coroutines.delay(100.milliseconds)
             courseIds
         }
         coEvery { coursesRepository.getCoursesByIds(courseIds) } returns courses

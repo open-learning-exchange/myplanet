@@ -6,7 +6,6 @@ import io.mockk.mockk
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -19,7 +18,6 @@ class LifeRepositoryTest {
 
     private lateinit var myLifeDao: MyLifeDao
     private lateinit var repository: LifeRepositoryImpl
-    private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setup() {

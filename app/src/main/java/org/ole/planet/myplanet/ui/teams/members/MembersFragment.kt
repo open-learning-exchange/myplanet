@@ -62,7 +62,7 @@ class MembersFragment : BaseTeamFragment() {
         binding.rvMembers.adapter = membersAdapter
 
         val initialUser = UserEntity()
-        requestsAdapter = RequestsAdapter(requireActivity(), initialUser) { reqUser, isAccepted ->
+        requestsAdapter = RequestsAdapter(initialUser) { reqUser, isAccepted ->
             requestsViewModel.respondToRequest(teamId, reqUser, isAccepted)
         }.apply { setTeamId(teamId) }
         binding.rvRequests.layoutManager = GridLayoutManager(activity, columns)

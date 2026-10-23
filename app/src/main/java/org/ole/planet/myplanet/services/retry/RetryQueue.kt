@@ -17,14 +17,6 @@ class RetryQueue @Inject constructor(
         private const val TAG = "RetryQueue"
     }
 
-    fun isCurrentlyProcessing(): Boolean = retryRepository.isCurrentlyProcessing()
-
-    internal fun tryStartProcessing(): Boolean = retryRepository.tryStartProcessing()
-
-    internal fun finishProcessing() {
-        retryRepository.finishProcessing()
-    }
-
     suspend fun queueFailedOperation(
         uploadType: String,
         error: UploadError,
@@ -54,15 +46,6 @@ class RetryQueue @Inject constructor(
 
     suspend fun markInProgress(operationId: String) {
         retryRepository.markInProgress(operationId)
-    }
-
-    suspend fun markCompleted(operationId: String) {
-        retryRepository.markCompleted(operationId)
-        Log.d(TAG, "Marked operation $operationId as completed")
-    }
-
-    suspend fun markFailed(operationId: String, errorMessage: String?, httpCode: Int?) {
-        retryRepository.markFailed(operationId, errorMessage, httpCode)
     }
 
     suspend fun cleanup() {

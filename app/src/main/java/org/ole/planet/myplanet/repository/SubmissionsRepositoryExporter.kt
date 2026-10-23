@@ -161,10 +161,6 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                     textSize = 20f
                     isFakeBoldText = true
                 }
-                val headerPaint = Paint().apply {
-                    textSize = 16f
-                    isFakeBoldText = true
-                }
                 val subHeaderPaint = Paint().apply {
                     textSize = 14f
                     isFakeBoldText = true
@@ -251,7 +247,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
     private fun drawMultilineText(canvas: Canvas, text: String, x: Float, y: Float, paint: Paint, maxWidth: Float): Float {
         var currentY = y
         val words = text.split(" ")
-        val line = java.lang.StringBuilder()
+        val line = StringBuilder()
         var lineWidth = 0f
 
         words.forEach { word ->

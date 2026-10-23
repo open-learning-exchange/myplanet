@@ -852,7 +852,14 @@ class ResourcesRepositoryImpl @Inject constructor(
         val library = myLibraryDao.getById(localId) ?: return false
         library._id = remoteId
         library._rev = remoteRev
+
+        val rekey = remoteId.isNotBlank() && library.id != remoteId && moveResourceFolder(localId, remoteId)
+        if (rekey) {
+            library.id = remoteId
+            library.resourceId = remoteId
+        }
         myLibraryDao.upsert(library)
+        if (rekey) myLibraryDao.deleteById(localId)
 
         // Private resources also create a local team-resource link.
         if (library.isPrivate && !library.privateFor.isNullOrBlank()) {
@@ -864,6 +871,17 @@ class ResourcesRepositoryImpl @Inject constructor(
             )
         }
         return true
+    }
+
+    private suspend fun moveResourceFolder(fromId: String, toId: String): Boolean = withContext(dispatcherProvider.io) {
+        val oleDir = storagePathResolver.resolveOleDirectory()
+        val from = File(oleDir, fromId)
+        val to = File(oleDir, toId)
+        when {
+            !from.exists() -> true
+            to.exists() -> false
+            else -> from.renameTo(to)
+        }
     }
 
     override suspend fun trackResourceOpen(item: MyLibrary) {
