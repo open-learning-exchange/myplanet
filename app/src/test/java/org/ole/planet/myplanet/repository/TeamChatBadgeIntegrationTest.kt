@@ -51,6 +51,7 @@ class TeamChatBadgeIntegrationTest {
             sharedPrefManager,
             newsDao,
             database.newsLogDao(),
+            database.removedLogDao(),
         )
 
         val userRepository = dagger.Lazy { mockk<UserRepository>(relaxed = true) }
