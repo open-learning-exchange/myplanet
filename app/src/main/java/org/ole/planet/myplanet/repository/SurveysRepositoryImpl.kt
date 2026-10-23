@@ -41,7 +41,6 @@ import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
-import kotlin.time.Duration.Companion.milliseconds
 
 class SurveysRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -93,12 +92,12 @@ class SurveysRepositoryImpl @Inject constructor(
                 if (existingSurvey == null) {
                     val newSurveyId = UUID.randomUUID().toString()
                     val mappedSurvey = createMappedSurvey(newSurveyId, examId, exam, userModel, teamName, teamId)
-                    examDao.upsert(mappedSurvey)
+                    examDao.upsert(mappedSurvey ?: return)
 
                     val questionEntities = ExamQuestion.insertExamQuestions(
                         ExamQuestion.serializeQuestions(getExamQuestions(examId)),
                         newSurveyId
-                    ).map { it }
+                    ).mapNotNull { it }
                     if (questionEntities.isNotEmpty()) {
                         questionDao.upsertAll(questionEntities)
                     }
@@ -118,7 +117,7 @@ class SurveysRepositoryImpl @Inject constructor(
                 sParentCode = sParentCode,
                 isTeam = isTeam,
                 teamId = teamId
-            ).let { submissionDao.upsertAll(listOf(it)) }
+            )?.let { submissionDao.upsertAll(listOf(it)) }
         }
     }
 
@@ -298,7 +297,7 @@ class SurveysRepositoryImpl @Inject constructor(
         userId: String?,
         surveys: List<StepExam>
     ): Map<String, SurveyInfo> {
-        val surveyIds = surveys.map { it.id }
+        val surveyIds = surveys.mapNotNull { it.id }
         val submissions = if (isTeam && !teamId.isNullOrEmpty()) {
             submissionDao.getByTeamId(teamId)
         } else if (!userId.isNullOrEmpty()) {
@@ -322,7 +321,7 @@ class SurveysRepositoryImpl @Inject constructor(
             resolvedId to submission
         }.groupBy({ it.first }, { it.second })
 
-        return surveys.associate { survey ->
+        return surveys.mapNotNull { survey ->
             val surveyId = survey.id
             val surveySubmissions = submissionsByParentId[surveyId].orEmpty()
             val submissionCount = surveySubmissions.size
@@ -339,14 +338,14 @@ class SurveysRepositoryImpl @Inject constructor(
                     .orEmpty(),
                 creationDate = formatDate(survey.createdDate, "MMM dd, yyyy")
             )
-        }
+        }.toMap()
     }
 
     override suspend fun getSurveyFormState(
         surveys: List<StepExam>,
         teamId: String?
     ): Map<String, SurveyFormState> {
-        val surveyIds = surveys.map { it.id }
+        val surveyIds = surveys.mapNotNull { it.id }
         if (surveyIds.isEmpty()) return emptyMap()
 
         val teamSubmissions = if (teamId.isNullOrEmpty()) {
@@ -357,13 +356,13 @@ class SurveysRepositoryImpl @Inject constructor(
         }
         val questionCounts = questionDao.getByExamIds(surveyIds).groupingBy { it.examId }.eachCount()
 
-        return surveys.associate { survey ->
+        return surveys.mapNotNull { survey ->
             val surveyId = survey.id
             surveyId to SurveyFormState(
                 teamSubmissions[surveyId],
                 questionCounts[surveyId] ?: 0
             )
-        }
+        }.toMap()
     }
 
     override suspend fun getSurveySubmissionCount(userId: String?): Int {
@@ -409,7 +408,7 @@ class SurveysRepositoryImpl @Inject constructor(
             examDao.upsertAll(exams)
         }
         if (questions.isNotEmpty()) {
-            questionDao.upsertAll(questions)
+            questionDao.upsertAll(questions.mapNotNull { it })
             questionDao.deleteStaleQuestions(questions)
         }
     }
