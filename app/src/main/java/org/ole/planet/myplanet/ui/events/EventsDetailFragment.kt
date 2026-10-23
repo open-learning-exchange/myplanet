@@ -234,7 +234,4 @@ class EventsDetailFragment : BaseBindingFragment<FragmentEventsDetailBinding>(Fr
         binding.btnLeave.isEnabled = user?.id?.isNotBlank() == true && isEventActive
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-    }
 }

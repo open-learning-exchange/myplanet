@@ -173,15 +173,6 @@ abstract class BasePermissionActivity : AppCompatActivity() {
         }
     }
 
-    fun areNotificationsEnabled(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            checkPermission(Manifest.permission.POST_NOTIFICATIONS) &&
-                    NotificationManagerCompat.from(this).areNotificationsEnabled()
-        } else {
-            NotificationManagerCompat.from(this).areNotificationsEnabled()
-        }
-    }
-
     fun getNotificationPermissionStatus(): NotificationPermissionStatus {
         return when {
             Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU -> {

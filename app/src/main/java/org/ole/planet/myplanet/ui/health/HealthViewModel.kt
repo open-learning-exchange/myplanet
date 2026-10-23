@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -82,7 +83,7 @@ class HealthViewModel @Inject constructor(
                 if (active) {
                     realtimeSyncManager.updatesFor(HEALTH_TABLE)
                         .filter { it.shouldRefreshUI }
-                        .debounce(SYNC_REFRESH_DEBOUNCE_MS)
+                        .debounce(SYNC_REFRESH_DEBOUNCE_MS.milliseconds)
                 } else {
                     emptyFlow()
                 }
@@ -101,7 +102,7 @@ class HealthViewModel @Inject constructor(
         var job: Job? = null
         job = viewModelScope.launch {
             val loadingJob = launch {
-                delay(100)
+                delay(100.milliseconds)
                 _isListLoading.value = true
             }
             try {

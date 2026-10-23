@@ -59,7 +59,6 @@ class RequestsFragment : BaseMemberFragment() {
 
     override val adapter: ListAdapter<*, *> by lazy {
         RequestsAdapter(
-            requireActivity(),
             currentUser,
         ) { user, isAccepted ->
             viewModel.respondToRequest(teamId, user, isAccepted)

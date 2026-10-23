@@ -7,6 +7,7 @@ import androidx.test.core.app.ApplicationProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
@@ -63,7 +64,7 @@ class HealthSearchDebounceTest {
 
         val searchJob = etSearch.textChanges()
             .drop(1)
-            .debounce(300)
+            .debounce(300.milliseconds)
             .distinctUntilChanged()
             .onEach { query -> viewModel.searchPatients(query?.toString() ?: "", "joinDate", true) }
             .launchIn(this)

@@ -3,9 +3,7 @@ package org.ole.planet.myplanet.base
 import android.content.DialogInterface
 import android.graphics.Typeface
 import android.os.Bundle
-import android.text.Editable
 import android.text.TextUtils
-import android.text.TextWatcher
 import android.view.Gravity
 import android.view.View
 import android.widget.EditText
@@ -19,8 +17,10 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import io.noties.markwon.editor.MarkwonEditor
-import io.noties.markwon.editor.MarkwonEditorTextWatcher
 import java.util.Date
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.surveys.SurveyFragment
 import org.ole.planet.myplanet.utils.CameraUtils
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
+import org.ole.planet.myplanet.utils.MarkdownPreRenderer
 import org.ole.planet.myplanet.utils.MarkdownUtils
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -57,10 +58,21 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var submitId = ""
     var isTeam: Boolean = false
     var teamId: String? = null
-    internal var answerTextWatcher: TextWatcher? = null
+    private var answerTextWatcher: MarkdownPreRenderer? = null
     private var currentAnswerEditText: EditText? = null
+    private var markwonExecutor: ExecutorService? = null
     private val markwon by lazy(LazyThreadSafetyMode.NONE) { MarkdownUtils.create(requireActivity()) }
     private val markwonEditor by lazy(LazyThreadSafetyMode.NONE) { MarkwonEditor.create(markwon) }
+
+    private fun getMarkwonExecutor(): ExecutorService {
+        val executor = markwonExecutor
+        if (executor == null || executor.isShutdown) {
+            val newExecutor = Executors.newSingleThreadExecutor()
+            markwonExecutor = newExecutor
+            return newExecutor
+        }
+        return executor
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -112,7 +124,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             val toast = Toast.makeText(activity, getString(R.string.incorrect_ans), Toast.LENGTH_SHORT)
             toast.show()
             viewLifecycleOwner.lifecycleScope.launch {
-                delay(1000)
+                delay(1000.milliseconds)
                 toast.cancel()
             }
         }
@@ -184,32 +196,41 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     fun setMarkdownViewAndShowInput(etAnswer: EditText, type: String, oldAnswer: String?) {
-        currentAnswerEditText?.removeTextChangedListener(answerTextWatcher)
-        currentAnswerEditText = etAnswer
+        if (currentAnswerEditText !== etAnswer) {
+            releaseAnswerTextWatcher()
+            currentAnswerEditText = etAnswer
+        }
         etAnswer.visibility = View.VISIBLE
-        if (type.equals("textarea", ignoreCase = true)) {
-            answerTextWatcher = MarkwonEditorTextWatcher.withProcess(markwonEditor)
-            etAnswer.addTextChangedListener(answerTextWatcher)
-        } else {
-            answerTextWatcher = object : TextWatcher {
-                @Suppress("EmptyMethod")
-                override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-                @Suppress("EmptyMethod")
-                override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-                @Suppress("EmptyMethod")
-                override fun afterTextChanged(editable: Editable) {}
-            }
-            etAnswer.addTextChangedListener(answerTextWatcher)
+        // One watcher per EditText, attached until onDestroyView: it has to see every setText, plain-text
+        // questions included, or a render still in flight from the last textarea lands on the new answer.
+        val isMarkdown = type.equals("textarea", ignoreCase = true)
+        val watcher = answerTextWatcher
+        if (watcher != null) {
+            watcher.isRenderingEnabled = isMarkdown
+        } else if (isMarkdown) {
+            answerTextWatcher = MarkdownPreRenderer(markwonEditor, getMarkwonExecutor(), etAnswer)
+                .also { etAnswer.addTextChangedListener(it) }
         }
         etAnswer.setText(oldAnswer)
     }
 
+    private fun releaseAnswerTextWatcher() {
+        answerTextWatcher?.let {
+            it.cancel()
+            currentAnswerEditText?.removeTextChangedListener(it)
+        }
+        answerTextWatcher = null
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
-        currentAnswerEditText?.removeTextChangedListener(answerTextWatcher)
+        releaseAnswerTextWatcher()
+        currentAnswerEditText = null
     }
 
     override fun onDestroy() {
+        markwonExecutor?.shutdown()
+        markwonExecutor = null
         CameraUtils.release()
         super.onDestroy()
     }

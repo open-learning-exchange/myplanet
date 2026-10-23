@@ -73,11 +73,6 @@ class EnterprisesRepositoryImplTest {
 
         val result = repository.exportReportsAsCsv(teamId, "Test Team")
 
-        val expectedTotalIncome = 50 + 20 // 70
-        val expectedTotalExpenses = 10 + 15 // 25
-        val expectedProfitLoss = 70 - 25 // 45
-        val expectedEndingBalance = 45 + 100 // 145
-
         val startDateFormatted = TimeUtils.formatDateForCsv(1000L)
         val endDateFormatted = TimeUtils.formatDateForCsv(2000L)
         val createdDateFormatted = TimeUtils.formatDateForCsv(3000L)

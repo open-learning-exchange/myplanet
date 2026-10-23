@@ -21,7 +21,7 @@ class TeamTaskTest {
 
     @Before
     fun setup() {
-        MainApplication.testContext = ApplicationProvider.getApplicationContext<Context>()
+        MainApplication.testContext = ApplicationProvider.getApplicationContext()
     }
 
     @After

@@ -24,6 +24,7 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.ArrayList
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
@@ -222,7 +223,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             sharedPrefManager.setNewLoginUsername(null)
             sharedPrefManager.setNewLoginPassword(null)
             lifecycleScope.launch {
-                delay(500)
+                delay(500.milliseconds)
                 submitForm(username, password)
             }
         }
@@ -383,7 +384,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     binding.inputName.setSelection(lowercaseText.length)
                 }
             }
-            .debounce(300)
+            .debounce(300.milliseconds)
 
         collectWhenStarted(usernameFlow) { s ->
             val input = s?.toString() ?: ""
@@ -402,7 +403,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
     private fun setupFormValidation() {
         val passwordFlow = binding.inputPassword.textChanges()
-            .debounce(300)
+            .debounce(300.milliseconds)
 
         collectWhenStarted(passwordFlow) { s ->
             val input = s?.toString() ?: ""
@@ -681,7 +682,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         }
     }
 
-    fun getCustomDeviceName(): String? {
+    fun getCustomDeviceName(): String {
         return prefData.getCustomDeviceName().ifEmpty { NetworkUtils.getDeviceName() }
     }
 

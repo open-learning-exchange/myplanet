@@ -142,7 +142,7 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `setUserLibrary returns existing library and no-ops when already added`() = runTest {
-        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        val mockUser = UserEntity().apply { id = "user-123" }
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val mockLibrary = MyLibrary().apply {
@@ -160,7 +160,7 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `setUserLibrary returns existing library and no-ops when already removed`() = runTest {
-        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        val mockUser = UserEntity().apply { id = "user-123" }
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val mockLibrary = MyLibrary().apply {
@@ -326,7 +326,7 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `setUserLibrary returns updated library on successful toggle`() = runTest {
-        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        val mockUser = UserEntity().apply { id = "user-123" }
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val mockLibrary = MyLibrary().apply {
@@ -975,6 +975,7 @@ class ResourcesRepositoryImplTest {
 
         val mockTeamsRepository = mockk<TeamsRepository>(relaxed = true)
         every { teamsRepositoryLazy.get() } returns mockTeamsRepository
+        every { storagePathResolver.resolveOleDirectory() } returns kotlin.io.path.createTempDirectory("resources-private-test").toFile()
         coEvery { myLibraryDao.getById(localId) } returns library
         coEvery { myLibraryDao.upsert(any()) } returns Unit
 
@@ -989,6 +990,30 @@ class ResourcesRepositoryImplTest {
                 title = "Private Resource",
                 planetCode = "planet1"
             )
+        }
+    }
+
+    @Test
+    fun `markResourceUploaded re-keys a device-created resource and its folder to the server id`() = runTest {
+        val baseDir = kotlin.io.path.createTempDirectory("resources-rekey-test").toFile()
+        val oleDir = File(baseDir, "ole")
+        File(oleDir, "local-uuid").apply { mkdirs() }
+        File(oleDir, "local-uuid/song.mp3").writeText("audio")
+        every { storagePathResolver.resolveOleDirectory() } returns oleDir
+        val library = MyLibrary().apply { id = "local-uuid"; resourceId = "local-uuid"; resourceLocalAddress = "song.mp3" }
+        coEvery { myLibraryDao.getById("local-uuid") } returns library
+        coEvery { myLibraryDao.upsert(any()) } returns Unit
+
+        try {
+            val result = repository.markResourceUploaded("local-uuid", "remote1", "1-rev", "planet1")
+
+            assertTrue(result)
+            coVerify { myLibraryDao.upsert(match { it.id == "remote1" && it.resourceId == "remote1" && it._rev == "1-rev" }) }
+            coVerify { myLibraryDao.deleteById("local-uuid") }
+            assertTrue(File(oleDir, "remote1/song.mp3").exists())
+            assertFalse(File(oleDir, "local-uuid").exists())
+        } finally {
+            baseDir.deleteRecursively()
         }
     }
 

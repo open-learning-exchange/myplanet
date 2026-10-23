@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.services.sync
 import android.content.Context
 import android.util.Base64
 import android.util.Log
-import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every

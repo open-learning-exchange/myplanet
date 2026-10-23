@@ -27,7 +27,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.add
 import kotlinx.serialization.json.put
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody
@@ -65,7 +64,6 @@ class ConfigurationsRepositoryImplTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private val context: Context = mockk()
     private val apiInterface: ApiInterface = mockk()
-    private val preferences: SharedPreferences = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val appDatabase: AppDatabase = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
@@ -150,7 +148,6 @@ class ConfigurationsRepositoryImplTest {
 
     @Test
     fun `checkHealth logs tagged error and returns network message when the request throws`() = runTest(testDispatcher) {
-        val healthUrl = "http://test.url/healthaccess?p=1234"
 
         val rawPrefs: SharedPreferences = mockk()
         every { sharedPrefManager.rawPreferences } returns rawPrefs
@@ -307,9 +304,9 @@ class ConfigurationsRepositoryImplTest {
             latestapkcode = 2
         }
 
-        val responsePlanet = retrofit2.Response.success(myPlanet)
+        val responsePlanet = Response.success(myPlanet)
         val apkStringJson = GsonUtils.gson.toJson("v3")
-        val responseApk = retrofit2.Response.success(apkStringJson.toResponseBody("application/json".toMediaTypeOrNull()))
+        val responseApk = Response.success(apkStringJson.toResponseBody("application/json".toMediaTypeOrNull()))
 
         coEvery { apiInterface.checkVersion(any()) } returns responsePlanet
         coEvery { apiInterface.getApkVersion(any()) } returns responseApk
@@ -552,7 +549,6 @@ class ConfigurationsRepositoryImplTest {
     @Test
     fun `checkCheckSum returns true when checksums match`() = runTest(testDispatcher) {
         val path = "test_path"
-        val checksumUrl = "http://test.url/checksum"
         val expectedChecksum = "matched_checksum"
 
         every { sharedPrefManager.getServerUrl() } returns "http://test.url"
@@ -565,7 +561,7 @@ class ConfigurationsRepositoryImplTest {
         val response = Response.success(200, mockBody)
         coEvery { apiInterface.getChecksum(any()) } returns response
 
-        val mockFile = mockk<java.io.File>()
+        val mockFile = mockk<File>()
         every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
         every { mockFile.exists() } returns true
 
@@ -582,7 +578,6 @@ class ConfigurationsRepositoryImplTest {
     @Test
     fun `checkCheckSum returns false when checksums do not match`() = runTest(testDispatcher) {
         val path = "test_path"
-        val checksumUrl = "http://test.url/checksum"
         val expectedChecksum = "expected_checksum"
         val fileChecksum = "different_checksum"
 
@@ -596,7 +591,7 @@ class ConfigurationsRepositoryImplTest {
         val response = Response.success(200, mockBody)
         coEvery { apiInterface.getChecksum(any()) } returns response
 
-        val mockFile = mockk<java.io.File>()
+        val mockFile = mockk<File>()
         every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
         every { mockFile.exists() } returns true
 
@@ -625,9 +620,9 @@ class ConfigurationsRepositoryImplTest {
         val response = Response.success(200, mockBody)
         coEvery { apiInterface.getChecksum(any()) } returns response
 
-        every { android.util.Log.w(any(), any<String>()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
 
-        val mockFile = mockk<java.io.File>()
+        val mockFile = mockk<File>()
         every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
         every { mockFile.exists() } returns true
 
@@ -644,7 +639,6 @@ class ConfigurationsRepositoryImplTest {
     @Test
     fun `checkCheckSum returns false when file does not exist`() = runTest(testDispatcher) {
         val path = "test_path"
-        val checksumUrl = "http://test.url/checksum"
         val expectedChecksum = "matched_checksum"
 
         every { sharedPrefManager.getServerUrl() } returns "http://test.url"
@@ -657,7 +651,7 @@ class ConfigurationsRepositoryImplTest {
         val response = Response.success(200, mockBody)
         coEvery { apiInterface.getChecksum(any()) } returns response
 
-        val mockFile = mockk<java.io.File>()
+        val mockFile = mockk<File>()
         every { storagePathResolver.resolveFileFromUrl(path) } returns mockFile
         every { mockFile.exists() } returns false
 
@@ -709,7 +703,6 @@ class ConfigurationsRepositoryImplTest {
         every { mockUri.port } returns 80
         every { android.net.Uri.parse(url) } returns mockUri
 
-        val couchdbURL = "http://satellite:1234@test.url:80"
         val configUrl = "http://satellite:1234@test.url:80/configurations/_all_docs?include_docs=true"
 
         val docJson = kotlinx.serialization.json.buildJsonObject {
