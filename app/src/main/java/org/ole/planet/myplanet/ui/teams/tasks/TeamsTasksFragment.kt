@@ -167,7 +167,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                 isValid = false
             }
             if (isValid) {
-                createOrUpdateTask(task, desc, t, selectedAssignee?.id)
+                createOrUpdateTask(task, desc, t, selectedAssignee?.id ?: t?.assignee)
                 alertDialog.dismiss()
             }
         }

@@ -357,13 +357,13 @@ class UploadManagerTest {
         )
         val library = MyLibrary().apply { id = "lib1" }
         coEvery { uploadCoordinator.uploadRoom<MyLibrary>(any()) } returns UploadResult.Success(1, listOf(uploadedItem))
-        coEvery { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) } returns listOf(library)
+        coEvery { resourcesRepository.getLibraryItemsByIds(listOf("lib1", "remote1")) } returns listOf(library)
 
         val listener = mockk<OnSuccessListener>(relaxed = true)
         uploadManager.uploadResource(listener)
         advanceUntilIdle()
 
-        coVerify { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) }
+        coVerify { resourcesRepository.getLibraryItemsByIds(listOf("lib1", "remote1")) }
         coVerify { listener.onSuccess("Uploaded 1 resources successfully") }
     }
 
@@ -381,13 +381,13 @@ class UploadManagerTest {
             succeeded = listOf(uploadedItem),
             failed = listOf(mockError)
         )
-        coEvery { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) } returns listOf(library)
+        coEvery { resourcesRepository.getLibraryItemsByIds(listOf("lib1", "remote1")) } returns listOf(library)
 
         val listener = mockk<OnSuccessListener>(relaxed = true)
         uploadManager.uploadResource(listener)
         advanceUntilIdle()
 
-        coVerify { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) }
+        coVerify { resourcesRepository.getLibraryItemsByIds(listOf("lib1", "remote1")) }
         coVerify { listener.onSuccess("Partial success: 1 succeeded, 1 failed") }
     }
 
@@ -404,13 +404,13 @@ class UploadManagerTest {
             resourceLocalAddress = "file.pdf"
         }
         coEvery { uploadCoordinator.uploadRoom<MyLibrary>(any()) } returns UploadResult.Success(1, listOf(uploadedItem))
-        coEvery { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) } returns listOf(library)
+        coEvery { resourcesRepository.getLibraryItemsByIds(listOf("lib1", "remote1")) } returns listOf(library)
         coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns retrofit2.Response.success(JsonObject())
 
         uploadManager.uploadResource(null)
         advanceUntilIdle()
 
-        coVerify { resourcesRepository.getLibraryItemsByIds(listOf("lib1")) }
+        coVerify { resourcesRepository.getLibraryItemsByIds(listOf("lib1", "remote1")) }
         coVerify { uploadRepository.uploadAttachment(any(), any(), "remote1", "rev1", any()) }
     }
 

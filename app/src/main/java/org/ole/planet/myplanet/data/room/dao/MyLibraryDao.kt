@@ -111,6 +111,9 @@ interface MyLibraryDao {
     @Query("SELECT * FROM my_library WHERE _rev IS NULL")
     suspend fun getPendingUploads(): List<MyLibrary>
 
+    @Query("DELETE FROM my_library WHERE id = :id")
+    suspend fun deleteById(id: String)
+
     @Query(
         "SELECT * FROM my_library WHERE isPrivate = 1 AND mediaType = 'image' " +
             "AND createdDate > :timestamp"
