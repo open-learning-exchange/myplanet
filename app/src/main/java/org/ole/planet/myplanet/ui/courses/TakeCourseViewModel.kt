@@ -29,7 +29,8 @@ sealed interface TakeCourseUiState {
         val course: MyCourse,
         val steps: List<CourseStep>,
         val userModel: UserEntity?,
-        val courseProgress: Int
+        val courseProgress: Int,
+        val blockingStepIndex: Int = -1
     ) : TakeCourseUiState
 }
 
@@ -60,6 +61,12 @@ class TakeCourseViewModel @Inject constructor(
 
     suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int {
         return coursesRepository.getCurrentProgress(steps, userId, courseId)
+    }
+
+    // Saves any pass a graded attempt has earned first, so a step the learner passed doesn't stay locked
+    suspend fun getBlockingStepIndex(steps: List<CourseStep?>?, userModel: UserEntity?, courseId: String?): Int {
+        progressRepository.saveEarnedExamPasses(steps, userModel?.id, userModel?.planetCode, userModel?.parentCode, courseId)
+        return progressRepository.getBlockingStepIndex(steps, userModel?.id, courseId)
     }
 
     suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData {
@@ -118,8 +125,9 @@ class TakeCourseViewModel @Inject constructor(
                 val steps = coursesRepository.getCourseSteps(courseId)
                 val progressMap = progressRepository.getCourseProgress(listOf(courseId), userModel?.id)
                 val progress = progressMap[courseId]?.current ?: 0
+                val blockingStepIndex = getBlockingStepIndex(steps, userModel, courseId)
 
-                _uiState.value = TakeCourseUiState.Success(course, steps, userModel, progress)
+                _uiState.value = TakeCourseUiState.Success(course, steps, userModel, progress, blockingStepIndex)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

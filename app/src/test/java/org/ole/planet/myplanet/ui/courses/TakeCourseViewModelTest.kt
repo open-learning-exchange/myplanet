@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.courses
 
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -47,13 +48,16 @@ class TakeCourseViewModelTest {
         course: MyCourse? = MyCourse().apply { courseId = this@TakeCourseViewModelTest.courseId },
         steps: List<CourseStep> = emptyList(),
         currentProgress: Int = 0,
-        user: UserEntity? = UserEntity().apply { id = "user_1" }
+        user: UserEntity? = UserEntity().apply { id = "user_1" },
+        blockingStepIndex: Int = -1
     ) {
         coEvery { userRepository.getUserModel() } returns user
         coEvery { coursesRepository.getCourseById(courseId) } returns course
         coEvery { coursesRepository.getCourseSteps(courseId) } returns steps
         coEvery { progressRepository.getCourseProgress(listOf(courseId), user?.id) } returns
             hashMapOf(courseId to org.ole.planet.myplanet.model.CourseProgressState(current = currentProgress, max = steps.size))
+        coEvery { progressRepository.saveEarnedExamPasses(any(), any(), any(), any(), any()) } returns Unit
+        coEvery { progressRepository.getBlockingStepIndex(any(), any(), any()) } returns blockingStepIndex
     }
 
     @Before
@@ -73,6 +77,35 @@ class TakeCourseViewModelTest {
         state as TakeCourseUiState.Success
         assertEquals(courseId, state.course.courseId)
         assertEquals(3, state.courseProgress)
+    }
+
+    @Test
+    fun loadCourse_carriesTheBlockingStepIntoTheState() = runTest {
+        val steps = listOf(CourseStep(id = "s1"), CourseStep(id = "s2", passingRequired = true), CourseStep(id = "s3"))
+        stubCourseLoad(steps = steps, currentProgress = 3, blockingStepIndex = 1)
+
+        viewModel.loadCourse(courseId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as TakeCourseUiState.Success
+        assertEquals(1, state.blockingStepIndex)
+        // The saved resume point is still reported; the fragment clamps it to the blocking step
+        assertEquals(3, state.courseProgress)
+    }
+
+    @Test
+    fun getBlockingStepIndex_savesEarnedPassesBeforeReadingTheLock() = runTest {
+        val steps = listOf(CourseStep(id = "s1", passingRequired = true))
+        val user = UserEntity().apply { id = "user_1"; planetCode = "planet"; parentCode = "parent" }
+        coEvery { progressRepository.saveEarnedExamPasses(any(), any(), any(), any(), any()) } returns Unit
+        coEvery { progressRepository.getBlockingStepIndex(steps, "user_1", courseId) } returns -1
+
+        assertEquals(-1, viewModel.getBlockingStepIndex(steps, user, courseId))
+
+        coVerifyOrder {
+            progressRepository.saveEarnedExamPasses(steps, "user_1", "planet", "parent", courseId)
+            progressRepository.getBlockingStepIndex(steps, "user_1", courseId)
+        }
     }
 
     @Test

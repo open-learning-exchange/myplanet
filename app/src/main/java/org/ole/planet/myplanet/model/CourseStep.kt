@@ -10,5 +10,6 @@ open class CourseStep(
     var courseId: String? = null,
     var stepTitle: String? = null,
     var description: String? = null,
-    var noOfResources: Int? = null
+    var noOfResources: Int? = null,
+    var passingRequired: Boolean = false
 )

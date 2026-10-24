@@ -769,6 +769,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                         valueChoices = valueChoices,
                         mistakes = GsonUtils.getInt("mistakes", answerJson),
                         isPassed = GsonUtils.getBoolean("passed", answerJson),
+                        grade = GsonUtils.getInt("grade", answerJson),
                         examId = parentId,
                         questionId = questionId,
                         submissionId = id,

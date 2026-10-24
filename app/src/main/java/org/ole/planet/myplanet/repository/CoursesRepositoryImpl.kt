@@ -532,7 +532,8 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean, userId: String?) {
-        if (courseId.isNullOrEmpty()) return
+        // A stored pass is never taken away: it may be what unlocks the next step
+        if (courseId.isNullOrEmpty() || !passed) return
         courseProgressDao.updatePassedByCourseAndStep(courseId, stepNum, passed, userId)
     }
 
@@ -709,6 +710,7 @@ class CoursesRepositoryImpl @Inject constructor(
                     stepTitle = GsonUtils.getString("stepTitle", stepJson),
                     description = stepDescription,
                     noOfResources = GsonUtils.getJsonArray("resources", stepJson).size(),
+                    passingRequired = GsonUtils.getBoolean("passingRequired", stepJson),
                 )
             )
             collectRoomExam(stepJson, "exam", courseId, stepId, parsedExams, parsedQuestions)
