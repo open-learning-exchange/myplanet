@@ -629,9 +629,21 @@ class ProgressRepositoryImplTest {
                 progress.size == 1 &&
                     progress.first().id == "doc1" &&
                     progress.first()._id == "doc1" &&
-                    progress.first().passed
+                    progress.first().passed &&
+                    progress.first().isUpdated
             })
         }
+    }
+
+    @Test
+    fun saveCourseProgress_flagsAnUploadedRowWhenItsPassIsSaved() = testScope.runTest {
+        coEvery { courseProgressDao.findByCourseUserAndStep("course1", "user1", 2) } returns CourseProgress().apply {
+            id = "doc1"; _id = "doc1"; courseId = "course1"; userId = "user1"; stepNum = 2
+        }
+
+        repository.saveCourseProgress("user1", "planet", "parent", "course1", 2, true)
+
+        coVerify { courseProgressDao.upsert(match { it.passed && it.isUpdated }) }
     }
 
     @Test

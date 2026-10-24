@@ -319,6 +319,9 @@ class ProgressRepositoryImpl @Inject constructor(
         courseProgress.courseId = courseId
         courseProgress.stepNum = stepNum
         if (passed != null) {
+            if (passed != courseProgress.passed && courseProgress._id != null) {
+                courseProgress.isUpdated = true
+            }
             courseProgress.passed = passed
         }
         courseProgress.createdOn = planetCode
@@ -348,6 +351,9 @@ class ProgressRepositoryImpl @Inject constructor(
         courseProgress._rev = GsonUtils.getString("_rev", act)
         if (!courseProgress.passed) {
             courseProgress.passed = GsonUtils.getBoolean("passed", act) || localPassed
+        }
+        if (courseProgress.passed && !GsonUtils.getBoolean("passed", act)) {
+            courseProgress.isUpdated = true
         }
         courseProgress.stepNum = GsonUtils.getInt("stepNum", act)
         courseProgress.userId = GsonUtils.getString("userId", act)
