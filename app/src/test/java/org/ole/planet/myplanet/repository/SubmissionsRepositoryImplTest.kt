@@ -641,6 +641,49 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `saveExamAnswer completes an exam without written questions and saves its grade`() = runTest {
+        val question = ExamQuestion().apply {
+            id = "question2"; examId = "exam1"; type = "select"; marks = "3"
+            choices = """[{"id":"a","text":"Right"},{"id":"b","text":"Wrong"}]"""
+            correctChoiceList = listOf("Right")
+        }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1@course1" }
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1@course1", userId = "user1")
+        coEvery { questionDao.getByExamId("exam1") } returns listOf(
+            ExamQuestion().apply { id = "question1"; examId = "exam1"; type = "selectMultiple"; marks = "2" },
+            question
+        )
+        coEvery { answerDao.getBySubmissionId("submission1") } returns listOf(
+            Answer(id = "answer1", questionId = "question1", submissionId = "submission1", grade = 1),
+            Answer(id = "answer2", questionId = "question2", submissionId = "submission1", grade = 1)
+        )
+
+        repository.saveExamAnswer(ExamAnswerData(submission, question, "a", null, null, false, "exam", 1, 2, true, "user1"))
+
+        coVerify { submissionDao.updateStatusGradeAndLastUpdate("submission1", "complete", 5L, any()) }
+    }
+
+    @Test
+    fun `saveExamAnswer leaves an exam with a written question for grading`() = runTest {
+        val question = ExamQuestion().apply {
+            id = "question2"; examId = "exam1"; type = "select"
+            choices = """[{"id":"a","text":"Right"},{"id":"b","text":"Wrong"}]"""
+            correctChoiceList = listOf("Right")
+        }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1@course1" }
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1@course1", userId = "user1")
+        coEvery { questionDao.getByExamId("exam1") } returns listOf(
+            ExamQuestion().apply { id = "question1"; examId = "exam1"; type = "textarea" },
+            question
+        )
+
+        repository.saveExamAnswer(ExamAnswerData(submission, question, "a", null, null, false, "exam", 1, 2, true, "user1"))
+
+        coVerify { submissionDao.updateStatusAndLastUpdate("submission1", "requires grading", any()) }
+        coVerify(exactly = 0) { submissionDao.updateStatusGradeAndLastUpdate(any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `saveExamAnswer keeps choice JSON valid when other text has quotes and backslashes`() = runTest {
         val question = ExamQuestion().apply { id = "question1"; examId = "exam1"; type = "selectMultiple" }
         val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1" }

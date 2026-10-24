@@ -52,11 +52,12 @@ interface SubmissionDao {
     @Query("UPDATE submissions SET user = :userJson, status = 'complete', isUpdated = 1 WHERE id = :id") suspend fun markComplete(id: String, userJson: String): Int
     @Query("UPDATE submissions SET status = :status, isUpdated = 1 WHERE id = :id") suspend fun updateStatus(id: String, status: String): Int
     @Query("UPDATE submissions SET status = :status, lastUpdateTime = :lastUpdateTime, isUpdated = 1 WHERE id = :id") suspend fun updateStatusAndLastUpdate(id: String, status: String, lastUpdateTime: Long): Int
+    @Query("UPDATE submissions SET status = :status, grade = :grade, lastUpdateTime = :lastUpdateTime, isUpdated = 1 WHERE id = :id") suspend fun updateStatusGradeAndLastUpdate(id: String, status: String, grade: Long, lastUpdateTime: Long): Int
     @Query("DELETE FROM submissions WHERE parentId = :parentId AND userId IS :userId") suspend fun deleteByParentAndUser(parentId: String, userId: String?): Int
     @Query("DELETE FROM submissions WHERE id IN (:ids)") suspend fun deleteByIds(ids: List<String>): Int
     @Query("DELETE FROM submissions WHERE parentId IS :parentId AND userId IS :userId AND status = 'pending' AND type = 'survey' AND teamId IS NULL") suspend fun deletePendingSurveyOrphans(parentId: String?, userId: String?): Int
     @Query("SELECT * FROM submissions WHERE type = 'exam' AND parentId IS NOT NULL AND userId IS NOT NULL AND status != 'pending' AND (isUpdated = 1 OR _id IS NULL OR _id = '')") suspend fun getPendingExamResults(): List<Submission>
-    @Query("SELECT * FROM submissions WHERE status = 'complete' AND (isUpdated = 1 OR _id IS NULL OR _id = '')") suspend fun getPendingSubmissions(): List<Submission>
+    @Query("SELECT * FROM submissions WHERE status = 'complete' AND type IS NOT 'exam' AND (isUpdated = 1 OR _id IS NULL OR _id = '')") suspend fun getPendingSubmissions(): List<Submission>
     @Upsert suspend fun upsertAll(items: List<Submission>)
     @Upsert fun upsertAllBlocking(items: List<Submission>)
     @Query("UPDATE submissions SET _rev = :rev WHERE id = :id") suspend fun updateRev(id: String, rev: String): Int
