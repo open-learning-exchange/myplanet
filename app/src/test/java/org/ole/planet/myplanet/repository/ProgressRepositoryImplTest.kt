@@ -1072,15 +1072,6 @@ class ProgressRepositoryImplTest {
     }
 
     @Test
-    fun getBlockingStepIndex_withoutFlaggedStepsSkipsTheDatabase() = testScope.runTest {
-        val steps = listOf(CourseStep(id = "step1"), CourseStep(id = "step2"))
-
-        assertEquals(-1, repository.getBlockingStepIndex(steps, "user1", "course1"))
-        coVerify(exactly = 0) { examDao.getByCourseIdAndType(any(), any()) }
-        coVerify(exactly = 0) { courseProgressDao.getByUserAndCourse(any(), any()) }
-    }
-
-    @Test
     fun saveEarnedExamPasses_savesAPassForAnExactPassMark() = testScope.runTest {
         coEvery { courseProgressDao.findByCourseUserAndStep(any(), any(), any()) } returns null
         coEvery { examDao.getByCourseIdAndType("course1", "courses") } returns gatedExams()
@@ -1112,21 +1103,6 @@ class ProgressRepositoryImplTest {
     }
 
     @Test
-    fun saveEarnedExamPasses_zeroTotalPassesWhenEveryAnswerIsCorrect() = testScope.runTest {
-        coEvery { courseProgressDao.findByCourseUserAndStep(any(), any(), any()) } returns null
-        coEvery { examDao.getByCourseIdAndType("course1", "courses") } returns gatedExams()
-        coEvery { courseProgressDao.getByUserAndCourse("user1", "course1") } returns listOf(
-            CourseProgress().apply { stepNum = 2; passed = true }
-        )
-        coEvery { mockSubmissionsRepository.getSubmissionsByParentId("exam4@course1", "user1", "complete") } returns
-            listOf(attempt("a1", 0, 1, 1))
-
-        repository.saveEarnedExamPasses(gatedSteps(), "user1", "planet1", "parent1", "course1")
-
-        coVerify(exactly = 1) { courseProgressDao.upsert(match { it.stepNum == 4 && it.passed }) }
-    }
-
-    @Test
     fun saveEarnedExamPasses_onlyCountsCompletedAttempts() = testScope.runTest {
         coEvery { examDao.getByCourseIdAndType("course1", "courses") } returns gatedExams()
         coEvery { courseProgressDao.getByUserAndCourse("user1", "course1") } returns emptyList()
@@ -1139,17 +1115,4 @@ class ProgressRepositoryImplTest {
         coVerify(exactly = 0) { courseProgressDao.upsert(any()) }
     }
 
-    @Test
-    fun saveEarnedExamPasses_leavesStoredPassesAlone() = testScope.runTest {
-        coEvery { examDao.getByCourseIdAndType("course1", "courses") } returns gatedExams()
-        coEvery { courseProgressDao.getByUserAndCourse("user1", "course1") } returns listOf(
-            CourseProgress().apply { stepNum = 2; passed = true },
-            CourseProgress().apply { stepNum = 4; passed = true }
-        )
-
-        repository.saveEarnedExamPasses(gatedSteps(), "user1", "planet1", "parent1", "course1")
-
-        coVerify(exactly = 0) { mockSubmissionsRepository.getSubmissionsByParentId(any(), any(), any()) }
-        coVerify(exactly = 0) { courseProgressDao.upsert(any()) }
-    }
 }

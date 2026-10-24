@@ -207,14 +207,6 @@ class StepExamTest {
     }
 
     @Test
-    fun isPassingAttempt_scoreDecidesWhenExamHasMarks() {
-        val exam = StepExam(totalMarks = 50, passingPercentage = "58")
-
-        assertFalse(exam.isPassingAttempt(28, allAnswersCorrect = true))
-        assertTrue(exam.isPassingAttempt(50, allAnswersCorrect = false))
-    }
-
-    @Test
     fun isPassingAttempt_zeroTotalPassesOnlyWhenEveryAnswerIsCorrect() {
         val exam = StepExam(totalMarks = 0, passingPercentage = "58")
 

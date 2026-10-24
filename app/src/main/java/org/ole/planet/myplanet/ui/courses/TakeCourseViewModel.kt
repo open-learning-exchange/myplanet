@@ -63,7 +63,6 @@ class TakeCourseViewModel @Inject constructor(
         return coursesRepository.getCurrentProgress(steps, userId, courseId)
     }
 
-    // Saves any pass a graded attempt has earned first, so a step the learner passed doesn't stay locked
     suspend fun getBlockingStepIndex(steps: List<CourseStep?>?, userModel: UserEntity?, courseId: String?): Int {
         progressRepository.saveEarnedExamPasses(steps, userModel?.id, userModel?.planetCode, userModel?.parentCode, courseId)
         return progressRepository.getBlockingStepIndex(steps, userModel?.id, courseId)

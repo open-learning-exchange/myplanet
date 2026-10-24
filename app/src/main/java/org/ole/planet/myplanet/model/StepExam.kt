@@ -34,9 +34,6 @@ open class StepExam(
     var isTeamShareAllowed: Boolean = false,
     var sourceSurveyId: String? = null
 ) {
-    // Whether a completed attempt scoring grade marks passes. Compared without dividing:
-    // 29 / 50 * 100 is 57.99999999999999 and would miss a 58% pass mark.
-    // An exam worth no marks has no score to compare, so it passes only when every answer is correct.
     fun isPassingAttempt(grade: Long, allAnswersCorrect: Boolean): Boolean {
         if (totalMarks <= 0) return allAnswersCorrect
         val percentage = passingPercentage?.trim()?.toDoubleOrNull() ?: 100.0

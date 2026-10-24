@@ -151,7 +151,6 @@ class ProgressRepositoryImpl @Inject constructor(
         return calculateCurrentProgress(steps, progresses)
     }
 
-    // Saves a pass for each step that requires one once a completed (graded) attempt earns it; never saves passed = false
     override suspend fun saveEarnedExamPasses(
         steps: List<CourseStep?>?,
         userId: String?,
@@ -179,7 +178,6 @@ class ProgressRepositoryImpl @Inject constructor(
         }
     }
 
-    // Index of the first step whose exam must be passed and isn't (-1 when none); every later step is locked behind it
     override suspend fun getBlockingStepIndex(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int {
         if (steps.isNullOrEmpty() || courseId.isNullOrEmpty()) return -1
         if (steps.none { it?.passingRequired == true }) return -1
@@ -191,7 +189,6 @@ class ProgressRepositoryImpl @Inject constructor(
         } ?: -1
     }
 
-    // A step requires a pass only when it asks for one and has an exam with questions to pass
     private suspend fun requiredExamsByStepId(steps: List<CourseStep?>, courseId: String): Map<String, StepExam> {
         val requiredStepIds = steps.mapNotNullTo(HashSet()) { step -> step?.id?.takeIf { step.passingRequired } }
         val exams = examDao.getByCourseIdAndType(courseId, "courses")
@@ -200,7 +197,6 @@ class ProgressRepositoryImpl @Inject constructor(
         }.toMap()
     }
 
-    // A step can have several progress docs; a passed one wins
     private suspend fun passedStepNums(userId: String?, courseId: String): Set<Int> {
         return courseProgressDao.getByUserAndCourse(userId, courseId)
             .mapNotNullTo(HashSet()) { if (it.passed) it.stepNum else null }

@@ -332,7 +332,6 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
         }
     }
 
-    // A pass can be saved while the course is open (a sync brings in a graded attempt), so re-read the lock
     private fun refreshStepLock() {
         stepLockJob?.cancel()
         stepLockJob = viewLifecycleOwner.lifecycleScope.launch {

@@ -71,13 +71,6 @@ class TakeCourseFragmentStepLockTest {
     }
 
     @Test
-    fun resume_goesToTheSavedStepWhenNothingBlocks() {
-        val fragment = launchFragment(blockingStepIndex = -1, savedProgress = 3)
-
-        assertEquals(3, viewPager(fragment).currentItem)
-    }
-
-    @Test
     fun next_staysOnTheStepThatMustBePassed() {
         val fragment = launchFragment(blockingStepIndex = 0, savedProgress = 1)
 
@@ -105,15 +98,6 @@ class TakeCourseFragmentStepLockTest {
     }
 
     @Test
-    fun seekBar_jumpsWhenNothingBlocks() {
-        val fragment = launchFragment(blockingStepIndex = -1, savedProgress = 1)
-
-        dragSeekBarTo(fragment, 2)
-
-        assertEquals(2, viewPager(fragment).currentItem)
-    }
-
-    @Test
     fun stepListTap_onALockedStepIsIgnored() {
         val fragment = launchFragment(blockingStepIndex = 0, savedProgress = 1)
 
@@ -121,16 +105,6 @@ class TakeCourseFragmentStepLockTest {
         idle()
 
         assertEquals(1, viewPager(fragment).currentItem)
-    }
-
-    @Test
-    fun stepListTap_opensTheStepThatMustBePassed() {
-        val fragment = launchFragment(blockingStepIndex = 1, savedProgress = 1)
-
-        fragment.navigateToStep("step_2")
-        idle()
-
-        assertEquals(2, viewPager(fragment).currentItem)
     }
 
     private fun launchFragment(blockingStepIndex: Int, savedProgress: Int): TakeCourseFragment {

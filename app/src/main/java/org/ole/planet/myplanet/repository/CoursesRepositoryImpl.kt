@@ -532,7 +532,6 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean, userId: String?) {
-        // A stored pass is never taken away: it may be what unlocks the next step
         if (courseId.isNullOrEmpty() || !passed) return
         courseProgressDao.updatePassedByCourseAndStep(courseId, stepNum, passed, userId)
     }
