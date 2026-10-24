@@ -684,6 +684,35 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `saveExamAnswer grades a multiple-choice exam answer 1`() = runTest {
+        val question = ExamQuestion().apply {
+            id = "question1"; examId = "exam1"; type = "select"
+            choices = """[{"id":"a","text":"Right"},{"id":"b","text":"Wrong"}]"""
+            correctChoiceList = listOf("Right")
+        }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1@course1" }
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1@course1", userId = "user1")
+
+        repository.saveExamAnswer(ExamAnswerData(submission, question, "a", null, null, false, "exam", 0, 2, false, "user1"))
+
+        coVerify { answerDao.upsertAll(match { it.single().questionId == "question1" && it.single().grade == 1 }) }
+    }
+
+    @Test
+    fun `saveExamAnswer leaves a written exam answer ungraded`() = runTest {
+        val question = ExamQuestion().apply {
+            id = "question1"; examId = "exam1"; type = "textarea"
+            correctChoiceList = listOf("photosynthesis")
+        }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1@course1" }
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1@course1", userId = "user1")
+
+        repository.saveExamAnswer(ExamAnswerData(submission, question, "Photosynthesis", null, null, false, "exam", 0, 2, false, "user1"))
+
+        coVerify { answerDao.upsertAll(match { it.single().questionId == "question1" && it.single().grade == null }) }
+    }
+
+    @Test
     fun `saveExamAnswer keeps choice JSON valid when other text has quotes and backslashes`() = runTest {
         val question = ExamQuestion().apply { id = "question1"; examId = "exam1"; type = "selectMultiple" }
         val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1" }

@@ -606,7 +606,11 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 valueChoices = valueChoices,
                 mistakes = if (type == "exam" && !isCorrect) (existing?.mistakes ?: 0) + 1 else existing?.mistakes ?: 0,
                 isPassed = if (type == "exam") isCorrect else existing?.isPassed ?: false,
-                grade = if (type == "exam") 1 else existing?.grade ?: 0,
+                grade = when {
+                    type != "exam" -> existing?.grade
+                    question.type.equals("input", ignoreCase = true) || question.type.equals("textarea", ignoreCase = true) -> null
+                    else -> 1
+                },
                 examId = question.examId,
                 questionId = questionId,
                 submissionId = submissionId,
@@ -783,7 +787,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                         valueChoices = valueChoices,
                         mistakes = GsonUtils.getInt("mistakes", answerJson),
                         isPassed = GsonUtils.getBoolean("passed", answerJson),
-                        grade = GsonUtils.getInt("grade", answerJson),
+                        grade = answerJson.get("grade")?.takeUnless { it.isJsonNull }?.let { GsonUtils.getInt("grade", answerJson) },
                         examId = parentId,
                         questionId = questionId,
                         submissionId = id,

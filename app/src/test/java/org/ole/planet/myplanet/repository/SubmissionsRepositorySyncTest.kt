@@ -187,4 +187,11 @@ class SubmissionsRepositorySyncTest {
         val grades = answerDao.getBySubmissionId("server-5").associate { it.questionId to it.grade }
         assertEquals(mapOf("q1" to 1, "q2" to 0), grades)
     }
+
+    @Test
+    fun `pulling leaves an answer with no grade ungraded`() = runBlocking {
+        repository.insertSubmission(pulledSubmission("server-6", status = "requires grading"))
+
+        assertEquals(listOf(null, null), answerDao.getBySubmissionId("server-6").map { it.grade })
+    }
 }
