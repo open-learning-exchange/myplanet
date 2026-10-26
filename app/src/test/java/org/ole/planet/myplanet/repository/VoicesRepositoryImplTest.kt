@@ -74,7 +74,7 @@ class VoicesRepositoryImplTest {
 
     @Test
     fun getCommunityNews_uses_dispatcherProvider_default() = testScope.runTest {
-        every { newsDao.getTopLevelMessagesFlow() } returns flowOf(emptyList())
+        every { newsDao.getTopLevelCommunityCandidatesFlow() } returns flowOf(emptyList())
 
         val flow = repository.getCommunityNews("testUser")
         val result = flow.toList()
