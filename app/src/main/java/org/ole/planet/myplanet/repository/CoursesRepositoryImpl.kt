@@ -546,12 +546,12 @@ class CoursesRepositoryImpl @Inject constructor(
 
         val hasExam = if (stepExams.isNotEmpty()) {
             val firstStepId = stepExams[0].id
-            submissionsRepository.hasSubmission(firstStepId, step.courseId, userId, "exam")
+            submissionsRepository.hasSubmission(firstStepId, step.courseId, userId, "exam", finishedOnly = true)
         } else false
 
         val hasSurvey = if (stepSurvey.isNotEmpty()) {
             val firstStepId = stepSurvey[0].id
-            submissionsRepository.hasSubmission(firstStepId, step.courseId, userId, "survey")
+            submissionsRepository.hasSubmission(firstStepId, step.courseId, userId, "survey", finishedOnly = true)
         } else false
 
         return CourseStepData(

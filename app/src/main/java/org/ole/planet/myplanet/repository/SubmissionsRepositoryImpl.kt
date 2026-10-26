@@ -211,6 +211,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         courseId: String?,
         userId: String?,
         type: String,
+        finishedOnly: Boolean,
     ): Boolean {
         if (stepExamId.isNullOrBlank() || courseId.isNullOrBlank() || userId.isNullOrBlank()) {
             return false
@@ -221,7 +222,12 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
 
         val parentId = "$stepExamId@$courseId"
-        return submissionDao.countByUserParentAndType(userId, parentId, type) > 0
+        val count = if (finishedOnly) {
+            submissionDao.countFinishedByUserParentAndType(userId, parentId, type)
+        } else {
+            submissionDao.countByUserParentAndType(userId, parentId, type)
+        }
+        return count > 0
     }
 
     override suspend fun hasPendingOfflineSubmissions(): Boolean {

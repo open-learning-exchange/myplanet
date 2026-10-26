@@ -32,6 +32,7 @@ interface SubmissionDao {
     @Query("SELECT COUNT(*) FROM submissions WHERE (isUpdated = 1 OR _id IS NULL OR _id = '')") suspend fun countPendingOfflineSubmissions(): Int
     @Query("SELECT COUNT(*) FROM submissions WHERE LOWER(status) = 'pending' AND id IN (SELECT submissionId FROM answers WHERE submissionId IS NOT NULL)") suspend fun countPendingExamResults(): Int
     @Query("SELECT COUNT(*) FROM submissions WHERE userId IS :userId AND parentId = :parentId AND type = :type") suspend fun countByUserParentAndType(userId: String?, parentId: String, type: String): Int
+    @Query("SELECT COUNT(*) FROM submissions WHERE userId IS :userId AND parentId = :parentId AND type = :type AND status != 'pending'") suspend fun countFinishedByUserParentAndType(userId: String?, parentId: String, type: String): Int
     @Query("SELECT COUNT(*) FROM submissions WHERE userId IS :userId AND parentId LIKE '%' || :examId || '%' AND status != 'pending'") suspend fun countCompletedByUserAndExamId(userId: String?, examId: String): Int
     @Query("SELECT * FROM submissions WHERE parentId IS :parentId AND userId IS :userId AND (:status IS NULL OR status = :status) ORDER BY startTime DESC") suspend fun getByParentUserAndStatus(parentId: String?, userId: String?, status: String?): List<Submission>
     @Query("SELECT * FROM submissions WHERE parentId IS :parentId AND userId IS :userId AND status = 'pending' ORDER BY startTime DESC LIMIT 1") suspend fun getPendingByUserAndParent(parentId: String?, userId: String?): Submission?
