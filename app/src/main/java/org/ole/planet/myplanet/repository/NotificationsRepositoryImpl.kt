@@ -12,9 +12,11 @@ import javax.inject.Inject
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
+import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.NotificationPayload
+import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.model.TeamNotificationInfo
@@ -30,7 +32,8 @@ class NotificationsRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider,
     private val teamNotificationDao: TeamNotificationDao,
     private val notificationDao: NotificationDao,
-    private val voicesRepository: VoicesRepository
+    private val voicesRepository: VoicesRepository,
+    private val removedLogDao: RemovedLogDao
 ) : NotificationsRepository {
     override suspend fun refresh() = Unit
 
@@ -464,12 +467,27 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun deleteNotifications(ids: Set<String>): Set<String> {
         if (ids.isEmpty()) return emptySet()
+        val serverIds = notificationDao.getByIds(ids.toList()).filter { it.isFromServer }.map { it.id }
+        if (serverIds.isNotEmpty()) {
+            removedLogDao.insertAll(serverIds.map { serverId ->
+                RemovedLog().apply {
+                    id = UUID.randomUUID().toString()
+                    type = DELETED_NOTIFICATION_TYPE
+                    docId = serverId
+                }
+            })
+        }
         return notificationDao.deleteExisting(ids.toList()).toSet()
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
+        val deletedIds = removedLogDao.getRemovedDocIds(DELETED_NOTIFICATION_TYPE, null).toHashSet()
         val documentList = jsonArray.toSyncDocuments().map { it.second }
-        val parsedList = documentList.mapNotNull { parseNotification(it) }
+        val parsedList = documentList.mapNotNull { parseNotification(it) }.filterNot { it.id in deletedIds }
         notificationDao.upsertAllPreservingPendingRead(parsedList)
+    }
+
+    private companion object {
+        const val DELETED_NOTIFICATION_TYPE = "notification"
     }
 }

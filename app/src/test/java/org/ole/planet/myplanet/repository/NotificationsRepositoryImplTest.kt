@@ -36,6 +36,7 @@ class NotificationsRepositoryImplTest {
     private lateinit var teamNotificationDao: TeamNotificationDao
     private lateinit var notificationDao: NotificationDao
     private lateinit var voicesRepository: VoicesRepository
+    private lateinit var removedLogDao: org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 
     @Before
     fun setUp() {
@@ -44,14 +45,48 @@ class NotificationsRepositoryImplTest {
         teamNotificationDao = mockk(relaxed = true)
         notificationDao = mockk(relaxed = true)
         voicesRepository = mockk(relaxed = true)
+        removedLogDao = mockk(relaxed = true)
         repository = NotificationsRepositoryImpl(
             userRepository,
             teamsRepository,
             TestTimeProvider(),
             teamNotificationDao,
             notificationDao,
-            voicesRepository
+            voicesRepository,
+            removedLogDao
         )
+    }
+
+    @Test
+    fun `deleteNotifications remembers deleted server notifications and the next pull skips them`() = runTest {
+        val serverNotification = AppNotification().apply { id = "server1"; isFromServer = true }
+        val localNotification = AppNotification().apply { id = "local1"; isFromServer = false }
+        coEvery { notificationDao.getByIds(listOf("server1", "local1")) } returns listOf(serverNotification, localNotification)
+        coEvery { notificationDao.deleteExisting(any()) } returns listOf("server1", "local1")
+        val logged = slot<List<org.ole.planet.myplanet.model.RemovedLog>>()
+        coEvery { removedLogDao.insertAll(capture(logged)) } returns Unit
+
+        repository.deleteNotifications(linkedSetOf("server1", "local1"))
+
+        assertEquals(listOf("server1"), logged.captured.map { it.docId })
+
+        coEvery { removedLogDao.getRemovedDocIds("notification", null) } returns listOf("server1")
+        val saved = slot<List<AppNotification>>()
+        coEvery { notificationDao.upsertAllPreservingPendingRead(capture(saved)) } returns Unit
+        val jsonArray = JsonArray().apply {
+            listOf("server1", "server2").forEach { docId ->
+                add(JsonObject().apply {
+                    add("doc", JsonObject().apply {
+                        addProperty("_id", docId); addProperty("_rev", "1-a"); addProperty("user", "user1")
+                        addProperty("message", "hello"); addProperty("type", "newResource"); addProperty("status", "unread")
+                    })
+                })
+            }
+        }
+
+        repository.bulkInsertFromSync(jsonArray)
+
+        assertEquals(listOf("server2"), saved.captured.map { it.id })
     }
 
     @Test
