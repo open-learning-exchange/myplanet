@@ -67,6 +67,8 @@ class AddResourceFragment : BaseBindingBottomSheetFragment<FragmentAddResourceBi
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        photoURI = savedInstanceState?.getString(KEY_PHOTO_URI)?.let(Uri::parse)
+        videoUri = savedInstanceState?.getString(KEY_VIDEO_URI)?.let(Uri::parse)
         if (arguments != null) {
             type = requireArguments().getInt("type", 0)
             teamId = requireArguments().getString("teamId")
@@ -119,6 +121,12 @@ class AddResourceFragment : BaseBindingBottomSheetFragment<FragmentAddResourceBi
             isHideable = true
         }
         return bottomSheetDialog
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        photoURI?.let { outState.putString(KEY_PHOTO_URI, it.toString()) }
+        videoUri?.let { outState.putString(KEY_VIDEO_URI, it.toString()) }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -276,6 +284,8 @@ class AddResourceFragment : BaseBindingBottomSheetFragment<FragmentAddResourceBi
     }
 
     companion object {
+        private const val KEY_PHOTO_URI = "photo_uri"
+        private const val KEY_VIDEO_URI = "video_uri"
         const val REQUEST_VIDEO_CAPTURE = 1
         const val REQUEST_CAPTURE_PICTURE = 2
         const val REQUEST_FILE_SELECTION = 3
