@@ -198,6 +198,28 @@ class ChatRepositoryImplTest {
     }
 
     @Test
+    fun sendContinueChatRequest_failedResponse_doesNotSaveATurnWithABlankReply() = runTest {
+        val mockResponse = retrofit2.Response.success(ChatResponse(status = "Error", chat = null, couchDBResponse = null))
+        coEvery { chatApiService.sendChatRequest(any()) } returns mockResponse
+
+        val result = chatRepository.sendContinueChatRequest("hello", "testUser", AiProvider("OpenAI", "GPT-4"), "chat-123", "1-rev")
+
+        assertTrue(result is ChatResult.Error)
+        coVerify(exactly = 0) { chatDao.findByDocId(any()) }
+        coVerify(exactly = 0) { chatDao.update(any()) }
+    }
+
+    @Test
+    fun sendContinueChatRequest_networkError_doesNotSaveATurnWithABlankReply() = runTest {
+        coEvery { chatApiService.sendChatRequest(any()) } throws java.io.IOException("offline")
+
+        val result = chatRepository.sendContinueChatRequest("hello", "testUser", AiProvider("OpenAI", "GPT-4"), "chat-123", "1-rev")
+
+        assertTrue(result is ChatResult.Error)
+        coVerify(exactly = 0) { chatDao.update(any()) }
+    }
+
+    @Test
     fun `extractSharedViewInIds returns empty map for empty list`() {
         val result = chatRepository.extractSharedViewInIds(emptyList())
         assertTrue(result.isEmpty())
