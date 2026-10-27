@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.google.gson.JsonObject
 import io.mockk.every
