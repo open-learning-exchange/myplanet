@@ -8,6 +8,7 @@ import com.google.gson.JsonObject
 import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.data.api.ChatApiService
@@ -103,11 +104,11 @@ class ChatRepositoryImpl @Inject constructor(
                 continueConversation(id, message, chatResponse, newRev)
                 ChatResult.Success(chatResponse, id, newRev)
             } else {
-                continueConversation(id, message, "", rev)
                 ChatResult.Error(responseBody?.message ?: response.message() ?: "Request failed")
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            continueConversation(id, message, "", rev)
             ChatResult.Error(e.message ?: "Request failed")
         }
     }

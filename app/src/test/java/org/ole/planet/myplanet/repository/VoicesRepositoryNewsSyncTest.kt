@@ -88,7 +88,8 @@ class VoicesRepositoryNewsSyncTest {
             Gson(),
             sharedPrefManager,
             newsDao,
-            mockk<org.ole.planet.myplanet.data.room.dao.NewsLogDao>(relaxed = true)
+            mockk<org.ole.planet.myplanet.data.room.dao.NewsLogDao>(relaxed = true),
+            db.removedLogDao()
         )
     }
 
@@ -96,6 +97,21 @@ class VoicesRepositoryNewsSyncTest {
     fun tearDown() {
         db.close()
         unmockkObject(UrlUtils, NetworkUtils)
+    }
+
+    @Test
+    fun `a deleted synced post is queued for server deletion and not re-added by the next pull`() = runBlocking {
+        repository.insertNewsList(listOf(messageDoc("n1", "Hello")))
+        val localId = newsDao.getByUnderscoreId("n1")!!.id
+
+        repository.deletePost(localId, "")
+        repository.insertNewsList(listOf(messageDoc("n1", "Hello")))
+
+        assertNull(newsDao.getByUnderscoreId("n1"))
+        assertEquals(listOf("n1"), repository.getPendingNewsDeletions())
+
+        repository.markNewsDeletionsUploaded(listOf("n1"))
+        assertTrue(repository.getPendingNewsDeletions().isEmpty())
     }
 
     @Test
@@ -359,7 +375,8 @@ class VoicesRepositoryNewsSyncTest {
         val dispatchers = mockk<DispatcherProvider> { every { default } returns Dispatchers.Unconfined }
         val flowRepository = VoicesRepositoryImpl(
             dispatchers, Gson(), Gson(), sharedPrefManager, newsDao,
-            mockk<org.ole.planet.myplanet.data.room.dao.NewsLogDao>(relaxed = true)
+            mockk<org.ole.planet.myplanet.data.room.dao.NewsLogDao>(relaxed = true),
+            db.removedLogDao()
         )
         val doc = messageDoc("n1", "Hello").apply { addProperty("viewableBy", "community") }
         repository.insertNewsList(listOf(doc))
