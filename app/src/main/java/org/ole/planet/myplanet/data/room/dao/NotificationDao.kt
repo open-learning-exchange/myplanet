@@ -7,7 +7,6 @@ import androidx.room.Transaction
 import androidx.room.Upsert
 import androidx.sqlite.db.SimpleSQLiteQuery
 import androidx.sqlite.db.SupportSQLiteQuery
-import java.util.Date
 import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.NotificationPayload
 
@@ -56,17 +55,17 @@ interface NotificationDao {
     @Query("SELECT id FROM notifications WHERE (userId = :userId OR (:isAdmin = 1 AND userId = 'SYSTEM')) AND isRead = 0")
     suspend fun getUnreadIds(userId: String, isAdmin: Boolean = false): List<String>
 
-    @Query("UPDATE notifications SET isRead = 1, createdAt = :createdAt, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE id IN (:ids)")
-    suspend fun markAsReadInternal(ids: List<String>, createdAt: Date): Int
+    @Query("UPDATE notifications SET isRead = 1, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE id IN (:ids)")
+    suspend fun markAsReadInternal(ids: List<String>): Int
 
     @Transaction
-    suspend fun markAsRead(ids: List<String>, createdAt: Date): Int {
+    suspend fun markAsRead(ids: List<String>): Int {
         if (ids.isEmpty()) return 0
-        return ids.distinct().chunked(900).sumOf { chunk -> markAsReadInternal(chunk, createdAt) }
+        return ids.distinct().chunked(900).sumOf { chunk -> markAsReadInternal(chunk) }
     }
 
-    @Query("UPDATE notifications SET isRead = 1, createdAt = :createdAt, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE (userId = :userId OR (:isAdmin = 1 AND userId = 'SYSTEM')) AND isRead = 0")
-    suspend fun markAllUnreadAsRead(userId: String, createdAt: Date, isAdmin: Boolean = false): Int
+    @Query("UPDATE notifications SET isRead = 1, needsSync = CASE WHEN isFromServer = 1 THEN 1 ELSE needsSync END WHERE (userId = :userId OR (:isAdmin = 1 AND userId = 'SYSTEM')) AND isRead = 0")
+    suspend fun markAllUnreadAsRead(userId: String, isAdmin: Boolean = false): Int
 
     @Query("SELECT * FROM notifications WHERE needsSync = 1 AND rev IS NOT NULL")
     suspend fun getPendingSyncNotifications(): List<AppNotification>
@@ -145,19 +144,19 @@ interface NotificationDao {
     }
 
     @Transaction
-    suspend fun markExistingAsRead(ids: List<String>, createdAt: Date): List<String> {
+    suspend fun markExistingAsRead(ids: List<String>): List<String> {
         val found = getIdsByIds(ids)
         if (found.isNotEmpty()) {
-            markAsRead(found, createdAt)
+            markAsRead(found)
         }
         return found
     }
 
     @Transaction
-    suspend fun markAllUnreadAsReadReturningIds(userId: String, createdAt: Date, isAdmin: Boolean = false): List<String> {
+    suspend fun markAllUnreadAsReadReturningIds(userId: String, isAdmin: Boolean = false): List<String> {
         val unreadIds = getUnreadIds(userId, isAdmin)
         if (unreadIds.isNotEmpty()) {
-            markAllUnreadAsRead(userId, createdAt, isAdmin)
+            markAllUnreadAsRead(userId, isAdmin)
         }
         return unreadIds
     }
