@@ -438,6 +438,12 @@ class VoicesRepositoryImpl @Inject constructor(
     private suspend fun buildNewsFromJson(doc: JsonObject, underscoreId: String, existing: Map<String?, News>? = null): News {
         val news = (existing?.get(underscoreId) ?: newsDao.getByUnderscoreId(underscoreId))
             ?: News().apply { id = underscoreId }
+        if (news.isUpdated) {
+            news._rev = GsonUtils.getString("_rev", doc)
+            news.reactions = parseReactions(doc.get("reactions"))
+            news.applyPendingReactions()
+            return news
+        }
         news._rev = GsonUtils.getString("_rev", doc)
         news._id = underscoreId
         news.viewableBy = GsonUtils.getString("viewableBy", doc)

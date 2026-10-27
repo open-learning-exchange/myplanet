@@ -261,6 +261,27 @@ class VoicesRepositoryNewsSyncTest {
     }
 
     @Test
+    fun `insertNewsList keeps an unsent local edit and label but takes the server rev and reactions`() = runBlocking {
+        repository.insertNewsList(listOf(messageDoc("n1", "Hello")))
+        val localId = newsDao.getByUnderscoreId("n1")!!.id
+        repository.editPost(localId, "Hello, edited", emptySet(), null)
+        repository.addLabel(localId, "offer")
+
+        val serverUpdate = messageDoc("n1", "Hello").apply {
+            addProperty("_rev", "2-n1")
+            add("reactions", reactionsOf("👍" to listOf("org.couchdb.user:bob")))
+        }
+        repository.insertNewsList(listOf(serverUpdate))
+
+        val news = newsDao.getByUnderscoreId("n1")!!
+        assertEquals("Hello, edited", news.message)
+        assertTrue(news.labels!!.contains("offer"))
+        assertTrue(news.isUpdated)
+        assertEquals("2-n1", news._rev)
+        assertEquals(mapOf("👍" to listOf("org.couchdb.user:bob")), news.reactionsMap)
+    }
+
+    @Test
     fun `insertNewsList clears reactions removed on the server`() = runBlocking {
         val withReactions = messageDoc("n1", "Hello").apply {
             add("reactions", reactionsOf("👍" to listOf("org.couchdb.user:bob")))
