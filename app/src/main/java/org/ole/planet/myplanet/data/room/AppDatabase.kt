@@ -127,7 +127,7 @@ import org.ole.planet.myplanet.model.UserEntity
         Answer::class,
         MyTeam::class,
     ],
-    version = 15,
+    version = 16,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)

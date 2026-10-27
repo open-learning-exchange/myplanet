@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.databinding.FragmentReportsBinding
 import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.utils.AmountUtils
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -187,11 +188,11 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
             if (isValidReportForm(dialogAddReportBinding)) {
                 isReportSaving = true
                 val description = dialogAddReportBinding.summary.text.toString()
-                val beginningBalance = dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: 0
-                val sales = dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: 0
-                val otherIncome = dialogAddReportBinding.otherIncome.text.toString().toIntOrNull() ?: 0
-                val wages = dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: 0
-                val otherExpenses = dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: 0
+                val beginningBalance = AmountUtils.parse(dialogAddReportBinding.beginningBalance.text) ?: 0.0
+                val sales = AmountUtils.parse(dialogAddReportBinding.sales.text) ?: 0.0
+                val otherIncome = AmountUtils.parse(dialogAddReportBinding.otherIncome.text) ?: 0.0
+                val wages = AmountUtils.parse(dialogAddReportBinding.personnel.text) ?: 0.0
+                val otherExpenses = AmountUtils.parse(dialogAddReportBinding.nonPersonnel.text) ?: 0.0
                 val startDate = startTimeStamp?.toLongOrNull() ?: 0L
                 val endDate = endTimeStamp?.toLongOrNull() ?: 0L
                 val capturedTeamId = teamId
@@ -259,11 +260,11 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         dialogAddReportBinding.startDate.text = getString(R.string.message_placeholder, TimeUtils.formatDate(currentReport.startDate, " MMM dd, yyyy"))
         dialogAddReportBinding.endDate.text = getString(R.string.message_placeholder, TimeUtils.formatDate(currentReport.endDate, " MMM dd, yyyy"))
         dialogAddReportBinding.summary.setText(getString(R.string.message_placeholder, currentReport.description))
-        dialogAddReportBinding.beginningBalance.setText(currentReport.beginningBalance.toString())
-        dialogAddReportBinding.sales.setText(currentReport.sales.toString())
-        dialogAddReportBinding.otherIncome.setText(currentReport.otherIncome.toString())
-        dialogAddReportBinding.personnel.setText(currentReport.wages.toString())
-        dialogAddReportBinding.nonPersonnel.setText(currentReport.otherExpenses.toString())
+        dialogAddReportBinding.beginningBalance.setText(AmountUtils.toPlainString(currentReport.beginningBalance))
+        dialogAddReportBinding.sales.setText(AmountUtils.toPlainString(currentReport.sales))
+        dialogAddReportBinding.otherIncome.setText(AmountUtils.toPlainString(currentReport.otherIncome))
+        dialogAddReportBinding.personnel.setText(AmountUtils.toPlainString(currentReport.wages))
+        dialogAddReportBinding.nonPersonnel.setText(AmountUtils.toPlainString(currentReport.otherExpenses))
 
         setupDatePickers(dialogAddReportBinding, calendar)
 
@@ -282,11 +283,11 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
 
                 isReportSaving = true
                 val description = dialogAddReportBinding.summary.text.toString()
-                val beginningBalance = dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: currentReport.beginningBalance
-                val sales = dialogAddReportBinding.sales.text.toString().toIntOrNull() ?: currentReport.sales
-                val otherIncome = dialogAddReportBinding.otherIncome.text.toString().toIntOrNull() ?: currentReport.otherIncome
-                val wages = dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: currentReport.wages
-                val otherExpenses = dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: currentReport.otherExpenses
+                val beginningBalance = AmountUtils.parse(dialogAddReportBinding.beginningBalance.text) ?: currentReport.beginningBalance
+                val sales = AmountUtils.parse(dialogAddReportBinding.sales.text) ?: currentReport.sales
+                val otherIncome = AmountUtils.parse(dialogAddReportBinding.otherIncome.text) ?: currentReport.otherIncome
+                val wages = AmountUtils.parse(dialogAddReportBinding.personnel.text) ?: currentReport.wages
+                val otherExpenses = AmountUtils.parse(dialogAddReportBinding.nonPersonnel.text) ?: currentReport.otherExpenses
                 val startDate = startTimeStamp?.toLongOrNull() ?: currentReport.startDate
                 val endDate = endTimeStamp?.toLongOrNull() ?: currentReport.endDate
                 val imageUri = selectedImageUri
