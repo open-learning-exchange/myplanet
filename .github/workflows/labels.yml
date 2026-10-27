@@ -18,6 +18,11 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  # gradle_patch() reads the version file's git blob via the GraphQL
+  # repository.object(...) field -- the Contents API surface, gated by
+  # contents:read. Without it the blob read returns null and the version-bump
+  # discount silently no-ops. contents:read is a read-only scope.
+  contents: read
 
 concurrency:
   group: labels-${{ inputs.pr || github.event.pull_request.number }}
