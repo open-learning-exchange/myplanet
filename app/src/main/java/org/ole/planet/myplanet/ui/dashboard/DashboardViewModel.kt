@@ -55,6 +55,7 @@ data class DashboardUiState(
     val teams: List<MyTeam> = emptyList(),
     val offlineLogins: Int = 0,
     val fullName: String? = null,
+    val surveyCount: Int = 0,
 )
 
 data class ChallengeDialogData(
@@ -145,6 +146,7 @@ class DashboardViewModel @Inject constructor(
     private var coursesJob: Job? = null
     private var teamsJob: Job? = null
     private var profileJob: Job? = null
+    private var surveysJob: Job? = null
 
     fun setUnreadNotifications(count: Int) {
         _uiState.update { it.copy(unreadNotifications = count) }
@@ -205,6 +207,15 @@ class DashboardViewModel @Inject constructor(
             val profile = userRepository.getDashboardProfile(userId)
 
             _uiState.update { it.copy(fullName = profile.fullName, offlineLogins = profile.offlineLogins) }
+        }
+
+        surveysJob?.cancel()
+        surveysJob = viewModelScope.launch {
+            submissionsRepository.getPendingSurveysFlow(userId)
+                .flowOn(dispatcherProvider.io)
+                .collect { pendingSurveys ->
+                    _uiState.update { it.copy(surveyCount = pendingSurveys.size) }
+                }
         }
     }
 
