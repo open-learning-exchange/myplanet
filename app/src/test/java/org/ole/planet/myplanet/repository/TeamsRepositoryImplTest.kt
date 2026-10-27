@@ -733,6 +733,39 @@ class TeamsRepositoryImplTest {
     }
 
     @Test
+    fun `bulkInsertFromSync keeps an unsent local report edit and takes only the server rev`() = runTest(testDispatcher) {
+        io.mockk.mockkStatic("androidx.room.RoomDatabaseKt")
+        val blockSlot = io.mockk.slot<suspend () -> Unit>()
+        coEvery { appDatabase.withTransaction(capture(blockSlot)) } coAnswers { blockSlot.captured.invoke() }
+        val edited = MyTeam().apply {
+            _id = "report1"; _rev = "1-a"; docType = "report"; description = "local edit"; sales = 500; updated = true
+        }
+        coEvery { teamDao.getByIds(listOf("report1")) } returns listOf(edited)
+        val jsonArray = com.google.gson.JsonArray().apply {
+            add(com.google.gson.JsonObject().apply {
+                add("doc", com.google.gson.JsonObject().apply {
+                    addProperty("_id", "report1")
+                    addProperty("_rev", "2-b")
+                    addProperty("docType", "report")
+                    addProperty("description", "server copy")
+                    addProperty("sales", 100)
+                })
+            })
+        }
+        val saved = slot<MyTeam>()
+        coEvery { teamDao.upsert(capture(saved)) } returns Unit
+
+        teamsRepository.bulkInsertFromSync(jsonArray)
+
+        assertEquals("2-b", saved.captured._rev)
+        assertEquals("local edit", saved.captured.description)
+        assertEquals(500, saved.captured.sales)
+        assertTrue(saved.captured.updated)
+
+        io.mockk.unmockkStatic("androidx.room.RoomDatabaseKt")
+    }
+
+    @Test
     fun `getByIds chunking splits 1200 ids into three calls of 500, 500, and 200`() = runTest(testDispatcher) {
         val ids = (1..1200).map { "team_$it" }
         val uploadedTeams = ids.associateWith { "rev_$it" }

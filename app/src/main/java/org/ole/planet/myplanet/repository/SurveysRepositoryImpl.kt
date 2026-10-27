@@ -399,7 +399,13 @@ class SurveysRepositoryImpl @Inject constructor(
         }
 
         if (exams.isNotEmpty()) {
-            examDao.upsertAll(exams.mapNotNull { it })
+            val existingById = examDao.getByIds(exams.map { it.id }).associateBy { it.id }
+            exams.forEach { exam ->
+                val existing = existingById[exam.id] ?: return@forEach
+                if (exam.courseId.isNullOrBlank()) exam.courseId = existing.courseId
+                if (exam.stepId.isNullOrBlank()) exam.stepId = existing.stepId
+            }
+            examDao.upsertAll(exams)
         }
         if (questions.isNotEmpty()) {
             questionDao.upsertAll(questions.mapNotNull { it })

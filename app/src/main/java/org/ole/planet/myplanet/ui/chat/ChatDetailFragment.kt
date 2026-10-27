@@ -537,6 +537,10 @@ class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(Fragme
         _id = ""
         _rev = ""
         currentID = ""
+        lastChatHistory = emptyList()
+        sharedViewModel.setSelectedChatHistory(emptyList())
+        sharedViewModel.setSelectedId("")
+        sharedViewModel.setSelectedRev("")
         binding.editGchatMessage.text.clear()
         binding.textGchatIndicator.visibility = View.GONE
     }

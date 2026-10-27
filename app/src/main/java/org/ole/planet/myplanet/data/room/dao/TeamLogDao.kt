@@ -38,6 +38,21 @@ interface TeamLogDao {
     suspend fun upsertAll(logs: List<TeamLog>)
 
     /** Returns the number of rows updated (0 means the local row was gone). */
+    @Query("SELECT * FROM team_log WHERE _id IN (:remoteIds)")
+    suspend fun getByRemoteIdsInternal(remoteIds: List<String>): List<TeamLog>
+
+    suspend fun getByRemoteIds(remoteIds: List<String>): List<TeamLog> {
+        if (remoteIds.isEmpty()) return emptyList()
+        return remoteIds.distinct().chunked(900).flatMap { getByRemoteIdsInternal(it) }
+    }
+
+    @Query("DELETE FROM team_log WHERE id IN (:ids)")
+    suspend fun deleteByIdsInternal(ids: List<String>)
+
+    suspend fun deleteByIds(ids: List<String>) {
+        ids.distinct().chunked(900).forEach { deleteByIdsInternal(it) }
+    }
+
     @Query("UPDATE team_log SET _id = :remoteId, _rev = :rev WHERE id = :localId")
     suspend fun markUploaded(localId: String, remoteId: String, rev: String): Int
 }
