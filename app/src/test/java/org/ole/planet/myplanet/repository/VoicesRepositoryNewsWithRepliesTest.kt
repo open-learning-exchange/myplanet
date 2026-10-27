@@ -59,7 +59,8 @@ class VoicesRepositoryNewsWithRepliesTest {
             Gson(),
             mockk<SharedPrefManager>(relaxed = true),
             newsDao,
-            mockk<NewsLogDao>(relaxed = true)
+            mockk<NewsLogDao>(relaxed = true),
+            db.removedLogDao()
         )
     }
 

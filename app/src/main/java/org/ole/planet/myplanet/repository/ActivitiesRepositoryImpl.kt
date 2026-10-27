@@ -139,7 +139,10 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logLogout(userName: String?) {
-        offlineActivityDao.getLatestByType(UserSessionManager.KEY_LOGIN)?.let { activity ->
+        val latestLogin = userName?.takeIf { it.isNotEmpty() }
+            ?.let { offlineActivityDao.getLatestByTypeAndUserName(UserSessionManager.KEY_LOGIN, it) }
+            ?: offlineActivityDao.getLatestByType(UserSessionManager.KEY_LOGIN)
+        latestLogin?.let { activity ->
             offlineActivityDao.updateLogoutTime(activity.id, timeProvider.now())
         }
     }
@@ -246,6 +249,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
         val activities = offlineActivityDao.getByIds(ids.toList())
         activities.forEach { activity ->
             revMap[activity.id]?.let { activity.changeRev(it) }
+            activity.isUpdated = false
         }
         if (activities.isNotEmpty()) {
             offlineActivityDao.upsertAll(activities)
@@ -303,6 +307,10 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
         activity._rev = GsonUtils.getString("_rev", json)
         activity._id = serverId
+        if (activity.isUpdated) {
+            existingActivitiesMap[serverId] = activity
+            return activity
+        }
         activity.loginTime = loginTime
         activity.type = GsonUtils.getString("type", json)
         activity.userName = userName
@@ -339,10 +347,10 @@ class ActivitiesRepositoryImpl @Inject constructor(
         ob.addDocumentOrigin()
         ob.addProperty("deviceName", NetworkUtils.getDeviceName())
         ob.addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
-        if (activity._id != null) {
+        if (!activity._id.isNullOrEmpty()) {
             ob.addProperty("_id", activity._id)
         }
-        if (activity._rev != null) {
+        if (!activity._rev.isNullOrEmpty()) {
             ob.addProperty("_rev", activity._rev)
         }
         return ob
