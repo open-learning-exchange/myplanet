@@ -138,7 +138,6 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             binding.etReferrals.setText(saved?.referrals.orEmpty())
         }
         showCheckbox(examination)
-        // Load the saved custom diagnoses once; doing it on every redraw brought back the last one removed
         preloadCustomDiagnosis()
         showOtherDiagnosis()
     }
