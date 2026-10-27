@@ -24,7 +24,7 @@ class CourseProgressViewModel @Inject constructor(
         if (_courseProgress.value != null) return
         viewModelScope.launch {
             val user = userRepository.getUserModel()
-            _courseProgress.value = coursesRepository.getCourseProgress(courseId, user?._id)
+            _courseProgress.value = coursesRepository.getCourseProgress(courseId, user?.id)
         }
     }
 }
