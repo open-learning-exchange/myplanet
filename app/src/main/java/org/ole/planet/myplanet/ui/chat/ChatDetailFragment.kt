@@ -563,7 +563,7 @@ class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(Fragme
         }
         viewLifecycleOwner.lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            sendNewChatRequest(contextualQuery, userName, aiProvider)
+            sendNewChatRequest(contextualQuery, userName, aiProvider, displayQuery = query)
         }
     }
 
@@ -642,26 +642,27 @@ class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(Fragme
         }
     }
 
-    private fun sendNewChatRequest(query: String, userName: String?, aiProvider: AiProvider) {
+    private fun sendNewChatRequest(query: String, userName: String?, aiProvider: AiProvider, displayQuery: String = query) {
         viewLifecycleOwner.lifecycleScope.launch {
             val result = sharedViewModel.sendNewChatRequest(query, userName, aiProvider)
-            handleChatResult(result)
+            handleChatResult(result, displayQuery)
         }
     }
 
     private fun sendContinueChatRequest(query: String, userName: String?, aiProvider: AiProvider, id: String, rev: String) {
         viewLifecycleOwner.lifecycleScope.launch {
             val result = sharedViewModel.sendContinueChatRequest(query, userName, aiProvider, id, rev)
-            handleChatResult(result)
+            handleChatResult(result, query)
         }
     }
 
-    private fun handleChatResult(result: ChatResult) {
+    private fun handleChatResult(result: ChatResult, query: String) {
         when (result) {
             is ChatResult.Success -> {
                 mAdapter.addResponse(result.response, ChatMessage.RESPONSE_SOURCE_NETWORK)
                 _rev = result.rev
                 currentID = result.id
+                keepConversationInViewModel(result, query)
                 if (isAdded && activity is DashboardActivity) {
                     (activity as DashboardActivity).refreshChatHistory()
                 }
@@ -671,6 +672,18 @@ class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(Fragme
             }
         }
         enableUI()
+    }
+
+    private fun keepConversationInViewModel(result: ChatResult.Success, query: String) {
+        val turn = Conversation().apply {
+            this.query = query
+            response = result.response
+        }
+        val history = sharedViewModel.selectedChatHistory.value.orEmpty() + turn
+        lastChatHistory = history
+        sharedViewModel.setSelectedChatHistory(history)
+        sharedViewModel.setSelectedId(result.id)
+        sharedViewModel.setSelectedRev(result.rev)
     }
 
     private fun showError(message: String?) {
