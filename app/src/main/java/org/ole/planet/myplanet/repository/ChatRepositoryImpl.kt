@@ -104,7 +104,6 @@ class ChatRepositoryImpl @Inject constructor(
                 continueConversation(id, message, chatResponse, newRev)
                 ChatResult.Success(chatResponse, id, newRev)
             } else {
-                // The server didn't store this turn, so don't save it locally with a blank reply either
                 ChatResult.Error(responseBody?.message ?: response.message() ?: "Request failed")
             }
         } catch (e: CancellationException) {
