@@ -156,7 +156,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCommunityNews(userIdentifier: String): Flow<List<News>> {
-        return newsDao.getTopLevelMessagesFlow()
+        return newsDao.getTopLevelCommunityCandidatesFlow()
             .distinctUntilChanged { old, new ->
                 old.size == new.size && old.zip(new).all { (o, n) ->
                     o.id == n.id && o.time == n.time &&
