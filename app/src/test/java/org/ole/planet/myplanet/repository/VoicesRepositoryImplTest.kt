@@ -44,6 +44,7 @@ class VoicesRepositoryImplTest {
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val newsDao: NewsDao = mockk(relaxed = true)
     private val newsLogDao: org.ole.planet.myplanet.data.room.dao.NewsLogDao = mockk(relaxed = true)
+    private val removedLogDao: org.ole.planet.myplanet.data.room.dao.RemovedLogDao = mockk(relaxed = true)
 
     private fun newRepository(gsonInstance: Gson): VoicesRepositoryImpl {
         return spyk(
@@ -53,7 +54,8 @@ class VoicesRepositoryImplTest {
                 Gson(),
                 sharedPrefManager,
                 newsDao,
-                newsLogDao
+                newsLogDao,
+                removedLogDao
             ),
             recordPrivateCalls = true
         )
@@ -74,7 +76,7 @@ class VoicesRepositoryImplTest {
 
     @Test
     fun getCommunityNews_uses_dispatcherProvider_default() = testScope.runTest {
-        every { newsDao.getTopLevelMessagesFlow() } returns flowOf(emptyList())
+        every { newsDao.getTopLevelCommunityCandidatesFlow() } returns flowOf(emptyList())
 
         val flow = repository.getCommunityNews("testUser")
         val result = flow.toList()

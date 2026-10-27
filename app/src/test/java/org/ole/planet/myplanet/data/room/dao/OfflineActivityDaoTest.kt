@@ -49,6 +49,33 @@ class OfflineActivityDaoTest {
     }
 
     @Test
+    fun updateLogoutTime_requeuesAnUploadedLoginAndLatestLoginIsScopedToTheUser() = runBlocking {
+        val uploaded = OfflineActivity().apply {
+            id = "a1"; _id = "remote1"; _rev = "1-a"; type = UserSessionManager.KEY_LOGIN; userName = "john"; loginTime = 100L
+        }
+        val otherUser = OfflineActivity().apply {
+            id = "a2"; _id = "remote2"; _rev = "1-b"; type = UserSessionManager.KEY_LOGIN; userName = "mary"; loginTime = 200L
+        }
+        offlineActivityDao.upsertAll(listOf(uploaded, otherUser))
+        assertTrue(offlineActivityDao.getPendingLoginUploads().isEmpty())
+
+        assertEquals("a1", offlineActivityDao.getLatestByTypeAndUserName(UserSessionManager.KEY_LOGIN, "john")?.id)
+        offlineActivityDao.updateLogoutTime("a1", 500L)
+
+        val pending = offlineActivityDao.getPendingLoginUploads()
+        assertEquals(listOf("a1"), pending.map { it.id })
+        assertEquals(500L, pending.single().logoutTime)
+    }
+
+    @Test
+    fun changeRev_readsTheIdAndRevFromAPostResponse() {
+        val activity = OfflineActivity()
+        activity.changeRev(com.google.gson.JsonObject().apply { addProperty("id", "remote1"); addProperty("rev", "1-a") })
+        assertEquals("remote1", activity._id)
+        assertEquals("1-a", activity._rev)
+    }
+
+    @Test
     fun getLastVisits_groupsByUserNameAndReturnsMaxLoginTime() = runBlocking {
         offlineActivityDao.insert(createActivity("1", "u1", "alice", "login", 1000L))
         offlineActivityDao.insert(createActivity("2", "u1", "alice", "other", 5000L))
