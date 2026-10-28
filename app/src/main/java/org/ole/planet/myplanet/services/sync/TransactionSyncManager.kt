@@ -95,6 +95,7 @@ class TransactionSyncManager @Inject constructor(
 
     companion object {
         private const val MAX_CONCURRENT_ATTACHMENT_DOWNLOADS = 6
+        const val SYNC_FAILED = -1
     }
     
     private val tableSyncHandlers: Map<String, suspend (JsonArray) -> Unit> = mapOf(
@@ -223,6 +224,7 @@ class TransactionSyncManager @Inject constructor(
             var totalDocs = 0
             var batchNumber = if (useCheckpoint) skip / pageSize else 0
             var syncCompletedFully = false
+            var syncFailed = false
             val url = UrlUtils.getUrl()
             val authHeader = UrlUtils.header
 
@@ -245,6 +247,8 @@ class TransactionSyncManager @Inject constructor(
                 val batchApiDuration = SystemClock.elapsedRealtime() - batchApiStartTime
                 if (response.body() == null || !response.isSuccessful) {
                     Log.d("SyncPerf", "  ✗ Failed $table batch $batchNumber: HTTP ${response.code()}")
+                    // Older servers may not have this table; nothing to pull is not a failure.
+                    if (response.code() == 404) syncCompletedFully = true else syncFailed = true
                     break
                 }
                 val arr = getJsonArray("rows", response.body()?.toGson())
@@ -300,6 +304,7 @@ class TransactionSyncManager @Inject constructor(
                 sharedPrefManager.rawPreferences.edit().remove(checkpointKey).apply()
             }
             val totalDuration = SystemClock.elapsedRealtime() - syncStartTime
+            if (syncFailed) return@withContext SYNC_FAILED
             Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
             totalDocs
         } catch (e: CancellationException) {
@@ -312,7 +317,7 @@ class TransactionSyncManager @Inject constructor(
             e.printStackTrace()
             val failDuration = SystemClock.elapsedRealtime() - syncStartTime
             Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
-            0
+            SYNC_FAILED
         }
     }
 
