@@ -47,6 +47,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     @Inject
     lateinit var submissionsUploader: SubmissionsUploader
     private var syncStartTime: Long = 0L
+    private var submissionToastShown = false
 
     companion object {
         private const val TAG = "UserInformationFragment"
@@ -90,6 +91,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                     if (isAdded) dialog?.dismiss()
                 }
                 is UserInformationResult.MarkSubmissionSuccess -> {
+                    submissionToastShown = true
                     Utilities.toast(
                         requireContext(),
                         getString(R.string.thank_you_for_taking_this_survey)
@@ -99,6 +101,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                     }
                 }
                 is UserInformationResult.MarkSubmissionError -> {
+                    submissionToastShown = true
                     if (result.message == "no ID provided") {
                         Utilities.toast(
                             requireContext(),
@@ -286,12 +289,14 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         parentFragmentManager.setFragmentResult(PROFILE_UPDATE_REQUEST_KEY, Bundle())
         Log.d(TAG, "onDismiss called, syncStartTime: $syncStartTime")
         val safeTeamId = arguments?.getString("teamId") ?: ""
-        if (safeTeamId == "") {
+        if (safeTeamId == "" || isStateSaved || activity?.isChangingConfigurations == true) {
             return
         } else {
             submissionsUploader.checkAvailableServer(syncStartTime)
 
-            Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
+            if (!submissionToastShown) {
+                Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
+            }
             val activity = requireActivity()
             if (activity is androidx.appcompat.app.AppCompatActivity) {
                 FragmentNavigator.popBackStack(activity.supportFragmentManager)
