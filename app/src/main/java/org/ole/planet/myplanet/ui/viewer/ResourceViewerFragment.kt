@@ -499,8 +499,11 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         setupPdfFabActions()
     }
 
+    private fun localFile(): File? =
+        if (isFullPath) filePath?.let { File(it) } else File(externalFilesDir, "ole/$filePath")
+
     private fun renderPdf() {
-        val file = File(externalFilesDir, "ole/$filePath")
+        val file = localFile() ?: return
         if (!file.exists()) return
 
         binding.root.doOnLayout { view ->
@@ -541,8 +544,8 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
 
     private suspend fun loadPdfText(): String {
         pdfText?.let { return it }
-        val file = File(externalFilesDir, "ole/$filePath")
-        if (!file.exists()) {
+        val file = localFile()
+        if (file == null || !file.exists()) {
             pdfText = ""
             return ""
         }
@@ -600,7 +603,7 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         textFileTitle.text = title
         isResourceFinished = true
 
-        val file = File(externalFilesDir, "ole/$filePath")
+        val file = localFile() ?: return
         if (!file.exists()) return
 
         val (text, truncated) = withContext(dispatcherProvider.io) {
