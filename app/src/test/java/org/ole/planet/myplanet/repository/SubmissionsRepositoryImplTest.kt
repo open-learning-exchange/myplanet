@@ -96,6 +96,27 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `isStepCompleted keeps survey-only step incomplete until survey is submitted`() = runTest {
+        coEvery { examDao.getFirstByStepId("step1") } returns null
+        coEvery { examDao.getByStepIdAndType("step1", "surveys") } returns listOf(StepExam(id = "survey1", type = "surveys"))
+        coEvery { submissionDao.countCompletedByUserAndExamId("user1", "survey1") } returns 0
+
+        assertFalse(repository.isStepCompleted("step1", "user1"))
+
+        coEvery { submissionDao.countCompletedByUserAndExamId("user1", "survey1") } returns 1
+
+        assertTrue(repository.isStepCompleted("step1", "user1"))
+    }
+
+    @Test
+    fun `isStepCompleted treats step without test or survey as completed`() = runTest {
+        coEvery { examDao.getFirstByStepId("step1") } returns null
+        coEvery { examDao.getByStepIdAndType("step1", "surveys") } returns emptyList()
+
+        assertTrue(repository.isStepCompleted("step1", "user1"))
+    }
+
+    @Test
     fun `getPendingSurveysFlow queries correctly`() = runTest {
         every { submissionDao.observePendingSurveys("user_123") } returns kotlinx.coroutines.flow.flowOf(listOf(Submission(id = "submission1")))
 

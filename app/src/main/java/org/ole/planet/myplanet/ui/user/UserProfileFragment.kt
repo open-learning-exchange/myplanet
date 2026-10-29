@@ -87,6 +87,7 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        photoURI = savedInstanceState?.getString(KEY_PHOTO_URI)?.let(Uri::parse)
         pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK && result.data != null) {
                 val uri = result.data?.data ?: return@registerForActivityResult
@@ -134,6 +135,11 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
                     )
                 }
             }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        photoURI?.let { outState.putString(KEY_PHOTO_URI, it.toString()) }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -543,5 +549,9 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
         editProfileDialog?.dismiss()
         editProfileDialog = null
         super.onDestroyView()
+    }
+
+    private companion object {
+        const val KEY_PHOTO_URI = "photo_uri"
     }
 }

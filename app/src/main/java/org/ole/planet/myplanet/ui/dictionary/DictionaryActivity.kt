@@ -113,10 +113,7 @@ class DictionaryActivity : BaseActivity() {
                 )
             }
             is DictionarySearchState.NotFound -> {
-                Utilities.toast(
-                    this@DictionaryActivity,
-                    getString(R.string.word_not_available_in_our_database)
-                )
+                fragmentDictionaryBinding.tvResult.text = getString(R.string.word_not_available_in_our_database)
             }
         }
     }

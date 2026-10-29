@@ -5,7 +5,9 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -121,6 +123,24 @@ class DictionaryViewModelTest {
         advanceUntilIdle()
 
         assertTrue(viewModel.searchState.value is DictionarySearchState.NotFound)
+    }
+
+    @Test
+    fun `searchWord emits a new NotFound for each different missing word`() = runTest(testDispatcher) {
+        coEvery { dictionaryRepository.findByWord(any()) } returns null
+        val emitted = mutableListOf<DictionarySearchState>()
+        val job = launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.searchState.collect { emitted += it } }
+
+        viewModel.searchWord("zzz")
+        advanceUntilIdle()
+        viewModel.searchWord("qqq")
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(DictionarySearchState.NotFound("zzz"), DictionarySearchState.NotFound("qqq")),
+            emitted.filterIsInstance<DictionarySearchState.NotFound>()
+        )
+        job.cancel()
     }
 
     @Test
