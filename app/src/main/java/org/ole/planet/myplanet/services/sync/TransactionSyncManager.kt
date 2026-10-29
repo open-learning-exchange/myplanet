@@ -24,8 +24,11 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.UserEntity
@@ -347,10 +350,9 @@ class TransactionSyncManager @Inject constructor(
             val resumeFileName = getString("resumeFileName", jsonDoc)
             val hasAttachment = jsonDoc.getAsJsonObject("_attachments")?.has("resume.pdf") == true
             if (resumeFileName.isNotEmpty() && hasAttachment) {
-                val destFile = File(
-                    FileUtils.getOlePath(context) + "cv/$resumeFileName"
-                )
-                if (!destFile.exists() && inProgress.add(resumeFileName)) {
+                val cvPath = Achievement.cvRelativePath(docId, resumeFileName)
+                val destFile = File(FileUtils.getOlePath(context) + cvPath)
+                if (!destFile.exists() && inProgress.add(cvPath)) {
                     launch { semaphore.withPermit { downloadCvAttachment(docId, destFile) } }
                 }
             }
@@ -437,25 +439,17 @@ class TransactionSyncManager @Inject constructor(
 
         val successfulSyncs = pending.map { notification ->
             async {
-                val rev = notification.rev ?: return@async null
-                val body = JsonObject().apply {
-                    addProperty("_id", notification.id)
-                    addProperty("_rev", rev)
-                    addProperty("status", "read")
-                    addProperty("user", notification.userId)
-                    addProperty("message", notification.message)
-                    addProperty("type", notification.type)
-                    notification.link?.let { addProperty("link", it) }
-                    addProperty("priority", notification.priority)
-                    addProperty("time", notification.createdAt.time)
-                }
+                if (notification.rev == null) return@async null
+                val url = "${UrlUtils.getUrl()}/notifications/${notification.id}"
                 try {
-                    val response = apiInterface.putDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/notifications/${notification.id}",
-                        body.toKotlinx().jsonObject
-                    )
+                    val current = apiInterface.getJsonObject(UrlUtils.header, url)
+                    if (current.code() == 404) return@async Pair(notification.id, null)
+                    val serverDoc = current.body()?.takeIf { current.isSuccessful } ?: return@async null
+                    val body = buildJsonObject {
+                        serverDoc.forEach { (key, value) -> put(key, value) }
+                        put("status", "read")
+                    }
+                    val response = apiInterface.putDoc(UrlUtils.header, "application/json", url, body)
                     if (response.isSuccessful) {
                         val newRev = JsonUtils.getString("rev", response.body()).takeIf { it.isNotEmpty() }
                         Pair(notification.id, newRev)
