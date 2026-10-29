@@ -211,6 +211,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         courseId: String?,
         userId: String?,
         type: String,
+        finishedOnly: Boolean,
     ): Boolean {
         if (stepExamId.isNullOrBlank() || courseId.isNullOrBlank() || userId.isNullOrBlank()) {
             return false
@@ -221,7 +222,12 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
 
         val parentId = "$stepExamId@$courseId"
-        return submissionDao.countByUserParentAndType(userId, parentId, type) > 0
+        val count = if (finishedOnly) {
+            submissionDao.countFinishedByUserParentAndType(userId, parentId, type)
+        } else {
+            submissionDao.countByUserParentAndType(userId, parentId, type)
+        }
+        return count > 0
     }
 
     override suspend fun hasPendingOfflineSubmissions(): Boolean {
@@ -588,9 +594,17 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 true
             }
             val isFinal = index == total - 1
+            val examQuestions = if (type == "exam" && isFinal && isExplicitSubmission && isCorrect) {
+                question.examId?.let { questionDao.getByExamId(it) }.orEmpty()
+            } else {
+                emptyList()
+            }
+            val autoGraded = examQuestions.isNotEmpty() && examQuestions.none {
+                it.type.equals("input", ignoreCase = true) || it.type.equals("textarea", ignoreCase = true)
+            }
             val newStatus = when {
                 isFinal && isExplicitSubmission && type == "survey" -> "complete"
-                isFinal && isExplicitSubmission && isCorrect -> "requires grading"
+                isFinal && isExplicitSubmission && isCorrect -> if (autoGraded) "complete" else "requires grading"
                 else -> "pending"
             }
             val now = Date().time
@@ -600,13 +614,23 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 valueChoices = valueChoices,
                 mistakes = if (type == "exam" && !isCorrect) (existing?.mistakes ?: 0) + 1 else existing?.mistakes ?: 0,
                 isPassed = if (type == "exam") isCorrect else existing?.isPassed ?: false,
-                grade = if (type == "exam") 1 else existing?.grade ?: 0,
+                grade = when {
+                    type != "exam" -> existing?.grade
+                    question.type.equals("input", ignoreCase = true) || question.type.equals("textarea", ignoreCase = true) -> null
+                    else -> 1
+                },
                 examId = question.examId,
                 questionId = questionId,
                 submissionId = submissionId,
             )
             answerDao.upsertAll(listOf(answer))
-            submissionDao.updateStatusAndLastUpdate(submissionRow.id, newStatus, now)
+            if (autoGraded) {
+                val grades = answerDao.getBySubmissionId(submissionRow.id).associate { it.questionId to it.grade }
+                val grade = examQuestions.sumOf { (it.marks?.toIntOrNull() ?: 1) * (grades[it.id] ?: 0) }.toLong()
+                submissionDao.updateStatusGradeAndLastUpdate(submissionRow.id, newStatus, grade, now)
+            } else {
+                submissionDao.updateStatusAndLastUpdate(submissionRow.id, newStatus, now)
+            }
 
             if (newStatus == "complete") {
                 submissionDao.deletePendingSurveyOrphans(submissionRow.parentId, submissionRow.userId)
@@ -771,6 +795,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                         valueChoices = valueChoices,
                         mistakes = GsonUtils.getInt("mistakes", answerJson),
                         isPassed = GsonUtils.getBoolean("passed", answerJson),
+                        grade = answerJson.get("grade")?.takeUnless { it.isJsonNull }?.let { GsonUtils.getInt("grade", answerJson) },
                         examId = parentId,
                         questionId = questionId,
                         submissionId = id,

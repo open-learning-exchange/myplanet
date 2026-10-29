@@ -34,6 +34,12 @@ open class StepExam(
     var isTeamShareAllowed: Boolean = false,
     var sourceSurveyId: String? = null
 ) {
+    fun isPassingAttempt(grade: Long, allAnswersCorrect: Boolean): Boolean {
+        if (totalMarks <= 0) return allAnswersCorrect
+        val percentage = passingPercentage?.trim()?.toDoubleOrNull() ?: 100.0
+        return grade * 100.0 >= percentage * totalMarks
+    }
+
     companion object {
         fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject): StepExam {
             return insertCourseStepsExams(myCoursesID, stepId, exam, "")

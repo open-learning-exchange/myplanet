@@ -532,7 +532,7 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean, userId: String?) {
-        if (courseId.isNullOrEmpty()) return
+        if (courseId.isNullOrEmpty() || !passed) return
         courseProgressDao.updatePassedByCourseAndStep(courseId, stepNum, passed, userId)
     }
 
@@ -546,12 +546,12 @@ class CoursesRepositoryImpl @Inject constructor(
 
         val hasExam = if (stepExams.isNotEmpty()) {
             val firstStepId = stepExams[0].id
-            submissionsRepository.hasSubmission(firstStepId, step.courseId, userId, "exam")
+            submissionsRepository.hasSubmission(firstStepId, step.courseId, userId, "exam", finishedOnly = true)
         } else false
 
         val hasSurvey = if (stepSurvey.isNotEmpty()) {
             val firstStepId = stepSurvey[0].id
-            submissionsRepository.hasSubmission(firstStepId, step.courseId, userId, "survey")
+            submissionsRepository.hasSubmission(firstStepId, step.courseId, userId, "survey", finishedOnly = true)
         } else false
 
         return CourseStepData(
@@ -709,6 +709,7 @@ class CoursesRepositoryImpl @Inject constructor(
                     stepTitle = GsonUtils.getString("stepTitle", stepJson),
                     description = stepDescription,
                     noOfResources = GsonUtils.getJsonArray("resources", stepJson).size(),
+                    passingRequired = GsonUtils.getBoolean("passingRequired", stepJson),
                 )
             )
             collectRoomExam(stepJson, "exam", courseId, stepId, parsedExams, parsedQuestions)

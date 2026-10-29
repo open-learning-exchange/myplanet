@@ -10,6 +10,7 @@ import io.mockk.unmockkAll
 import java.util.UUID
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -188,5 +189,36 @@ class StepExamTest {
         assertTrue(json.has("questions"))
         assertEquals("uniqueIdentifier", json.get("androidId").asString)
         assertEquals("myplanet", json.get("app").asString)
+    }
+
+    @Test
+    fun isPassingAttempt_exactPassMarkPasses() {
+        // 29 / 50 * 100 is 57.99999999999999 in floating point; the comparison must not divide
+        val exam = StepExam(totalMarks = 50, passingPercentage = "58")
+
+        assertTrue(exam.isPassingAttempt(29, allAnswersCorrect = false))
+    }
+
+    @Test
+    fun isPassingAttempt_oneMarkBelowPassMarkFails() {
+        val exam = StepExam(totalMarks = 50, passingPercentage = "58")
+
+        assertFalse(exam.isPassingAttempt(28, allAnswersCorrect = false))
+    }
+
+    @Test
+    fun isPassingAttempt_zeroTotalPassesOnlyWhenEveryAnswerIsCorrect() {
+        val exam = StepExam(totalMarks = 0, passingPercentage = "58")
+
+        assertTrue(exam.isPassingAttempt(0, allAnswersCorrect = true))
+        assertFalse(exam.isPassingAttempt(0, allAnswersCorrect = false))
+    }
+
+    @Test
+    fun isPassingAttempt_missingPassingPercentageRequiresFullMarks() {
+        val exam = StepExam(totalMarks = 50, passingPercentage = null)
+
+        assertFalse(exam.isPassingAttempt(49, allAnswersCorrect = false))
+        assertTrue(exam.isPassingAttempt(50, allAnswersCorrect = false))
     }
 }
