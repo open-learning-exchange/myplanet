@@ -42,8 +42,8 @@ class EnterprisesRepositoryImplTest {
     fun `getReportsFlow delegates to observeNonArchivedFinanceReportsByTeamId`() = runTest {
         val teamId = "team123"
         val expectedReports = listOf(
-            FinanceReport(_id="report1", _rev=null, status=null, description=null, beginningBalance=0, sales=0, otherIncome=0, wages=0, otherExpenses=0, startDate=0L, endDate=0L, createdDate=2000L, updatedDate=0L, updated=false, imageName=null),
-            FinanceReport(_id="report2", _rev=null, status=null, description=null, beginningBalance=0, sales=0, otherIncome=0, wages=0, otherExpenses=0, startDate=0L, endDate=0L, createdDate=1000L, updatedDate=0L, updated=false, imageName=null)
+            FinanceReport(_id="report1", _rev=null, status=null, description=null, beginningBalance=0.0, sales=0.0, otherIncome=0.0, wages=0.0, otherExpenses=0.0, startDate=0L, endDate=0L, createdDate=2000L, updatedDate=0L, updated=false, imageName=null),
+            FinanceReport(_id="report2", _rev=null, status=null, description=null, beginningBalance=0.0, sales=0.0, otherIncome=0.0, wages=0.0, otherExpenses=0.0, startDate=0L, endDate=0L, createdDate=1000L, updatedDate=0L, updated=false, imageName=null)
         )
 
         every { teamDao.observeNonArchivedFinanceReportsByTeamId(teamId) } returns flowOf(expectedReports)
@@ -62,11 +62,11 @@ class EnterprisesRepositoryImplTest {
             endDate = 2000L,
             createdDate = 3000L,
             updatedDate = 4000L,
-            beginningBalance = 100,
-            sales = 50,
-            otherIncome = 20,
-            wages = 10,
-            otherExpenses = 15
+            beginningBalance = 100.0,
+            sales = 50.0,
+            otherIncome = 20.0,
+            wages = 10.0,
+            otherExpenses = 15.0
         )
 
         coEvery { teamDao.getNonArchivedReportCsvProjectionsByTeamId(teamId) } returns listOf(reportProjection)
@@ -107,11 +107,11 @@ class EnterprisesRepositoryImplTest {
         val imageBytes = byteArrayOf(1, 2, 3, 4)
         val report = FinanceReportParams(
             description = "desc",
-            beginningBalance = 0,
-            sales = 0,
-            otherIncome = 0,
-            wages = 0,
-            otherExpenses = 0,
+            beginningBalance = 0.0,
+            sales = 0.0,
+            otherIncome = 0.0,
+            wages = 0.0,
+            otherExpenses = 0.0,
             startDate = 0L,
             endDate = 0L,
             teamId = "team-1",
@@ -166,11 +166,11 @@ class EnterprisesRepositoryImplTest {
 
         val payload = FinanceReportParams(
             description = "updated description",
-            beginningBalance = 10,
-            sales = 20,
-            otherIncome = 30,
-            wages = 40,
-            otherExpenses = 50,
+            beginningBalance = 10.0,
+            sales = 20.0,
+            otherIncome = 30.0,
+            wages = 40.0,
+            otherExpenses = 50.0,
             startDate = 100L,
             endDate = 200L,
             teamId = "team1",
@@ -186,11 +186,11 @@ class EnterprisesRepositoryImplTest {
             teamDao.updateReportFields(
                 id = "r1",
                 description = "updated description",
-                beginningBalance = 10,
-                sales = 20,
-                otherIncome = 30,
-                wages = 40,
-                otherExpenses = 50,
+                beginningBalance = 10.0,
+                sales = 20.0,
+                otherIncome = 30.0,
+                wages = 40.0,
+                otherExpenses = 50.0,
                 startDate = 100L,
                 endDate = 200L,
                 updatedDate = 99999L
@@ -204,11 +204,11 @@ class EnterprisesRepositoryImplTest {
     fun `updateReport with blank reportId calls nothing`() = runTest {
         val payload = FinanceReportParams(
             description = "desc",
-            beginningBalance = 0,
-            sales = 0,
-            otherIncome = 0,
-            wages = 0,
-            otherExpenses = 0,
+            beginningBalance = 0.0,
+            sales = 0.0,
+            otherIncome = 0.0,
+            wages = 0.0,
+            otherExpenses = 0.0,
             startDate = 0L,
             endDate = 0L,
             teamId = "team1",
@@ -247,11 +247,11 @@ class EnterprisesRepositoryImplTest {
         val imageBytes = byteArrayOf(5, 6, 7)
         val payload = FinanceReportParams(
             description = "desc",
-            beginningBalance = 0,
-            sales = 0,
-            otherIncome = 0,
-            wages = 0,
-            otherExpenses = 0,
+            beginningBalance = 0.0,
+            sales = 0.0,
+            otherIncome = 0.0,
+            wages = 0.0,
+            otherExpenses = 0.0,
             startDate = 0L,
             endDate = 0L,
             teamId = "team1",
@@ -276,11 +276,11 @@ class EnterprisesRepositoryImplTest {
 
         val report = FinanceReportParams(
             description = "desc",
-            beginningBalance = 0,
-            sales = 0,
-            otherIncome = 0,
-            wages = 0,
-            otherExpenses = 0,
+            beginningBalance = 0.0,
+            sales = 0.0,
+            otherIncome = 0.0,
+            wages = 0.0,
+            otherExpenses = 0.0,
             startDate = 0L,
             endDate = 0L,
             teamId = "team-1",
@@ -298,8 +298,8 @@ class EnterprisesRepositoryImplTest {
 
     @Test
     fun `getReportsFlow deduplicates byte-identical emissions`() = runTest {
-        val r1 = report("r1", "rev1", sales = 10)
-        val r2 = report("r1", "rev1", sales = 10)
+        val r1 = report("r1", "rev1", sales = 10.0)
+        val r2 = report("r1", "rev1", sales = 10.0)
         every { teamDao.observeNonArchivedFinanceReportsByTeamId("team1") } returns
             flowOf(listOf(r1), listOf(r2))
 
@@ -311,8 +311,8 @@ class EnterprisesRepositoryImplTest {
 
     @Test
     fun `getReportsFlow emits when a locally-edited financial field changes with rev unchanged`() = runTest {
-        val before = report("r1", "rev1", sales = 10)
-        val after = report("r1", "rev1", sales = 25)
+        val before = report("r1", "rev1", sales = 10.0)
+        val after = report("r1", "rev1", sales = 25.0)
         every { teamDao.observeNonArchivedFinanceReportsByTeamId("team1") } returns
             flowOf(listOf(before), listOf(after))
 
@@ -320,8 +320,8 @@ class EnterprisesRepositoryImplTest {
         repository.getReportsFlow("team1").collect { emissions.add(it) }
 
         assertEquals(2, emissions.size)
-        assertEquals(10, emissions[0][0].sales)
-        assertEquals(25, emissions[1][0].sales)
+        assertEquals(10.0, emissions[0][0].sales, 0.0)
+        assertEquals(25.0, emissions[1][0].sales, 0.0)
     }
 
     @Test
@@ -387,7 +387,7 @@ class EnterprisesRepositoryImplTest {
         id: String,
         rev: String,
         description: String? = null,
-        sales: Int = 0,
+        sales: Double = 0.0,
         createdDate: Long = 0L,
         status: String? = null,
     ) = FinanceReport(
@@ -395,11 +395,11 @@ class EnterprisesRepositoryImplTest {
         _rev = rev,
         status = status,
         description = description,
-        beginningBalance = 0,
+        beginningBalance = 0.0,
         sales = sales,
-        otherIncome = 0,
-        wages = 0,
-        otherExpenses = 0,
+        otherIncome = 0.0,
+        wages = 0.0,
+        otherExpenses = 0.0,
         startDate = 0L,
         endDate = 0L,
         createdDate = createdDate,

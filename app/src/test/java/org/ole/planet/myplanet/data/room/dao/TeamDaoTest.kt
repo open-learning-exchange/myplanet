@@ -116,11 +116,11 @@ class TeamDaoTest {
             docType = "report"
             status = "active"
             description = "test description"
-            beginningBalance = 100
-            sales = 200
-            otherIncome = 50
-            wages = 30
-            otherExpenses = 20
+            beginningBalance = 100.0
+            sales = 200.0
+            otherIncome = 50.0
+            wages = 30.0
+            otherExpenses = 20.0
             startDate = 1000L
             endDate = 2000L
             createdDate = 3000L
@@ -138,11 +138,11 @@ class TeamDaoTest {
         assertEquals("rev1", financeReport._rev)
         assertEquals("active", financeReport.status)
         assertEquals("test description", financeReport.description)
-        assertEquals(100, financeReport.beginningBalance)
-        assertEquals(200, financeReport.sales)
-        assertEquals(50, financeReport.otherIncome)
-        assertEquals(30, financeReport.wages)
-        assertEquals(20, financeReport.otherExpenses)
+        assertEquals(100.0, financeReport.beginningBalance, 0.0)
+        assertEquals(200.0, financeReport.sales, 0.0)
+        assertEquals(50.0, financeReport.otherIncome, 0.0)
+        assertEquals(30.0, financeReport.wages, 0.0)
+        assertEquals(20.0, financeReport.otherExpenses, 0.0)
         assertEquals(1000L, financeReport.startDate)
         assertEquals(2000L, financeReport.endDate)
         assertEquals(3000L, financeReport.createdDate)
@@ -161,11 +161,11 @@ class TeamDaoTest {
             status = "active"
             imageName = "chart.png"
             description = "old desc"
-            beginningBalance = 10
-            sales = 20
-            otherIncome = 30
-            wages = 40
-            otherExpenses = 50
+            beginningBalance = 10.0
+            sales = 20.0
+            otherIncome = 30.0
+            wages = 40.0
+            otherExpenses = 50.0
             startDate = 100L
             endDate = 200L
             updatedDate = 300L
@@ -176,11 +176,11 @@ class TeamDaoTest {
         val count = teamDao.updateReportFields(
             id = "report1",
             description = "new desc",
-            beginningBalance = 100,
-            sales = 200,
-            otherIncome = 300,
-            wages = 400,
-            otherExpenses = 500,
+            beginningBalance = 100.0,
+            sales = 200.0,
+            otherIncome = 300.0,
+            wages = 400.0,
+            otherExpenses = 500.0,
             startDate = 1000L,
             endDate = 2000L,
             updatedDate = 3000L
@@ -190,11 +190,11 @@ class TeamDaoTest {
 
         val updatedEntity = teamDao.getById("report1")!!
         assertEquals("new desc", updatedEntity.description)
-        assertEquals(100, updatedEntity.beginningBalance)
-        assertEquals(200, updatedEntity.sales)
-        assertEquals(300, updatedEntity.otherIncome)
-        assertEquals(400, updatedEntity.wages)
-        assertEquals(500, updatedEntity.otherExpenses)
+        assertEquals(100.0, updatedEntity.beginningBalance, 0.0)
+        assertEquals(200.0, updatedEntity.sales, 0.0)
+        assertEquals(300.0, updatedEntity.otherIncome, 0.0)
+        assertEquals(400.0, updatedEntity.wages, 0.0)
+        assertEquals(500.0, updatedEntity.otherExpenses, 0.0)
         assertEquals(1000L, updatedEntity.startDate)
         assertEquals(2000L, updatedEntity.endDate)
         assertEquals(3000L, updatedEntity.updatedDate)
@@ -212,11 +212,11 @@ class TeamDaoTest {
         val count = teamDao.updateReportFields(
             id = "unknown_report",
             description = "desc",
-            beginningBalance = 10,
-            sales = 20,
-            otherIncome = 30,
-            wages = 40,
-            otherExpenses = 50,
+            beginningBalance = 10.0,
+            sales = 20.0,
+            otherIncome = 30.0,
+            wages = 40.0,
+            otherExpenses = 50.0,
             startDate = 100L,
             endDate = 200L,
             updatedDate = 300L
@@ -249,7 +249,7 @@ class TeamDaoTest {
     fun `setImageNameById changes only imageName and isUpdated leaving other columns intact`() = runBlocking {
         val initial = report("r1", teamId = "team1", createdDate = 100L).apply {
             description = "original desc"
-            sales = 500
+            sales = 500.0
             updated = false
             imageName = "old_logo.png"
         }
@@ -262,7 +262,7 @@ class TeamDaoTest {
         assertEquals("new_logo.png", updatedEntity.imageName)
         assertEquals(true, updatedEntity.updated)
         assertEquals("original desc", updatedEntity.description)
-        assertEquals(500, updatedEntity.sales)
+        assertEquals(500.0, updatedEntity.sales, 0.0)
         assertEquals("team1", updatedEntity.teamId)
         assertEquals(100L, updatedEntity.createdDate)
     }
@@ -273,21 +273,21 @@ class TeamDaoTest {
             startDate = 10L
             endDate = 20L
             updatedDate = 30L
-            beginningBalance = 100
-            sales = 50
-            otherIncome = 20
-            wages = 10
-            otherExpenses = 15
+            beginningBalance = 100.0
+            sales = 50.0
+            otherIncome = 20.0
+            wages = 10.0
+            otherExpenses = 15.0
         }
         val r2 = report("r2", createdDate = 200L).apply {
             startDate = 40L
             endDate = 50L
             updatedDate = 60L
-            beginningBalance = 200
-            sales = 80
-            otherIncome = 30
-            wages = 20
-            otherExpenses = 25
+            beginningBalance = 200.0
+            sales = 80.0
+            otherIncome = 30.0
+            wages = 20.0
+            otherExpenses = 25.0
         }
         val archived = report("archived", createdDate = 300L, status = "archived")
         val otherTeam = report("otherTeam", teamId = "team2", createdDate = 400L)
@@ -301,21 +301,21 @@ class TeamDaoTest {
         assertEquals(40L, projections[0].startDate)
         assertEquals(50L, projections[0].endDate)
         assertEquals(60L, projections[0].updatedDate)
-        assertEquals(200, projections[0].beginningBalance)
-        assertEquals(80, projections[0].sales)
-        assertEquals(30, projections[0].otherIncome)
-        assertEquals(20, projections[0].wages)
-        assertEquals(25, projections[0].otherExpenses)
+        assertEquals(200.0, projections[0].beginningBalance, 0.0)
+        assertEquals(80.0, projections[0].sales, 0.0)
+        assertEquals(30.0, projections[0].otherIncome, 0.0)
+        assertEquals(20.0, projections[0].wages, 0.0)
+        assertEquals(25.0, projections[0].otherExpenses, 0.0)
 
         assertEquals(100L, projections[1].createdDate)
         assertEquals(10L, projections[1].startDate)
         assertEquals(20L, projections[1].endDate)
         assertEquals(30L, projections[1].updatedDate)
-        assertEquals(100, projections[1].beginningBalance)
-        assertEquals(50, projections[1].sales)
-        assertEquals(20, projections[1].otherIncome)
-        assertEquals(10, projections[1].wages)
-        assertEquals(15, projections[1].otherExpenses)
+        assertEquals(100.0, projections[1].beginningBalance, 0.0)
+        assertEquals(50.0, projections[1].sales, 0.0)
+        assertEquals(20.0, projections[1].otherIncome, 0.0)
+        assertEquals(10.0, projections[1].wages, 0.0)
+        assertEquals(15.0, projections[1].otherExpenses, 0.0)
     }
 
     @Test

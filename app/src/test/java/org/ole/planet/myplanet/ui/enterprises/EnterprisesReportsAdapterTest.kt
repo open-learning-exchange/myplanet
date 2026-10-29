@@ -27,11 +27,11 @@ class EnterprisesReportsAdapterTest {
     private fun createReport(
         id: String,
         description: String? = null,
-        beginningBalance: Int = 0,
-        sales: Int = 0,
-        otherIncome: Int = 0,
-        wages: Int = 0,
-        otherExpenses: Int = 0,
+        beginningBalance: Double = 0.0,
+        sales: Double = 0.0,
+        otherIncome: Double = 0.0,
+        wages: Double = 0.0,
+        otherExpenses: Double = 0.0,
         imageName: String? = null
     ) = FinanceReport(
         _id = id,
@@ -128,49 +128,49 @@ class EnterprisesReportsAdapterTest {
     fun testReportTotals_calculatesIncomeExpensesProfitLossAndEndingBalance() {
         val report = createReport(
             id = "r1",
-            sales = 500,
-            otherIncome = 100,
-            wages = 200,
-            otherExpenses = 50,
-            beginningBalance = 1000
+            sales = 500.0,
+            otherIncome = 100.0,
+            wages = 200.0,
+            otherExpenses = 50.0,
+            beginningBalance = 1000.0
         )
 
         val totals = reportTotals(report)
 
-        assertEquals(600, totals.totalIncome)
-        assertEquals(250, totals.totalExpenses)
-        assertEquals(350, totals.profitLoss)
-        assertEquals(1350, totals.endingBalance)
+        assertEquals(600.0, totals.totalIncome, 0.0)
+        assertEquals(250.0, totals.totalExpenses, 0.0)
+        assertEquals(350.0, totals.profitLoss, 0.0)
+        assertEquals(1350.0, totals.endingBalance, 0.0)
     }
 
     @Test
     fun testReportTotals_withNegativeBeginningBalance_calculatesEndingBalanceCorrectly() {
         val report = createReport(
             id = "r1",
-            sales = 200,
-            otherIncome = 50,
-            wages = 100,
-            otherExpenses = 50,
-            beginningBalance = -500
+            sales = 200.0,
+            otherIncome = 50.0,
+            wages = 100.0,
+            otherExpenses = 50.0,
+            beginningBalance = -500.0
         )
 
         val totals = reportTotals(report)
 
-        assertEquals(250, totals.totalIncome)
-        assertEquals(150, totals.totalExpenses)
-        assertEquals(100, totals.profitLoss)
-        assertEquals(-400, totals.endingBalance)
+        assertEquals(250.0, totals.totalIncome, 0.0)
+        assertEquals(150.0, totals.totalExpenses, 0.0)
+        assertEquals(100.0, totals.profitLoss, 0.0)
+        assertEquals(-400.0, totals.endingBalance, 0.0)
     }
 
     @Test
     fun testOnBindViewHolder_bindsReportTotalsToViews() {
         val report = createReport(
             id = "report1",
-            sales = 300,
-            otherIncome = 50,
-            wages = 100,
-            otherExpenses = 20,
-            beginningBalance = -100
+            sales = 300.0,
+            otherIncome = 50.0,
+            wages = 100.0,
+            otherExpenses = 20.0,
+            beginningBalance = -100.0
         )
 
         adapter.submitList(listOf(report)) {
@@ -179,10 +179,10 @@ class EnterprisesReportsAdapterTest {
 
             adapter.onBindViewHolder(viewHolder, 0)
 
-            assertEquals(context.getString(R.string.number_placeholder, 350), viewHolder.binding.totalIncomeValue.text.toString())
-            assertEquals(context.getString(R.string.number_placeholder, 120), viewHolder.binding.totalExpensesValue.text.toString())
-            assertEquals(context.getString(R.string.number_placeholder, 230), viewHolder.binding.profitLossValue.text.toString())
-            assertEquals(context.getString(R.string.number_placeholder, 130), viewHolder.binding.endingBalanceValue.text.toString())
+            assertEquals("350", viewHolder.binding.totalIncomeValue.text.toString())
+            assertEquals("120", viewHolder.binding.totalExpensesValue.text.toString())
+            assertEquals("230", viewHolder.binding.profitLossValue.text.toString())
+            assertEquals("130", viewHolder.binding.endingBalanceValue.text.toString())
         }
     }
 

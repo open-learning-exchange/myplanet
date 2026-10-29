@@ -738,7 +738,7 @@ class TeamsRepositoryImplTest {
         val blockSlot = io.mockk.slot<suspend () -> Unit>()
         coEvery { appDatabase.withTransaction(capture(blockSlot)) } coAnswers { blockSlot.captured.invoke() }
         val edited = MyTeam().apply {
-            _id = "report1"; _rev = "1-a"; docType = "report"; description = "local edit"; sales = 500; updated = true
+            _id = "report1"; _rev = "1-a"; docType = "report"; description = "local edit"; sales = 500.0; updated = true
         }
         coEvery { teamDao.getByIds(listOf("report1")) } returns listOf(edited)
         val jsonArray = com.google.gson.JsonArray().apply {
@@ -759,7 +759,7 @@ class TeamsRepositoryImplTest {
 
         assertEquals("2-b", saved.captured._rev)
         assertEquals("local edit", saved.captured.description)
-        assertEquals(500, saved.captured.sales)
+        assertEquals(500.0, saved.captured.sales, 0.0)
         assertTrue(saved.captured.updated)
 
         io.mockk.unmockkStatic("androidx.room.RoomDatabaseKt")

@@ -49,11 +49,11 @@ open class MyTeam(
     var isPublic: Boolean = false,
     @ColumnInfo(name = "isUpdated") var updated: Boolean = false,
     var isDeletePending: Boolean = false,
-    var beginningBalance: Int = 0,
-    var sales: Int = 0,
-    var otherIncome: Int = 0,
-    var wages: Int = 0,
-    var otherExpenses: Int = 0,
+    var beginningBalance: Double = 0.0,
+    var sales: Double = 0.0,
+    var otherIncome: Double = 0.0,
+    var wages: Double = 0.0,
+    var otherExpenses: Double = 0.0,
     var startDate: Long = 0,
     var endDate: Long = 0,
     var updatedDate: Long = 0,
@@ -109,11 +109,11 @@ open class MyTeam(
                 team.docType = JsonUtils.getString("docType", kDoc)
             }
             team.isPublic = JsonUtils.getBoolean("public", kDoc)
-            team.beginningBalance = JsonUtils.getInt("beginningBalance", kDoc)
-            team.sales = JsonUtils.getInt("sales", kDoc)
-            team.otherIncome = JsonUtils.getInt("otherIncome", kDoc)
-            team.wages = JsonUtils.getInt("wages", kDoc)
-            team.otherExpenses = JsonUtils.getInt("otherExpenses", kDoc)
+            team.beginningBalance = JsonUtils.getDouble("beginningBalance", kDoc)
+            team.sales = JsonUtils.getDouble("sales", kDoc)
+            team.otherIncome = JsonUtils.getDouble("otherIncome", kDoc)
+            team.wages = JsonUtils.getDouble("wages", kDoc)
+            team.otherExpenses = JsonUtils.getDouble("otherExpenses", kDoc)
             team.startDate = JsonUtils.getLong("startDate", kDoc)
             team.endDate = JsonUtils.getLong("endDate", kDoc)
             team.updatedDate = JsonUtils.getLong("updatedDate", kDoc)
