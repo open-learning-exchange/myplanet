@@ -7,6 +7,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.UUID
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -69,6 +70,19 @@ class NewsDaoTest {
         val pendingIds = newsDao.getPendingUploads().map { it.id }.toSet()
 
         assertEquals(setOf("created", "edited", "reacted", "withImage"), pendingIds)
+    }
+
+    @Test
+    fun getTopLevelCommunityCandidatesFlow_leavesOutTeamOnlyPosts() = runBlocking {
+        val community = News().apply { id = "community"; docType = "message"; viewableBy = "community"; time = 300L }
+        val sharedToCommunity = News().apply { id = "shared"; docType = "message"; viewableBy = "teams"; viewIn = communityViewIn(); time = 200L }
+        val teamOnly = News().apply { id = "team"; docType = "message"; viewableBy = "teams"; viewIn = teamViewIn(); time = 100L }
+        val reply = News().apply { id = "reply"; docType = "message"; viewableBy = "community"; replyTo = "community"; time = 50L }
+        newsDao.upsertAll(listOf(community, sharedToCommunity, teamOnly, reply))
+
+        val ids = newsDao.getTopLevelCommunityCandidatesFlow().first().map { it.id }
+
+        assertEquals(listOf("community", "shared"), ids)
     }
 
     @Test

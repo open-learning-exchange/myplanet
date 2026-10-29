@@ -29,6 +29,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject as KJsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -589,6 +591,42 @@ class UserRepositoryImplTest {
             val expectedUrl = "http://john:plainpass123@localhost:5984/_users/org.couchdb.user:john"
             val matches = urlSlot.captured == expectedUrl
             assertTrue("URL mismatch for plain password", matches)
+        } finally {
+            unmockkObject(SecurePrefs)
+        }
+    }
+
+    @Test
+    fun `checkAndUploadUser skips a user whose credentials are not on the device`() = runTest(testDispatcher) {
+        mockkObject(SecurePrefs)
+        try {
+            every { SecurePrefs.getUserName(context, settings) } returns "alice"
+            every { SecurePrefs.getPassword(context, settings) } returns "alicePassword"
+            val bob = UserEntity().apply { name = "bob"; isUpdated = true }
+
+            repository.checkAndUploadUser(bob, "alicePassword") { _, _ -> }
+
+            coVerify(exactly = 0) { apiInterface.getJsonObject(any(), any()) }
+            coVerify(exactly = 0) { apiInterface.putDoc(any(), any(), any(), any()) }
+        } finally {
+            unmockkObject(SecurePrefs)
+        }
+    }
+
+    @Test
+    fun `checkAndUploadUser does not create the user when the existence check is unauthorized`() = runTest(testDispatcher) {
+        mockkObject(SecurePrefs)
+        try {
+            every { SecurePrefs.getUserName(context, settings) } returns "bob"
+            every { SecurePrefs.getPassword(context, settings) } returns "stalePassword"
+            every { UrlUtils.getUrl() } returns "http://admin:secret@localhost:5984"
+            coEvery { apiInterface.getJsonObject(any(), any()) } returns
+                Response.error(401, "{}".toResponseBody("application/json".toMediaTypeOrNull()))
+            val bob = UserEntity().apply { name = "bob"; isUpdated = true }
+
+            repository.checkAndUploadUser(bob, "stalePassword") { _, _ -> }
+
+            coVerify(exactly = 0) { apiInterface.putDoc(any(), any(), any(), any()) }
         } finally {
             unmockkObject(SecurePrefs)
         }
