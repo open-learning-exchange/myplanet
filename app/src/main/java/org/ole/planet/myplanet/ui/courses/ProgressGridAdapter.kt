@@ -46,6 +46,7 @@ class ProgressGridAdapter(private val context: Context) :
                 holder.itemView.setBackgroundColor(colorInProgress)
             }
         } else {
+            holder.tvProgress.text = ""
             holder.itemView.setBackgroundColor(colorMain)
         }
     }
