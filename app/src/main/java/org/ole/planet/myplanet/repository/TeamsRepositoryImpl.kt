@@ -1158,7 +1158,21 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertTeamLogs(logs: List<JsonObject>) {
-        teamLogDao.upsertAll(logs.map(::teamLogFromJson))
+        val teamLogs = logs.map(::teamLogFromJson)
+        appDatabase.withTransaction {
+            val localIdByRemoteId = teamLogDao.getByRemoteIds(teamLogs.mapNotNull { it._id?.takeIf(String::isNotBlank) })
+                .filter { it._id != null && it.id != it._id }
+                .associate { it._id!! to it.id }
+            val duplicateIds = mutableListOf<String>()
+            teamLogs.forEach { log ->
+                localIdByRemoteId[log._id]?.let { localId ->
+                    duplicateIds += log.id
+                    log.id = localId
+                }
+            }
+            teamLogDao.deleteByIds(duplicateIds)
+            teamLogDao.upsertAll(teamLogs)
+        }
     }
 
     override suspend fun getLastVisit(userName: String?, teamId: String?): Long? {
@@ -1267,6 +1281,12 @@ class TeamsRepositoryImpl @Inject constructor(
         }
 
         val existingTeam = existingTeams?.get(teamId) ?: teamDao.getById(teamId)
+        if (existingTeam != null && (existingTeam.updated || existingTeam.isDeletePending)) {
+            existingTeam._rev = GsonUtils.getString("_rev", doc)
+            teamDao.upsert(existingTeam)
+            existingTeams?.put(teamId, existingTeam)
+            return
+        }
         val model = existingTeam ?: MyTeam().apply { _id = teamId }
         MyTeam.populateTeamFields(doc, model, true)
         processDescription(model.description)

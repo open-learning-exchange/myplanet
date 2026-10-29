@@ -7,6 +7,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.asRequestBody
@@ -155,7 +156,31 @@ class VoicesUploader @Inject constructor(
                     voicesRepository.markNewsUploaded(successfulUpdates)
                 }
             }
+            uploadNewsDeletions()
         }
+    }
+
+    private suspend fun uploadNewsDeletions() {
+        val deleted = voicesRepository.getPendingNewsDeletions().filter { remoteId ->
+            try {
+                val url = "${UrlUtils.getUrl()}/news/$remoteId"
+                val current = uploadRepository.fetchExistingDoc(url)
+                if (current.code() == 404) return@filter true
+                val rev = getString("_rev", current.body()?.takeIf { current.isSuccessful } ?: return@filter false)
+                val tombstone = JsonObject().apply {
+                    addProperty("_id", remoteId)
+                    addProperty("_rev", rev)
+                    addProperty("_deleted", true)
+                }
+                uploadRepository.putUpload(url, tombstone).isSuccessful
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to delete news $remoteId on the server", e)
+                false
+            }
+        }
+        voicesRepository.markNewsDeletionsUploaded(deleted)
     }
 
     private suspend fun queueNewsRetry(

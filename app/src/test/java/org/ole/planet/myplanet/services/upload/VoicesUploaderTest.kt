@@ -19,6 +19,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -216,6 +217,26 @@ class VoicesUploaderTest {
         val update = updates.captured.single()
         assertEquals(listOf("old-res", "new-res"), update.imagesArray.map { it.asJsonObject["resourceId"].asString })
         assertEquals("Hello\n![](resources/new-res/new.png)", update.message)
+    }
+
+    @Test
+    fun `uploadNews deletes voices removed on this device from the server`() = testScope.runTest {
+        coEvery { voicesRepository.getNewsForUpload() } returns emptyList()
+        coEvery { voicesRepository.getPendingNewsDeletions() } returns listOf("gone", "alreadyGone")
+        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/news/gone") } returns
+            Response.success(JsonObject().apply { addProperty("_id", "gone"); addProperty("_rev", "3-x") })
+        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/news/alreadyGone") } returns
+            Response.error(404, "{}".toResponseBody(null))
+        val tombstone = slot<JsonObject>()
+        coEvery { uploadRepository.putUpload("http://mock.url/news/gone", capture(tombstone)) } returns
+            Response.success(JsonObject().apply { addProperty("ok", true) })
+
+        voicesUploader.uploadNews()
+        advanceUntilIdle()
+
+        assertEquals("3-x", tombstone.captured.get("_rev").asString)
+        assertEquals(true, tombstone.captured.get("_deleted").asBoolean)
+        coVerify { voicesRepository.markNewsDeletionsUploaded(listOf("gone", "alreadyGone")) }
     }
 
     @Test

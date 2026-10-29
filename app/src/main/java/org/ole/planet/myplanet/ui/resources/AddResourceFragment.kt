@@ -29,6 +29,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.launch
@@ -243,7 +244,14 @@ class AddResourceFragment : BaseBindingBottomSheetFragment<FragmentAddResourceBi
         viewLifecycleOwner.lifecycleScope.launch {
             val path = when (requestCode) {
                 REQUEST_CAPTURE_PICTURE, REQUEST_VIDEO_CAPTURE, REQUEST_FILE_SELECTION ->
-                    withContext(dispatcherProvider.io) { FileUtils.resolveUriToPath(context, uri) }
+                    withContext(dispatcherProvider.io) {
+                        val destinationDir = if (type == 0) {
+                            context.cacheDir
+                        } else {
+                            File(FileUtils.getOlePath(context), "personals/${UUID.randomUUID()}").apply { mkdirs() }
+                        }
+                        FileUtils.resolveUriToPath(context, uri, destinationDir)
+                    }
                 else -> null
             }
             processResource(path)
