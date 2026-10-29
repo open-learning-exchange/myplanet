@@ -5,6 +5,7 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import java.io.File
 import java.util.Collections
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -93,6 +94,19 @@ class Achievement {
     }
 
     companion object {
+        private val UNSAFE_PATH_CHARS = Regex("[^A-Za-z0-9._@-]")
+
+        fun cvRelativePath(achievementId: String?, fileName: String): String {
+            if (achievementId.isNullOrBlank()) return "cv/$fileName"
+            return "cv/${achievementId.replace(UNSAFE_PATH_CHARS, "_")}/$fileName"
+        }
+        
+        fun resolveCvRelativePath(olePath: String, achievementId: String?, fileName: String): String {
+            val perAchievement = cvRelativePath(achievementId, fileName)
+            val legacy = "cv/$fileName"
+            return if (!File(olePath + perAchievement).exists() && File(olePath + legacy).exists()) legacy else perAchievement
+        }
+
         internal const val CACHE_CAPACITY = 1000
         internal val parsedJsonCache: MutableMap<String, JsonElement> = Collections.synchronizedMap(
             object : LinkedHashMap<String, JsonElement>(16, 0.75f, true) {
