@@ -9,6 +9,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.asRequestBody
+import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserAchievementsRepository
 import org.ole.planet.myplanet.services.FileUploader
@@ -50,7 +51,8 @@ class AchievementUploader @Inject constructor(
     }
 
     private suspend fun uploadCvAttachment(docId: String, rev: String, resumeFileName: String) {
-        val cvFile = File(FileUtils.getOlePath(context) + "cv/$resumeFileName")
+        val olePath = FileUtils.getOlePath(context)
+        val cvFile = File(olePath + Achievement.resolveCvRelativePath(olePath, docId, resumeFileName))
         if (!cvFile.exists()) return
         try {
             val body = cvFile.asRequestBody("application/pdf".toMediaTypeOrNull())
