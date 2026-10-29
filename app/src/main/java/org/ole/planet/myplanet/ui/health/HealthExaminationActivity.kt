@@ -138,6 +138,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             binding.etReferrals.setText(saved?.referrals.orEmpty())
         }
         showCheckbox(examination)
+        preloadCustomDiagnosis()
         showOtherDiagnosis()
     }
 
@@ -175,7 +176,6 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
 
     private fun showOtherDiagnosis() {
         binding.containerOtherDiagnosis.removeAllViews()
-        preloadCustomDiagnosis()
         val chipContext = ContextThemeWrapper(this, R.style.Theme_App_Chip)
         for (s in customDiag ?: emptySet()) {
             if (s.isNullOrBlank()) {
