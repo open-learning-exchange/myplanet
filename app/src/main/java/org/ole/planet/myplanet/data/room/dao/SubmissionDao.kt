@@ -58,7 +58,7 @@ interface SubmissionDao {
     @Query("DELETE FROM submissions WHERE id IN (:ids)") suspend fun deleteByIds(ids: List<String>): Int
     @Query("DELETE FROM submissions WHERE parentId IS :parentId AND userId IS :userId AND status = 'pending' AND type = 'survey' AND teamId IS NULL") suspend fun deletePendingSurveyOrphans(parentId: String?, userId: String?): Int
     @Query("SELECT * FROM submissions WHERE type = 'exam' AND parentId IS NOT NULL AND userId IS NOT NULL AND status != 'pending' AND (isUpdated = 1 OR _id IS NULL OR _id = '')") suspend fun getPendingExamResults(): List<Submission>
-    @Query("SELECT * FROM submissions WHERE status = 'complete' AND type IS NOT 'exam' AND (isUpdated = 1 OR _id IS NULL OR _id = '')") suspend fun getPendingSubmissions(): List<Submission>
+    @Query("SELECT * FROM submissions WHERE status = 'complete' AND NOT (type IS 'exam' AND parentId IS NOT NULL AND userId IS NOT NULL) AND (isUpdated = 1 OR _id IS NULL OR _id = '')") suspend fun getPendingSubmissions(): List<Submission>
     @Upsert suspend fun upsertAll(items: List<Submission>)
     @Upsert fun upsertAllBlocking(items: List<Submission>)
     @Query("UPDATE submissions SET _rev = :rev WHERE id = :id") suspend fun updateRev(id: String, rev: String): Int

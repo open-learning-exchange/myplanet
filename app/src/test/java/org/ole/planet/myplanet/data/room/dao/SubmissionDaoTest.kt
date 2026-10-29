@@ -59,6 +59,27 @@ class SubmissionDaoTest {
     }
 
     @Test
+    fun pendingUploadQueries_pickUpEveryFinishedExamExactlyOnce() = runBlocking {
+        fun exam(id: String, parentId: String?, userId: String?) = Submission(
+            id = id, parentId = parentId, userId = userId, type = "exam", status = "complete", isUpdated = true
+        )
+        submissionDao.upsertAll(
+            listOf(
+                exam("full", "exam1", "user1"),
+                exam("noParent", null, "user1"),
+                exam("noUser", "exam1", null),
+                Submission(id = "survey", parentId = "survey1", userId = "user1", type = "survey", status = "complete", isUpdated = true),
+            )
+        )
+
+        val examResults = submissionDao.getPendingExamResults().map { it.id }
+        val submissions = submissionDao.getPendingSubmissions().map { it.id }
+
+        assertEquals(listOf("full"), examResults)
+        assertEquals(setOf("noParent", "noUser", "survey"), submissions.toSet())
+    }
+
+    @Test
     fun countFinishedByUserParentAndType_skipsAttemptsStillInProgress() = runBlocking {
         fun exam(id: String, status: String, parentId: String = "exam1@course1") =
             Submission(id = id, parentId = parentId, userId = "user1", type = "exam", status = status)
