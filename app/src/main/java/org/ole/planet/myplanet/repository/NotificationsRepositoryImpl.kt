@@ -123,12 +123,12 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun markNotificationsAsRead(notificationIds: Set<String>): Set<String> {
         if (notificationIds.isEmpty()) return emptySet()
-        return notificationDao.markExistingAsRead(notificationIds.toList(), Date(timeProvider.now())).toSet()
+        return notificationDao.markExistingAsRead(notificationIds.toList()).toSet()
     }
 
     override suspend fun markAllUnreadAsRead(userId: String?, isAdmin: Boolean): Set<String> {
         val actualUserId = userId ?: return emptySet()
-        return notificationDao.markAllUnreadAsReadReturningIds(actualUserId, Date(timeProvider.now()), isAdmin).toSet()
+        return notificationDao.markAllUnreadAsReadReturningIds(actualUserId, isAdmin).toSet()
     }
 
     suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean = false): List<NotificationPayload> {

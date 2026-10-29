@@ -345,12 +345,12 @@ class NotificationsRepositoryImplTest {
         repository.markNotificationAsRead("summary_testType", "user1")
 
         coVerify { notificationDao.markSummaryAsRead("user1", "testType") }
-        coVerify(exactly = 0) { notificationDao.markAsRead(any()) }
+        coVerify(exactly = 0) { notificationDao.markAsRead(any<String>()) }
     }
 
     @Test
     fun `markNotificationAsRead marks regular notification as read`() = runTest {
-        coEvery { notificationDao.markAsRead(any()) } returns 1
+        coEvery { notificationDao.markAsRead(any<String>()) } returns 1
 
         repository.markNotificationAsRead("regular_id", "user1")
 
@@ -391,20 +391,18 @@ class NotificationsRepositoryImplTest {
         val result = repository.markNotificationsAsRead(emptySet())
 
         assertTrue(result.isEmpty())
-        coVerify(exactly = 0) { notificationDao.markExistingAsRead(any(), any()) }
+        coVerify(exactly = 0) { notificationDao.markExistingAsRead(any()) }
     }
 
     @Test
-    fun `markNotificationsAsRead marks existing notifications as read using timeProvider now`() = runTest {
+    fun `markNotificationsAsRead marks existing notifications as read`() = runTest {
         val ids = setOf("id1", "id2", "id3")
-        val dateSlot = slot<java.util.Date>()
-        coEvery { notificationDao.markExistingAsRead(eq(ids.toList()), capture(dateSlot)) } returns listOf("id1", "id2")
+        coEvery { notificationDao.markExistingAsRead(ids.toList()) } returns listOf("id1", "id2")
 
         val result = repository.markNotificationsAsRead(ids)
 
         assertEquals(setOf("id1", "id2"), result)
-        coVerify { notificationDao.markExistingAsRead(ids.toList(), any()) }
-        assertEquals(TestTimeProvider().now(), dateSlot.captured.time)
+        coVerify { notificationDao.markExistingAsRead(ids.toList()) }
     }
 
     @Test
@@ -417,14 +415,12 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `markAllUnreadAsRead fetches unread ids and updates all unread`() = runTest {
-        val dateSlot = slot<java.util.Date>()
-        coEvery { notificationDao.markAllUnreadAsReadReturningIds(eq("user1"), capture(dateSlot)) } returns listOf("id1", "id2")
+        coEvery { notificationDao.markAllUnreadAsReadReturningIds("user1", false) } returns listOf("id1", "id2")
 
         val result = repository.markAllUnreadAsRead("user1")
 
         assertEquals(setOf("id1", "id2"), result)
-        coVerify { notificationDao.markAllUnreadAsReadReturningIds("user1", any()) }
-        assertEquals(TestTimeProvider().now(), dateSlot.captured.time)
+        coVerify { notificationDao.markAllUnreadAsReadReturningIds("user1", false) }
     }
 
     @Test
