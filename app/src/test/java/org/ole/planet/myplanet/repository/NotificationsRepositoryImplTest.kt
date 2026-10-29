@@ -36,6 +36,7 @@ class NotificationsRepositoryImplTest {
     private lateinit var teamNotificationDao: TeamNotificationDao
     private lateinit var notificationDao: NotificationDao
     private lateinit var voicesRepository: VoicesRepository
+    private lateinit var removedLogDao: org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 
     @Before
     fun setUp() {
@@ -44,14 +45,48 @@ class NotificationsRepositoryImplTest {
         teamNotificationDao = mockk(relaxed = true)
         notificationDao = mockk(relaxed = true)
         voicesRepository = mockk(relaxed = true)
+        removedLogDao = mockk(relaxed = true)
         repository = NotificationsRepositoryImpl(
             userRepository,
             teamsRepository,
             TestTimeProvider(),
             teamNotificationDao,
             notificationDao,
-            voicesRepository
+            voicesRepository,
+            removedLogDao
         )
+    }
+
+    @Test
+    fun `deleteNotifications remembers deleted server notifications and the next pull skips them`() = runTest {
+        val serverNotification = AppNotification().apply { id = "server1"; isFromServer = true }
+        val localNotification = AppNotification().apply { id = "local1"; isFromServer = false }
+        coEvery { notificationDao.getByIds(listOf("server1", "local1")) } returns listOf(serverNotification, localNotification)
+        coEvery { notificationDao.deleteExisting(any()) } returns listOf("server1", "local1")
+        val logged = slot<List<org.ole.planet.myplanet.model.RemovedLog>>()
+        coEvery { removedLogDao.insertAll(capture(logged)) } returns Unit
+
+        repository.deleteNotifications(linkedSetOf("server1", "local1"))
+
+        assertEquals(listOf("server1"), logged.captured.map { it.docId })
+
+        coEvery { removedLogDao.getRemovedDocIds("notification", null) } returns listOf("server1")
+        val saved = slot<List<AppNotification>>()
+        coEvery { notificationDao.upsertAllPreservingPendingRead(capture(saved)) } returns Unit
+        val jsonArray = JsonArray().apply {
+            listOf("server1", "server2").forEach { docId ->
+                add(JsonObject().apply {
+                    add("doc", JsonObject().apply {
+                        addProperty("_id", docId); addProperty("_rev", "1-a"); addProperty("user", "user1")
+                        addProperty("message", "hello"); addProperty("type", "newResource"); addProperty("status", "unread")
+                    })
+                })
+            }
+        }
+
+        repository.bulkInsertFromSync(jsonArray)
+
+        assertEquals(listOf("server2"), saved.captured.map { it.id })
     }
 
     @Test
@@ -310,12 +345,12 @@ class NotificationsRepositoryImplTest {
         repository.markNotificationAsRead("summary_testType", "user1")
 
         coVerify { notificationDao.markSummaryAsRead("user1", "testType") }
-        coVerify(exactly = 0) { notificationDao.markAsRead(any()) }
+        coVerify(exactly = 0) { notificationDao.markAsRead(any<String>()) }
     }
 
     @Test
     fun `markNotificationAsRead marks regular notification as read`() = runTest {
-        coEvery { notificationDao.markAsRead(any()) } returns 1
+        coEvery { notificationDao.markAsRead(any<String>()) } returns 1
 
         repository.markNotificationAsRead("regular_id", "user1")
 
@@ -356,20 +391,18 @@ class NotificationsRepositoryImplTest {
         val result = repository.markNotificationsAsRead(emptySet())
 
         assertTrue(result.isEmpty())
-        coVerify(exactly = 0) { notificationDao.markExistingAsRead(any(), any()) }
+        coVerify(exactly = 0) { notificationDao.markExistingAsRead(any()) }
     }
 
     @Test
-    fun `markNotificationsAsRead marks existing notifications as read using timeProvider now`() = runTest {
+    fun `markNotificationsAsRead marks existing notifications as read`() = runTest {
         val ids = setOf("id1", "id2", "id3")
-        val dateSlot = slot<java.util.Date>()
-        coEvery { notificationDao.markExistingAsRead(eq(ids.toList()), capture(dateSlot)) } returns listOf("id1", "id2")
+        coEvery { notificationDao.markExistingAsRead(ids.toList()) } returns listOf("id1", "id2")
 
         val result = repository.markNotificationsAsRead(ids)
 
         assertEquals(setOf("id1", "id2"), result)
-        coVerify { notificationDao.markExistingAsRead(ids.toList(), any()) }
-        assertEquals(TestTimeProvider().now(), dateSlot.captured.time)
+        coVerify { notificationDao.markExistingAsRead(ids.toList()) }
     }
 
     @Test
@@ -382,14 +415,12 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `markAllUnreadAsRead fetches unread ids and updates all unread`() = runTest {
-        val dateSlot = slot<java.util.Date>()
-        coEvery { notificationDao.markAllUnreadAsReadReturningIds(eq("user1"), capture(dateSlot)) } returns listOf("id1", "id2")
+        coEvery { notificationDao.markAllUnreadAsReadReturningIds("user1", false) } returns listOf("id1", "id2")
 
         val result = repository.markAllUnreadAsRead("user1")
 
         assertEquals(setOf("id1", "id2"), result)
-        coVerify { notificationDao.markAllUnreadAsReadReturningIds("user1", any()) }
-        assertEquals(TestTimeProvider().now(), dateSlot.captured.time)
+        coVerify { notificationDao.markAllUnreadAsReadReturningIds("user1", false) }
     }
 
     @Test

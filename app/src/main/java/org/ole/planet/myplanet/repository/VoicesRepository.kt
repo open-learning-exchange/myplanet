@@ -28,6 +28,8 @@ data class NewsUpdateData(
 interface VoicesRepository : VoicesEditor, VoicesShareRepository {
     suspend fun getNewsForUpload(): List<NewsUploadData>
     suspend fun markNewsUploaded(updates: List<NewsUpdateData>)
+    suspend fun getPendingNewsDeletions(): List<String>
+    suspend fun markNewsDeletionsUploaded(remoteIds: List<String>)
     suspend fun getCommunityNews(userIdentifier: String): Flow<List<News>>
     suspend fun getNewsWithReplies(newsId: String): Pair<News?, List<News>>
     suspend fun createTeamNews(newsData: HashMap<String?, String>, user: UserEntity, imageList: List<String>?): Boolean

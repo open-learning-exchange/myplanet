@@ -722,7 +722,11 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun checkAndUploadUser(model: UserEntity, password: String?, updateHealthFn: suspend (String, String) -> Unit) {
         try {
-            val pwd = password ?: SecurePrefs.getPassword(context, settings) ?: ""
+            val sessionPassword = password ?: SecurePrefs.getPassword(context, settings)
+            val isSessionUser = SecurePrefs.getUserName(context, settings) == model.name
+            val pwd = model.password?.takeIf { it.isNotBlank() }
+                ?: sessionPassword?.takeIf { isSessionUser }
+                ?: return
             val header = UrlUtils.basicAuthHeader(model.name.toString(), pwd)
             val userExists = checkIfUserExists(header, model)
             if (!userExists) {
@@ -730,19 +734,19 @@ class UserRepositoryImpl @Inject constructor(
             } else if (model.isUpdated) {
                 updateExistingUser(header, model)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("UserRepositoryImpl", "checkAndUploadUser failed", e)
         }
     }
 
     override suspend fun checkIfUserExists(header: String, model: UserEntity): Boolean {
-        try {
-            val res = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
-            val exists = res.body() != null
-            return exists
-        } catch (e: Exception) {
-            Log.e("UserRepositoryImpl", "checkIfUserExists failed", e)
-            return false
+        val res = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
+        return when {
+            res.isSuccessful && res.body() != null -> true
+            res.code() == 404 -> false
+            else -> throw IOException("Unable to check user ${model.name}: HTTP ${res.code()}")
         }
     }
 
@@ -995,7 +999,8 @@ class UserRepositoryImpl @Inject constructor(
             achievements = achievement.achievements ?: emptyList(),
             achievementResources = resources,
             references = achievement.references ?: emptyList(),
-            resumeFileName = achievement.resumeFileName ?: ""
+            resumeFileName = achievement.resumeFileName ?: "",
+            achievementId = achievement._id
         )
     }
 
