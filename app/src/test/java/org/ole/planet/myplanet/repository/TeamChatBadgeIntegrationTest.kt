@@ -63,6 +63,7 @@ class TeamChatBadgeIntegrationTest {
             teamNotificationDao,
             mockk(relaxed = true),
             voicesRepository,
+            mockk(relaxed = true),
         )
     }
 

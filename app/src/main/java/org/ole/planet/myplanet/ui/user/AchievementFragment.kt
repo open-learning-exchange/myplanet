@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentAchievementBinding
 import org.ole.planet.myplanet.databinding.LayoutButtonPrimaryBinding
 import org.ole.planet.myplanet.databinding.RowAchievementBinding
+import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.UserEntity
@@ -215,7 +216,9 @@ class AchievementFragment : BaseContainerFragment() {
             binding.cvCard.visibility = View.GONE
             return
         }
-        val cvFile = File(FileUtils.getOlePath(requireContext()) + "cv/$cvFilename")
+        val olePath = FileUtils.getOlePath(requireContext())
+        val cvPath = Achievement.resolveCvRelativePath(olePath, data.achievementId, cvFilename)
+        val cvFile = File(olePath + cvPath)
         if (!cvFile.exists()) {
             binding.cvCard.visibility = View.GONE
             return
@@ -223,7 +226,7 @@ class AchievementFragment : BaseContainerFragment() {
         binding.cvCard.visibility = View.VISIBLE
         binding.btnViewCv.setOnClickListener {
             val intent = Intent(requireContext(), ResourceViewerActivity::class.java)
-            intent.putExtra("TOUCHED_FILE", "cv/$cvFilename")
+            intent.putExtra("TOUCHED_FILE", cvPath)
             intent.putExtra("resourceType", ResourceViewerFragment.ResourceType.PDF.name)
             startActivity(intent)
         }

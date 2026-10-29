@@ -141,7 +141,18 @@ class ResourcesAdapter(
                 isLocallyOffline = locallyOfflineIds.contains(it.item.id)
             )
         }
-        submitList(updatedList, onComplete)
+        submitList(updatedList) {
+            pruneSelection()
+            onComplete?.invoke()
+        }
+    }
+    
+    private fun pruneSelection() {
+        val visibleIds = currentList.mapNotNullTo(HashSet()) { it.item.id }
+        if (selectedItemIds.retainAll(visibleIds)) {
+            selectedItemsMap.keys.retainAll(visibleIds)
+            listener?.onSelectedListChange(selectedItemsMap.values.toList())
+        }
     }
 
     override fun getItemViewType(position: Int): Int {
@@ -393,7 +404,7 @@ class ResourcesAdapter(
     }
 
     fun areAllSelected(): Boolean {
-        return currentList.isNotEmpty() && selectedItemIds.size == currentList.size
+        return currentList.isNotEmpty() && currentList.all { it.item.id in selectedItemIds }
     }
 
     fun selectAllItems(selectAll: Boolean) {

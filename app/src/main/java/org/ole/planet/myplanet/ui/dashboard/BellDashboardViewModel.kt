@@ -5,12 +5,12 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.Submission
@@ -46,8 +46,8 @@ class BellDashboardViewModel @Inject constructor(
     val completedCourses: StateFlow<List<CourseCompletion>> = _completedCourses.asStateFlow()
 
 
-    private val _surveyPrompt = MutableSharedFlow<SurveyPrompt>(replay = 0)
-    val surveyPrompt: SharedFlow<SurveyPrompt> = _surveyPrompt.asSharedFlow()
+    private val _surveyPrompt = Channel<SurveyPrompt>(Channel.BUFFERED)
+    val surveyPrompt: Flow<SurveyPrompt> = _surveyPrompt.receiveAsFlow()
 
     init {
         viewModelScope.launch {
@@ -90,7 +90,7 @@ class BellDashboardViewModel @Inject constructor(
 
             if (pendingSurveys.isNotEmpty()) {
                 val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
-                _surveyPrompt.emit(SurveyPrompt(pendingSurveys, surveyTitles, isReminder = true))
+                _surveyPrompt.send(SurveyPrompt(pendingSurveys, surveyTitles, isReminder = true))
             }
         }
     }
@@ -105,7 +105,7 @@ class BellDashboardViewModel @Inject constructor(
                 val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
                 if (surveysRepository.isReminderScheduled(surveyIds)) return@launch
                 val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
-                _surveyPrompt.emit(SurveyPrompt(pendingSurveys, surveyTitles, isReminder = false))
+                _surveyPrompt.send(SurveyPrompt(pendingSurveys, surveyTitles, isReminder = false))
             }
         }
     }
