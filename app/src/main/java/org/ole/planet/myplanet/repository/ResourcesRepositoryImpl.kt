@@ -499,7 +499,9 @@ class ResourcesRepositoryImpl @Inject constructor(
             if (urls.isEmpty()) {
                 return false
             }
-            DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
+            withContext(dispatcherProvider.io) {
+                DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
+            }
             true
         } catch (_: Exception) {
             false
