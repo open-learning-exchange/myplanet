@@ -27,6 +27,7 @@ class AddHealthActivity : AppCompatActivity() {
     private val viewModel: HealthViewModel by viewModels()
     var userId: String? = null
     private var myHealth: MyHealth? = null
+    private var isPrefilled = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,6 +37,7 @@ class AddHealthActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         userId = intent.getStringExtra("userId")
+        isPrefilled = savedInstanceState?.getBoolean(KEY_PREFILLED) ?: false
         binding.btnSubmit.setOnClickListener {
             it.isEnabled = false
             createMyHealth()
@@ -57,6 +59,11 @@ class AddHealthActivity : AppCompatActivity() {
         }
         binding.etBirthdateLayout.editText?.setOnClickListener(datePickerClickListener)
         binding.ivDatePicker.setOnClickListener(datePickerClickListener)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_PREFILLED, isPrefilled)
     }
 
     private fun createMyHealth() {
@@ -102,14 +109,18 @@ class AddHealthActivity : AppCompatActivity() {
     }
 
     private fun populate() {
-        userId?.let { viewModel.loadHealthData(it) }
+        if (!isPrefilled) {
+            userId?.let { viewModel.loadHealthData(it) }
+        }
 
         collectWhenStarted(viewModel.isLoading) { isLoading ->
             binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         }
 
         collectWhenStarted(viewModel.healthData) { healthData ->
+            if (isPrefilled) return@collectWhenStarted
             healthData?.let {
+                isPrefilled = true
                 myHealth = it.myHealth
                 val health = myHealth?.profile
 
@@ -155,6 +166,8 @@ class AddHealthActivity : AppCompatActivity() {
     }
 
     companion object {
+        private const val KEY_PREFILLED = "is_prefilled"
+
         fun contactTypeKeys(context: Context): Array<String> {
             val english = Configuration(context.resources.configuration).apply { setLocale(Locale.ENGLISH) }
             return context.createConfigurationContext(english).resources.getStringArray(R.array.contact_type)

@@ -391,7 +391,9 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
     override suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
         if (stepId == null) return true
-        val exam = examDao.getFirstByStepId(stepId) ?: return true
+        val exam = examDao.getFirstByStepId(stepId)
+            ?: examDao.getByStepIdAndType(stepId, "surveys").firstOrNull()
+            ?: return true
         return exam.id.let {
             submissionDao.countCompletedByUserAndExamId(userId, it) > 0
         }

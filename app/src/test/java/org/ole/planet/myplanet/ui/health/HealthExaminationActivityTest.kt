@@ -114,6 +114,29 @@ class HealthExaminationActivityTest {
     }
 
     @Test
+    fun saveData_keepsAnEditedExaminationsDateAgeAndSelfFlag() {
+        val activity = Robolectric.buildActivity(HealthExaminationActivity::class.java).create().get()
+        val exam = HealthExamination().apply {
+            _id = "exam1"
+            date = 1_600_000_000_000L
+            age = 30
+            isSelfExamination = true
+        }
+        activity.user = org.ole.planet.myplanet.model.UserEntity(id = "patient").apply { dob = "1980-01-01" }
+        val cls = HealthExaminationActivity::class.java
+        cls.getDeclaredField("examination").apply { isAccessible = true }.set(activity, exam)
+        cls.getDeclaredField("currentUser").apply { isAccessible = true }
+            .set(activity, org.ole.planet.myplanet.model.UserEntity(id = "nurse").apply { _id = "org.couchdb.user:nurse" })
+
+        cls.getDeclaredMethod("saveData").apply { isAccessible = true }.invoke(activity)
+
+        assertEquals(1_600_000_000_000L, exam.date)
+        assertEquals(30, exam.age)
+        assertTrue(exam.isSelfExamination)
+        assertTrue(exam.isUpdated)
+    }
+
+    @Test
     fun seedSavedConditions_keepsTickedStandardConditionsAndLeavesCustomToTheChips() {
         val activity = Robolectric.buildActivity(HealthExaminationActivity::class.java).create().get()
         val standard = activity.resources.getStringArray(R.array.diagnosis_list)
