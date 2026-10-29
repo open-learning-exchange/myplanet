@@ -3,9 +3,11 @@ package org.ole.planet.myplanet.services.sync
 import android.content.Context
 import dagger.Lazy
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.slot
 import io.mockk.unmockkObject
 import java.io.File
 import java.io.IOException
@@ -14,6 +16,11 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
+import kotlinx.serialization.json.put
 import okhttp3.MediaType
 import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -22,11 +29,13 @@ import okio.BufferedSource
 import okio.ForwardingSource
 import okio.buffer
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatSyncWriter
@@ -114,6 +123,37 @@ class TransactionSyncManagerTest {
     @After
     fun tearDown() {
         unmockkObject(UrlUtils)
+    }
+
+    @Test
+    fun `syncNotificationReads keeps the server document's fields and only marks it read`() = testScope.runTest {
+        val notification = AppNotification().apply { id = "n1"; rev = "1-a"; userId = "u1"; message = "local copy" }
+        coEvery { notificationsRepository.getPendingSyncNotifications() } returns listOf(notification)
+        coEvery { notificationsRepository.markNotificationsSynced(any()) } returns Unit
+        val serverDoc = buildJsonObject {
+            put("_id", "n1")
+            put("_rev", "2-b")
+            put("status", "unread")
+            put("item", "team1")
+            put("replyTo", "news1")
+            put("time", 1000L)
+            put("linkParams", buildJsonObject { put("activeTab", "applicantTab") })
+        }
+        coEvery { apiInterface.getJsonObject(any(), "http://mockurl/notifications/n1") } returns Response.success(serverDoc)
+        val sent = slot<kotlinx.serialization.json.JsonObject>()
+        coEvery { apiInterface.putDoc(any(), any(), "http://mockurl/notifications/n1", capture(sent)) } returns
+            Response.success(buildJsonObject { put("rev", "3-c") })
+
+        transactionSyncManager.syncNotificationReads()
+
+        val body = sent.captured
+        assertEquals("read", body["status"]?.jsonPrimitive?.content)
+        assertEquals("2-b", body["_rev"]?.jsonPrimitive?.content)
+        assertEquals("team1", body["item"]?.jsonPrimitive?.content)
+        assertEquals("news1", body["replyTo"]?.jsonPrimitive?.content)
+        assertEquals(1000L, body["time"]?.jsonPrimitive?.long)
+        assertEquals("applicantTab", body["linkParams"]?.jsonObject?.get("activeTab")?.jsonPrimitive?.content)
+        coVerify { notificationsRepository.markNotificationsSynced(listOf("n1" to "3-c")) }
     }
 
     @Test

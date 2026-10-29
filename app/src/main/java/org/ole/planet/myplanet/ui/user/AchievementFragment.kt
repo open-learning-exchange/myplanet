@@ -173,7 +173,7 @@ class AchievementFragment : BaseContainerFragment() {
 
         val libraries = resourceIds.mapNotNull { resourcesMap[it] }
 
-        if (desc.isNotEmpty() && libraries.isNotEmpty()) {
+        if (desc.isNotEmpty() || link.isNotEmpty() || libraries.isNotEmpty()) {
             binding.llRow.setOnClickListener { toggleDescription(binding) }
             binding.flexboxResources.removeAllViews()
             libraries.forEach { binding.flexboxResources.addView(createResourceButton(it)) }
