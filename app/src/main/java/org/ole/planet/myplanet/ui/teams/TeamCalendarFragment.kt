@@ -474,8 +474,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
         }
         btnAdd.setOnClickListener {
             if(arguments?.getBoolean("fromLogin", false) != true){
-                start = clickedCalendar
-                end = clickedCalendar
+                start = clickedCalendar.clone() as Calendar
+                end = clickedCalendar.clone() as Calendar
                 showMeetupAlert()
             }
         }
