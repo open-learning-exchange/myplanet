@@ -2,8 +2,11 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.app.Application
 import android.content.Context
+import android.view.MotionEvent
+import android.view.View
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
@@ -17,6 +20,7 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.MockitoAnnotations
 import org.ole.planet.myplanet.model.Course
+import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
@@ -124,6 +128,34 @@ class CoursesAdapterTest {
 
         assertEquals(android.view.View.GONE, holder.binding.checkbox.visibility)
         assertEquals(false, holder.binding.checkbox.hasOnClickListeners())
+    }
+
+    @Test
+    fun `test tapping course progress bar keeps displayed progress`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val course = Course("1", "A", "desc", "grade", "subject", 0, 10, isMyCourse = true)
+        adapter.setProgressMap(mapOf("1" to CourseProgressState(current = 3, max = 10)))
+        adapter.submitList(listOf(course))
+
+        val recyclerView = RecyclerView(context).apply {
+            layoutManager = LinearLayoutManager(context)
+            this.adapter = this@CoursesAdapterTest.adapter
+            measure(
+                View.MeasureSpec.makeMeasureSpec(1000, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(2000, View.MeasureSpec.EXACTLY)
+            )
+            layout(0, 0, 1000, 2000)
+        }
+        val holder = recyclerView.findViewHolderForAdapterPosition(0) as CoursesAdapter.GridViewHolder
+        val seekBar = holder.binding.courseProgress
+        assertEquals(3, seekBar.progress)
+
+        val x = seekBar.width * 0.9f
+        val y = seekBar.height / 2f
+        seekBar.dispatchTouchEvent(MotionEvent.obtain(0, 0, MotionEvent.ACTION_DOWN, x, y, 0))
+        seekBar.dispatchTouchEvent(MotionEvent.obtain(0, 10, MotionEvent.ACTION_UP, x, y, 0))
+
+        assertEquals(3, seekBar.progress)
     }
 
     @Test
