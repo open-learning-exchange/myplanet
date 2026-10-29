@@ -203,4 +203,36 @@ class ResourcesAdapterTest {
         assertEquals(false, adapter.areAllSelected())
         assertEquals(0, selectedList?.size)
     }
+
+    @Test
+    fun `selections hidden by a new list are dropped and select all still matches the visible rows`() {
+        fun model(id: String) = ResourceListModel(
+            MyLibrary().apply { this.id = id },
+            ResourceItem(
+                id = id, title = "Res $id", description = "desc", createdDate = 0L, averageRating = "0",
+                timesRated = 0, resourceId = "res$id", isOffline = false, _rev = "rev$id", uploadDate = "date",
+                filename = "file$id"
+            ),
+            emptyList()
+        )
+        adapter.setLibraryList(listOf(model("1"), model("2"), model("3")))
+        var selectedList: List<ResourceItem>? = null
+        adapter.setListener(object : OnLibraryItemSelectedListener {
+            override fun onSelectedListChange(list: List<ResourceItem>) {
+                selectedList = list
+            }
+            override fun onTagClicked(tag: TagItem) {}
+            override fun onResourceClicked(item: ResourceItem) {}
+        })
+        adapter.selectAllItems(true)
+
+        var committed = false
+        adapter.setLibraryList(listOf(model("1"), model("2"))) { committed = true }
+        while (!committed) {
+            org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        }
+
+        assertEquals(listOf("1", "2"), selectedList?.map { it.id })
+        assertEquals(true, adapter.areAllSelected())
+    }
 }
