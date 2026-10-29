@@ -29,6 +29,7 @@ jobs:
         .apk.sha256
         .aab
         .aab.sha256
+        .mapping.txt
 
     steps:
       - name: checkout repository code
@@ -96,6 +97,7 @@ jobs:
           cp sign/app-${FLAVOR}-release.aab output/myPlanet.aab
           sha256sum output/myPlanet.apk > output/myPlanet.apk.sha256
           sha256sum output/myPlanet.aab > output/myPlanet.aab.sha256
+          cp app/build/outputs/mapping/${FLAVOR}Release/mapping.txt output/myPlanet.mapping.txt
           ls -alR output
 
       - name: set playstore variables
@@ -103,6 +105,7 @@ jobs:
         run: |
           echo "PLAYSTORE_PACKAGE_NAME=org.ole.planet.myplanet" >> $GITHUB_ENV
           echo "PLAYSTORE_RELEASE_FILE=output/myPlanet.aab" >> $GITHUB_ENV
+          echo "PLAYSTORE_MAPPING_FILE=output/myPlanet.mapping.txt" >> $GITHUB_ENV
           echo "PLAYSTORE_TRACK=internal" >> $GITHUB_ENV
           echo "PLAYSTORE_STATUS=completed" >> $GITHUB_ENV
           echo "PLAYSTORE_RELEASE_NAME=${{ env.ANDROID_VERSION_CODE }} (${{ env.ANDROID_VERSION_NAME }})" >> $GITHUB_ENV
@@ -116,6 +119,7 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: ${{ env.PLAYSTORE_PACKAGE_NAME }}
           releaseFiles: ${{ env.PLAYSTORE_RELEASE_FILE }}
+          mappingFile: ${{ env.PLAYSTORE_MAPPING_FILE }}
           track: ${{ env.PLAYSTORE_TRACK }}
           releaseName: ${{ env.PLAYSTORE_RELEASE_NAME }}
           status: ${{ env.PLAYSTORE_STATUS }}
@@ -129,6 +133,7 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: ${{ env.PLAYSTORE_PACKAGE_NAME }}
           releaseFiles: ${{ env.PLAYSTORE_RELEASE_FILE }}
+          mappingFile: ${{ env.PLAYSTORE_MAPPING_FILE }}
           track: ${{ env.PLAYSTORE_TRACK }}
           releaseName: ${{ env.PLAYSTORE_RELEASE_NAME }}
           status: ${{ env.PLAYSTORE_STATUS }}
