@@ -999,7 +999,8 @@ class UserRepositoryImpl @Inject constructor(
             achievements = achievement.achievements ?: emptyList(),
             achievementResources = resources,
             references = achievement.references ?: emptyList(),
-            resumeFileName = achievement.resumeFileName ?: ""
+            resumeFileName = achievement.resumeFileName ?: "",
+            achievementId = achievement._id
         )
     }
 

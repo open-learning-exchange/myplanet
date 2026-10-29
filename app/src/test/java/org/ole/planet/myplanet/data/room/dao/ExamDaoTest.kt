@@ -98,6 +98,24 @@ class ExamDaoTest {
     }
 
     @Test
+    fun getFirstByStepId_skipsStepSurvey() = runBlocking {
+        val survey = StepExam().apply {
+            id = "a-survey"
+            type = "surveys"
+            stepId = "step1"
+        }
+        val test = StepExam().apply {
+            id = "b-test"
+            type = "courses"
+            stepId = "step1"
+        }
+
+        examDao.upsertAll(listOf(survey, test))
+
+        assertEquals("b-test", examDao.getFirstByStepId("step1")?.id)
+    }
+
+    @Test
     fun getTeamOwnedSurveys_returnsMatchingTeamOrSubmissionSurveys() = runBlocking {
         val exam1 = StepExam().apply {
             id = "1"

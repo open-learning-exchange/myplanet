@@ -16,7 +16,7 @@ interface ExamDao {
     }
 
     @Query("SELECT * FROM exams WHERE id = :id LIMIT 1") suspend fun getById(id: String): StepExam?
-    @Query("SELECT * FROM exams WHERE stepId = :stepId LIMIT 1") suspend fun getFirstByStepId(stepId: String): StepExam?
+    @Query("SELECT * FROM exams WHERE stepId = :stepId AND (type IS NULL OR type NOT IN ('surveys', 'survey')) LIMIT 1") suspend fun getFirstByStepId(stepId: String): StepExam?
     @Query("SELECT * FROM exams WHERE courseId = :courseId") suspend fun getByCourseId(courseId: String): List<StepExam>
     @Query("SELECT * FROM exams WHERE courseId IN (:courseIds)") suspend fun getByCourseIdsInternal(courseIds: List<String>): List<StepExam>
 
