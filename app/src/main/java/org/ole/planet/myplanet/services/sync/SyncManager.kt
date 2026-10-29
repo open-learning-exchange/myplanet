@@ -15,6 +15,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Date
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
@@ -162,13 +163,16 @@ class SyncManager @Inject constructor(
                 "meetups", "courses", "notifications"
             )
             val completedTables = AtomicInteger(0)
+            val failedTables = ConcurrentLinkedQueue<String>()
             _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_account_data), 1, 4,
                 0, parallelTables.size)
             coroutineScope {
                 val syncJobs = parallelTables.map { tableName ->
                     async {
                         syncTimeLogger.startProcess("${tableName}_sync")
-                        transactionSyncManager.syncDb(tableName)
+                        if (transactionSyncManager.syncDb(tableName) == TransactionSyncManager.SYNC_FAILED) {
+                            failedTables.add(tableName)
+                        }
                         syncTimeLogger.endProcess("${tableName}_sync")
                         val done = completedTables.incrementAndGet()
                         _syncStatus.value = SyncStatus.Syncing(
@@ -216,7 +220,11 @@ class SyncManager @Inject constructor(
             syncPerf { "FULL SYNC COMPLETED at ${timestampFormat.format(Instant.now())}" }
             syncPerf { "TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms)" }
             syncPerf { "═══════════════════════════════════════════════════════════════" }
-            succeeded = true
+            if (failedTables.isEmpty()) {
+                succeeded = true
+            } else {
+                handleException(context.getString(R.string.sync_tables_failed, failedTables.joinToString(", ")))
+            }
         } catch (e: CancellationException) {
             throw e
         } catch (err: Exception) {

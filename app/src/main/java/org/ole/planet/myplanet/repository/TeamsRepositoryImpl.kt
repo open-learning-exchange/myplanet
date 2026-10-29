@@ -1263,11 +1263,20 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     private suspend fun insertMyTeam(doc: JsonObject, existingTeams: MutableMap<String, MyTeam>?) {
-        val status = GsonUtils.getString("status", doc)
-        if (status == "archived") return
-
         val teamId = GsonUtils.getString("_id", doc)
         if (teamId.isBlank()) return
+
+        if (GsonUtils.getString("status", doc) == "archived") {
+            val archivedTeam = existingTeams?.get(teamId) ?: teamDao.getById(teamId) ?: return
+            if (archivedTeam.updated || archivedTeam.isDeletePending) {
+                archivedTeam._rev = GsonUtils.getString("_rev", doc)
+                teamDao.upsert(archivedTeam)
+            } else {
+                teamDao.deleteById(teamId)
+                existingTeams?.remove(teamId)
+            }
+            return
+        }
 
         val docType = GsonUtils.getString("docType", doc)
         val userId = GsonUtils.getString("userId", doc)

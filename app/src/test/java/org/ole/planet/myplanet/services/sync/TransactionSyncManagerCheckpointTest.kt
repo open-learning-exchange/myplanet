@@ -84,6 +84,14 @@ class TransactionSyncManagerCheckpointTest {
         return response
     }
 
+    private fun errorResponse(code: Int): Response<KJsonObject> {
+        val response = mockk<Response<KJsonObject>>()
+        every { response.isSuccessful } returns false
+        every { response.body() } returns null
+        every { response.code() } returns code
+        return response
+    }
+
     @Before
     fun setup() {
         mockkObject(UrlUtils)
@@ -159,11 +167,29 @@ class TransactionSyncManagerCheckpointTest {
 
         val total = transactionSyncManager.syncDb("ratings", useCheckpoint = true)
 
-        assertEquals(0, total)
+        assertEquals(TransactionSyncManager.SYNC_FAILED, total)
         // Only the pre-batch skip=0 should have been written; the fetched-but-uncommitted
         // page must not move the checkpoint to 20.
         assertTrue(putValues.contains(0))
         assertFalse("checkpoint must not advance for an uncommitted batch", putValues.contains(20))
+    }
+
+    @Test
+    fun `server error is reported as a failure rather than an empty table`() = runBlocking {
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns errorResponse(500)
+
+        val total = transactionSyncManager.syncDb("ratings", useCheckpoint = true)
+
+        assertEquals(TransactionSyncManager.SYNC_FAILED, total)
+    }
+
+    @Test
+    fun `missing table on the server is treated as empty`() = runBlocking {
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns errorResponse(404)
+
+        val total = transactionSyncManager.syncDb("ratings", useCheckpoint = true)
+
+        assertEquals(0, total)
     }
 
     // runBlocking (not runTest) so throwing/rethrowing a CancellationException across the

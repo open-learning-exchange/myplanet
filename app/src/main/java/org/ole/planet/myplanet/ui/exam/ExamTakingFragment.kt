@@ -59,6 +59,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     private val binding get() = _binding!!
     private var isCertified = false
     private var isExplicitSubmission = false
+    private var isSavingAnswer = false
     private var examTakingTextWatcher: TextWatcher? = null
     private val answerCache = mutableMapOf<String, AnswerData>()
     @Inject
@@ -207,21 +208,33 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     private fun setupListeners() {
         binding.btnBack.setOnClickListener {
+            if (isSavingAnswer) return@setOnClickListener
+            isSavingAnswer = true
             saveCurrentAnswer()
             viewLifecycleOwner.lifecycleScope.launch {
-                updateAnsDb()
-                goToPreviousQuestion()
+                try {
+                    updateAnsDb()
+                    goToPreviousQuestion()
+                } finally {
+                    isSavingAnswer = false
+                }
             }
         }
         binding.btnNext.setOnClickListener {
+            if (isSavingAnswer) return@setOnClickListener
+            isSavingAnswer = true
             saveCurrentAnswer()
             viewLifecycleOwner.lifecycleScope.launch {
-                val cont = updateAnsDb()
-                if (this@ExamTakingFragment.type == "exam" && !cont) {
-                    Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
-                    return@launch
+                try {
+                    val cont = updateAnsDb()
+                    if (this@ExamTakingFragment.type == "exam" && !cont) {
+                        Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
+                        return@launch
+                    }
+                    goToNextQuestion()
+                } finally {
+                    isSavingAnswer = false
                 }
-                goToNextQuestion()
             }
         }
 
@@ -645,6 +658,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     override fun onClick(view: View) {
         if (view.id == R.id.btn_submit) {
+            if (isSavingAnswer) return
             if (questions != null && currentIndex in 0 until (questions?.size ?: 0)) {
                 val isLastQuestion = currentIndex == (questions?.size?.minus(1) ?: 0)
                 if (isLastQuestion) {
@@ -657,16 +671,21 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                     return
                 }
 
+                isSavingAnswer = true
                 viewLifecycleOwner.lifecycleScope.launch {
-                    val cont = updateAnsDb()
-                    if (this@ExamTakingFragment.type == "exam" && !cont) {
-                        Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
-                        return@launch
-                    }
+                    try {
+                        val cont = updateAnsDb()
+                        if (this@ExamTakingFragment.type == "exam" && !cont) {
+                            Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
+                            return@launch
+                        }
 
-                    capturePhoto()
-                    hideSoftKeyboard(requireActivity())
-                    checkAnsAndContinue(cont)
+                        capturePhoto()
+                        hideSoftKeyboard(requireActivity())
+                        checkAnsAndContinue(cont)
+                    } finally {
+                        isSavingAnswer = false
+                    }
                 }
             }
         }

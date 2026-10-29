@@ -238,10 +238,12 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         }
         binding.btnViewCvEdit.setOnClickListener {
             val filename = pendingCvFilename ?: achievement?.resumeFileName ?: return@setOnClickListener
-            val cvFile = File(FileUtils.getOlePath(requireContext()) + "cv/$filename")
+            val olePath = FileUtils.getOlePath(requireContext())
+            val cvPath = Achievement.resolveCvRelativePath(olePath, achievement?._id, filename)
+            val cvFile = File(olePath + cvPath)
             if (cvFile.exists()) {
                 val intent = Intent(requireContext(), ResourceViewerActivity::class.java)
-                intent.putExtra("TOUCHED_FILE", "cv/$filename")
+                intent.putExtra("TOUCHED_FILE", cvPath)
                 intent.putExtra("resourceType", ResourceViewerFragment.ResourceType.PDF.name)
                 startActivity(intent)
             } else {
@@ -483,9 +485,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         if (uri != null && filename != null) {
             val context = requireContext()
             withContext(dispatcherProvider.io) {
-                val destDir = File(FileUtils.getOlePath(context) + "cv")
-                if (!destDir.exists()) destDir.mkdirs()
-                val destFile = File(destDir, filename)
+                val destFile = File(FileUtils.getOlePath(context) + Achievement.cvRelativePath(achievement?._id, filename))
+                destFile.parentFile?.mkdirs()
                 try {
                     context.contentResolver.openInputStream(uri)?.use { input ->
                         destFile.outputStream().use { output -> input.copyTo(output) }
