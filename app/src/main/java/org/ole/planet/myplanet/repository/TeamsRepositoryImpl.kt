@@ -1158,7 +1158,21 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertTeamLogs(logs: List<JsonObject>) {
-        teamLogDao.upsertAll(logs.map(::teamLogFromJson))
+        val teamLogs = logs.map(::teamLogFromJson)
+        appDatabase.withTransaction {
+            val localIdByRemoteId = teamLogDao.getByRemoteIds(teamLogs.mapNotNull { it._id?.takeIf(String::isNotBlank) })
+                .filter { it._id != null && it.id != it._id }
+                .associate { it._id!! to it.id }
+            val duplicateIds = mutableListOf<String>()
+            teamLogs.forEach { log ->
+                localIdByRemoteId[log._id]?.let { localId ->
+                    duplicateIds += log.id
+                    log.id = localId
+                }
+            }
+            teamLogDao.deleteByIds(duplicateIds)
+            teamLogDao.upsertAll(teamLogs)
+        }
     }
 
     override suspend fun getLastVisit(userName: String?, teamId: String?): Long? {
@@ -1249,11 +1263,20 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     private suspend fun insertMyTeam(doc: JsonObject, existingTeams: MutableMap<String, MyTeam>?) {
-        val status = GsonUtils.getString("status", doc)
-        if (status == "archived") return
-
         val teamId = GsonUtils.getString("_id", doc)
         if (teamId.isBlank()) return
+
+        if (GsonUtils.getString("status", doc) == "archived") {
+            val archivedTeam = existingTeams?.get(teamId) ?: teamDao.getById(teamId) ?: return
+            if (archivedTeam.updated || archivedTeam.isDeletePending) {
+                archivedTeam._rev = GsonUtils.getString("_rev", doc)
+                teamDao.upsert(archivedTeam)
+            } else {
+                teamDao.deleteById(teamId)
+                existingTeams?.remove(teamId)
+            }
+            return
+        }
 
         val docType = GsonUtils.getString("docType", doc)
         val userId = GsonUtils.getString("userId", doc)
@@ -1267,6 +1290,12 @@ class TeamsRepositoryImpl @Inject constructor(
         }
 
         val existingTeam = existingTeams?.get(teamId) ?: teamDao.getById(teamId)
+        if (existingTeam != null && (existingTeam.updated || existingTeam.isDeletePending)) {
+            existingTeam._rev = GsonUtils.getString("_rev", doc)
+            teamDao.upsert(existingTeam)
+            existingTeams?.put(teamId, existingTeam)
+            return
+        }
         val model = existingTeam ?: MyTeam().apply { _id = teamId }
         MyTeam.populateTeamFields(doc, model, true)
         processDescription(model.description)

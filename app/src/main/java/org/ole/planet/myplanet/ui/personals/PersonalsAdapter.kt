@@ -2,12 +2,10 @@ package org.ole.planet.myplanet.ui.personals
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import java.io.File
 import org.ole.planet.myplanet.callback.OnPersonalSelectedListener
 import org.ole.planet.myplanet.databinding.RowMyPersonalBinding
 import org.ole.planet.myplanet.model.Personal
@@ -70,6 +68,7 @@ class PersonalsAdapter(private val context: Context) : ListAdapter<Personal, Per
             "pdf" -> context.startActivity(
                 Intent(context, ResourceViewerActivity::class.java)
                     .putExtra("TOUCHED_FILE", path)
+                    .putExtra("isFullPath", true)
                     .putExtra("resourceType", ResourceViewerFragment.ResourceType.PDF.name)
             )
             "bmp", "gif", "jpg", "png", "webp" -> context.startActivity(
@@ -81,7 +80,8 @@ class PersonalsAdapter(private val context: Context) : ListAdapter<Personal, Per
             "aac", "mp3" -> openAudioFile(context, path)
             "mp4" -> context.startActivity(
                 Intent(context, ResourceViewerActivity::class.java)
-                    .putExtra("TOUCHED_FILE", Uri.fromFile(File(path)).toString())
+                    .putExtra("TOUCHED_FILE", path)
+                    .putExtra("isFullPath", true)
                     .putExtra("resourceType", ResourceViewerFragment.ResourceType.VIDEO.name)
             )
         }

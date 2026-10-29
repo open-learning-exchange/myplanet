@@ -7,6 +7,7 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import java.util.Calendar
 import java.util.HashMap
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -15,8 +16,10 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.NewsLogDao
+import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -31,7 +34,8 @@ class VoicesRepositoryImpl @Inject constructor(
     @PlainGson private val plainGson: Gson,
     private val sharedPrefManager: SharedPrefManager,
     private val newsDao: NewsDao,
-    private val newsLogDao: NewsLogDao
+    private val newsLogDao: NewsLogDao,
+    private val removedLogDao: RemovedLogDao
 ) : VoicesRepository {
     private val concatenatedLinks = ArrayList<String>()
 
@@ -152,7 +156,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCommunityNews(userIdentifier: String): Flow<List<News>> {
-        return newsDao.getTopLevelMessagesFlow()
+        return newsDao.getTopLevelCommunityCandidatesFlow()
             .distinctUntilChanged { old, new ->
                 old.size == new.size && old.zip(new).all { (o, n) ->
                     o.id == n.id && o.time == n.time &&
@@ -266,7 +270,7 @@ class VoicesRepositoryImpl @Inject constructor(
 
         if (teamName.isNotEmpty() || ar == null || ar.size() < 2) {
             val idsToDelete = collectNewsAndReplies(newsId)
-            newsDao.deleteByIds(idsToDelete)
+            deleteNewsRows(idsToDelete)
         } else {
             val filtered = JsonArray().apply {
                 ar.forEach { elem ->
@@ -282,7 +286,7 @@ class VoicesRepositoryImpl @Inject constructor(
             }
             if (filtered.isEmpty) {
                 val idsToDelete = collectNewsAndReplies(newsId)
-                newsDao.deleteByIds(idsToDelete)
+                deleteNewsRows(idsToDelete)
             } else {
                 news.viewIn = gson.toJson(filtered)
                 news.sharedBy = ""
@@ -385,9 +389,32 @@ class VoicesRepositoryImpl @Inject constructor(
         return newsDao.getPlanetMessages(planetCode)
     }
 
+    private suspend fun deleteNewsRows(ids: List<String>) {
+        val remoteIds = newsDao.getByIds(ids).mapNotNull { it._id?.takeIf { remoteId -> remoteId.isNotEmpty() } }
+        if (remoteIds.isNotEmpty()) {
+            removedLogDao.insertAll(remoteIds.map { remoteId ->
+                RemovedLog().apply {
+                    id = UUID.randomUUID().toString()
+                    type = NEWS_DELETION_TYPE
+                    docId = remoteId
+                }
+            })
+        }
+        newsDao.deleteByIds(ids)
+    }
+
+    override suspend fun getPendingNewsDeletions(): List<String> =
+        removedLogDao.getRemovedDocIds(NEWS_DELETION_TYPE, null)
+
+    override suspend fun markNewsDeletionsUploaded(remoteIds: List<String>) {
+        if (remoteIds.isEmpty()) return
+        removedLogDao.deleteByTypeUserAndDocsChunked(NEWS_DELETION_TYPE, null, remoteIds)
+    }
+
     override suspend fun insertNewsList(docs: List<JsonObject>) {
+        val pendingDeletions = removedLogDao.getRemovedDocIds(NEWS_DELETION_TYPE, null).toHashSet()
         val underscoreIds = ArrayList<String>(docs.size)
-        val mappedDocs = docs.map { doc ->
+        val mappedDocs = docs.filterNot { GsonUtils.getString("_id", it) in pendingDeletions }.map { doc ->
             val id = GsonUtils.getString("_id", doc)
             if (id.isNotEmpty()) {
                 underscoreIds.add(id)
@@ -408,9 +435,14 @@ class VoicesRepositoryImpl @Inject constructor(
         saveConcatenatedLinksToPrefs()
     }
 
-    private suspend fun buildNewsFromJson(doc: JsonObject, underscoreId: String, existing: Map<String?, News>? = null): News {
-        val news = (existing?.get(underscoreId) ?: newsDao.getByUnderscoreId(underscoreId))
-            ?: News().apply { id = underscoreId }
+    private fun buildNewsFromJson(doc: JsonObject, underscoreId: String, existing: Map<String?, News>): News {
+        val news = existing[underscoreId] ?: News().apply { id = underscoreId }
+        if (news.isUpdated) {
+            news._rev = GsonUtils.getString("_rev", doc)
+            news.reactions = parseReactions(doc.get("reactions"))
+            news.applyPendingReactions()
+            return news
+        }
         news._rev = GsonUtils.getString("_rev", doc)
         news._id = underscoreId
         news.viewableBy = GsonUtils.getString("viewableBy", doc)
@@ -566,5 +598,9 @@ class VoicesRepositoryImpl @Inject constructor(
 
     override suspend fun markNewsLogUploaded(localId: String, remoteId: String, rev: String): Boolean {
         return newsLogDao.markUploaded(localId, remoteId, rev) != 0
+    }
+
+    private companion object {
+        const val NEWS_DELETION_TYPE = "news"
     }
 }

@@ -11,6 +11,7 @@ import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.utils.AmountUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -95,13 +96,13 @@ class EnterprisesRepositoryImpl @Inject constructor(
                 .append(TimeUtils.formatDateForCsv(report.endDate)).append(", ")
                 .append(TimeUtils.formatDateForCsv(report.createdDate)).append(", ")
                 .append(TimeUtils.formatDateForCsv(report.updatedDate)).append(", ")
-                .append(report.beginningBalance).append(", ")
-                .append(report.sales).append(", ")
-                .append(report.otherIncome).append(", ")
-                .append(report.wages).append(", ")
-                .append(report.otherExpenses).append(", ")
-                .append(profitLoss).append(", ")
-                .append(endingBalance).append('\n')
+                .append(AmountUtils.toPlainString(report.beginningBalance)).append(", ")
+                .append(AmountUtils.toPlainString(report.sales)).append(", ")
+                .append(AmountUtils.toPlainString(report.otherIncome)).append(", ")
+                .append(AmountUtils.toPlainString(report.wages)).append(", ")
+                .append(AmountUtils.toPlainString(report.otherExpenses)).append(", ")
+                .append(AmountUtils.toPlainString(profitLoss)).append(", ")
+                .append(AmountUtils.toPlainString(endingBalance)).append('\n')
         }
         return csvBuilder.toString()
     }

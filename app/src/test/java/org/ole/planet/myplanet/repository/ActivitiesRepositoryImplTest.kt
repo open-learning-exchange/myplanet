@@ -247,14 +247,36 @@ class ActivitiesRepositoryImplTest {
     }
 
     @Test
+    fun `insertLoginActivitiesFromSync keeps a logout that has not uploaded yet`() = runTest {
+        val local = OfflineActivity().apply {
+            id = "act1"; _id = "remote1"; _rev = "1-a"; type = "login"; userName = "john"; loginTime = 100L; logoutTime = 500L; isUpdated = true
+        }
+        coEvery { offlineActivityDao.getByRemoteIds(listOf("remote1")) } returns listOf(local)
+        val saved = slot<List<OfflineActivity>>()
+        coEvery { offlineActivityDao.upsertAll(capture(saved)) } returns Unit
+        val serverDoc = JsonObject().apply {
+            addProperty("_id", "remote1"); addProperty("_rev", "2-b"); addProperty("type", "login")
+            addProperty("user", "john"); addProperty("loginTime", 100L); addProperty("logoutTime", 0L)
+        }
+
+        repository.insertLoginActivitiesFromSync(listOf(serverDoc))
+
+        val activity = saved.captured.single()
+        assertEquals(500L, activity.logoutTime)
+        assertEquals("2-b", activity._rev)
+        assertTrue(activity.isUpdated)
+    }
+
+    @Test
     fun `logLogout updates logout time`() = runTest {
         every { timeProvider.now() } returns 987654321L
         val mockActivity = OfflineActivity().apply { id = "act1" }
-        coEvery { offlineActivityDao.getLatestByType(UserSessionManager.KEY_LOGIN) } returns mockActivity
+        coEvery { offlineActivityDao.getLatestByTypeAndUserName(UserSessionManager.KEY_LOGIN, "john") } returns mockActivity
 
         repository.logLogout("john")
 
         coVerify { offlineActivityDao.updateLogoutTime("act1", 987654321L) }
+        coVerify(exactly = 0) { offlineActivityDao.getLatestByType(any()) }
     }
 
     @Test

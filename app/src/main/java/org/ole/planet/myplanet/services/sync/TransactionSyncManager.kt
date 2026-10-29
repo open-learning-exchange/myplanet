@@ -24,8 +24,11 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.UserEntity
@@ -93,6 +96,7 @@ class TransactionSyncManager @Inject constructor(
 
     companion object {
         private const val MAX_CONCURRENT_ATTACHMENT_DOWNLOADS = 6
+        const val SYNC_FAILED = -1
     }
     
     private val tableSyncHandlers: Map<String, suspend (JsonArray) -> Unit> = mapOf(
@@ -221,6 +225,7 @@ class TransactionSyncManager @Inject constructor(
             var totalDocs = 0
             var batchNumber = if (useCheckpoint) skip / pageSize else 0
             var syncCompletedFully = false
+            var syncFailed = false
             val url = UrlUtils.getUrl()
             val authHeader = UrlUtils.header
 
@@ -243,6 +248,8 @@ class TransactionSyncManager @Inject constructor(
                 val batchApiDuration = SystemClock.elapsedRealtime() - batchApiStartTime
                 if (response.body() == null || !response.isSuccessful) {
                     Log.d("SyncPerf", "  ✗ Failed $table batch $batchNumber: HTTP ${response.code()}")
+                    // Older servers may not have this table; nothing to pull is not a failure.
+                    if (response.code() == 404) syncCompletedFully = true else syncFailed = true
                     break
                 }
                 val arr = getJsonArray("rows", response.body()?.toGson())
@@ -298,6 +305,7 @@ class TransactionSyncManager @Inject constructor(
                 sharedPrefManager.rawPreferences.edit().remove(checkpointKey).apply()
             }
             val totalDuration = SystemClock.elapsedRealtime() - syncStartTime
+            if (syncFailed) return@withContext SYNC_FAILED
             Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
             totalDocs
         } catch (e: CancellationException) {
@@ -310,7 +318,7 @@ class TransactionSyncManager @Inject constructor(
             e.printStackTrace()
             val failDuration = SystemClock.elapsedRealtime() - syncStartTime
             Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
-            0
+            SYNC_FAILED
         }
     }
 
@@ -347,10 +355,9 @@ class TransactionSyncManager @Inject constructor(
             val resumeFileName = getString("resumeFileName", jsonDoc)
             val hasAttachment = jsonDoc.getAsJsonObject("_attachments")?.has("resume.pdf") == true
             if (resumeFileName.isNotEmpty() && hasAttachment) {
-                val destFile = File(
-                    FileUtils.getOlePath(context) + "cv/$resumeFileName"
-                )
-                if (!destFile.exists() && inProgress.add(resumeFileName)) {
+                val cvPath = Achievement.cvRelativePath(docId, resumeFileName)
+                val destFile = File(FileUtils.getOlePath(context) + cvPath)
+                if (!destFile.exists() && inProgress.add(cvPath)) {
                     launch { semaphore.withPermit { downloadCvAttachment(docId, destFile) } }
                 }
             }
@@ -437,25 +444,17 @@ class TransactionSyncManager @Inject constructor(
 
         val successfulSyncs = pending.map { notification ->
             async {
-                val rev = notification.rev ?: return@async null
-                val body = JsonObject().apply {
-                    addProperty("_id", notification.id)
-                    addProperty("_rev", rev)
-                    addProperty("status", "read")
-                    addProperty("user", notification.userId)
-                    addProperty("message", notification.message)
-                    addProperty("type", notification.type)
-                    notification.link?.let { addProperty("link", it) }
-                    addProperty("priority", notification.priority)
-                    addProperty("time", notification.createdAt.time)
-                }
+                if (notification.rev == null) return@async null
+                val url = "${UrlUtils.getUrl()}/notifications/${notification.id}"
                 try {
-                    val response = apiInterface.putDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/notifications/${notification.id}",
-                        body.toKotlinx().jsonObject
-                    )
+                    val current = apiInterface.getJsonObject(UrlUtils.header, url)
+                    if (current.code() == 404) return@async Pair(notification.id, null)
+                    val serverDoc = current.body()?.takeIf { current.isSuccessful } ?: return@async null
+                    val body = buildJsonObject {
+                        serverDoc.forEach { (key, value) -> put(key, value) }
+                        put("status", "read")
+                    }
+                    val response = apiInterface.putDoc(UrlUtils.header, "application/json", url, body)
                     if (response.isSuccessful) {
                         val newRev = JsonUtils.getString("rev", response.body()).takeIf { it.isNotEmpty() }
                         Pair(notification.id, newRev)

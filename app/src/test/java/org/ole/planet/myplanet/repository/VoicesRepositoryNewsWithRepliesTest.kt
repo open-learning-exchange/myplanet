@@ -59,7 +59,8 @@ class VoicesRepositoryNewsWithRepliesTest {
             Gson(),
             mockk<SharedPrefManager>(relaxed = true),
             newsDao,
-            mockk<NewsLogDao>(relaxed = true)
+            mockk<NewsLogDao>(relaxed = true),
+            db.removedLogDao()
         )
     }
 
@@ -83,7 +84,7 @@ class VoicesRepositoryNewsWithRepliesTest {
         val (parent, replies) = repository.getNewsWithReplies("p1")
 
         assertEquals("p1", parent?.id)
-        assertEquals(listOf("r3", "r2", "r1"), replies.map { it.id })
+        assertEquals(listOf("r2", "r1"), replies.map { it.id })
     }
 
     @Test

@@ -3,10 +3,12 @@ package org.ole.planet.myplanet.services.sync
 import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
@@ -129,6 +131,23 @@ class SyncManagerTest {
 
         verify { listener.onSyncFailed("disk full") }
         assertEquals(SyncManager.SyncStatus.Error("disk full"), syncManager.syncStatus.value)
+        verify(exactly = 0) { sharedPrefManager.setLastSync(any()) }
+    }
+
+    @Test
+    fun `a failed table pull fails the sync and does not stamp last sync`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+        coEvery { transactionSyncManager.syncDb(any(), any()) } returns 0
+        coEvery { transactionSyncManager.syncDb("news", any()) } returns TransactionSyncManager.SYNC_FAILED
+        mockkObject(HeavyTableSyncWorker.Companion)
+        every { HeavyTableSyncWorker.schedule(any(), any()) } just Runs
+        val expectedMessage = context.getString(org.ole.planet.myplanet.R.string.sync_tables_failed, "news")
+
+        syncManager.start(listener, "sync", listOf())
+
+        verify { listener.onSyncFailed(expectedMessage) }
+        verify(exactly = 0) { listener.onSyncComplete() }
+        assertEquals(SyncManager.SyncStatus.Error(expectedMessage), syncManager.syncStatus.value)
         verify(exactly = 0) { sharedPrefManager.setLastSync(any()) }
     }
 

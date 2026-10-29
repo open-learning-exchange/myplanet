@@ -172,14 +172,25 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
         binding.btnRemove.setOnClickListener(this)
         binding.finishStep.setOnClickListener(this)
         binding.courseProgress.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
+            private var requestedStep: Int? = null
+
             override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
-                if (b && i <= currentCourseProgress + 1 && !CourseStepLock.isPageLocked(i, blockingStepIndex)) {
-                    binding.viewPager2.currentItem = i
-                }
+                if (!b) return
+                requestedStep = i
+                seekBar.progress = currentCourseProgress
             }
 
-            override fun onStartTrackingTouch(seekBar: SeekBar) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar) {}
+            override fun onStartTrackingTouch(seekBar: SeekBar) {
+                requestedStep = null
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar) {
+                val step = requestedStep ?: return
+                requestedStep = null
+                if (step <= currentCourseProgress + 1 && !CourseStepLock.isPageLocked(step, blockingStepIndex)) {
+                    binding.viewPager2.currentItem = step
+                }
+            }
         })
     }
 

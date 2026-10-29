@@ -22,7 +22,7 @@ interface OfflineActivityDao {
     @Query("SELECT * FROM offline_activity WHERE userName = :userName AND type = :type")
     fun observeByUserNameAndType(userName: String, type: String): Flow<List<OfflineActivity>>
 
-    @Query("SELECT * FROM offline_activity WHERE _rev IS NULL AND type = 'login'")
+    @Query("SELECT * FROM offline_activity WHERE (_rev IS NULL OR isUpdated = 1) AND type = 'login'")
     suspend fun getPendingLoginUploads(): List<OfflineActivity>
 
     @Query("SELECT MAX(loginTime) FROM offline_activity")
@@ -50,6 +50,9 @@ interface OfflineActivityDao {
     @Query("SELECT * FROM offline_activity WHERE type = :type ORDER BY loginTime DESC LIMIT 1")
     suspend fun getLatestByType(type: String): OfflineActivity?
 
+    @Query("SELECT * FROM offline_activity WHERE type = :type AND userName = :userName ORDER BY loginTime DESC LIMIT 1")
+    suspend fun getLatestByTypeAndUserName(type: String, userName: String): OfflineActivity?
+
     @Query("SELECT * FROM offline_activity WHERE id IN (:ids)")
     suspend fun getByIds(ids: List<String>): List<OfflineActivity>
 
@@ -65,6 +68,6 @@ interface OfflineActivityDao {
     @Upsert
     suspend fun upsertAll(activities: List<OfflineActivity>)
 
-    @Query("UPDATE offline_activity SET logoutTime = :logoutTime WHERE id = :id")
+    @Query("UPDATE offline_activity SET logoutTime = :logoutTime, isUpdated = 1 WHERE id = :id")
     suspend fun updateLogoutTime(id: String, logoutTime: Long): Int
 }

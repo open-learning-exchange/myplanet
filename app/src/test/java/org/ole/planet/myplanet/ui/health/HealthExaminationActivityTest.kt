@@ -64,6 +64,24 @@ class HealthExaminationActivityTest {
     }
 
     @Test
+    fun removingTheLastCustomDiagnosisChip_keepsItRemoved() {
+        val activity = Robolectric.buildActivity(HealthExaminationActivity::class.java).create().get()
+        val cls = HealthExaminationActivity::class.java
+        cls.getDeclaredField("examination").apply { isAccessible = true }.set(activity, HealthExamination())
+        cls.getDeclaredField("conditionsMap").apply { isAccessible = true }.set(activity, mapOf("Custom Non-Existent Diagnosis" to true))
+        cls.getDeclaredMethod("initExamination").apply { isAccessible = true }.invoke(activity)
+
+        val container = activity.findViewById<android.view.ViewGroup>(R.id.container_other_diagnosis)
+        assertEquals(1, container.childCount)
+        (container.getChildAt(0) as com.google.android.material.chip.Chip).performCloseIconClick()
+
+        assertEquals(0, container.childCount)
+        @Suppress("UNCHECKED_CAST")
+        val customDiag = cls.getDeclaredField("customDiag").apply { isAccessible = true }.get(activity) as Set<String?>
+        assertTrue(customDiag.isEmpty())
+    }
+
+    @Test
     fun initExamination_loadsSavedNotesIntoEveryField() {
         val activity = Robolectric.buildActivity(HealthExaminationActivity::class.java).create().get()
         val key = org.ole.planet.myplanet.utils.AndroidDecrypter.generateKey()
@@ -93,6 +111,29 @@ class HealthExaminationActivityTest {
         assertEquals("x", text(R.id.et_xray))
         assertEquals("lab", text(R.id.et_labtest))
         assertEquals("r", text(R.id.et_referrals))
+    }
+
+    @Test
+    fun saveData_keepsAnEditedExaminationsDateAgeAndSelfFlag() {
+        val activity = Robolectric.buildActivity(HealthExaminationActivity::class.java).create().get()
+        val exam = HealthExamination().apply {
+            _id = "exam1"
+            date = 1_600_000_000_000L
+            age = 30
+            isSelfExamination = true
+        }
+        activity.user = org.ole.planet.myplanet.model.UserEntity(id = "patient").apply { dob = "1980-01-01" }
+        val cls = HealthExaminationActivity::class.java
+        cls.getDeclaredField("examination").apply { isAccessible = true }.set(activity, exam)
+        cls.getDeclaredField("currentUser").apply { isAccessible = true }
+            .set(activity, org.ole.planet.myplanet.model.UserEntity(id = "nurse").apply { _id = "org.couchdb.user:nurse" })
+
+        cls.getDeclaredMethod("saveData").apply { isAccessible = true }.invoke(activity)
+
+        assertEquals(1_600_000_000_000L, exam.date)
+        assertEquals(30, exam.age)
+        assertTrue(exam.isSelfExamination)
+        assertTrue(exam.isUpdated)
     }
 
     @Test

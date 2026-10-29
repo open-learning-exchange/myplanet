@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.ui.voices.VoicesAdapterHelper
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
@@ -73,7 +74,11 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                 binding.tlMessage.error = getString(R.string.please_enter_message)
                 return@setOnClickListener
             }
-            binding.etMessage.setText(R.string.empty_text)
+            val userModel = user
+            if (userModel == null) {
+                Utilities.toast(requireContext(), getString(R.string.error, "Failed to create news"))
+                return@setOnClickListener
+            }
             val map = HashMap<String?, String>()
             map["viewInId"] = getEffectiveTeamId()
             map["viewInSection"] = "teams"
@@ -82,9 +87,8 @@ class TeamsVoicesFragment : BaseTeamFragment() {
             map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
             map["name"] = getEffectiveTeamName()
 
-            user?.let { userModel ->
-                viewModel.createTeamNews(map, userModel, imageList)
-            }
+            binding.btnSubmit.isEnabled = false
+            viewModel.createTeamNews(map, userModel, imageList.toList())
         }
 
         if (shouldQueryTeamLocally()) {
@@ -132,6 +136,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                 }
                 launch {
                     viewModel.createNewsSuccess.collect { success ->
+                        binding.btnSubmit.isEnabled = true
                         if (success) {
                             binding.rvDiscussion.post {
                                 binding.rvDiscussion.smoothScrollToPosition(0)
@@ -143,6 +148,8 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                             binding.llAddNews.visibility = View.GONE
                             binding.tlMessage.error = null
                             binding.addMessage.text = getString(R.string.add_message)
+                        } else {
+                            Utilities.toast(requireContext(), getString(R.string.error, "Failed to create news"))
                         }
                     }
                 }

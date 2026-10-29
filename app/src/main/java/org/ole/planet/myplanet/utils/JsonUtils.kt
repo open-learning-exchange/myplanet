@@ -5,6 +5,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.longOrNull
 
@@ -38,6 +39,11 @@ object JsonUtils {
     fun getLong(fieldName: String, jsonObject: JsonObject?): Long {
         val primitive = field(fieldName, jsonObject) as? JsonPrimitive ?: return 0L
         return primitive.longOrNull ?: primitive.content.toLongOrNull() ?: 0L
+    }
+
+    fun getDouble(fieldName: String, jsonObject: JsonObject?): Double {
+        val primitive = field(fieldName, jsonObject) as? JsonPrimitive ?: return 0.0
+        return primitive.doubleOrNull ?: primitive.content.toDoubleOrNull() ?: 0.0
     }
 
     fun getFloat(fieldName: String, jsonObject: JsonObject?): Float {

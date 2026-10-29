@@ -53,10 +53,13 @@ interface NewsDao {
     @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND docType = 'message' COLLATE NOCASE ORDER BY time DESC")
     fun getTopLevelMessagesFlow(): Flow<List<News>>
 
-    @Query("SELECT * FROM news WHERE replyTo = :newsId COLLATE NOCASE ORDER BY time DESC")
+    @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND docType = 'message' COLLATE NOCASE AND (viewableBy = 'community' COLLATE NOCASE OR viewIn LIKE '%community%') ORDER BY time DESC")
+    fun getTopLevelCommunityCandidatesFlow(): Flow<List<News>>
+
+    @Query("SELECT * FROM news WHERE replyTo = :newsId ORDER BY time DESC")
     suspend fun getReplies(newsId: String): List<News>
 
-    @Query("SELECT COUNT(*) FROM news WHERE replyTo = :newsId COLLATE NOCASE")
+    @Query("SELECT COUNT(*) FROM news WHERE replyTo = :newsId")
     suspend fun getReplyCount(newsId: String): Int
 
     @Query("WITH RECURSIVE thread(id) AS (SELECT :newsId UNION SELECT news.id FROM news JOIN thread ON news.replyTo = thread.id) SELECT id FROM thread")
