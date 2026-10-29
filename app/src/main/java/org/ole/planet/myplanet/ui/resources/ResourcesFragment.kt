@@ -336,7 +336,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             putExtra("resource_local_url", model.library.resourceLocalAddress)
             putExtra("is_edit_mode", true)
         }
-        startActivity(intent)
+        addResourceLauncher.launch(intent)
     }
 
     private fun setupEventListeners() {
