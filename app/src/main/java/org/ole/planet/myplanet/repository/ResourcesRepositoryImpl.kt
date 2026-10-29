@@ -1008,6 +1008,6 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     private companion object {
-        val NON_RESOURCE_DIRS = setOf("cv", "team_attachments", "course_attachments", "userimages")
+        val NON_RESOURCE_DIRS = setOf("cv", "team_attachments", "course_attachments", "userimages", "personals")
     }
 }

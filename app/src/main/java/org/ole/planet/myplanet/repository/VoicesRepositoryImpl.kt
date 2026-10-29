@@ -435,9 +435,8 @@ class VoicesRepositoryImpl @Inject constructor(
         saveConcatenatedLinksToPrefs()
     }
 
-    private suspend fun buildNewsFromJson(doc: JsonObject, underscoreId: String, existing: Map<String?, News>? = null): News {
-        val news = (existing?.get(underscoreId) ?: newsDao.getByUnderscoreId(underscoreId))
-            ?: News().apply { id = underscoreId }
+    private fun buildNewsFromJson(doc: JsonObject, underscoreId: String, existing: Map<String?, News>): News {
+        val news = existing[underscoreId] ?: News().apply { id = underscoreId }
         if (news.isUpdated) {
             news._rev = GsonUtils.getString("_rev", doc)
             news.reactions = parseReactions(doc.get("reactions"))

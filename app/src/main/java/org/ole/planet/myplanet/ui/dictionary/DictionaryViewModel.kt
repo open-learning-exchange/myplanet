@@ -22,7 +22,7 @@ sealed interface DictionaryLoadState {
 sealed interface DictionarySearchState {
     data object Idle : DictionarySearchState
     data class Found(val entry: DictionaryWord) : DictionarySearchState
-    data object NotFound : DictionarySearchState
+    data class NotFound(val query: String) : DictionarySearchState
 }
 
 @HiltViewModel
@@ -62,7 +62,7 @@ class DictionaryViewModel @Inject constructor(
             _searchState.value = if (entry != null) {
                 DictionarySearchState.Found(entry)
             } else {
-                DictionarySearchState.NotFound
+                DictionarySearchState.NotFound(query)
             }
         }
     }

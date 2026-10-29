@@ -345,12 +345,14 @@ class DownloadService : Service() {
         val storageError = getStorageError(contentLength)
         if (storageError != null) {
             Log.e(TAG, "tryDownload [$source]: storage check failed — $storageError")
+            result.body.close()
             downloadFailed(storageError, fromSync)
             return false
         }
 
         if (contentLength == 0L && !isPartial) {
             Log.e(TAG, "tryDownload [$source]: server returned empty body for $fileName")
+            result.body.close()
             downloadFailed("Empty file from server", fromSync)
             return false
         }
