@@ -51,6 +51,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     var allowSubmission = true
     private var examination: HealthExamination? = null
     private var conditionsMap: Map<String, Boolean> = emptyMap()
+    private var savedCreatedBy: String? = null
     private fun initViews() {
         binding.btnAddDiag.setOnClickListener {
             val text = binding.etOtherDiag.text.toString().trim()
@@ -127,6 +128,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             binding.etHearing.setText(examination?.hearing)
             val encrypted = user?.let { examination?.getEncryptedDataAsJson(it) }
             val saved = encrypted?.let { runCatching { GsonUtils.gson.fromJson(it, Examination::class.java) }.getOrNull() }
+            savedCreatedBy = saved?.createdBy
             binding.etObservation.setText(saved?.notes.orEmpty())
             binding.etDiag.setText(saved?.diagnosis.orEmpty())
             binding.etTreatments.setText(saved?.treatments.orEmpty())
@@ -253,17 +255,17 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
                 examination = HealthExamination()
                 examination?._id = odUserId
                 examination?.userId = odUserId
+                examination?.isSelfExamination = currentUser?._id == pojo?._id
+                examination?.date = Date().time
+                examination?.age = user?.dob?.let { getAge(it) } ?: 0
             }
             examination?.profileId = health?.userKey
             examination?.creatorId = health?.userKey
             examination?.gender = user?.gender
-            examination?.age = user?.dob?.let { getAge(it) } ?: 0
-            examination?.isSelfExamination = currentUser?._id == pojo?._id
-            examination?.date = Date().time
             examination?.planetCode = user?.planetCode
             val sign = Examination()
             sign.allergies = "${binding.etAllergies.text}".trim { it <= ' ' }
-            sign.createdBy = currentUser?._id
+            sign.createdBy = savedCreatedBy?.takeIf { it.isNotBlank() } ?: currentUser?._id
             examination?.bp = "${binding.etBloodpressure.text}".trim { it <= ' ' }
             examination?.setTemperature(parseVitalReading("${binding.etTemperature.text}".trim { it <= ' ' }))
             examination?.pulse = getInt("${binding.etPulseRate.text}".trim { it <= ' ' })
@@ -281,7 +283,6 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             sign.notes = "${binding.etObservation.text}".trim { it <= ' ' }
             sign.diagnosis = "${binding.etDiag.text}".trim { it <= ' ' }
             sign.medications = "${binding.etMedications.text}".trim { it <= ' ' }
-            examination?.date = Date().time
             examination?.isUpdated = true
             examination?.isHasInfo = hasInfo
             pojo?.isUpdated = true
