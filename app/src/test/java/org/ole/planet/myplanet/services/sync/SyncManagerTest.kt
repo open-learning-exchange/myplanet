@@ -3,10 +3,10 @@ package org.ole.planet.myplanet.services.sync
 import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
-import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
