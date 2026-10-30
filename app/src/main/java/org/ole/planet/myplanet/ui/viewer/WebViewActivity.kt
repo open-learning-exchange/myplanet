@@ -53,6 +53,9 @@ class WebViewActivity : AppCompatActivity() {
     private val resourceDirectory: File? by lazy {
         getLocalResourceDirectory(intent.getStringExtra("RESOURCE_ID"))
     }
+    private val externalFilesPath: String by lazy {
+        getExternalFilesDir(null)?.absolutePath ?: ""
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -286,7 +289,7 @@ class WebViewActivity : AppCompatActivity() {
     
     private fun checkUrlSafety(url: String): Boolean {
         val resourceId = resourceDirectory?.name
-        val appDir = getExternalFilesDir(null)?.absolutePath ?: ""
+        val appDir = if (resourceId != null) externalFilesPath else ""
         return WebViewSafety.isUrlSafe(url, trustedHosts, resourceId, appDir)
     }
 
