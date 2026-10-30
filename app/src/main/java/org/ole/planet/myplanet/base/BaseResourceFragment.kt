@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -57,6 +58,8 @@ abstract class BaseResourceFragment : Fragment() {
     lateinit var coursesRepository: CoursesRepository
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
+    @Inject
+    lateinit var configurationsRepository: ConfigurationsRepository
     @Inject
     lateinit var broadcastService: BroadcastService
 
@@ -238,10 +241,8 @@ abstract class BaseResourceFragment : Fragment() {
     open fun onDownloadComplete() {
         prgDialog.dismiss()
 
-        if (sharedPrefManager.isAlternativeUrl()) {
-            sharedPrefManager.setAlternativeUrl("")
-            sharedPrefManager.setProcessedAlternativeUrl("")
-            sharedPrefManager.setIsAlternativeUrl(false)
+        lifecycleScope.launch {
+            configurationsRepository.clearAlternativeUrlIfPrimaryReachable()
         }
     }
 
