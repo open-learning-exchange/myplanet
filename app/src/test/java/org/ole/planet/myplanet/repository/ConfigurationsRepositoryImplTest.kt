@@ -993,4 +993,41 @@ class ConfigurationsRepositoryImplTest {
             sharedPrefManager.clearPreferences()
         }
     }
+
+    @Test
+    fun `clearAlternativeUrlIfPrimaryReachable keeps alternative url while primary is down`() = runTest(testDispatcher) {
+        every { sharedPrefManager.isAlternativeUrl() } returns true
+        every { sharedPrefManager.getServerUrl() } returns "http://192.168.1.73"
+        coEvery { serverUrlMapper.isUrlDirectlyReachable("http://192.168.1.73") } returns false
+
+        repository.clearAlternativeUrlIfPrimaryReachable()
+
+        verify(exactly = 0) { sharedPrefManager.setIsAlternativeUrl(any()) }
+        verify(exactly = 0) { sharedPrefManager.setProcessedAlternativeUrl(any()) }
+    }
+
+    @Test
+    fun `clearAlternativeUrlIfPrimaryReachable clears alternative url once primary answers`() = runTest(testDispatcher) {
+        every { sharedPrefManager.isAlternativeUrl() } returns true
+        every { sharedPrefManager.getServerUrl() } returns "http://192.168.1.73"
+        coEvery { serverUrlMapper.isUrlDirectlyReachable("http://192.168.1.73") } returns true
+
+        repository.clearAlternativeUrlIfPrimaryReachable()
+
+        verify {
+            sharedPrefManager.setAlternativeUrl("")
+            sharedPrefManager.setProcessedAlternativeUrl("")
+            sharedPrefManager.setIsAlternativeUrl(false)
+        }
+    }
+
+    @Test
+    fun `clearAlternativeUrlIfPrimaryReachable skips probe when not on alternative url`() = runTest(testDispatcher) {
+        every { sharedPrefManager.isAlternativeUrl() } returns false
+
+        repository.clearAlternativeUrlIfPrimaryReachable()
+
+        coVerify(exactly = 0) { serverUrlMapper.isUrlDirectlyReachable(any()) }
+        verify(exactly = 0) { sharedPrefManager.setIsAlternativeUrl(any()) }
+    }
 }
