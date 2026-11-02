@@ -25,15 +25,15 @@ import org.ole.planet.myplanet.utils.AttachmentReader
 import org.ole.planet.myplanet.utils.UriAttachment
 
 data class FinanceSummaryUiState(
-    val debit: Int = 0,
-    val credit: Int = 0,
-    val total: Int = 0,
+    val debit: Double = 0.0,
+    val credit: Double = 0.0,
+    val total: Double = 0.0,
     val isCautionVisible: Boolean = false
 ) {
     companion object {
         fun from(transactions: List<Transaction>): FinanceSummaryUiState {
-            var debit = 0
-            var credit = 0
+            var debit = 0.0
+            var credit = 0.0
             for (transaction in transactions) {
                 if ("credit".equals(transaction.type, ignoreCase = true)) {
                     credit += transaction.amount
@@ -111,7 +111,7 @@ class EnterprisesFinancesViewModel @Inject constructor(
         teamId: String,
         type: String,
         note: String,
-        amount: Int,
+        amount: Double,
         date: Long,
         parentCode: String?,
         planetCode: String?,
