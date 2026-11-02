@@ -202,6 +202,10 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         return imageList
     }
 
+    override fun restoreImages(snapshot: List<String>) {
+        imageList.retainAll(snapshot.toSet())
+    }
+
     private fun handleImageSelection(url: Uri?) {
         if (url == null) {
             return
