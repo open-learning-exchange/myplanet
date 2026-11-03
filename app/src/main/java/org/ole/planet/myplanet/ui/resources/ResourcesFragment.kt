@@ -729,7 +729,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private val emptySource: String
-        get() = if (filterApplied(etSearch.text?.toString()?.trim().orEmpty()) || selectedDownloadFilterIndex != 0) {
+        get() = if (filterApplied(_binding?.layoutSearch?.etSearch?.text?.toString()?.trim().orEmpty()) || selectedDownloadFilterIndex != 0) {
             "resources_filtered"
         } else {
             "resources"

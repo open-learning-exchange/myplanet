@@ -314,7 +314,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     }
 
     private fun openCollectionsFragment() {
-        val f = CollectionsFragment.getInstance(filterController.searchTags, emptySource)
+        val f = CollectionsFragment.getInstance(filterController.searchTags, "courses")
         f.setListener(this)
         f.show(childFragmentManager, "")
     }
