@@ -122,15 +122,15 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    open fun addToMyList(onComplete: (() -> Unit)? = null) {
+    open fun addToMyList(onComplete: ((succeeded: Boolean) -> Unit)? = null) {
         if (isAddInProgress) {
-            onComplete?.invoke()
+            onComplete?.invoke(false)
             return
         }
 
         val itemsToAdd = selectedItems?.toList() ?: emptyList()
         if (itemsToAdd.isEmpty()) {
-            onComplete?.invoke()
+            onComplete?.invoke(false)
             return
         }
 
@@ -146,7 +146,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
 
         if (resourceIds.isEmpty() && courseIds.isEmpty()) {
-            onComplete?.invoke()
+            onComplete?.invoke(false)
             return
         }
 
@@ -154,6 +154,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         setJoinInProgress(true)
 
         viewLifecycleOwner.lifecycleScope.launch {
+            var succeeded = false
             try {
                 val userId = userRepository.getUserModel()?.id ?: return@launch
                 var libraryAdded = false
@@ -193,10 +194,11 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
                 if (libraryAdded) toast(activity, getString(R.string.added_to_my_library))
                 if (courseAdded) toast(activity, getString(R.string.added_to_my_courses))
+                succeeded = true
             } finally {
                 isAddInProgress = false
                 setJoinInProgress(false)
-                onComplete?.invoke()
+                onComplete?.invoke(succeeded)
             }
         }
     }
