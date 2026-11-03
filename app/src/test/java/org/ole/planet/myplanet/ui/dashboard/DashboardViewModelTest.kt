@@ -124,6 +124,7 @@ class DashboardViewModelTest {
         coEvery { userRepository.getDashboardProfile(userId) } returns DashboardProfile("John Doe", 0)
         coEvery { resourcesRepository.getMyLibraryFlow(userId) } returns kotlinx.coroutines.flow.flowOf(emptyList())
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(emptyList())
+        coEvery { submissionsRepository.getPendingSurveysFlow(userId) } returns flowOf(emptyList())
 
         // First call
         coEvery { coursesRepository.getMyCoursesFlow(userId) } returns firstCoursesFlow
@@ -159,6 +160,7 @@ class DashboardViewModelTest {
 
         coEvery { userRepository.getDashboardProfile(userId) } returns DashboardProfile("John Doe", 0)
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(emptyList())
+        coEvery { submissionsRepository.getPendingSurveysFlow(userId) } returns flowOf(emptyList())
 
         // Library throws CancellationException, simulating its job being cancelled
         coEvery { resourcesRepository.getMyLibraryFlow(userId) } throws CancellationException("Test cancel")
@@ -184,6 +186,7 @@ class DashboardViewModelTest {
         coEvery { coursesRepository.getMyCoursesFlow(userId) } returns flowOf(listOf(MyCourse().apply { courseTitle = "Course1" }))
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(listOf(MyTeam().apply { name = "Team1" }))
         coEvery { userRepository.getDashboardProfile(userId) } returns DashboardProfile("John Doe", 2)
+        coEvery { submissionsRepository.getPendingSurveysFlow(userId) } returns flowOf(listOf(org.ole.planet.myplanet.model.Submission()))
 
         viewModel.loadUserContent(userId)
 
@@ -198,6 +201,7 @@ class DashboardViewModelTest {
         assertEquals("Team1", (state.teams[0] as MyTeam).name)
         assertEquals(1, state.library.size)
         assertEquals("Lib1", (state.library[0] as MyLibrary).title)
+        assertEquals(1, state.surveyCount)
     }
 
     @Test
