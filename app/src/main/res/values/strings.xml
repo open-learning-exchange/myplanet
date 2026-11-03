@@ -758,6 +758,7 @@
     <string name="completed_colon">\n Completed: %s</string>
     <string name="assigned_to_colon">Assigned to: %s</string>
     <string name="add_task">Add Task</string>
+    <string name="edit_task">Edit Task</string>
     <string name="task_title_is_required">Task title is required</string>
     <string name="deadline_is_required">Deadline is required</string>
     <string name="updated">updated</string>
