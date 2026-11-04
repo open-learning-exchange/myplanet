@@ -237,6 +237,8 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 if (!isAdded) {
                     return@launch
                 }
+                val failureRes = if (addOnTap) R.string.failed_to_add_please_retry else R.string.failed_to_remove_resource
+                binding.btnRemove.isEnabled = false
                 try {
                     val updated = viewModel.setUserLibrary(id, addOnTap)
                     if (updated != null) {
@@ -244,11 +246,16 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                         val formatRes = if (addOnTap) R.string.format_added_to_mylibrary else R.string.format_removed_from_mylibrary
                         Utilities.toast(activity, getString(formatRes, getString(R.string.resources)))
                         setLibraryData()
+                    } else {
+                        Utilities.toast(activity, getString(failureRes))
                     }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
                     Log.w(TAG, "setClickListeners failed", e)
+                    Utilities.toast(activity, getString(failureRes))
+                } finally {
+                    _binding?.btnRemove?.isEnabled = true
                 }
             }
         }
