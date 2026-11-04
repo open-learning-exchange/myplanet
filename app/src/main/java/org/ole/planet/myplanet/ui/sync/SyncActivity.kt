@@ -795,8 +795,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 if (isSync) {
                     isServerReachable(processedUrl, "sync")
                 } else if (forceSync) {
-                    isServerReachable(processedUrl, "upload")
-                    startUpload("")
+                    if (isServerReachable(processedUrl, "upload")) {
+                        startUpload("")
+                    }
                 }
             }
         } catch (e: Exception) {
