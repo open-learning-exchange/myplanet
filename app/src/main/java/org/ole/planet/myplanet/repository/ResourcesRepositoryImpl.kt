@@ -250,7 +250,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val title = request.title ?: return Result.failure(Exception("Title is missing"))
 
         if (resourceTitleExists(title)) {
-            return Result.failure(Exception("Resource title already exists"))
+            return Result.failure(DuplicateResourceTitleException())
         }
 
         val sourceFile = request.resourceUrl?.let { File(it) }
