@@ -219,6 +219,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
                 false
             } else if (value is SyncUiState.Error) {
                 safelyDismissDialog()
+                Toast.makeText(this@ProcessUserDataActivity, value.message ?: getString(R.string.sync_failed), Toast.LENGTH_LONG).show()
                 false
             } else {
                 true
