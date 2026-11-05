@@ -637,6 +637,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         prefData.setLoggedIn(true)
         openDashboard()
         loginNetworkJob?.cancel()
+
+        val prefData = prefData
+        val syncRepository = syncRepository
+        val transactionSyncManager = transactionSyncManager
+        val timeProvider = timeProvider
         loginNetworkJob = isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
                 val serverUrl = prefData.getServerUrl()
