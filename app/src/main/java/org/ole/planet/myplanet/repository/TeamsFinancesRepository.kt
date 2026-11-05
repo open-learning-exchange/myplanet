@@ -9,7 +9,7 @@ interface TeamsFinancesRepository {
         endDate: Long? = null, sortAscending: Boolean = false
     ): Flow<List<Transaction>>
     suspend fun createTransaction(
-        teamId: String, type: String, note: String, amount: Int, date: Long,
+        teamId: String, type: String, note: String, amount: Double, date: Long,
         parentCode: String?, planetCode: String?,
         imageName: String? = null, imageData: ByteArray? = null
     ): Result<Unit>

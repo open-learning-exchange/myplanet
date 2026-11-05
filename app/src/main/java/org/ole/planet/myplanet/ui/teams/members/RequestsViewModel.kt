@@ -29,7 +29,8 @@ data class RequestsUiState(
 data class MembersUiState(
     val members: List<JoinedMemberData> = emptyList(),
     val currentUserId: String? = null,
-    val isLeader: Boolean = false
+    val isLeader: Boolean = false,
+    val isLoaded: Boolean = false
 )
 
 enum class MemberAction {
@@ -70,7 +71,8 @@ class RequestsViewModel @Inject constructor(
             _membersState.value = MembersUiState(
                 members = members,
                 currentUserId = currentUserId,
-                isLeader = members.any { it.user.id == currentUserId && it.isLeader }
+                isLeader = members.any { it.user.id == currentUserId && it.isLeader },
+                isLoaded = true
             )
         }
     }

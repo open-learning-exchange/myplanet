@@ -186,10 +186,15 @@ object VoicesActions {
             components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
             loadExistingImages(context, news, components.imageLayout, imagesToRemove)
         }
+        val imagesBeforeDialog = listener?.getCurrentImageList()?.toList().orEmpty()
         val dialog = AlertDialog.Builder(context, R.style.ReplyAlertDialog)
             .setView(components.view)
             .setPositiveButton(R.string.button_submit, null)
-            .setNegativeButton(R.string.cancel) { d, _ -> d.dismiss() }
+            .setNegativeButton(R.string.cancel) { d, _ ->
+                listener?.restoreImages(imagesBeforeDialog)
+                d.dismiss()
+            }
+            .setOnCancelListener { listener?.restoreImages(imagesBeforeDialog) }
             .create()
 
         dialog.show()
