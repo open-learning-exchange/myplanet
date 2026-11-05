@@ -10,6 +10,7 @@ import androidx.activity.viewModels
 import androidx.core.text.HtmlCompat
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding
@@ -73,7 +74,7 @@ class DictionaryActivity : BaseActivity() {
         }
     }
 
-    private fun renderLoadState(state: DictionaryLoadState) {
+    private suspend fun renderLoadState(state: DictionaryLoadState) {
         when (state) {
             is DictionaryLoadState.Idle -> Unit
             is DictionaryLoadState.Populated -> {
@@ -87,7 +88,9 @@ class DictionaryActivity : BaseActivity() {
                     this@DictionaryActivity,
                     getString(R.string.downloading_started_please_check_notificati)
                 )
-                DownloadUtils.openDownloadService(this@DictionaryActivity, list, false)
+                withContext(dispatcherProvider.io) {
+                    DownloadUtils.openDownloadService(this@DictionaryActivity, list, false)
+                }
             }
             is DictionaryLoadState.Failed -> {
                 Log.e("DictionaryActivity", "Failed to load dictionary data", state.cause)
