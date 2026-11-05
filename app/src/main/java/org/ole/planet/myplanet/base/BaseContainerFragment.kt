@@ -252,7 +252,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                     resourcesAccessViewModel.trackOpen(items)
                     ResourceOpener.openFileType(requireActivity(), items, "online")
                     val arrayList = arrayListOf(UrlUtils.getUrl(items))
-                    DownloadUtils.openPriorityDownloadService(requireContext(), arrayList)
+                    startDownload(arrayList)
                 }
                 else -> {
                     val arrayList = arrayListOf(UrlUtils.getUrl(items))
