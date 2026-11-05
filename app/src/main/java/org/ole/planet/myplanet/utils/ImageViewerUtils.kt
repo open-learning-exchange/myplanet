@@ -23,6 +23,7 @@ object ImageViewerUtils {
         val binding = DialogZoomableImageBinding.inflate(LayoutInflater.from(context))
 
         dialog.setContentView(binding.root)
+        EdgeToEdgeUtils.keepClearOfSystemBars(binding.closeButton)
         dialog.window?.setBackgroundDrawable(Color.BLACK.toDrawable())
 
         val request = Glide.with(binding.photoView.context)

@@ -327,7 +327,8 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         val questionId = currentQuestion?.id ?: return false
         val answerData = answerCache[questionId]
 
-        val singleOtherOptionSelected = ans == "other" || answerData?.singleAnswer == "other"
+        val singleOtherOptionSelected = ans.equals("other", ignoreCase = true) ||
+                answerData?.singleAnswer.equals("other", ignoreCase = true)
         val multipleOtherOptionSelected = listAns?.containsKey("Other") == true ||
                 answerData?.multipleAnswers?.containsKey("Other") == true
         val otherOptionSelected = singleOtherOptionSelected || multipleOtherOptionSelected
@@ -414,7 +415,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                     ans = answerData.singleAnswer
                     if (answerData.otherText.isNotEmpty()) {
                         binding.etAnswer.setText(answerData.otherText)
-                        if (ans == "other") {
+                        if (ans.equals("other", ignoreCase = true)) {
                             binding.etAnswer.visibility = View.VISIBLE
                         }
                     }
@@ -614,7 +615,8 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
         if (choice.equals("Other", ignoreCase = true) && choice == oldAnswer) {
             binding.etAnswer.visibility = View.VISIBLE
-            binding.etAnswer.setText(oldAnswer)
+            val questionId = questions?.getOrNull(currentIndex)?.id
+            binding.etAnswer.setText(questionId?.let { answerCache[it]?.otherText }.orEmpty())
         }
     }
 

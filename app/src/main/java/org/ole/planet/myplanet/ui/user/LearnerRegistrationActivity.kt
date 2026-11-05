@@ -40,6 +40,7 @@ class LearnerRegistrationActivity : BaseActivity() {
     private fun selectedGender(): String? = when {
         binding.male.isChecked -> "male"
         binding.female.isChecked -> "female"
+        binding.other.isChecked -> "other"
         else -> null
     }
 

@@ -668,6 +668,7 @@ class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(Fragme
                 }
             }
             is ChatResult.Error -> {
+                restoreUnsentQuery(query)
                 showError(result.message)
             }
         }
@@ -684,6 +685,15 @@ class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(Fragme
         sharedViewModel.setSelectedChatHistory(history)
         sharedViewModel.setSelectedId(result.id)
         sharedViewModel.setSelectedRev(result.rev)
+    }
+
+    private fun restoreUnsentQuery(query: String) {
+        _binding?.editGchatMessage?.let { input ->
+            if (input.text.isNullOrEmpty()) {
+                input.setText(query)
+                input.setSelection(query.length)
+            }
+        }
     }
 
     private fun showError(message: String?) {
