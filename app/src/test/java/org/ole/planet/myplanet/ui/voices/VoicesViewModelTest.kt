@@ -77,7 +77,7 @@ class VoicesViewModelTest {
         var result: List<News?> = emptyList()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.filteredNews.collect {
-                result = it
+                result = it ?: emptyList()
             }
         }
 
@@ -123,7 +123,7 @@ class VoicesViewModelTest {
         var result: List<News?> = emptyList()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.filteredNews.collect {
-                result = it
+                result = it ?: emptyList()
             }
         }
 
@@ -171,7 +171,7 @@ class VoicesViewModelTest {
 
         var result: List<News?> = emptyList()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.filteredNews.collect { result = it }
+            viewModel.filteredNews.collect { result = it ?: emptyList() }
         }
 
         viewModel.observeCommunityNews("test_user")
@@ -208,7 +208,7 @@ class VoicesViewModelTest {
 
         var result: List<News?> = emptyList()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.filteredNews.collect { result = it }
+            viewModel.filteredNews.collect { result = it ?: emptyList() }
         }
 
         viewModel.observeCommunityNews("test_user")
@@ -271,7 +271,7 @@ class VoicesViewModelTest {
 
         var result: List<News?> = emptyList()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.filteredNews.collect { result = it }
+            viewModel.filteredNews.collect { result = it ?: emptyList() }
         }
 
         viewModel.observeCommunityNews("test_user")
@@ -300,7 +300,7 @@ class VoicesViewModelTest {
 
         var result: List<News?> = emptyList()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.filteredNews.collect { result = it }
+            viewModel.filteredNews.collect { result = it ?: emptyList() }
         }
 
         viewModel.observeCommunityNews("test_user")
@@ -326,7 +326,7 @@ class VoicesViewModelTest {
 
         var result: List<News?> = emptyList()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.filteredNews.collect { result = it }
+            viewModel.filteredNews.collect { result = it ?: emptyList() }
         }
 
         viewModel.observeCommunityNews("test_user")

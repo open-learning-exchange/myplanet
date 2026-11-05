@@ -44,7 +44,7 @@ open class MyTeam(
     var rules: String? = null,
     var isLeader: Boolean = false,
     var type: String? = null,
-    var amount: Int = 0,
+    var amount: Double = 0.0,
     var date: Long = 0,
     var isPublic: Boolean = false,
     @ColumnInfo(name = "isUpdated") var updated: Boolean = false,
@@ -103,7 +103,7 @@ open class MyTeam(
             team.createdBy = JsonUtils.getString("createdBy", kDoc)
             team.userPlanetCode = JsonUtils.getString("userPlanetCode", kDoc)
             team.isLeader = JsonUtils.getBoolean("isLeader", kDoc)
-            team.amount = JsonUtils.getInt("amount", kDoc)
+            team.amount = JsonUtils.getDouble("amount", kDoc)
             team.date = JsonUtils.getLong("date", kDoc)
             if (!hadLocalChanges) {
                 team.docType = JsonUtils.getString("docType", kDoc)

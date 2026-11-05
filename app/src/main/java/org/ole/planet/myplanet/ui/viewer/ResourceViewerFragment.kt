@@ -493,8 +493,6 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
         val pdfFileName = binding.root.findViewById<TextView>(R.id.pdfFileName)
         pdfFileName.text = title
 
-        isResourceFinished = true
-
         renderPdf()
         setupPdfFabActions()
     }
@@ -502,9 +500,16 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
     private fun localFile(): File? =
         if (isFullPath) filePath?.let { File(it) } else File(externalFilesDir, "ole/$filePath")
 
+    private fun showPdfPlaceholder(messageRes: Int) {
+        binding.root.findViewById<TextView>(R.id.pdfPlaceholder)?.setText(messageRes)
+    }
+
     private fun renderPdf() {
-        val file = localFile() ?: return
-        if (!file.exists()) return
+        val file = localFile()
+        if (file == null || !file.exists()) {
+            showPdfPlaceholder(R.string.resource_not_found_message)
+            return
+        }
 
         binding.root.doOnLayout { view ->
             val targetW = view.width
@@ -528,7 +533,11 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
                     }
                 }
 
-                if (bitmap != null && isAdded) {
+                if (!isAdded) return@launch
+                if (bitmap == null) {
+                    showPdfPlaceholder(R.string.unable_to_open_resource)
+                } else {
+                    isResourceFinished = true
                     val pdfPlaceholder = binding.root.findViewById<TextView>(R.id.pdfPlaceholder)
                     pdfPlaceholder.visibility = View.GONE
                     val parent = pdfPlaceholder.parent as ViewGroup
@@ -573,6 +582,10 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
                 pdfTextJob = viewLifecycleOwner.lifecycleScope.launch {
                     val text = loadPdfText()
                     if (!viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return@launch
+                    if (text.isBlank()) {
+                        Utilities.toast(requireContext(), getString(R.string.pdf_no_text_layer))
+                        return@launch
+                    }
                     ttsManager.speak(text)
                 }
             }
