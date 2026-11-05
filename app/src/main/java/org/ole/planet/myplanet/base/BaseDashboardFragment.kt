@@ -164,8 +164,6 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
             countView?.visibility = View.VISIBLE
             countView?.text = getString(R.string.number_placeholder, dbMylibrary.size)
         }
-        // sync rewrites rows mid-flight, re-emitting this list in a new order each batch;
-        // rebuild only when the chips themselves would change
         if (flexboxLayout == null || flexboxLayout.isRenderedWith(dbMylibrary.map { it.id to it.title })) return
         flexboxLayout.removeAllViews()
         if (dbMylibrary.isEmpty()) {
@@ -195,7 +193,6 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         }
     }
 
-    // chips outlive the emission that built them, so resolve the latest copy at click time
     private fun currentLibrary(item: MyLibrary): MyLibrary =
         userLibrary.firstOrNull { it.id == item.id } ?: item
 
@@ -384,8 +381,6 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     }
 }
 
-// The dashboard queries have no ORDER BY, so order is ignored; the count still catches duplicate keys.
-// The keys live on the view, so a recreated view always renders on its first emission.
 internal fun FlexboxLayout.isRenderedWith(keys: List<Any?>): Boolean {
     val rendered = keys.size to keys.toHashSet()
     if (tag == rendered) return true
