@@ -45,7 +45,7 @@ class VoicesViewModel @Inject constructor(
     private val _selectedLabel = MutableStateFlow("All")
     val selectedLabel: StateFlow<String> = _selectedLabel.asStateFlow()
 
-    private val _baseNewsList = MutableStateFlow<List<News?>>(emptyList())
+    private val _baseNewsList = MutableStateFlow<List<News?>?>(null)
 
     private val _labels = MutableStateFlow<List<String>>(emptyList())
     val labels: StateFlow<List<String>> = _labels.asStateFlow()
@@ -57,15 +57,16 @@ class VoicesViewModel @Inject constructor(
 
     private val labelDisplayToValue: Map<String, String> = Constants.LABELS
 
-    val filteredNews: StateFlow<List<News?>> = combine(
+    // null until the first load, so the UI can tell "loading" from "empty"
+    val filteredNews: StateFlow<List<News?>?> = combine(
         _baseNewsList,
         _searchQuery,
         _selectedLabel
     ) { news, query, label ->
-        filterNews(news, query, label)
+        news?.let { filterNews(it, query, label) }
     }
     .flowOn(dispatcherProvider.default)
-    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     fun observeCommunityNews(userIdentifier: String) {
         observeJob?.cancel()

@@ -91,6 +91,7 @@ class MembersFragment : BaseTeamFragment() {
             loadMembers()
         }
         collectWhenStarted(requestsViewModel.membersState) { state ->
+            if (!state.isLoaded) return@collectWhenStarted
             membersAdapter?.setUserId(state.currentUserId)
             membersAdapter?.updateData(state.members, state.isLeader)
             BaseRecyclerFragment.showNoData(binding.tvNodata, state.members.size, "")
