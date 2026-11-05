@@ -57,7 +57,6 @@ class VoicesViewModel @Inject constructor(
 
     private val labelDisplayToValue: Map<String, String> = Constants.LABELS
 
-    // null until the first load, so the UI can tell "loading" from "empty"
     val filteredNews: StateFlow<List<News?>?> = combine(
         _baseNewsList,
         _searchQuery,
