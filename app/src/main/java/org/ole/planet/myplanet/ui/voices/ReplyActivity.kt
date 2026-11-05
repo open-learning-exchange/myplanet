@@ -169,7 +169,11 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     }
 
     override fun showReply(news: News?, fromLogin: Boolean, nonTeamMember: Boolean) {
-        startActivity(Intent(this, ReplyActivity::class.java).putExtra("id", news?.id))
+        startActivity(
+            Intent(this, ReplyActivity::class.java).putExtra("id", news?.id)
+                .putExtra("fromLogin", fromLogin)
+                .putExtra("nonTeamMember", nonTeamMember)
+        )
     }
 
     override fun addImage(llImage: ViewGroup?) {

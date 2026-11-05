@@ -36,6 +36,7 @@ class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding
     private var selectedItemsList: ArrayList<TagEntity> = ArrayList()
     private var currentTagDataList: List<TagData> = emptyList()
     private var filterQuery = ""
+    private var searchChildMatches: Map<String, List<TagEntity>> = emptyMap()
     private var isCollectionSwitchOn = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -102,18 +103,23 @@ class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding
     }
 
     private fun filterTags(charSequence: String) {
-        filterQuery = charSequence
+        filterQuery = charSequence.trim()
         refreshTagList()
     }
 
-   private fun refreshTagList() {
+    private fun refreshTagList() {
         val visibleParents = if (filterQuery.isEmpty()) {
+            searchChildMatches = emptyMap()
             list
         } else {
             val query = filterQuery.lowercase(Locale.ROOT)
-            list.filter {
-                it.name?.lowercase(Locale.ROOT)?.contains(query) == true
-            }
+            fun TagEntity.matchesQuery() = name?.lowercase(Locale.ROOT)?.contains(query) == true
+            searchChildMatches = list.mapNotNull { parent ->
+                childMap[parent.id]?.filter { it.matchesQuery() }
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let { parent.id to it }
+            }.toMap()
+            list.filter { it.matchesQuery() || searchChildMatches.containsKey(it.id) }
         }
         currentTagDataList = buildTagDataList(visibleParents)
         adapter.submitList(currentTagDataList)
@@ -196,11 +202,14 @@ class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding
 
             tagDataList.add(parent.copy(isSelected = isSelected, isSelectMultiple = isSelectMultiple))
 
-            if (parent.isExpanded) {
-                childMap[parent.tag.id]?.forEach { childTag ->
-                    val isChildSelected = isTagSelected(childTag)
-                    tagDataList.add(TagData.Child(childTag, isChildSelected, isSelectMultiple))
-                }
+            val visibleChildren = if (parent.isExpanded) {
+                childMap[parent.tag.id]
+            } else {
+                searchChildMatches[parent.tag.id]
+            }
+            visibleChildren?.forEach { childTag ->
+                val isChildSelected = isTagSelected(childTag)
+                tagDataList.add(TagData.Child(childTag, isChildSelected, isSelectMultiple))
             }
         }
         return tagDataList

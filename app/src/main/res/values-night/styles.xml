@@ -9,6 +9,7 @@
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:itemBackground">@color/colorPrimaryDark</item>
         <item name="android:itemTextAppearance">@style/CustomTextMenu</item>
+        <item name="android:windowBackground">@color/colorPrimary</item>
     </style>
 
     <style name="CustomTextMenu" parent="@android:style/TextAppearance.Widget.IconMenu.Item">
@@ -29,6 +30,7 @@
     <style name="FullscreenTheme" parent="MaterialDrawerTheme.Light.DarkToolbar.TranslucentStatus">
         <item name="android:actionBarStyle">@style/FullscreenActionBarStyle</item>
         <item name="android:windowActionBarOverlay">false</item>
+        <item name="android:windowBackground">@color/colorPrimary</item>
     </style>
 
     <style name="FullscreenActionBarStyle" parent="Widget.AppCompat.ActionBar">
@@ -43,10 +45,11 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:windowBackground">@color/colorPrimary</item>
     </style>
 
     <style name="CustomTheme" parent="MaterialDrawerTheme.TranslucentStatus">
-        <!-- ...and here we setting appcompat’s color theme attrs -->
+        <!-- ...and here we're setting appcompat’s color theme attrs -->
         <item name="colorPrimary">#F1433C</item>
         <item name="colorPrimaryDark">#D03033</item>
         <item name="colorAccent">@color/colorPrimary</item>
