@@ -214,7 +214,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             adapterLibrary.setLibraryList(filteredList)
 
             checkList(filteredList.size)
-            showNoData(tvMessage, filteredList.size, "resources")
+            showNoData(tvMessage, filteredList.size, emptySource)
             changeButtonStatus()
         } else {
             viewModel.resetFilter()
@@ -295,7 +295,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
 
         if (::adapterLibrary.isInitialized) {
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+            showNoData(tvMessage, adapterLibrary.itemCount, emptySource)
             changeButtonStatus()
             checkList()
         }
@@ -336,7 +336,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             putExtra("resource_local_url", model.library.resourceLocalAddress)
             putExtra("is_edit_mode", true)
         }
-        startActivity(intent)
+        addResourceLauncher.launch(intent)
     }
 
     private fun setupEventListeners() {
@@ -404,7 +404,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
 
         checkList(filteredList.size)
-        showNoData(tvMessage, filteredList.size, "resources")
+        showNoData(tvMessage, filteredList.size, emptySource)
         lastFilteredCount = filteredList.size
         return lastFilteredCount
     }
@@ -509,7 +509,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                     guestDialog(requireContext())
                 } else {
                     hasAdded = true
-                    addToMyList {
+                    addToMyList { succeeded ->
+                        if (!succeeded) return@addToMyList
                         val fragment = ResourcesFragment().apply {
                             arguments = Bundle().apply {
                                 putBoolean("isMyCourseLib", true)
@@ -728,6 +729,13 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         super.onDestroyView()
     }
 
+    private val emptySource: String
+        get() = if (filterApplied(_binding?.layoutSearch?.etSearch?.text?.toString()?.trim().orEmpty()) || selectedDownloadFilterIndex != 0) {
+            "resources_filtered"
+        } else {
+            "resources"
+        }
+
     private fun filterApplied(searchText: String): Boolean {
         return !(subjects.isEmpty() && languages.isEmpty()
                 && mediums.isEmpty() && levels.isEmpty()
@@ -821,12 +829,13 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
-    override fun addToMyList(onComplete: (() -> Unit)?) {
+    override fun addToMyList(onComplete: ((succeeded: Boolean) -> Unit)?) {
         val userId = userModel?.id
         val itemsToAdd = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToAdd.isNotEmpty()) {
             viewLifecycleOwner.lifecycleScope.launch {
+                var succeeded = false
                 try {
                     viewModel.addResourcesToUserLibrary(itemsToAdd, userId)
                         .onSuccess {
@@ -836,17 +845,18 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                             selectedItems?.clear()
                             changeButtonStatus()
                             hideButton()
+                            succeeded = true
                         }
                         .onFailure {
                             _binding ?: return@onFailure
                             Utilities.toast(activity, getString(R.string.error, it.message))
                         }
                 } finally {
-                    onComplete?.invoke()
+                    onComplete?.invoke(succeeded)
                 }
             }
         } else {
-            onComplete?.invoke()
+            onComplete?.invoke(false)
         }
     }
 
