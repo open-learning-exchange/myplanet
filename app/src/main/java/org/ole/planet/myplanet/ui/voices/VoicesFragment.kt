@@ -120,6 +120,7 @@ class VoicesFragment : BaseVoicesFragment() {
             binding.btnSubmit.isEnabled = true
             if (n != null) {
                 binding.etMessage.setText(R.string.empty_text)
+                binding.tlMessage.error = null
                 binding.llAddNews.visibility = View.GONE
                 binding.btnNewVoice.text = getString(R.string.new_voice)
                 imageList.clear()

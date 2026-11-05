@@ -141,3 +141,5 @@ sealed class ResourceUrlsResponse {
     object NoAttachments : ResourceUrlsResponse()
     object Error : ResourceUrlsResponse()
 }
+
+class DuplicateResourceTitleException : Exception("Resource title already exists")
