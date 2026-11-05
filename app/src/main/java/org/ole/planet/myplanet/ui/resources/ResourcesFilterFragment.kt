@@ -184,19 +184,31 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
     }
 
     private fun expand(view: View, listView: ListView, headerTextView: TextView) {
-        val count = listView.adapter.count
-        val itemHeight = 100
-        val topPadding = 80
-        val targetHeight = if(count < 6){
-            count * itemHeight + topPadding
-        } else {
-            5 * itemHeight + topPadding
-        }
+        val targetHeight = measureSectionHeight(view, listView, MAX_VISIBLE_ROWS)
         view.layoutParams.height = 0
         view.visibility = View.VISIBLE
         val animator = slideAnimator(view, 0, targetHeight)
         animator.start()
         rotateDrawable(headerTextView, 180f)
+    }
+
+    private fun measureSectionHeight(section: View, listView: ListView, maxRows: Int): Int {
+        val adapter = listView.adapter ?: return section.paddingTop + section.paddingBottom
+        val rows = minOf(adapter.count, maxRows)
+        val availableWidth = ((section.parent as? View)?.width ?: 0)
+            .takeIf { it > 0 }
+            ?.minus(section.paddingLeft + section.paddingRight)
+            ?: resources.displayMetrics.widthPixels
+        val widthSpec = View.MeasureSpec.makeMeasureSpec(availableWidth, View.MeasureSpec.EXACTLY)
+        val heightSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        var rowsHeight = 0
+        for (i in 0 until rows) {
+            val row = adapter.getView(i, null, listView)
+            row.measure(widthSpec, heightSpec)
+            rowsHeight += row.measuredHeight
+        }
+        val dividers = (rows - 1).coerceAtLeast(0) * listView.dividerHeight
+        return rowsHeight + dividers + section.paddingTop + section.paddingBottom
     }
 
     private fun collapse(view: View, headerTextView: TextView) {
@@ -241,3 +253,5 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
         return if (count > 0) getString(R.string.filter_header_with_count, cleanTitle, count) else cleanTitle
     }
 }
+
+private const val MAX_VISIBLE_ROWS = 5
