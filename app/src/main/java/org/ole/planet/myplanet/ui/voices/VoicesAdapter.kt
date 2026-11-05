@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.ImageUtils
@@ -1155,6 +1156,7 @@ class VoicesAdapter(
         val closeButton = view.findViewById<ImageView>(R.id.closeButton)
 
         dialog.setContentView(view)
+        EdgeToEdgeUtils.keepClearOfSystemBars(closeButton)
         dialog.window?.setBackgroundDrawable(ContextCompat.getColor(context, R.color.md_black_1000).toDrawable())
 
         val request = Glide.with(photoView.context)
