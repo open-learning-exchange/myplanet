@@ -266,7 +266,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun initViews() {
         binding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtils.setupEdgeToEdge(
+        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(
             this, window.decorView, lightStatusBar = false,
             statusBarColor = MaterialColors.getColor(binding.myToolbar, androidx.appcompat.R.attr.colorPrimary)
         )

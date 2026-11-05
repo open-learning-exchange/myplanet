@@ -52,7 +52,7 @@ class DictionaryActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         fragmentDictionaryBinding = FragmentDictionaryBinding.inflate(layoutInflater)
         setContentView(fragmentDictionaryBinding.root)
-        EdgeToEdgeUtils.setupEdgeToEdge(this, fragmentDictionaryBinding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, fragmentDictionaryBinding.root)
         initActionBar()
         title = getString(R.string.dictionary)
 

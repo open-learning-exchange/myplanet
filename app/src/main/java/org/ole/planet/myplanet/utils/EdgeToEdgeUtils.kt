@@ -19,12 +19,29 @@ object EdgeToEdgeUtils {
     fun setupEdgeToEdge(activity: ComponentActivity, rootView: View, lightStatusBar: Boolean? = null,
                         lightNavigationBar: Boolean? = null, statusBarColor: Int? = null
     ) {
+        setup(activity, rootView, lightStatusBar, lightNavigationBar, statusBarColor, avoidKeyboard = false)
+    }
+
+    fun setupEdgeToEdgeWithKeyboard(activity: ComponentActivity, rootView: View, lightStatusBar: Boolean? = null,
+                                    lightNavigationBar: Boolean? = null, statusBarColor: Int? = null
+    ) {
+        setup(activity, rootView, lightStatusBar, lightNavigationBar, statusBarColor, avoidKeyboard = true)
+    }
+
+    private fun setup(activity: ComponentActivity, rootView: View, lightStatusBar: Boolean?,
+                      lightNavigationBar: Boolean?, statusBarColor: Int?, avoidKeyboard: Boolean
+    ) {
         configureEdgeToEdge(activity, rootView, lightStatusBar, lightNavigationBar)
         val statusBarStrip = statusBarColor?.let { paintStatusBarStrip(rootView, it) }
 
         ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, windowInsets ->
             val insets = windowInsets.getInsets(SAFE_AREA)
-            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+            val bottom = if (avoidKeyboard) {
+                maxOf(insets.bottom, windowInsets.getInsets(WindowInsetsCompat.Type.ime()).bottom)
+            } else {
+                insets.bottom
+            }
+            view.setPadding(insets.left, insets.top, insets.right, bottom)
             statusBarStrip?.let {
                 it.setLayerHeight(STRIP_LAYER, insets.top)
                 it.invalidateSelf()
@@ -33,28 +50,6 @@ object EdgeToEdgeUtils {
         }
     }
 
-    fun setupEdgeToEdgeWithKeyboard(
-        activity: ComponentActivity,
-        rootView: View,
-        lightStatusBar: Boolean? = null,
-        lightNavigationBar: Boolean? = null
-    ) {
-        configureEdgeToEdge(activity, rootView, lightStatusBar, lightNavigationBar)
-
-        ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, windowInsets ->
-            val safeInsets = windowInsets.getInsets(SAFE_AREA)
-            val imeInsets = windowInsets.getInsets(WindowInsetsCompat.Type.ime())
-
-            view.setPadding(
-                safeInsets.left,
-                safeInsets.top,
-                safeInsets.right,
-                maxOf(safeInsets.bottom, imeInsets.bottom)
-            )
-            WindowInsetsCompat.CONSUMED
-        }
-    }
-    
     fun keepClearOfSystemBars(view: View) {
         val base = (view.layoutParams as? ViewGroup.MarginLayoutParams) ?: return
         val left = base.leftMargin

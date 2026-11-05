@@ -79,6 +79,26 @@ class EdgeToEdgeUtilsTest {
     }
 
     @Test
+    fun `setupEdgeToEdgeWithKeyboard paints the status bar strip and still avoids the keyboard`() {
+        root.setBackgroundColor(Color.WHITE)
+
+        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(activity, root, statusBarColor = Color.BLUE)
+        ViewCompat.dispatchApplyWindowInsets(root, insets(Insets.of(0, 24, 0, 10), ime = Insets.of(0, 0, 0, 300)))
+
+        assertEquals(300, root.paddingBottom)
+        assertEquals(24, (root.background as LayerDrawable).getLayerHeight(1))
+    }
+
+    @Test
+    fun `setupEdgeToEdge ignores the keyboard`() {
+        EdgeToEdgeUtils.setupEdgeToEdge(activity, root)
+
+        ViewCompat.dispatchApplyWindowInsets(root, insets(Insets.of(0, 20, 0, 10), ime = Insets.of(0, 0, 0, 300)))
+
+        assertEquals(10, root.paddingBottom)
+    }
+
+    @Test
     @Config(qualifiers = "notnight")
     fun `bar icons default to dark in light mode`() {
         EdgeToEdgeUtils.setupEdgeToEdge(activity, root)
