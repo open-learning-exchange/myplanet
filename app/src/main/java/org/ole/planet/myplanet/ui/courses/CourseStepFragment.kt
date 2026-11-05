@@ -43,6 +43,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
     private var nextStepId: String? = null
+    private var trackedDownloadUrls: List<String> = emptyList()
     private lateinit var step: CourseStep
     private var resources: List<MyLibrary> = emptyList()
     private var stepExams: List<StepExam> = emptyList()
@@ -105,6 +106,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                     fragmentCourseStepBinding.btnAskAi.visibility = View.VISIBLE
                     setupInlineResources()
 
+                    if (state.downloadingUrls != trackedDownloadUrls) {
+                        trackedDownloadUrls = state.downloadingUrls
+                        if (state.downloadingUrls.isNotEmpty()) trackDownloadUrls(state.downloadingUrls)
+                    }
                     if (state.isDownloadingResources) {
                         fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.VISIBLE
                     } else {
@@ -263,6 +268,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     override fun onDownloadComplete() {
         super.onDownloadComplete()
+        viewModel.refreshInlineResources(stepId)
+    }
+
+    override fun onDownloadFailed() {
         viewModel.refreshInlineResources(stepId)
     }
 

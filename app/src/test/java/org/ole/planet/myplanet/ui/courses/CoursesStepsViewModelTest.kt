@@ -185,6 +185,7 @@ class CoursesStepsViewModelTest {
             id = "lib_1"
             resourceId = "res_1"
             resourceLocalAddress = "file.pdf"
+            resourceRemoteAddress = "http://server/resources/res_1/file.pdf"
         }
         val stepData = CourseStepData(
             step = CourseStep().apply { id = stepId },
@@ -199,12 +200,14 @@ class CoursesStepsViewModelTest {
         coEvery { userRepository.getUserModel() } returns null
         coEvery { coursesRepository.getCourseStepData(stepId, null) } returns stepData
         coEvery { configurationsRepository.checkServerAvailability() } returns true
+        coEvery { resourcesRepository.downloadResourcesPriority(any()) } returns true
 
         viewModel.loadStep(stepId, null)
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
         assertTrue(state.isDownloadingResources)
+        assertEquals(listOf("http://server/resources/res_1/file.pdf"), state.downloadingUrls)
         coVerify { resourcesRepository.downloadResourcesPriority(listOf(libraryItem)) }
     }
 
@@ -351,12 +354,44 @@ class CoursesStepsViewModelTest {
     }
 
     @Test
+    fun loadStep_whenDownloadFailsToStart_clearsDownloadingState() = runTest {
+        val stepId = "step_1"
+        val libraryItem = MyLibrary().apply {
+            id = "lib_1"
+            resourceId = "res_1"
+            resourceRemoteAddress = "http://server/resources/res_1/file.pdf"
+        }
+        val stepData = CourseStepData(
+            step = CourseStep().apply { id = stepId },
+            resources = listOf(libraryItem),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = true,
+            hasExam = false,
+            hasSurvey = false
+        )
+
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { coursesRepository.getCourseStepData(stepId, null) } returns stepData
+        coEvery { configurationsRepository.checkServerAvailability() } returns true
+        coEvery { resourcesRepository.downloadResourcesPriority(any()) } returns false
+
+        viewModel.loadStep(stepId, null)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isDownloadingResources)
+        assertTrue(state.downloadingUrls.isEmpty())
+    }
+
+    @Test
     fun loadStep_whenServerCheckPending_publishesStateImmediatelyThenTriggersDownloadWhenAvailable() = runTest {
         val stepId = "step_1"
         val libraryItem = MyLibrary().apply {
             id = "lib_1"
             resourceId = "res_1"
             resourceLocalAddress = "file.pdf"
+            resourceRemoteAddress = "http://server/resources/res_1/file.pdf"
         }
         val stepData = CourseStepData(
             step = CourseStep().apply { id = stepId; description = "Step 1 Content" },
@@ -372,6 +407,7 @@ class CoursesStepsViewModelTest {
         coEvery { userRepository.getUserModel() } returns null
         coEvery { coursesRepository.getCourseStepData(stepId, null) } returns stepData
         coEvery { configurationsRepository.checkServerAvailability() } coAnswers { probeDeferred.await() }
+        coEvery { resourcesRepository.downloadResourcesPriority(any()) } returns true
 
         viewModel.loadStep(stepId, null)
         runCurrent()
