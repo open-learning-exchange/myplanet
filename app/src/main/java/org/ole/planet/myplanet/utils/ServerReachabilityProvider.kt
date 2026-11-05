@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utils
 
+import dagger.Lazy
 import java.net.HttpURLConnection
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
@@ -19,7 +20,7 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 
 @Singleton
 class ServerReachabilityProvider @Inject constructor(
-    @ReachabilityHttpClient private val okHttpClient: OkHttpClient,
+    @ReachabilityHttpClient private val okHttpClient: Lazy<OkHttpClient>,
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider
@@ -115,7 +116,7 @@ class ServerReachabilityProvider @Inject constructor(
         val request = Request.Builder().url(urlString).apply {
             if (useHead) head() else get()
         }.build()
-        val call = okHttpClient.newCall(request)
+        val call = okHttpClient.get().newCall(request)
         tracker?.onCallStarted(call)
         return try {
             call.execute().use { response ->

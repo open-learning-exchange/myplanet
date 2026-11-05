@@ -24,6 +24,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
@@ -169,7 +170,11 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     }
 
     override fun showReply(news: News?, fromLogin: Boolean, nonTeamMember: Boolean) {
-        startActivity(Intent(this, ReplyActivity::class.java).putExtra("id", news?.id))
+        startActivity(
+            Intent(this, ReplyActivity::class.java).putExtra("id", news?.id)
+                .putExtra("fromLogin", fromLogin)
+                .putExtra("nonTeamMember", nonTeamMember)
+        )
     }
 
     override fun addImage(llImage: ViewGroup?) {
@@ -206,24 +211,24 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         if (url == null) {
             return
         }
+        val appContext = applicationContext
+        lifecycleScope.launch {
+            val path: String = withContext(dispatcherProvider.io) {
+                resolveUriToPath(appContext, url)
+            } ?: return@launch
 
-        val path: String? = resolveUriToPath(this, url)
+            if (News.containsImagePath(imageList, path)) {
+                Toast.makeText(this@ReplyActivity, R.string.image_already_added, Toast.LENGTH_SHORT).show()
+                return@launch
+            }
 
-        if (path == null) {
-            return
-        }
+            imageList.add(News.createImageListEntry(path))
 
-        if (News.containsImagePath(imageList, path)) {
-            Toast.makeText(this, R.string.image_already_added, Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        imageList.add(News.createImageListEntry(path))
-
-        try {
-            showSelectedImages()
-        } catch (e: Exception) {
-            Log.w(TAG, "handleImageSelection failed", e)
+            try {
+                showSelectedImages()
+            } catch (e: Exception) {
+                Log.w(TAG, "handleImageSelection failed", e)
+            }
         }
     }
 
