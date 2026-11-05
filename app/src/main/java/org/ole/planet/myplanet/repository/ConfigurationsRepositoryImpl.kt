@@ -564,6 +564,14 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun clearAlternativeUrlIfPrimaryReachable() {
+        if (!sharedPrefManager.isAlternativeUrl()) return
+        if (!serverUrlMapper.isUrlDirectlyReachable(sharedPrefManager.getServerUrl())) return
+        sharedPrefManager.setAlternativeUrl("")
+        sharedPrefManager.setProcessedAlternativeUrl("")
+        sharedPrefManager.setIsAlternativeUrl(false)
+    }
+
     override suspend fun clearLocalAppData() {
         clearAllData()
         clearPreferences()
