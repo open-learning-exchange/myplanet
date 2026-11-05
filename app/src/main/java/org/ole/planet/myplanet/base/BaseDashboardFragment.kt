@@ -18,6 +18,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
 import org.ole.planet.myplanet.model.MyCourse
@@ -126,7 +127,10 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         collectWhenStarted(newsViewModel.privateImageUrls) { urls ->
             if (urls.isNotEmpty()) {
                 Utilities.toast(activity, getString(R.string.downloading_images_please_check_notification))
-                DownloadUtils.openDownloadService(activity, ArrayList(urls), false)
+                val ctx = activity
+                withContext(dispatcherProvider.io) {
+                    DownloadUtils.openDownloadService(ctx, ArrayList(urls), false)
+                }
             } else {
                 Utilities.toast(activity, getString(R.string.no_images_to_download))
             }
