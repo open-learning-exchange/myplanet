@@ -11,8 +11,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7746
-        versionName = "0.77.46"
+        versionCode = 7761
+        versionName = "0.77.61"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
@@ -252,7 +252,6 @@ dependencies {
     implementation(libs.circleimageview)
     implementation(libs.pbkdf2)
     implementation(libs.markwon.editor)
-    implementation(libs.markwon.image)
     implementation(libs.markwon.image.glide)
     implementation(libs.markwon.html)
     implementation(libs.markwon.ext.tables)
