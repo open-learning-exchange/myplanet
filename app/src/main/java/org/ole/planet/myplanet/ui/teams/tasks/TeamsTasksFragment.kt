@@ -138,7 +138,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
 
         val titleView = TextView(requireActivity()).apply {
-            text = getString(R.string.add_task)
+            text = getString(if (t == null) R.string.add_task else R.string.edit_task)
             setTextColor(context.getColor(R.color.daynight_textColor))
             setPadding(75, 50, 0, 0)
             textSize = 24f
@@ -152,8 +152,8 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         val alertDialog = builder.create()
         alertDialog.show()
         alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            val task = alertTaskBinding.etTask.text.toString()
-            val desc = alertTaskBinding.etDescription.text.toString()
+            val task = alertTaskBinding.etTask.text.toString().trim()
+            val desc = alertTaskBinding.etDescription.text.toString().trim()
             var isValid = true
             if (task.isEmpty()) {
                 Utilities.toast(activity, getString(R.string.task_title_is_required))

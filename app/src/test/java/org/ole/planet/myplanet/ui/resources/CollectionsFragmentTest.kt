@@ -72,6 +72,42 @@ class CollectionsFragmentTest {
         })
     }
 
+    private fun filterAndGetIds(fragment: CollectionsFragment, query: String): List<String> {
+        setField(fragment, "adapter", io.mockk.mockk<ResourcesTagsAdapter>(relaxed = true))
+        val filterTags = CollectionsFragment::class.java.getDeclaredMethod("filterTags", String::class.java)
+        filterTags.isAccessible = true
+        filterTags.invoke(fragment, query)
+        @Suppress("UNCHECKED_CAST")
+        val result = findField(CollectionsFragment::class.java, "currentTagDataList")
+            .apply { isAccessible = true }.get(fragment) as List<TagData>
+        return result.map {
+            when (it) {
+                is TagData.Parent -> it.tag.id
+                is TagData.Child -> it.tag.id
+            }
+        }
+    }
+
+    @Test
+    fun `search matching only a child shows its parent with the matching child`() {
+        val parents = listOf(tag("p1", "Math"), tag("p2", "Science"))
+        val childMap = mapOf(
+            "p1" to listOf(tag("c1", "Algebra"), tag("c2", "Geometry")),
+            "p2" to listOf(tag("c3", "Biology"))
+        )
+        val fragment = newFragment(parents, childMap = childMap)
+
+        assertEquals(listOf("p1", "c1"), filterAndGetIds(fragment, "alg"))
+    }
+
+    @Test
+    fun `search ignores surrounding whitespace`() {
+        val parents = listOf(tag("p1", "Math"), tag("p2", "Science"))
+        val fragment = newFragment(parents)
+
+        assertEquals(listOf("p1"), filterAndGetIds(fragment, "math "))
+    }
+
     @Test
     fun `buildTagDataList returns a plain List of parents`() {
         val parents = listOf(tag("p1", "Math"), tag("p2", "Science"))

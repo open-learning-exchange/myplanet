@@ -1,11 +1,11 @@
 package org.ole.planet.myplanet
 
 import android.app.Application
-import android.content.ComponentCallbacks2
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
+import android.os.Build
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
@@ -141,7 +141,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         private fun warnBestEffortFailed(what: String, failure: Throwable) {
             try {
                 Log.w(TAG, "$what failed", failure)
-            } catch (loggingFailure: RuntimeException) {
+            } catch (_: RuntimeException) {
             }
         }
 
@@ -282,11 +282,13 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
     private fun setupStrictMode() {
         if (BuildConfig.DEBUG) {
-            val threadPolicy = StrictMode.ThreadPolicy.Builder()
+            val threadPolicyBuilder = StrictMode.ThreadPolicy.Builder()
                 .detectAll()
                 .penaltyLog()
-                .build()
-            StrictMode.setThreadPolicy(threadPolicy)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                threadPolicyBuilder.permitExplicitGc()
+            }
+            StrictMode.setThreadPolicy(threadPolicyBuilder.build())
 
             val vmPolicy = VmPolicy.Builder()
                 .detectAll()
@@ -481,7 +483,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
-        if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
+        if (level >= TRIM_MEMORY_RUNNING_LOW) {
             PdfThumbnailLoader.evictAll()
         }
     }
