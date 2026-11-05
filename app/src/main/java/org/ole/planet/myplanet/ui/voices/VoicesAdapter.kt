@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
 import android.os.Build
+import android.text.Spanned
 import android.text.TextUtils
 import android.util.Log
 import android.view.LayoutInflater
@@ -44,8 +45,10 @@ import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.ImageUtils
+import org.ole.planet.myplanet.utils.MarkdownUtils.parseMarkdown
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
+import org.ole.planet.myplanet.utils.MarkdownUtils.setParsedMarkdown
 import org.ole.planet.myplanet.utils.StableIdGenerator
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.makeExpandable
@@ -194,6 +197,7 @@ class VoicesAdapter(
     private var nonTeamMember = false
     private var recyclerView: RecyclerView? = null
     private val userCache = object : LinkedHashMap<String, UserEntity?>(64, 0.75f, true) { override fun removeEldestEntry(e: Map.Entry<String, UserEntity?>) = size > 128 }
+    private val markdownCache = object : LinkedHashMap<String, Spanned>(64, 0.75f, true) { override fun removeEldestEntry(e: Map.Entry<String, Spanned>) = size > 100 }
     private val fetchingUserIds = mutableSetOf<String>()
     private val replyCountCache = mutableMapOf<String, Int>()
     private val userIdPositions = mutableMapOf<String, MutableList<Int>>()
@@ -475,7 +479,7 @@ class VoicesAdapter(
             600,
             350
         )
-        setMarkdownText(holder.binding.tvMessage, markdownContentWithLocalPaths)
+        setMessageMarkdown(holder.binding.tvMessage, news, markdownContentWithLocalPaths)
         val fulltext = holder.binding.tvMessage.text
         holder.binding.tvMessage.makeExpandable(
             fullText = fulltext,
@@ -488,6 +492,18 @@ class VoicesAdapter(
                 "${formatDate(news.time)} | Shared from $sharedTeamName"
             }
         holder.binding.tvEdited.visibility = if (news.isEdited) View.VISIBLE else View.GONE
+    }
+
+    private fun setMessageMarkdown(textView: TextView, news: News, markdown: String) {
+        val cacheable = news.id.isNotEmpty() && !markdown.contains("![") &&
+            markdown.none { it == '<' || it == '|' }
+        if (!cacheable) {
+            setMarkdownText(textView, markdown)
+            return
+        }
+        val key = "${news.id}:${markdown.hashCode()}"
+        val spanned = markdownCache.getOrPut(key) { parseMarkdown(context, markdown) }
+        setParsedMarkdown(textView, spanned)
     }
 
     private fun configureEditDeleteButtons(holder: VoicesViewHolder, news: News) {
