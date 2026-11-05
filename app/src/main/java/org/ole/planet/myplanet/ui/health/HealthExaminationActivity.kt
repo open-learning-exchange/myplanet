@@ -121,7 +121,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         if (examination != null) {
             binding.etTemperature.setText("%.1f".format(Locale.ROOT, examination?.temperature))
             binding.etPulseRate.setText(getString(R.string.number_placeholder, examination?.pulse))
-            binding.etBloodpressure.setText(getString(R.string.message_placeholder, examination?.bp))
+            binding.etBloodpressure.setText(examination?.bp?.takeUnless { it == "null" }.orEmpty())
             binding.etHeight.setText("%.1f".format(Locale.ROOT, examination?.height))
             binding.etWeight.setText("%.1f".format(Locale.ROOT, examination?.weight))
             binding.etVision.setText(examination?.vision)
@@ -147,7 +147,10 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     private fun validateFields() {
         allowSubmission = true
         binding.etBloodpressure.doOnTextChanged { _, _, _, _ ->
-            if (!"${binding.etBloodpressure.text}".contains("/")) {
+            if ("${binding.etBloodpressure.text}".isBlank()) {
+                binding.etBloodpressure.error = null
+                allowSubmission = true
+            } else if (!"${binding.etBloodpressure.text}".contains("/")) {
                 binding.etBloodpressure.error = getString(R.string.blood_pressure_should_be_numeric_systolic_diastolic)
                 allowSubmission = false
             } else {
