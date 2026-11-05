@@ -47,6 +47,19 @@ class BaseRecyclerFragmentTest {
     }
 
     @Test
+    fun showNoData_withFilteredSources_setsNoResultsForFilterMessage() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val textView = TextView(context)
+        val expected = context.getString(R.string.no_results_for_filter)
+
+        BaseRecyclerFragment.showNoData(textView, 0, "courses_filtered")
+        assertEquals(expected, textView.text.toString())
+
+        BaseRecyclerFragment.showNoData(textView, 0, "resources_filtered")
+        assertEquals(expected, textView.text.toString())
+    }
+
+    @Test
     fun showNoData_withUnknownSource_setsDefaultMessage() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val textView = TextView(context)
