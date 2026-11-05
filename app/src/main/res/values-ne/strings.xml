@@ -756,6 +756,7 @@
     <string name="completed_colon">\n सम्पन्न भएको: %s</string>
     <string name="assigned_to_colon">कुनैले सौंपाइएको: %s</string>
     <string name="add_task">काम थप्नुहोस्</string>
+    <string name="edit_task">काम सम्पादन गर्नुहोस्</string>
     <string name="task_title_is_required">कामको शीर्षक आवश्यक छ</string>
     <string name="deadline_is_required">अन्तिम मिति आवश्यक छ</string>
     <string name="updated">अपडेट गरियो</string>
