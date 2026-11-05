@@ -509,7 +509,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                     guestDialog(requireContext())
                 } else {
                     hasAdded = true
-                    addToMyList {
+                    addToMyList { succeeded ->
+                        if (!succeeded) return@addToMyList
                         val fragment = ResourcesFragment().apply {
                             arguments = Bundle().apply {
                                 putBoolean("isMyCourseLib", true)
@@ -828,12 +829,13 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
-    override fun addToMyList(onComplete: (() -> Unit)?) {
+    override fun addToMyList(onComplete: ((succeeded: Boolean) -> Unit)?) {
         val userId = userModel?.id
         val itemsToAdd = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToAdd.isNotEmpty()) {
             viewLifecycleOwner.lifecycleScope.launch {
+                var succeeded = false
                 try {
                     viewModel.addResourcesToUserLibrary(itemsToAdd, userId)
                         .onSuccess {
@@ -843,17 +845,18 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                             selectedItems?.clear()
                             changeButtonStatus()
                             hideButton()
+                            succeeded = true
                         }
                         .onFailure {
                             _binding ?: return@onFailure
                             Utilities.toast(activity, getString(R.string.error, it.message))
                         }
                 } finally {
-                    onComplete?.invoke()
+                    onComplete?.invoke(succeeded)
                 }
             }
         } else {
-            onComplete?.invoke()
+            onComplete?.invoke(false)
         }
     }
 
