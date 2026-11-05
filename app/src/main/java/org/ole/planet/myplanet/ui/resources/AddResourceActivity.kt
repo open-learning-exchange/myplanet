@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.DuplicateResourceTitleException
 import org.ole.planet.myplanet.repository.LocalResourceRequest
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
@@ -218,7 +219,11 @@ class AddResourceActivity : AppCompatActivity() {
                 setResult(RESULT_OK)
                 finish()
             } else {
-                binding.tlTitle.error = getString(R.string.resource_title_already_exists)
+                if (result.exceptionOrNull() is DuplicateResourceTitleException) {
+                    binding.tlTitle.error = getString(R.string.resource_title_already_exists)
+                } else {
+                    toast(this@AddResourceActivity, getString(R.string.failed_to_add_please_retry))
+                }
                 binding.btnSubmit.isEnabled = true
             }
         }

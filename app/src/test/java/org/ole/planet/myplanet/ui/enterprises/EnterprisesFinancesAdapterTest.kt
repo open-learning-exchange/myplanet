@@ -52,8 +52,8 @@ class EnterprisesFinancesAdapterTest {
             date = System.currentTimeMillis(),
             description = "Test transaction",
             type = "debit",
-            amount = 100,
-            balance = 500,
+            amount = 100.0,
+            balance = 500.0,
             imageName = "missing.jpg"
         )
 
@@ -78,8 +78,8 @@ class EnterprisesFinancesAdapterTest {
             date = System.currentTimeMillis(),
             description = "Test transaction",
             type = "debit",
-            amount = 100,
-            balance = 500,
+            amount = 100.0,
+            balance = 500.0,
             imageName = "receipt.jpg"
         )
 
@@ -117,8 +117,8 @@ class EnterprisesFinancesAdapterTest {
             date = System.currentTimeMillis(),
             description = "Test transaction",
             type = "debit",
-            amount = 100,
-            balance = 500,
+            amount = 100.0,
+            balance = 500.0,
             imageName = "receipt.jpg"
         )
 

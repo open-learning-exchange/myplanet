@@ -160,24 +160,25 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     private fun renderMyLibrary(dbMylibrary: List<MyLibrary>) {
         userLibrary = dbMylibrary
         val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayout)
-        flexboxLayout?.removeAllViews()
         flexboxLayout?.flexDirection = FlexDirection.ROW
         val countView = view?.findViewById<TextView>(R.id.count_library)
         if (dbMylibrary.isEmpty()) {
             countView?.visibility = View.GONE
-            flexboxLayout?.let {
-                renderPlaceholder(it, getString(R.string.no_resources_added_yet)) {
-                    if (model?.id?.startsWith("guest") == true) {
-                        DialogUtils.guestDialog(requireContext())
-                    } else {
-                        homeItemClickListener?.openCallFragment(ResourcesFragment())
-                    }
-                }
-            }
-            return
         } else {
             countView?.visibility = View.VISIBLE
             countView?.text = getString(R.string.number_placeholder, dbMylibrary.size)
+        }
+        if (flexboxLayout == null || flexboxLayout.isRenderedWith(dbMylibrary.map { it.id to it.title })) return
+        flexboxLayout.removeAllViews()
+        if (dbMylibrary.isEmpty()) {
+            renderPlaceholder(flexboxLayout, getString(R.string.no_resources_added_yet)) {
+                if (model?.id?.startsWith("guest") == true) {
+                    DialogUtils.guestDialog(requireContext())
+                } else {
+                    homeItemClickListener?.openCallFragment(ResourcesFragment())
+                }
+            }
+            return
         }
         for (items in dbMylibrary) {
             val itemLibraryHomeBinding =
@@ -187,21 +188,25 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
             itemLibraryHomeBinding.title.text = items.title
             itemLibraryHomeBinding.detail.setOnClickListener {
                 if (homeItemClickListener != null) {
-                    homeItemClickListener?.openLibraryDetailFragment(items)
+                    homeItemClickListener?.openLibraryDetailFragment(currentLibrary(items))
                 }
             }
 
             myLibraryItemClickAction(itemLibraryHomeBinding.title, items)
-            flexboxLayout?.addView(v, createChipLayoutParams())
+            flexboxLayout.addView(v, createChipLayoutParams())
         }
     }
 
+    private fun currentLibrary(item: MyLibrary): MyLibrary =
+        userLibrary.firstOrNull { it.id == item.id } ?: item
+
     private fun renderMyCourses(courses: List<MyCourse>) {
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutCourse) ?: return
-        flexboxLayout.removeAllViews()
         val filteredCourses = courses.filter { !it.courseTitle.isNullOrBlank() }
         userCourses = filteredCourses
         setCountText(filteredCourses.size, MyCourse::class.java, requireView())
+        if (flexboxLayout.isRenderedWith(filteredCourses.map { it.courseId to it.courseTitle })) return
+        flexboxLayout.removeAllViews()
         if (filteredCourses.isEmpty()) {
             renderPlaceholder(flexboxLayout, getString(R.string.no_courses_joined_yet)) {
                 if (model?.id?.startsWith("guest") == true) {
@@ -221,26 +226,29 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     private suspend fun renderMyTeams(teams: List<MyTeam>) {
         userTeams = teams
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutTeams) ?: return
-        flexboxLayout.removeAllViews()
         setCountText(teams.size, MyTeam::class.java, requireView())
-        if (teams.isEmpty()) {
-            renderPlaceholder(flexboxLayout, getString(R.string.no_teams_joined_yet)) {
-                homeItemClickListener?.openCallFragment(TeamFragment())
+        if (!flexboxLayout.isRenderedWith(teams.map { Triple(it._id, it.name, it.teamType) })) {
+            flexboxLayout.removeAllViews()
+            if (teams.isEmpty()) {
+                renderPlaceholder(flexboxLayout, getString(R.string.no_teams_joined_yet)) {
+                    homeItemClickListener?.openCallFragment(TeamFragment())
+                }
+                return
             }
-            return
-        }
 
-        for (ob in teams) {
-            val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
-            val name = v.findViewById<TextView>(R.id.tv_name)
-            if (ob.teamType == "sync") {
-                name.setTypeface(null, Typeface.BOLD)
+            for (ob in teams) {
+                val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
+                val name = v.findViewById<TextView>(R.id.tv_name)
+                if (ob.teamType == "sync") {
+                    name.setTypeface(null, Typeface.BOLD)
+                }
+                handleClick(ob._id, ob.name, TeamDetailFragment(), name)
+                name.text = ob.name
+                v.tag = ob._id
+                flexboxLayout.addView(v, createChipLayoutParams())
             }
-            handleClick(ob._id, ob.name, TeamDetailFragment(), name)
-            name.text = ob.name
-            v.tag = ob._id
-            flexboxLayout.addView(v, createChipLayoutParams())
         }
+        if (teams.isEmpty()) return
 
         val userId = userRepository.getUserModel()?.id
         val teamIds = teams.map { it._id }
@@ -309,7 +317,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     private fun myLibraryItemClickAction(textView: TextView, items: MyLibrary?) {
         textView.setOnClickListener {
             items?.let {
-                openResource(it)
+                openResource(currentLibrary(it))
             }
         }
     }
@@ -375,4 +383,11 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
     fun onSyncFailed(msg: String?) {
         di?.dismiss()
     }
+}
+
+internal fun FlexboxLayout.isRenderedWith(keys: List<Any?>): Boolean {
+    val rendered = keys.size to keys.toHashSet()
+    if (tag == rendered) return true
+    tag = rendered
+    return false
 }
