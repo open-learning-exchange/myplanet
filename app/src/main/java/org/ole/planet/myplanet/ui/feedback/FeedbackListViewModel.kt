@@ -19,8 +19,6 @@ class FeedbackListViewModel @Inject constructor(
     private val feedbackRepository: FeedbackRepository,
     private val userRepository: UserReadRepository
 ) : ViewModel() {
-
-    // null until the first load, so the UI can tell "loading" from "empty"
     private val _feedbackList = MutableStateFlow<List<Feedback>?>(null)
     val feedbackList: StateFlow<List<Feedback>?> = _feedbackList.asStateFlow()
 
