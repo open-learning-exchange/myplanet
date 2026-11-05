@@ -256,6 +256,14 @@
                         android:text="@string/female"
                         android:textColor="@color/daynight_textColor"
                         android:buttonTint="@color/daynight_textColor" />
+                    <RadioButton
+                        android:id="@+id/other"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@string/other"
+                        android:text="@string/other"
+                        android:textColor="@color/daynight_textColor"
+                        android:buttonTint="@color/daynight_textColor" />
                 </RadioGroup>
             </LinearLayout>
 
