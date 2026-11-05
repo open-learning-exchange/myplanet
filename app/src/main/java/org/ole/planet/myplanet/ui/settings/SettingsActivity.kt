@@ -319,16 +319,16 @@ class SettingsActivity : AppCompatActivity() {
             val autoForceWeeklySync = findPreference<SwitchPreference>("force_weekly_sync") ?: return
             val autoForceMonthlySync = findPreference<SwitchPreference>("force_monthly_sync") ?: return
             val lastSyncDate = findPreference<Preference>("lastSyncDate")
-            autoSync.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
-                if (autoSync.isChecked) {
+            autoSync.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, newValue: Any? ->
+                if (newValue == true) {
                     if (autoForceWeeklySync.isChecked) {
                         autoForceMonthlySync.isChecked = false
                     } else autoForceWeeklySync.isChecked = !autoForceMonthlySync.isChecked
                 }
                 true
             }
-            autoForceSync(autoSync, autoForceWeeklySync, autoForceMonthlySync)
-            autoForceSync(autoSync, autoForceMonthlySync, autoForceWeeklySync)
+            autoForceSync(autoForceWeeklySync, autoForceMonthlySync)
+            autoForceSync(autoForceMonthlySync, autoForceWeeklySync)
             val lastSynced = sharedPrefManager.getLastSync()
             if (lastSynced == 0L) {
                 lastSyncDate?.setTitle(R.string.last_synced_never)
@@ -423,9 +423,9 @@ class SettingsActivity : AppCompatActivity() {
 
     companion object {
         var openDashboard = true
-        private fun autoForceSync(autoSync: SwitchPreference, autoForceA: SwitchPreference, autoForceB: SwitchPreference) {
-            autoForceA.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
-                autoForceB.isChecked = !autoSync.isChecked
+        private fun autoForceSync(autoForceA: SwitchPreference, autoForceB: SwitchPreference) {
+            autoForceA.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, newValue: Any? ->
+                autoForceB.isChecked = newValue != true
                 true
             }
         }
