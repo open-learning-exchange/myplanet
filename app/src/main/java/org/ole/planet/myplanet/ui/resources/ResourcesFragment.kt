@@ -214,7 +214,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             adapterLibrary.setLibraryList(filteredList)
 
             checkList(filteredList.size)
-            showNoData(tvMessage, filteredList.size, "resources")
+            showNoData(tvMessage, filteredList.size, emptySource)
             changeButtonStatus()
         } else {
             viewModel.resetFilter()
@@ -295,7 +295,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
 
         if (::adapterLibrary.isInitialized) {
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+            showNoData(tvMessage, adapterLibrary.itemCount, emptySource)
             changeButtonStatus()
             checkList()
         }
@@ -336,7 +336,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             putExtra("resource_local_url", model.library.resourceLocalAddress)
             putExtra("is_edit_mode", true)
         }
-        startActivity(intent)
+        addResourceLauncher.launch(intent)
     }
 
     private fun setupEventListeners() {
@@ -404,7 +404,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
 
         checkList(filteredList.size)
-        showNoData(tvMessage, filteredList.size, "resources")
+        showNoData(tvMessage, filteredList.size, emptySource)
         lastFilteredCount = filteredList.size
         return lastFilteredCount
     }
@@ -728,6 +728,13 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         _binding = null
         super.onDestroyView()
     }
+
+    private val emptySource: String
+        get() = if (filterApplied(_binding?.layoutSearch?.etSearch?.text?.toString()?.trim().orEmpty()) || selectedDownloadFilterIndex != 0) {
+            "resources_filtered"
+        } else {
+            "resources"
+        }
 
     private fun filterApplied(searchText: String): Boolean {
         return !(subjects.isEmpty() && languages.isEmpty()

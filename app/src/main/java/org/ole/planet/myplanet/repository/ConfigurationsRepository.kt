@@ -32,6 +32,7 @@ interface ConfigurationsRepository {
     suspend fun syncCommunityLeaders()
     fun clearPreferences()
     suspend fun ensureServerUrlUpdated()
+    suspend fun clearAlternativeUrlIfPrimaryReachable()
     suspend fun clearFirstRunStorageAndSetFlag(hasWritePermission: Boolean)
     suspend fun getQueuedDownloads(): List<String>
 

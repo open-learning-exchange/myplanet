@@ -266,6 +266,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         private const val TAG = "BaseRecyclerFragment"
         private val noDataMessages = mapOf(
             "courses" to R.string.no_courses,
+            "courses_filtered" to R.string.no_results_for_filter,
             "resources" to R.string.no_resources,
             "resources_filtered" to R.string.no_results_for_filter,
             "finances" to R.string.no_finance_record,
