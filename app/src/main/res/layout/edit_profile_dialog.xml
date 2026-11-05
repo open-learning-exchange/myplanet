@@ -350,8 +350,17 @@
                                 android:id="@+id/rbFemale"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginEnd="@dimen/padding_large"
                                 android:buttonTint="@color/colorPrimary"
                                 android:text="@string/female"
+                                android:textColor="@color/daynight_textColor"
+                                android:textSize="@dimen/profile_detail_text_size" />
+                            <RadioButton
+                                android:id="@+id/rbOther"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:buttonTint="@color/colorPrimary"
+                                android:text="@string/other"
                                 android:textColor="@color/daynight_textColor"
                                 android:textSize="@dimen/profile_detail_text_size" />
                         </RadioGroup>

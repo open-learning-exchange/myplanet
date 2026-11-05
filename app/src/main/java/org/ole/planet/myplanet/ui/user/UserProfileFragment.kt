@@ -363,9 +363,11 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
     }
 
     private fun setupGender(binding: EditProfileDialogBinding) {
-        when (model?.gender?.lowercase(Locale.US)) {
+        selectedGender = model?.gender?.takeIf { it.isNotBlank() }
+        when (selectedGender?.lowercase(Locale.US)) {
             "male" -> binding.rbMale.isChecked = true
             "female" -> binding.rbFemale.isChecked = true
+            "other" -> binding.rbOther.isChecked = true
         }
     }
 
@@ -412,6 +414,7 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
             selectedGender = when {
                 binding.rbMale.isChecked -> "male"
                 binding.rbFemale.isChecked -> "female"
+                binding.rbOther.isChecked -> "other"
                 else -> selectedGender
             }
 
@@ -458,7 +461,7 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
                 binding.dateOfBirth.error = getString(R.string.compulsory_date_of_birth)
                 false
             }
-            binding.rdGender.checkedRadioButtonId == -1 -> {
+            binding.rdGender.checkedRadioButtonId == -1 && selectedGender == null -> {
                 Snackbar.make(binding.root, getString(R.string.gender_not_picked), Snackbar.LENGTH_SHORT).show()
                 false
             }
