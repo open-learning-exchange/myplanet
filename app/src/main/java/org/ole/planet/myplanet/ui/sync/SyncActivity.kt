@@ -549,11 +549,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
                     showSnack(activityContext.findViewById(android.R.id.content), getString(R.string.sync_completed))
 
-                    if (prefData.isAlternativeUrl()) {
-                        prefData.setAlternativeUrl("")
-                        prefData.setProcessedAlternativeUrl("")
-                        prefData.setIsAlternativeUrl(false)
-                    }
+                    configurationsRepository.clearAlternativeUrlIfPrimaryReachable()
 
                     resourceDownloadCoordinator.runPostSyncDownloads()
 
@@ -637,6 +633,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         prefData.setLoggedIn(true)
         openDashboard()
         loginNetworkJob?.cancel()
+
+        val prefData = prefData
+        val syncRepository = syncRepository
+        val transactionSyncManager = transactionSyncManager
+        val timeProvider = timeProvider
         loginNetworkJob = isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
                 val serverUrl = prefData.getServerUrl()
@@ -795,8 +796,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 if (isSync) {
                     isServerReachable(processedUrl, "sync")
                 } else if (forceSync) {
-                    isServerReachable(processedUrl, "upload")
-                    startUpload("")
+                    if (isServerReachable(processedUrl, "upload")) {
+                        startUpload("")
+                    }
                 }
             }
         } catch (e: Exception) {
