@@ -151,6 +151,10 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         return if (::imageList.isInitialized) imageList else null
     }
 
+    override fun restoreImages(snapshot: List<String>) {
+        if (::imageList.isInitialized) imageList.retainAll(snapshot.toSet())
+    }
+
     private fun addImagePath(path: String?, resultCode: Int) {
         if (path.isNullOrEmpty()) return
 
