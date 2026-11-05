@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.Transaction
+import org.ole.planet.myplanet.utils.AmountUtils
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileExistenceCache
 import org.ole.planet.myplanet.utils.ImageViewerUtils
@@ -52,13 +53,13 @@ class EnterprisesFinancesAdapter(
         binding.date.text = item.date?.let { formatDate(it, "MMM dd, yyyy") } ?: ""
         binding.note.text = item.description
         if (item.type.equals("debit", ignoreCase = true)) {
-            binding.debit.text = context.getString(R.string.number_placeholder, item.amount)
+            binding.debit.text = AmountUtils.format(item.amount)
             binding.credit.text = context.getString(R.string.message_placeholder, " -")
         } else {
-            binding.credit.text = context.getString(R.string.number_placeholder, item.amount)
+            binding.credit.text = AmountUtils.format(item.amount)
             binding.debit.text = context.getString(R.string.message_placeholder, " -")
         }
-        binding.balance.text = item.balance.toString()
+        binding.balance.text = AmountUtils.format(item.balance)
         bindFinanceImage(binding, item)
         updateBackgroundColor(holder, position)
     }

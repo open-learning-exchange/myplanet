@@ -64,7 +64,7 @@ class EnterprisesFinancesViewModelTest {
         val teamId = "test_team_id"
         val type = "credit"
         val note = "test note"
-        val amount = 100
+        val amount = 100.0
         val date = 123456789L
         val parentCode = "parent"
         val planetCode = "planet"
@@ -113,7 +113,7 @@ class EnterprisesFinancesViewModelTest {
         val teamId = "test_team_id"
         val type = "credit"
         val note = "test note"
-        val amount = 100
+        val amount = 100.0
         val date = 123456789L
         val mockUri = mockk<Uri>()
         val error = SecurityException("Permission denied")
@@ -153,7 +153,7 @@ class EnterprisesFinancesViewModelTest {
         val teamId = "test_team_id"
         val type = "credit"
         val note = "test note"
-        val amount = 100
+        val amount = 100.0
         val date = 123456789L
         val error = Exception("Test error")
 
@@ -196,7 +196,7 @@ class EnterprisesFinancesViewModelTest {
 
     @Test
     fun `getTeamTransactions updates transactions state`() = runTest {
-        val mockTransactions = listOf(Transaction("1", 0L, "desc", "type", 100, 100))
+        val mockTransactions = listOf(Transaction("1", 0L, "desc", "type", 100.0, 100.0))
         val teamId = "test_team_id"
         val sortAscending = true
         val startDate = 1000L
@@ -220,7 +220,7 @@ class EnterprisesFinancesViewModelTest {
 
     @Test
     fun `getTeamTransactions duplicate call while active does not re-query repository`() = runTest {
-        val mockTransactions = listOf(Transaction("1", 0L, "desc", "type", 100, 100))
+        val mockTransactions = listOf(Transaction("1", 0L, "desc", "type", 100.0, 100.0))
         val teamId = "test_team_id"
         val sortAscending = true
         val startDate = 1000L
@@ -251,7 +251,7 @@ class EnterprisesFinancesViewModelTest {
 
     @Test
     fun `getTeamTransactions call with different arguments re-queries repository`() = runTest {
-        val mockTransactions = listOf(Transaction("1", 0L, "desc", "type", 100, 100))
+        val mockTransactions = listOf(Transaction("1", 0L, "desc", "type", 100.0, 100.0))
         val teamId = "test_team_id"
 
         coEvery {
@@ -289,9 +289,9 @@ class EnterprisesFinancesViewModelTest {
     @Test
     fun `getTeamTransactions calculates total and updates financeSummary correctly`() = runTest {
         val mockTransactions = listOf(
-            Transaction("1", 0L, "credit entry", "credit", 500, 500),
-            Transaction("2", 0L, "debit entry 1", "debit", 200, 300),
-            Transaction("3", 0L, "debit entry 2", "debit", 100, 200)
+            Transaction("1", 0L, "credit entry", "credit", 500.0, 500.0),
+            Transaction("2", 0L, "debit entry 1", "debit", 200.0, 300.0),
+            Transaction("3", 0L, "debit entry 2", "debit", 100.0, 200.0)
         )
         val teamId = "test_team_id"
 
@@ -313,9 +313,9 @@ class EnterprisesFinancesViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         val summary = states.last()
-        assertEquals(300, summary.debit)
-        assertEquals(500, summary.credit)
-        assertEquals(200, summary.total)
+        assertEquals(300.0, summary.debit, 0.0)
+        assertEquals(500.0, summary.credit, 0.0)
+        assertEquals(200.0, summary.total, 0.0)
         assertEquals(false, summary.isCautionVisible)
         job.cancel()
     }
@@ -323,8 +323,8 @@ class EnterprisesFinancesViewModelTest {
     @Test
     fun `financeSummary exhibits caution when total is negative`() = runTest {
         val mockTransactions = listOf(
-            Transaction("1", 0L, "credit entry", "credit", 100, 100),
-            Transaction("2", 0L, "debit entry", "debit", 300, -200)
+            Transaction("1", 0L, "credit entry", "credit", 100.0, 100.0),
+            Transaction("2", 0L, "debit entry", "debit", 300.0, -200.0)
         )
         val teamId = "test_team_id"
 
@@ -346,9 +346,9 @@ class EnterprisesFinancesViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         val summary = states.last()
-        assertEquals(300, summary.debit)
-        assertEquals(100, summary.credit)
-        assertEquals(-200, summary.total)
+        assertEquals(300.0, summary.debit, 0.0)
+        assertEquals(100.0, summary.credit, 0.0)
+        assertEquals(-200.0, summary.total, 0.0)
         assertEquals(true, summary.isCautionVisible)
         job.cancel()
     }
