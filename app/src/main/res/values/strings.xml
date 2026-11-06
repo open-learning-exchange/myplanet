@@ -1254,6 +1254,8 @@
     <string name="team_surveys">Team surveys</string>
     <string name="enterprise_created">Enterprise created</string>
     <string name="image_already_added">This image has already been added</string>
+    <string name="voice_image_gif_too_large">GIFs larger than 2 MB can\'t be attached</string>
+    <string name="voice_image_unreadable">This image couldn\'t be read</string>
     <string name="debug_retry_queue">Retry Queue (Debug)</string>
     <string name="debug_retry_queue_summary">View and manage failed upload retries</string>
     <string name="retry_queue_status">Retry Queue Status</string>

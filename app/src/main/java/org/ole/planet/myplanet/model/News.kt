@@ -335,10 +335,11 @@ open class News {
             return viewInArray.toString()
         }
 
-        fun createImageListEntry(path: String): String {
+        fun createImageListEntry(path: String, resourceId: String = UUID.randomUUID().toString()): String {
             val jsonObject = JsonObject()
             jsonObject.addProperty("imageUrl", path)
             jsonObject.addProperty("fileName", FileUtils.getFileNameFromUrl(path))
+            jsonObject.addProperty("resourceId", resourceId)
             return GsonUtils.gson.toJson(jsonObject)
         }
 
