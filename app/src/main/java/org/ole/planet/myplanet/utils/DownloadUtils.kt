@@ -19,6 +19,7 @@ import java.util.regex.Pattern
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.DownloadService
+import org.ole.planet.myplanet.services.DownloadStopReceiver
 import org.ole.planet.myplanet.services.DownloadWorker
 
 object DownloadUtils {
@@ -80,6 +81,7 @@ object DownloadUtils {
             .setOngoing(true)
             .setSilent(true)
             .setOnlyAlertOnce(true)
+            .addAction(DownloadStopReceiver.stopAction(context))
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
     }
@@ -102,6 +104,7 @@ object DownloadUtils {
             .setOngoing(!forWorker)
             .setSilent(true)
             .setOnlyAlertOnce(true)
+            .addAction(DownloadStopReceiver.stopAction(context))
 
         if (fileProgress in 0..100) {
             builder.setProgress(100, fileProgress, false)

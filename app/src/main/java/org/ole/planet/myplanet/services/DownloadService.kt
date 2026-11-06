@@ -228,6 +228,7 @@ class DownloadService : Service() {
             .setOngoing(true)
             .setSilent(true)
             .setOnlyAlertOnce(true)
+            .addAction(DownloadStopReceiver.stopAction(this))
             .also { notificationBuilder = it }
 
         builder.setContentText("Starting downloads (0/${cachedRemainingCount + 1})")
