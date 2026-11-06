@@ -1312,6 +1312,9 @@
     <string name="storage_pdfs">Dukumentiyada PDF</string>
     <string name="storage_images">Sawirrada</string>
     <string name="storage_other">Faylasha Kale</string>
+    <string name="storage_partial_downloads">Soo dejimo qayb ah</string>
+    <string name="storage_clear_partial_downloads">Ma tirtirtaa soo dejimaha qayb ahaan?</string>
+    <string name="storage_clear_partial_downloads_message">Kuwani waa soo dejimo la joojiyay intaanay dhammaan. Tirtiriddoodu waxay bannaynaysaa meel, soo dejimahaasina mar kale bilowga ayay ka bilaabmi doonaan.</string>
     <string name="storage_empty">Ma jiro waxyaabo la soo dejiyay</string>
     <string name="storage_delete_confirm">Ma tirtiraysaa dhammaan soo-dejisyada %1$s?</string>
     <string name="storage_delete_selected_confirm">Ma tirtiraysaa %1$d shay(yada) la doortay?</string>

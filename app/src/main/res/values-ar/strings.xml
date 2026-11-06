@@ -1328,6 +1328,9 @@
     <string name="storage_pdfs">ملفات PDF</string>
     <string name="storage_images">الصور</string>
     <string name="storage_other">ملفات أخرى</string>
+    <string name="storage_partial_downloads">التنزيلات الجزئية</string>
+    <string name="storage_clear_partial_downloads">مسح التنزيلات الجزئية؟</string>
+    <string name="storage_clear_partial_downloads_message">هذه تنزيلات توقفت قبل اكتمالها. مسحها يحرر المساحة، وستبدأ هذه التنزيلات من جديد في المرة القادمة.</string>
     <string name="storage_empty">لم يُعثر على أي محتوى منزَّل</string>
     <string name="storage_delete_confirm">حذف جميع تنزيلات %1$s؟</string>
     <string name="storage_delete_selected_confirm">حذف %1$d عنصر(عناصر) محدد؟</string>

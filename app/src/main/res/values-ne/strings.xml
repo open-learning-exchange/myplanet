@@ -1312,6 +1312,9 @@
     <string name="storage_pdfs">PDF हरू</string>
     <string name="storage_images">छविहरू</string>
     <string name="storage_other">अन्य फाइलहरू</string>
+    <string name="storage_partial_downloads">आंशिक डाउनलोडहरू</string>
+    <string name="storage_clear_partial_downloads">आंशिक डाउनलोडहरू हटाउने?</string>
+    <string name="storage_clear_partial_downloads_message">यी पूरा हुनुअघि रोकिएका डाउनलोडहरू हुन्। हटाउँदा ठाउँ खाली हुन्छ, र ती डाउनलोडहरू अर्को पटक सुरुदेखि सुरु हुनेछन्।</string>
     <string name="storage_empty">कुनै डाउनलोड सामग्री फेला परेन</string>
     <string name="storage_delete_confirm">सबै %1$s डाउनलोडहरू मेटाउने?</string>
     <string name="storage_delete_selected_confirm">%1$d छानिएको वस्तु(हरू) मेटाउने?</string>

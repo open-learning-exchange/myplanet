@@ -1315,6 +1315,9 @@
     <string name="storage_pdfs">PDFs</string>
     <string name="storage_images">Imágenes</string>
     <string name="storage_other">Otros archivos</string>
+    <string name="storage_partial_downloads">Descargas parciales</string>
+    <string name="storage_clear_partial_downloads">¿Borrar las descargas parciales?</string>
+    <string name="storage_clear_partial_downloads_message">Son descargas que se detuvieron antes de terminar. Borrarlas libera espacio, y esas descargas empezarán de nuevo la próxima vez.</string>
     <string name="storage_empty">No se encontró contenido descargado</string>
     <string name="storage_delete_confirm">¿Eliminar todas las descargas de %1$s?</string>
     <string name="storage_delete_selected_confirm">¿Eliminar %1$d elemento(s) seleccionado(s)?</string>

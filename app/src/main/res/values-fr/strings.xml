@@ -1316,6 +1316,9 @@
     <string name="storage_pdfs">PDFs</string>
     <string name="storage_images">Images</string>
     <string name="storage_other">Autres fichiers</string>
+    <string name="storage_partial_downloads">Téléchargements partiels</string>
+    <string name="storage_clear_partial_downloads">Effacer les téléchargements partiels ?</string>
+    <string name="storage_clear_partial_downloads_message">Ce sont des téléchargements arrêtés avant la fin. Les effacer libère de l\'espace, et ces téléchargements recommenceront depuis le début la prochaine fois.</string>
     <string name="storage_empty">Aucun contenu téléchargé trouvé</string>
     <string name="storage_delete_confirm">Supprimer tous les téléchargements de %1$s ?</string>
     <string name="storage_delete_selected_confirm">Supprimer %1$d élément(s) sélectionné(s) ?</string>
