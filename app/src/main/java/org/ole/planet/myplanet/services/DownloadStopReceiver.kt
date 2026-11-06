@@ -13,20 +13,13 @@ import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.utils.DownloadUtils
 
-/**
- * Handles the Stop action on the ongoing download notification, so a download can be stopped from
- * anywhere, not only from the progress dialog of the screen that started it.
- */
 class DownloadStopReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != ACTION_STOP_DOWNLOADS) return
         context.stopService(Intent(context, DownloadService::class.java))
-        // Downloads fall back to DownloadWorker when the service cannot start; stop those too.
         DownloadUtils.cancelDownloadWork(context)
 
-        // A screen may still be showing the progress dialog; a failed update with no message is what
-        // makes it close quietly instead of waiting on progress that will never come.
         val pendingResult: PendingResult? = goAsync()
         val scope = EntryPointAccessors
             .fromApplication(context.applicationContext, CoreDependenciesEntryPoint::class.java)

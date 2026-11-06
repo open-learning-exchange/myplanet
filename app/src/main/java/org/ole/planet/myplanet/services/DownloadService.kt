@@ -7,7 +7,6 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.os.SystemClock
@@ -52,6 +51,9 @@ import org.ole.planet.myplanet.utils.FileUtils.availableExternalMemorySize
 import org.ole.planet.myplanet.utils.FileUtils.externalMemoryAvailable
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utils.UrlUtils
+import androidx.core.net.toUri
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @AndroidEntryPoint
 class DownloadService : Service() {
@@ -98,14 +100,11 @@ class DownloadService : Service() {
     @Volatile
     private var cachedRemainingCount = 0
     private var areNotificationsEnabled = true
-
     private var currentJob: Job? = null
 
-    /** Set once the service is being torn down (the user pressed Stop); silences every later notification. */
     @Volatile
     private var stopped = false
 
-    /** Body currently being streamed, closed on stop so a blocked read gives up instead of finishing the file. */
     @Volatile
     private var activeBody: ResponseBody? = null
     private lateinit var broadcastService: BroadcastService
@@ -275,8 +274,6 @@ class DownloadService : Service() {
             var primaryResult = downloadRepository.downloadFileResponse(url, authHeader, resumeOffset, ifRange)
 
             if (primaryResult is DownloadResult.Error && primaryResult.code == 416 && resumeOffset > 0) {
-                // The partial file no longer lines up with what the server holds. Throwing it away and
-                // failing would make the user tap Download twice; start over from the first byte instead.
                 Log.w(TAG, "initDownload: resume offset ${resumeOffset}B rejected (416) for $fileName, restarting from scratch")
                 deleteTempFile(url)
                 deleteValidatorFile(url)
@@ -331,7 +328,7 @@ class DownloadService : Service() {
         }
 
         if (resolvedAltBase != null && resolvedPrimaryBase != null) {
-            val parsed = Uri.parse(url)
+            val parsed = url.toUri()
             val path = parsed.path.orEmpty()
             val query = if (parsed.query != null) "?${parsed.query}" else ""
             val altUrl = resolvedAltBase + path + query
@@ -388,8 +385,6 @@ class DownloadService : Service() {
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            // A stop closes the body under the reader, which surfaces as an IOException: that is
-            // the user's choice, not a failure, so let the cancellation through instead of reporting it.
             currentCoroutineContext().ensureActive()
             Log.e(TAG, "tryDownload [$source]: write failed for $fileName", e)
             downloadFailed(e.localizedMessage ?: "Write failed", fromSync)
@@ -478,7 +473,6 @@ class DownloadService : Service() {
         val remoteRemaining = body.contentLength()
         val fileSize = if (remoteRemaining > 0) resumeOffset + remoteRemaining else -1L
         var total = resumeOffset
-        // Lets the resource list show how far a stopped download got ("Paused at 40%").
         val expectedSizeFile = File(tempFile.parentFile, "${tempFile.name}$EXPECTED_SIZE_SUFFIX")
         if (fileSize > 0) expectedSizeFile.writeText(fileSize.toString()) else expectedSizeFile.delete()
         Log.d(
@@ -538,7 +532,9 @@ class DownloadService : Service() {
         val context = currentCoroutineContext()
         while (true) {
             context.ensureActive()
-            val readCount = bis.read(data)
+            val readCount = withContext(Dispatchers.IO) {
+                bis.read(data)
+            }
             if (readCount == -1) break
 
             if (readCount > 0) {
@@ -557,7 +553,9 @@ class DownloadService : Service() {
                     sendNotification(download)
                     lastNotificationUpdateTime = now
                 }
-                output.write(data, 0, readCount)
+                withContext(Dispatchers.IO) {
+                    output.write(data, 0, readCount)
+                }
             }
         }
         return total
@@ -664,7 +662,6 @@ class DownloadService : Service() {
         stopped = true
         currentJob?.cancel()
         activeBody?.let { body ->
-            // Closing can drain the socket briefly, which is network I/O, so keep it off the main thread.
             appScope.launch { runCatching { body.close() } }
         }
         try {
@@ -673,7 +670,7 @@ class DownloadService : Service() {
             Log.e(TAG, "Error persisting processed URLs", e)
         }
         try {
-            stopForeground(Service.STOP_FOREGROUND_REMOVE)
+            stopForeground(STOP_FOREGROUND_REMOVE)
         } catch (e: Exception) {
             Log.e(TAG, "Error stopping foreground service", e)
         }
@@ -692,12 +689,9 @@ class DownloadService : Service() {
         const val ONGOING_NOTIFICATION_ID = 1
         const val COMPLETION_NOTIFICATION_ID = 2
         private const val NOTIFICATION_UPDATE_INTERVAL_MS = 500L
-        /** URLs queued by sync rather than by the user; a user's Stop leaves these in the queue. */
         const val SYNC_DOWNLOADS_KEY = "sync_downloads_queue"
         const val PENDING_DOWNLOADS_KEY = "pending_downloads_queue"
         const val PRIORITY_DOWNLOADS_KEY = "priority_downloads_queue"
-
-        /** Suffix of the file beside `<name>.tmp` that holds the full size of the download, in bytes. */
         const val EXPECTED_SIZE_SUFFIX = ".size"
 
         @VisibleForTesting

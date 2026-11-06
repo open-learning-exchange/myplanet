@@ -85,8 +85,7 @@ open class StorageBreakdownViewModel @Inject constructor(
             }
         }
     }
-
-    /** Clears stopped downloads, leaving any that may be in progress right now. */
+    
     fun clearPartialDownloads() {
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch(dispatcherProvider.io) {

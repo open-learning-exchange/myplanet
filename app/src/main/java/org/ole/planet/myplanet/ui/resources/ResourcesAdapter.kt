@@ -326,7 +326,6 @@ class ResourcesAdapter(
         })
     }
 
-    /** A stopped download keeps its partial file; say so on the card, so the user knows a tap resumes it. */
     private suspend fun bindPartialDownload(model: ResourceListModel, tvMeta: TextView, ivDownloaded: ImageView) {
         val id = model.item.id ?: return
         val isOffline = model.item.isOffline || locallyOfflineIds.contains(id) || model.isLocallyOffline

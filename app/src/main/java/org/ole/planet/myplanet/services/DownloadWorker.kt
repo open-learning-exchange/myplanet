@@ -101,8 +101,6 @@ class DownloadWorker @AssistedInject constructor(
             removeCompletedUrls(urlsKey, urls.filterIndexed { i, _ -> results[i] }.toSet())
             resultFor(succeeded = results.count { it }, attempted = results.size, runAttemptCount = runAttemptCount)
         } catch (e: CancellationException) {
-            // Stopped by the user: WorkManager drops a foreground notification itself, but not the plain
-            // one shown when the worker could not be promoted.
             notificationManager.cancel(WORKER_NOTIFICATION_ID)
             throw e
         } catch (e: Exception) {
@@ -133,17 +131,14 @@ class DownloadWorker @AssistedInject constructor(
             val outputFile = FileUtils.getSDPathFromUrl(context, url)
             outputFile.parentFile?.mkdirs()
             val partial = PartialFiles(outputFile)
-            // Earlier versions wrote to a .part file and deleted it on failure; drop any leftover.
             File(outputFile.parentFile, "${outputFile.name}.part").delete()
 
-            var resumeOffset = partial.resumeOffset()
+            val resumeOffset = partial.resumeOffset()
             val ifRange = if (resumeOffset > 0) partial.validator() else null
             var response = downloadRepository.downloadFileResponse(url, authHeader, resumeOffset, ifRange)
             if (response is DownloadResult.Error && response.code == 416 && resumeOffset > 0) {
-                // The partial file no longer lines up with the server's copy: start over from the first byte.
                 Log.w(TAG, "Resume offset ${resumeOffset}B rejected (416) for ${getFileNameFromUrl(url)}, restarting")
                 partial.discard()
-                resumeOffset = 0L
                 response = downloadRepository.downloadFileResponse(url, authHeader, 0L, null)
             }
             when (response) {
@@ -164,11 +159,6 @@ class DownloadWorker @AssistedInject constructor(
         }
     }
 
-    /**
-     * The files DownloadService uses for a download in progress, so a partial file left by either the
-     * service or this worker can be resumed by the other: `<name>.tmp`, its `.tmp.etag` validator for
-     * If-Range, and `.tmp.size` with the full size for the resource list's "Paused at N%".
-     */
     private class PartialFiles(val outputFile: File) {
         val tempFile = File(outputFile.parentFile, "${outputFile.name}.tmp")
         private val validatorFile = File(outputFile.parentFile, "${outputFile.name}.tmp.etag")
@@ -209,7 +199,6 @@ class DownloadWorker @AssistedInject constructor(
         val expectedSize = if (remaining > 0) startOffset + remaining else -1L
         partial.writeExpectedSize(expectedSize)
 
-        // On any failure (network drop, Stop) the partial file stays so the next attempt resumes from it.
         val totalBytes = writeBody(body, partial.tempFile, isPartial, startOffset, expectedSize, url, index, total)
         if (expectedSize > 0 && totalBytes != expectedSize) {
             throw IOException("Incomplete download: $totalBytes of $expectedSize bytes")
@@ -240,8 +229,6 @@ class DownloadWorker @AssistedInject constructor(
             body.source().use { source ->
                 val buffer = Buffer()
                 while (true) {
-                    // The copy never suspends on its own, so without this a cancelled worker keeps
-                    // streaming the whole file before it notices.
                     coroutineContext.ensureActive()
                     val read = source.read(buffer, 8_192)
                     if (read == -1L) break
@@ -317,8 +304,6 @@ class DownloadWorker @AssistedInject constructor(
 
     companion object {
         private const val TAG = "DownloadWorker"
-
-        /** Tag on every download work request, so Stop can cancel them all. */
         const val WORK_TAG = "download_work"
         internal const val MAX_RETRY_ATTEMPTS = 3
 

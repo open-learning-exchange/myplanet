@@ -183,7 +183,6 @@ object ResourcesCardBinder {
         return parts.joinToString(" · ")
     }
 
-    /** How far a stopped download of [finalFile] got: null when none is waiting to resume. */
     suspend fun partialDownloadPercent(finalFile: File, dispatcherProvider: DispatcherProvider): PartialDownload? =
         withContext(dispatcherProvider.io) {
             val tempFile = File(finalFile.parentFile, "${finalFile.name}.tmp")
@@ -194,7 +193,6 @@ object ResourcesCardBinder {
             PartialDownload(partialPercent(partialBytes, totalBytes))
         }
 
-    /** Whole percent of a partial download, capped at 99 because a partial file is never finished; null when the size is unknown. */
     fun partialPercent(partialBytes: Long, totalBytes: Long?): Int? {
         if (totalBytes == null || totalBytes <= 0L) return null
         return (partialBytes * 100 / totalBytes).toInt().coerceIn(0, 99)

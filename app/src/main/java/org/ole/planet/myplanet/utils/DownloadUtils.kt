@@ -173,10 +173,6 @@ object DownloadUtils {
         startDownloadServiceSafely(context, key, fromSync)
     }
 
-    /**
-     * Drops every queued download the user started, so pressing Stop does not bring them back the
-     * next time something starts the service. Downloads queued by sync are left for sync to finish.
-     */
     fun dropUserQueuedDownloads(context: Context) {
         val preferences = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
         val syncOwned = preferences.getStringSet(DownloadService.SYNC_DOWNLOADS_KEY, emptySet()) ?: emptySet()
@@ -223,7 +219,6 @@ object DownloadUtils {
         WorkManager.getInstance(context).enqueue(workRequest)
     }
 
-    /** Cancels downloads running through [DownloadWorker], the fallback used when the service cannot start. */
     fun cancelDownloadWork(context: Context) {
         WorkManager.getInstance(context).cancelAllWorkByTag(DownloadWorker.WORK_TAG)
     }
