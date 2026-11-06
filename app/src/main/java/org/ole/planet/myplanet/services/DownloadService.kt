@@ -33,6 +33,8 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.R
@@ -98,6 +100,14 @@ class DownloadService : Service() {
     private var areNotificationsEnabled = true
 
     private var currentJob: Job? = null
+
+    /** Set once the service is being torn down (the user pressed Stop); silences every later notification. */
+    @Volatile
+    private var stopped = false
+
+    /** Body currently being streamed, closed on stop so a blocked read gives up instead of finishing the file. */
+    @Volatile
+    private var activeBody: ResponseBody? = null
     private lateinit var broadcastService: BroadcastService
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -207,6 +217,7 @@ class DownloadService : Service() {
     }
 
     private fun updateNotificationForBatchDownload() {
+        if (stopped) return
         val builder = notificationBuilder ?: NotificationCompat.Builder(this, "DownloadChannel")
             .setContentTitle(getString(R.string.downloading_files))
             .setSmallIcon(R.drawable.ic_download)
@@ -360,7 +371,12 @@ class DownloadService : Service() {
         return try {
             downloadFile(result.body, url, isPartial, result.validator)
             true
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
+            // A stop closes the body under the reader, which surfaces as an IOException: that is
+            // the user's choice, not a failure, so let the cancellation through instead of reporting it.
+            currentCoroutineContext().ensureActive()
             Log.e(TAG, "tryDownload [$source]: write failed for $fileName", e)
             downloadFailed(e.localizedMessage ?: "Write failed", fromSync)
             false
@@ -368,6 +384,7 @@ class DownloadService : Service() {
     }
 
     private fun downloadFailed(message: String, fromSync: Boolean) {
+        if (stopped) return
         val remaining = cachedRemainingCount
         notificationBuilder?.apply {
             setContentText("Error: $message")
@@ -451,6 +468,7 @@ class DownloadService : Service() {
                 if (resumeOffset > 0) " resuming from ${resumeOffset}B" else ""
         )
 
+        activeBody = body
         try {
             BufferedInputStream(body.byteStream(), BUFFER_SIZE).use { bis ->
                 FileOutputStream(tempFile, isPartial).use { output ->
@@ -477,14 +495,19 @@ class DownloadService : Service() {
             }
             deleteValidatorFile(url)
             Log.d(TAG, "downloadFile: complete — $fileName written ${total}B to ${finalFile.absolutePath}")
+        } catch (e: CancellationException) {
+            Log.d(TAG, "downloadFile: stopped $fileName after ${total}B, keeping partial file for resume")
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "downloadFile: failed for $fileName after ${total}B, keeping partial file for resume", e)
             throw e
+        } finally {
+            activeBody = null
         }
         onDownloadComplete(url)
     }
 
-    private fun copyStreamWithProgress(
+    private suspend fun copyStreamWithProgress(
         bis: BufferedInputStream,
         output: FileOutputStream,
         download: Download,
@@ -492,7 +515,9 @@ class DownloadService : Service() {
         initialTotal: Long
     ): Long {
         var total = initialTotal
+        val context = currentCoroutineContext()
         while (true) {
+            context.ensureActive()
             val readCount = bis.read(data)
             if (readCount == -1) break
 
@@ -529,6 +554,7 @@ class DownloadService : Service() {
     }
 
     private fun sendNotification(download: Download) {
+        if (stopped) return
         val url = currentDownloadUrl
         if (url.isBlank()) return
 
@@ -593,6 +619,7 @@ class DownloadService : Service() {
         }
 
         sendIntent(download, fromSync)
+        if (stopped) return
         notificationBuilder?.apply {
             setProgress(sessionCompletedCount + remaining, sessionCompletedCount, false)
             setContentText("Downloaded $fileName")
@@ -614,6 +641,12 @@ class DownloadService : Service() {
     }
 
     override fun onDestroy() {
+        stopped = true
+        currentJob?.cancel()
+        activeBody?.let { body ->
+            // Closing can drain the socket briefly, which is network I/O, so keep it off the main thread.
+            appScope.launch { runCatching { body.close() } }
+        }
         try {
             persistProcessedUrls()
         } catch (e: Exception) {
@@ -624,7 +657,6 @@ class DownloadService : Service() {
         } catch (e: Exception) {
             Log.e(TAG, "Error stopping foreground service", e)
         }
-        currentJob?.cancel()
         notificationManager?.cancel(ONGOING_NOTIFICATION_ID)
         super.onDestroy()
     }

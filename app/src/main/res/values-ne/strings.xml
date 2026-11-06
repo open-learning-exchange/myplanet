@@ -103,6 +103,7 @@
     <string name="user">प्रयोगकर्ता</string>
     <string name="remove_selected">चयनित\nहटाउनुहोस्</string>
     <string name="stop_download">डाउनलोड रोक्नुहोस्</string>
+    <string name="download_stopped">डाउनलोड रोकियो</string>
     <string name="downloading_file">फाइल डाउनलोड गर्दै…</string>
     <string name="cancel">रद्द गर्नुहोस्</string>
     <string name="added_to">थपिएको</string>

@@ -9,6 +9,7 @@ import android.provider.Settings
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.Toast
 import androidx.annotation.StyleRes
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.snackbar.Snackbar
@@ -30,6 +31,7 @@ object DialogUtils {
         prgDialog.setNegativeButton(context.getString(R.string.stop_download), isVisible = true) {
             context.stopService(Intent(context, DownloadService::class.java))
             prgDialog.dismiss()
+            Utilities.toast(context, context.getString(R.string.download_stopped), Toast.LENGTH_SHORT)
         }
         return prgDialog
     }

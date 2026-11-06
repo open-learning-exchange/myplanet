@@ -103,6 +103,7 @@
     <string name="user">مستخدم</string>
     <string name="remove_selected">إزالة المحدد</string>
     <string name="stop_download">إيقاف التنزيل</string>
+    <string name="download_stopped">تم إيقاف التنزيل</string>
     <string name="downloading_file">جارٍ تنزيل الملف…</string>
     <string name="cancel">إلغاء</string>
     <string name="added_to">تمت الإضافة إلى</string>
