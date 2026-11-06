@@ -129,6 +129,7 @@ abstract class BaseResourceFragment : Fragment() {
                 } else {
                     pendingDownloadUrls.clear()
                     download?.message?.let { showError(prgDialog, it) } ?: prgDialog.dismiss()
+                    onDownloadFailed()
                 }
             }
         }
@@ -237,6 +238,8 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     protected open fun onSingleResourceDownloaded(url: String) {}
+
+    protected open fun onDownloadFailed() {}
 
     open fun onDownloadComplete() {
         prgDialog.dismiss()

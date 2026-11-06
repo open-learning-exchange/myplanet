@@ -38,6 +38,7 @@ data class CourseStepUiState(
     val markdownDescription: String = "",
     val user: UserEntity? = null,
     val isDownloadingResources: Boolean = false,
+    val downloadingUrls: List<String> = emptyList(),
     val isLoading: Boolean = false
 )
 
@@ -95,12 +96,27 @@ class CoursesStepsViewModel @Inject constructor(
                 isLoading = false
             )
 
-            if (notDownloaded.isNotEmpty()) {
+            val downloadUrls = notDownloaded.mapNotNull { it.resourceRemoteAddress }
+            if (downloadUrls.isNotEmpty()) {
                 val serverAvailable = configurationsRepository.checkServerAvailability()
                 if (serverAvailable) {
-                    _uiState.update { if (it.step?.id == data.step.id) it.copy(isDownloadingResources = true) else it }
+                    _uiState.update {
+                        if (it.step?.id == data.step.id) {
+                            it.copy(isDownloadingResources = true, downloadingUrls = downloadUrls)
+                        } else {
+                            it
+                        }
+                    }
                     viewModelScope.launch {
-                        resourcesRepository.downloadResourcesPriority(notDownloaded)
+                        if (!resourcesRepository.downloadResourcesPriority(notDownloaded)) {
+                            _uiState.update {
+                                if (it.step?.id == data.step.id) {
+                                    it.copy(isDownloadingResources = false, downloadingUrls = emptyList())
+                                } else {
+                                    it
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -148,7 +164,8 @@ class CoursesStepsViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     resources = updatedResources,
-                    isDownloadingResources = false
+                    isDownloadingResources = false,
+                    downloadingUrls = emptyList()
                 )
             }
         }
