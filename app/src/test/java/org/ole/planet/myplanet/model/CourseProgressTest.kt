@@ -48,4 +48,12 @@ class CourseProgressTest {
         assertEquals("uniqueIdentifier", jsonObject.get("androidId").asString)
         assertEquals("myplanet", jsonObject.get("app").asString)
     }
+
+    @Test
+    fun serializeProgress_sendsTheDocIdAndRevOnceUploaded() {
+        val jsonObject = CourseProgress.serializeProgress(CourseProgress().apply { _id = "doc1"; _rev = "1-abc"; passed = true })
+
+        assertEquals("doc1", jsonObject.get("_id").asString)
+        assertEquals("1-abc", jsonObject.get("_rev").asString)
+    }
 }

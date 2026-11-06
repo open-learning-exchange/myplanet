@@ -172,4 +172,26 @@ class SubmissionsRepositorySyncTest {
         assertEquals("graded", row.status)
         assertEquals("2-abc", row._rev)
     }
+
+    @Test
+    fun `pulling keeps each answer's grade`() = runBlocking {
+        val graded = pulledSubmission("server-5").apply {
+            add("answers", JsonArray().apply {
+                add(JsonObject().apply { addProperty("value", "A"); addProperty("questionId", "q1"); addProperty("grade", 1) })
+                add(JsonObject().apply { addProperty("value", "B"); addProperty("questionId", "q2"); addProperty("grade", 0) })
+            })
+        }
+
+        repository.insertSubmission(graded)
+
+        val grades = answerDao.getBySubmissionId("server-5").associate { it.questionId to it.grade }
+        assertEquals(mapOf("q1" to 1, "q2" to 0), grades)
+    }
+
+    @Test
+    fun `pulling leaves an answer with no grade ungraded`() = runBlocking {
+        repository.insertSubmission(pulledSubmission("server-6", status = "requires grading"))
+
+        assertEquals(listOf(null, null), answerDao.getBySubmissionId("server-6").map { it.grade })
+    }
 }

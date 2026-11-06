@@ -21,7 +21,7 @@ open class Answer(
     var valueChoices: List<String>? = null,
     var mistakes: Int = 0,
     var isPassed: Boolean = false,
-    var grade: Int = 0,
+    var grade: Int? = null,
     var examId: String? = null,
     var questionId: String? = null,
     var submissionId: String? = null
@@ -55,6 +55,7 @@ open class Answer(
             }
             put("mistakes", ans.mistakes)
             put("passed", ans.isPassed)
+            ans.grade?.let { put("grade", it) }
             if (!ans.questionId.isNullOrEmpty()) {
                 put("questionId", ans.questionId)
             }

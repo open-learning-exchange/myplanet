@@ -28,10 +28,13 @@ open class CourseProgress {
     var userId: String? = null
     var courseId: String? = null
     var parentCode: String? = null
+    var isUpdated: Boolean = false
 
     companion object {
         fun serializeProgress(progress: CourseProgress): JsonObject {
             val `object` = buildJsonObject {
+                progress._id?.let { put("_id", it) }
+                progress._rev?.let { put("_rev", it) }
                 put("userId", progress.userId)
                 put("parentCode", progress.parentCode)
                 put("courseId", progress.courseId)

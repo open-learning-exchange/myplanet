@@ -7,11 +7,11 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
+import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
-import androidx.core.graphics.drawable.toDrawable
 
 object EdgeToEdgeUtils {
     private val SAFE_AREA = WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()

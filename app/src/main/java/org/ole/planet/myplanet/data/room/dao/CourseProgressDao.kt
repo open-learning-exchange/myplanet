@@ -51,13 +51,13 @@ interface CourseProgressDao {
         return results
     }
 
-    @Query("SELECT * FROM course_progress WHERE _id IS NULL AND userId NOT LIKE 'guest%'")
+    @Query("SELECT * FROM course_progress WHERE (_id IS NULL OR isUpdated = 1) AND userId NOT LIKE 'guest%'")
     suspend fun getPendingUploads(): List<CourseProgress>
 
-    @Query("UPDATE course_progress SET _id = :remoteId, _rev = :rev WHERE id = :localId")
+    @Query("UPDATE course_progress SET _id = :remoteId, _rev = :rev, isUpdated = 0 WHERE id = :localId")
     suspend fun markUploaded(localId: String, remoteId: String, rev: String): Int
 
-    @Query("UPDATE course_progress SET passed = :passed WHERE courseId = :courseId AND stepNum = :stepNum AND userId IS :userId")
+    @Query("UPDATE course_progress SET isUpdated = CASE WHEN _id IS NOT NULL AND passed != :passed THEN 1 ELSE isUpdated END, passed = :passed WHERE courseId = :courseId AND stepNum = :stepNum AND userId IS :userId")
     suspend fun updatePassedByCourseAndStep(courseId: String, stepNum: Int, passed: Boolean, userId: String?): Int
 
     @Upsert

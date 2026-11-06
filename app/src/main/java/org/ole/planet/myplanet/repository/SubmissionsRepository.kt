@@ -38,6 +38,7 @@ interface SubmissionsRepository {
         courseId: String?,
         userId: String?,
         type: String,
+        finishedOnly: Boolean = false,
     ): Boolean
     suspend fun hasPendingOfflineSubmissions(): Boolean
     suspend fun hasPendingExamResults(): Boolean

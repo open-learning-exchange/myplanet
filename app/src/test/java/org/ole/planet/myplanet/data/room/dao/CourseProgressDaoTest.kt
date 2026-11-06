@@ -151,4 +151,36 @@ class CourseProgressDaoTest {
             results.map { it.id }.toSet()
         )
     }
+
+    @Test
+    fun getPendingUploads_includesUploadedRowsWithAChangedPassUntilTheyUpload() = runBlocking {
+        courseProgressDao.upsertAll(listOf(
+            CourseProgress().apply { id = "new"; userId = "user1" },
+            CourseProgress().apply { id = "synced"; _id = "synced"; userId = "user1" },
+            CourseProgress().apply { id = "changed"; _id = "changed"; isUpdated = true; userId = "user1" }
+        ))
+
+        assertEquals(setOf("new", "changed"), courseProgressDao.getPendingUploads().map { it.id }.toSet())
+
+        courseProgressDao.markUploaded("changed", "changed", "2-abc")
+
+        assertEquals(setOf("new"), courseProgressDao.getPendingUploads().map { it.id }.toSet())
+    }
+
+    @Test
+    fun updatePassedByCourseAndStep_flagsAnUploadedRowOnlyWhenItsPassChanges() = runBlocking {
+        courseProgressDao.upsertAll(listOf(
+            createProgress("uploaded", "course1", "user1", stepNum = 1, passed = false).apply { _id = "uploaded" },
+            createProgress("local", "course1", "user1", stepNum = 2, passed = false),
+            createProgress("passed", "course1", "user1", stepNum = 3, passed = true).apply { _id = "passed" }
+        ))
+
+        (1..3).forEach { courseProgressDao.updatePassedByCourseAndStep("course1", it, true, "user1") }
+
+        val rows = courseProgressDao.getByUserAndCourse("user1", "course1").associateBy { it.id }
+        assertTrue(rows.getValue("uploaded").passed && rows.getValue("uploaded").isUpdated)
+        assertTrue(rows.getValue("local").passed)
+        assertFalse(rows.getValue("local").isUpdated)
+        assertFalse(rows.getValue("passed").isUpdated)
+    }
 }

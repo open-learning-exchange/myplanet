@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(FragmentTakeCourseBinding::inflate), ViewPager.OnPageChangeListener, View.OnClickListener {
     private var isNextStepLocked = false
     private var lockedStepMessage = ""
+    private var blockingStepIndex = -1
     @Inject
     lateinit var userSessionManager: UserSessionManager
     private val viewModel: TakeCourseViewModel by viewModels()
@@ -53,6 +54,7 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
     private var coursesPagerAdapter: CoursesPagerAdapter? = null
     private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
     private var progressJob: Job? = null
+    private var stepLockJob: Job? = null
     private val stepFormatPattern by lazy { "${getString(R.string.step)} %d/%d" }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -98,6 +100,7 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
         steps = state.steps
         currentStep = state.courseProgress
         currentCourseProgress = currentStep
+        blockingStepIndex = state.blockingStepIndex
 
         binding.loadingIndicator.visibility = View.GONE
         binding.contentLayout.visibility = View.VISIBLE
@@ -109,6 +112,7 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
         }
 
         position = if (lastPositionBeforeExam > 0) lastPositionBeforeExam else if (currentStep > 0) currentStep else 0
+        position = position.coerceAtMost(CoursesStepsGate.lastOpenPage(blockingStepIndex, steps.size))
         lastPositionBeforeExam = -1
         setNavigationButtons()
 
@@ -184,7 +188,7 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
             override fun onStopTrackingTouch(seekBar: SeekBar) {
                 val step = requestedStep ?: return
                 requestedStep = null
-                if (step <= currentCourseProgress + 1) {
+                if (step <= currentCourseProgress + 1 && !CoursesStepsGate.isPageLocked(step, blockingStepIndex)) {
                     binding.viewPager2.currentItem = step
                 }
             }
@@ -294,6 +298,10 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
         if (!containsUserId) return
         val index = steps.indexOfFirst { it?.id == stepId }
         if (index < 0) return
+        if (CoursesStepsGate.isPageLocked(index + 1, blockingStepIndex)) {
+            showPassTestMessage()
+            return
+        }
         binding.viewPager2.setCurrentItem(index + 1, true)
     }
 
@@ -306,6 +314,7 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
         if (position > 0 && position - 1 < steps.size) {
             changeNextButtonState(position)
         }
+        refreshStepLock()
         updateNavigationVisibility()
         updateStepDisplay(position)
     }
@@ -334,6 +343,18 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
             isNextStepLocked = false
         }
     }
+
+    private fun refreshStepLock() {
+        stepLockJob?.cancel()
+        stepLockJob = viewLifecycleOwner.lifecycleScope.launch {
+            blockingStepIndex = viewModel.getBlockingStepIndex(steps, userModel, courseId)
+        }
+    }
+
+    private fun showPassTestMessage() {
+        Snackbar.make(binding.root, getString(R.string.please_pass_test, blockingStepIndex + 1), Snackbar.LENGTH_SHORT).show()
+    }
+
     override fun onPageScrollStateChanged(state: Int) {}
 
     private fun onClickNext() {
@@ -364,6 +385,10 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
             R.id.next_step -> {
                 if (isNextStepLocked) {
                     Snackbar.make(binding.root, lockedStepMessage, Snackbar.LENGTH_SHORT).show()
+                    return
+                }
+                if (CoursesStepsGate.isPageLocked(binding.viewPager2.currentItem + 1, blockingStepIndex)) {
+                    showPassTestMessage()
                     return
                 }
                 if (isValidClickRight) {
@@ -483,6 +508,7 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
         pageChangeCallback = null
         lifecycleScope.coroutineContext.cancelChildren()
         progressJob = null
+        stepLockJob = null
         joinDialog?.dismiss()
         joinDialog = null
         coursesPagerAdapter = null

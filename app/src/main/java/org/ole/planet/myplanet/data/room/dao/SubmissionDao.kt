@@ -32,6 +32,7 @@ interface SubmissionDao {
     @Query("SELECT COUNT(*) FROM submissions WHERE (isUpdated = 1 OR _id IS NULL OR _id = '')") suspend fun countPendingOfflineSubmissions(): Int
     @Query("SELECT COUNT(*) FROM submissions WHERE LOWER(status) = 'pending' AND id IN (SELECT submissionId FROM answers WHERE submissionId IS NOT NULL)") suspend fun countPendingExamResults(): Int
     @Query("SELECT COUNT(*) FROM submissions WHERE userId IS :userId AND parentId = :parentId AND type = :type") suspend fun countByUserParentAndType(userId: String?, parentId: String, type: String): Int
+    @Query("SELECT COUNT(*) FROM submissions WHERE userId IS :userId AND parentId = :parentId AND type = :type AND status != 'pending'") suspend fun countFinishedByUserParentAndType(userId: String?, parentId: String, type: String): Int
     @Query("SELECT COUNT(*) FROM submissions WHERE userId IS :userId AND parentId LIKE '%' || :examId || '%' AND status != 'pending'") suspend fun countCompletedByUserAndExamId(userId: String?, examId: String): Int
     @Query("SELECT * FROM submissions WHERE parentId IS :parentId AND userId IS :userId AND (:status IS NULL OR status = :status) ORDER BY startTime DESC") suspend fun getByParentUserAndStatus(parentId: String?, userId: String?, status: String?): List<Submission>
     @Query("SELECT * FROM submissions WHERE parentId IS :parentId AND userId IS :userId AND status = 'pending' ORDER BY startTime DESC LIMIT 1") suspend fun getPendingByUserAndParent(parentId: String?, userId: String?): Submission?
@@ -52,11 +53,12 @@ interface SubmissionDao {
     @Query("UPDATE submissions SET user = :userJson, status = 'complete', isUpdated = 1 WHERE id = :id") suspend fun markComplete(id: String, userJson: String): Int
     @Query("UPDATE submissions SET status = :status, isUpdated = 1 WHERE id = :id") suspend fun updateStatus(id: String, status: String): Int
     @Query("UPDATE submissions SET status = :status, lastUpdateTime = :lastUpdateTime, isUpdated = 1 WHERE id = :id") suspend fun updateStatusAndLastUpdate(id: String, status: String, lastUpdateTime: Long): Int
+    @Query("UPDATE submissions SET status = :status, grade = :grade, lastUpdateTime = :lastUpdateTime, isUpdated = 1 WHERE id = :id") suspend fun updateStatusGradeAndLastUpdate(id: String, status: String, grade: Long, lastUpdateTime: Long): Int
     @Query("DELETE FROM submissions WHERE parentId = :parentId AND userId IS :userId") suspend fun deleteByParentAndUser(parentId: String, userId: String?): Int
     @Query("DELETE FROM submissions WHERE id IN (:ids)") suspend fun deleteByIds(ids: List<String>): Int
     @Query("DELETE FROM submissions WHERE parentId IS :parentId AND userId IS :userId AND status = 'pending' AND type = 'survey' AND teamId IS NULL") suspend fun deletePendingSurveyOrphans(parentId: String?, userId: String?): Int
     @Query("SELECT * FROM submissions WHERE type = 'exam' AND parentId IS NOT NULL AND userId IS NOT NULL AND status != 'pending' AND (isUpdated = 1 OR _id IS NULL OR _id = '')") suspend fun getPendingExamResults(): List<Submission>
-    @Query("SELECT * FROM submissions WHERE status = 'complete' AND (isUpdated = 1 OR _id IS NULL OR _id = '')") suspend fun getPendingSubmissions(): List<Submission>
+    @Query("SELECT * FROM submissions WHERE status = 'complete' AND NOT (type IS 'exam' AND parentId IS NOT NULL AND userId IS NOT NULL) AND (isUpdated = 1 OR _id IS NULL OR _id = '')") suspend fun getPendingSubmissions(): List<Submission>
     @Upsert suspend fun upsertAll(items: List<Submission>)
     @Upsert fun upsertAllBlocking(items: List<Submission>)
     @Query("UPDATE submissions SET _rev = :rev WHERE id = :id") suspend fun updateRev(id: String, rev: String): Int

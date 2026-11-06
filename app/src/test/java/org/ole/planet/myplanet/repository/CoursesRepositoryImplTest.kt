@@ -101,6 +101,13 @@ class CoursesRepositoryImplTest {
     }
 
     @Test
+    fun testUpdateCourseProgressNeverClearsAStoredPass() = runTest {
+        repository.updateCourseProgress("course1", 2, false, "user-a")
+
+        coVerify(exactly = 0) { courseProgressDao.updatePassedByCourseAndStep(any(), any(), any(), any()) }
+    }
+
+    @Test
     fun testNormalizeText() {
         assertEquals("hello world", StringUtils.normalizeText("HELLO World"))
         assertEquals("cafe", StringUtils.normalizeText("Café"))
@@ -517,6 +524,34 @@ class CoursesRepositoryImplTest {
         assertEquals("eyJzdGVwVGl0bGUiOiJTdGVwIDEiLCJkZXNjcmlwdGlvbiI6IkRlc2MgMSJ9", expectedStepId)
         assertEquals(expectedStepId, capturedSteps.captured.first().id)
         coVerify(exactly = 1) { courseStepDao.deleteStaleSteps("course_101", listOf(expectedStepId)) }
+
+        io.mockk.unmockkStatic("androidx.room.RoomDatabaseKt")
+    }
+
+    @Test
+    fun `bulkInsertFromSync reads passingRequired from each step`() = runTest {
+        io.mockk.mockkStatic("androidx.room.RoomDatabaseKt")
+        val transactionBlock = io.mockk.slot<suspend () -> Any?>()
+        coEvery { appDatabase.withTransaction(capture(transactionBlock)) } coAnswers {
+            transactionBlock.captured.invoke()
+        }
+
+        val syncData = JsonParser.parseString(
+            """
+            [{"id": "course_102", "doc": {"_id": "course_102", "courseTitle": "Gated", "steps": [
+                {"stepTitle": "Step 1"},
+                {"stepTitle": "Step 2", "passingRequired": true},
+                {"stepTitle": "Step 3", "passingRequired": false}
+            ]}}]
+            """.trimIndent()
+        ).asJsonArray
+
+        val capturedSteps = slot<List<CourseStep>>()
+        coEvery { courseStepDao.upsertAll(capture(capturedSteps)) } returns Unit
+
+        repository.bulkInsertFromSync(syncData)
+
+        assertEquals(listOf(false, true, false), capturedSteps.captured.map { it.passingRequired })
 
         io.mockk.unmockkStatic("androidx.room.RoomDatabaseKt")
     }
