@@ -16,19 +16,23 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.PartialDownloads
+import org.ole.planet.myplanet.utils.TimeProvider
 
 data class StorageBreakdownUiState(
     val isLoading: Boolean = true,
     val availableSpaceText: String = "",
     val totalBytes: Long = 0L,
-    val categories: List<StorageBreakdownViewModel.CategoryData> = emptyList()
+    val categories: List<StorageBreakdownViewModel.CategoryData> = emptyList(),
+    val partialDownloads: PartialDownloads.Summary = PartialDownloads.Summary(0L, 0)
 )
 
 @HiltViewModel
 open class StorageBreakdownViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val resourcesRepository: ResourcesRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val timeProvider: TimeProvider
 ) : ViewModel() {
 
     data class CategoryData(
@@ -59,7 +63,9 @@ open class StorageBreakdownViewModel @Inject constructor(
 
         viewModelScope.launch(dispatcherProvider.io) {
             val availableSpaceText = FileUtils.availableOverTotalMemoryFormattedString(context)
-            val result = resourcesRepository.getStorageBreakdown(File(FileUtils.getOlePath(context)))
+            val oleDir = File(FileUtils.getOlePath(context))
+            val result = resourcesRepository.getStorageBreakdown(oleDir)
+            val partialDownloads = PartialDownloads.summarize(oleDir)
 
             val scannedCategories = categories.mapIndexed { index, category ->
                 category.copy(
@@ -73,9 +79,22 @@ open class StorageBreakdownViewModel @Inject constructor(
                     isLoading = false,
                     availableSpaceText = availableSpaceText,
                     totalBytes = result.totalBytes,
-                    categories = scannedCategories
+                    categories = scannedCategories,
+                    partialDownloads = partialDownloads
                 )
             }
+        }
+    }
+    
+    fun clearPartialDownloads() {
+        _uiState.update { it.copy(isLoading = true) }
+        viewModelScope.launch(dispatcherProvider.io) {
+            PartialDownloads.delete(
+                File(FileUtils.getOlePath(context)),
+                timeProvider.now(),
+                PartialDownloads.ACTIVE_WINDOW_MILLIS
+            )
+            loadStorage(forceRefresh = true)
         }
     }
 }

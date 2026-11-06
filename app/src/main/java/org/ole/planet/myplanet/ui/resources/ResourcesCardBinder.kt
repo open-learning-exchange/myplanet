@@ -13,6 +13,7 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import java.io.File
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.PdfThumbnailLoader
@@ -31,6 +32,8 @@ data class CoverBindParams(
     val htmlCoverCache: MutableMap<String, File?>? = null,
     val fileLengthCache: MutableMap<String, Long?>? = null
 )
+
+data class PartialDownload(val percent: Int?)
 
 object ResourcesCardBinder {
 
@@ -179,6 +182,25 @@ object ResourcesCardBinder {
         language?.takeIf { it.isNotBlank() }?.let { parts.add(it) }
         return parts.joinToString(" · ")
     }
+
+    suspend fun partialDownloadPercent(finalFile: File, dispatcherProvider: DispatcherProvider): PartialDownload? =
+        withContext(dispatcherProvider.io) {
+            val tempFile = File(finalFile.parentFile, "${finalFile.name}.tmp")
+            val partialBytes = if (tempFile.exists()) tempFile.length() else 0L
+            if (partialBytes <= 0L) return@withContext null
+            val sizeFile = File(tempFile.parentFile, "${tempFile.name}${DownloadService.EXPECTED_SIZE_SUFFIX}")
+            val totalBytes = if (sizeFile.exists()) sizeFile.readText().trim().toLongOrNull() else null
+            PartialDownload(partialPercent(partialBytes, totalBytes))
+        }
+
+    fun partialPercent(partialBytes: Long, totalBytes: Long?): Int? {
+        if (totalBytes == null || totalBytes <= 0L) return null
+        return (partialBytes * 100 / totalBytes).toInt().coerceIn(0, 99)
+    }
+
+    fun partialLabel(context: Context, partial: PartialDownload): String =
+        partial.percent?.let { context.getString(R.string.download_paused_at_percent, it) }
+            ?: context.getString(R.string.download_partially_downloaded)
 
     suspend fun cachedFileLength(
         file: File,

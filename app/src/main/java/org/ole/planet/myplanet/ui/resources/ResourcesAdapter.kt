@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.ImageView
 import android.widget.PopupMenu
+import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.widget.ImageViewCompat
 import androidx.recyclerview.widget.ListAdapter
@@ -48,6 +49,7 @@ class ResourcesAdapter(
     private var adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
     private val htmlCoverCache = mutableMapOf<String, File?>()
     private val fileLengthCache = mutableMapOf<String, Long?>()
+    private val partialDownloads = mutableMapOf<String, PartialDownload>()
 
     init {
         setHasStableIds(true)
@@ -285,6 +287,7 @@ class ResourcesAdapter(
             )
             val fileSize = resourceFileLength(model)
             binding.tvMeta.text = ResourcesCardBinder.buildMetaLine(context, type, model.library.language, fileSize, mediaType = model.library.mediaType)
+            bindPartialDownload(model, binding.tvMeta, binding.ivDownloaded)
         })
     }
 
@@ -319,7 +322,37 @@ class ResourcesAdapter(
             )
             val fileSize = resourceFileLength(model)
             binding.tvMeta.text = ResourcesCardBinder.buildMetaLine(context, type, model.library.language, fileSize, mediaType = model.library.mediaType)
+            bindPartialDownload(model, binding.tvMeta, binding.ivDownloaded)
         })
+    }
+
+    private suspend fun bindPartialDownload(model: ResourceListModel, tvMeta: TextView, ivDownloaded: ImageView) {
+        val id = model.item.id ?: return
+        val isOffline = model.item.isOffline || locallyOfflineIds.contains(id) || model.isLocallyOffline
+        val partial = if (isOffline) null else partialDownloadFor(model)
+        if (partial == null) {
+            partialDownloads.remove(id)
+            return
+        }
+        partialDownloads[id] = partial
+        tvMeta.text = "${tvMeta.text} · ${ResourcesCardBinder.partialLabel(context, partial)}"
+        applyPartialIcon(ivDownloaded)
+    }
+
+    private suspend fun partialDownloadFor(model: ResourceListModel): PartialDownload? {
+        val address = model.library.resourceLocalAddress?.takeIf { it.isNotBlank() } ?: return null
+        val libraryId = model.library.id.takeIf { it.isNotBlank() } ?: return null
+        val dir = externalFilesDir ?: return null
+        return ResourcesCardBinder.partialDownloadPercent(FileUtils.getLibraryFile(dir, libraryId, address), dispatcherProvider)
+    }
+
+    private fun applyPartialIcon(ivDownloaded: ImageView) {
+        ivDownloaded.setImageResource(R.drawable.ic_download)
+        ImageViewCompat.setImageTintList(
+            ivDownloaded,
+            android.content.res.ColorStateList.valueOf(ContextCompat.getColor(context, R.color.list_status_in_progress_text))
+        )
+        ivDownloaded.contentDescription = context.getString(R.string.resume_download)
     }
 
     private suspend fun resourceFileLength(model: ResourceListModel): Long? {
@@ -354,6 +387,7 @@ class ResourcesAdapter(
             context.getString(R.string.download)
         }
         ivDownloaded.visibility = if (isResourceOpened && isOffline) View.INVISIBLE else View.VISIBLE
+        if (!isOffline && partialDownloads.containsKey(model.item.id)) applyPartialIcon(ivDownloaded)
     }
 
     private fun bindClicks(itemView: View, checkbox: CheckBox, model: ResourceListModel) {
