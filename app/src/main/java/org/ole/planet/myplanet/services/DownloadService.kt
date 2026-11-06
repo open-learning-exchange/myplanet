@@ -52,8 +52,6 @@ import org.ole.planet.myplanet.utils.FileUtils.externalMemoryAvailable
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utils.UrlUtils
 import androidx.core.net.toUri
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 @AndroidEntryPoint
 class DownloadService : Service() {
@@ -532,9 +530,7 @@ class DownloadService : Service() {
         val context = currentCoroutineContext()
         while (true) {
             context.ensureActive()
-            val readCount = withContext(Dispatchers.IO) {
-                bis.read(data)
-            }
+            val readCount = bis.read(data)
             if (readCount == -1) break
 
             if (readCount > 0) {
@@ -553,9 +549,7 @@ class DownloadService : Service() {
                     sendNotification(download)
                     lastNotificationUpdateTime = now
                 }
-                withContext(Dispatchers.IO) {
-                    output.write(data, 0, readCount)
-                }
+                output.write(data, 0, readCount)
             }
         }
         return total
