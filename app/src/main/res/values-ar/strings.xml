@@ -756,6 +756,7 @@
     <string name="completed_colon">%s :اكتمل\n</string>
     <string name="assigned_to_colon">%s :معيّن لـ</string>
     <string name="add_task">إضافة مهمة</string>
+    <string name="edit_task">تعديل المهمة</string>
     <string name="task_title_is_required">اسم المهمة مطلوب</string>
     <string name="deadline_is_required">الموعد النهائي مطلوب</string>
     <string name="updated">تم التحديث</string>

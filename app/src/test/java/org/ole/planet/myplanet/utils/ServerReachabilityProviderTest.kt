@@ -36,7 +36,7 @@ class ServerReachabilityProviderTest {
     @Before
     fun setUp() {
         provider = ServerReachabilityProvider(
-            okHttpClient,
+            dagger.Lazy { okHttpClient },
             serverUrlMapper,
             dispatcherProvider,
             timeProvider
@@ -150,7 +150,7 @@ class ServerReachabilityProviderTest {
         every { mockResponseAlt.isSuccessful } returns true
 
         val providerWithIo = ServerReachabilityProvider(
-            okHttpClient,
+            dagger.Lazy { okHttpClient },
             serverUrlMapper,
             IoDispatcherProvider(testDispatcher),
             timeProvider
@@ -275,10 +275,10 @@ class ServerReachabilityProviderTest {
     }
 
     private fun realProvider() = ServerReachabilityProvider(
-        OkHttpClient.Builder()
+        dagger.Lazy { OkHttpClient.Builder()
             .connectTimeout(5, TimeUnit.SECONDS)
             .readTimeout(5, TimeUnit.SECONDS)
-            .build(),
+            .build() },
         serverUrlMapper,
         dispatcherProvider,
         timeProvider

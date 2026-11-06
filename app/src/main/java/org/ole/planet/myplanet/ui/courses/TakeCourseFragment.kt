@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.withStarted
 import androidx.viewpager.widget.ViewPager
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.snackbar.Snackbar
@@ -415,6 +416,12 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
         val userId = userModel?.id
         val decision = viewModel.getRatingPromptDecision(cId, userId)
 
+        viewLifecycleOwner.lifecycle.withStarted {
+            finishWithRatingPrompt(cId, title, decision)
+        }
+    }
+
+    private fun finishWithRatingPrompt(cId: String?, title: String, decision: RatingPromptDecision) {
         if (cId != null && decision == RatingPromptDecision.Show && isAdded) {
             val ratingDialog = RatingsFragment.newInstance("course", cId, title)
             ratingDialog.setOnDismissListener {

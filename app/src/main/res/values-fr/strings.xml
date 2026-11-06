@@ -756,6 +756,7 @@
     <string name="completed_colon">\n Terminé: %s</string>
     <string name="assigned_to_colon">Assigné à: %s</string>
     <string name="add_task">Ajouter une tâche</string>
+    <string name="edit_task">Modifier la tâche</string>
     <string name="task_title_is_required">Le titre de la tâche est requis</string>
     <string name="deadline_is_required">La date limite est requise</string>
     <string name="updated">mis à jour</string>

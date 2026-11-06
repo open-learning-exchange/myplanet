@@ -25,6 +25,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.ArrayList
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
@@ -87,7 +88,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root)
 
         if (mAdapter == null) {
             mAdapter = UsersAdapter(this@LoginActivity)
@@ -282,23 +283,30 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     customProgressDialog.setText(getString(R.string.please_wait))
                     customProgressDialog.show()
                     lifecycleScope.launch {
-                        val user = loginViewModel.getUserByName(username)
-                        if (user == null || !user.isArchived) {
-                            submitForm(username, password)
-                        } else {
-                            val builder = AlertDialog.Builder(this@LoginActivity)
-                            builder.setMessage("member ${binding.inputName.text} is archived")
-                            builder.setCancelable(false)
-                            builder.setPositiveButton("ok") { dialog: DialogInterface, _: Int ->
-                                dialog.dismiss()
-                                binding.inputName.setText(R.string.empty_text)
-                                binding.inputPassword.setText(R.string.empty_text)
+                        try {
+                            val user = loginViewModel.getUserByName(username)
+                            if (user == null || !user.isArchived) {
+                                submitForm(username, password)
+                            } else {
+                                val builder = AlertDialog.Builder(this@LoginActivity)
+                                builder.setMessage("member ${binding.inputName.text} is archived")
+                                builder.setCancelable(false)
+                                builder.setPositiveButton("ok") { dialog: DialogInterface, _: Int ->
+                                    dialog.dismiss()
+                                    binding.inputName.setText(R.string.empty_text)
+                                    binding.inputPassword.setText(R.string.empty_text)
+                                }
+                                val dialog = builder.create()
+                                dialog.show()
                             }
-                            val dialog = builder.create()
-                            dialog.show()
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            toast(this@LoginActivity, getString(R.string.unable_to_login))
+                        } finally {
+                            binding.btnSignin.isEnabled = true
+                            customProgressDialog.dismiss()
                         }
-                        binding.btnSignin.isEnabled = true
-                        customProgressDialog.dismiss()
                     }
                 }
             } else {

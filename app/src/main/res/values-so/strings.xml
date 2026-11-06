@@ -756,6 +756,7 @@
     <string name="completed_colon">\nLa soo socdo: %s</string>
     <string name="assigned_to_colon">La soo saaray: %s</string>
     <string name="add_task">Ku dar xog</string>
+    <string name="edit_task">Wax ka beddel hawsha</string>
     <string name="task_title_is_required">Cinwaanka xogta waa loo baahan yahay</string>
     <string name="deadline_is_required">Waqtiga la socdo waa loo baahan yahay</string>
     <string name="updated">Dib u cusbooneysay</string>

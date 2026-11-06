@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.hilt.work.HiltWorker
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
@@ -36,7 +38,6 @@ class AutoSyncWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     private val sharedPrefManager: SharedPrefManager,
     private val syncManager: SyncManager,
-    private val uploadManager: UploadManager,
     private val uploadToShelfService: UploadToShelfService,
     private val configurationsRepository: ConfigurationsRepository,
     private val dispatcherProvider: DispatcherProvider,
@@ -74,7 +75,7 @@ class AutoSyncWorker @AssistedInject constructor(
     override fun onSyncFailed(msg: String?) {
         syncContinuation?.takeIf { it.isActive }?.resume(Unit)
         syncContinuation = null
-        if (MainApplication.syncFailedCount > 3) {
+        if (MainApplication.syncFailedCount > 3 && isAppInForeground()) {
             context.startActivity(
                 Intent(context, LoginActivity::class.java)
                     .putExtra("showWifiDialog", true)
@@ -82,6 +83,9 @@ class AutoSyncWorker @AssistedInject constructor(
             )
         }
     }
+
+    private fun isAppInForeground(): Boolean =
+        ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
         workerScope.launch(dispatcherProvider.main) {

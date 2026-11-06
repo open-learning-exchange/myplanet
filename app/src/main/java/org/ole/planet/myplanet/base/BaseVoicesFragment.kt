@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -21,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import java.io.File
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
@@ -48,14 +48,21 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
             if (result.resultCode == Activity.RESULT_OK) {
                 val data = result.data
                 val clipData = data?.clipData
-                if (clipData != null) {
-                    for (i in 0 until clipData.itemCount) {
-                        val uri = clipData.getItemAt(i).uri
-                        processImageUri(uri, result.resultCode)
-                    }
+                val uris = if (clipData != null) {
+                    (0 until clipData.itemCount).map { clipData.getItemAt(it).uri }
                 } else {
-                    val uri = data?.data
-                    processImageUri(uri, result.resultCode)
+                    listOf(data?.data)
+                }
+                if (view == null) return@registerForActivityResult
+                val appContext = requireContext().applicationContext
+                viewLifecycleOwner.lifecycleScope.launch {
+                    for (uri in uris) {
+                        if (uri == null) continue
+                        val path = withContext(dispatcherProvider.io) {
+                            FileUtils.resolveUriToPath(appContext, uri)
+                        }
+                        addImagePath(path, result.resultCode)
+                    }
                 }
             }
         }
@@ -144,11 +151,11 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         return if (::imageList.isInitialized) imageList else null
     }
 
-    private fun processImageUri(uri: Uri?, resultCode: Int) {
-        if (uri == null) return
+    override fun restoreImages(snapshot: List<String>) {
+        if (::imageList.isInitialized) imageList.retainAll(snapshot.toSet())
+    }
 
-        val path: String? = FileUtils.resolveUriToPath(requireActivity(), uri)
-
+    private fun addImagePath(path: String?, resultCode: Int) {
         if (path.isNullOrEmpty()) return
 
         if (News.containsImagePath(imageList, path)) {
@@ -167,7 +174,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
             llImage?.addView(imageBinding.root)
             if (resultCode == 102) adapterNews?.setImageList(imageList)
         } catch (e: Exception) {
-            Log.w(TAG, "processImageUri failed", e)
+            Log.w(TAG, "addImagePath failed", e)
         }
     }
 

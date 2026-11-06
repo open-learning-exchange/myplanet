@@ -133,7 +133,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         if (cachedState.courses.isNotEmpty()) {
             adapterCourses.setProgressMap(cachedState.progressMap)
             adapterCourses.submitList(cachedState.courses) {
-                if (isAdded) showNoData(tvMessage, cachedState.courses.size, "courses")
+                if (isAdded) showNoData(tvMessage, cachedState.courses.size, emptySource)
             }
         }
 
@@ -172,7 +172,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
             setupButtonVisibility()
             if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
             if (::adapterCourses.isInitialized) {
-                showNoData(tvMessage, adapterCourses.itemCount, "courses")
+                showNoData(tvMessage, adapterCourses.itemCount, emptySource)
             }
             selectionController.clearAll(null)
             checkList()
@@ -193,7 +193,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                     selectedItems?.clear()
                     selectionController.clearAll(adapterCourses)
                     checkList()
-                    showNoData(tvMessage, state.courses.size, "courses")
+                    showNoData(tvMessage, state.courses.size, emptySource)
                     pendingScrollState?.let { saved ->
                         recyclerView.layoutManager?.onRestoreInstanceState(saved)
                         pendingScrollState = null
@@ -416,6 +416,9 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         }
     }
 
+    private val emptySource: String
+        get() = if (::filterController.isInitialized && filterController.filterApplied()) "courses_filtered" else "courses"
+
     private fun checkList() {
         if (!::adapterCourses.isInitialized || !::filterController.isInitialized || !::selectionController.isInitialized) return
         val isEmpty = adapterCourses.currentList.isEmpty()
@@ -463,7 +466,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     override fun onTagSelected(tag: TagEntity) {
         if (::filterController.isInitialized) {
             filterController.setSingleTag(tag)
-            showNoData(tvMessage, adapterCourses.itemCount, "courses")
+            showNoData(tvMessage, adapterCourses.itemCount, emptySource)
         }
     }
 
@@ -471,12 +474,12 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         if (::filterController.isInitialized) filterController.setTags(list ?: emptyList())
     }
 
-    override fun addToMyList(onComplete: (() -> Unit)?) {
-        super.addToMyList {
+    override fun addToMyList(onComplete: ((succeeded: Boolean) -> Unit)?) {
+        super.addToMyList { succeeded ->
             if (isAdded && ::selectionController.isInitialized && ::adapterCourses.isInitialized) {
                 selectionController.clearAll(adapterCourses)
             }
-            onComplete?.invoke()
+            onComplete?.invoke(succeeded)
         }
     }
 
@@ -504,7 +507,8 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                     DialogUtils.guestDialog(requireContext())
                 } else {
                     hasAdded = true
-                    addToMyList {
+                    addToMyList { succeeded ->
+                        if (!succeeded) return@addToMyList
                         val fragment = CoursesFragment().apply {
                             arguments = Bundle().apply { putBoolean("isMyCourseLib", true) }
                         }
