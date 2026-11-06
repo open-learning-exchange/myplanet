@@ -265,10 +265,20 @@ class DownloadService : Service() {
                 return false
             }
 
-            val resumeOffset = resumeOffsetFor(url)
+            var resumeOffset = resumeOffsetFor(url)
             val ifRange = if (resumeOffset > 0) resumeValidatorFor(url) else null
             Log.d(TAG, "initDownload: fetching $fileName from primary URL${if (resumeOffset > 0) " (resuming from ${resumeOffset}B)" else ""}")
-            val primaryResult = downloadRepository.downloadFileResponse(url, authHeader, resumeOffset, ifRange)
+            var primaryResult = downloadRepository.downloadFileResponse(url, authHeader, resumeOffset, ifRange)
+
+            if (primaryResult is DownloadResult.Error && primaryResult.code == 416 && resumeOffset > 0) {
+                // The partial file no longer lines up with what the server holds. Throwing it away and
+                // failing would make the user tap Download twice; start over from the first byte instead.
+                Log.w(TAG, "initDownload: resume offset ${resumeOffset}B rejected (416) for $fileName, restarting from scratch")
+                deleteTempFile(url)
+                deleteValidatorFile(url)
+                resumeOffset = 0L
+                primaryResult = downloadRepository.downloadFileResponse(url, authHeader, 0L, null)
+            }
 
             if (primaryResult is DownloadResult.Error && primaryResult.code == null) {
                 Log.w(TAG, "initDownload: primary failed with network error (${primaryResult.message}), checking for alternative URL")
@@ -276,7 +286,7 @@ class DownloadService : Service() {
                 if (altUrl != null) {
                     Log.d(TAG, "initDownload: retrying with ${UrlUtils.redactForLog(altUrl)}")
                     currentDownloadUrl = altUrl
-                    val altResult = downloadRepository.downloadFileResponse(altUrl, authHeader, resumeOffset, ifRange)
+                    val altResult = downloadRepository.downloadFileResponse(altUrl, authHeader, resumeOffset, ifRange.takeIf { resumeOffset > 0 })
                     return tryDownloadFromResult(altResult, altUrl, fromSync, fileName, isAlternative = true, resumeOffset)
                 }
             }
