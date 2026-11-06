@@ -58,7 +58,7 @@ class DownloadStopReceiverTest {
 
         val stopped = shadowOf(context).nextStoppedService
         assertEquals(DownloadService::class.java.name, stopped?.component?.className)
-        verify(exactly = 1) { workManager.cancelAllWorkByTag("download_work") }
+        verify(exactly = 1) { workManager.cancelAllWorkByTag(DownloadWorker.WORK_TAG) }
         coVerify {
             broadcastService.sendBroadcast(match { intent ->
                 val download = intent.getParcelableExtra<Download>("download")
