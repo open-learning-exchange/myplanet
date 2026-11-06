@@ -21,6 +21,7 @@ import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.withStarted
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.chip.Chip
@@ -58,6 +59,7 @@ import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -204,10 +206,12 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                     )
                 )
 
-                Utilities.toast(activity, getString(R.string.achievement_saved))
-                _binding?.btnUpdate?.isEnabled = true
-                if (isAdded) {
-                    FragmentNavigator.popBackStack(parentFragmentManager)
+                lifecycle.withStarted {
+                    Utilities.toast(activity, getString(R.string.achievement_saved))
+                    _binding?.btnUpdate?.isEnabled = true
+                    if (isAdded) {
+                        FragmentNavigator.popBackStack(parentFragmentManager)
+                    }
                 }
             }
         }
@@ -268,14 +272,15 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         binding.llAttachment.removeAllViews()
         val inflater = LayoutInflater.from(activity)
         for (e in achievementArray ?: return) {
+            val achievement = e as? JsonObject ?: continue
             editAttachmentBinding = EditAttachementBinding.inflate(inflater, binding.llAttachment, false)
-            editAttachmentBinding.tvTitle.text = e.asJsonObject["title"].asString
+            editAttachmentBinding.tvTitle.text = GsonUtils.getString("title", achievement)
             val flexboxLayout = editAttachmentBinding.flexbox
             val chipContext = ContextThemeWrapper(context, R.style.Theme_App_Chip)
-            val resources = e.asJsonObject.getAsJsonArray("resources") ?: JsonArray()
+            val resources = achievement.getAsJsonArray("resources") ?: JsonArray()
             for (element in resources) {
                 val chip = Chip(chipContext).apply {
-                    text = element.asJsonObject["title"].asString
+                    text = GsonUtils.getString("title", element as? JsonObject)
                 }
                 flexboxLayout.addView(chip)
             }
@@ -283,7 +288,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                 achievementArray?.remove(e)
                 showAchievementAndInfo()
             }
-            editAttachmentBinding.edit.setOnClickListener { showAddAchievementAlert(e.asJsonObject) }
+            editAttachmentBinding.edit.setOnClickListener { showAddAchievementAlert(achievement) }
             val editAttachmentView: View = editAttachmentBinding.root
             binding.llAttachment.addView(editAttachmentView)
         }
@@ -293,13 +298,14 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         binding.llOtherInfo.removeAllViews()
         val inflater = LayoutInflater.from(activity)
         for (e in referenceArray ?: return) {
+            val reference = e as? JsonObject ?: continue
             editOtherInfoBinding = EditOtherInfoBinding.inflate(inflater, binding.llOtherInfo, false)
-            editOtherInfoBinding.tvTitle.text = e.asJsonObject["name"].asString
+            editOtherInfoBinding.tvTitle.text = GsonUtils.getString("name", reference)
             editOtherInfoBinding.ivDelete.setOnClickListener {
                 referenceArray?.remove(e)
                 showReference()
             }
-            editOtherInfoBinding.edit.setOnClickListener { showReferenceDialog(e.asJsonObject) }
+            editOtherInfoBinding.edit.setOnClickListener { showReferenceDialog(reference) }
             val editOtherInfoView: View = editOtherInfoBinding.root
             binding.llOtherInfo.addView(editOtherInfoView)
         }
@@ -333,10 +339,10 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun setPrevReference(ar: Array<EditText>, `object`: JsonObject?) {
         if (`object` != null) {
-            ar[0].setText(`object`["name"].asString)
-            ar[1].setText(`object`["phone"].asString)
-            ar[2].setText(`object`["email"].asString)
-            ar[3].setText(`object`["relationship"].asString)
+            ar[0].setText(GsonUtils.getString("name", `object`))
+            ar[1].setText(GsonUtils.getString("phone", `object`))
+            ar[2].setText(GsonUtils.getString("email", `object`))
+            ar[3].setText(GsonUtils.getString("relationship", `object`))
         }
     }
 
@@ -390,14 +396,14 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private fun setUpOldAchievement(`object`: JsonObject?, etDescription: EditText, etTitle: EditText, tvDate: AppCompatTextView): Set<String?> {
         val prevSet: MutableSet<String?> = HashSet()
         if (`object` != null) {
-            etTitle.setText(`object`["title"].asString)
-            etDescription.setText(`object`["description"].asString)
-            tvDate.text = `object`["date"].asString
-            alertAddAttachmentBinding.etLink.setText(`object`["link"]?.asString ?: "")
+            etTitle.setText(GsonUtils.getString("title", `object`))
+            etDescription.setText(GsonUtils.getString("description", `object`))
+            tvDate.text = GsonUtils.getString("date", `object`)
+            alertAddAttachmentBinding.etLink.setText(GsonUtils.getString("link", `object`))
             val array = `object`.getAsJsonArray("resources") ?: JsonArray()
-            date = `object`["date"].asString
+            date = GsonUtils.getString("date", `object`)
             for (o in array) {
-                prevSet.add(o.asJsonObject["title"].asString)
+                prevSet.add(GsonUtils.getString("title", o as? JsonObject))
             }
             resourceArray = array
         }

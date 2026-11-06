@@ -19,9 +19,8 @@ class FeedbackListViewModel @Inject constructor(
     private val feedbackRepository: FeedbackRepository,
     private val userRepository: UserReadRepository
 ) : ViewModel() {
-
-    private val _feedbackList = MutableStateFlow<List<Feedback>>(emptyList())
-    val feedbackList: StateFlow<List<Feedback>> = _feedbackList.asStateFlow()
+    private val _feedbackList = MutableStateFlow<List<Feedback>?>(null)
+    val feedbackList: StateFlow<List<Feedback>?> = _feedbackList.asStateFlow()
 
     private var fetchJob: Job? = null
 

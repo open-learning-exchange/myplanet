@@ -136,16 +136,21 @@ class VoicesFragment : BaseVoicesFragment() {
                 binding.tlMessage.error = getString(R.string.please_enter_message)
                 return@setOnClickListener
             }
+            val userModel = user
+            if (userModel == null) {
+                Utilities.toast(requireContext(), getString(R.string.error, "Failed to create news"))
+                return@setOnClickListener
+            }
             val map = HashMap<String?, String>()
             map["message"] = message
-            map["viewInId"] = "${user?.planetCode ?: ""}@${user?.parentCode ?: ""}"
+            map["viewInId"] = "${userModel.planetCode ?: ""}@${userModel.parentCode ?: ""}"
             map["viewInSection"] = "community"
             map["messageType"] = "sync"
-            map["messagePlanetCode"] = user?.planetCode ?: ""
+            map["messagePlanetCode"] = userModel.planetCode ?: ""
 
             binding.btnSubmit.isEnabled = false
 
-            user?.let { it1 -> voicesViewModel.createNews(map, it1, imageList.toList()) }
+            voicesViewModel.createNews(map, userModel, imageList.toList())
         }
 
         binding.addNewsImage.setOnClickListener {

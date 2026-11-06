@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.enterprises
 
 import android.app.DatePickerDialog
-import android.content.DialogInterface
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -34,6 +33,7 @@ import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
 import org.ole.planet.myplanet.databinding.HeaderFinanceBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.Transaction
+import org.ole.planet.myplanet.utils.AmountUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
@@ -124,9 +124,9 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         hBinding.imgDate.rotation = if (headerState.isAsc) 180f else 0f
 
         val summary = viewModel.financeSummary.value
-        hBinding.tvDebit.text = getString(R.string.number_placeholder, summary.debit)
-        hBinding.tvCredit.text = getString(R.string.number_placeholder, summary.credit)
-        hBinding.tvBalance.text = getString(R.string.number_placeholder, summary.total)
+        hBinding.tvDebit.text = AmountUtils.format(summary.debit)
+        hBinding.tvCredit.text = AmountUtils.format(summary.credit)
+        hBinding.tvBalance.text = AmountUtils.format(summary.total)
         hBinding.balanceCaution.visibility = if (summary.isCautionVisible) View.VISIBLE else View.GONE
     }
 
@@ -282,42 +282,42 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     }
 
     private fun addTransaction() {
-        AlertDialog.Builder(requireActivity()).setView(setUpAlertUi()).setTitle(R.string.add_transaction)
-            .setPositiveButton("Submit") { _: DialogInterface?, _: Int ->
-                val type = if (addTransactionBinding.spnType.selectedItemPosition == 1) "Debit" else "Credit"
-                val note = "${addTransactionBinding.tlNote.editText?.text}".trim { it <= ' ' }
-                val amount = "${addTransactionBinding.tlAmount.editText?.text}".trim { it <= ' ' }
-                if (note.isEmpty()) {
-                    Utilities.toast(activity, getString(R.string.note_is_required))
-                } else if (amount.isEmpty()) {
-                    Utilities.toast(activity, getString(R.string.amount_is_required))
-                } else if (date == null) {
-                    Utilities.toast(activity, getString(R.string.date_is_required))
-                } else {
-                    val amountValue = amount.toIntOrNull()
-                    if (amountValue == null) {
-                        Utilities.toast(activity, getString(R.string.amount_is_required))
-                        return@setPositiveButton
-                    }
-                    val capturedDate = date ?: return@setPositiveButton
-                    val dateInMillis = capturedDate.timeInMillis
-                    val capturedTeamId = teamId
-                    val parentCode = user?.parentCode
-                    val planetCode = user?.planetCode
-                    val imageUri = selectedImageUri
+        val dialog = AlertDialog.Builder(requireActivity()).setView(setUpAlertUi()).setTitle(R.string.add_transaction)
+            .setPositiveButton("Submit", null)
+            .setNegativeButton("Cancel", null)
+            .create()
+        dialog.show()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val type = if (addTransactionBinding.spnType.selectedItemPosition == 1) "Debit" else "Credit"
+            val note = "${addTransactionBinding.tlNote.editText?.text}".trim { it <= ' ' }
+            val amountValue = AmountUtils.parse(addTransactionBinding.tlAmount.editText?.text)
+            if (note.isEmpty()) {
+                Utilities.toast(activity, getString(R.string.note_is_required))
+            } else if (amountValue == null || amountValue <= 0.0) {
+                Utilities.toast(activity, getString(R.string.amount_is_required))
+            } else if (date == null) {
+                Utilities.toast(activity, getString(R.string.date_is_required))
+            } else {
+                val capturedDate = date ?: return@setOnClickListener
+                val dateInMillis = capturedDate.timeInMillis
+                val capturedTeamId = teamId
+                val parentCode = user?.parentCode
+                val planetCode = user?.planetCode
+                val imageUri = selectedImageUri
 
-                    viewModel.createTransaction(
-                        teamId = capturedTeamId,
-                        type = type,
-                        note = note,
-                        amount = amountValue,
-                        date = dateInMillis,
-                        parentCode = parentCode,
-                        planetCode = planetCode,
-                        imageUri = imageUri,
-                    )
-                }
-            }.setNegativeButton("Cancel", null).show()
+                viewModel.createTransaction(
+                    teamId = capturedTeamId,
+                    type = type,
+                    note = note,
+                    amount = amountValue,
+                    date = dateInMillis,
+                    parentCode = parentCode,
+                    planetCode = planetCode,
+                    imageUri = imageUri,
+                )
+                dialog.dismiss()
+            }
+        }
     }
 
     private fun setUpAlertUi(): View {

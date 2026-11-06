@@ -224,6 +224,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
 
                 override fun showErrorDialog(errorMessage: String) {
+                    if (::syncIconDrawable.isInitialized) {
+                        syncIconDrawable.stop()
+                        syncIconDrawable.selectDrawable(0)
+                    }
                     alertDialogOkay(errorMessage)
                 }
 
@@ -796,8 +800,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 if (isSync) {
                     isServerReachable(processedUrl, "sync")
                 } else if (forceSync) {
-                    isServerReachable(processedUrl, "upload")
-                    startUpload("")
+                    if (isServerReachable(processedUrl, "upload")) {
+                        startUpload("")
+                    }
                 }
             }
         } catch (e: Exception) {

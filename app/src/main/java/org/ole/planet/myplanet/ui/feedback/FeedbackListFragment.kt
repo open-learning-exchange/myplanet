@@ -52,6 +52,7 @@ class FeedbackListFragment : BaseBindingFragment<FragmentFeedbackListBinding>(Fr
 
     private fun observeFeedbackList() {
         collectWhenStarted(viewModel.feedbackList) { feedbackList ->
+            if (feedbackList == null) return@collectWhenStarted
             updatedFeedbackList(feedbackList)
         }
     }
