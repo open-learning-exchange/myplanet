@@ -242,6 +242,8 @@ class DownloadWorkerTest {
 
         mockkObject(FileUtils)
         every { FileUtils.checkFileExist(context, any()) } returns false
+        val dir = java.nio.file.Files.createTempDirectory("download_worker").toFile()
+        every { FileUtils.getSDPathFromUrl(context, any()) } answers { java.io.File(dir, secondArg<String>().substringAfterLast('/')) }
 
         coEvery { downloadRepository.downloadFileResponse(url1, any()) } coAnswers {
             awaitCancellation()
@@ -260,6 +262,73 @@ class DownloadWorkerTest {
         coVerify(exactly = 0) { downloadRepository.downloadFileResponse(url3, any()) }
 
         unmockkObject(FileUtils)
+    }
+
+    private fun stubSingleDownload(url: String): java.io.File {
+        every { preferences.getStringSet(any(), any()) } returns setOf(url)
+        every { workerParams.inputData.getString("urls_key") } returns "url_list_key"
+        every { workerParams.inputData.getBoolean("fromSync", false) } returns false
+        mockkObject(FileUtils)
+        every { FileUtils.checkFileExist(context, url) } returns false
+        val dir = java.nio.file.Files.createTempDirectory("download_worker").toFile()
+        val outputFile = java.io.File(dir, "file.txt")
+        every { FileUtils.getSDPathFromUrl(context, url) } returns outputFile
+        return outputFile
+    }
+
+    @Test
+    fun `a partial file is resumed with a range request and appended to`() = runTest(testDispatcher) {
+        val url = "http://example.com/resources/123/file.txt"
+        val outputFile = stubSingleDownload(url)
+        val dir = outputFile.parentFile!!
+        java.io.File(dir, "file.txt.tmp").writeText("first-half-")
+        java.io.File(dir, "file.txt.tmp.etag").writeText("\"etag-1\"")
+        coEvery { downloadRepository.downloadFileResponse(url, any(), 11L, "\"etag-1\"") } returns
+            DownloadResult.Success("second-half".toByteArray().toResponseBody(null), 206, "\"etag-1\"")
+
+        worker.doWork()
+
+        assertEquals("first-half-second-half", outputFile.readText())
+        assertTrue(!java.io.File(dir, "file.txt.tmp").exists())
+        assertTrue(!java.io.File(dir, "file.txt.tmp.etag").exists())
+        assertTrue(!java.io.File(dir, "file.txt.tmp.size").exists())
+        coVerify { resourcesRepository.markResourceOfflineByUrl(url) }
+        dir.deleteRecursively()
+    }
+
+    @Test
+    fun `a full response to a resume replaces the stale partial file`() = runTest(testDispatcher) {
+        val url = "http://example.com/resources/123/file.txt"
+        val outputFile = stubSingleDownload(url)
+        val dir = outputFile.parentFile!!
+        java.io.File(dir, "file.txt.tmp").writeText("stale")
+        coEvery { downloadRepository.downloadFileResponse(url, any(), 5L, null) } returns
+            DownloadResult.Success("fresh-whole-file".toByteArray().toResponseBody(null), 200)
+
+        worker.doWork()
+
+        assertEquals("fresh-whole-file", outputFile.readText())
+        dir.deleteRecursively()
+    }
+
+    @Test
+    fun `a rejected resume offset restarts the download from the first byte`() = runTest(testDispatcher) {
+        val url = "http://example.com/resources/123/file.txt"
+        val outputFile = stubSingleDownload(url)
+        val dir = outputFile.parentFile!!
+        java.io.File(dir, "file.txt.tmp").writeText("mismatched")
+        java.io.File(dir, "file.txt.tmp.etag").writeText("\"old\"")
+        coEvery { downloadRepository.downloadFileResponse(url, any(), 10L, "\"old\"") } returns
+            DownloadResult.Error("Requested range not satisfiable", 416)
+        coEvery { downloadRepository.downloadFileResponse(url, any(), 0L, null) } returns
+            DownloadResult.Success("fresh-whole-file".toByteArray().toResponseBody(null), 200)
+
+        val result = worker.doWork()
+
+        assertTrue(result is androidx.work.ListenableWorker.Result.Success)
+        assertEquals("fresh-whole-file", outputFile.readText())
+        assertTrue(!java.io.File(dir, "file.txt.tmp.etag").exists())
+        dir.deleteRecursively()
     }
 
     @Test
@@ -298,7 +367,7 @@ class DownloadWorkerTest {
     }
 
     @Test
-    fun `truncated download leaves no file behind and is not marked offline`() = runTest(testDispatcher) {
+    fun `truncated download keeps its partial file for resume and is not marked offline`() = runTest(testDispatcher) {
         val url = "http://example.com/resources/123/file.txt"
         every { preferences.getStringSet(any(), any()) } returns setOf(url)
         every { workerParams.inputData.getString("urls_key") } returns "url_list_key"
@@ -320,7 +389,8 @@ class DownloadWorkerTest {
         worker.doWork()
 
         assertTrue(!outputFile.exists())
-        assertTrue(!java.io.File(dir, "file.txt.part").exists())
+        assertEquals("the bytes received so far are kept for the next attempt", 1024L, java.io.File(dir, "file.txt.tmp").length())
+        assertEquals("4096", java.io.File(dir, "file.txt.tmp.size").readText())
         coVerify(exactly = 0) { resourcesRepository.markResourceOfflineByUrl(url) }
 
         dir.deleteRecursively()

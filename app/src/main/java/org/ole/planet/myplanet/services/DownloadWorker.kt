@@ -22,6 +22,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import okio.Buffer
+import okio.appendingSink
 import okio.buffer
 import okio.sink
 import org.ole.planet.myplanet.R
@@ -129,9 +130,25 @@ class DownloadWorker @AssistedInject constructor(
             return true
         }
         return try {
-            when (val response = downloadRepository.downloadFileResponse(url, authHeader)) {
+            val outputFile = FileUtils.getSDPathFromUrl(context, url)
+            outputFile.parentFile?.mkdirs()
+            val partial = PartialFiles(outputFile)
+            // Earlier versions wrote to a .part file and deleted it on failure; drop any leftover.
+            File(outputFile.parentFile, "${outputFile.name}.part").delete()
+
+            var resumeOffset = partial.resumeOffset()
+            val ifRange = if (resumeOffset > 0) partial.validator() else null
+            var response = downloadRepository.downloadFileResponse(url, authHeader, resumeOffset, ifRange)
+            if (response is DownloadResult.Error && response.code == 416 && resumeOffset > 0) {
+                // The partial file no longer lines up with the server's copy: start over from the first byte.
+                Log.w(TAG, "Resume offset ${resumeOffset}B rejected (416) for ${getFileNameFromUrl(url)}, restarting")
+                partial.discard()
+                resumeOffset = 0L
+                response = downloadRepository.downloadFileResponse(url, authHeader, 0L, null)
+            }
+            when (response) {
                 is DownloadResult.Success -> {
-                    downloadFileBody(response.body, url, index, total)
+                    downloadFileBody(response, url, partial, index, total)
                     true
                 }
                 is DownloadResult.Error -> {
@@ -147,22 +164,62 @@ class DownloadWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun downloadFileBody(body: ResponseBody, url: String, index: Int, total: Int) {
-        val fileSize = body.contentLength()
-        val outputFile: File = FileUtils.getSDPathFromUrl(context, url)
-        outputFile.parentFile?.mkdirs()
-        val partFile = File(outputFile.parentFile, "${outputFile.name}.part")
-        try {
-            val totalBytes = writeBody(body, partFile, fileSize, url, index, total)
-            if (fileSize > 0 && totalBytes != fileSize) {
-                throw IOException("Incomplete download: $totalBytes of $fileSize bytes")
-            }
-            if (!partFile.renameTo(outputFile)) {
-                partFile.copyTo(outputFile, overwrite = true)
-            }
-        } finally {
-            partFile.delete()
+    /**
+     * The files DownloadService uses for a download in progress, so a partial file left by either the
+     * service or this worker can be resumed by the other: `<name>.tmp`, its `.tmp.etag` validator for
+     * If-Range, and `.tmp.size` with the full size for the resource list's "Paused at N%".
+     */
+    private class PartialFiles(val outputFile: File) {
+        val tempFile = File(outputFile.parentFile, "${outputFile.name}.tmp")
+        private val validatorFile = File(outputFile.parentFile, "${outputFile.name}.tmp.etag")
+        private val sizeFile = File(outputFile.parentFile, "${outputFile.name}.tmp.size")
+
+        fun resumeOffset(): Long = if (tempFile.exists()) tempFile.length() else 0L
+
+        fun validator(): String? =
+            if (validatorFile.exists()) validatorFile.readText().takeIf { it.isNotBlank() } else null
+
+        fun writeValidator(validator: String?) {
+            if (validator.isNullOrBlank()) validatorFile.delete() else validatorFile.writeText(validator)
         }
+
+        fun writeExpectedSize(size: Long) {
+            if (size > 0) sizeFile.writeText(size.toString()) else sizeFile.delete()
+        }
+
+        fun discard() {
+            tempFile.delete()
+            clearSidecars()
+        }
+
+        fun clearSidecars() {
+            validatorFile.delete()
+            sizeFile.delete()
+        }
+    }
+
+    private suspend fun downloadFileBody(response: DownloadResult.Success, url: String, partial: PartialFiles, index: Int, total: Int) {
+        val body = response.body
+        val isPartial = response.code == 206
+        if (!isPartial) partial.tempFile.delete()
+        val startOffset = if (isPartial) partial.tempFile.length() else 0L
+        partial.writeValidator(response.validator)
+
+        val remaining = body.contentLength()
+        val expectedSize = if (remaining > 0) startOffset + remaining else -1L
+        partial.writeExpectedSize(expectedSize)
+
+        // On any failure (network drop, Stop) the partial file stays so the next attempt resumes from it.
+        val totalBytes = writeBody(body, partial.tempFile, isPartial, startOffset, expectedSize, url, index, total)
+        if (expectedSize > 0 && totalBytes != expectedSize) {
+            throw IOException("Incomplete download: $totalBytes of $expectedSize bytes")
+        }
+        val outputFile = partial.outputFile
+        if (!partial.tempFile.renameTo(outputFile)) {
+            partial.tempFile.copyTo(outputFile, overwrite = true)
+            partial.tempFile.delete()
+        }
+        partial.clearSidecars()
         try {
             resourcesRepository.markResourceOfflineByUrl(url)
         } catch (e: CancellationException) {
@@ -173,13 +230,13 @@ class DownloadWorker @AssistedInject constructor(
     }
 
     private suspend fun writeBody(
-        body: ResponseBody, outputFile: File, fileSize: Long, url: String, index: Int, total: Int
+        body: ResponseBody, tempFile: File, append: Boolean, startOffset: Long, fileSize: Long, url: String, index: Int, total: Int
     ): Long {
-        var totalBytes: Long = 0
+        var totalBytes: Long = startOffset
         var lastUpdateTime = 0L
         val coroutineContext = currentCoroutineContext()
 
-        outputFile.sink().buffer().use { sink ->
+        (if (append) tempFile.appendingSink() else tempFile.sink()).buffer().use { sink ->
             body.source().use { source ->
                 val buffer = Buffer()
                 while (true) {
