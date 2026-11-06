@@ -448,7 +448,9 @@ class DownloadService : Service() {
     }
 
     private fun deleteTempFile(url: String) {
-        tempFileForUrl(url).delete()
+        val tempFile = tempFileForUrl(url)
+        tempFile.delete()
+        File(tempFile.parentFile, "${tempFile.name}$EXPECTED_SIZE_SUFFIX").delete()
     }
 
     private fun deleteValidatorFile(url: String) {
@@ -472,6 +474,9 @@ class DownloadService : Service() {
         val remoteRemaining = body.contentLength()
         val fileSize = if (remoteRemaining > 0) resumeOffset + remoteRemaining else -1L
         var total = resumeOffset
+        // Lets the resource list show how far a stopped download got ("Paused at 40%").
+        val expectedSizeFile = File(tempFile.parentFile, "${tempFile.name}$EXPECTED_SIZE_SUFFIX")
+        if (fileSize > 0) expectedSizeFile.writeText(fileSize.toString()) else expectedSizeFile.delete()
         Log.d(
             TAG,
             "downloadFile: writing $fileName to ${tempFile.absolutePath} size=${if (fileSize <= 0) "unknown" else "${fileSize}B"}" +
@@ -504,6 +509,7 @@ class DownloadService : Service() {
                 tempFile.delete()
             }
             deleteValidatorFile(url)
+            expectedSizeFile.delete()
             Log.d(TAG, "downloadFile: complete — $fileName written ${total}B to ${finalFile.absolutePath}")
         } catch (e: CancellationException) {
             Log.d(TAG, "downloadFile: stopped $fileName after ${total}B, keeping partial file for resume")
@@ -684,6 +690,9 @@ class DownloadService : Service() {
         private const val NOTIFICATION_UPDATE_INTERVAL_MS = 500L
         const val PENDING_DOWNLOADS_KEY = "pending_downloads_queue"
         const val PRIORITY_DOWNLOADS_KEY = "priority_downloads_queue"
+
+        /** Suffix of the file beside `<name>.tmp` that holds the full size of the download, in bytes. */
+        const val EXPECTED_SIZE_SUFFIX = ".size"
 
         @VisibleForTesting
         internal fun countRemaining(priority: Set<String>, pending: Set<String>, processed: Set<String>): Int =

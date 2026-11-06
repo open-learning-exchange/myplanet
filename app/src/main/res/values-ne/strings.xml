@@ -1144,6 +1144,9 @@
     <string name="show_additional_fields">थप क्षेत्रहरू देखाउनुहोस्</string>
     <string name="hide_additional_fields">थप क्षेत्रहरू लुकाउनुहोस्</string>
     <string name="preparing_download">डाउनलोडको तयारी गर्दै…</string>
+    <string name="download_partially_downloaded">आंशिक रूपमा डाउनलोड भयो</string>
+    <string name="download_paused_at_percent">%1$d%% मा रोकिएको</string>
+    <string name="resume_download">डाउनलोड पुनः सुरु गर्नुहोस्</string>
     <string name="downloading_files">फाइलहरू डाउनलोड हुँदैछन्</string>
     <string name="edit_mission_and_services">मिशन र सेवाहरू सम्पादन गर्नुहोस्</string>
     <string name="this_team_has_no_description_defined">यस टिमको कुनै विवरण परिभाषित गरिएको छैन</string>

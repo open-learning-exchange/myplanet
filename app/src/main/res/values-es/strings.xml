@@ -1144,6 +1144,9 @@
     <string name="show_additional_fields">Mostrar campos adicionales</string>
     <string name="hide_additional_fields">Ocultar campos adicionales</string>
     <string name="preparing_download">Preparando la descarga…</string>
+    <string name="download_partially_downloaded">Descargado parcialmente</string>
+    <string name="download_paused_at_percent">En pausa al %1$d%%</string>
+    <string name="resume_download">Reanudar descarga</string>
     <string name="downloading_files">Descargando archivos</string>
     <string name="edit_mission_and_services">editar misión y servicios</string>
     <string name="this_team_has_no_description_defined">Este equipo no tiene descripción definida</string>

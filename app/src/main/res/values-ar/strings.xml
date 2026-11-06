@@ -1148,6 +1148,9 @@
     <string name="show_additional_fields">عرض الحقول الإضافية</string>
     <string name="hide_additional_fields">إخفاء الحقول الإضافية</string>
     <string name="preparing_download">جارٍ تحضير التنزيل…</string>
+    <string name="download_partially_downloaded">تم تنزيل جزء منه</string>
+    <string name="download_paused_at_percent">متوقف عند %1$d%%</string>
+    <string name="resume_download">استئناف التنزيل</string>
     <string name="downloading_files">جارٍ تنزيل الملفات</string>
     <string name="edit_mission_and_services">تعديل المهمة والخدمات</string>
     <string name="this_team_has_no_description_defined">هذا الفريق ليس لديه وصف محدد</string>

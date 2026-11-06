@@ -1144,6 +1144,9 @@
     <string name="show_additional_fields">muuji beeraha dheeraadka ah</string>
     <string name="hide_additional_fields">qari beeraha dheeraadka ah</string>
     <string name="preparing_download">Diyaarinaya soo dejinta…</string>
+    <string name="download_partially_downloaded">Qayb ahaan ayaa la soo dejiyay</string>
+    <string name="download_paused_at_percent">Waa la hakiyay %1$d%%</string>
+    <string name="resume_download">Sii wad soo dejinta</string>
     <string name="downloading_files">Faylasha ayaa la soo dejinayaa</string>
     <string name="edit_mission_and_services">wax ka beddel himilada iyo adeegyada</string>
     <string name="this_team_has_no_description_defined">kooxdani ma laha sharaxaad la cayimay</string>
