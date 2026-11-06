@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
-object CourseStepLock {
+object CoursesStepsGate {
 
     fun isPageLocked(page: Int, blockingStepIndex: Int): Boolean {
         return blockingStepIndex >= 0 && page > blockingStepIndex + 1

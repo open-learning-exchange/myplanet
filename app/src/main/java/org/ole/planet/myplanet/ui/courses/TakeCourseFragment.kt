@@ -112,7 +112,7 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
         }
 
         position = if (lastPositionBeforeExam > 0) lastPositionBeforeExam else if (currentStep > 0) currentStep else 0
-        position = position.coerceAtMost(CourseStepLock.lastOpenPage(blockingStepIndex, steps.size))
+        position = position.coerceAtMost(CoursesStepsGate.lastOpenPage(blockingStepIndex, steps.size))
         lastPositionBeforeExam = -1
         setNavigationButtons()
 
@@ -188,7 +188,7 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
             override fun onStopTrackingTouch(seekBar: SeekBar) {
                 val step = requestedStep ?: return
                 requestedStep = null
-                if (step <= currentCourseProgress + 1 && !CourseStepLock.isPageLocked(step, blockingStepIndex)) {
+                if (step <= currentCourseProgress + 1 && !CoursesStepsGate.isPageLocked(step, blockingStepIndex)) {
                     binding.viewPager2.currentItem = step
                 }
             }
@@ -298,7 +298,7 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
         if (!containsUserId) return
         val index = steps.indexOfFirst { it?.id == stepId }
         if (index < 0) return
-        if (CourseStepLock.isPageLocked(index + 1, blockingStepIndex)) {
+        if (CoursesStepsGate.isPageLocked(index + 1, blockingStepIndex)) {
             showPassTestMessage()
             return
         }
@@ -387,7 +387,7 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
                     Snackbar.make(binding.root, lockedStepMessage, Snackbar.LENGTH_SHORT).show()
                     return
                 }
-                if (CourseStepLock.isPageLocked(binding.viewPager2.currentItem + 1, blockingStepIndex)) {
+                if (CoursesStepsGate.isPageLocked(binding.viewPager2.currentItem + 1, blockingStepIndex)) {
                     showPassTestMessage()
                     return
                 }
