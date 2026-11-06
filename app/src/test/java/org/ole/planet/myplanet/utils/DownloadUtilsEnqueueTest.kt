@@ -4,7 +4,10 @@ import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.work.impl.WorkManagerImpl
 import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.mockk.verify
@@ -14,6 +17,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.services.DownloadService
+import org.ole.planet.myplanet.services.DownloadWorker
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
@@ -38,6 +42,17 @@ class DownloadUtilsEnqueueTest {
     @After
     fun tearDown() {
         unmockkAll()
+    }
+
+    @Test
+    fun cancelDownloadWork_cancelsEveryDownloadWorkerByTag() {
+        val workManager = mockk<WorkManagerImpl>(relaxed = true)
+        mockkStatic(WorkManagerImpl::class)
+        every { WorkManagerImpl.getInstance(any()) } returns workManager
+
+        DownloadUtils.cancelDownloadWork(context)
+
+        verify(exactly = 1) { workManager.cancelAllWorkByTag(DownloadWorker.WORK_TAG) }
     }
 
     @Test

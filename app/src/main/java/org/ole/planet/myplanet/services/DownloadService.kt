@@ -778,6 +778,7 @@ class DownloadService : Service() {
                     "urls_key" to urlsKey,
                     "fromSync" to fromSync
                 ))
+                .addTag(DownloadWorker.WORK_TAG)
                 .build()
 
             WorkManager.getInstance(context).enqueue(workRequest)

@@ -217,10 +217,15 @@ object DownloadUtils {
                     "fromSync" to fromSync
                 )
             )
-            .addTag("download_work")
+            .addTag(DownloadWorker.WORK_TAG)
             .build()
 
         WorkManager.getInstance(context).enqueue(workRequest)
+    }
+
+    /** Cancels downloads running through [DownloadWorker], the fallback used when the service cannot start. */
+    fun cancelDownloadWork(context: Context) {
+        WorkManager.getInstance(context).cancelAllWorkByTag(DownloadWorker.WORK_TAG)
     }
 
     fun canStartForegroundService(context: Context): Boolean {

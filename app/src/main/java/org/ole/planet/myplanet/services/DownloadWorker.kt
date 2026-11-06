@@ -17,6 +17,8 @@ import dagger.assisted.AssistedInject
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import okio.Buffer
@@ -98,6 +100,9 @@ class DownloadWorker @AssistedInject constructor(
             removeCompletedUrls(urlsKey, urls.filterIndexed { i, _ -> results[i] }.toSet())
             resultFor(succeeded = results.count { it }, attempted = results.size, runAttemptCount = runAttemptCount)
         } catch (e: CancellationException) {
+            // Stopped by the user: WorkManager drops a foreground notification itself, but not the plain
+            // one shown when the worker could not be promoted.
+            notificationManager.cancel(WORKER_NOTIFICATION_ID)
             throw e
         } catch (e: Exception) {
             Log.e(TAG, "Download worker failed", e)
@@ -172,11 +177,15 @@ class DownloadWorker @AssistedInject constructor(
     ): Long {
         var totalBytes: Long = 0
         var lastUpdateTime = 0L
+        val coroutineContext = currentCoroutineContext()
 
         outputFile.sink().buffer().use { sink ->
             body.source().use { source ->
                 val buffer = Buffer()
                 while (true) {
+                    // The copy never suspends on its own, so without this a cancelled worker keeps
+                    // streaming the whole file before it notices.
+                    coroutineContext.ensureActive()
                     val read = source.read(buffer, 8_192)
                     if (read == -1L) break
                     sink.write(buffer, read)
@@ -251,6 +260,9 @@ class DownloadWorker @AssistedInject constructor(
 
     companion object {
         private const val TAG = "DownloadWorker"
+
+        /** Tag on every download work request, so Stop can cancel them all. */
+        const val WORK_TAG = "download_work"
         internal const val MAX_RETRY_ATTEMPTS = 3
 
         internal fun resultFor(succeeded: Int, attempted: Int, runAttemptCount: Int): Result = when {

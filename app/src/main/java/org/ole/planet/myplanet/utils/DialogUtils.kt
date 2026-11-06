@@ -31,6 +31,7 @@ object DialogUtils {
         prgDialog.setNegativeButton(context.getString(R.string.stop_download), isVisible = true) {
             DownloadUtils.dropUserQueuedDownloads(context)
             context.stopService(Intent(context, DownloadService::class.java))
+            DownloadUtils.cancelDownloadWork(context)
             prgDialog.dismiss()
             Utilities.toast(context, context.getString(R.string.download_stopped), Toast.LENGTH_SHORT)
         }
