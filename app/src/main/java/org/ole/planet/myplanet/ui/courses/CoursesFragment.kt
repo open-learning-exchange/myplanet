@@ -474,12 +474,12 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         if (::filterController.isInitialized) filterController.setTags(list ?: emptyList())
     }
 
-    override fun addToMyList(onComplete: (() -> Unit)?) {
-        super.addToMyList {
+    override fun addToMyList(onComplete: ((succeeded: Boolean) -> Unit)?) {
+        super.addToMyList { succeeded ->
             if (isAdded && ::selectionController.isInitialized && ::adapterCourses.isInitialized) {
                 selectionController.clearAll(adapterCourses)
             }
-            onComplete?.invoke()
+            onComplete?.invoke(succeeded)
         }
     }
 
@@ -507,7 +507,8 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                     DialogUtils.guestDialog(requireContext())
                 } else {
                     hasAdded = true
-                    addToMyList {
+                    addToMyList { succeeded ->
+                        if (!succeeded) return@addToMyList
                         val fragment = CoursesFragment().apply {
                             arguments = Bundle().apply { putBoolean("isMyCourseLib", true) }
                         }
