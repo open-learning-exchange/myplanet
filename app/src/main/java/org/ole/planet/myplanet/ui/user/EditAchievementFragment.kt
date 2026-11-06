@@ -21,6 +21,7 @@ import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.withStarted
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.chip.Chip
@@ -205,10 +206,12 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                     )
                 )
 
-                Utilities.toast(activity, getString(R.string.achievement_saved))
-                _binding?.btnUpdate?.isEnabled = true
-                if (isAdded) {
-                    FragmentNavigator.popBackStack(parentFragmentManager)
+                lifecycle.withStarted {
+                    Utilities.toast(activity, getString(R.string.achievement_saved))
+                    _binding?.btnUpdate?.isEnabled = true
+                    if (isAdded) {
+                        FragmentNavigator.popBackStack(parentFragmentManager)
+                    }
                 }
             }
         }
