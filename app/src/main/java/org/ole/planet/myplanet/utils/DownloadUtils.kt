@@ -158,10 +158,31 @@ object DownloadUtils {
         val preferences = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
         val existing = preferences.getStringSet(key, emptySet()) ?: emptySet()
         val merged = existing.toMutableSet().apply { addAll(urls) }
+        val syncOwned = if (fromSync) {
+            (preferences.getStringSet(DownloadService.SYNC_DOWNLOADS_KEY, emptySet()) ?: emptySet()) + urls
+        } else {
+            null
+        }
         preferences.edit {
             putStringSet(key, merged)
+            syncOwned?.let { putStringSet(DownloadService.SYNC_DOWNLOADS_KEY, it) }
         }
         startDownloadServiceSafely(context, key, fromSync)
+    }
+
+    /**
+     * Drops every queued download the user started, so pressing Stop does not bring them back the
+     * next time something starts the service. Downloads queued by sync are left for sync to finish.
+     */
+    fun dropUserQueuedDownloads(context: Context) {
+        val preferences = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+        val syncOwned = preferences.getStringSet(DownloadService.SYNC_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+        val priority = preferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+        val pending = preferences.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+        preferences.edit(commit = true) {
+            putStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, priority.intersect(syncOwned))
+            putStringSet(DownloadService.PENDING_DOWNLOADS_KEY, pending.intersect(syncOwned))
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.S)

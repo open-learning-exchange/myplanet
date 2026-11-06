@@ -198,9 +198,12 @@ class DownloadService : Service() {
         remainingPriority.removeAll(completed)
         val remainingPending = preferences.getStringSet(PENDING_DOWNLOADS_KEY, emptySet())?.toMutableSet() ?: mutableSetOf()
         remainingPending.removeAll(completed)
+        val remainingSyncOwned = preferences.getStringSet(SYNC_DOWNLOADS_KEY, emptySet())?.toMutableSet() ?: mutableSetOf()
+        remainingSyncOwned.removeAll(completed)
         preferences.edit {
             putStringSet(PRIORITY_DOWNLOADS_KEY, remainingPriority)
             putStringSet(PENDING_DOWNLOADS_KEY, remainingPending)
+            putStringSet(SYNC_DOWNLOADS_KEY, remainingSyncOwned)
         }
         processedSinceLastPersist = 0
     }
@@ -688,6 +691,8 @@ class DownloadService : Service() {
         const val ONGOING_NOTIFICATION_ID = 1
         const val COMPLETION_NOTIFICATION_ID = 2
         private const val NOTIFICATION_UPDATE_INTERVAL_MS = 500L
+        /** URLs queued by sync rather than by the user; a user's Stop leaves these in the queue. */
+        const val SYNC_DOWNLOADS_KEY = "sync_downloads_queue"
         const val PENDING_DOWNLOADS_KEY = "pending_downloads_queue"
         const val PRIORITY_DOWNLOADS_KEY = "priority_downloads_queue"
 

@@ -90,4 +90,30 @@ class DownloadUtilsEnqueueTest {
 
         verify(exactly = 0) { DownloadService.startService(any(), any(), any()) }
     }
+
+    @Test
+    fun openDownloadService_fromSync_marksUrlsAsSyncOwned() {
+        val prefs = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+
+        DownloadUtils.openDownloadService(context, arrayListOf("sync-a"), true)
+        DownloadUtils.openDownloadService(context, arrayListOf("user-b"), false)
+
+        assertEquals(setOf("sync-a"), prefs.getStringSet(DownloadService.SYNC_DOWNLOADS_KEY, emptySet()))
+    }
+
+    @Test
+    fun dropUserQueuedDownloads_removesUserUrls_andKeepsSyncUrls() {
+        val prefs = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, setOf("user-priority"))
+            .putStringSet(DownloadService.PENDING_DOWNLOADS_KEY, setOf("user-pending", "sync-pending"))
+            .putStringSet(DownloadService.SYNC_DOWNLOADS_KEY, setOf("sync-pending"))
+            .commit()
+
+        DownloadUtils.dropUserQueuedDownloads(context)
+
+        assertEquals(emptySet<String>(), prefs.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, null))
+        assertEquals(setOf("sync-pending"), prefs.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, null))
+        assertEquals(setOf("sync-pending"), prefs.getStringSet(DownloadService.SYNC_DOWNLOADS_KEY, null))
+    }
 }
