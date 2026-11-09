@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.ServerReachabilityProvider
 import retrofit2.Response
@@ -36,7 +35,6 @@ class ChatRepositoryImpl @Inject constructor(
     private val chatApiService: ChatApiService,
     private val serverUrlMapper: ServerUrlMapper,
     private val sharedPrefManager: SharedPrefManager,
-    private val dispatcherProvider: DispatcherProvider,
     private val serverReachabilityProvider: ServerReachabilityProvider,
     @PlainGson private val gson: Gson
 ) : ChatRepository, ChatSyncWriter {
