@@ -152,14 +152,14 @@ class ResourceViewerFragment : BaseBindingFragment<FragmentResourceViewerBinding
             isFullPath = it.getBoolean(ARG_IS_FULL_PATH, false)
             auth = it.getString(ARG_AUTH) ?: ""
         }
+        audioRecorder = AudioRecorder().setAudioRecordListener(audioRecordListener)
+        audioRecorder.setCaller(this, requireContext())
     }
 
     private var lastSavedPositionMs: Long = -1L
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        audioRecorder = AudioRecorder().setAudioRecordListener(audioRecordListener)
-        audioRecorder.setCaller(requireActivity(), requireContext())
 
         if (type == ResourceType.VIDEO || type == ResourceType.AUDIO) {
             setupPlaybackSpeedMenu()

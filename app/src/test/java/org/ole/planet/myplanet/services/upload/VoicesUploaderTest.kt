@@ -6,6 +6,8 @@ import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import java.io.File
+import java.util.Base64
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -22,8 +24,11 @@ import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.repository.NewsUpdateData
 import org.ole.planet.myplanet.repository.NewsUploadData
@@ -53,6 +58,9 @@ class VoicesUploaderTest {
 
     private lateinit var voicesUploader: VoicesUploader
 
+    @get:Rule
+    val tempFolder = TemporaryFolder()
+
     @Before
     fun setup() {
         MainApplication.testContext = context
@@ -60,6 +68,8 @@ class VoicesUploaderTest {
         every { Log.d(any(), any()) } returns 0
         every { Log.e(any(), any()) } returns 0
         every { Log.e(any(), any(), any()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
+        every { Log.w(any(), any<String>(), any()) } returns 0
 
         mockkStatic(TextUtils::class)
         every { TextUtils.isEmpty(any()) } answers { firstArg<CharSequence?>().isNullOrEmpty() }
@@ -71,6 +81,9 @@ class VoicesUploaderTest {
         mockkObject(UrlUtils)
         every { UrlUtils.header } returns "mockHeader"
         every { UrlUtils.getUrl() } returns "http://mock.url"
+
+        mockkObject(FileUtils)
+        every { FileUtils.getMimeType(any()) } returns "image/jpeg"
 
         voicesUploader = VoicesUploader(
             gson = gson,
@@ -89,59 +102,112 @@ class VoicesUploaderTest {
         unmockkAll()
     }
 
+    private fun imageEntry(path: String, resourceId: String? = "res-1"): String {
+        val obj = JsonObject().apply {
+            addProperty("imageUrl", path)
+            addProperty("fileName", File(path).name)
+            resourceId?.let { addProperty("resourceId", it) }
+        }
+        every { gson.fromJson(obj.toString(), JsonObject::class.java) } returns obj
+        return obj.toString()
+    }
+
+    private fun voiceWithImage(entry: String) = NewsUploadData(
+        id = "news1",
+        _id = "news1_id",
+        message = "Hello",
+        imageUrls = listOf(entry),
+        newsJson = JsonObject().apply { addProperty("message", "Hello") }
+    )
+
+    private fun stubImagePut(code: Int) {
+        coEvery { uploadRepository.putUpload(match { it.startsWith("http://mock.url/resources/") }, any()) } returns
+            if (code in 200..299) Response.success(code, JsonObject()) else Response.error(code, "{}".toResponseBody(null))
+    }
+
     @Test
-    fun `uploadNews derives mimeType from filename and passes to header map`() = testScope.runTest {
-        mockkObject(FileUtils)
-        every { FileUtils.getFileNameFromUrl("http://example.com/test_image.png") } returns "test_image.png"
-        every { FileUtils.getMimeType("test_image.png") } returns "image/png"
-
-        val imgObj = JsonObject().apply {
-            addProperty("fileName", "test_image.png")
-            addProperty("imageUrl", "http://example.com/test_image.png")
-        }
-        val imgJsonString = imgObj.toString()
-        every { gson.fromJson(imgJsonString, JsonObject::class.java) } returns imgObj
-
-        val newsJson = JsonObject().apply {
-            addProperty("message", "Hello World")
-        }
-        val newsItem = NewsUploadData(
-            id = "news1",
-            _id = "news1_id",
-            message = "Hello World",
-            imageUrls = listOf(imgJsonString),
-            newsJson = newsJson
-        )
-
-        coEvery { voicesRepository.getNewsForUpload() } returns listOf(newsItem)
-        coEvery { userRepository.getUserModel() } returns null
-
-        val imageResponseJson = JsonObject().apply {
-            addProperty("id", "res123")
-            addProperty("rev", "rev123")
-        }
-        coEvery { uploadRepository.postUpload("http://mock.url/resources", any()) } returns Response.success(imageResponseJson)
-        coEvery { uploadRepository.uploadResource(any(), any(), any()) } returns Response.success(JsonObject())
-
-        val bulkResponse = JsonArray().apply {
-            add(JsonObject().apply {
-                addProperty("id", "news1_id")
-                addProperty("rev", "rev2")
-            })
-        }
-        coEvery { uploadRepository.postUploadArray("http://mock.url/news/_bulk_docs", any()) } returns Response.success(bulkResponse)
+    fun `an image goes up as one PUT carrying its file under its fixed id`() = testScope.runTest {
+        val file = tempFolder.newFile("post1.jpg").apply { writeBytes(byteArrayOf(1, 2, 3)) }
+        coEvery { voicesRepository.getNewsForUpload() } returns listOf(voiceWithImage(imageEntry(file.path)))
+        val doc = slot<JsonObject>()
+        coEvery { uploadRepository.putUpload("http://mock.url/resources/res-1", capture(doc)) } returns Response.success(201, JsonObject())
+        stubBulkUpload(slot())
+        val updates = slot<List<NewsUpdateData>>()
+        coEvery { voicesRepository.markNewsUploaded(capture(updates)) } returns Unit
 
         voicesUploader.uploadNews()
         advanceUntilIdle()
 
-        coVerify(exactly = 1) {
-            uploadRepository.uploadResource(
-                match { headers -> headers["Content-Type"] == "image/png" && headers["If-Match"] == "rev123" },
-                "http://mock.url/resources/res123/test_image.png",
-                any()
-            )
-        }
+        val attachment = doc.captured.getAsJsonObject("_attachments").getAsJsonObject("post1.jpg")
+        assertEquals("image/jpeg", attachment["content_type"].asString)
+        assertEquals(Base64.getEncoder().encodeToString(byteArrayOf(1, 2, 3)), attachment["data"].asString)
+        assertEquals("image", doc.captured["mediaType"].asString)
+        coVerify(exactly = 0) { uploadRepository.postUpload(any(), any()) }
+        coVerify(exactly = 0) { uploadRepository.uploadResource(any(), any(), any()) }
+        assertEquals("Hello\n![](resources/res-1/post1.jpg)", updates.captured.single().message)
     }
+
+    @Test
+    fun `a 409 on the image means an earlier attempt stored it and the voice still posts`() = testScope.runTest {
+        val file = tempFolder.newFile("post1.jpg")
+        coEvery { voicesRepository.getNewsForUpload() } returns listOf(voiceWithImage(imageEntry(file.path)))
+        stubImagePut(409)
+        stubBulkUpload(slot())
+
+        voicesUploader.uploadNews()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { voicesRepository.markNewsUploaded(any()) }
+    }
+
+    @Test
+    fun `a rejected image keeps the voice pending instead of linking a missing file`() = testScope.runTest {
+        val file = tempFolder.newFile("post1.jpg")
+        coEvery { voicesRepository.getNewsForUpload() } returns listOf(voiceWithImage(imageEntry(file.path)))
+        stubImagePut(500)
+
+        voicesUploader.uploadNews()
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { uploadRepository.postUploadArray(any(), any()) }
+        coVerify(exactly = 0) { voicesRepository.markNewsUploaded(any()) }
+        assertTrue(file.exists())
+    }
+
+    @Test
+    fun `an entry queued before ids existed gets the same safe id and name on every attempt`() = testScope.runTest {
+        val file = tempFolder.newFile("photo (1).jpg")
+        coEvery { voicesRepository.getNewsForUpload() } returns listOf(voiceWithImage(imageEntry(file.path, resourceId = null)))
+        val urls = mutableListOf<String>()
+        coEvery { uploadRepository.putUpload(capture(urls), any()) } returns Response.error(503, "{}".toResponseBody(null))
+
+        voicesUploader.uploadNews()
+        voicesUploader.uploadNews()
+        advanceUntilIdle()
+
+        assertEquals(2, urls.size)
+        assertEquals(urls[0], urls[1])
+        val docs = mutableListOf<JsonObject>()
+        coVerify { uploadRepository.putUpload(any(), capture(docs)) }
+        assertEquals(setOf("photo_1_.jpg"), docs.first().getAsJsonObject("_attachments").keySet())
+    }
+
+    @Test
+    fun `an image whose file is gone is dropped and the voice posts`() = testScope.runTest {
+        coEvery { voicesRepository.getNewsForUpload() } returns
+            listOf(voiceWithImage(imageEntry(File(tempFolder.root, "gone.jpg").path, resourceId = null)))
+        stubBulkUpload(slot())
+        val updates = slot<List<NewsUpdateData>>()
+        coEvery { voicesRepository.markNewsUploaded(capture(updates)) } returns Unit
+
+        voicesUploader.uploadNews()
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { uploadRepository.putUpload(any(), any()) }
+        assertEquals("Hello", updates.captured.single().message)
+        assertEquals(0, updates.captured.single().imagesArray.size())
+    }
+
     private fun existingImages() = JsonArray().apply {
         add(JsonObject().apply {
             addProperty("resourceId", "old-res")
@@ -184,28 +250,15 @@ class VoicesUploaderTest {
 
     @Test
     fun `a new image is added alongside existing ones and its markdown is kept locally`() = testScope.runTest {
-        mockkObject(FileUtils)
-        every { FileUtils.getFileNameFromUrl("/sdcard/new.png") } returns "new.png"
-        every { FileUtils.getMimeType("new.png") } returns "image/png"
-        val imgObj = JsonObject().apply {
-            addProperty("fileName", "new.png")
-            addProperty("imageUrl", "/sdcard/new.png")
-        }
-        every { gson.fromJson(imgObj.toString(), JsonObject::class.java) } returns imgObj
+        val file = tempFolder.newFile("new.jpg")
         val newsJson = JsonObject().apply {
             addProperty("message", "Hello")
             add("images", existingImages())
         }
         coEvery { voicesRepository.getNewsForUpload() } returns listOf(
-            NewsUploadData(id = "news1", _id = "news1_id", message = "Hello", imageUrls = listOf(imgObj.toString()), newsJson = newsJson)
+            NewsUploadData(id = "news1", _id = "news1_id", message = "Hello", imageUrls = listOf(imageEntry(file.path, "new-res")), newsJson = newsJson)
         )
-        coEvery { userRepository.getUserModel() } returns null
-        val imageResponse = JsonObject().apply {
-            addProperty("id", "new-res")
-            addProperty("rev", "1-res")
-        }
-        coEvery { uploadRepository.postUpload("http://mock.url/resources", any()) } returns Response.success(imageResponse)
-        coEvery { uploadRepository.uploadResource(any(), any(), any()) } returns Response.success(JsonObject())
+        stubImagePut(201)
         val payload = slot<JsonObject>()
         stubBulkUpload(payload)
         val updates = slot<List<NewsUpdateData>>()
@@ -216,7 +269,7 @@ class VoicesUploaderTest {
 
         val update = updates.captured.single()
         assertEquals(listOf("old-res", "new-res"), update.imagesArray.map { it.asJsonObject["resourceId"].asString })
-        assertEquals("Hello\n![](resources/new-res/new.png)", update.message)
+        assertEquals("Hello\n![](resources/new-res/new.jpg)", update.message)
     }
 
     @Test
