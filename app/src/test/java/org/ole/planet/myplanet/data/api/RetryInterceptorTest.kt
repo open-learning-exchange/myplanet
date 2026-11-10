@@ -57,7 +57,7 @@ class RetryInterceptorTest {
 
         assertEquals(200, result.code)
         verify(exactly = 1) { chain.proceed(request) }
-        verify(exactly = 0) { broadcastService.trySendBroadcast(any()) }
+        verify(exactly = 0) { broadcastService.trySendRetryEvent(any(), any(), any()) }
     }
 
     @Test
@@ -75,7 +75,7 @@ class RetryInterceptorTest {
         assertEquals(500, result.code)
         // 1 initial + 3 retries = 4
         verify(exactly = 4) { chain.proceed(request) }
-        verify(exactly = 3) { broadcastService.trySendBroadcast(any()) }
+        verify(exactly = 3) { broadcastService.trySendRetryEvent(any(), any(), any()) }
     }
 
     @Test
@@ -93,7 +93,7 @@ class RetryInterceptorTest {
 
         assertEquals(200, result.code)
         verify(exactly = 2) { chain.proceed(request) }
-        verify(exactly = 1) { broadcastService.trySendBroadcast(any()) }
+        verify(exactly = 1) { broadcastService.trySendRetryEvent(any(), any(), any()) }
     }
 
     @Test
@@ -114,7 +114,7 @@ class RetryInterceptorTest {
 
         // 1 initial + 3 retries = 4
         verify(exactly = 4) { chain.proceed(request) }
-        verify(exactly = 3) { broadcastService.trySendBroadcast(any()) }
+        verify(exactly = 3) { broadcastService.trySendRetryEvent(any(), any(), any()) }
     }
 
     @Test
@@ -131,7 +131,7 @@ class RetryInterceptorTest {
 
         assertEquals(200, result.code)
         verify(exactly = 2) { chain.proceed(request) }
-        verify(exactly = 1) { broadcastService.trySendBroadcast(any()) }
+        verify(exactly = 1) { broadcastService.trySendRetryEvent(any(), any(), any()) }
     }
 
     @Test
@@ -154,7 +154,7 @@ class RetryInterceptorTest {
         }
 
         verify(exactly = 1) { chain.proceed(request) }
-        verify(exactly = 0) { broadcastService.trySendBroadcast(any()) }
+        verify(exactly = 0) { broadcastService.trySendRetryEvent(any(), any(), any()) }
     }
 
     @Test
@@ -174,7 +174,7 @@ class RetryInterceptorTest {
 
         assertEquals(502, result.code)
         verify(exactly = 1) { chain.proceed(request) }
-        verify(exactly = 0) { broadcastService.trySendBroadcast(any()) }
+        verify(exactly = 0) { broadcastService.trySendRetryEvent(any(), any(), any()) }
     }
 
     @Test
@@ -194,7 +194,27 @@ class RetryInterceptorTest {
 
         assertEquals(200, result.code)
         verify(exactly = 2) { chain.proceed(request) }
-        verify(exactly = 1) { broadcastService.trySendBroadcast(any()) }
+        verify(exactly = 1) { broadcastService.trySendRetryEvent(any(), any(), any()) }
+    }
+
+    @Test
+    fun testRetryEventUrlContainsOnlyEncodedPath() {
+        val request = Request.Builder()
+            .url("http://satellite:1234@host:5984/db/_find?x=y")
+            .post("{}".toRequestBody())
+            .build()
+        val response503 = createResponse(request, 503)
+        val response200 = createResponse(request, 200)
+
+        val chain = mockk<Interceptor.Chain>()
+        every { chain.request() } returns request
+        every { chain.proceed(request) } returns response503 andThen response200
+        every { chain.call() } returns notCancelledCall()
+
+        val result = retryInterceptor.intercept(chain)
+
+        assertEquals(200, result.code)
+        verify(exactly = 1) { broadcastService.trySendRetryEvent("/db/_find", 1, 10L) }
     }
 
     @Test
@@ -230,7 +250,7 @@ class RetryInterceptorTest {
         }
 
         verify(exactly = 1) { chain.proceed(request) }
-        verify(exactly = 1) { broadcastService.trySendBroadcast(any()) }
+        verify(exactly = 1) { broadcastService.trySendRetryEvent(any(), any(), any()) }
     }
 
     @Test
