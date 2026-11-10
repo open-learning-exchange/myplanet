@@ -9,6 +9,7 @@
     android:padding="@dimen/padding_normal">
 
     <RelativeLayout
+        android:id="@+id/rv_item_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 

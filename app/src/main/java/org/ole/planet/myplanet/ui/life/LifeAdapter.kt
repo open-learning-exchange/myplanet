@@ -128,7 +128,7 @@ class LifeAdapter(
         val imageView get() = binding.itemImageView
         val dragImageButton get() = binding.dragImageButton
         val visibility get() = binding.visibilityImageButton
-        val rvItemContainer get() = binding.rvItemParentLayout
+        val rvItemContainer get() = binding.rvItemContent
 
         init {
             imageView.setOnClickListener { view: View ->
