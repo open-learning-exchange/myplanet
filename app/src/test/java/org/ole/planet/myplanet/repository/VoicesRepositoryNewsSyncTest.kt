@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -17,11 +18,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.room.AppDatabase
@@ -44,6 +47,20 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
 class VoicesRepositoryNewsSyncTest {
+
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkObject(UrlUtils, NetworkUtils)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkObject(UrlUtils, NetworkUtils)
+        }
+    }
 
     private lateinit var db: AppDatabase
     private lateinit var newsDao: NewsDao
@@ -68,9 +85,8 @@ class VoicesRepositoryNewsSyncTest {
 
     @Before
     fun setUp() {
-        mockkObject(UrlUtils)
+        clearMocks(UrlUtils, NetworkUtils, answers = true, recordedCalls = true)
         every { UrlUtils.getUrl() } returns "http://test.local"
-        mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "android-id"
         // Non-null String return => a relaxed mock yields "" and gson.fromJson("") returns null,
         // NPE-ing saveConcatenatedLinksToPrefs. Return null so it takes the empty-set branch.
@@ -96,7 +112,6 @@ class VoicesRepositoryNewsSyncTest {
     @After
     fun tearDown() {
         db.close()
-        unmockkObject(UrlUtils, NetworkUtils)
     }
 
     @Test
@@ -299,7 +314,6 @@ class VoicesRepositoryNewsSyncTest {
         val news = newsDao.getByUnderscoreId("n1")!!
 
         repository.toggleReaction(news.id, "❤️", "org.couchdb.user:alice")
-        mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "test-device"
 
         val payload = repository.getNewsForUpload().single { it._id == "n1" }.newsJson
