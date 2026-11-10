@@ -7,16 +7,19 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.RequestBuilder
 import com.bumptech.glide.RequestManager
 import com.bumptech.glide.request.BaseRequestOptions
+import io.mockk.clearStaticMockk
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.spyk
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifyOrder
+import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.R
@@ -32,10 +35,30 @@ class ImageUtilsTest {
     private lateinit var context: Context
     private lateinit var imageView: ImageView
 
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkStatic(Glide::class)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkStatic(Glide::class)
+        }
+    }
+
     @Before
     fun setUp() {
+        clearStaticMockk(Glide::class)
         context = RuntimeEnvironment.getApplication()
         imageView = ImageView(context)
+    }
+
+    @After
+    fun tearDown() {
+        clearStaticMockk(Glide::class)
     }
 
     @Test
@@ -146,40 +169,32 @@ class ImageUtilsTest {
     @Test
     fun testLoadProfileImage_ClearsInFlightRequest_WhenNullUrl() {
         val requestManager = mockk<RequestManager>(relaxed = true)
-        mockkStatic(Glide::class)
-        try {
-            every { Glide.with(any<Context>()) } returns requestManager
-            val spiedImageView = spyk(ImageView(context))
-            every { spiedImageView.isOpaque } returns false
+        every { Glide.with(any<Context>()) } returns requestManager
+        val spiedImageView = mockk<ImageView>(relaxed = true)
+        every { spiedImageView.context } returns context
+        every { spiedImageView.isOpaque } returns false
 
-            ImageUtils.loadProfileImage(null, spiedImageView, 200)
+        ImageUtils.loadProfileImage(null, spiedImageView, 200)
 
-            verifyOrder {
-                requestManager.clear(spiedImageView)
-                spiedImageView.setImageResource(R.drawable.profile)
-            }
-        } finally {
-            unmockkStatic(Glide::class)
+        verifyOrder {
+            requestManager.clear(spiedImageView)
+            spiedImageView.setImageResource(R.drawable.profile)
         }
     }
 
     @Test
     fun testLoadProfileImage_ClearsInFlightRequest_WhenEmptyUrl() {
         val requestManager = mockk<RequestManager>(relaxed = true)
-        mockkStatic(Glide::class)
-        try {
-            every { Glide.with(any<Context>()) } returns requestManager
-            val spiedImageView = spyk(ImageView(context))
-            every { spiedImageView.isOpaque } returns false
+        every { Glide.with(any<Context>()) } returns requestManager
+        val spiedImageView = mockk<ImageView>(relaxed = true)
+        every { spiedImageView.context } returns context
+        every { spiedImageView.isOpaque } returns false
 
-            ImageUtils.loadProfileImage("", spiedImageView, 200)
+        ImageUtils.loadProfileImage("", spiedImageView, 200)
 
-            verifyOrder {
-                requestManager.clear(spiedImageView)
-                spiedImageView.setImageResource(R.drawable.profile)
-            }
-        } finally {
-            unmockkStatic(Glide::class)
+        verifyOrder {
+            requestManager.clear(spiedImageView)
+            spiedImageView.setImageResource(R.drawable.profile)
         }
     }
 
@@ -187,65 +202,53 @@ class ImageUtilsTest {
     fun testLoadProfileImage_DoesNotClearRequest_WhenNonEmptyUrl() {
         val requestManager = mockk<RequestManager>(relaxed = true)
         val requestBuilder = mockk<RequestBuilder<android.graphics.drawable.Drawable>>()
-        mockkStatic(Glide::class)
-        try {
-            every { Glide.with(any<Context>()) } returns requestManager
-            every { requestManager.load(any<String>()) } returns requestBuilder
-            every { (requestBuilder as BaseRequestOptions<*>).diskCacheStrategy(any()) } returns requestBuilder
-            every { (requestBuilder as BaseRequestOptions<*>).override(any<Int>(), any<Int>()) } returns requestBuilder
-            every { (requestBuilder as BaseRequestOptions<*>).circleCrop() } returns requestBuilder
-            every { (requestBuilder as BaseRequestOptions<*>).placeholder(any<Int>()) } returns requestBuilder
-            every { (requestBuilder as BaseRequestOptions<*>).error(any<Int>()) } returns requestBuilder
-            every { requestBuilder.into(any<ImageView>()) } returns mockk(relaxed = true)
+        every { Glide.with(any<Context>()) } returns requestManager
+        every { requestManager.load(any<String>()) } returns requestBuilder
+        every { (requestBuilder as BaseRequestOptions<*>).diskCacheStrategy(any()) } returns requestBuilder
+        every { (requestBuilder as BaseRequestOptions<*>).override(any<Int>(), any<Int>()) } returns requestBuilder
+        every { (requestBuilder as BaseRequestOptions<*>).circleCrop() } returns requestBuilder
+        every { (requestBuilder as BaseRequestOptions<*>).placeholder(any<Int>()) } returns requestBuilder
+        every { (requestBuilder as BaseRequestOptions<*>).error(any<Int>()) } returns requestBuilder
+        every { requestBuilder.into(any<ImageView>()) } returns mockk(relaxed = true)
 
-            val spiedImageView = spyk(ImageView(context))
-            every { spiedImageView.isOpaque } returns false
+        val spiedImageView = mockk<ImageView>(relaxed = true)
+        every { spiedImageView.context } returns context
+        every { spiedImageView.isOpaque } returns false
 
-            ImageUtils.loadProfileImage("http://example.com/image.jpg", spiedImageView, 200)
+        ImageUtils.loadProfileImage("http://example.com/image.jpg", spiedImageView, 200)
 
-            verify(exactly = 0) { requestManager.clear(spiedImageView) }
-        } finally {
-            unmockkStatic(Glide::class)
-        }
+        verify(exactly = 0) { requestManager.clear(spiedImageView) }
     }
 
     @Test
     fun testLoadImage_ClearsInFlightRequest_WhenNullUrl() {
         val requestManager = mockk<RequestManager>(relaxed = true)
-        mockkStatic(Glide::class)
-        try {
-            every { Glide.with(any<Context>()) } returns requestManager
-            val spiedImageView = spyk(ImageView(context))
-            every { spiedImageView.isOpaque } returns false
+        every { Glide.with(any<Context>()) } returns requestManager
+        val spiedImageView = mockk<ImageView>(relaxed = true)
+        every { spiedImageView.context } returns context
+        every { spiedImageView.isOpaque } returns false
 
-            ImageUtils.loadImage(null, spiedImageView)
+        ImageUtils.loadImage(null, spiedImageView)
 
-            verifyOrder {
-                requestManager.clear(spiedImageView)
-                spiedImageView.setImageResource(R.drawable.ole_logo)
-            }
-        } finally {
-            unmockkStatic(Glide::class)
+        verifyOrder {
+            requestManager.clear(spiedImageView)
+            spiedImageView.setImageResource(R.drawable.ole_logo)
         }
     }
 
     @Test
     fun testLoadImage_ClearsInFlightRequest_WhenEmptyUrl() {
         val requestManager = mockk<RequestManager>(relaxed = true)
-        mockkStatic(Glide::class)
-        try {
-            every { Glide.with(any<Context>()) } returns requestManager
-            val spiedImageView = spyk(ImageView(context))
-            every { spiedImageView.isOpaque } returns false
+        every { Glide.with(any<Context>()) } returns requestManager
+        val spiedImageView = mockk<ImageView>(relaxed = true)
+        every { spiedImageView.context } returns context
+        every { spiedImageView.isOpaque } returns false
 
-            ImageUtils.loadImage("", spiedImageView)
+        ImageUtils.loadImage("", spiedImageView)
 
-            verifyOrder {
-                requestManager.clear(spiedImageView)
-                spiedImageView.setImageResource(R.drawable.ole_logo)
-            }
-        } finally {
-            unmockkStatic(Glide::class)
+        verifyOrder {
+            requestManager.clear(spiedImageView)
+            spiedImageView.setImageResource(R.drawable.ole_logo)
         }
     }
 
@@ -253,26 +256,22 @@ class ImageUtilsTest {
     fun testLoadImage_DoesNotClearRequest_WhenNonEmptyUrl() {
         val requestManager = mockk<RequestManager>(relaxed = true)
         val requestBuilder = mockk<RequestBuilder<android.graphics.drawable.Drawable>>()
-        mockkStatic(Glide::class)
-        try {
-            every { Glide.with(any<Context>()) } returns requestManager
-            every { requestManager.load(any<String>()) } returns requestBuilder
-            every { (requestBuilder as BaseRequestOptions<*>).diskCacheStrategy(any()) } returns requestBuilder
-            every { (requestBuilder as BaseRequestOptions<*>).override(any<Int>(), any<Int>()) } returns requestBuilder
-            every { (requestBuilder as BaseRequestOptions<*>).circleCrop() } returns requestBuilder
-            every { (requestBuilder as BaseRequestOptions<*>).placeholder(any<Int>()) } returns requestBuilder
-            every { (requestBuilder as BaseRequestOptions<*>).error(any<Int>()) } returns requestBuilder
-            every { (requestBuilder as BaseRequestOptions<*>).apply(any()) } returns requestBuilder
-            every { requestBuilder.into(any<ImageView>()) } returns mockk(relaxed = true)
+        every { Glide.with(any<Context>()) } returns requestManager
+        every { requestManager.load(any<String>()) } returns requestBuilder
+        every { (requestBuilder as BaseRequestOptions<*>).diskCacheStrategy(any()) } returns requestBuilder
+        every { (requestBuilder as BaseRequestOptions<*>).override(any<Int>(), any<Int>()) } returns requestBuilder
+        every { (requestBuilder as BaseRequestOptions<*>).circleCrop() } returns requestBuilder
+        every { (requestBuilder as BaseRequestOptions<*>).placeholder(any<Int>()) } returns requestBuilder
+        every { (requestBuilder as BaseRequestOptions<*>).error(any<Int>()) } returns requestBuilder
+        every { (requestBuilder as BaseRequestOptions<*>).apply(any()) } returns requestBuilder
+        every { requestBuilder.into(any<ImageView>()) } returns mockk(relaxed = true)
 
-            val spiedImageView = spyk(ImageView(context))
-            every { spiedImageView.isOpaque } returns false
+        val spiedImageView = mockk<ImageView>(relaxed = true)
+        every { spiedImageView.context } returns context
+        every { spiedImageView.isOpaque } returns false
 
-            ImageUtils.loadImage("http://example.com/image.jpg", spiedImageView)
+        ImageUtils.loadImage("http://example.com/image.jpg", spiedImageView)
 
-            verify(exactly = 0) { requestManager.clear(spiedImageView) }
-        } finally {
-            unmockkStatic(Glide::class)
-        }
+        verify(exactly = 0) { requestManager.clear(spiedImageView) }
     }
 }
