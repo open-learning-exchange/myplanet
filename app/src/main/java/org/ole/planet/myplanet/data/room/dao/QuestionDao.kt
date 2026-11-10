@@ -24,11 +24,20 @@ interface QuestionDao {
     }
     @Query("SELECT COUNT(*) FROM exam_questions WHERE examId = :examId") suspend fun countByExamId(examId: String): Int
     @Upsert suspend fun upsertAll(items: List<ExamQuestion>)
-    @Query("DELETE FROM exam_questions WHERE examId = :examId AND id NOT IN (:keepIds)") suspend fun deleteStaleInternal(examId: String, keepIds: List<String>)
+    @Query("SELECT id FROM exam_questions WHERE examId = :examId") suspend fun getIdsByExamId(examId: String): List<String>
+    @Query("DELETE FROM exam_questions WHERE examId = :examId AND id IN (:ids)") suspend fun deleteByIdsInternal(examId: String, ids: List<String>)
 
+    @androidx.room.Transaction
     suspend fun deleteStaleQuestions(questions: List<ExamQuestion>) {
         questions.groupBy { it.examId }.forEach { (examId, examQuestions) ->
-            if (examId != null) deleteStaleInternal(examId, examQuestions.map { it.id }.distinct())
+            if (examId != null) {
+                val storedIds = getIdsByExamId(examId)
+                val keepIds = examQuestions.map { it.id }.toSet()
+                val stale = storedIds.toSet() - keepIds
+                if (stale.isNotEmpty()) {
+                    stale.chunked(900).forEach { deleteByIdsInternal(examId, it) }
+                }
+            }
         }
     }
 }
