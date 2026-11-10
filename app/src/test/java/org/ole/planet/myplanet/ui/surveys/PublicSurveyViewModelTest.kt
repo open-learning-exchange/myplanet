@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysPublicMapper
 import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.utils.TestTimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PublicSurveyViewModelTest {
@@ -31,6 +32,7 @@ class PublicSurveyViewModelTest {
     private lateinit var submissionsRepository: SubmissionsRepository
     private lateinit var publicMapper: SurveysPublicMapper
     private lateinit var viewModel: PublicSurveyViewModel
+    private val timeProvider = TestTimeProvider(currentTime = 1_000L)
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
@@ -43,7 +45,8 @@ class PublicSurveyViewModelTest {
         viewModel = PublicSurveyViewModel(
             surveysRepository,
             submissionsRepository,
-            publicMapper
+            publicMapper,
+            timeProvider
         )
     }
 
@@ -66,7 +69,7 @@ class PublicSurveyViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertTrue(viewModel.surveyStarted)
-        assertTrue(viewModel.launchTime > 0)
+        assertEquals(1_000L, viewModel.launchTime)
         coVerify { surveysRepository.saveSurveyFromPublicApi(any()) }
 
         val event = deferredEvent.await()
@@ -101,7 +104,7 @@ class PublicSurveyViewModelTest {
 
         val submission = Submission().apply {
             id = "sub1"
-            lastUpdateTime = viewModel.launchTime + 1000L
+            lastUpdateTime = timeProvider.currentTime + 1000L
             user = "{\"name\":\"John\",\"age\":\" 25 \"}"
         }
         coEvery { submissionsRepository.getLatestSubmissionByParentId("survey123", "complete") } returns submission
@@ -119,5 +122,34 @@ class PublicSurveyViewModelTest {
         val event = uploadEventDeferred.await()
         assertTrue(event is PublicSurveyEvent.UploadFinished)
         assertTrue((event as PublicSurveyEvent.UploadFinished).success)
+    }
+
+    @Test
+    fun `uploadCompletedSubmission with lastUpdateTime below launchTime emits NavigateOnward without submitting`() = runTest {
+        val response = JsonObject().apply { addProperty("_id", "survey123") }
+        coEvery { surveysRepository.fetchPublicSurvey("url", "team1", "survey123") } returns response
+        coEvery { surveysRepository.saveSurveyFromPublicApi(any()) } returns Unit
+
+        val loadEventDeferred = async { viewModel.events.first() }
+        viewModel.loadSurvey("url", "team1", "survey123")
+        testDispatcher.scheduler.advanceUntilIdle()
+        val loadEvent = loadEventDeferred.await()
+        assertTrue(loadEvent is PublicSurveyEvent.SurveyLoaded)
+
+        val submission = Submission().apply {
+            id = "sub_stale"
+            lastUpdateTime = viewModel.launchTime - 1L
+            user = "{\"name\":\"John\",\"age\":\" 25 \"}"
+        }
+        coEvery { submissionsRepository.getLatestSubmissionByParentId("survey123", "complete") } returns submission
+
+        val uploadEventDeferred = async { viewModel.events.first() }
+
+        viewModel.uploadCompletedSubmission("url", "team1", "survey123")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 0) { surveysRepository.submitPublicSurvey(any(), any(), any(), any(), any()) }
+        val event = uploadEventDeferred.await()
+        assertTrue(event is PublicSurveyEvent.NavigateOnward)
     }
 }
