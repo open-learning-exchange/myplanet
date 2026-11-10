@@ -40,7 +40,6 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.UserSessionManager.Companion.KEY_RESOURCE_DOWNLOAD
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity
 import org.ole.planet.myplanet.utils.CourseRatingUtils
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ResourceOpener
@@ -53,8 +52,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     lateinit var profileDbHandler: UserSessionManager
     @Inject
     lateinit var prefData: SharedPrefManager
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
 
     private val resourcesAccessViewModel: ResourcesAccessViewModel by viewModels()
 
