@@ -1,8 +1,8 @@
-package org.ole.planet.myplanet.base
+package org.ole.planet.myplanet.ui.resources
 
 import androidx.annotation.VisibleForTesting
 
-internal object DownloadSuggestions {
+internal object DownloadOfferTracker {
     private val offered = mutableMapOf<String, MutableSet<String>>()
     
     @Synchronized

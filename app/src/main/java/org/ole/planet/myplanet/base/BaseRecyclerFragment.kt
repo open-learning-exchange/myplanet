@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.ui.resources.DownloadOfferTracker
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities.toast
 
@@ -105,7 +106,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     private fun offerDownloads(libraries: List<MyLibrary?>) {
         val userId = sharedPrefManager.getUserId().ifEmpty { "--" }
         val ids = libraries.mapNotNull { it?.resourceId ?: it?.id }
-        if (ids.isNotEmpty() && DownloadSuggestions.shouldOffer(userId, ids)) {
+        if (ids.isNotEmpty() && DownloadOfferTracker.shouldOffer(userId, ids)) {
             showDownloadDialog(libraries)
         }
     }
