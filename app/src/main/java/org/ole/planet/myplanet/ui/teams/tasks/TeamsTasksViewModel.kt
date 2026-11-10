@@ -13,12 +13,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.model.TaskStatus
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.effectiveStatus
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeUtils
+
+enum class TaskTab { ALL, TODO, IN_PROGRESS, COMPLETED, MINE }
 
 sealed class TaskActionEvent {
     data class TaskCreatedOrUpdated(val isCreated: Boolean, val assigneeId: String?) : TaskActionEvent()
@@ -114,6 +118,10 @@ class TeamsTasksViewModel @Inject constructor(
         return teamsRepository.getJoinedMembers(teamId)
     }
 
+    suspend fun getAssignableMembers(teamId: String): List<UserEntity> {
+        return getJoinedMembers(teamId).filter { user -> user.getFullName().isNotBlank() || !user.name.isNullOrBlank() }
+    }
+
     fun assignTask(taskId: String, user: UserEntity) {
         viewModelScope.launch {
             teamsRepository.assignTask(taskId, user.id)
@@ -127,5 +135,37 @@ class TeamsTasksViewModel @Inject constructor(
 
     suspend fun fetchAssigneeNames(assigneesToFetch: Collection<String>): Map<String, String> {
         return userRepository.getUsersByIds(assigneesToFetch.toList()).mapNotNull { user -> user.name?.let { user.id to it } }.toMap()
+    }
+
+    companion object {
+        fun filterAllTasks(tasks: List<TeamTask>): List<TeamTask> {
+            return tasks.sortedWith(compareBy<TeamTask> { it.effectiveStatus() == TaskStatus.COMPLETED.value }.thenByDescending { it.deadline })
+        }
+
+        fun filterTodoTasks(tasks: List<TeamTask>): List<TeamTask> {
+            return tasks.filter { it.effectiveStatus() == TaskStatus.TODO.value }.sortedByDescending { it.deadline }
+        }
+
+        fun filterInProgressTasks(tasks: List<TeamTask>): List<TeamTask> {
+            return tasks.filter { it.effectiveStatus() == TaskStatus.IN_PROGRESS.value }.sortedByDescending { it.deadline }
+        }
+
+        fun filterCompletedTasks(tasks: List<TeamTask>): List<TeamTask> {
+            return tasks.filter { it.effectiveStatus() == TaskStatus.COMPLETED.value }.sortedByDescending { it.deadline }
+        }
+
+        fun filterMyTasks(tasks: List<TeamTask>, userId: String?): List<TeamTask> {
+            return tasks.filter { it.effectiveStatus() != TaskStatus.COMPLETED.value && it.assignee == userId }.sortedByDescending { it.deadline }
+        }
+
+        fun filterTasks(tasks: List<TeamTask>, tab: TaskTab, userId: String?): List<TeamTask> {
+            return when (tab) {
+                TaskTab.ALL -> filterAllTasks(tasks)
+                TaskTab.TODO -> filterTodoTasks(tasks)
+                TaskTab.IN_PROGRESS -> filterInProgressTasks(tasks)
+                TaskTab.COMPLETED -> filterCompletedTasks(tasks)
+                TaskTab.MINE -> filterMyTasks(tasks, userId)
+            }
+        }
     }
 }
