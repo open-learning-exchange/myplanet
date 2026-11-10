@@ -34,10 +34,15 @@ class LifeRepositoryImpl @Inject constructor(
         return updatedLives
     }
 
+    private fun hasForeignOwner(rowUserId: String?, effectiveUserId: String?): Boolean {
+        val normalizedRowOwner = normalizeUserId(rowUserId)
+        return normalizedRowOwner != null && normalizedRowOwner != effectiveUserId
+    }
+
     override suspend fun updateMyLifeListOrder(list: List<MyLife>, userId: String?) {
         if (list.isEmpty()) return
-        val rawUserId = list.firstOrNull()?.userId ?: userId
-        val effectiveUserId = normalizeUserId(rawUserId)
+        val effectiveUserId = normalizeUserId(userId)
+        if (list.any { hasForeignOwner(it.userId, effectiveUserId) }) return
         val idToIndex = buildMap(list.size) {
             list.forEachIndexed { index, item ->
                 put(item._id, index)
@@ -47,6 +52,7 @@ class LifeRepositoryImpl @Inject constructor(
         if (ids.isEmpty()) return
 
         val managedLives = myLifeDao.getByIds(ids)
+        if (managedLives.any { hasForeignOwner(it.userId, effectiveUserId) }) return
         val changed = managedLives.mapNotNull { managedLife ->
             val index = idToIndex[managedLife._id]
             if (index != null && managedLife.weight != index) {
