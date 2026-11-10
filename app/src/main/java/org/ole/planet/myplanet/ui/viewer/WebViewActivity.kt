@@ -41,6 +41,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ServerConfigUtils
+import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.WebViewSafety
 
 @AndroidEntryPoint
@@ -100,6 +101,10 @@ class WebViewActivity : AppCompatActivity() {
                 resolved.directory == null -> activityWebViewBinding.contentWebView.wv.loadUrl(link)
                 resolved.encodedEntryPath != null ->
                     activityWebViewBinding.contentWebView.wv.loadUrl("https://appassets.androidplatform.net/assets/${resolved.encodedEntryPath}")
+                else -> {
+                    Utilities.toast(this@WebViewActivity, getString(R.string.unable_to_open_resource))
+                    finish()
+                }
             }
         }
     }
@@ -110,11 +115,7 @@ class WebViewActivity : AppCompatActivity() {
         val externalFilesPath = getExternalFilesDir(null)?.absolutePath ?: ""
         val dir = getLocalResourceDirectory(resourceId)
             ?: return LocalContent(null, null, externalFilesPath)
-        val indexFile = FileUtils.resolveHtmlEntryFile(dir, entryRelativePath)
-        val encodedEntryPath = indexFile?.takeIf { it.exists() }?.let { file ->
-            file.relativeTo(dir).invariantSeparatorsPath.split("/").joinToString("/") { Uri.encode(it) }
-        }
-        return LocalContent(dir, encodedEntryPath, externalFilesPath)
+        return LocalContent(dir, encodedEntryPath(dir, entryRelativePath), externalFilesPath)
     }
 
     private fun setupWebView() {
@@ -328,6 +329,11 @@ class WebViewActivity : AppCompatActivity() {
     }
 
     companion object {
+        internal fun encodedEntryPath(dir: File, entryRelativePath: String?): String? {
+            val indexFile = FileUtils.resolveHtmlEntryFile(dir, entryRelativePath)?.takeIf { it.exists() } ?: return null
+            return indexFile.relativeTo(dir.canonicalFile).invariantSeparatorsPath.split("/").joinToString("/") { Uri.encode(it) }
+        }
+
         internal fun isWithinDirectory(file: File, directory: File): Boolean {
             val canonicalFile = file.canonicalFile
             val canonicalDirectory = directory.canonicalFile
