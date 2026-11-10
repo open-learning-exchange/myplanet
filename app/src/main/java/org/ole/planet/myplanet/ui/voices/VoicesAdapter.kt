@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.voices
 
 import android.annotation.SuppressLint
-import android.app.Dialog
 import android.content.Context
 import android.os.Build
 import android.text.Spanned
@@ -17,13 +16,11 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
@@ -41,10 +38,10 @@ import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.ImageUtils
+import org.ole.planet.myplanet.utils.ImageViewerUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.parseMarkdown
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
@@ -191,6 +188,9 @@ class VoicesAdapter(
     }
 
     private val externalFilesDir = FileUtils.getExternalFilesDir(context)
+    private val thumbnailSize120 by lazy { context.resources.getDimensionPixelSize(R.dimen.image_thumbnail_size_120) }
+    private val thumbnailSize100 by lazy { context.resources.getDimensionPixelSize(R.dimen.image_thumbnail_size_100) }
+    private val thumbnailMarginPx by lazy { (4 * context.resources.displayMetrics.density).toInt() }
     private var listener: OnNewsItemClickListener? = null
     private var imageList: List<String>? = null
     private var fromLogin = false
@@ -1094,19 +1094,19 @@ class VoicesAdapter(
     private fun loadSingleImage(binding: RowNewsBinding, path: String?) {
         if (path == null) return
         val file = File(path)
-        val size = binding.imgNews.context.resources.getDimensionPixelSize(R.dimen.image_thumbnail_size_120)
+        val size = thumbnailSize120
         loadGlideImage(file, binding.imgNews, size)
         binding.imgNews.visibility = View.VISIBLE
         binding.imgNews.setOnClickListener {
-            showZoomableImage(it.context, path)
+            ImageViewerUtils.showZoomableImage(it.context, path)
         }
     }
 
     private fun addImageToContainer(binding: RowNewsBinding, path: String?) {
         if (path == null) return
         val imageView = ImageView(context)
-        val size = context.resources.getDimensionPixelSize(R.dimen.image_thumbnail_size_100)
-        val margin = (4 * context.resources.displayMetrics.density).toInt()
+        val size = thumbnailSize100
+        val margin = thumbnailMarginPx
         val params = ViewGroup.MarginLayoutParams(size, size)
         params.setMargins(margin, margin, margin, margin)
         imageView.layoutParams = params
@@ -1116,7 +1116,7 @@ class VoicesAdapter(
         loadGlideImage(file, imageView, size)
 
         imageView.setOnClickListener {
-            showZoomableImage(context, path)
+            ImageViewerUtils.showZoomableImage(context, path)
         }
 
         binding.llNewsImages.addView(imageView)
@@ -1129,11 +1129,11 @@ class VoicesAdapter(
             val basePath = externalFilesDir
             if (library != null && basePath != null) {
                 val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-                val size = binding.imgNews.context.resources.getDimensionPixelSize(R.dimen.image_thumbnail_size_120)
+                val size = thumbnailSize120
                 loadGlideImage(imageFile, binding.imgNews, size)
                 binding.imgNews.visibility = View.VISIBLE
                 binding.imgNews.setOnClickListener {
-                    showZoomableImage(it.context, imageFile.toString())
+                    ImageViewerUtils.showZoomableImage(it.context, imageFile.toString())
                 }
             }
         }
@@ -1147,8 +1147,8 @@ class VoicesAdapter(
             if (library != null && basePath != null) {
                 val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
                 val imageView = ImageView(context)
-                val size = context.resources.getDimensionPixelSize(R.dimen.image_thumbnail_size_100)
-                val margin = (4 * context.resources.displayMetrics.density).toInt()
+                val size = thumbnailSize100
+                val margin = thumbnailMarginPx
                 val params = ViewGroup.MarginLayoutParams(size, size)
                 params.setMargins(margin, margin, margin, margin)
                 imageView.layoutParams = params
@@ -1157,36 +1157,12 @@ class VoicesAdapter(
                 loadGlideImage(imageFile, imageView, size)
 
                 imageView.setOnClickListener {
-                    showZoomableImage(context, imageFile.toString())
+                    ImageViewerUtils.showZoomableImage(context, imageFile.toString())
                 }
 
                 binding.llNewsImages.addView(imageView)
             }
         }
-    }
-
-    private fun showZoomableImage(context: Context, imageUrl: String) {
-        val dialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
-        val view = LayoutInflater.from(context).inflate(R.layout.dialog_zoomable_image, null)
-        val photoView = view.findViewById<PhotoView>(R.id.photoView)
-        val closeButton = view.findViewById<ImageView>(R.id.closeButton)
-
-        dialog.setContentView(view)
-        EdgeToEdgeUtils.keepClearOfSystemBars(closeButton)
-        dialog.window?.setBackgroundDrawable(ContextCompat.getColor(context, R.color.md_black_1000).toDrawable())
-
-        val request = Glide.with(photoView.context)
-        val file = File(imageUrl)
-        val target = if (isGif(imageUrl)) {
-            request.asGif().load(file).error(request.asGif().load(imageUrl))
-        } else {
-            request.load(file).error(request.load(imageUrl))
-        }
-        target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().error(R.drawable.ic_loading).into(photoView)
-
-        closeButton.setOnClickListener { dialog.dismiss() }
-
-        dialog.show()
     }
 
     internal inner class VoicesViewHolder(val binding: RowNewsBinding) : RecyclerView.ViewHolder(binding.root) {
