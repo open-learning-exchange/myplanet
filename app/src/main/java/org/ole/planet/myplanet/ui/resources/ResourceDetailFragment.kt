@@ -276,10 +276,6 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         }
     }
 
-    override fun onRatingChanged(type: String, id: String) {
-        onRatingChanged()
-    }
-
     override fun onRatingChanged() {
         lastKnownRating?.let { setRatings(it) }
         if (view == null) return
