@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.StepItem
@@ -16,6 +17,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MarkdownUtils
 import org.ole.planet.myplanet.utils.StoragePathResolver
 
@@ -37,7 +39,8 @@ sealed interface CourseDetailUiState {
 class CourseDetailViewModel @Inject constructor(
     private val storagePathResolver: StoragePathResolver,
     private val coursesRepository: CoursesRepository,
-    private val ratingsRepository: RatingsRepository
+    private val ratingsRepository: RatingsRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<CourseDetailUiState>(CourseDetailUiState.Loading)
@@ -65,11 +68,17 @@ class CourseDetailViewModel @Inject constructor(
 
                     _stepItems.value = courseDetail.steps
 
-                    val markdownDescription = MarkdownUtils.prependBaseUrlToImages(
-                        courseDetail.course.description,
-                        "file://${storagePathResolver.resolveExternalFilesDir()}/ole/",
-                        600, 350
-                    )
+                    val filesDir = withContext(dispatcherProvider.io) {
+                        storagePathResolver.resolveExternalFilesDir()
+                    }
+
+                    val markdownDescription = withContext(dispatcherProvider.default) {
+                        MarkdownUtils.prependBaseUrlToImages(
+                            courseDetail.course.description,
+                            "file://$filesDir/ole/",
+                            600, 350
+                        )
+                    }
 
                     _uiState.value = CourseDetailUiState.Success(
                         course = courseDetail.course,
