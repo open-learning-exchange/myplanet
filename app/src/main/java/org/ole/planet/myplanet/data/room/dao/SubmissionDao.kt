@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.data.room.dao
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.Submission
@@ -63,4 +64,20 @@ interface SubmissionDao {
     @Upsert fun upsertAllBlocking(items: List<Submission>)
     @Query("UPDATE submissions SET _rev = :rev WHERE id = :id") suspend fun updateRev(id: String, rev: String): Int
     @Query("UPDATE submissions SET _id = :remoteId, _rev = :remoteRev, isUpdated = 0 WHERE id = :localId") suspend fun markUploaded(localId: String, remoteId: String?, remoteRev: String?): Int
+
+    @Transaction
+    suspend fun updateRevs(updates: Map<String, String>) {
+        updates.forEach { (id, rev) -> updateRev(id, rev) }
+    }
+
+    @Transaction
+    suspend fun markUploadedBatch(items: List<UploadedSubmission>): List<UploadedSubmission> {
+        return items.filter { markUploaded(it.localId, it.remoteId, it.remoteRev) == 0 }
+    }
+
+    data class UploadedSubmission(
+        val localId: String,
+        val remoteId: String?,
+        val remoteRev: String?
+    )
 }
