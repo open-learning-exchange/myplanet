@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.services
 
 import android.app.Application
+import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -37,6 +38,7 @@ class DownloadStopReceiverTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
+        context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE).edit().clear().commit()
         val entryPoint = mockk<CoreDependenciesEntryPoint>()
         every { entryPoint.applicationScope() } returns CoroutineScope(Dispatchers.Unconfined)
         mockkStatic(EntryPointAccessors::class)
@@ -65,6 +67,31 @@ class DownloadStopReceiverTest {
                 intent.action == DownloadService.MESSAGE_PROGRESS && download?.failed == true && download.message == null
             })
         }
+    }
+
+    @Test
+    fun `stop action drops user-queued downloads so they don't restart with the next service start`() {
+        val prefs = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, setOf("user-priority"))
+            .putStringSet(DownloadService.PENDING_DOWNLOADS_KEY, setOf("user-pending", "sync-pending"))
+            .putStringSet(DownloadService.SYNC_DOWNLOADS_KEY, setOf("sync-pending"))
+            .commit()
+
+        DownloadStopReceiver().onReceive(context, Intent(DownloadStopReceiver.ACTION_STOP_DOWNLOADS))
+
+        assertEquals(emptySet<String>(), prefs.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, null))
+        assertEquals(setOf("sync-pending"), prefs.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, null))
+    }
+
+    @Test
+    fun `unrelated actions leave the download queues alone`() {
+        val prefs = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putStringSet(DownloadService.PENDING_DOWNLOADS_KEY, setOf("user-pending")).commit()
+
+        DownloadStopReceiver().onReceive(context, Intent("some.other.action"))
+
+        assertEquals(setOf("user-pending"), prefs.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, null))
     }
 
     @Test

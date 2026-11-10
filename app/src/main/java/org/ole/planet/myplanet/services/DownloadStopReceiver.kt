@@ -17,8 +17,7 @@ class DownloadStopReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != ACTION_STOP_DOWNLOADS) return
-        context.stopService(Intent(context, DownloadService::class.java))
-        DownloadUtils.cancelDownloadWork(context)
+        DownloadUtils.stopDownloads(context)
 
         val pendingResult: PendingResult? = goAsync()
         val scope = EntryPointAccessors

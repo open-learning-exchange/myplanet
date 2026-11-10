@@ -6,6 +6,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
@@ -171,6 +172,18 @@ object DownloadUtils {
             syncOwned?.let { putStringSet(DownloadService.SYNC_DOWNLOADS_KEY, it) }
         }
         startDownloadServiceSafely(context, key, fromSync)
+    }
+
+    /**
+     * The one Stop path, shared by the progress dialog and the notification action so the two can't drift.
+     * Drops user-queued URLs (sync-owned ones stay queued), then halts whatever is in flight — the service
+     * and every download worker, sync-owned included — the same way the service's own onDestroy stops
+     * mid-file whatever it was fetching. Sync's queued URLs survive, so the next sync picks them back up.
+     */
+    fun stopDownloads(context: Context) {
+        dropUserQueuedDownloads(context)
+        context.stopService(Intent(context, DownloadService::class.java))
+        cancelDownloadWork(context)
     }
 
     fun dropUserQueuedDownloads(context: Context) {
