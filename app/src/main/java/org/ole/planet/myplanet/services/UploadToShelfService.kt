@@ -32,7 +32,7 @@ class UploadToShelfService @Inject constructor(
     fun uploadUserData(listener: OnSuccessListener) {
         appScope.launch(dispatcherProvider.io) {
             try {
-                val userModels = userRepository.getPendingSyncUsers(100)
+                val userModels = userSyncRepository.getPendingSyncUsers(100)
 
                 if (userModels.isNotEmpty()) {
                     val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
@@ -99,7 +99,7 @@ class UploadToShelfService @Inject constructor(
     }
 
     private suspend fun uploadToShelf(listener: OnSuccessListener) {
-        val unmanagedUsers = userRepository.getSyncedUsers()
+        val unmanagedUsers = userSyncRepository.getSyncedUsers()
 
         if (unmanagedUsers.isEmpty()) {
             withContext(dispatcherProvider.main) {
@@ -122,7 +122,7 @@ class UploadToShelfService @Inject constructor(
 
     private suspend fun uploadSingleUserToShelf(userName: String?, listener: OnSuccessListener) {
         try {
-            val model = userName?.let { userRepository.getSyncedUserByName(it) }
+            val model = userName?.let { userSyncRepository.getSyncedUserByName(it) }
 
             if (model != null) {
                 userSyncRepository.uploadShelfData(model)
