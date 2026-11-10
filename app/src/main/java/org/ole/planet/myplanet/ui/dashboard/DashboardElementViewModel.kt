@@ -5,12 +5,12 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 
 @HiltViewModel
 class DashboardElementViewModel @Inject constructor(
-    private val userRepository: UserRepository,
+    private val userRepository: UserReadRepository,
     private val activitiesRepository: ActivitiesRepository,
     private val userSessionManager: UserSessionManager
 ) : ViewModel() {

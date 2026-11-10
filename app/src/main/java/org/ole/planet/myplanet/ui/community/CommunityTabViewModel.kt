@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 
 data class CommunityTabState(
     val planetCode: String,
@@ -21,7 +21,7 @@ data class CommunityTabState(
 @HiltViewModel
 class CommunityTabViewModel @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserReadRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<CommunityTabState?>(null)

@@ -14,12 +14,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.OfflineActivity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class ActivitiesViewModel @Inject constructor(
-    private val userRepository: UserRepository,
+    private val userRepository: UserReadRepository,
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
