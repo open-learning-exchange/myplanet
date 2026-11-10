@@ -15,7 +15,6 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
-import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -83,7 +82,6 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     private var teamAdapter: ArrayAdapter<String?>? = null
     private var isUserInteracting = false
     private var cachedTeams: List<MyTeam>? = null
-    private val loginViewModel: LoginViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
@@ -594,11 +592,10 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         } else {
             if (user.source == "guest"){
                 lifecycleScope.launch {
-                    val model = loginViewModel.createGuestUser(user.name ?: "")
+                    val model = loginViewModel.loginAsGuest(user.name ?: "")
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                     } else {
-                        profileDbHandler.saveUserInfoPref("", model)
                         onLogin()
                     }
                 }
@@ -636,12 +633,11 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             positiveButton.setOnClickListener {
                 positiveButton.isEnabled = false
                 lifecycleScope.launch {
-                    val model = loginViewModel.createGuestUser(username)
+                    val model = loginViewModel.loginAsGuest(username)
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                         positiveButton.isEnabled = true
                     } else {
-                        profileDbHandler.saveUserInfoPref("", model)
                         onLogin()
                         dialog.dismiss()
                     }

@@ -65,12 +65,11 @@ fun LoginActivity.showGuestLoginDialog(viewModel: LoginViewModel) {
                         existingUser._id?.contains("org.couchdb.user:") == true -> showUserAlreadyMemberDialog(username)
                     }
                 } else {
-                    val model = viewModel.createGuestUser(username)
+                    val model = viewModel.loginAsGuest(username)
                     if (model == null) {
                         toast(this@showGuestLoginDialog, getString(R.string.unable_to_login))
                     } else {
                         saveUsers(username, "", "guest")
-                        profileDbHandler.saveUserInfoPref("", model)
                         onLogin()
                     }
                 }
