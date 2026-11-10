@@ -9,7 +9,8 @@ import org.ole.planet.myplanet.model.Community
 
 @Dao
 abstract class CommunityDao {
-    @Query("SELECT * FROM community ORDER BY weight ASC")
+    /** Rows with an empty name are never returned. */
+    @Query("SELECT * FROM community WHERE name != '' ORDER BY weight ASC")
     abstract suspend fun getAllSorted(): List<Community>
 
     @Query("DELETE FROM community")
