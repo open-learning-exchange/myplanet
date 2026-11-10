@@ -16,8 +16,8 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 import androidx.core.graphics.createBitmap
 
-object VoiceImages {
-    private const val TAG = "VoiceImages"
+object VoiceImagePreparer {
+    private const val TAG = "VoiceImagePreparer"
     private const val DIR_NAME = "voice_images"
     const val MAX_SIDE = 1280
     const val JPEG_QUALITY = 85

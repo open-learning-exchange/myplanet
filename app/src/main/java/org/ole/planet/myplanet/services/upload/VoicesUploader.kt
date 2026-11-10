@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.VoiceImages
+import org.ole.planet.myplanet.utils.VoiceImagePreparer
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
@@ -179,7 +179,7 @@ class VoicesUploader @Inject constructor(
         val context = MainApplication.context
         files.forEach { file ->
             try {
-                if (VoiceImages.isOwnedFile(context, file)) file.delete()
+                if (VoiceImagePreparer.isOwnedFile(context, file)) file.delete()
             } catch (e: Exception) {
                 Log.w(TAG, "Could not delete uploaded image ${file.name}", e)
             }

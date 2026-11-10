@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.ui.voices.ReplyActivity
 import org.ole.planet.myplanet.ui.voices.VoicesActions
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.VoiceImages
+import org.ole.planet.myplanet.utils.VoiceImagePreparer
 
 abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickListener {
     lateinit var imageList: MutableList<String>
@@ -60,14 +60,14 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
                     for (uri in uris) {
                         if (uri == null) continue
                         val prepared = withContext(dispatcherProvider.io) {
-                            VoiceImages.prepare(appContext, uri, timeProvider)
+                            VoiceImagePreparer.prepare(appContext, uri, timeProvider)
                         }
                         if (!isAdded) return@launch
                         when (prepared) {
-                            is VoiceImages.Result.Ready -> addImagePath(prepared.path, result.resultCode)
-                            VoiceImages.Result.GifTooLarge ->
+                            is VoiceImagePreparer.Result.Ready -> addImagePath(prepared.path, result.resultCode)
+                            VoiceImagePreparer.Result.GifTooLarge ->
                                 Toast.makeText(requireContext(), R.string.voice_image_gif_too_large, Toast.LENGTH_SHORT).show()
-                            VoiceImages.Result.Unreadable ->
+                            VoiceImagePreparer.Result.Unreadable ->
                                 Toast.makeText(requireContext(), R.string.voice_image_unreadable, Toast.LENGTH_SHORT).show()
                         }
                     }

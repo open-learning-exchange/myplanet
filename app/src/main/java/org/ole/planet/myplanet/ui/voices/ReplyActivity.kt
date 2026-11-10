@@ -39,7 +39,7 @@ import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeProvider
-import org.ole.planet.myplanet.utils.VoiceImages
+import org.ole.planet.myplanet.utils.VoiceImagePreparer
 
 @AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
@@ -221,15 +221,15 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         val appContext = applicationContext
         lifecycleScope.launch {
             val prepared = withContext(dispatcherProvider.io) {
-                VoiceImages.prepare(appContext, url, timeProvider)
+                VoiceImagePreparer.prepare(appContext, url, timeProvider)
             }
             val path = when (prepared) {
-                is VoiceImages.Result.Ready -> prepared.path
-                VoiceImages.Result.GifTooLarge -> {
+                is VoiceImagePreparer.Result.Ready -> prepared.path
+                VoiceImagePreparer.Result.GifTooLarge -> {
                     Toast.makeText(this@ReplyActivity, R.string.voice_image_gif_too_large, Toast.LENGTH_SHORT).show()
                     return@launch
                 }
-                VoiceImages.Result.Unreadable -> {
+                VoiceImagePreparer.Result.Unreadable -> {
                     Toast.makeText(this@ReplyActivity, R.string.voice_image_unreadable, Toast.LENGTH_SHORT).show()
                     return@launch
                 }
