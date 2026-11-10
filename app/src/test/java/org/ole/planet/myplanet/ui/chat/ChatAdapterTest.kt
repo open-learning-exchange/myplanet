@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.ContextWrapper
+import android.os.Looper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ApplicationProvider
@@ -13,7 +14,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.model.ChatMessage
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
@@ -72,6 +75,57 @@ class ChatAdapterTest {
             (countingContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
                 .primaryClip?.getItemAt(0)?.text?.toString() == "third"
         )
+    }
+
+    private fun awaitList(expectedSize: Int) {
+        val deadline = System.currentTimeMillis() + 2_000
+        while (adapter.currentList.size != expectedSize && System.currentTimeMillis() < deadline) {
+            shadowOf(Looper.getMainLooper()).idle()
+            Thread.sleep(5)
+        }
+        shadowOf(Looper.getMainLooper()).idle()
+        assertEquals(expectedSize, adapter.currentList.size)
+    }
+
+    @Test
+    fun `removeUnansweredQuery drops the failed query bubble`() {
+        adapter.addQuery("what is soil?")
+        awaitList(1)
+
+        adapter.removeUnansweredQuery("what is soil?")
+
+        awaitList(0)
+    }
+
+    @Test
+    fun `removeUnansweredQuery works before the add has finished diffing`() {
+        adapter.addQuery("what is soil?")
+        adapter.removeUnansweredQuery("what is soil?")
+
+        awaitList(0)
+    }
+
+    @Test
+    fun `retrying after a failure leaves a single query bubble`() {
+        adapter.addQuery("what is soil?")
+        adapter.removeUnansweredQuery("what is soil?")
+        adapter.addQuery("what is soil?")
+        awaitList(1)
+
+        assertEquals(ChatMessage.QUERY, adapter.currentList.single().viewType)
+    }
+
+    @Test
+    fun `removeUnansweredQuery keeps an answered query`() {
+        adapter.addQuery("what is soil?")
+        awaitList(1)
+        adapter.addResponse("Soil is...", ChatMessage.RESPONSE_SOURCE_NETWORK)
+        awaitList(2)
+
+        adapter.removeUnansweredQuery("what is soil?")
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertEquals(2, adapter.currentList.size)
     }
 
     private class CountingClipboardContext(base: Context) : ContextWrapper(base) {

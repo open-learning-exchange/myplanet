@@ -116,12 +116,31 @@ class ChatAdapter(
         )
     }
 
+    private var latestSubmitted: List<ChatMessage> = emptyList()
+
+    override fun submitList(list: List<ChatMessage>?) {
+        latestSubmitted = list.orEmpty()
+        super.submitList(list)
+    }
+
+    override fun submitList(list: List<ChatMessage>?, commitCallback: Runnable?) {
+        latestSubmitted = list.orEmpty()
+        super.submitList(list, commitCallback)
+    }
+
     fun addQuery(query: String) {
         val currentList = currentList.toMutableList()
         currentList.add(ChatMessage(query, ChatMessage.QUERY))
         submitList(currentList) {
             scrollToLastItem()
         }
+    }
+
+    fun removeUnansweredQuery(query: String) {
+        val list = latestSubmitted
+        val last = list.lastOrNull() ?: return
+        if (last.viewType != ChatMessage.QUERY || last.message != query) return
+        submitList(list.dropLast(1))
     }
 
     fun addResponse(response: String, source: Int) {

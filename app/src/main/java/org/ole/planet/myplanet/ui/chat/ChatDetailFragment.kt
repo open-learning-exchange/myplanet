@@ -668,6 +668,7 @@ class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(Fragme
                 }
             }
             is ChatResult.Error -> {
+                mAdapter.removeUnansweredQuery(query)
                 restoreUnsentQuery(query)
                 showError(result.message)
             }
