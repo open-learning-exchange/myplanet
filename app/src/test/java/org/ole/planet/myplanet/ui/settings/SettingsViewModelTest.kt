@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.RetryRepository
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.repository.UserReadRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
@@ -41,7 +41,7 @@ class SettingsViewModelTest {
     private val configurationsRepository: ConfigurationsRepository = mockk(relaxed = true)
     private val retryRepository: RetryRepository = mockk(relaxed = true)
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
-    private val userSessionManager: UserSessionManager = mockk(relaxed = true)
+    private val userRepository: UserReadRepository = mockk(relaxed = true)
 
     @Test
     fun `clearAllData calls clearLocalAppData on configurationsRepository and emits clearDataEvent`() = runTest {
@@ -52,7 +52,7 @@ class SettingsViewModelTest {
             retryRepository,
             resourcesRepository,
             dispatcherProvider,
-            userSessionManager
+            userRepository
         )
 
         viewModel.clearAllData()
@@ -66,14 +66,14 @@ class SettingsViewModelTest {
 
     @Test
     fun `isGuest is true for id guest_abc`() = runTest {
-        coEvery { userSessionManager.getUserModel() } returns UserEntity(id = "guest_abc")
+        coEvery { userRepository.getUserModel() } returns UserEntity(id = "guest_abc")
 
         val viewModel = SettingsViewModel(
             configurationsRepository,
             retryRepository,
             resourcesRepository,
             dispatcherProvider,
-            userSessionManager
+            userRepository
         )
 
         assertTrue(viewModel.isGuest())
@@ -81,14 +81,14 @@ class SettingsViewModelTest {
 
     @Test
     fun `isGuest is true for id guest`() = runTest {
-        coEvery { userSessionManager.getUserModel() } returns UserEntity(id = "guest")
+        coEvery { userRepository.getUserModel() } returns UserEntity(id = "guest")
 
         val viewModel = SettingsViewModel(
             configurationsRepository,
             retryRepository,
             resourcesRepository,
             dispatcherProvider,
-            userSessionManager
+            userRepository
         )
 
         assertTrue(viewModel.isGuest())
@@ -96,14 +96,14 @@ class SettingsViewModelTest {
 
     @Test
     fun `isGuest is false for a normal id`() = runTest {
-        coEvery { userSessionManager.getUserModel() } returns UserEntity(id = "user123")
+        coEvery { userRepository.getUserModel() } returns UserEntity(id = "user123")
 
         val viewModel = SettingsViewModel(
             configurationsRepository,
             retryRepository,
             resourcesRepository,
             dispatcherProvider,
-            userSessionManager
+            userRepository
         )
 
         assertFalse(viewModel.isGuest())
@@ -111,14 +111,14 @@ class SettingsViewModelTest {
 
     @Test
     fun `isGuest is false when getUserModel() returns null`() = runTest {
-        coEvery { userSessionManager.getUserModel() } returns null
+        coEvery { userRepository.getUserModel() } returns null
 
         val viewModel = SettingsViewModel(
             configurationsRepository,
             retryRepository,
             resourcesRepository,
             dispatcherProvider,
-            userSessionManager
+            userRepository
         )
 
         assertFalse(viewModel.isGuest())
@@ -128,14 +128,14 @@ class SettingsViewModelTest {
     fun `isGuest is false when the user's id is null`() = runTest {
         val userWithNullId = UserEntity()
         UserEntity::class.java.getField("id").set(userWithNullId, null)
-        coEvery { userSessionManager.getUserModel() } returns userWithNullId
+        coEvery { userRepository.getUserModel() } returns userWithNullId
 
         val viewModel = SettingsViewModel(
             configurationsRepository,
             retryRepository,
             resourcesRepository,
             dispatcherProvider,
-            userSessionManager
+            userRepository
         )
 
         assertFalse(viewModel.isGuest())
