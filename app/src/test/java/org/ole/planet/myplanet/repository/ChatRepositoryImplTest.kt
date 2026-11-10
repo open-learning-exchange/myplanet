@@ -13,6 +13,8 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -45,7 +47,8 @@ class ChatRepositoryImplTest {
     @Before
     fun setup() {
         every { sharedPrefManager.rawPreferences } returns mockk(relaxed = true)
-        chatRepository = ChatRepositoryImpl(chatDao, chatApiService, serverUrlMapper, sharedPrefManager, dispatcherProvider, serverReachabilityProvider, Gson())
+        chatRepository = ChatRepositoryImpl(chatDao, chatApiService, serverUrlMapper, sharedPrefManager,
+            serverReachabilityProvider, Gson())
     }
 
     @After
@@ -207,6 +210,46 @@ class ChatRepositoryImplTest {
         assertTrue(result is ChatResult.Error)
         coVerify(exactly = 0) { chatDao.findByDocId(any()) }
         coVerify(exactly = 0) { chatDao.update(any()) }
+    }
+
+    @Test
+    fun sendNewChatRequest_serverErrorStatus_surfacesTheErrorBodyMessage() = runTest {
+        val errorJson = """{"error":"Internal Server Error","message":"Invalid API key"}"""
+        val mockResponse = retrofit2.Response.error<ChatResponse>(
+            500,
+            errorJson.toResponseBody("application/json".toMediaType())
+        )
+        coEvery { chatApiService.sendChatRequest(any()) } returns mockResponse
+
+        val result = chatRepository.sendNewChatRequest("hello", "testUser", AiProvider("OpenAI", "GPT-4"))
+
+        assertEquals(ChatResult.Error("Invalid API key"), result)
+    }
+
+    @Test
+    fun sendContinueChatRequest_serverErrorWithoutMessage_fallsBackToErrorField() = runTest {
+        val mockResponse = retrofit2.Response.error<ChatResponse>(
+            404,
+            """{"error":"Not Found"}""".toResponseBody("application/json".toMediaType())
+        )
+        coEvery { chatApiService.sendChatRequest(any()) } returns mockResponse
+
+        val result = chatRepository.sendContinueChatRequest("hello", "testUser", AiProvider("OpenAI", "GPT-4"), "chat-123", "1-rev")
+
+        assertEquals(ChatResult.Error("Not Found"), result)
+    }
+
+    @Test
+    fun sendNewChatRequest_serverErrorWithUnreadableBody_isNeverBlank() = runTest {
+        val mockResponse = retrofit2.Response.error<ChatResponse>(
+            502,
+            "<html>bad gateway</html>".toResponseBody("text/html".toMediaType())
+        )
+        coEvery { chatApiService.sendChatRequest(any()) } returns mockResponse
+
+        val result = chatRepository.sendNewChatRequest("hello", "testUser", AiProvider("OpenAI", "GPT-4"))
+
+        assertTrue(result is ChatResult.Error && result.message.isNotBlank())
     }
 
     @Test
