@@ -23,7 +23,6 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities.toast
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
-    @Inject lateinit var dispatcherProvider: DispatcherProvider
     var subjects: MutableSet<String> = mutableSetOf()
     var languages: MutableSet<String> = mutableSetOf()
     var mediums: MutableSet<String> = mutableSetOf()

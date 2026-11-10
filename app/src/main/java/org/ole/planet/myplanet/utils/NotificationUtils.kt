@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utils
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager as SystemNotificationManager
@@ -9,6 +10,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -85,11 +87,9 @@ object NotificationUtils {
     }
 
     fun setChannel(notificationManager: SystemNotificationManager?) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val importance = SystemNotificationManager.IMPORTANCE_LOW
-            val notificationChannel = NotificationChannel("11", "ole", importance)
-            notificationManager?.createNotificationChannel(notificationChannel)
-        }
+        val importance = SystemNotificationManager.IMPORTANCE_LOW
+        val notificationChannel = NotificationChannel("11", "ole", importance)
+        notificationManager?.createNotificationChannel(notificationChannel)
     }
 
     fun getInstance(context: Context): NotificationManager {
@@ -153,20 +153,21 @@ object NotificationUtils {
         )
 
         private fun createNotificationChannels() {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val systemNotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as SystemNotificationManager
-                listOfNotNull(
-                    createChannel(ChannelConfig(CHANNEL_GENERAL, "General Notifications", "General app notifications", IMPORTANCE_DEFAULT, true)),
-                    createChannel(ChannelConfig(CHANNEL_SURVEYS, "Survey Notifications", "New surveys and survey reminders", IMPORTANCE_HIGH, true, true)),
-                    createChannel(ChannelConfig(CHANNEL_TASKS, "Task Notifications", "Task assignments and deadlines", IMPORTANCE_HIGH, true, true)),
-                    createChannel(ChannelConfig(CHANNEL_SYSTEM, "System Notifications", "Storage warnings and system updates", IMPORTANCE_DEFAULT, false)),
-                    createChannel(ChannelConfig(CHANNEL_TEAM, "Team Notifications", "Team join requests and team updates", IMPORTANCE_DEFAULT, true))
-                ).forEach { systemNotificationManager.createNotificationChannel(it) }
-            }
+            val systemNotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as SystemNotificationManager
+            listOfNotNull(
+                createChannel(ChannelConfig(CHANNEL_GENERAL, "General Notifications", "General app notifications", IMPORTANCE_DEFAULT, true)),
+                createChannel(ChannelConfig(CHANNEL_SURVEYS, "Survey Notifications", "New surveys and survey reminders", IMPORTANCE_HIGH,
+                    vibrate = true, badge = true
+                )),
+                createChannel(ChannelConfig(CHANNEL_TASKS, "Task Notifications", "Task assignments and deadlines", IMPORTANCE_HIGH,
+                    vibrate = true, badge = true
+                )),
+                createChannel(ChannelConfig(CHANNEL_SYSTEM, "System Notifications", "Storage warnings and system updates", IMPORTANCE_DEFAULT, false)),
+                createChannel(ChannelConfig(CHANNEL_TEAM, "Team Notifications", "Team join requests and team updates", IMPORTANCE_DEFAULT, true))
+            ).forEach { systemNotificationManager.createNotificationChannel(it) }
         }
 
-        private fun createChannel(config: ChannelConfig): NotificationChannel? {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return null
+        private fun createChannel(config: ChannelConfig): NotificationChannel {
             return NotificationChannel(config.id, config.name, config.importance).apply {
                 description = config.desc
                 enableLights(true)
@@ -197,12 +198,20 @@ object NotificationUtils {
 
         fun showNotification(config: NotificationConfig): Boolean {
             val notificationId = getNotificationIdIfShouldShow(config) ?: return false
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            ) {
+                return false
+            }
 
             return try {
                 val notification = buildNotification(config)
                 notificationManager.notify(notificationId, notification)
                 markNotificationAsShown(config.id)
                 true
+            } catch (e: SecurityException) {
+                Log.w(TAG, "showNotification permission revoked", e)
+                false
             } catch (e: Exception) {
                 Log.w(TAG, "showNotification failed", e)
                 false

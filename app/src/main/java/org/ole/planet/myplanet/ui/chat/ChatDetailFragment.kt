@@ -699,7 +699,8 @@ class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(Fragme
     private fun showError(message: String?) {
         _binding?.let { binding ->
             binding.textGchatIndicator.visibility = View.VISIBLE
-            binding.textGchatIndicator.text = context?.getString(R.string.message_placeholder, message)
+            binding.textGchatIndicator.text = message?.takeIf { it.isNotBlank() }
+                ?: getString(R.string.request_failed_please_retry)
         }
     }
 

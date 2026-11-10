@@ -73,6 +73,17 @@ class DownloadUtilsEnqueueTest {
     }
 
     @Test
+    fun queuedDownloadUrls_combinesPriorityAndPendingQueues() {
+        val prefs = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, setOf("p"))
+            .putStringSet(DownloadService.PENDING_DOWNLOADS_KEY, setOf("q"))
+            .commit()
+
+        assertEquals(setOf("p", "q"), DownloadUtils.queuedDownloadUrls(context))
+    }
+
+    @Test
     fun openDownloadService_duplicateUrl_isNotDuplicated() {
         val prefs = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putStringSet(DownloadService.PENDING_DOWNLOADS_KEY, setOf("a")).commit()
