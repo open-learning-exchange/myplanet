@@ -47,12 +47,6 @@ class DownloadServiceOnDownloadCompleteTest {
         mockPreferences = mockk(relaxed = true)
         mockkObject(DownloadUtils)
         mockkObject(FileUtils)
-        mockkStatic(android.util.Log::class)
-        every { android.util.Log.d(any(), any()) } returns 0
-        every { android.util.Log.e(any(), any()) } returns 0
-        every { android.util.Log.e(any(), any(), any()) } returns 0
-        every { android.util.Log.w(any(), any<String>()) } returns 0
-        every { android.util.Log.i(any(), any()) } returns 0
     }
 
     @After
