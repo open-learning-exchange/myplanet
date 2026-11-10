@@ -87,10 +87,27 @@ open class News {
     var parsedSharedTeamName: String? = null
 
     private data class ImagesCache(val raw: String?, val parsed: JsonArray)
+    private data class ReactionsCache(
+        val raw: String?,
+        val parsed: JsonObject,
+        val map: Map<String, List<String>>
+    )
+    private data class PendingReactionsCache(
+        val raw: String?,
+        val map: Map<String, String>
+    )
 
     @Ignore
     @Volatile
     private var imagesCache: ImagesCache? = null
+
+    @Ignore
+    @Volatile
+    private var reactionsCache: ReactionsCache? = null
+
+    @Ignore
+    @Volatile
+    private var pendingReactionsCache: PendingReactionsCache? = null
 
     @get:Ignore
     val imagesArray: JsonArray
@@ -121,38 +138,65 @@ open class News {
             }
         }.toGson()
 
+    private fun getOrUpdateReactionsCache(): ReactionsCache {
+        val currentReactions = reactions
+        val cache = reactionsCache
+        if (cache != null && cache.raw == currentReactions) {
+            return cache
+        }
+        val parsed = if (currentReactions == null) {
+            JsonObject()
+        } else {
+            try {
+                GsonUtils.gson.fromJson(currentReactions, JsonObject::class.java) ?: JsonObject()
+            } catch (_: Exception) {
+                JsonObject()
+            }
+        }
+        val map = parsed.keySet().mapNotNull { emoji ->
+            val users = parsed.get(emoji)
+                ?.takeIf { it.isJsonArray }
+                ?.asJsonArray
+                ?.mapNotNull { if (it.isJsonPrimitive) it.asString else null }
+                .orEmpty()
+            if (users.isEmpty()) null else emoji to users
+        }.toMap()
+        val newCache = ReactionsCache(currentReactions, parsed, map)
+        reactionsCache = newCache
+        return newCache
+    }
+
     @get:Ignore
     val reactionsJson: JsonObject
-        get() = try {
-            reactions?.let { GsonUtils.gson.fromJson(it, JsonObject::class.java) } ?: JsonObject()
-        } catch (_: Exception) {
-            JsonObject()
-        }
+        get() = getOrUpdateReactionsCache().parsed.deepCopy()
 
     @get:Ignore
     val reactionsMap: Map<String, List<String>>
-        get() {
-            val obj = reactionsJson
-            return obj.keySet().mapNotNull { emoji ->
-                val users = obj.get(emoji)
-                    ?.takeIf { it.isJsonArray }
-                    ?.asJsonArray
-                    ?.mapNotNull { if (it.isJsonPrimitive) it.asString else null }
-                    .orEmpty()
-                if (users.isEmpty()) null else emoji to users
-            }.toMap()
-        }
+        get() = getOrUpdateReactionsCache().map
 
     @get:Ignore
     val pendingReactionsMap: Map<String, String>
-        get() = try {
-            pendingReactions?.let { GsonUtils.gson.fromJson(it, JsonObject::class.java) }
-                ?.entrySet()
-                ?.filter { it.value.isJsonPrimitive }
-                ?.associate { it.key to it.value.asString }
-                .orEmpty()
-        } catch (_: Exception) {
-            emptyMap()
+        get() {
+            val currentPending = pendingReactions
+            val cache = pendingReactionsCache
+            if (cache != null && cache.raw == currentPending) {
+                return cache.map
+            }
+            val map = if (currentPending == null) {
+                emptyMap()
+            } else {
+                try {
+                    GsonUtils.gson.fromJson(currentPending, JsonObject::class.java)
+                        ?.entrySet()
+                        ?.filter { it.value.isJsonPrimitive }
+                        ?.associate { it.key to it.value.asString }
+                        .orEmpty()
+                } catch (_: Exception) {
+                    emptyMap()
+                }
+            }
+            pendingReactionsCache = PendingReactionsCache(currentPending, map)
+            return map
         }
 
     fun updateReaction(emoji: String, userId: String) {
