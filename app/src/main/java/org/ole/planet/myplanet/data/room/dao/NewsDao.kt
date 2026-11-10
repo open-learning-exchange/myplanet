@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.News
 
@@ -22,13 +23,26 @@ interface NewsDao {
     suspend fun getByUnderscoreId(underscoreId: String): News?
 
     @Query("SELECT * FROM news WHERE _id IN (:underscoreIds)")
-    suspend fun getByUnderscoreIds(underscoreIds: List<String>): List<News>
+    suspend fun getByUnderscoreIdsInternal(underscoreIds: List<String>): List<News>
+
+    suspend fun getByUnderscoreIds(underscoreIds: List<String>): List<News> {
+        if (underscoreIds.isEmpty()) return emptyList()
+        return underscoreIds.distinct().chunked(900).flatMap { chunk -> getByUnderscoreIdsInternal(chunk) }
+    }
 
     @Query("SELECT * FROM news")
     suspend fun getAll(): List<News>
 
+    @Query("SELECT * FROM news WHERE _id IS NULL OR _id = '' OR isUpdated = 1 OR pendingReactions IS NOT NULL OR (imageUrls IS NOT NULL AND imageUrls != '[]')")
+    suspend fun getPendingUploads(): List<News>
+
     @Query("SELECT * FROM news WHERE id IN (:ids)")
-    suspend fun getByIds(ids: List<String>): List<News>
+    suspend fun getByIdsInternal(ids: List<String>): List<News>
+
+    suspend fun getByIds(ids: List<String>): List<News> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.distinct().chunked(900).flatMap { getByIdsInternal(it) }
+    }
 
     @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND ((viewableBy = 'teams' COLLATE NOCASE AND viewableId = :teamId COLLATE NOCASE) OR viewIn LIKE :teamPattern ESCAPE '\\') ORDER BY time DESC")
     suspend fun getTopLevelByTeam(teamId: String, teamPattern: String): List<News>
@@ -37,15 +51,15 @@ interface NewsDao {
     fun getTopLevelByTeamFlow(teamId: String, teamPattern: String): Flow<List<News>>
 
     @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND docType = 'message' COLLATE NOCASE ORDER BY time DESC")
-    suspend fun getTopLevelMessages(): List<News>
-
-    @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND docType = 'message' COLLATE NOCASE ORDER BY time DESC")
     fun getTopLevelMessagesFlow(): Flow<List<News>>
 
-    @Query("SELECT * FROM news WHERE replyTo = :newsId COLLATE NOCASE ORDER BY time DESC")
+    @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND docType = 'message' COLLATE NOCASE AND (viewableBy = 'community' COLLATE NOCASE OR viewIn LIKE '%community%') ORDER BY time DESC")
+    fun getTopLevelCommunityCandidatesFlow(): Flow<List<News>>
+
+    @Query("SELECT * FROM news WHERE replyTo = :newsId ORDER BY time DESC")
     suspend fun getReplies(newsId: String): List<News>
 
-    @Query("SELECT COUNT(*) FROM news WHERE replyTo = :newsId COLLATE NOCASE")
+    @Query("SELECT COUNT(*) FROM news WHERE replyTo = :newsId")
     suspend fun getReplyCount(newsId: String): Int
 
     @Query("WITH RECURSIVE thread(id) AS (SELECT :newsId UNION SELECT news.id FROM news JOIN thread ON news.replyTo = thread.id) SELECT id FROM thread")
@@ -88,9 +102,26 @@ interface NewsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(news: News)
 
+    @Query("UPDATE news SET reactions = :reactions, pendingReactions = :pendingReactions WHERE id = :id")
+    suspend fun updateReactions(id: String, reactions: String?, pendingReactions: String?)
+
+    @Transaction
+    suspend fun toggleReaction(id: String, emoji: String, userId: String): News? {
+        val news = getById(id) ?: return null
+        news.updateReaction(emoji, userId)
+        updateReactions(id, news.reactions, news.pendingReactions)
+        return news
+    }
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(news: List<News>)
 
     @Query("DELETE FROM news WHERE id IN (:ids)")
-    suspend fun deleteByIds(ids: List<String>)
+    suspend fun deleteByIdsInternal(ids: List<String>)
+
+    @Transaction
+    suspend fun deleteByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        ids.distinct().chunked(900).forEach { deleteByIdsInternal(it) }
+    }
 }

@@ -54,7 +54,8 @@ class TaskNotificationWorkerTest {
         every { FileUtils.totalAvailableMemoryRatio(any()) } returns 50L
 
         mockkObject(NotificationUtils)
-        every { NotificationUtils.getInstance(any()) } returns mockk(relaxed = true)
+        every { NotificationUtils.getInstance(any()) } returns notificationManager
+        every { notificationManager.canShowNotification(NotificationUtils.TYPE_TASK) } returns true
         every { NotificationUtils.createTaskNotification(any(), any(), any(), any()) } returns mockk<NotificationConfig>(relaxed = true)
 
         worker = TaskNotificationWorker(
@@ -66,6 +67,8 @@ class TaskNotificationWorkerTest {
             timeProvider
         )
     }
+
+    private val notificationManager = mockk<NotificationUtils.NotificationManager>(relaxed = true)
 
     @After
     fun tearDown() {
@@ -105,5 +108,21 @@ class TaskNotificationWorkerTest {
         coVerify(exactly = 0) {
             teamsRepository.markTasksNotified(any())
         }
+    }
+
+    @Test
+    fun `doWork leaves tasks unmarked while task notifications cannot be shown`() = runTest {
+        val user = UserEntity().apply { id = "user_123" }
+        coEvery { userSessionManager.getUserModel() } returns user
+        every { notificationManager.canShowNotification(NotificationUtils.TYPE_TASK) } returns false
+
+        val task1 = TeamTask().apply { id = "task_1"; title = "Task One" }
+        coEvery { teamsRepository.getPendingTasksForUser(any(), any(), any()) } returns listOf(task1)
+
+        val result = worker.doWork()
+
+        assertEquals(Result.success(), result)
+        coVerify(exactly = 0) { notificationManager.showNotification(any()) }
+        coVerify(exactly = 0) { teamsRepository.markTasksNotified(any()) }
     }
 }

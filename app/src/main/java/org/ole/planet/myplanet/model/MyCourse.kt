@@ -6,9 +6,7 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put

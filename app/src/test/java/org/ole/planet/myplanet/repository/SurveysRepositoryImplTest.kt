@@ -3,9 +3,13 @@ package org.ole.planet.myplanet.repository
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
 import java.util.concurrent.TimeUnit
@@ -86,6 +90,29 @@ class SurveysRepositoryImplTest {
     @After
     fun tearDown() {
         unmockkAll()
+    }
+
+    @Test
+    fun `bulkInsertExamsFromSync keeps the course link written by the courses sync`() = runTest {
+        coEvery { examDao.getByIds(listOf("exam1")) } returns listOf(StepExam(id = "exam1", courseId = "course1", stepId = "step1"))
+        val saved = slot<List<StepExam>>()
+        coEvery { examDao.upsertAll(capture(saved)) } returns Unit
+        val jsonArray = JsonArray().apply {
+            add(JsonObject().apply {
+                add("doc", JsonObject().apply {
+                    addProperty("_id", "exam1")
+                    addProperty("name", "Course Test")
+                    addProperty("type", "courses")
+                })
+            })
+        }
+
+        repository.bulkInsertExamsFromSync(jsonArray)
+
+        val exam = saved.captured.single()
+        assertEquals("Course Test", exam.name)
+        assertEquals("course1", exam.courseId)
+        assertEquals("step1", exam.stepId)
     }
 
     @Test
@@ -337,6 +364,33 @@ class SurveysRepositoryImplTest {
 
         // Only 2 surveys were requested
         assertEquals(2, result.size)
+    }
+
+    @Test
+    fun `markExamsUploaded with empty succeeded list returns empty list`() = runTest {
+        val failed = repository.markExamsUploaded(emptyList())
+
+        assertEquals(emptyList<UploadedItemResult>(), failed)
+        coVerify(exactly = 0) { examDao.getByIds(any()) }
+    }
+
+    @Test
+    fun `markExamsUploaded updates exams and returns missing exams as failures`() = runTest {
+        val existingExam = StepExam(id = "exam-1")
+        coEvery { examDao.getByIds(listOf("exam-1", "exam-missing")) } returns listOf(existingExam)
+
+        val result1 = UploadedItemResult("exam-1", "remote-1", "rev-1", com.google.gson.JsonObject())
+        val result2 = UploadedItemResult("exam-missing", "remote-2", "rev-2", com.google.gson.JsonObject())
+
+        val failed = repository.markExamsUploaded(listOf(result1, result2))
+
+        // Only "exam-missing" should fail
+        assertEquals(1, failed.size)
+        assertEquals("exam-missing", failed.first().localId)
+
+        // examDao.upsertAll should be called with existingExam whose _rev has been updated to "rev-1"
+        assertEquals("rev-1", existingExam._rev)
+        coVerify { examDao.upsertAll(listOf(existingExam)) }
     }
 
 }

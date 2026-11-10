@@ -30,7 +30,6 @@ import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamNotificationInfo
-import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
@@ -54,7 +53,6 @@ data class DashboardUiState(
     val library: List<MyLibrary> = emptyList(),
     val courses: List<MyCourse> = emptyList(),
     val teams: List<MyTeam> = emptyList(),
-    val users: List<UserEntity> = emptyList(),
     val offlineLogins: Int = 0,
     val fullName: String? = null,
 )
@@ -152,20 +150,6 @@ class DashboardViewModel @Inject constructor(
         _uiState.update { it.copy(unreadNotifications = count) }
     }
 
-    fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
-        val earnedDollarsVoice = minOf(voiceCount, 5) * 2
-        val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
-        val total = earnedDollarsVoice + earnedDollarsSurvey
-        return total.coerceAtMost(500)
-    }
-
-    fun calculateCommunityProgress(allVoiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
-        val earnedDollarsVoice = minOf(allVoiceCount, 5) * 2
-        val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
-        val total = earnedDollarsVoice + earnedDollarsSurvey
-        return total.coerceAtMost(11)
-    }
-
     suspend fun updateResourceNotification(userId: String?) {
         val resourceCount = resourcesRepository.countLibrariesNeedingUpdate(userId)
         notificationsRepository.updateResourceNotification(userId, resourceCount)
@@ -226,17 +210,6 @@ class DashboardViewModel @Inject constructor(
 
     suspend fun getTeamType(teamId: String): String? {
         return teamsRepository.getTeamType(teamId)
-    }
-
-    suspend fun getLibraryListForUser(userId: String?): List<MyLibrary> {
-        return resourcesRepository.getLibraryListForUser(userId)
-    }
-
-    fun loadUsers() {
-        viewModelScope.launch {
-            val users = userRepository.getUsersSortedBy("joinDate", true)
-            _uiState.update { it.copy(users = users) }
-        }
     }
 
     fun dashboardDataFlow(userId: String?): Flow<Unit> {
@@ -377,12 +350,12 @@ class DashboardViewModel @Inject constructor(
             val max = GsonUtils.getInt("max", progress)
             val current = GsonUtils.getInt("current", progress)
             if (current == max) {
-                application.getString(org.ole.planet.myplanet.R.string.course_completed, courseName)
+                application.getString(R.string.course_completed, courseName)
             } else {
-                application.getString(org.ole.planet.myplanet.R.string.course_in_progress, courseName, current, max)
+                application.getString(R.string.course_in_progress, courseName, current, max)
             }
         } else {
-            application.getString(org.ole.planet.myplanet.R.string.course_not_started, courseName)
+            application.getString(R.string.course_not_started, courseName)
         }
     }
 

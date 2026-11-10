@@ -4,18 +4,19 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.TableDataUpdate
@@ -23,6 +24,7 @@ import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -35,11 +37,12 @@ class SurveysViewModelTest {
     private lateinit var syncFlow: MutableSharedFlow<TableDataUpdate>
     private lateinit var viewModel: SurveysViewModel
     private val testDispatcher = StandardTestDispatcher()
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
     private val testDispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
         surveysRepository = mockk()
         submissionsRepository = mockk()
         userRepository = mockk()
@@ -55,11 +58,6 @@ class SurveysViewModelTest {
             testDispatcherProvider,
             realtimeSyncManager
         )
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
     }
 
     private fun createSurvey(
@@ -380,5 +378,67 @@ class SurveysViewModelTest {
         // Verify reload occurred and updated list is published
         coVerify(exactly = 2) { surveysRepository.getIndividualSurveys() }
         assertEquals(2, viewModel.surveys.value.size)
+    }
+
+    @Test
+    fun `test sendSurveyToUsers publishes surveySent and clears sending on success`() = runTest {
+        coEvery { submissionsRepository.createBulkSurveySubmissions(any(), any()) } returns Unit
+
+        viewModel.sendSurveyToUsers("survey", listOf("u1", "u2"))
+        assertTrue(viewModel.isSendingSurvey.value)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { submissionsRepository.createBulkSurveySubmissions("survey", listOf("u1", "u2")) }
+        assertTrue(viewModel.surveySent.value)
+        assertFalse(viewModel.isSendingSurvey.value)
+    }
+
+    @Test
+    fun `test sendSurveyToUsers signals failure and clears sending when repository throws`() = runTest {
+        coEvery { submissionsRepository.createBulkSurveySubmissions(any(), any()) } throws RuntimeException("boom")
+        val failure = backgroundScope.async(testDispatcher) { viewModel.surveySendFailed.first() }
+        testDispatcher.scheduler.runCurrent()
+
+        viewModel.sendSurveyToUsers("survey", listOf("u1"))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(failure.isCompleted)
+        assertFalse(viewModel.surveySent.value)
+        assertFalse(viewModel.isSendingSurvey.value)
+    }
+
+    @Test
+    fun `test sendSurveyToUsers ignores a second call while a send is in flight`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        coEvery { submissionsRepository.createBulkSurveySubmissions(any(), any()) } coAnswers { gate.await() }
+
+        viewModel.sendSurveyToUsers("survey", listOf("u1"))
+        testDispatcher.scheduler.runCurrent()
+        viewModel.sendSurveyToUsers("survey", listOf("u1"))
+        gate.complete(Unit)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { submissionsRepository.createBulkSurveySubmissions(any(), any()) }
+    }
+
+    @Test
+    fun `adopted message clears once shown and a second adoption shows it again`() = runTest {
+        backgroundScope.launch(testDispatcher) { viewModel.surveys.collect {} }
+        coEvery { userRepository.getUserModel() } returns mockk(relaxed = true)
+        coEvery { surveysRepository.adoptSurvey(any(), any(), any(), any()) } returns Unit
+        coEvery { surveysRepository.getIndividualSurveys() } returns emptyList()
+        coEvery { surveysRepository.getSurveyInfos(any(), any(), any(), any()) } returns emptyMap()
+        coEvery { surveysRepository.getSurveyFormState(any(), any()) } returns emptyMap()
+
+        viewModel.adoptSurvey("1")
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals("Survey adopted successfully", viewModel.userMessage.value)
+
+        viewModel.onUserMessageShown()
+        assertEquals(null, viewModel.userMessage.value)
+
+        viewModel.adoptSurvey("2")
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals("Survey adopted successfully", viewModel.userMessage.value)
     }
 }

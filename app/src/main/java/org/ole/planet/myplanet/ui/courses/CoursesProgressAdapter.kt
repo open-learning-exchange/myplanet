@@ -28,8 +28,10 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<Courses
     override fun onBindViewHolder(holder: CoursesProgressViewHolder, position: Int) {
         val item = getItem(position)
         holder.binding.tvTitle.text = item.courseName
-        if (item.progressCurrent != null && item.progressMax != null) {
-            holder.binding.tvDescription.text = context.getString(R.string.step_progress, item.progressCurrent, item.progressMax)
+        holder.binding.tvDescription.text = if (item.progressCurrent != null && item.progressMax != null) {
+            context.getString(R.string.step_progress, item.progressCurrent, item.progressMax)
+        } else {
+            ""
         }
         if (item.mistakes != null) holder.binding.tvTotal.text = item.mistakes.toString()
         else holder.binding.tvTotal.text = context.getString(R.string.message_placeholder, "0")
@@ -39,7 +41,7 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<Courses
     private fun showStepMistakes(item: CoursesProgressRow, binding: RowMyProgressBinding) {
         val stepMistake = item.stepMistake
 
-        if (stepMistake != null && stepMistake.isNotEmpty()) {
+        if (!stepMistake.isNullOrEmpty()) {
             binding.llHeader.visibility = View.VISIBLE
 
             val currentChildCount = binding.llProgress.childCount
@@ -95,7 +97,6 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<Courses
 
     inner class CoursesProgressViewHolder(val binding: RowMyProgressBinding) : RecyclerView.ViewHolder(binding.root) {
         val tvTitle = binding.tvTitle
-        val tvTotal = binding.tvTotal
         val tvDescription = binding.tvDescription
 
         init {

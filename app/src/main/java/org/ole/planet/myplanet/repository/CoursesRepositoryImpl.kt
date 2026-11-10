@@ -11,11 +11,11 @@ import java.util.Base64
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.CourseDao
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
@@ -24,8 +24,6 @@ import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
-import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.Certification
 import org.ole.planet.myplanet.model.CourseDetailModel
@@ -48,14 +46,13 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.StringUtils
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class CoursesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val progressRepository: ProgressRepository,
-    private val activitiesRepository: ActivitiesRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val tagsRepository: TagsRepository,
     private val ratingsRepository: RatingsRepository,
@@ -66,9 +63,7 @@ class CoursesRepositoryImpl @Inject constructor(
     private val courseStepDao: CourseStepDao,
     private val examDao: ExamDao,
     private val questionDao: QuestionDao,
-    private val submissionDao: SubmissionDao,
-    private val answerDao: AnswerDao,
-    private val searchActivityDao: SearchActivityDao,
+    private val activitiesRepository: ActivitiesRepository,
     private val courseProgressDao: CourseProgressDao,
     private val removedLogDao: RemovedLogDao,
     private val myLibraryDao: MyLibraryDao,
@@ -117,7 +112,7 @@ class CoursesRepositoryImpl @Inject constructor(
         return mapCourses(courseDao.getForUserPattern(userIdPattern(userId)))
     }
 
-    override suspend fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>> {
+    override fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>> {
         return courseDao.observeForUserPattern(userIdPattern(userId)).map { courses ->
             mapCourses(courses)
         }.distinctUntilChanged { old, new ->
@@ -266,18 +261,14 @@ class CoursesRepositoryImpl @Inject constructor(
         return myLibraryDao.getCourseResources(courseId, isOffline)
     }
 
-    internal fun matchesAllParts(title: String, parts: List<String>): Boolean {
-        return parts.all { title.contains(it) }
-    }
-
     override suspend fun search(query: String): List<MyCourse> {
         if (query.isEmpty()) {
             return mapCourses(courseDao.getAll())
         }
 
         val queryParts = query.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
-        val normalizedQuery = Utilities.normalizeText(query)
+        val normalizedQueryParts = queryParts.map { StringUtils.normalizeText(it) }
+        val normalizedQuery = StringUtils.normalizeText(query)
 
         val queryBuilder = StringBuilder("SELECT * FROM courses WHERE 1 = 1")
         val bindArgs = mutableListOf<Any>()
@@ -346,7 +337,7 @@ class CoursesRepositoryImpl @Inject constructor(
             addProperty("doc.gradeLevel", grade)
             addProperty("doc.subjectLevel", subject)
         }
-        searchActivityDao.insert(
+        activitiesRepository.recordSearchActivity(
             SearchActivity(
                 id = UUID.randomUUID().toString(),
                 user = userName,
@@ -466,7 +457,7 @@ class CoursesRepositoryImpl @Inject constructor(
         }
 
         val examIdsSet = examIds.toSet()
-        val relevantSubmissions = submissionDao.getExamSubmissionsByUser(userId)
+        val relevantSubmissions = submissionsRepository.getExamSubmissionsByUser(userId)
             .filter { sub -> examIdsSet.contains(getParentBaseId(sub.parentId)) }
 
         val submissionsByExamId = relevantSubmissions.groupBy { sub ->
@@ -477,7 +468,7 @@ class CoursesRepositoryImpl @Inject constructor(
         val answersBySubmissionId = if (submissionIds.isEmpty()) {
             emptyMap()
         } else {
-            answerDao.getBySubmissionIds(submissionIds)
+            submissionsRepository.getAnswersBySubmissionIds(submissionIds)
                 .groupBy { it.submissionId ?: "" }
                 .filterKeys { it.isNotEmpty() }
         }
@@ -516,8 +507,7 @@ class CoursesRepositoryImpl @Inject constructor(
                         if (!ob.has("percentage")) ob.addProperty("percentage", 0)
                     } else {
                         ob.addProperty("completed", answers.size == questionCount)
-                        val percentage = (answers.size.toDouble() / questionCount) * 100
-                        ob.addProperty("percentage", percentage)
+                        ob.addProperty("percentage", answers.size * 100 / questionCount)
                     }
                     ob.addProperty("status", submission.status)
                 }
@@ -542,7 +532,7 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean, userId: String?) {
-        if (courseId.isNullOrEmpty()) return
+        if (courseId.isNullOrEmpty() || !passed) return
         courseProgressDao.updatePassedByCourseAndStep(courseId, stepNum, passed, userId)
     }
 
@@ -550,18 +540,18 @@ class CoursesRepositoryImpl @Inject constructor(
         val step = courseStepDao.getById(stepId)
             ?: throw IllegalStateException("Step not found")
         val resources = myLibraryDao.getByStepId(stepId)
-        val stepExams = examDao.getByStepIdAndType(stepId, "courses").map { it }
-        val stepSurvey = examDao.getByStepIdAndType(stepId, "surveys").map { it }
+        val stepExams = examDao.getByStepIdAndType(stepId, "courses")
+        val stepSurvey = examDao.getByStepIdAndType(stepId, "surveys")
         val userHasCourse = isMyCourse(userId, step.courseId)
 
         val hasExam = if (stepExams.isNotEmpty()) {
             val firstStepId = stepExams[0].id
-            submissionsRepository.hasSubmission(firstStepId, step.courseId, userId, "exam")
+            submissionsRepository.hasSubmission(firstStepId, step.courseId, userId, "exam", finishedOnly = true)
         } else false
 
         val hasSurvey = if (stepSurvey.isNotEmpty()) {
             val firstStepId = stepSurvey[0].id
-            submissionsRepository.hasSubmission(firstStepId, step.courseId, userId, "survey")
+            submissionsRepository.hasSubmission(firstStepId, step.courseId, userId, "survey", finishedOnly = true)
         } else false
 
         return CourseStepData(
@@ -589,10 +579,6 @@ class CoursesRepositoryImpl @Inject constructor(
         leaveCourses(courseIds, userId).getOrThrow()
     }
 
-    override suspend fun logCourseVisit(courseId: String, title: String, userId: String) {
-        activitiesRepository.logCourseVisit(courseId, title, userId)
-    }
-
     override suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int {
         return progressRepository.getCurrentProgress(steps, userId, courseId)
     }
@@ -616,14 +602,13 @@ class CoursesRepositoryImpl @Inject constructor(
         }
         if (examIds.isNotEmpty()) {
             val submissions = examIds.chunked(900).flatMap { chunk ->
-                submissionDao.getUnuploadedNonSurveyByParentIds(chunk)
+                submissionsRepository.getUnuploadedNonSurveySubmissionsByParentIds(chunk)
             }
             val submissionIds = submissions.map { it.id }
             if (submissionIds.isNotEmpty()) {
                 appDatabase.withTransaction {
                     submissionIds.chunked(900).forEach { chunk ->
-                        answerDao.deleteBySubmissionIds(chunk)
-                        submissionDao.deleteByIds(chunk)
+                        submissionsRepository.deleteSubmissionsWithAnswers(chunk)
                     }
                 }
             }
@@ -649,6 +634,7 @@ class CoursesRepositoryImpl @Inject constructor(
 
         val courses = ArrayList<MyCourse>(documentList.size)
         val steps = ArrayList<CourseStep>()
+        val stepIdsByCourse = HashMap<String, List<String>>()
         val exams = ArrayList<StepExam>()
         val questions = ArrayList<ExamQuestion>()
         var processedCount = 0
@@ -660,12 +646,13 @@ class CoursesRepositoryImpl @Inject constructor(
                     processedCount++
                     courses.add(payload.course)
                     steps.addAll(payload.steps)
+                    payload.course.courseId?.let { stepIdsByCourse[it] = payload.steps.map { step -> step.id } }
                     exams.addAll(payload.exams)
                     questions.addAll(payload.questions)
                 }
             } catch (e: Exception) {
                 if (!continueOnError) throw e
-                e.printStackTrace()
+                Log.w("CoursesRepository", "Failed to insert course from sync document", e)
             }
         }
 
@@ -674,8 +661,12 @@ class CoursesRepositoryImpl @Inject constructor(
         appDatabase.withTransaction {
             if (courses.isNotEmpty()) courseDao.upsertAll(courses)
             if (steps.isNotEmpty()) courseStepDao.upsertAll(steps)
+            stepIdsByCourse.forEach { (courseId, stepIds) -> courseStepDao.deleteStaleSteps(courseId, stepIds) }
             if (exams.isNotEmpty()) examDao.upsertAll(exams)
-            if (questions.isNotEmpty()) questionDao.upsertAll(questions)
+            if (questions.isNotEmpty()) {
+                questionDao.upsertAll(questions)
+                questionDao.deleteStaleQuestions(questions)
+            }
         }
         return processedCount
     }
@@ -718,6 +709,7 @@ class CoursesRepositoryImpl @Inject constructor(
                     stepTitle = GsonUtils.getString("stepTitle", stepJson),
                     description = stepDescription,
                     noOfResources = GsonUtils.getJsonArray("resources", stepJson).size(),
+                    passingRequired = GsonUtils.getBoolean("passingRequired", stepJson),
                 )
             )
             collectRoomExam(stepJson, "exam", courseId, stepId, parsedExams, parsedQuestions)
@@ -730,7 +722,7 @@ class CoursesRepositoryImpl @Inject constructor(
             courseRev = GsonUtils.getString("_rev", doc),
             courseId = courseId,
             courseTitle = title,
-            courseTitleNormal = Utilities.normalizeText(title),
+            courseTitleNormal = StringUtils.normalizeText(title),
             description = description,
             userId = mergeUserIds(existingCourse?.userId, shelfId),
             languageOfInstruction = GsonUtils.getString("languageOfInstruction", doc),
@@ -880,6 +872,8 @@ class CoursesRepositoryImpl @Inject constructor(
                     val resourceId = library.resourceId ?: return@forEach
                     try {
                         resourcesRepository.reconcileHtmlResourceOffline(resourceId)
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         Log.w("CoursesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
                     }
@@ -909,7 +903,7 @@ class CoursesRepositoryImpl @Inject constructor(
         val steps = if (courseKey.isBlank()) {
             emptyList()
         } else {
-            courseStepDao.getByCourseId(courseKey).map { it }
+            courseStepDao.getByCourseId(courseKey)
         }
         return course.apply { courseSteps = steps.toMutableList(); setNumberOfSteps(steps.size) }
     }

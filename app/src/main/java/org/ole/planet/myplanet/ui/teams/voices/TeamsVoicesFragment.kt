@@ -13,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -21,16 +22,15 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
 import org.ole.planet.myplanet.model.News
-import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.VoicePostingPolicy
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.toVoicePostingPolicy
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
-import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.ui.voices.VoicesAdapterHelper
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
@@ -74,7 +74,11 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                 binding.tlMessage.error = getString(R.string.please_enter_message)
                 return@setOnClickListener
             }
-            binding.etMessage.setText(R.string.empty_text)
+            val userModel = user
+            if (userModel == null) {
+                Utilities.toast(requireContext(), getString(R.string.error, "Failed to create news"))
+                return@setOnClickListener
+            }
             val map = HashMap<String?, String>()
             map["viewInId"] = getEffectiveTeamId()
             map["viewInSection"] = "teams"
@@ -83,9 +87,8 @@ class TeamsVoicesFragment : BaseTeamFragment() {
             map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
             map["name"] = getEffectiveTeamName()
 
-            user?.let { userModel ->
-                viewModel.createTeamNews(map, userModel, imageList)
-            }
+            binding.btnSubmit.isEnabled = false
+            viewModel.createTeamNews(map, userModel, imageList.toList())
         }
 
         if (shouldQueryTeamLocally()) {
@@ -133,6 +136,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                 }
                 launch {
                     viewModel.createNewsSuccess.collect { success ->
+                        binding.btnSubmit.isEnabled = true
                         if (success) {
                             binding.rvDiscussion.post {
                                 binding.rvDiscussion.smoothScrollToPosition(0)
@@ -144,6 +148,8 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                             binding.llAddNews.visibility = View.GONE
                             binding.tlMessage.error = null
                             binding.addMessage.text = getString(R.string.add_message)
+                        } else {
+                            Utilities.toast(requireContext(), getString(R.string.error, "Failed to create news"))
                         }
                     }
                 }
@@ -166,13 +172,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
 
         val chatDetailFragment = ChatDetailFragment()
         chatDetailFragment.arguments = bundle
-
-        FragmentNavigator.replaceFragment(
-            parentFragmentManager,
-            R.id.fragment_container,
-            chatDetailFragment,
-            addToBackStack = true
-        )
+        homeItemClickListener?.openCallFragment(chatDetailFragment)
     }
 
     override fun clearImages() {
@@ -204,15 +204,15 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     teamName = effectiveTeamName,
                     teamId = teamId,
                     isTeamLeaderFn = { onResult ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch {
-                            val result = kotlinx.coroutines.withTimeoutOrNull(2000) {
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val result = kotlinx.coroutines.withTimeoutOrNull(2000.milliseconds) {
                                 viewModel.isTeamLeader(teamId, user?._id)
                             }
                             onResult(result ?: false)
                         }
                     },
                     getUserFn = { userId, onResult ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch {
+                        viewLifecycleOwner.lifecycleScope.launch {
                             val result = viewModel.getUserById(userId)
                             onResult(result)
                         }
@@ -243,7 +243,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                         }
                     },
                     getLibraryResourceFn = { resourceId, onResult ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch {
+                        viewLifecycleOwner.lifecycleScope.launch {
                             val result = viewModel.getLibraryResource(resourceId)
                             onResult(result)
                         }
@@ -253,9 +253,8 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     },
                     onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope, dispatcherProvider),
                     labelManager = labelManager,
-                    voicesEditActions = voicesRepository,
-                    leadersList = UserEntity.parseLeadersJson(sharedPrefManager.getCommunityLeaders()),
-                    setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
+                    voicesEditor = voicesRepository,
+                    leadersList = viewModel.getCommunityLeaders()
                 )
             }
             adapterNews?.setListener(this)

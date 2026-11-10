@@ -15,7 +15,7 @@ interface CoursesRepository {
     suspend fun getAllCourses(): List<MyCourse>
     fun getMyCourses(userId: String?, courses: List<MyCourse>): List<MyCourse>
     suspend fun getMyCourses(userId: String): List<MyCourse>
-    suspend fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>>
+    fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>>
     suspend fun getCourseById(courseId: String): MyCourse?
     fun getCourseByCourseIdFlow(courseId: String): Flow<MyCourse?>
     fun getCourseDetailModel(courseId: String): Flow<CourseDetailModel?>
@@ -53,7 +53,6 @@ interface CoursesRepository {
     suspend fun getMyCourseIds(userId: String): JsonArray
     suspend fun removeCourseFromShelf(courseId: String, userId: String)
     suspend fun removeCoursesFromShelf(courseIds: List<String>, userId: String)
-    suspend fun logCourseVisit(courseId: String, title: String, userId: String)
     suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean
     suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean

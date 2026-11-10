@@ -38,7 +38,8 @@ class RequestsFragment : BaseMemberFragment() {
             (adapter as? RequestsAdapter)?.setData(
                 uiState.members,
                 uiState.isLeader,
-                uiState.memberCount
+                uiState.memberCount,
+                uiState.memberLimit
             )
             showNoData(binding.tvNodata, uiState.members.size, "members")
         }
@@ -58,7 +59,6 @@ class RequestsFragment : BaseMemberFragment() {
 
     override val adapter: ListAdapter<*, *> by lazy {
         RequestsAdapter(
-            requireActivity(),
             currentUser,
         ) { user, isAccepted ->
             viewModel.respondToRequest(teamId, user, isAccepted)

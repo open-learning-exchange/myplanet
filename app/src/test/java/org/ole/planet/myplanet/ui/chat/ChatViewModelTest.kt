@@ -2,21 +2,21 @@ package org.ole.planet.myplanet.ui.chat
 
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
+import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
@@ -27,10 +27,13 @@ import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.ChatResult
+import org.ole.planet.myplanet.repository.CommunityConfiguration
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -41,27 +44,25 @@ class ChatViewModelTest {
     private lateinit var userRepository: UserRepository
     private lateinit var teamsRepository: TeamsRepository
     private lateinit var voicesRepository: VoicesRepository
+    private lateinit var configurationsRepository: ConfigurationsRepository
     private val testDispatcher = StandardTestDispatcher()
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
     private lateinit var dispatcherProvider: TestDispatcherProvider
     private lateinit var realtimeSyncManager: RealtimeSyncManager
     private val dataUpdateFlow = MutableSharedFlow<TableDataUpdate>()
 
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
         chatRepository = mockk(relaxed = true)
         userRepository = mockk(relaxed = true)
         teamsRepository = mockk(relaxed = true)
         voicesRepository = mockk(relaxed = true)
+        configurationsRepository = mockk(relaxed = true)
         dispatcherProvider = TestDispatcherProvider(testDispatcher)
         realtimeSyncManager = mockk(relaxed = true)
         io.mockk.every { realtimeSyncManager.updatesFor("chats") } returns dataUpdateFlow
-        viewModel = ChatViewModel(chatRepository, userRepository, teamsRepository, voicesRepository, dispatcherProvider, realtimeSyncManager)
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
+        viewModel = ChatViewModel(chatRepository, userRepository, teamsRepository, voicesRepository, dispatcherProvider, realtimeSyncManager, configurationsRepository)
     }
 
     @Test
@@ -106,6 +107,40 @@ class ChatViewModelTest {
         testScheduler.advanceUntilIdle()
 
         assertEquals(1, signals.size)
+        job.cancel()
+    }
+
+    @Test
+    fun `chats update reloads the chat history list`() = runTest {
+        val user = UserEntity(_id = "user123", planetCode = "planet1", name = "Test User")
+        val firstChat = ChatHistory().apply {
+            _id = "chat1"
+            createdDate = "1"
+            updatedDate = "1"
+        }
+        val secondChat = ChatHistory().apply {
+            _id = "chat2"
+            createdDate = "2"
+            updatedDate = "2"
+        }
+        coEvery { userRepository.getUserById("user123") } returns user
+        coEvery { chatRepository.getChatHistoryForUser("Test User") } returnsMany listOf(
+            listOf(firstChat),
+            listOf(firstChat, secondChat)
+        )
+
+        // Same wiring as ChatHistoryFragment.setupRealtimeSync: every signal reloads the list
+        val job = launch(testDispatcher) {
+            viewModel.refreshChatSignal.collect { viewModel.loadChatHistoryScreenData("user123") }
+        }
+        testScheduler.advanceUntilIdle()
+        assertEquals(listOf(firstChat), viewModel.screenData.value?.chatHistory)
+
+        dataUpdateFlow.emit(TableDataUpdate("chats", 1, 0))
+        testScheduler.advanceUntilIdle()
+
+        coVerify(exactly = 2) { chatRepository.getChatHistoryForUser("Test User") }
+        assertEquals(listOf(firstChat, secondChat), viewModel.screenData.value?.chatHistory)
         job.cancel()
     }
 
@@ -200,15 +235,14 @@ class ChatViewModelTest {
         coEvery { teamsRepository.getTeamSummaries("user123") } returns listOf(team)
         coEvery { teamsRepository.getShareableEnterpriseSummaries("user123") } returns listOf(team)
         coEvery { teamsRepository.getTeamSummaryById("community1@parent1") } returns team
+        every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("parent1", "community1", null)
 
         val job = launch(testDispatcher) {
             viewModel.screenData.collect {}
         }
 
         viewModel.loadChatHistoryScreenData(
-            userId = "user123",
-            parentCode = "parent1",
-            communityName = "community1"
+            userId = "user123"
         )
 
         testScheduler.advanceUntilIdle()
@@ -238,8 +272,9 @@ class ChatViewModelTest {
         val chat2 = ChatHistory().apply { title = "Chat 2" }
 
         coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)
+        every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("", "", null)
 
-        viewModel.loadChatHistoryScreenData("user123", null, null)
+        viewModel.loadChatHistoryScreenData("user123")
         testScheduler.advanceUntilIdle()
 
         viewModel.searchChats("Chat 1", isFullSearch = false, isQuestion = false)
@@ -250,6 +285,49 @@ class ChatViewModelTest {
         viewModel.searchChats("", isFullSearch = false, isQuestion = false)
         testScheduler.advanceUntilIdle()
         assertEquals(2, viewModel.filteredChats.value.size)
+    }
+
+    @Test
+    fun `reloading chat history keeps the active search applied`() = runTest {
+        val chat1 = ChatHistory().apply { title = "Chat 1" }
+        val chat2 = ChatHistory().apply { title = "Chat 2" }
+        val chat3 = ChatHistory().apply { title = "Chat 1 follow-up" }
+
+        coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)
+        every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("", "", null)
+
+        viewModel.loadChatHistoryScreenData("user123")
+        testScheduler.advanceUntilIdle()
+        viewModel.searchChats("Chat 1", isFullSearch = false, isQuestion = false)
+        testScheduler.advanceUntilIdle()
+
+        // A reload (return to the screen or a realtime update) brings in a new matching chat
+        coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2, chat3)
+        viewModel.loadChatHistoryScreenData("user123")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(listOf("Chat 1", "Chat 1 follow-up"), viewModel.filteredChats.value.map { it.title })
+    }
+
+    @Test
+    fun `clearing the search before a reload restores the full list`() = runTest {
+        val chat1 = ChatHistory().apply { title = "Chat 1" }
+        val chat2 = ChatHistory().apply { title = "Chat 2" }
+
+        coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)
+        every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("", "", null)
+
+        viewModel.loadChatHistoryScreenData("user123")
+        testScheduler.advanceUntilIdle()
+        viewModel.searchChats("Chat 1", isFullSearch = true, isQuestion = true)
+        testScheduler.advanceUntilIdle()
+
+        // A fresh ChatHistoryFragment pushes its empty search box before its reload lands
+        viewModel.searchChats("", isFullSearch = false, isQuestion = false)
+        viewModel.loadChatHistoryScreenData("user123")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(listOf("Chat 1", "Chat 2"), viewModel.filteredChats.value.map { it.title })
     }
 
     @Test
@@ -268,12 +346,11 @@ class ChatViewModelTest {
         coEvery { chatRepository.getChatHistoryForUser("Cached User") } returns listOf(conversation)
         coEvery { teamsRepository.getTeamSummaries(any()) } returns emptyList()
         coEvery { teamsRepository.getShareableEnterpriseSummaries(any()) } returns emptyList()
+        every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("parent1", "community1", null)
 
         // First call to populate cache
         viewModel.loadChatHistoryScreenData(
-            userId = "user123",
-            parentCode = "parent1",
-            communityName = "community1"
+            userId = "user123"
         )
         testScheduler.advanceUntilIdle()
 
@@ -286,9 +363,7 @@ class ChatViewModelTest {
 
         // Second call should use cache
         viewModel.loadChatHistoryScreenData(
-            userId = "user123",
-            parentCode = "parent1",
-            communityName = "community1"
+            userId = "user123"
         )
         testScheduler.advanceUntilIdle()
 
@@ -304,6 +379,19 @@ class ChatViewModelTest {
         coVerify(exactly = 0) { teamsRepository.getTeamSummaries(any()) }
 
         job.cancel()
+    }
+
+    @Test
+    fun `two consecutive loadChatHistoryScreenData calls read getCommunityConfiguration twice`() = runTest {
+        every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("parent1", "community1", null)
+
+        viewModel.loadChatHistoryScreenData("user123")
+        testScheduler.advanceUntilIdle()
+
+        viewModel.loadChatHistoryScreenData("user123")
+        testScheduler.advanceUntilIdle()
+
+        verify(exactly = 2) { configurationsRepository.getCommunityConfiguration() }
     }
 
     @Test
@@ -466,5 +554,69 @@ class ChatViewModelTest {
         assertEquals(true, currentState.aiProvidersError)
 
         job.cancel()
+    }
+
+    @Test
+    fun `both news and chat history reads start concurrently before either completes`() = runTest {
+        val user = UserEntity(_id = "user123", planetCode = "planet1", name = "Test User")
+        coEvery { userRepository.getUserById("user123") } returns user
+        every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("parent1", "community1", null)
+
+        val newsGate = CompletableDeferred<List<News>>()
+        val historyGate = CompletableDeferred<List<ChatHistory>>()
+
+        var newsStarted = false
+        var historyStarted = false
+
+        coEvery { voicesRepository.getPlanetNewsMessages("planet1") } coAnswers {
+            newsStarted = true
+            newsGate.await()
+        }
+        coEvery { chatRepository.getChatHistoryForUser("Test User") } coAnswers {
+            historyStarted = true
+            historyGate.await()
+        }
+
+        viewModel.loadChatHistoryScreenData("user123")
+        testScheduler.advanceUntilIdle()
+
+        assertTrue(newsStarted)
+        assertTrue(historyStarted)
+
+        newsGate.complete(emptyList())
+        historyGate.complete(emptyList())
+        testScheduler.advanceUntilIdle()
+
+        org.junit.Assert.assertNotNull(viewModel.screenData.value)
+    }
+
+    @Test
+    fun `exception in one read is retried by RetryUtils and does not cancel viewModelScope`() = runTest {
+        val user = UserEntity(_id = "user123", planetCode = "planet1", name = "Test User")
+        coEvery { userRepository.getUserById("user123") } returns user
+        every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("parent1", "community1", null)
+
+        var attemptCount = 0
+        coEvery { voicesRepository.getPlanetNewsMessages("planet1") } coAnswers {
+            attemptCount++
+            if (attemptCount <= 3) {
+                throw RuntimeException("Temporary read failure")
+            } else {
+                emptyList()
+            }
+        }
+        coEvery { chatRepository.getChatHistoryForUser("Test User") } returns emptyList()
+
+        viewModel.loadChatHistoryScreenData("user123")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(3, attemptCount)
+        assertNull(viewModel.screenData.value)
+
+        viewModel.loadChatHistoryScreenData("user123")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(4, attemptCount)
+        org.junit.Assert.assertNotNull(viewModel.screenData.value)
     }
 }

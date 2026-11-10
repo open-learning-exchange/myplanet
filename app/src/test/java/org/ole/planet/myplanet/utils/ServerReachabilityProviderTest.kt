@@ -6,8 +6,12 @@ import io.mockk.mockk
 import io.mockk.verify
 import java.net.InetSocketAddress
 import java.util.Collections
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.runTest
 import okhttp3.Call
 import okhttp3.OkHttpClient
@@ -32,7 +36,7 @@ class ServerReachabilityProviderTest {
     @Before
     fun setUp() {
         provider = ServerReachabilityProvider(
-            okHttpClient,
+            dagger.Lazy { okHttpClient },
             serverUrlMapper,
             dispatcherProvider,
             timeProvider
@@ -60,13 +64,11 @@ class ServerReachabilityProviderTest {
         val firstCall = provider.isServerReachable(url)
         assertTrue(firstCall)
 
-        // Advance time by 10 seconds (within 30s TTL)
         timeProvider.advanceBy(10_000L)
 
         val secondCall = provider.isServerReachable(url)
         assertTrue(secondCall)
 
-        // OkHttpClient call should execute only once due to cache hit
         verify(exactly = 1) { okHttpClient.newCall(any()) }
     }
 
@@ -84,13 +86,11 @@ class ServerReachabilityProviderTest {
         val firstCall = provider.isServerReachable(url)
         assertTrue(firstCall)
 
-        // Advance time beyond 30s TTL (e.g., 30,001 ms)
         timeProvider.advanceBy(30_001L)
 
         val secondCall = provider.isServerReachable(url)
         assertTrue(secondCall)
 
-        // OkHttpClient should be called twice because cache expired
         verify(exactly = 2) { okHttpClient.newCall(any()) }
     }
 
@@ -117,6 +117,105 @@ class ServerReachabilityProviderTest {
         assertTrue(result)
         verify(exactly = 1) { mockCallPrimary.execute() }
         verify(exactly = 1) { mockCallAlt.execute() }
+    }
+
+    @Test
+    fun `isServerReachable cancels primary probe when alternative succeeds while primary blocks`() = runTest(testDispatcher) {
+        val url = "http://primary.com"
+        val altUrl = "http://alt.com"
+        val mockCallPrimary: Call = mockk()
+        val mockCallAlt: Call = mockk()
+        val mockResponseAlt: Response = mockk(relaxed = true)
+
+        val primaryLatch = CountDownLatch(1)
+        val primaryStarted = CountDownLatch(1)
+
+        every { serverUrlMapper.processUrl(url) } returns ServerUrlMapper.UrlMapping(url, altUrl)
+        every { okHttpClient.newCall(match { it.url.toString() == url || it.url.toString() == "$url/" }) } returns mockCallPrimary
+        every { okHttpClient.newCall(match { it.url.toString() == altUrl || it.url.toString() == "$altUrl/" }) } returns mockCallAlt
+
+        every { mockCallPrimary.execute() } answers {
+            primaryStarted.countDown()
+            primaryLatch.await(5, TimeUnit.SECONDS)
+            throw java.io.IOException("Canceled")
+        }
+        every { mockCallPrimary.cancel() } answers {
+            primaryLatch.countDown()
+        }
+
+        every { mockCallAlt.execute() } answers {
+            primaryStarted.await(5, TimeUnit.SECONDS)
+            mockResponseAlt
+        }
+        every { mockResponseAlt.isSuccessful } returns true
+
+        val providerWithIo = ServerReachabilityProvider(
+            dagger.Lazy { okHttpClient },
+            serverUrlMapper,
+            IoDispatcherProvider(testDispatcher),
+            timeProvider
+        )
+
+        val result = providerWithIo.isServerReachable(url)
+        assertTrue(result)
+        verify(exactly = 1) { mockCallPrimary.cancel() }
+    }
+
+    @Test
+    fun `isServerReachable returns false and caches when both primary and alternative fail`() = runTest(testDispatcher) {
+        val url = "http://primary.com"
+        val altUrl = "http://alt.com"
+        val mockCallPrimary: Call = mockk()
+        val mockCallAlt: Call = mockk()
+        val mockResponsePrimary: Response = mockk(relaxed = true)
+        val mockResponseAlt: Response = mockk(relaxed = true)
+
+        every { serverUrlMapper.processUrl(url) } returns ServerUrlMapper.UrlMapping(url, altUrl)
+        every { okHttpClient.newCall(match { it.url.toString() == url || it.url.toString() == "$url/" }) } returns mockCallPrimary
+        every { okHttpClient.newCall(match { it.url.toString() == altUrl || it.url.toString() == "$altUrl/" }) } returns mockCallAlt
+
+        every { mockCallPrimary.execute() } returns mockResponsePrimary
+        every { mockResponsePrimary.isSuccessful } returns false
+
+        every { mockCallAlt.execute() } returns mockResponseAlt
+        every { mockResponseAlt.isSuccessful } returns false
+
+        val firstCall = provider.isServerReachable(url)
+        assertFalse(firstCall)
+
+        timeProvider.advanceBy(10_000L)
+
+        val secondCall = provider.isServerReachable(url)
+        assertFalse(secondCall)
+
+        verify(exactly = 1) { mockCallPrimary.execute() }
+        verify(exactly = 1) { mockCallAlt.execute() }
+    }
+
+    @Test
+    fun `isServerReachable returns true when primary succeeds with at most one extra alt probe`() = runTest(testDispatcher) {
+        val url = "http://primary.com"
+        val altUrl = "http://alt.com"
+        val mockCallPrimary: Call = mockk()
+        val mockCallAlt: Call = mockk()
+        val mockResponsePrimary: Response = mockk(relaxed = true)
+        val mockResponseAlt: Response = mockk(relaxed = true)
+
+        every { serverUrlMapper.processUrl(url) } returns ServerUrlMapper.UrlMapping(url, altUrl)
+        every { okHttpClient.newCall(match { it.url.toString() == url || it.url.toString() == "$url/" }) } returns mockCallPrimary
+        every { okHttpClient.newCall(match { it.url.toString() == altUrl || it.url.toString() == "$altUrl/" }) } returns mockCallAlt
+
+        every { mockCallPrimary.execute() } returns mockResponsePrimary
+        every { mockResponsePrimary.isSuccessful } returns true
+
+        every { mockCallAlt.execute() } returns mockResponseAlt
+        every { mockResponseAlt.isSuccessful } returns true
+
+        val result = provider.isServerReachable(url)
+        assertTrue(result)
+
+        verify(exactly = 1) { mockCallPrimary.execute() }
+        verify(atMost = 1) { mockCallAlt.execute() }
     }
 
     @Test
@@ -176,10 +275,10 @@ class ServerReachabilityProviderTest {
     }
 
     private fun realProvider() = ServerReachabilityProvider(
-        OkHttpClient.Builder()
+        dagger.Lazy { OkHttpClient.Builder()
             .connectTimeout(5, TimeUnit.SECONDS)
             .readTimeout(5, TimeUnit.SECONDS)
-            .build(),
+            .build() },
         serverUrlMapper,
         dispatcherProvider,
         timeProvider
@@ -202,5 +301,13 @@ class ServerReachabilityProviderTest {
         } finally {
             server.stop(0)
         }
+    }
+
+    private class IoDispatcherProvider(private val testDispatcher: TestDispatcher) : DispatcherProvider {
+        override val main: CoroutineDispatcher = testDispatcher
+        override val mainImmediate: CoroutineDispatcher = testDispatcher
+        override val io: CoroutineDispatcher = Dispatchers.IO
+        override val default: CoroutineDispatcher = testDispatcher
+        override val unconfined: CoroutineDispatcher = testDispatcher
     }
 }

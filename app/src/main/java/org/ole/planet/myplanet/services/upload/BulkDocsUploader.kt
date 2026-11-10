@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.services.upload
 import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import kotlin.coroutines.cancellation.CancellationException
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.utils.UrlUtils
 
@@ -48,6 +49,8 @@ object BulkDocsUploader {
             } else {
                 items.forEach { (item, _) -> onResult(item, Outcome.RequestFailed(response.code(), null)) }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Exception during bulk upload to ${UrlUtils.redactForLog(url)}", e)
             items.forEach { (item, _) -> onResult(item, Outcome.RequestFailed(null, e)) }

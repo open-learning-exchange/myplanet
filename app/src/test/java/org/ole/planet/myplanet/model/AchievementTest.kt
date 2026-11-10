@@ -10,6 +10,32 @@ import org.junit.Test
 class AchievementTest {
 
     @Test
+    fun cvRelativePath_storesEachAchievementsCvInItsOwnFolder() {
+        assertEquals("cv/alice@planet/CV.pdf", Achievement.cvRelativePath("alice@planet", "CV.pdf"))
+        assertEquals("cv/org.couchdb.user_bob@planet/CV.pdf", Achievement.cvRelativePath("org.couchdb.user:bob@planet", "CV.pdf"))
+        assertEquals("cv/CV.pdf", Achievement.cvRelativePath(null, "CV.pdf"))
+    }
+
+    @Test
+    fun resolveCvRelativePath_fallsBackToTheFlatPathOnlyWhenThatIsWhereTheCvIs() {
+        val oleDir = kotlin.io.path.createTempDirectory("ole").toFile()
+        val olePath = oleDir.absolutePath + "/"
+        try {
+            assertEquals("cv/alice@planet/CV.pdf", Achievement.resolveCvRelativePath(olePath, "alice@planet", "CV.pdf"))
+
+            java.io.File(oleDir, "cv").mkdirs()
+            java.io.File(oleDir, "cv/CV.pdf").writeText("legacy")
+            assertEquals("cv/CV.pdf", Achievement.resolveCvRelativePath(olePath, "alice@planet", "CV.pdf"))
+
+            java.io.File(oleDir, "cv/alice@planet").mkdirs()
+            java.io.File(oleDir, "cv/alice@planet/CV.pdf").writeText("current")
+            assertEquals("cv/alice@planet/CV.pdf", Achievement.resolveCvRelativePath(olePath, "alice@planet", "CV.pdf"))
+        } finally {
+            oleDir.deleteRecursively()
+        }
+    }
+
+    @Test
     fun fromJson_setsFieldsAndParsesStringListArrays() {
         val references = JsonObject().apply {
             addProperty("name", "Jane Doe")

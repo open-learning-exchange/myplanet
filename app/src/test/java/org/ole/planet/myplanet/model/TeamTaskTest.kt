@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.google.gson.JsonObject
 import io.mockk.every
@@ -21,7 +20,7 @@ class TeamTaskTest {
 
     @Before
     fun setup() {
-        MainApplication.testContext = ApplicationProvider.getApplicationContext<Context>()
+        MainApplication.testContext = ApplicationProvider.getApplicationContext()
     }
 
     @After
@@ -56,6 +55,7 @@ class TeamTaskTest {
         assertEquals("Task Description", result.get("description").asString)
         assertTrue(result.get("completed").asBoolean)
         assertEquals(1620000000000L, result.get("completedTime").asLong)
+        assertEquals(TaskStatus.COMPLETED.value, result.get("status").asString)
 
         val assignee = result.getAsJsonObject("assignee")
         assertEquals("John Doe", assignee.get("userName").asString)
@@ -92,6 +92,7 @@ class TeamTaskTest {
         assertEquals("Task Description", result.get("description").asString)
         assertFalse(result.get("completed").asBoolean)
         assertEquals(0L, result.get("completedTime").asLong)
+        assertEquals(TaskStatus.TODO.value, result.get("status").asString)
 
         assertEquals("", result.get("assignee").asString)
 
@@ -100,6 +101,57 @@ class TeamTaskTest {
 
         val linkObj = result.getAsJsonObject("link")
         assertEquals("linkValue", linkObj.get("linkKey").asString)
+    }
+
+    @Test
+    fun testSerialize_keepsAssigneeIdWhenUserIsNotOnDevice() {
+        val task = TeamTask().apply {
+            _id = "t1"
+            title = "Assigned Task"
+            assignee = "member_1"
+        }
+
+        val result = TeamTask.serialize(task, null)
+
+        assertEquals("member_1", result.getAsJsonObject("assignee").get("_id").asString)
+    }
+
+    @Test
+    fun testSerialize_inProgressStatus() {
+        val task = TeamTask().apply {
+            _id = "t1"
+            title = "In Progress Task"
+            status = TaskStatus.IN_PROGRESS.value
+            completed = false
+        }
+
+        val result = TeamTask.serialize(task, null)
+        assertEquals(TaskStatus.IN_PROGRESS.value, result.get("status").asString)
+        assertFalse(result.get("completed").asBoolean)
+    }
+
+    @Test
+    fun testSerialize_archivedStatusPassesThrough() {
+        val task = TeamTask().apply {
+            _id = "t1"
+            status = "archived"
+            completed = false
+        }
+
+        val result = TeamTask.serialize(task, null)
+        assertEquals("archived", result.get("status").asString)
+    }
+
+    @Test
+    fun testSerialize_uncompletedFlagWinsOverCompletedStatus() {
+        val task = TeamTask().apply {
+            _id = "t1"
+            status = TaskStatus.COMPLETED.value
+            completed = false
+        }
+
+        val result = TeamTask.serialize(task, null)
+        assertEquals(TaskStatus.TODO.value, result.get("status").asString)
     }
 
     @Test

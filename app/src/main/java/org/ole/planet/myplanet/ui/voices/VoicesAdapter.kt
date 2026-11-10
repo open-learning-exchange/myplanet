@@ -4,13 +4,17 @@ import android.annotation.SuppressLint
 import android.app.Dialog
 import android.content.Context
 import android.os.Build
+import android.text.Spanned
 import android.text.TextUtils
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
@@ -32,16 +36,19 @@ import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.VoicesEditActions
+import org.ole.planet.myplanet.repository.VoicesEditor
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.ImageUtils
+import org.ole.planet.myplanet.utils.MarkdownUtils.parseMarkdown
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
+import org.ole.planet.myplanet.utils.MarkdownUtils.setParsedMarkdown
 import org.ole.planet.myplanet.utils.StableIdGenerator
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.makeExpandable
@@ -61,9 +68,8 @@ class VoicesAdapter(
     private val onEditAction: (suspend () -> Unit) -> Unit,
     private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit),
     private val labelManager: VoicesLabelManager,
-    private val voicesEditActions: VoicesEditActions,
-    private val leadersList: List<UserEntity>,
-    private val setRepliedNewsIdFn: (String?) -> Unit
+    private val voicesEditor: VoicesEditor,
+    private val leadersList: List<UserEntity>
 ) : ListAdapter<News, RecyclerView.ViewHolder>(
     DiffUtils.itemCallback<News>(
         areItemsTheSame = { oldItem, newItem ->
@@ -83,7 +89,7 @@ class VoicesAdapter(
                         oldItem.sharedBy == newItem.sharedBy && oldItem.labels == newItem.labels &&
                         oldItem.avatar == newItem.avatar && oldItem.imageUrls == newItem.imageUrls &&
                         oldItem.images == newItem.images && oldItem.replyTo == newItem.replyTo &&
-                        oldItem.viewIn == newItem.viewIn
+                        oldItem.viewIn == newItem.viewIn && oldItem.reactions == newItem.reactions
             } catch (e: Exception) {
                 false
             }
@@ -107,6 +113,9 @@ class VoicesAdapter(
             if (oldItem.viewIn != newItem.viewIn) {
                 payloads.add(PAYLOAD_VIEW_IN_CHANGED)
             }
+            if (oldItem.reactions != newItem.reactions) {
+                payloads.add(PAYLOAD_REACTIONS_CHANGED)
+            }
 
             // Every field checked in areContentsTheSame is covered by the buckets above.
             // If payloads is empty here, it means a future field was added to areContentsTheSame
@@ -126,6 +135,7 @@ class VoicesAdapter(
         const val PAYLOAD_LABELS_CHANGED = "PAYLOAD_LABELS_CHANGED"
         const val PAYLOAD_IMAGES_CHANGED = "PAYLOAD_IMAGES_CHANGED"
         const val PAYLOAD_VIEW_IN_CHANGED = "PAYLOAD_VIEW_IN_CHANGED"
+        const val PAYLOAD_REACTIONS_CHANGED = "PAYLOAD_REACTIONS_CHANGED"
     }
 
     private data class RowState(
@@ -187,6 +197,7 @@ class VoicesAdapter(
     private var nonTeamMember = false
     private var recyclerView: RecyclerView? = null
     private val userCache = object : LinkedHashMap<String, UserEntity?>(64, 0.75f, true) { override fun removeEldestEntry(e: Map.Entry<String, UserEntity?>) = size > 128 }
+    private val markdownCache = object : LinkedHashMap<String, Spanned>(64, 0.75f, true) { override fun removeEldestEntry(e: Map.Entry<String, Spanned>) = size > 100 }
     private val fetchingUserIds = mutableSetOf<String>()
     private val replyCountCache = mutableMapOf<String, Int>()
     private val userIdPositions = mutableMapOf<String, MutableList<Int>>()
@@ -325,6 +336,7 @@ class VoicesAdapter(
                         val sharedTeamName = news.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)
                         setMessageAndDate(holder, news, sharedTeamName)
                     }
+                    PAYLOAD_REACTIONS_CHANGED -> showReactions(holder, news)
                 }
             }
         }
@@ -349,6 +361,7 @@ class VoicesAdapter(
                 showReplyButton(holder, news, position)
                 updateLabels(holder, news)
                 handleChat(holder, news)
+                showReactions(holder, news)
                 val currentLeader = getCurrentLeader(userModel, news)
                 setMemberClickListeners(holder, userModel, currentLeader)
             }
@@ -417,6 +430,8 @@ class VoicesAdapter(
             llNewsImages.removeAllViews()
             recyclerGchat.visibility = View.GONE
             sharedChat.visibility = View.GONE
+            flReactions.removeAllViews()
+            btnReact.text = context.getString(R.string.react)
         }
     }
 
@@ -464,7 +479,7 @@ class VoicesAdapter(
             600,
             350
         )
-        setMarkdownText(holder.binding.tvMessage, markdownContentWithLocalPaths)
+        setMessageMarkdown(holder.binding.tvMessage, news, markdownContentWithLocalPaths)
         val fulltext = holder.binding.tvMessage.text
         holder.binding.tvMessage.makeExpandable(
             fullText = fulltext,
@@ -477,6 +492,18 @@ class VoicesAdapter(
                 "${formatDate(news.time)} | Shared from $sharedTeamName"
             }
         holder.binding.tvEdited.visibility = if (news.isEdited) View.VISIBLE else View.GONE
+    }
+
+    private fun setMessageMarkdown(textView: TextView, news: News, markdown: String) {
+        val cacheable = news.id.isNotEmpty() && !markdown.contains("![") &&
+            markdown.none { it == '<' || it == '|' }
+        if (!cacheable) {
+            setMarkdownText(textView, markdown)
+            return
+        }
+        val key = "${news.id}:${markdown.hashCode()}"
+        val spanned = markdownCache.getOrPut(key) { parseMarkdown(context, markdown) }
+        setParsedMarkdown(textView, spanned)
     }
 
     private fun configureEditDeleteButtons(holder: VoicesViewHolder, news: News) {
@@ -508,7 +535,7 @@ class VoicesAdapter(
                         currentUser,
                         listener,
                         holder,
-                        voicesEditActions,
+                        voicesEditor,
                         { h, updatedNews, pos ->
                             val targetNews = updatedNews ?: news
                             preParseNews(targetNews)
@@ -775,7 +802,7 @@ class VoicesAdapter(
                         currentUser,
                         listener,
                         viewHolder,
-                        voicesEditActions,
+                        voicesEditor,
                         { _, _, _ -> },
                         onEditAction
                     )
@@ -788,11 +815,154 @@ class VoicesAdapter(
         updateReplyCount(viewHolder, finalNews, position)
 
         viewHolder.binding.btnShowReply.setOnClickListener {
-            setRepliedNewsIdFn(finalNews?.id)
             listener?.showReply(finalNews, fromLogin, nonTeamMember)
         }
     }
 
+    private fun reactorId(): String? {
+        val user = currentUser ?: return null
+        if (isGuestUser()) return null
+        return user._id?.takeIf { it.isNotEmpty() } ?: user.name?.let { "org.couchdb.user:$it" }
+    }
+
+    private fun showReactions(holder: VoicesViewHolder, news: News) {
+        val userId = reactorId()
+        val binding = holder.binding
+        val reactionsMap = news.reactionsMap
+        binding.flReactions.removeAllViews()
+        if (reactionsMap.isEmpty()) {
+            binding.flReactions.visibility = View.GONE
+        } else {
+            binding.flReactions.visibility = View.VISIBLE
+            reactionsMap.forEach { (emoji, users) ->
+                val isOwn = users.contains(userId)
+                val chipPaddingH = context.resources.getDimensionPixelSize(R.dimen.padding_normal)
+                val chipPaddingV = context.resources.getDimensionPixelSize(R.dimen.padding_small)
+                val chipMargin = context.resources.getDimensionPixelSize(R.dimen._2dp)
+                val chip = TextView(context).apply {
+                    text = "$emoji ${users.size}"
+                    textSize = 14f
+                    setTextColor(
+                        ContextCompat.getColor(context, if (isOwn) R.color.chip_selected_text else R.color.daynight_textColor)
+                    )
+                    setPadding(chipPaddingH, chipPaddingV, chipPaddingH, chipPaddingV)
+                    setBackgroundResource(
+                        if (isOwn) R.drawable.reaction_chip_active
+                        else R.drawable.reaction_chip_inactive
+                    )
+                    isSelected = isOwn
+                    contentDescription = context.getString(R.string.reaction_chip_description, emoji, users.size)
+                    val params = ViewGroup.MarginLayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    )
+                    params.setMargins(chipMargin, chipMargin, chipMargin, chipMargin)
+                    layoutParams = params
+                    if (userId != null) {
+                        setOnClickListener { react(news, emoji, userId) }
+                    }
+                }
+                binding.flReactions.addView(chip)
+            }
+        }
+
+        if (userId == null) {
+            binding.btnReact.visibility = View.GONE
+            return
+        }
+        binding.btnReact.visibility = View.VISIBLE
+        binding.btnReact.setOnClickListener {
+            showEmojiPicker(news, userId, binding.btnReact)
+        }
+    }
+
+    private fun react(news: News, emoji: String, userId: String) {
+        news.updateReaction(emoji, userId)
+        safeNotifyItemChanged(currentList.indexOfFirst { it.id == news.id }, PAYLOAD_REACTIONS_CHANGED)
+        onEditAction { voicesEditor.toggleReaction(news.id, emoji, userId) }
+    }
+
+    private fun showEmojiPicker(news: News, userId: String, anchorView: View) {
+        val emojis = listOf("😀", "❤️", "👍", "😂", "😮", "😢")
+        val moreEmojis = listOf("😅", "😍", "🔥", "👏", "🙏", "😭", "😤", "😎", "🤩", "💀", "🤣", "💪", "👀", "🎉", "✨", "💯","🤔", "✅", "🤯", "🥳" )
+        val popupView = LayoutInflater.from(context).inflate(R.layout.popup_emoji_picker, null)
+        val container = popupView.findViewById<LinearLayout>(R.id.ll_emoji_container)
+        val popup = android.widget.PopupWindow(
+            popupView,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            true
+        )
+        popup.elevation = 10f
+        emojis.forEach { emoji ->
+            val tv = TextView(context).apply {
+                text = emoji
+                textSize = context.resources.getDimension(R.dimen.text_size_large) / context.resources.displayMetrics.scaledDensity
+                setPadding(
+                    context.resources.getDimensionPixelSize(R.dimen.padding_normal),
+                    context.resources.getDimensionPixelSize(R.dimen.padding_small),
+                    context.resources.getDimensionPixelSize(R.dimen.padding_normal),
+                    context.resources.getDimensionPixelSize(R.dimen.padding_small)
+                )
+                setOnClickListener {
+                    popup.dismiss()
+                    react(news, emoji, userId)
+                }
+            }
+            container.addView(tv)
+        }
+        // Add + button at the end
+        val plusBtn = TextView(context).apply {
+            text = "+"
+            contentDescription = context.getString(R.string.more_reactions)
+            textSize = context.resources.getDimension(R.dimen.text_size_large) / context.resources.displayMetrics.scaledDensity
+            setTextColor(ContextCompat.getColor(context, R.color.daynight_textColor))
+            setPadding(
+                context.resources.getDimensionPixelSize(R.dimen.padding_normal),
+                context.resources.getDimensionPixelSize(R.dimen.padding_small),
+                context.resources.getDimensionPixelSize(R.dimen.padding_normal),
+                context.resources.getDimensionPixelSize(R.dimen.padding_small)
+            )
+            setOnClickListener {
+                popup.dismiss()
+                val gridView = android.widget.GridView(context)
+                gridView.numColumns = 5
+                gridView.adapter = object : android.widget.BaseAdapter() {
+                    override fun getCount() = moreEmojis.size
+                    override fun getItem(p: Int) = moreEmojis[p]
+                    override fun getItemId(p: Int) = p.toLong()
+                    override fun getView(p: Int, v: View?, parent: ViewGroup): View {
+                        val tv = TextView(context)
+                        tv.text = moreEmojis[p]
+                        tv.textSize = context.resources.getDimension(R.dimen.text_size_large) / context.resources.displayMetrics.scaledDensity
+                        tv.gravity = android.view.Gravity.CENTER
+                        tv.setPadding(
+                            context.resources.getDimensionPixelSize(R.dimen.padding_large),
+                            context.resources.getDimensionPixelSize(R.dimen.padding_large),
+                            context.resources.getDimensionPixelSize(R.dimen.padding_large),
+                            context.resources.getDimensionPixelSize(R.dimen.padding_large)
+                        )
+                        return tv
+                    }
+                }
+                AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                    .setTitle(context.getString(R.string.react))
+                    .setView(gridView)
+                    .setNegativeButton(R.string.cancel, null)
+                    .show()
+                    .also { dialog ->
+                        gridView.setOnItemClickListener { _, _, position, _ ->
+                            val emoji = moreEmojis[position]
+                            dialog.dismiss()
+                            react(news, emoji, userId)
+                        }
+                    }
+            }
+        }
+        container.addView(plusBtn)
+
+        popup.showAsDropDown(anchorView, 0, -context.resources.getDimensionPixelSize(R.dimen._40dp))
+    }
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: News?) {
         val viewHolder = holder as VoicesViewHolder
 
@@ -848,6 +1018,7 @@ class VoicesAdapter(
         super.onViewRecycled(holder)
         if (holder is VoicesViewHolder) {
             holder.cancelJob?.invoke()
+            holder.binding.llNewsImages.tag = null
         }
     }
 
@@ -859,6 +1030,9 @@ class VoicesAdapter(
         binding.imgNews.visibility = View.GONE
         binding.llNewsImages.visibility = View.GONE
         binding.llNewsImages.removeAllViews()
+        
+        val imageBindToken = Any()
+        binding.llNewsImages.tag = imageBindToken
 
         val parsedImageUrls = getParsedImageUrls(news)
 
@@ -886,13 +1060,13 @@ class VoicesAdapter(
                 if (size == 1) {
                     val ob = imagesArray[0]?.asJsonObject
                     val resourceId = GsonUtils.getString("resourceId", ob)
-                    loadLibraryImage(binding, resourceId)
+                    loadLibraryImage(binding, resourceId, imageBindToken)
                 } else {
                     binding.llNewsImages.visibility = View.VISIBLE
                     for (i in 0 until size) {
                         val ob = imagesArray[i]?.asJsonObject
                         val resourceId = GsonUtils.getString("resourceId", ob)
-                        addLibraryImageToContainer(binding, resourceId)
+                        addLibraryImageToContainer(binding, resourceId, imageBindToken)
                     }
                 }
             }
@@ -948,9 +1122,10 @@ class VoicesAdapter(
         binding.llNewsImages.addView(imageView)
     }
 
-    private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?) {
+    private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?, imageBindToken: Any) {
         if (resourceId == null) return
         getLibraryResourceFn(resourceId) { library ->
+            if (binding.llNewsImages.tag !== imageBindToken) return@getLibraryResourceFn
             val basePath = externalFilesDir
             if (library != null && basePath != null) {
                 val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
@@ -964,9 +1139,10 @@ class VoicesAdapter(
         }
     }
 
-    private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?) {
+    private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?, imageBindToken: Any) {
         if (resourceId == null) return
         getLibraryResourceFn(resourceId) { library ->
+            if (binding.llNewsImages.tag !== imageBindToken) return@getLibraryResourceFn
             val basePath = externalFilesDir
             if (library != null && basePath != null) {
                 val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
@@ -996,6 +1172,7 @@ class VoicesAdapter(
         val closeButton = view.findViewById<ImageView>(R.id.closeButton)
 
         dialog.setContentView(view)
+        EdgeToEdgeUtils.keepClearOfSystemBars(closeButton)
         dialog.window?.setBackgroundDrawable(ContextCompat.getColor(context, R.color.md_black_1000).toDrawable())
 
         val request = Glide.with(photoView.context)

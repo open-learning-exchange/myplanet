@@ -38,10 +38,11 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.ResourceTitleProjection
-import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.LibraryTitle
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DeviceNameProvider
@@ -50,8 +51,8 @@ import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.StoragePathResolver
+import org.ole.planet.myplanet.utils.StringUtils
 import org.ole.planet.myplanet.utils.TimeProvider
-import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -62,7 +63,6 @@ class ResourcesRepositoryImplTest {
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val tagsRepository: TagsRepository = mockk(relaxed = true)
-    private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
     private val resourceActivityDao: ResourceActivityDao = mockk(relaxed = true)
     private val removedLogDao: RemovedLogDao = mockk(relaxed = true)
     private val teamsRepositoryLazy: Lazy<TeamsRepository> = mockk(relaxed = true)
@@ -100,7 +100,6 @@ class ResourcesRepositoryImplTest {
             activitiesRepository,
             sharedPrefManager,
             tagsRepository,
-            searchActivityDao,
             resourceActivityDao,
             removedLogDao,
             teamsSyncRepositoryLazy,
@@ -120,12 +119,12 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun testNormalizeText() {
-        assertEquals("hello world", Utilities.normalizeText("HELLO World"))
-        assertEquals("cafe", Utilities.normalizeText("Café"))
-        assertEquals("nino", Utilities.normalizeText("Niño"))
-        assertEquals("a e i o u", Utilities.normalizeText("á é í ó ú"))
-        assertEquals("c", Utilities.normalizeText("ç"))
-        assertEquals("aeiou", Utilities.normalizeText("äëïöü"))
+        assertEquals("hello world", StringUtils.normalizeText("HELLO World"))
+        assertEquals("cafe", StringUtils.normalizeText("Café"))
+        assertEquals("nino", StringUtils.normalizeText("Niño"))
+        assertEquals("a e i o u", StringUtils.normalizeText("á é í ó ú"))
+        assertEquals("c", StringUtils.normalizeText("ç"))
+        assertEquals("aeiou", StringUtils.normalizeText("äëïöü"))
     }
 
     @Test
@@ -140,7 +139,7 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `setUserLibrary returns existing library and no-ops when already added`() = runTest {
-        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        val mockUser = UserEntity().apply { id = "user-123" }
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val mockLibrary = MyLibrary().apply {
@@ -158,7 +157,7 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `setUserLibrary returns existing library and no-ops when already removed`() = runTest {
-        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        val mockUser = UserEntity().apply { id = "user-123" }
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val mockLibrary = MyLibrary().apply {
@@ -199,6 +198,30 @@ class ResourcesRepositoryImplTest {
             assertEquals("2-abc", library.downloadedRev)
             assertEquals("index.html", library.resourceLocalAddress)
             coVerify { myLibraryDao.upsert(library) }
+        } finally {
+            unmockkObject(FileUtils)
+        }
+    }
+
+    @Test
+    fun `markResourceOfflineByUrl only marks the downloaded resource among rows sharing a file name`() = runTest {
+        val downloaded = MyLibrary().apply { id = "res1"; resourceId = "res1"; resourceLocalAddress = "video.mp4" }
+        val other = MyLibrary().apply { id = "res2"; resourceId = "res2"; resourceLocalAddress = "video.mp4" }
+        coEvery { myLibraryDao.getByLocalAddress("video.mp4") } returns listOf(downloaded, other)
+        coEvery { myLibraryDao.getByResourceId("res1") } returns downloaded
+
+        val url = "http://example.com/resources/res1/video.mp4"
+        mockkObject(FileUtils)
+        try {
+            every { FileUtils.getFileNameFromUrl(url) } returns "video.mp4"
+            every { FileUtils.getIdFromUrl(url) } returns "res1"
+            every { FileUtils.getResourceRelativePathFromUrl(url) } returns "video.mp4"
+
+            repository.markResourceOfflineByUrl(url)
+
+            assertTrue(downloaded.resourceOffline)
+            assertFalse(other.resourceOffline)
+            coVerify { myLibraryDao.upsertAll(listOf(downloaded)) }
         } finally {
             unmockkObject(FileUtils)
         }
@@ -300,7 +323,7 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `setUserLibrary returns updated library on successful toggle`() = runTest {
-        val mockUser = org.ole.planet.myplanet.model.UserEntity().apply { id = "user-123" }
+        val mockUser = UserEntity().apply { id = "user-123" }
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val mockLibrary = MyLibrary().apply {
@@ -318,15 +341,14 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
-    fun `getLibraryTitles returns list of LibraryTitleProjection`() = runTest {
+    fun `getLibraryTitles returns list of LibraryTitle`() = runTest {
         val mockProjection = LibraryTitleProjection("lib1", "Test Library")
         coEvery { myLibraryDao.getLibraryTitles() } returns listOf(mockProjection)
 
         val result = repository.getLibraryTitles()
 
         assertEquals(1, result.size)
-        assertEquals("lib1", result[0].id)
-        assertEquals("Test Library", result[0].title)
+        assertEquals(LibraryTitle("lib1", "Test Library"), result[0])
     }
 
     @Test
@@ -550,7 +572,7 @@ class ResourcesRepositoryImplTest {
             mediums = setOf("video")
         )
 
-        coVerify(exactly = 1) { searchActivityDao.insert(capture(savedActivity)) }
+        coVerify(exactly = 1) { activitiesRepository.recordSearchActivity(capture(savedActivity)) }
         assertTrue(savedActivity.captured.id.isNotBlank())
         assertEquals("learner", savedActivity.captured.user)
         assertEquals("planet", savedActivity.captured.createdOn)
@@ -936,22 +958,6 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
-    fun `getResourceTitlesMap calls getResourceTitles and returns mapped titles`() = runTest {
-        val projections = listOf(
-            ResourceTitleProjection("res1", "Title 1"),
-            ResourceTitleProjection("res2", "Title 2")
-        )
-        coEvery { myLibraryDao.getResourceTitles() } returns projections
-
-        val result = repository.getResourceTitlesMap()
-
-        coVerify(exactly = 1) { myLibraryDao.getResourceTitles() }
-        assertEquals(2, result.size)
-        assertEquals("Title 1", result["res1"])
-        assertEquals("Title 2", result["res2"])
-    }
-
-    @Test
     fun `markResourceUploaded calls createLocalResourceLink when resource is private`() = runTest {
         val localId = "local1"
         val remoteId = "remote1"
@@ -966,6 +972,7 @@ class ResourcesRepositoryImplTest {
 
         val mockTeamsRepository = mockk<TeamsRepository>(relaxed = true)
         every { teamsRepositoryLazy.get() } returns mockTeamsRepository
+        every { storagePathResolver.resolveOleDirectory() } returns kotlin.io.path.createTempDirectory("resources-private-test").toFile()
         coEvery { myLibraryDao.getById(localId) } returns library
         coEvery { myLibraryDao.upsert(any()) } returns Unit
 
@@ -980,6 +987,30 @@ class ResourcesRepositoryImplTest {
                 title = "Private Resource",
                 planetCode = "planet1"
             )
+        }
+    }
+
+    @Test
+    fun `markResourceUploaded re-keys a device-created resource and its folder to the server id`() = runTest {
+        val baseDir = kotlin.io.path.createTempDirectory("resources-rekey-test").toFile()
+        val oleDir = File(baseDir, "ole")
+        File(oleDir, "local-uuid").apply { mkdirs() }
+        File(oleDir, "local-uuid/song.mp3").writeText("audio")
+        every { storagePathResolver.resolveOleDirectory() } returns oleDir
+        val library = MyLibrary().apply { id = "local-uuid"; resourceId = "local-uuid"; resourceLocalAddress = "song.mp3" }
+        coEvery { myLibraryDao.getById("local-uuid") } returns library
+        coEvery { myLibraryDao.upsert(any()) } returns Unit
+
+        try {
+            val result = repository.markResourceUploaded("local-uuid", "remote1", "1-rev", "planet1")
+
+            assertTrue(result)
+            coVerify { myLibraryDao.upsert(match { it.id == "remote1" && it.resourceId == "remote1" && it._rev == "1-rev" }) }
+            coVerify { myLibraryDao.deleteById("local-uuid") }
+            assertTrue(File(oleDir, "remote1/song.mp3").exists())
+            assertFalse(File(oleDir, "local-uuid").exists())
+        } finally {
+            baseDir.deleteRecursively()
         }
     }
 
@@ -1178,6 +1209,81 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
+    fun `batchInsertResources batch reconciles HTML libraries and calls upsertAll once for changes`() = runTest {
+        val baseDir = kotlin.io.path.createTempDirectory("batch-html-test").toFile()
+        File(baseDir, "ole/res1").apply { mkdirs() }
+        File(baseDir, "ole/res1/index.html").writeText("<html></html>")
+        File(baseDir, "ole/res2").apply { mkdirs() }
+        File(baseDir, "ole/res2/index.html").writeText("<html></html>")
+        every { storagePathResolver.resolveOleDirectory() } returns File(baseDir, "ole")
+
+        val doc1 = com.google.gson.JsonObject().apply {
+            addProperty("_id", "res1")
+            addProperty("mediaType", "HTML")
+        }
+        val doc2 = com.google.gson.JsonObject().apply {
+            addProperty("_id", "res2")
+            addProperty("mediaType", "HTML")
+        }
+
+        val lib1 = MyLibrary().apply { id = "res1"; resourceId = "res1"; mediaType = "HTML"; resourceOffline = false; _rev = "1-a" }
+        val lib2 = MyLibrary().apply { id = "res2"; resourceId = "res2"; mediaType = "HTML"; resourceOffline = false; _rev = "1-b" }
+
+        coEvery { myLibraryDao.getByIds(listOf("res1", "res2")) } returns emptyList()
+        coEvery { myLibraryDao.getByResourceIdsByRowid(listOf("res1", "res2")) } returns listOf(lib1, lib2)
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+
+        try {
+            repository.batchInsertResources(listOf(doc1, doc2))
+
+            coVerify(exactly = 0) { myLibraryDao.getByResourceId(any()) }
+            // Expect exactly 2 upsertAll calls: 1 for inserting documents initially, 1 for reconcileHtmlLibraries with both items
+            coVerify(exactly = 2) { myLibraryDao.upsertAll(any()) }
+            coVerify(exactly = 1) {
+                myLibraryDao.upsertAll(match { list ->
+                    list.size == 2 && list.all { it.isResourceOffline() && it.resourceLocalAddress == "index.html" }
+                })
+            }
+        } finally {
+            baseDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `reconcileHtmlLibraries mutates only the first row returned by getByResourceIdsByRowid when rows share resourceId`() = runTest {
+        val baseDir = kotlin.io.path.createTempDirectory("batch-html-shared-test").toFile()
+        File(baseDir, "ole/shared_res").apply { mkdirs() }
+        File(baseDir, "ole/shared_res/index.html").writeText("<html></html>")
+        every { storagePathResolver.resolveOleDirectory() } returns File(baseDir, "ole")
+
+        val doc1 = com.google.gson.JsonObject().apply {
+            addProperty("_id", "shared_res")
+            addProperty("mediaType", "HTML")
+        }
+
+        val row1LowestRowid = MyLibrary().apply { id = "pk1"; resourceId = "shared_res"; mediaType = "HTML"; resourceOffline = false; _rev = "1-a" }
+        val row2HigherRowid = MyLibrary().apply { id = "pk2"; resourceId = "shared_res"; mediaType = "HTML"; resourceOffline = false; _rev = "1-b" }
+
+        coEvery { myLibraryDao.getByIds(listOf("shared_res")) } returns emptyList()
+        coEvery { myLibraryDao.getByResourceIdsByRowid(listOf("shared_res")) } returns listOf(row1LowestRowid, row2HigherRowid)
+        coEvery { myLibraryDao.upsertAll(any()) } returns Unit
+
+        try {
+            repository.batchInsertResources(listOf(doc1))
+
+            coVerify(exactly = 0) { myLibraryDao.getByResourceId(any()) }
+            coVerify(exactly = 1) {
+                myLibraryDao.upsertAll(match { list ->
+                    list.size == 1 && list[0].id == "pk1" && list[0].isResourceOffline()
+                })
+            }
+            assertFalse(row2HigherRowid.isResourceOffline())
+        } finally {
+            baseDir.deleteRecursively()
+        }
+    }
+
+    @Test
     fun `reconcileHtmlResourceOffline clears in-memory resource list cache`() = runTest {
         val externalFiles = temporaryFolder.newFolder("external_cache_test")
         val oleDir = File(externalFiles, "ole").apply { mkdirs() }
@@ -1357,6 +1463,130 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
+    fun `getOfflineResourceItems groups nested files under their top resource folder`() = runTest {
+        val oleDir = temporaryFolder.newFolder("ole_nested")
+        File(oleDir, "res1/index.html").apply { parentFile?.mkdirs(); writeBytes(ByteArray(10)) }
+        File(oleDir, "res1/sudoku/img/x.png").apply { parentFile?.mkdirs(); writeBytes(ByteArray(20)) }
+        File(oleDir, "stray.png").writeBytes(ByteArray(5))
+        coEvery { myLibraryDao.getResourceTitlesByResourceIds(any()) } returns listOf(ResourceTitleProjection("res1", "Sudoku"))
+
+        val result = repository.getOfflineResourceItems(oleDir.absolutePath, emptySet(), emptySet())
+
+        assertEquals(1, result.size)
+        assertEquals("res1", result[0].resourceId)
+        assertEquals("Sudoku", result[0].title)
+        assertEquals(2, result[0].filePaths.size)
+        assertEquals(30L, result[0].totalSizeBytes)
+    }
+
+    @Test
+    fun `storage listing and breakdown leave out CV and attachment folders`() = runTest {
+        val oleDir = temporaryFolder.newFolder("ole_app_dirs")
+        File(oleDir, "res1/book.pdf").apply { parentFile?.mkdirs(); writeBytes(ByteArray(10)) }
+        File(oleDir, "cv/resume.pdf").apply { parentFile?.mkdirs(); writeBytes(ByteArray(20)) }
+        File(oleDir, "team_attachments/team1/logo.png").apply { parentFile?.mkdirs(); writeBytes(ByteArray(30)) }
+        coEvery { myLibraryDao.getResourceTitlesByResourceIds(any()) } returns listOf(ResourceTitleProjection("res1", "Book"))
+
+        val items = repository.getOfflineResourceItems(oleDir.absolutePath, setOf("pdf"), emptySet())
+        val breakdown = repository.getStorageBreakdown(oleDir)
+
+        assertEquals(listOf("res1"), items.map { it.resourceId })
+        assertEquals(10L, breakdown.totalBytes)
+    }
+
+    @Test
+    fun `storage listing and breakdown leave out personals folder`() = runTest {
+        val oleDir = temporaryFolder.newFolder("ole_personals")
+        File(oleDir, "res1/book.pdf").apply { parentFile?.mkdirs(); writeBytes(ByteArray(10)) }
+        File(oleDir, "personals/0b9f6c1e/notes.pdf").apply { parentFile?.mkdirs(); writeBytes(ByteArray(40)) }
+        coEvery { myLibraryDao.getResourceTitlesByResourceIds(any()) } returns listOf(ResourceTitleProjection("res1", "Book"))
+
+        val items = repository.getOfflineResourceItems(oleDir.absolutePath, setOf("pdf"), emptySet())
+        val breakdown = repository.getStorageBreakdown(oleDir)
+
+        assertEquals(listOf("res1"), items.map { it.resourceId })
+        assertEquals(10L, breakdown.totalBytes)
+    }
+
+    @Test
+    fun `deleteOfflineResources removes nested empty folders and marks the real resource not offline`() = runTest {
+        val oleDir = temporaryFolder.newFolder("ole_delete")
+        val html = File(oleDir, "res1/index.html").apply { parentFile?.mkdirs(); writeBytes(ByteArray(10)) }
+        val image = File(oleDir, "res1/sudoku/img/x.png").apply { parentFile?.mkdirs(); writeBytes(ByteArray(20)) }
+        coEvery { myLibraryDao.markAsNotOfflineByResourceIds(any()) } returns Unit
+
+        repository.deleteOfflineResources(
+            oleDir.absolutePath,
+            listOf(OfflineResourceItem("res1", "Sudoku", listOf(html.absolutePath, image.absolutePath), 30L))
+        )
+
+        assertFalse(File(oleDir, "res1").exists())
+        coVerify(exactly = 1) { myLibraryDao.markAsNotOfflineByResourceIds(listOf("res1")) }
+    }
+
+    @Test
+    fun `getStorageBreakdown produces identical counts and total sizes for fixture tree`() = runTest {
+        val rootDir = temporaryFolder.newFolder("ole_breakdown")
+
+        // Create test files
+        // Videos (Index 0): mp4 (100 bytes), MKV (uppercase, 200 bytes)
+        val file1 = File(rootDir, "video1.mp4").apply { writeBytes(ByteArray(100)) }
+        val file2 = File(rootDir, "video2.MKV").apply { writeBytes(ByteArray(200)) }
+
+        // Audio (Index 1): MP3 (uppercase, 50 bytes)
+        val subDir = File(rootDir, "audio_folder").apply { mkdirs() }
+        val file3 = File(subDir, "song.MP3").apply { writeBytes(ByteArray(50)) }
+
+        // PDFs (Index 2): pdf (300 bytes)
+        val file4 = File(rootDir, "document.pdf").apply { writeBytes(ByteArray(300)) }
+
+        // Images (Index 3): PNG (uppercase, 40 bytes)
+        val file5 = File(rootDir, "image.PNG").apply { writeBytes(ByteArray(40)) }
+
+        // Other (Index 4): txt (unknown extension, 80 bytes), no extension (20 bytes)
+        val file6 = File(rootDir, "notes.txt").apply { writeBytes(ByteArray(80)) }
+        val file7 = File(rootDir, "README").apply { writeBytes(ByteArray(20)) }
+
+        val result = repository.getStorageBreakdown(rootDir)
+
+        val expectedTotal = 100L + 200L + 50L + 300L + 40L + 80L + 20L
+        assertEquals(expectedTotal, result.totalBytes)
+
+        // Videos: 2 files, 300 bytes
+        assertEquals(2, result.counts[0])
+        assertEquals(300L, result.sizes[0])
+
+        // Audio: 1 file, 50 bytes
+        assertEquals(1, result.counts[1])
+        assertEquals(50L, result.sizes[1])
+
+        // PDFs: 1 file, 300 bytes
+        assertEquals(1, result.counts[2])
+        assertEquals(300L, result.sizes[2])
+
+        // Images: 1 file, 40 bytes
+        assertEquals(1, result.counts[3])
+        assertEquals(40L, result.sizes[3])
+
+        // Other: 2 files, 100 bytes
+        assertEquals(2, result.counts[4])
+        assertEquals(100L, result.sizes[4])
+    }
+
+    @Test
+    fun `getStorageBreakdown handles empty or nonexistent directory`() = runTest {
+        val emptyDir = temporaryFolder.newFolder("empty")
+        val emptyResult = repository.getStorageBreakdown(emptyDir)
+        assertEquals(0L, emptyResult.totalBytes)
+        assertEquals(0, emptyResult.counts.sum())
+
+        val nonExistentDir = File(temporaryFolder.root, "non_existent")
+        val nonExistentResult = repository.getStorageBreakdown(nonExistentDir)
+        assertEquals(0L, nonExistentResult.totalBytes)
+        assertEquals(0, nonExistentResult.counts.sum())
+    }
+
+    @Test
     fun `getOfflineResourceItems calculates size and paths in single pass`() = runTest {
         val oleDir = temporaryFolder.newFolder("ole")
         val res1Dir = File(oleDir, "res1").apply { mkdirs() }
@@ -1371,7 +1601,7 @@ class ResourcesRepositoryImplTest {
             ResourceTitleProjection("res1", "Video Resource"),
             ResourceTitleProjection("res2", "")
         )
-        coEvery { myLibraryDao.getResourceTitles() } returns projections
+        coEvery { myLibraryDao.getResourceTitlesByResourceIds(any()) } returns projections
         every { context.getString(org.ole.planet.myplanet.R.string.storage_unknown_resource) } returns "Unknown Resource"
 
         val knownExtensions = setOf("mp4", "pdf")
@@ -1394,6 +1624,17 @@ class ResourcesRepositoryImplTest {
         assertEquals("Unknown Resource", res2Item.title)
         assertEquals(1L, res2Item.totalSizeBytes)
         assertEquals(listOf(file4.absolutePath), res2Item.filePaths)
+    }
+
+    @Test
+    fun `getOfflineResourceItems never calls getResourceTitlesByResourceIds when ole directory is empty or has no matching files`() = runTest {
+        val emptyOleDir = temporaryFolder.newFolder("empty_ole")
+        val knownExtensions = setOf("mp4", "pdf")
+
+        val items = repository.getOfflineResourceItems(emptyOleDir.absolutePath, setOf("mp4"), knownExtensions)
+
+        assertTrue(items.isEmpty())
+        coVerify(exactly = 0) { myLibraryDao.getResourceTitlesByResourceIds(any()) }
     }
 
     private fun localResourceRequest(resourceUrl: String?): LocalResourceRequest {

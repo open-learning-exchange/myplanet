@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.annotation.VisibleForTesting
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
+import androidx.recyclerview.widget.AsyncDifferConfig
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -33,25 +34,12 @@ class ChatHistoryAdapter(
     private var newsList: List<News>,
     private var cachedSharedViewInIds: Map<String, Set<String>>,
     private var shareTargets: ChatShareTargets,
+    diffConfig: AsyncDifferConfig<ChatHistory>? = null,
     private val onShareChat: (HashMap<String?, String>, ChatHistory) -> Unit,
 ) : ListAdapter<ChatHistory, ChatHistoryAdapter.ViewHolderChat>(
-    DiffUtils.itemCallback(
-        areItemsTheSame = { oldItem, newItem ->
-            val oldId = oldItem._id
-            val newId = newItem._id
-            oldId != null && newId != null && oldId == newId
-        },
-        areContentsTheSame = { oldItem, newItem ->
-            oldItem._rev == newItem._rev &&
-                oldItem.lastUsed == newItem.lastUsed &&
-                oldItem.title == newItem.title &&
-                oldItem.conversations?.firstOrNull()?.query ==
-                newItem.conversations?.firstOrNull()?.query
-        }
-    )
+    diffConfig ?: AsyncDifferConfig.Builder(ITEM_CALLBACK).build()
 ) {
     private var chatHistoryItemClickListener: OnChatHistoryItemClickListener? = null
-    private var chatTitle: String? = ""
     private lateinit var shareTargetAdapter: ChatShareTargetAdapter
 
     private val daynightGreyColor by lazy { ContextCompat.getColor(context, R.color.daynight_grey) }
@@ -92,36 +80,12 @@ class ChatHistoryAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderChat {
         val rowChatHistoryBinding = RowChatHistoryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderChat(rowChatHistoryBinding)
-    }
+        val holder = ViewHolderChat(rowChatHistoryBinding)
 
-    fun updateChatHistory(newChatHistory: List<ChatHistory>) {
-        submitList(newChatHistory)
-    }
-
-    override fun onBindViewHolder(holder: ViewHolderChat, position: Int, payloads: MutableList<Any>) {
-        if (payloads.contains(PAYLOAD_CHAT_SHARED)) {
-            bindShareChat(holder, getItem(position))
-            return
-        }
-        super.onBindViewHolder(holder, position, payloads)
-    }
-
-    override fun onBindViewHolder(holder: ViewHolderChat, position: Int) {
-        val item = getItem(position)
-        val firstQuery = item.conversations?.getOrNull(0)?.query
-        if (firstQuery != null) {
-            holder.rowChatHistoryBinding.chatTitle.text = firstQuery
-            holder.rowChatHistoryBinding.chatTitle.contentDescription = firstQuery
-            chatTitle = firstQuery
-        } else {
-            holder.rowChatHistoryBinding.chatTitle.text = item.title
-            holder.rowChatHistoryBinding.chatTitle.contentDescription = item.title
-            chatTitle = item.title
-        }
-
-        holder.rowChatHistoryBinding.root.setOnClickListener {
-            holder.rowChatHistoryBinding.chatCardView.contentDescription = chatTitle
+        rowChatHistoryBinding.root.setOnClickListener {
+            val pos = holder.bindingAdapterPosition
+            if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+            val item = getItem(pos)
             chatHistoryItemClickListener?.onChatHistoryItemClicked(
                 item.conversations?.toList(),
                 "${item._id}",
@@ -130,62 +94,87 @@ class ChatHistoryAdapter(
             )
         }
 
-        bindShareChat(holder, item)
+        rowChatHistoryBinding.shareChat.setOnClickListener {
+            val pos = holder.bindingAdapterPosition
+            if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+            val item = getItem(pos)
+            showShareDialog(item)
+        }
+
+        return holder
     }
 
-    private fun bindShareChat(holder: ViewHolderChat, item: ChatHistory) {
-        holder.rowChatHistoryBinding.shareChat.setImageResource(R.drawable.baseline_share_24)
+    fun updateChatHistory(newChatHistory: List<ChatHistory>) {
+        submitList(newChatHistory)
+    }
 
-        holder.rowChatHistoryBinding.shareChat.setOnClickListener {
-            val chatShareDialogBinding = ChatShareDialogBinding.inflate(LayoutInflater.from(context))
-            var dialog: AlertDialog? = null
+    override fun onBindViewHolder(holder: ViewHolderChat, position: Int, payloads: MutableList<Any>) {
+        if (payloads.contains(PAYLOAD_CHAT_SHARED)) {
+            return
+        }
+        super.onBindViewHolder(holder, position, payloads)
+    }
 
-            val sharedIds = getSharedViewInIds(item._id)
-            val isCommunityShared = shareTargets.community?._id?.let { it in sharedIds } == true
-            val sharedChildren = if (isCommunityShared) setOf(context.getString(R.string.community)) else emptySet()
-            val dataMap = shareDataMap
+    override fun onBindViewHolder(holder: ViewHolderChat, position: Int) {
+        val item = getItem(position)
+        val title = getChatTitle(item)
+        holder.rowChatHistoryBinding.chatTitle.text = title
+        holder.rowChatHistoryBinding.chatTitle.contentDescription = title
+        holder.rowChatHistoryBinding.chatCardView.contentDescription = title
+    }
 
-            chatShareDialogBinding.listView.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
-            shareTargetAdapter = ChatShareTargetAdapter { clickedItem ->
-                if (clickedItem.isGroup) {
-                    val currentFlatList = shareTargetAdapter.currentList
-                    val currentlyExpanded = currentFlatList.firstOrNull { it.isGroup && it.title == clickedItem.title }?.isExpanded ?: false
-                    val expandedGroups = currentFlatList.mapNotNullTo(mutableSetOf()) { if (it.isGroup && it.isExpanded) it.title else null }
-                    if (currentlyExpanded) {
-                        expandedGroups.remove(clickedItem.title)
-                    } else {
-                        expandedGroups.add(clickedItem.title)
-                    }
-                    val newFlatList = generateFlatList(dataMap, sharedChildren, expandedGroups)
-                    shareTargetAdapter.submitList(newFlatList)
+    private fun getChatTitle(item: ChatHistory): String? =
+        item.conversations?.getOrNull(0)?.query ?: item.title
+
+    private fun showShareDialog(item: ChatHistory) {
+        val chatShareDialogBinding = ChatShareDialogBinding.inflate(LayoutInflater.from(context))
+        var dialog: AlertDialog? = null
+
+        val sharedIds = getSharedViewInIds(item._id)
+        val isCommunityShared = shareTargets.community?._id?.let { it in sharedIds } == true
+        val sharedChildren = if (isCommunityShared) setOf(context.getString(R.string.community)) else emptySet()
+        val dataMap = shareDataMap
+
+        chatShareDialogBinding.listView.layoutManager = LinearLayoutManager(context)
+        shareTargetAdapter = ChatShareTargetAdapter { clickedItem ->
+            if (clickedItem.isGroup) {
+                val currentFlatList = shareTargetAdapter.currentList
+                val currentlyExpanded = currentFlatList.firstOrNull { it.isGroup && it.title == clickedItem.title }?.isExpanded ?: false
+                val expandedGroups = currentFlatList.mapNotNullTo(mutableSetOf()) { if (it.isGroup && it.isExpanded) it.title else null }
+                if (currentlyExpanded) {
+                    expandedGroups.remove(clickedItem.title)
                 } else {
-                    if (clickedItem.parentTitle == context.getString(R.string.share_with_team_enterprise)) {
-                        if (clickedItem.title == context.getString(R.string.teams)) {
-                            showGrandChildRecyclerView(shareTargets.teams, context.getString(R.string.teams), item, sharedIds)
-                        } else {
-                            showGrandChildRecyclerView(shareTargets.enterprises, context.getString(R.string.enterprises), item, sharedIds)
-                        }
-                        dialog?.dismiss()
-                    } else if (clickedItem.parentTitle == context.getString(R.string.share_with_community) && !isCommunityShared) {
-                        showEditTextAndShareButton(shareTargets.community, context.getString(R.string.community), item)
-                        dialog?.dismiss()
+                    expandedGroups.add(clickedItem.title)
+                }
+                val newFlatList = generateFlatList(dataMap, sharedChildren, expandedGroups)
+                shareTargetAdapter.submitList(newFlatList)
+            } else {
+                if (clickedItem.parentTitle == context.getString(R.string.share_with_team_enterprise)) {
+                    if (clickedItem.title == context.getString(R.string.teams)) {
+                        showGrandChildRecyclerView(shareTargets.teams, context.getString(R.string.teams), item, sharedIds)
+                    } else {
+                        showGrandChildRecyclerView(shareTargets.enterprises, context.getString(R.string.enterprises), item, sharedIds)
                     }
+                    dialog?.dismiss()
+                } else if (clickedItem.parentTitle == context.getString(R.string.share_with_community) && !isCommunityShared) {
+                    showEditTextAndShareButton(shareTargets.community, context.getString(R.string.community), item)
+                    dialog?.dismiss()
                 }
             }
-            shareTargetAdapter.submitList(generateFlatList(dataMap, sharedChildren, emptySet()))
-            chatShareDialogBinding.listView.adapter = shareTargetAdapter
-
-            val builder = AlertDialog.Builder(context)
-            builder.setView(chatShareDialogBinding.root)
-            builder.setPositiveButton(context.getString(R.string.close)) { _, _ ->
-                dialog?.dismiss()
-            }
-            dialog = builder.create()
-
-            dialog.window?.setBackgroundDrawable(daynightGreyColor.toDrawable())
-
-            dialog.show()
         }
+        shareTargetAdapter.submitList(generateFlatList(dataMap, sharedChildren, emptySet()))
+        chatShareDialogBinding.listView.adapter = shareTargetAdapter
+
+        val builder = AlertDialog.Builder(context)
+        builder.setView(chatShareDialogBinding.root)
+        builder.setPositiveButton(context.getString(R.string.close)) { _, _ ->
+            dialog?.dismiss()
+        }
+        dialog = builder.create()
+
+        dialog.window?.setBackgroundDrawable(daynightGreyColor.toDrawable())
+
+        dialog.show()
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -291,5 +280,20 @@ class ChatHistoryAdapter(
 
     companion object {
         const val PAYLOAD_CHAT_SHARED = "PAYLOAD_CHAT_SHARED"
+
+        internal val ITEM_CALLBACK = DiffUtils.itemCallback<ChatHistory>(
+            areItemsTheSame = { oldItem, newItem ->
+                val oldId = oldItem._id
+                val newId = newItem._id
+                oldId != null && newId != null && oldId == newId
+            },
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem._rev == newItem._rev &&
+                    oldItem.lastUsed == newItem.lastUsed &&
+                    oldItem.title == newItem.title &&
+                    oldItem.conversations?.firstOrNull()?.query ==
+                    newItem.conversations?.firstOrNull()?.query
+            }
+        )
     }
 }

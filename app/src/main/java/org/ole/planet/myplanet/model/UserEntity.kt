@@ -116,12 +116,17 @@ open class UserEntity(
 
     fun encodeImageToBase64(imagePath: String?): String? {
         if (imagePath.isNullOrEmpty()) return null
+        if (imagePath.startsWith("http://", ignoreCase = true) || imagePath.startsWith("https://", ignoreCase = true)) {
+            return null
+        }
         return try {
             val inputStream: InputStream? = if (imagePath.startsWith("content://")) {
                 val uri = imagePath.toUri()
                 context.contentResolver.openInputStream(uri)
             } else {
-                File(imagePath).inputStream()
+                val file = File(imagePath)
+                if (!file.isFile) return null
+                file.inputStream()
             }
 
             inputStream?.use {
@@ -224,4 +229,4 @@ open class UserEntity(
     }
 }
 
-val UserEntity.effectiveId: String? get() = _id?.takeIf { it.isNotEmpty() } ?: id
+val UserEntity.effectiveId: String get() = _id?.takeIf { it.isNotEmpty() } ?: id

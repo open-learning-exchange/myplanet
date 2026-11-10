@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.databinding.DialogProgressBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.ui.sync.SyncActivity
-import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
+import org.ole.planet.myplanet.ui.user.LearnerRegistrationActivity
 
 object DialogUtils {
     fun getProgressDialog(context: Context): CustomProgressDialog {
@@ -52,7 +52,7 @@ object DialogUtils {
 
         becomeMember.setOnClickListener {
             val guest = true
-            val intent = Intent(context, BecomeMemberActivity::class.java)
+            val intent = Intent(context, LearnerRegistrationActivity::class.java)
             intent.putExtra("guest", guest)
             context.startActivity(intent)
         }

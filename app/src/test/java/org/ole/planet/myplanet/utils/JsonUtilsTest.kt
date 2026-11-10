@@ -4,10 +4,11 @@ import com.google.gson.JsonObject as GsonJsonObject
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class JsonUtilsTest {
@@ -129,5 +130,32 @@ class JsonUtilsTest {
         assertEquals(7L, JsonUtils.rawLong("count", kotlinxDoc))
         assertEquals(7, JsonUtils.rawInt("count", kotlinxDoc))
         assertEquals(true, JsonUtils.rawBoolean("flag", kotlinxDoc))
+    }
+
+    @Test
+    fun `getJsonObject returns shared empty singleton on missing fields`() {
+        val miss1 = JsonUtils.getJsonObject("missing1", kotlinxDoc)
+        val miss2 = JsonUtils.getJsonObject("missing2", kotlinxDoc)
+        assertSame(miss1, miss2)
+        assertEquals(0, miss1.size)
+
+        val hit = JsonUtils.getJsonObject("nested", kotlinxDoc)
+        assertNotSame(miss1, hit)
+    }
+
+    @Test
+    fun `getJsonArray returns shared empty singleton on missing fields`() {
+        val miss1 = JsonUtils.getJsonArray("missing1", kotlinxDoc)
+        val miss2 = JsonUtils.getJsonArray("missing2", kotlinxDoc)
+        assertSame(miss1, miss2)
+        assertEquals(0, miss1.size)
+
+        val doc = buildJsonObject {
+            putJsonArray("items") {
+                add("a")
+            }
+        }
+        val hit = JsonUtils.getJsonArray("items", doc)
+        assertNotSame(miss1, hit)
     }
 }

@@ -9,8 +9,15 @@ data class CommunityConfiguration(
     val planetType: String?
 )
 
+sealed interface HealthCheckResult {
+    data object NotConfigured : HealthCheckResult
+    data object Healthy : HealthCheckResult
+    data class Failed(val reason: String) : HealthCheckResult
+    data object InitFailed : HealthCheckResult
+}
+
 interface ConfigurationsRepository {
-    suspend fun checkHealth(): String
+    suspend fun checkHealth(): HealthCheckResult
     fun checkVersion(callback: CheckVersionCallback)
     suspend fun checkServerAvailability(): Boolean
     suspend fun checkServerAvailability(url: String): Boolean
@@ -22,8 +29,10 @@ interface ConfigurationsRepository {
     fun getCommunityName(): String
     fun getCommunityConfiguration(): CommunityConfiguration
     fun getCommunityLeaders(): List<UserEntity>
+    suspend fun syncCommunityLeaders()
     fun clearPreferences()
     suspend fun ensureServerUrlUpdated()
+    suspend fun clearAlternativeUrlIfPrimaryReachable()
     suspend fun clearFirstRunStorageAndSetFlag(hasWritePermission: Boolean)
     suspend fun getQueuedDownloads(): List<String>
 
@@ -37,4 +46,6 @@ interface ConfigurationsRepository {
         data class Success(val id: String, val code: String, val url: String, val defaultUrl: String, val isAlternativeUrl: Boolean) : ConfigurationResult()
         data class Failure(val errorMessage: String, val url: String) : ConfigurationResult()
     }
+
+    suspend fun clearLocalAppData()
 }

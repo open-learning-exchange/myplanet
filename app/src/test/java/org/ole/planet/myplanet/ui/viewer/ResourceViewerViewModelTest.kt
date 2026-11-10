@@ -4,9 +4,13 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
+import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -22,8 +26,11 @@ import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
+import org.ole.planet.myplanet.utils.PdfTextExtractor
+import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.robolectric.RobolectricTestRunner
 
@@ -40,6 +47,9 @@ class ResourceViewerViewModelTest {
     private val ratingsRepository: RatingsRepository = mockk(relaxed = true)
     private val configurationsRepository: ConfigurationsRepository = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
+    private val storagePathResolver: StoragePathResolver = mockk()
+    private val resourceDownloadCoordinator: ResourceDownloadCoordinator = mockk(relaxed = true)
+    private val pdfTextExtractor: PdfTextExtractor = mockk()
     private lateinit var viewModel: ResourceViewerViewModel
 
     @Before
@@ -47,14 +57,17 @@ class ResourceViewerViewModelTest {
         context = ApplicationProvider.getApplicationContext()
         sharedPrefManager = SharedPrefManager(context, mockk(relaxed = true))
         viewModel = ResourceViewerViewModel(
-            context = context,
             resourcesRepository = resourcesRepository,
             authSessionUpdaterFactory = mockk(relaxed = true),
             ratingsRepository = ratingsRepository,
             configurationsRepository = configurationsRepository,
             userRepository = userRepository,
             sharedPrefManager = sharedPrefManager,
-            dispatcherProvider = TestDispatcherProvider(mainDispatcherRule.testDispatcher)
+            storagePathResolver = storagePathResolver,
+            resourceDownloadCoordinator = resourceDownloadCoordinator,
+            pdfTextExtractor = pdfTextExtractor,
+            dispatcherProvider = TestDispatcherProvider(mainDispatcherRule.testDispatcher),
+            appScope = TestScope(mainDispatcherRule.testDispatcher)
         )
     }
 
@@ -216,5 +229,36 @@ class ResourceViewerViewModelTest {
         viewModel.setRatingPrompted(resourceId)
 
         coVerify(exactly = 1) { ratingsRepository.setRatingPrompted(userId, resourceId) }
+    }
+
+    @Test
+    fun saveTranslationAudioPath_updatesLibraryItemOnAppScope() = runTest {
+        viewModel.saveTranslationAudioPath("lib1", "/music/rec.aac")
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { resourcesRepository.updateLibraryItem("lib1", any()) }
+    }
+
+    @Test
+    fun getExternalFilesDir_delegatesToStoragePathResolver() = runTest {
+        val dir = File("/storage/emulated/0/Android/data/org.ole.planet.myplanet/files")
+        every { storagePathResolver.resolveExternalFilesDir() } returns dir
+
+        assertEquals(dir, viewModel.getExternalFilesDir())
+    }
+
+    @Test
+    fun downloadResource_delegatesToResourceDownloadCoordinator() = runTest {
+        viewModel.downloadResource("http://host/resources/file.mp4")
+
+        coVerify(exactly = 1) { resourceDownloadCoordinator.downloadIfMissing("http://host/resources/file.mp4") }
+    }
+
+    @Test
+    fun extractPdfText_delegatesToPdfTextExtractor() = runTest {
+        val file = File("/books/doc.pdf")
+        coEvery { pdfTextExtractor.extractText(file) } returns "hello"
+
+        assertEquals("hello", viewModel.extractPdfText(file))
     }
 }

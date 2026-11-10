@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -19,7 +20,6 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
-import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FeedbackListViewModelTest {
@@ -32,7 +32,6 @@ class FeedbackListViewModelTest {
     private lateinit var viewModel: FeedbackListViewModel
     private lateinit var feedbackRepository: FeedbackRepository
     private lateinit var userRepository: UserRepository
-    private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {
@@ -53,9 +52,9 @@ class FeedbackListViewModelTest {
     }
 
     @Test
-    fun testInitialStateIsPreloadEmptyList() = runTest(testDispatcher) {
-        // This test validates the pre-load default state of the StateFlow before the init coroutine has executed
-        assertEquals(emptyList<Feedback>(), viewModel.feedbackList.value)
+    fun testInitialStateIsPreloadNull() = runTest(testDispatcher) {
+        // Before the init coroutine has executed the list is null (loading), not empty
+        assertNull(viewModel.feedbackList.value)
     }
 
     @Test

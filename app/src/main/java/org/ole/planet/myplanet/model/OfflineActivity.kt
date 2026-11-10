@@ -26,10 +26,11 @@ open class OfflineActivity {
     var loginTime: Long? = null
     var logoutTime: Long? = null
     var androidId: String? = null
+    var isUpdated: Boolean = false
     fun changeRev(r: JsonObject?) {
         if (r != null) {
-            _rev = GsonUtils.getString("_rev", r)
-            _id = GsonUtils.getString("_id", r)
+            _rev = GsonUtils.getString("_rev", r).ifEmpty { GsonUtils.getString("rev", r) }
+            _id = GsonUtils.getString("_id", r).ifEmpty { GsonUtils.getString("id", r) }
         }
     }
 }

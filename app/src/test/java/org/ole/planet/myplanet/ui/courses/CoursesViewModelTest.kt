@@ -107,30 +107,6 @@ class CoursesViewModelTest {
 
     @Test
     fun testToggleSort_correctlySortsCourses() = runTest {
-        val course1 = Course(
-            courseId = "1",
-            courseTitle = "Zebra",
-            description = "desc",
-            gradeLevel = "grade",
-            subjectLevel = "subject",
-            createdDate = 1000L
-        )
-        val course2 = Course(
-            courseId = "2",
-            courseTitle = "Apple",
-            description = "desc",
-            gradeLevel = "grade",
-            subjectLevel = "subject",
-            createdDate = 2000L
-        )
-        val course3 = Course(
-            courseId = "3",
-            courseTitle = "Banana",
-            description = "desc",
-            gradeLevel = "grade",
-            subjectLevel = "subject",
-            createdDate = 1500L
-        )
 
         val myCourse1 = MyCourse().apply {
             courseId = "1"

@@ -4,7 +4,6 @@ import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import org.ole.planet.myplanet.R
 
 /**
  * Room replacement for the former `MyLife` model.
@@ -51,22 +50,5 @@ class MyLife {
         result = 31 * result + isVisible.hashCode()
         result = 31 * result + weight
         return result
-    }
-
-    companion object {
-        private val defaultItemPairs = listOf(
-            "ic_myhealth" to R.string.myhealth,
-            "my_achievement" to R.string.achievements,
-            "ic_submissions" to R.string.submission,
-            "ic_my_survey" to R.string.my_survey,
-            "ic_references" to R.string.references,
-            "ic_calendar" to R.string.calendar,
-            "ic_mypersonals" to R.string.mypersonals
-        )
-
-        fun defaultItems(userId: String?, resolveLabel: (Int) -> String): List<MyLife> =
-            defaultItemPairs.map { (imageId, stringRes) ->
-                MyLife(imageId, userId, resolveLabel(stringRes))
-            }
     }
 }

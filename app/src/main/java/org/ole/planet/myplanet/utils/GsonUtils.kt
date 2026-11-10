@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.utils
 
-import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
@@ -59,8 +58,6 @@ private fun JsonPrimitive.toKotlinxPrimitive(): KJsonPrimitive = when {
 }
 
 object GsonUtils {
-    private const val TAG = "GsonUtils"
-
     val gson: Gson by lazy {
         Gson()
     }
@@ -68,18 +65,8 @@ object GsonUtils {
     private inline fun <T> safeGet(default: () -> T, block: () -> T): T {
         return try {
             block()
-        } catch (e: Exception) {
-            logFallback(e)
+        } catch (_: Exception) {
             default()
-        }
-    }
-
-    private fun logFallback(e: Exception) {
-        try {
-            if (Log.isLoggable(TAG, Log.DEBUG)) {
-                Log.d(TAG, "expected type mismatch, using fallback: ${e.message}")
-            }
-        } catch (_: Throwable) {
         }
     }
 
@@ -88,8 +75,7 @@ object GsonUtils {
         val ar = news.parsedViewIn ?: if (!news.viewIn.isNullOrEmpty()) {
             try {
                 gson.fromJson(news.viewIn, JsonArray::class.java)
-            } catch (e: Exception) {
-                Log.w(TAG, "failed to parse viewIn", e)
+            } catch (_: Exception) {
                 null
             }
         } else null
@@ -104,9 +90,9 @@ object GsonUtils {
     }
 
     private fun fieldElement(fieldName: String, jsonObject: JsonObject?): JsonElement? =
-        jsonObject?.takeIf { it.has(fieldName) }?.get(fieldName)
+        jsonObject?.get(fieldName)
 
-    private fun <T> getPrimitive(default: T, elementSupplier: () -> JsonElement?, extract: (JsonElement) -> T): T = safeGet({ default }) {
+    private inline fun <T> getPrimitive(default: T, elementSupplier: () -> JsonElement?, extract: (JsonElement) -> T): T = safeGet({ default }) {
         val el = elementSupplier()
         if (el == null || el is JsonNull) default else extract(el)
     }
@@ -138,26 +124,6 @@ object GsonUtils {
             if (!el.isJsonPrimitive) false else el.asBoolean
         }
 
-    fun addString(`object`: JsonObject, fieldName: String, value: String?) {
-        if (!value.isNullOrEmpty()) `object`.addProperty(fieldName, value)
-    }
-
-    fun addLong(`object`: JsonObject, fieldName: String, value: Long) {
-        if (value > 0) `object`.addProperty(fieldName, value)
-    }
-
-    fun addInteger(`object`: JsonObject, fieldName: String, value: Int) {
-        if (value != 0) `object`.addProperty(fieldName, value)
-    }
-
-    fun addFloat(`object`: JsonObject, fieldName: String, value: Float) {
-        if (value != 0f) `object`.addProperty(fieldName, value)
-    }
-
-    fun addJson(`object`: JsonObject, fieldName: String, value: JsonObject?) {
-        if (value != null && value.keySet().isNotEmpty()) `object`.add(fieldName, value)
-    }
-
     fun getInt(fieldName: String, jsonObject: JsonObject?): Int =
         getPrimitive(0, { fieldElement(fieldName, jsonObject) }) { el ->
             if (!el.isJsonPrimitive) 0 else el.asJsonPrimitive.let { primitive ->
@@ -183,10 +149,8 @@ object GsonUtils {
     }
 
     private fun getJsonElement(fieldName: String, jsonObject: JsonObject, type: Class<*>): JsonElement {
-        if (!jsonObject.has(fieldName)) return if (type == JsonObject::class.java) JsonObject() else JsonArray()
-        return safeGet({ if (type == JsonObject::class.java) JsonObject() else JsonArray() }) {
-            jsonObject.get(fieldName)
-        }
+        val el = jsonObject.get(fieldName) ?: return if (type == JsonObject::class.java) JsonObject() else JsonArray()
+        return el
     }
 
     fun getLong(fieldName: String, jsonObject: JsonObject?): Long =

@@ -23,7 +23,6 @@ import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.annotation.StringRes
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.ViewCompat
@@ -34,6 +33,7 @@ import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.google.android.material.color.MaterialColors
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
@@ -46,9 +46,11 @@ import com.mikepenz.materialdrawer.holder.DimenHolder
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
+import dagger.Lazy
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.math.ceil
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -70,6 +72,7 @@ import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.chat.ChatHistoryFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.ui.components.showThemeModePicker
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.notifications.NotificationsFragment
@@ -84,7 +87,7 @@ import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
-import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
+import org.ole.planet.myplanet.ui.user.LearnerRegistrationActivity
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
@@ -122,8 +125,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     @Inject
     override lateinit var resourcesRepository: ResourcesRepository
+    @Inject
+    lateinit var notificationManagerProvider: Lazy<NotificationUtils.NotificationManager>
     private val challengeManager: ChallengePrompter by lazy {
-        ChallengePrompter(this, prefData, dashboardViewModel)
+        ChallengePrompter(this, prefData)
     }
     private var notificationManager: NotificationUtils.NotificationManager? = null
     private var notificationsShownThisSession = false
@@ -179,7 +184,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             isReady = true
             binding.root.invalidate()
             notificationManager = withContext(dispatcherProvider.io) {
-                NotificationUtils.getInstance(this@DashboardActivity)
+                notificationManagerProvider.get()
             }
         }
     }
@@ -261,7 +266,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun initViews() {
         binding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtils.setupEdgeToEdge(this, window.decorView)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(
+            this, window.decorView, lightStatusBar = false,
+            statusBarColor = MaterialColors.getColor(binding.myToolbar, androidx.appcompat.R.attr.colorPrimary)
+        )
         setupUI(binding.activityDashboardParentLayout, this@DashboardActivity)
         setSupportActionBar(binding.myToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
@@ -365,7 +373,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         if (isFirstLaunch) {
             lifecycleScope.launch {
-                delay(50)
+                delay(50.milliseconds)
                 val state = dashboardViewModel.getGuestVisitState(user?.id).await()
                 if (state.shouldAutoOpenDrawer &&
                     resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
@@ -444,7 +452,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.id.action_about -> openCallFragment(AboutFragment(), AboutFragment::class.java.simpleName)
             R.id.action_logout -> logout()
             R.id.change_language -> SettingsActivity.SettingFragment.languageChanger(this)
-            R.id.action_theme -> themeManager.showThemeDialog(this)
+            R.id.action_theme -> showThemeModePicker(this, themeManager)
             else -> {}
         }
     }
@@ -562,19 +570,19 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
     
-    private suspend fun handleSurveyNavigation(surveyId: String?) {
+    private fun handleSurveyNavigation(surveyId: String?) {
         if (surveyId != null) {
             dashboardViewModel.handleSurveyNavigation(surveyId)
         }
     }
     
-    private suspend fun handleTaskNavigation(taskId: String?) {
+    private fun handleTaskNavigation(taskId: String?) {
         if (taskId != null) {
             dashboardViewModel.handleTaskNavigation(taskId)
         }
     }
 
-    private suspend fun handleJoinRequestNavigation(requestId: String?) {
+    private fun handleJoinRequestNavigation(requestId: String?) {
         if (requestId != null) {
             val actualJoinRequestId = if (requestId.startsWith("join_request_")) {
                 requestId.removePrefix("join_request_")
@@ -605,7 +613,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val timeText = if (lastSyncMillis <= 0L) {
             getString(R.string.last_synced_never)
         } else {
-            TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
+            TimeUtils.getRelativeTime(this, lastSyncMillis, timeProvider)
         }
         binding.dashboardLastSyncStatus.text = getString(R.string.dashboard_sync_status, timeText)
     }
@@ -614,7 +622,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 while (true) {
-                    delay(LAST_SYNC_STATUS_REFRESH_INTERVAL_MS)
+                    delay(LAST_SYNC_STATUS_REFRESH_INTERVAL_MS.milliseconds)
                     updateLastSyncStatus()
                 }
             }
@@ -638,7 +646,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 val pendingResult = goAsync()
                 lifecycleScope.launch {
                     try {
-                        kotlinx.coroutines.withTimeout(10000) {
+                        kotlinx.coroutines.withTimeout(10000.milliseconds) {
                             if (intent?.action == "org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM") {
                                 val userId = user?.id
                                 if (userId != null) {
@@ -650,7 +658,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                             }
                                         }
                                     } else {
-                                        delay(300)
+                                        delay(300.milliseconds)
                                         refreshNotificationsWithRetry(userId)
                                     }
                                 } else {
@@ -698,7 +706,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (fromLogin || !notificationsShownThisSession) {
             notificationsShownThisSession = true
             lifecycleScope.launch {
-                delay(1000)
+                delay(1000.milliseconds)
                 dashboardViewModel.checkAndCreateNewNotifications(user?.id, user?.isManager() == true)
             }
         }
@@ -781,7 +789,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             logout.contentDescription = getString(R.string.menu_logout)
             becomeMember.setOnClickListener {
                 lifecycleScope.launch {
-                    val intent = Intent(this@DashboardActivity, BecomeMemberActivity::class.java)
+                    val intent = Intent(this@DashboardActivity, LearnerRegistrationActivity::class.java)
                     intent.putExtra("username", profileDbHandler.getUserModel()?.name)
                     intent.putExtra("guest", true)
                     setResult(RESULT_OK, intent)
@@ -794,9 +802,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
     }
 
-    private fun topBarVisible(){
+    private fun topBarVisible() {
+        val tabLayout = tl ?: return
         val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
 
         tabLayout.visibility = if (isLandscape) {
             View.VISIBLE

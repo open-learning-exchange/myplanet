@@ -1,11 +1,11 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -92,6 +93,27 @@ class SubmissionsRepositoryImplTest {
     @After
     fun tearDown() {
         unmockkAll()
+    }
+
+    @Test
+    fun `isStepCompleted keeps survey-only step incomplete until survey is submitted`() = runTest {
+        coEvery { examDao.getFirstByStepId("step1") } returns null
+        coEvery { examDao.getByStepIdAndType("step1", "surveys") } returns listOf(StepExam(id = "survey1", type = "surveys"))
+        coEvery { submissionDao.countCompletedByUserAndExamId("user1", "survey1") } returns 0
+
+        assertFalse(repository.isStepCompleted("step1", "user1"))
+
+        coEvery { submissionDao.countCompletedByUserAndExamId("user1", "survey1") } returns 1
+
+        assertTrue(repository.isStepCompleted("step1", "user1"))
+    }
+
+    @Test
+    fun `isStepCompleted treats step without test or survey as completed`() = runTest {
+        coEvery { examDao.getFirstByStepId("step1") } returns null
+        coEvery { examDao.getByStepIdAndType("step1", "surveys") } returns emptyList()
+
+        assertTrue(repository.isStepCompleted("step1", "user1"))
     }
 
     @Test
@@ -229,8 +251,8 @@ class SubmissionsRepositoryImplTest {
             StepExam(id = "exam1", name = "Exam 1"),
             StepExam(id = "exam2", name = "Exam 2")
         )
-        val answer1 = org.ole.planet.myplanet.model.Answer(id = "ans1", submissionId = "sub1", value = "ans1_val")
-        val answer3 = org.ole.planet.myplanet.model.Answer(id = "ans3", submissionId = "sub3", value = "ans3_val")
+        val answer1 = Answer(id = "ans1", submissionId = "sub1", value = "ans1_val")
+        val answer3 = Answer(id = "ans3", submissionId = "sub3", value = "ans3_val")
         coEvery { answerDao.getBySubmissionIds(listOf("sub1", "sub3")) } returns listOf(answer1, answer3)
 
         val result = repository.getUniquePendingSurveys("user")
@@ -470,13 +492,15 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `deleteExamSubmissions deletes answers and submissions through Room`() = runTest {
-        coEvery { submissionDao.getByParentUserAndStatus("exam@course", "user", null) } returns listOf(Submission(id = "submission1"))
+    fun `deleteExamSubmissions deletes only pending attempts and their answers`() = runTest {
+        coEvery { submissionDao.getByParentUserAndStatus("exam@course", "user", "pending") } returns listOf(Submission(id = "submission1"))
 
         repository.deleteExamSubmissions("exam", "course", "user")
 
         coVerify { answerDao.deleteBySubmissionIds(listOf("submission1")) }
-        coVerify { submissionDao.deleteByParentAndUser("exam@course", "user") }
+        coVerify { submissionDao.deleteByIds(listOf("submission1")) }
+        coVerify(exactly = 0) { submissionDao.getByParentUserAndStatus(any(), any(), null) }
+        coVerify(exactly = 0) { submissionDao.deleteByParentAndUser(any(), any()) }
     }
 
     @Test
@@ -503,7 +527,7 @@ class SubmissionsRepositoryImplTest {
         val result = repository.startExamSession("exam_id", "parentId", "user", request, recreate = true, deleteStale = true)
 
         assertEquals("exam_id@course_id", result.parentId)
-        coVerify { submissionDao.getByParentUserAndStatus("exam_id@course_id", "user", null) }
+        coVerify { submissionDao.getByParentUserAndStatus("exam_id@course_id", "user", "pending") }
         coVerify { submissionDao.upsertAll(match { it.single().parentId == "exam_id@course_id" }) }
     }
 
@@ -616,6 +640,129 @@ class SubmissionsRepositoryImplTest {
         assertTrue(result)
         coVerify { answerDao.upsertAll(match { it.single().submissionId == "submission1" && it.single().value == "answer text" }) }
         coVerify { submissionDao.updateStatusAndLastUpdate("submission1", "complete", any()) }
+    }
+
+    @Test
+    fun `saveExamAnswer keeps an exam pending when the final answer is wrong`() = runTest {
+        val question = ExamQuestion().apply {
+            id = "question1"; examId = "exam1"; type = "select"
+            choices = """[{"id":"a","text":"Right"},{"id":"b","text":"Wrong"}]"""
+            correctChoiceList = listOf("Right")
+        }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1" }
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1", userId = "user1")
+
+        val result = repository.saveExamAnswer(
+            ExamAnswerData(submission, question, "b", null, null, false, "exam", 0, 1, true, "user1")
+        )
+
+        assertFalse(result)
+        coVerify { submissionDao.updateStatusAndLastUpdate("submission1", "pending", any()) }
+        coVerify(exactly = 0) { submissionDao.updateStatusAndLastUpdate("submission1", "requires grading", any()) }
+    }
+
+    @Test
+    fun `saveExamAnswer completes an exam without written questions and saves its grade`() = runTest {
+        val question = ExamQuestion().apply {
+            id = "question2"; examId = "exam1"; type = "select"; marks = "3"
+            choices = """[{"id":"a","text":"Right"},{"id":"b","text":"Wrong"}]"""
+            correctChoiceList = listOf("Right")
+        }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1@course1" }
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1@course1", userId = "user1")
+        coEvery { questionDao.getByExamId("exam1") } returns listOf(
+            ExamQuestion().apply { id = "question1"; examId = "exam1"; type = "selectMultiple"; marks = "2" },
+            question
+        )
+        coEvery { answerDao.getBySubmissionId("submission1") } returns listOf(
+            Answer(id = "answer1", questionId = "question1", submissionId = "submission1", grade = 1),
+            Answer(id = "answer2", questionId = "question2", submissionId = "submission1", grade = 1)
+        )
+
+        repository.saveExamAnswer(ExamAnswerData(submission, question, "a", null, null, false, "exam", 1, 2, true, "user1"))
+
+        coVerify { submissionDao.updateStatusGradeAndLastUpdate("submission1", "complete", 5L, any()) }
+    }
+
+    @Test
+    fun `saveExamAnswer leaves an exam with a written question for grading`() = runTest {
+        val question = ExamQuestion().apply {
+            id = "question2"; examId = "exam1"; type = "select"
+            choices = """[{"id":"a","text":"Right"},{"id":"b","text":"Wrong"}]"""
+            correctChoiceList = listOf("Right")
+        }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1@course1" }
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1@course1", userId = "user1")
+        coEvery { questionDao.getByExamId("exam1") } returns listOf(
+            ExamQuestion().apply { id = "question1"; examId = "exam1"; type = "textarea" },
+            question
+        )
+
+        repository.saveExamAnswer(ExamAnswerData(submission, question, "a", null, null, false, "exam", 1, 2, true, "user1"))
+
+        coVerify { submissionDao.updateStatusAndLastUpdate("submission1", "requires grading", any()) }
+        coVerify(exactly = 0) { submissionDao.updateStatusGradeAndLastUpdate(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `saveExamAnswer grades a multiple-choice exam answer 1`() = runTest {
+        val question = ExamQuestion().apply {
+            id = "question1"; examId = "exam1"; type = "select"
+            choices = """[{"id":"a","text":"Right"},{"id":"b","text":"Wrong"}]"""
+            correctChoiceList = listOf("Right")
+        }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1@course1" }
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1@course1", userId = "user1")
+
+        repository.saveExamAnswer(ExamAnswerData(submission, question, "a", null, null, false, "exam", 0, 2, false, "user1"))
+
+        coVerify { answerDao.upsertAll(match { it.single().questionId == "question1" && it.single().grade == 1 }) }
+    }
+
+    @Test
+    fun `saveExamAnswer leaves a written exam answer ungraded`() = runTest {
+        val question = ExamQuestion().apply {
+            id = "question1"; examId = "exam1"; type = "textarea"
+            correctChoiceList = listOf("photosynthesis")
+        }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1@course1" }
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1@course1", userId = "user1")
+
+        repository.saveExamAnswer(ExamAnswerData(submission, question, "Photosynthesis", null, null, false, "exam", 0, 2, false, "user1"))
+
+        coVerify { answerDao.upsertAll(match { it.single().questionId == "question1" && it.single().grade == null }) }
+    }
+
+    @Test
+    fun `saveExamAnswer keeps choice JSON valid when other text has quotes and backslashes`() = runTest {
+        val question = ExamQuestion().apply { id = "question1"; examId = "exam1"; type = "selectMultiple" }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1" }
+        val otherText = """my "own" answer \ here"""
+        val answerData = ExamAnswerData(
+            submission = submission,
+            question = question,
+            ans = "",
+            listAns = mapOf("Say \"hi\"" to "c1", "Other" to "other"),
+            otherText = otherText,
+            otherVisible = true,
+            type = "survey",
+            index = 0,
+            total = 1,
+            isExplicitSubmission = true,
+            userId = "user1",
+        )
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1", userId = "user1")
+        val saved = slot<List<Answer>>()
+        coEvery { answerDao.upsertAll(capture(saved)) } returns Unit
+
+        repository.saveExamAnswer(answerData)
+
+        val choices = saved.captured.single().valueChoicesArray
+        assertEquals(2, choices.size())
+        assertEquals("c1", choices[0].asJsonObject.get("id").asString)
+        assertEquals("Say \"hi\"", choices[0].asJsonObject.get("text").asString)
+        assertEquals("other", choices[1].asJsonObject.get("id").asString)
+        assertEquals(otherText, choices[1].asJsonObject.get("text").asString)
     }
 
     @Test
@@ -1039,6 +1186,24 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `getSubmissionProjections ignores surrounding whitespace in query`() = runTest {
+        val s1 = Submission().apply { id = "1"; parentId = "p1"; type = "exam"; status = "complete"; lastUpdateTime = 100L; userId = "user1" }
+        val s2 = Submission().apply { id = "2"; parentId = "p2"; type = "exam"; status = "complete"; lastUpdateTime = 200L; userId = "user1" }
+
+        val examMap = mapOf<String?, StepExam>(
+            "p1" to StepExam().apply { name = "Math Quiz" },
+            "p2" to StepExam().apply { name = "Science Test" }
+        )
+
+        coEvery { userRepository.getUsersByIds(any()) } returns emptyList()
+
+        val projections = repository.getSubmissionProjections(listOf(s1, s2), "user1", "exam", " Math ", examMap)
+
+        assertEquals(1, projections.size)
+        assertEquals("1", projections[0].submission.id)
+    }
+
+    @Test
     fun `getNormalizedSubmitterName returns null when user is blank`() {
         val submission = Submission().apply {
             user = "   "
@@ -1126,6 +1291,53 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `getExamSubmissionsByUser delegates to submissionDao`() = runTest {
+        val expected = listOf(Submission(id = "sub1"))
+        coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns expected
+
+        val result = repository.getExamSubmissionsByUser("user1")
+
+        assertEquals(expected, result)
+        coVerify(exactly = 1) { submissionDao.getExamSubmissionsByUser("user1") }
+    }
+
+    @Test
+    fun `getAnswersBySubmissionIds delegates to answerDao`() = runTest {
+        val expected = listOf(Answer(id = "ans1"))
+        coEvery { answerDao.getBySubmissionIds(listOf("sub1")) } returns expected
+
+        val result = repository.getAnswersBySubmissionIds(listOf("sub1"))
+
+        assertEquals(expected, result)
+        coVerify(exactly = 1) { answerDao.getBySubmissionIds(listOf("sub1")) }
+    }
+
+    @Test
+    fun `getUnuploadedNonSurveySubmissionsByParentIds delegates to submissionDao`() = runTest {
+        val expected = listOf(Submission(id = "sub1"))
+        coEvery { submissionDao.getUnuploadedNonSurveyByParentIds(listOf("p1")) } returns expected
+
+        val result = repository.getUnuploadedNonSurveySubmissionsByParentIds(listOf("p1"))
+
+        assertEquals(expected, result)
+        coVerify(exactly = 1) { submissionDao.getUnuploadedNonSurveyByParentIds(listOf("p1")) }
+    }
+
+    @Test
+    fun `deleteSubmissionsWithAnswers calls answerDao then submissionDao in order`() = runTest {
+        val ids = listOf("sub1", "sub2")
+        coEvery { answerDao.deleteBySubmissionIds(ids) } returns 2
+        coEvery { submissionDao.deleteByIds(ids) } returns 2
+
+        repository.deleteSubmissionsWithAnswers(ids)
+
+        coVerifyOrder {
+            answerDao.deleteBySubmissionIds(ids)
+            submissionDao.deleteByIds(ids)
+        }
+    }
+
+    @Test
     fun `getPendingExamResults preserves the DAO order and sets membershipDoc from teamId`() = runTest {
         val s1 = Submission().apply { id = "s1" }
         val s2 = Submission().apply { id = "s2"; teamId = "team123" }
@@ -1140,5 +1352,30 @@ class SubmissionsRepositoryImplTest {
         assertNotNull(results[1].membershipDoc)
         assertEquals("team123", results[1].membershipDoc?.teamId)
         assertNull(results[2].membershipDoc)
+    }
+
+    @Test
+    fun `markSubmissionsUploaded delegates submission updates to dao`() = runTest {
+        coEvery { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") } returns 1
+
+        val failed = repository.markSubmissionsUploaded(
+            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", JsonObject()))
+        )
+
+        assertEquals(emptyList<UploadedItemResult>(), failed)
+        coVerify { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") }
+    }
+
+    @Test
+    fun `markSubmissionsUploaded returns failure if dao returns 0`() = runTest {
+        coEvery { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") } returns 0
+
+        val failed = repository.markSubmissionsUploaded(
+            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", JsonObject()))
+        )
+
+        assertEquals(1, failed.size)
+        assertEquals("sub-1", failed.first().localId)
+        coVerify { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") }
     }
 }

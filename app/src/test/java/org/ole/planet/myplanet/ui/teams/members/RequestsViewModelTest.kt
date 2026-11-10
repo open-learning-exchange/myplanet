@@ -4,6 +4,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifySequence
 import io.mockk.mockk
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -53,7 +54,8 @@ class RequestsViewModelTest {
         val members = listOf(user1, user2)
 
         coEvery { teamsRepository.getRequestedMembers(teamId) } returns members
-        coEvery { teamsRepository.getJoinedMemberCount(teamId) } returns 1
+        coEvery { teamsRepository.getMemberCountTowardLimit(teamId) } returns 1
+        coEvery { teamsRepository.getTeamMemberLimit(teamId) } returns 0
 
         val currentUser = UserEntity().apply { id = "currentUser" }
         coEvery { userRepository.getUserModel() } returns currentUser
@@ -75,7 +77,8 @@ class RequestsViewModelTest {
     fun `fetchMembers sets currentUser in uiState or falls back to empty UserEntity when null`() = runTest(testDispatcher) {
         val teamId = "team1"
         coEvery { teamsRepository.getRequestedMembers(teamId) } returns emptyList()
-        coEvery { teamsRepository.getJoinedMemberCount(teamId) } returns 0
+        coEvery { teamsRepository.getMemberCountTowardLimit(teamId) } returns 0
+        coEvery { teamsRepository.getTeamMemberLimit(teamId) } returns 0
         coEvery { userRepository.getUserModel() } returns null
         coEvery { teamsRepository.isTeamLeader(teamId, null) } returns false
 
@@ -94,7 +97,8 @@ class RequestsViewModelTest {
         val members = listOf(user1, user2)
 
         coEvery { teamsRepository.getRequestedMembers(teamId) } returns members
-        coEvery { teamsRepository.getJoinedMemberCount(teamId) } returns 0
+        coEvery { teamsRepository.getMemberCountTowardLimit(teamId) } returns 0
+        coEvery { teamsRepository.getTeamMemberLimit(teamId) } returns 0
         coEvery { userRepository.getUserModel() } returns null
         coEvery { teamsRepository.isTeamLeader(teamId, null) } returns false
 
@@ -130,7 +134,8 @@ class RequestsViewModelTest {
         val members = listOf(user1, user2)
 
         coEvery { teamsRepository.getRequestedMembers(teamId) } returns members
-        coEvery { teamsRepository.getJoinedMemberCount(teamId) } returns 0
+        coEvery { teamsRepository.getMemberCountTowardLimit(teamId) } returns 0
+        coEvery { teamsRepository.getTeamMemberLimit(teamId) } returns 0
         coEvery { userRepository.getUserModel() } returns null
         coEvery { teamsRepository.isTeamLeader(teamId, null) } returns false
 
@@ -161,11 +166,12 @@ class RequestsViewModelTest {
         val members = listOf(UserEntity().apply { id = "user1" })
 
         coEvery { teamsRepository.getRequestedMembers(teamId) } returns members
-        coEvery { teamsRepository.getJoinedMemberCount(teamId) } returns 1
+        coEvery { teamsRepository.getMemberCountTowardLimit(teamId) } returns 1
+        coEvery { teamsRepository.getTeamMemberLimit(teamId) } returns 0
 
         val currentUser = UserEntity().apply { id = "currentUser" }
         coEvery { userRepository.getUserModel() } coAnswers {
-            kotlinx.coroutines.delay(100)
+            kotlinx.coroutines.delay(100.milliseconds)
             currentUser
         }
         coEvery { teamsRepository.isTeamLeader(teamId, currentUser.id) } returns true
@@ -188,9 +194,9 @@ class RequestsViewModelTest {
         val user2 = UserEntity().apply { id = "user2" }
         val user3 = UserEntity().apply { id = "user3" }
 
-        val member1 = JoinedMemberData(currentUser, 0L, null, "", "", isLeader = true)
-        val member2 = JoinedMemberData(user2, 0L, null, "", "", isLeader = false)
-        val member3 = JoinedMemberData(user3, 0L, null, "", "", isLeader = false)
+        val member1 = JoinedMemberData(currentUser, 0L, null, isLeader = true)
+        val member2 = JoinedMemberData(user2, 0L, null, isLeader = false)
+        val member3 = JoinedMemberData(user3, 0L, null, isLeader = false)
         val membersLeader = listOf(member1, member2, member3)
 
         coEvery { userRepository.getUserModel() } returns currentUser
@@ -204,7 +210,7 @@ class RequestsViewModelTest {
         assertEquals(currentUserId, stateLeader.currentUserId)
         assertTrue(stateLeader.isLeader)
 
-        val member1NotLeader = JoinedMemberData(currentUser, 0L, null, "", "", isLeader = false)
+        val member1NotLeader = JoinedMemberData(currentUser, 0L, null, isLeader = false)
         val membersNotLeader = listOf(member1NotLeader, member2, member3)
 
         coEvery { teamsRepository.getJoinedMembersWithVisitInfo(teamId) } returns membersNotLeader

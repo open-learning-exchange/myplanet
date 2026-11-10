@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.ui.ratings
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -16,7 +16,6 @@ import org.ole.planet.myplanet.repository.RatingEntry
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @ExperimentalCoroutinesApi
@@ -33,13 +32,6 @@ class RatingsViewModelTest {
     fun setup() {
         ratingsRepository = mockk()
         userRepository = mockk()
-        val testDispatcherProvider = object : DispatcherProvider {
-            override val main = Dispatchers.Unconfined
-            override val mainImmediate = Dispatchers.Unconfined
-            override val io = Dispatchers.Unconfined
-            override val default = Dispatchers.Unconfined
-            override val unconfined = Dispatchers.Unconfined
-        }
         viewModel = RatingsViewModel(ratingsRepository, userRepository)
     }
 
@@ -128,6 +120,32 @@ class RatingsViewModelTest {
         val state = viewModel.ratingState.value
         assertTrue(state is RatingsViewModel.RatingUiState.Error)
         assertEquals("User not found", (state as RatingsViewModel.RatingUiState.Error).message)
+    }
+
+    @Test
+    fun `getRatingSummary falls back to _id when user id is blank`() = runTest {
+        val type = "course"
+        val itemId = "item-1"
+        val fallbackId = "u1"
+
+        val mockUser = UserEntity().apply {
+            id = ""
+            _id = fallbackId
+        }
+        val mockSummary = RatingSummary(
+            existingRating = null,
+            averageRating = 0f,
+            totalRatings = 0,
+            userRating = null
+        )
+
+        coEvery { userRepository.getUserProfile() } returns mockUser
+        coEvery { ratingsRepository.getRatingSummary(type, itemId, fallbackId) } returns mockSummary
+
+        viewModel.loadRatingData(type, itemId)
+        advanceUntilIdle()
+
+        coVerify { ratingsRepository.getRatingSummary(type, itemId, fallbackId) }
     }
 
     @Test

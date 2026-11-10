@@ -7,7 +7,7 @@ object ResourcesSearchUtils {
     fun <T> searchList(list: List<T>, query: String, normalizedTitleSelector: (T) -> String?): List<T> {
         if (query.isEmpty()) return list
 
-        val normalizedQuery = Utilities.normalizeText(query)
+        val normalizedQuery = StringUtils.normalizeText(query)
         val normalizedQueryParts = normalizedQuery.splitToSequence(" ").filter { it.isNotEmpty() }.toList()
 
         val startsWithQuery = mutableListOf<T>()
@@ -22,6 +22,6 @@ object ResourcesSearchUtils {
     }
 
     fun searchLocalModels(models: List<ResourceListModel>, query: String): List<ResourceListModel> {
-        return searchList(models, query) { it.library.titleNormal ?: Utilities.normalizeText(it.item.title ?: "") }
+        return searchList(models, query) { it.library.titleNormal ?: StringUtils.normalizeText(it.item.title ?: "") }
     }
 }

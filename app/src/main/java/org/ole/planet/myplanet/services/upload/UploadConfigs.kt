@@ -7,19 +7,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.CourseActivity
-import org.ole.planet.myplanet.model.CourseProgress
-import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.NewsLog
-import org.ole.planet.myplanet.model.Rating
-import org.ole.planet.myplanet.model.ResourceActivity
-import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
-import org.ole.planet.myplanet.model.SubmitPhotos
-import org.ole.planet.myplanet.model.TeamLog
-import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ApkLogUpload
@@ -192,10 +184,11 @@ class UploadConfigs @Inject constructor(
         endpoint = "exams",
         fetchPendingItems = { surveysRepository.getPendingAdoptedSurveys() },
         serializer = UploadSerializer.Async { exam ->
-            val questions = surveysRepository.getExamQuestions(exam.id ?: "")
+            val questions = surveysRepository.getExamQuestions(exam.id)
             StepExam.serializeExam(exam, questions)
         },
-        idExtractor = { it.id }
+        idExtractor = { it.id },
+        markUploaded = { surveysRepository.markExamsUploaded(it) }
     )
 
     // Migrated to Room: uses the database-agnostic RoomUploadConfig path in UploadCoordinator.
@@ -207,7 +200,7 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it.id },
         markUploaded = { results ->
             // Mark each uploaded feedback; rows that no longer exist are reported as failures.
-            results.filter { result -> !feedbackRepository.markFeedbackUploaded(result.localId) }
+            results.filter { result -> !feedbackRepository.markFeedbackUploaded(result.localId, result.remoteId, result.remoteRev) }
         }
     )
 
@@ -252,7 +245,8 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it.id },
         dbIdExtractor = { it._id },
         filterGuests = true,
-        guestUserIdExtractor = { it.userId }
+        guestUserIdExtractor = { it.userId },
+        markUploaded = { submissionsRepository.markSubmissionsUploaded(it) }
     )
 
     val Submissions = UploadConfig(
@@ -265,9 +259,7 @@ class UploadConfigs @Inject constructor(
         },
         idExtractor = { it.id },
         dbIdExtractor = { it._id },
-        additionalUpdates = { submission, _ ->
-            submission.isUpdated = false
-        }
+        markUploaded = { submissionsRepository.markSubmissionsUploaded(it) }
     )
 
     // Migrated to Room: uses the database-agnostic RoomUploadConfig path in UploadCoordinator.
@@ -304,7 +296,9 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it.id },
         dbIdExtractor = { it._id }, // Enables POST/PUT logic
         markUploaded = { results ->
-            results.filter { result -> !ratingsRepository.markRatingUploaded(result.localId) }
+            results.filter { result ->
+                !ratingsRepository.markRatingUploaded(result.localId, result.remoteId, result.remoteRev)
+            }
         }
     )
 }

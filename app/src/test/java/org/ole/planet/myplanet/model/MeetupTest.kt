@@ -4,13 +4,15 @@ import android.app.Application
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.MockKAnnotations
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.unmockkAll
-import org.junit.After
+import io.mockk.unmockkObject
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -22,16 +24,25 @@ import org.robolectric.annotation.Config
 @Config(application = Application::class)
 class MeetupTest {
 
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkObject(NetworkUtils)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkObject(NetworkUtils)
+        }
+    }
+
     @Before
     fun setup() {
         MockKAnnotations.init(this)
-        mockkObject(NetworkUtils)
+        clearAllMocks(answers = false, childMocks = false)
         every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
-    }
-
-    @After
-    fun tearDown() {
-        unmockkAll()
     }
 
     @Test
@@ -107,6 +118,58 @@ class MeetupTest {
     }
 
     @Test
+    fun `fromJson reads planet metadata from the server document over the local row`() {
+        val meetupDoc = JsonObject().apply {
+            addProperty("_id", "meetup1")
+            addProperty("createdDate", 777L)
+            addProperty("recurringNumber", 4)
+            addProperty("sourcePlanet", "earth")
+            add("sync", JsonObject().apply {
+                addProperty("type", "sync")
+                addProperty("planetCode", "earth")
+            })
+        }
+        val existingMeetup = Meetup().apply {
+            createdDate = 12345L
+            recurringNumber = 10
+            sync = null
+            sourcePlanet = null
+        }
+
+        val meetup = Meetup.fromJson(meetupDoc, "", existingMeetup)
+
+        assertEquals(777L, meetup.createdDate)
+        assertEquals(4, meetup.recurringNumber)
+        assertEquals("earth", meetup.sourcePlanet)
+        assertEquals("""{"type":"sync","planetCode":"earth"}""", meetup.sync)
+    }
+
+    @Test
+    fun `planet meetup survives a fromJson then serialize round trip`() {
+        val meetupDoc = JsonObject().apply {
+            addProperty("_id", "meetup1")
+            addProperty("_rev", "rev1")
+            addProperty("recurring", "weekly")
+            add("day", JsonArray().apply { add("Monday"); add("Wednesday") })
+            addProperty("createdDate", 777L)
+            addProperty("recurringNumber", 4)
+            addProperty("sourcePlanet", "earth")
+            add("sync", JsonObject().apply {
+                addProperty("type", "local")
+                addProperty("planetCode", "earth")
+            })
+        }
+
+        val jsonObject = Meetup.serialize(Meetup.fromJson(meetupDoc, "", null))
+
+        assertEquals(meetupDoc.get("day"), jsonObject.get("day"))
+        assertEquals(777L, jsonObject.get("createdDate").asLong)
+        assertEquals(4, jsonObject.get("recurringNumber").asInt)
+        assertEquals("earth", jsonObject.get("sourcePlanet").asString)
+        assertEquals(meetupDoc.get("sync"), jsonObject.get("sync"))
+    }
+
+    @Test
     fun `fromJson without userId uses empty string`() {
         val meetupDoc = JsonObject().apply {
             addProperty("_id", "meetup1")
@@ -115,6 +178,18 @@ class MeetupTest {
         val meetup = Meetup.fromJson(meetupDoc, "", null)
 
         assertEquals("", meetup.userId)
+    }
+
+    @Test
+    fun `fromJson without userId keeps the existing row's attendance`() {
+        val meetupDoc = JsonObject().apply {
+            addProperty("_id", "meetup1")
+        }
+        val existingMeetup = Meetup().apply { userId = "user123" }
+
+        val meetup = Meetup.fromJson(meetupDoc, "", existingMeetup)
+
+        assertEquals("user123", meetup.userId)
     }
 
     @Test

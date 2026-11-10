@@ -14,6 +14,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -22,6 +24,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.debounce
@@ -35,11 +38,11 @@ import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.effectiveId
-import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
+import org.ole.planet.myplanet.ui.user.LearnerRegistrationActivity
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.ImageUtils
+import org.ole.planet.myplanet.utils.StringUtils
 import org.ole.planet.myplanet.utils.TimeUtils
-import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
@@ -63,12 +66,14 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
     var userId: String? = null
     var userModel: UserEntity? = null
     var loggedInUser: UserEntity? = null
-    lateinit var userModelList: List<UserEntity>
     lateinit var adapter: HealthUsersAdapter
     private lateinit var healthAdapter: HealthExaminationAdapter
     var dialog: AlertDialog? = null
 
     private var searchJob: Job? = null
+    private var memberQuery = ""
+    private var memberSortField = "joinDate"
+    private var memberSortDescending = false
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -100,9 +105,15 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
 
     private fun observeData() {
 
-        collectWhenStarted(viewModel.healthSyncUpdates) {
-            viewModel.refreshSelectedPatient()
-        }
+        viewLifecycleOwner.lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onStart(owner: LifecycleOwner) {
+                viewModel.setSyncActive(true)
+            }
+
+            override fun onStop(owner: LifecycleOwner) {
+                viewModel.setSyncActive(false)
+            }
+        })
 
         collectWhenStarted(viewModel.loggedInUser) { user ->
             loggedInUser = user
@@ -152,22 +163,22 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
             binding.txtFullName.text = getDisplayName(currentUser)
             val userImageSize = binding.userImage.context.resources.getDimensionPixelSize(R.dimen.user_image_size)
             ImageUtils.loadPlaceholderImage(currentUser.userImage, binding.userImage, userImageSize)
-            binding.txtEmail.text = Utilities.checkNA(currentUser.email)
-            binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
+            binding.txtEmail.text = StringUtils.checkNA(currentUser.email)
+            binding.txtLanguage.text = StringUtils.checkNA(currentUser.language)
             binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { "dd-MM-yyyy" }
 
             if (healthRecord != null) {
                 val (mh, mm, list, userMap) = healthRecord
                 val myHealths = mm.profile
-                binding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
-                binding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
-                binding.txtBirthPlace.text = Utilities.checkNA(currentUser.birthPlace)
+                binding.txtOtherNeed.text = StringUtils.checkNA(myHealths?.notes)
+                binding.txtSpecialNeeds.text = StringUtils.checkNA(myHealths?.specialNeeds)
+                binding.txtBirthPlace.text = StringUtils.checkNA(currentUser.birthPlace)
                 val contact = myHealths?.emergencyContact?.takeIf { it.isNotBlank() }
                 binding.txtEmergencyContact.text = getString(
                     R.string.emergency_contact_details,
-                    Utilities.checkNA(myHealths?.emergencyContactName),
-                    Utilities.checkNA(myHealths?.emergencyContactType),
-                    Utilities.checkNA(contact)
+                    StringUtils.checkNA(myHealths?.emergencyContactName),
+                    StringUtils.checkNA(AddHealthActivity.contactTypeLabel(requireContext(), myHealths?.emergencyContactType)),
+                    StringUtils.checkNA(contact)
                 ).trimIndent()
 
                 if (list.isNotEmpty()) {
@@ -181,10 +192,12 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
                         }
                     }
                     healthAdapter.updateData(mh, currentUser, userMap, list)
-                    binding.rvRecords.apply {
-                        layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
-                        isNestedScrollingEnabled = false
-                        adapter = healthAdapter
+                    if (binding.rvRecords.adapter !== healthAdapter) {
+                        binding.rvRecords.apply {
+                            layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
+                            isNestedScrollingEnabled = false
+                            adapter = healthAdapter
+                        }
                     }
 
                     binding.rvRecords.post {
@@ -258,11 +271,9 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
             dialog?.dismiss()
         }
 
-        viewModel.loadPatients()
-
         alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
         alertHealthListBinding?.btnAddMember?.setOnClickListener {
-            startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
+            startActivity(Intent(requireContext(), LearnerRegistrationActivity::class.java))
         }
 
         alertHealthListBinding?.let { binding ->
@@ -282,24 +293,30 @@ class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentV
             override fun onNothingSelected(p0: AdapterView<*>?) {}
 
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-                val (sortBy, sort) = when (p2) {
-                    0 -> "joinDate" to true
-                    1 -> "joinDate" to false
+                val (sortBy, descending) = when (p2) {
+                    0 -> "joinDate" to false
+                    1 -> "joinDate" to true
                     2 -> "name" to false
                     else -> "name" to true
                 }
-                viewModel.loadPatients(sortBy, sort)
+                memberSortField = sortBy
+                memberSortDescending = descending
+                viewModel.searchPatients(memberQuery, memberSortField, memberSortDescending)
             }
         }
     }
 
     private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, rv: RecyclerView) {
         searchJob?.cancel()
+        memberQuery = ""
         searchJob = etSearch.textChanges()
             .drop(1)
-            .debounce(SEARCH_DEBOUNCE_MS)
+            .debounce(SEARCH_DEBOUNCE_MS.milliseconds)
             .distinctUntilChanged()
-            .onEach { query -> viewModel.searchPatients(query?.toString() ?: "", "joinDate", true) }
+            .onEach { query ->
+                memberQuery = query?.toString().orEmpty()
+                viewModel.searchPatients(memberQuery, memberSortField, memberSortDescending)
+            }
             .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 

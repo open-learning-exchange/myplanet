@@ -8,6 +8,7 @@ import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
 import java.io.File
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -101,6 +102,31 @@ class DiagnosticsRepositoryImplTest {
     }
 
     @Test
+    fun `saveLogToRoom returns false when apkLogDao insert throws`() = runTest {
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { apkLogDao.insert(any()) } throws RuntimeException("insert failed")
+
+        val result = repository.saveLogToRoom("crash", "boom", "1700000000000")
+
+        assertFalse(result)
+    }
+
+    @Test(expected = CancellationException::class)
+    fun `saveLogToRoom rethrows CancellationException`() = runTest {
+        coEvery { userRepository.getUserModel() } throws CancellationException("cancelled")
+
+        repository.saveLogToRoom("crash", "boom", "1700000000000")
+    }
+
+    @Test(expected = CancellationException::class)
+    fun `saveLogToRoom rethrows CancellationException when apkLogDao insert throws`() = runTest {
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { apkLogDao.insert(any()) } throws CancellationException("cancelled")
+
+        repository.saveLogToRoom("crash", "boom", "1700000000000")
+    }
+
+    @Test
     fun `saveLogsToRoom returns true and inserts nothing for an empty list`() = runTest {
         val result = repository.saveLogsToRoom(emptyList())
 
@@ -181,6 +207,27 @@ class DiagnosticsRepositoryImplTest {
 
         assertFalse(result)
         coVerify(exactly = 0) { apkLogDao.insertAll(any()) }
+    }
+
+    @Test
+    fun `saveLogsToRoom returns false when apkLogDao insertAll throws`() = runTest {
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { apkLogDao.insertAll(any()) } throws RuntimeException("insertAll failed")
+
+        val result = repository.saveLogsToRoom(
+            listOf(CrashLogStore.PendingLog(File("/tmp/a.log"), "crash", "1700000000001", "err1"))
+        )
+
+        assertFalse(result)
+    }
+
+    @Test(expected = CancellationException::class)
+    fun `saveLogsToRoom rethrows CancellationException`() = runTest {
+        coEvery { userRepository.getUserModel() } throws CancellationException("cancelled")
+
+        repository.saveLogsToRoom(
+            listOf(CrashLogStore.PendingLog(File("/tmp/a.log"), "crash", "1700000000001", "err1"))
+        )
     }
 
     @Test

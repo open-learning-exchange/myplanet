@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 class SubmissionViewModel @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val userRepository: UserRepository,
-    private val dispatcherProvider: DispatcherProvider,
+    dispatcherProvider: DispatcherProvider,
 ) : ViewModel() {
 
     private val _type = MutableStateFlow("")

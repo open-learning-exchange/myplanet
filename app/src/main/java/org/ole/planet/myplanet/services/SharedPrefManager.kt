@@ -26,7 +26,6 @@ class SharedPrefManager @Inject constructor(
     companion object {
         private val userListType = object : TypeToken<List<User>>() {}.type
         private const val SAVED_USERS = "savedUsers"
-        private const val REPLIED_NEWS_ID = "repliedNewsId"
         const val MANUAL_CONFIG = "manualConfig"
         private const val SELECTED_TEAM_ID = "selectedTeamId"
         const val FIRST_LAUNCH = "firstLaunch"
@@ -103,14 +102,6 @@ class SharedPrefManager @Inject constructor(
         savedUsersCache = SavedUsersCache(json, users.detach())
     }
 
-    fun getRepliedNewsId(): String? {
-        return pref.getString(REPLIED_NEWS_ID, null)
-    }
-
-    fun setRepliedNewsId(repliedNewsId: String?) {
-        pref.edit { putString(REPLIED_NEWS_ID, repliedNewsId) }
-    }
-
     fun getManualConfig(): Boolean {
         return pref.getBoolean(MANUAL_CONFIG, false)
     }
@@ -119,7 +110,7 @@ class SharedPrefManager @Inject constructor(
         pref.edit { putBoolean(MANUAL_CONFIG, manualConfig) }
     }
 
-    fun getSelectedTeamId(): String? {
+    fun getSelectedTeamId(): String {
         return pref.getString(SELECTED_TEAM_ID, "") ?: ""
     }
 
@@ -135,7 +126,7 @@ class SharedPrefManager @Inject constructor(
         pref.edit { putBoolean(FIRST_LAUNCH, firstLaunch) }
     }
 
-    fun getTeamName(): String? {
+    fun getTeamName(): String {
         return pref.getString(TEAM_NAME, "") ?: ""
     }
 
@@ -183,28 +174,14 @@ class SharedPrefManager @Inject constructor(
     fun setConfigurationId(id: String) = pref.edit { putString(CONFIGURATION_ID, id) }
 
     fun getCouchdbUrl(): String = pref.getString(COUCHDB_URL, "") ?: ""
-    fun setCouchdbUrl(url: String) {
-        pref.edit { putString(COUCHDB_URL, url) }
-        UrlUtils.invalidateCaches()
-    }
 
     fun getUrlUser(): String = pref.getString(URL_USER, "") ?: ""
-    fun setUrlUser(user: String) {
-        pref.edit { putString(URL_USER, user) }
-        UrlUtils.invalidateCaches()
-    }
 
     fun getUrlPwd(): String = pref.getString(URL_PWD, "") ?: ""
-    fun setUrlPwd(pwd: String) {
-        pref.edit { putString(URL_PWD, pwd) }
-        UrlUtils.invalidateCaches()
-    }
 
     fun getUrlScheme(): String = pref.getString(URL_SCHEME, "") ?: ""
-    fun setUrlScheme(scheme: String) = pref.edit { putString(URL_SCHEME, scheme) }
 
     fun getUrlHost(): String = pref.getString(URL_HOST, "") ?: ""
-    fun setUrlHost(host: String) = pref.edit { putString(URL_HOST, host) }
 
     fun setAlternativeUrl(url: String) = pref.edit { putString(ALTERNATIVE_URL, url) }
 
@@ -294,7 +271,6 @@ class SharedPrefManager @Inject constructor(
     fun setSwitchCloudUrl(value: Boolean) = pref.edit { putBoolean(SWITCH_CLOUD_URL, value) }
 
     fun getUserId(): String = pref.getString(USER_ID, "") ?: ""
-    fun setUserId(id: String) = pref.edit { putString(USER_ID, id) }
 
     fun getParentCode(): String = pref.getString(PARENT_CODE, "") ?: ""
     fun setParentCode(code: String) = pref.edit { putString(PARENT_CODE, code) }
@@ -311,7 +287,6 @@ class SharedPrefManager @Inject constructor(
     }
 
     fun getUserName(): String = pref.getString(USER_NAME, "") ?: ""
-    fun setUserName(name: String) = pref.edit { putString(USER_NAME, name) }
 
     fun getCommunityLeaders(): String = pref.getString(COMMUNITY_LEADERS, "") ?: ""
     fun setCommunityLeaders(json: String) = pref.edit { putString(COMMUNITY_LEADERS, json) }

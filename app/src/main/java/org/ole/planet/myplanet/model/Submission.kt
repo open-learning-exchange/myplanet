@@ -29,9 +29,6 @@ open class Submission(
     var teamId: String? = null,
     var isUpdated: Boolean = false
 ) {
-    @Ignore
-    @Transient
-    var submitterName: String = ""
 }
 
 open class MembershipDoc {

@@ -1,13 +1,15 @@
 package org.ole.planet.myplanet.utils
 
 import android.net.Uri
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockkStatic
-import io.mockk.unmockkAll
-import org.junit.After
+import io.mockk.unmockkStatic
+import org.junit.AfterClass
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 
 class WebViewSafetyTest {
@@ -15,9 +17,23 @@ class WebViewSafetyTest {
     private val trustedHosts = listOf("planet.learning.org", "myplanet.com")
     private val appDir = "/data/user/0/org.ole.planet.myplanet/files"
 
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkStatic(Uri::class)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkStatic(Uri::class)
+        }
+    }
+
     @Before
     fun setUp() {
-        mockkStatic(Uri::class)
+        clearAllMocks()
         every { Uri.parse(any()) } answers {
             val urlString = firstArg<String>()
             val schemeIndex = urlString.indexOf("://")
@@ -37,11 +53,6 @@ class WebViewSafetyTest {
             every { mockUri.host } returns host
             mockUri
         }
-    }
-
-    @After
-    fun tearDown() {
-        unmockkAll()
     }
 
     @Test

@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.feedback
 
 import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import androidx.core.content.ContextCompat
 import org.junit.Assert.assertNotNull
 import org.junit.Test

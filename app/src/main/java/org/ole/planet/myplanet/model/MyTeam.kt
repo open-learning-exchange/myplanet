@@ -13,7 +13,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.FileUtils.getOlePath
-import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
@@ -45,16 +44,16 @@ open class MyTeam(
     var rules: String? = null,
     var isLeader: Boolean = false,
     var type: String? = null,
-    var amount: Int = 0,
+    var amount: Double = 0.0,
     var date: Long = 0,
     var isPublic: Boolean = false,
     @ColumnInfo(name = "isUpdated") var updated: Boolean = false,
     var isDeletePending: Boolean = false,
-    var beginningBalance: Int = 0,
-    var sales: Int = 0,
-    var otherIncome: Int = 0,
-    var wages: Int = 0,
-    var otherExpenses: Int = 0,
+    var beginningBalance: Double = 0.0,
+    var sales: Double = 0.0,
+    var otherIncome: Double = 0.0,
+    var wages: Double = 0.0,
+    var otherExpenses: Double = 0.0,
     var startDate: Long = 0,
     var endDate: Long = 0,
     var updatedDate: Long = 0,
@@ -66,6 +65,7 @@ open class MyTeam(
         set(value) { _id = value }
 
     companion object {
+        const val DEFAULT_MEMBER_LIMIT = 12
         fun getFirstAttachmentName(doc: JsonObject): String? {
             val attachments = doc.getAsJsonObject("_attachments") ?: return null
             return attachments.keySet().firstOrNull()
@@ -103,17 +103,17 @@ open class MyTeam(
             team.createdBy = JsonUtils.getString("createdBy", kDoc)
             team.userPlanetCode = JsonUtils.getString("userPlanetCode", kDoc)
             team.isLeader = JsonUtils.getBoolean("isLeader", kDoc)
-            team.amount = JsonUtils.getInt("amount", kDoc)
+            team.amount = JsonUtils.getDouble("amount", kDoc)
             team.date = JsonUtils.getLong("date", kDoc)
             if (!hadLocalChanges) {
                 team.docType = JsonUtils.getString("docType", kDoc)
             }
             team.isPublic = JsonUtils.getBoolean("public", kDoc)
-            team.beginningBalance = JsonUtils.getInt("beginningBalance", kDoc)
-            team.sales = JsonUtils.getInt("sales", kDoc)
-            team.otherIncome = JsonUtils.getInt("otherIncome", kDoc)
-            team.wages = JsonUtils.getInt("wages", kDoc)
-            team.otherExpenses = JsonUtils.getInt("otherExpenses", kDoc)
+            team.beginningBalance = JsonUtils.getDouble("beginningBalance", kDoc)
+            team.sales = JsonUtils.getDouble("sales", kDoc)
+            team.otherIncome = JsonUtils.getDouble("otherIncome", kDoc)
+            team.wages = JsonUtils.getDouble("wages", kDoc)
+            team.otherExpenses = JsonUtils.getDouble("otherExpenses", kDoc)
             team.startDate = JsonUtils.getLong("startDate", kDoc)
             team.endDate = JsonUtils.getLong("endDate", kDoc)
             team.updatedDate = JsonUtils.getLong("updatedDate", kDoc)
@@ -147,28 +147,23 @@ open class MyTeam(
             }
         }
 
-        fun populateReportFields(doc: JsonObject, team: MyTeam) {
-            val kDoc = doc.toKotlinx().jsonObject
-            team.description = JsonUtils.getString("description", kDoc)
-            team.beginningBalance = JsonUtils.getInt("beginningBalance", kDoc)
-            team.sales = JsonUtils.getInt("sales", kDoc)
-            team.otherIncome = JsonUtils.getInt("otherIncome", kDoc)
-            team.wages = JsonUtils.getInt("wages", kDoc)
-            team.otherExpenses = JsonUtils.getInt("otherExpenses", kDoc)
-            team.startDate = JsonUtils.getLong("startDate", kDoc)
-            team.endDate = JsonUtils.getLong("endDate", kDoc)
-            team.updatedDate = JsonUtils.getLong("updatedDate", kDoc)
-            team.updated = JsonUtils.getBoolean("updated", kDoc)
-            getFirstAttachmentName(doc)?.let { team.imageName = it }
-        }
-
         fun serialize(team: MyTeam): JsonObject {
             if (team.isDeletePending) {
-                return buildJsonObject {
+                val `object` = buildJsonObject {
                     if (!team._id.isNullOrEmpty()) put("_id", team._id)
                     if (!team._rev.isNullOrEmpty()) put("_rev", team._rev)
                     put("_deleted", true)
+                    if (!team.teamId.isNullOrEmpty()) put("teamId", team.teamId)
+                    put("userId", team.userId)
+                    put("userPlanetCode", team.userPlanetCode)
+                    put("teamPlanetCode", team.teamPlanetCode)
+                    put("teamType", team.teamType)
+                    put("docType", team.docType)
                 }.toGson()
+
+                val keysToRemove = `object`.keySet().filter { `object`.get(it).isJsonNull }
+                keysToRemove.forEach { `object`.remove(it) }
+                return `object`
             }
 
             if (team.docType == "resourceLink") {
@@ -195,14 +190,14 @@ open class MyTeam(
                 put("name", team.name)
                 put("userId", team.userId)
                 if (team.docType != "report" && team.docType != "request") {
-                    put("limit", team.limit)
+                    if (team.limit > 0) put("limit", team.limit)
                     put("amount", team.amount)
                     put("date", team.date)
                     put("public", team.isPublic)
                     put("isLeader", team.isLeader)
                 }
+                if (team.docType != "request" || team.createdDate > 0) put("createdDate", team.createdDate)
                 if (team.docType != "request") {
-                    put("createdDate", team.createdDate)
                     put("description", team.description)
                     put("beginningBalance", team.beginningBalance)
                     put("sales", team.sales)

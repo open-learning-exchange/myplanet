@@ -133,10 +133,9 @@ object ServerConfigUtils {
 
     fun getCommunityConfig(selected: Community, httpsProtocol: String): CommunityConfig {
         val domain = selected.localDomain
-        val protocol = httpsProtocol
         val pin = if (selected.weight == 0) BuildConfig.PLANET_LEARNING_PIN else ""
         val isPinEnabled = selected.weight != 0
-        return CommunityConfig(domain, protocol, pin, isPinEnabled)
+        return CommunityConfig(domain, httpsProtocol, pin, isPinEnabled)
     }
 
     private val _trustedServerHosts: List<String> by lazy {

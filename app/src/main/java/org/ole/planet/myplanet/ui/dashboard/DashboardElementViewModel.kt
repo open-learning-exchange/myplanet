@@ -23,7 +23,7 @@ class DashboardElementViewModel @Inject constructor(
         activitiesRepository.recordSyncUserChallengeAction(userId)
     }
 
-    suspend fun logout() {
+    fun logout() {
         userSessionManager.logoutAsync()
     }
 }

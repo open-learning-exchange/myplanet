@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.user
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.AsyncDifferConfig
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
@@ -11,7 +12,12 @@ import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.GsonUtils.getString
 
-class AchievementsAdapter(list: List<String>) : ListAdapter<ReferenceRow, AchievementsViewHolder>(DIFF_CALLBACK) {
+class AchievementsAdapter @JvmOverloads constructor(
+    list: List<String>,
+    diffConfig: AsyncDifferConfig<ReferenceRow>? = null
+) : ListAdapter<ReferenceRow, AchievementsViewHolder>(
+    diffConfig ?: AsyncDifferConfig.Builder(DIFF_CALLBACK).build()
+) {
     init {
         submitJsonList(list)
     }
@@ -81,7 +87,7 @@ class AchievementsAdapter(list: List<String>) : ListAdapter<ReferenceRow, Achiev
 
         private val HANDLED_PAYLOADS = setOf(PAYLOAD_PHONE, PAYLOAD_EMAIL)
 
-        private val DIFF_CALLBACK = DiffUtils.itemCallback<ReferenceRow>(
+        internal val DIFF_CALLBACK = DiffUtils.itemCallback<ReferenceRow>(
             areItemsTheSame = { oldItem, newItem ->
                 // We use name and relationship as the unique identity.
                 oldItem.name == newItem.name && oldItem.relationship == newItem.relationship

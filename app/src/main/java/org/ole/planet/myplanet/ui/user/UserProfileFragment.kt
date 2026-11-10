@@ -53,9 +53,11 @@ import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.ui.courses.CoursesFilterFragment
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ImageUtils
+import org.ole.planet.myplanet.utils.StringUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -85,14 +87,14 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        photoURI = savedInstanceState?.getString(KEY_PHOTO_URI)?.let(Uri::parse)
         pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK && result.data != null) {
                 val uri = result.data?.data ?: return@registerForActivityResult
                 viewLifecycleOwner.lifecycleScope.launch {
                     val appContext = requireContext().applicationContext
-                    val filesDir = requireContext().filesDir
                     val path = withContext(dispatcherProvider.io) {
-                        FileUtils.resolveUriToPath(appContext, uri, filesDir)
+                        FileUtils.resolveUriToPath(appContext, uri, appContext.filesDir)
                     }
                     if (path != null) {
                         startIntent(path)
@@ -108,9 +110,8 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
             if (isSuccess && uri != null) {
                 viewLifecycleOwner.lifecycleScope.launch {
                     val appContext = requireContext().applicationContext
-                    val filesDir = requireContext().filesDir
                     val path = withContext(dispatcherProvider.io) {
-                        FileUtils.resolveUriToPath(appContext, uri, filesDir)
+                        FileUtils.resolveUriToPath(appContext, uri, appContext.filesDir)
                     }
                     if (path != null) {
                         startIntent(path)
@@ -134,6 +135,11 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
             }
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        photoURI?.let { outState.putString(KEY_PHOTO_URI, it.toString()) }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -151,7 +157,7 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
             viewModel.lastVisit,
             viewModel.numberOfResourceOpen,
             viewModel.connectedCommunityCode
-        ) { _, _, _, _, _ -> Unit }
+        ) { _, _, _, _, _ -> }
 
         collectWhenStarted(combinedFlow) {
             if (isAdded) {
@@ -210,18 +216,18 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
         }
         binding.txtSecondary.text = getString(
             R.string.profile_secondary_line,
-            Utilities.checkNA(model?.email),
-            Utilities.checkNA(communityCode())
+            StringUtils.checkNA(model?.email),
+            StringUtils.checkNA(communityCode())
         )
 
-        binding.rowEmail.tvValue.text = Utilities.checkNA(model?.email)
+        binding.rowEmail.tvValue.text = StringUtils.checkNA(model?.email)
 
         val dob = if (TextUtils.isEmpty(model?.dob)) getString(R.string.n_a) else TimeUtils.getFormattedDate(model?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         binding.rowDob.tvValue.text = dob
 
-        binding.rowGender.tvValue.text = Utilities.checkNA(model?.gender)
-        binding.rowLanguage.tvValue.text = Utilities.checkNA(model?.language)
-        binding.rowLevel.tvValue.text = Utilities.checkNA(model?.level)
+        binding.rowGender.tvValue.text = StringUtils.checkNA(model?.gender)
+        binding.rowLanguage.tvValue.text = StringUtils.checkNA(model?.language)
+        binding.rowLevel.tvValue.text = StringUtils.checkNA(model?.level)
     }
 
     private fun loadProfileImage() {
@@ -334,19 +340,20 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
     }
 
     private fun setupLevelSpinner(binding: EditProfileDialogBinding) {
-        val levels = resources.getStringArray(subject_level).toMutableList().apply { remove("All") }
-        levels.add(0, getString(R.string.select_level))
-        selectedLevel = Utilities.checkNA(model?.level)
+        val englishLevels = CoursesFilterFragment.englishValues(requireContext(), subject_level).drop(1)
+        val localizedLevels = resources.getStringArray(subject_level).drop(1)
+        val levels = listOf(getString(R.string.select_level)) + localizedLevels
+        val currentLevel = StringUtils.checkNA(model?.level)
+        val levelIndex = englishLevels.indexOf(currentLevel).takeIf { it >= 0 } ?: localizedLevels.indexOf(currentLevel)
+        selectedLevel = englishLevels.getOrElse(levelIndex) { "" }
         val levelAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item_profile, levels)
         levelAdapter.setDropDownViewResource(R.layout.spinner_item_profile)
         binding.level.adapter = levelAdapter
-
-        val levelPosition = levels.indexOf(selectedLevel)
-        if (levelPosition > 0) binding.level.setSelection(levelPosition) else binding.level.setSelection(0)
+        binding.level.setSelection(levelIndex + 1)
 
         binding.level.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                selectedLevel = if (position == 0) "" else levels[position]
+                selectedLevel = englishLevels.getOrElse(position - 1) { "" }
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -354,9 +361,11 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
     }
 
     private fun setupGender(binding: EditProfileDialogBinding) {
-        when (model?.gender?.lowercase(Locale.US)) {
+        selectedGender = model?.gender?.takeIf { it.isNotBlank() }
+        when (selectedGender?.lowercase(Locale.US)) {
             "male" -> binding.rbMale.isChecked = true
             "female" -> binding.rbFemale.isChecked = true
+            "other" -> binding.rbOther.isChecked = true
         }
     }
 
@@ -403,6 +412,7 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
             selectedGender = when {
                 binding.rbMale.isChecked -> "male"
                 binding.rbFemale.isChecked -> "female"
+                binding.rbOther.isChecked -> "other"
                 else -> selectedGender
             }
 
@@ -449,7 +459,7 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
                 binding.dateOfBirth.error = getString(R.string.compulsory_date_of_birth)
                 false
             }
-            binding.rdGender.checkedRadioButtonId == -1 -> {
+            binding.rdGender.checkedRadioButtonId == -1 && selectedGender == null -> {
                 Snackbar.make(binding.root, getString(R.string.gender_not_picked), Snackbar.LENGTH_SHORT).show()
                 false
             }
@@ -463,17 +473,17 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
         binding.guestPill.visibility = if (isGuest) View.VISIBLE else View.GONE
     }
 
-    private fun communityCode(): String? {
+    private fun communityCode(): String {
         return model?.planetCode?.takeIf { it.isNotBlank() } ?: viewModel.connectedCommunityCode.value
     }
 
     private fun createStatsMap(): LinkedHashMap<String, String?> {
         return linkedMapOf(
-            getString(R.string.community_name) to Utilities.checkNA(communityCode()),
-            getString(R.string.last_login) to viewModel.lastVisit.value?.let { TimeUtils.getRelativeTime(it, timeProvider) },
+            getString(R.string.community_name) to StringUtils.checkNA(communityCode()),
+            getString(R.string.last_login) to viewModel.lastVisit.value?.let { TimeUtils.getRelativeTime(requireContext(), it, timeProvider) },
             getString(R.string.total_visits_overall) to viewModel.offlineVisits.value.toString(),
-            getString(R.string.most_opened_resource) to Utilities.checkNA(viewModel.maxOpenedResource.value),
-            getString(R.string.number_of_resources_opened) to Utilities.checkNA(viewModel.numberOfResourceOpen.value)
+            getString(R.string.most_opened_resource) to StringUtils.checkNA(viewModel.maxOpenedResource.value),
+            getString(R.string.number_of_resources_opened) to StringUtils.checkNA(viewModel.numberOfResourceOpen.value)
         )
     }
 
@@ -540,5 +550,9 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
         editProfileDialog?.dismiss()
         editProfileDialog = null
         super.onDestroyView()
+    }
+
+    private companion object {
+        const val KEY_PHOTO_URI = "photo_uri"
     }
 }

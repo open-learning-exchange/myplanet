@@ -18,7 +18,7 @@ interface RatingsRepository {
     ): RatingSummary
     suspend fun insertRatingsFromSync(documentList: List<JsonObject>)
     suspend fun getPendingRatingUploads(): List<org.ole.planet.myplanet.model.Rating>
-    suspend fun markRatingUploaded(id: String): Boolean
+    suspend fun markRatingUploaded(id: String, remoteId: String?, remoteRev: String?): Boolean
 }
 
 data class RatingEntry(

@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.ui.enterprises
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,19 +18,22 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.repository.TeamsFinancesRepository
+import org.ole.planet.myplanet.utils.AttachmentReader
+import org.ole.planet.myplanet.utils.UriAttachment
 
 data class FinanceSummaryUiState(
-    val debit: Int = 0,
-    val credit: Int = 0,
-    val total: Int = 0,
+    val debit: Double = 0.0,
+    val credit: Double = 0.0,
+    val total: Double = 0.0,
     val isCautionVisible: Boolean = false
 ) {
     companion object {
         fun from(transactions: List<Transaction>): FinanceSummaryUiState {
-            var debit = 0
-            var credit = 0
+            var debit = 0.0
+            var credit = 0.0
             for (transaction in transactions) {
                 if ("credit".equals(transaction.type, ignoreCase = true)) {
                     credit += transaction.amount
@@ -49,7 +54,9 @@ data class FinanceSummaryUiState(
 
 @HiltViewModel
 class EnterprisesFinancesViewModel @Inject constructor(
-    private val teamsRepository: TeamsFinancesRepository
+    private val teamsRepository: TeamsFinancesRepository,
+    @ApplicationScope private val appScope: CoroutineScope,
+    private val attachmentReader: AttachmentReader
 ) : ViewModel() {
 
     private val _transactions = MutableStateFlow<List<Transaction>>(emptyList())
@@ -104,26 +111,36 @@ class EnterprisesFinancesViewModel @Inject constructor(
         teamId: String,
         type: String,
         note: String,
-        amount: Int,
+        amount: Double,
         date: Long,
         parentCode: String?,
         planetCode: String?,
-        imageName: String?,
-        imageData: ByteArray?
+        imageUri: Uri? = null,
+        imageName: String? = null,
+        imageData: ByteArray? = null
     ) {
-        viewModelScope.launch {
-            val result = teamsRepository.createTransaction(
-                teamId = teamId,
-                type = type,
-                note = note,
-                amount = amount,
-                date = date,
-                parentCode = parentCode,
-                planetCode = planetCode,
-                imageName = imageName,
-                imageData = imageData
-            )
-            _transactionCreated.emit(result)
+        appScope.launch {
+            try {
+                val (resolvedName, resolvedData) = if (imageUri != null) {
+                    attachmentReader.read(imageUri)
+                } else {
+                    UriAttachment(imageName, imageData)
+                }
+                val result = teamsRepository.createTransaction(
+                    teamId = teamId,
+                    type = type,
+                    note = note,
+                    amount = amount,
+                    date = date,
+                    parentCode = parentCode,
+                    planetCode = planetCode,
+                    imageName = resolvedName,
+                    imageData = resolvedData
+                )
+                _transactionCreated.emit(result)
+            } catch (e: Exception) {
+                _transactionCreated.emit(Result.failure(e))
+            }
         }
     }
 }

@@ -3,9 +3,10 @@ package org.ole.planet.myplanet.repository
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.google.gson.Gson
-import io.mockk.coEvery
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -20,6 +21,7 @@ import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.robolectric.RobolectricTestRunner
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class TeamChatBadgeIntegrationTest {
 
@@ -41,7 +43,7 @@ class TeamChatBadgeIntegrationTest {
         val plainGson = Gson()
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val sharedPrefManager = SharedPrefManager(context, Gson())
-        val testDispatcher = kotlinx.coroutines.test.UnconfinedTestDispatcher()
+        val testDispatcher = UnconfinedTestDispatcher()
         voicesRepository = VoicesRepositoryImpl(
             TestDispatcherProvider(testDispatcher),
             Gson(),
@@ -49,20 +51,19 @@ class TeamChatBadgeIntegrationTest {
             sharedPrefManager,
             newsDao,
             database.newsLogDao(),
+            database.removedLogDao(),
         )
 
         val userRepository = dagger.Lazy { mockk<UserRepository>(relaxed = true) }
         val teamsRepository = dagger.Lazy { mockk<TeamsNotificationsRepository>(relaxed = true) }
-        val teamTaskDao = mockk<org.ole.planet.myplanet.data.room.dao.TeamTaskDao>(relaxed = true)
-        coEvery { teamTaskDao.getTasksForUserBetween(any(), any(), any()) } returns emptyList()
         notificationsRepository = NotificationsRepositoryImpl(
             userRepository,
             teamsRepository,
             TestTimeProvider(),
             teamNotificationDao,
             mockk(relaxed = true),
-            teamTaskDao,
             voicesRepository,
+            mockk(relaxed = true),
         )
     }
 
@@ -103,7 +104,7 @@ class TeamChatBadgeIntegrationTest {
         assertFalse(before[teamId]?.hasChat == true)
 
         // Opening the feed writes the watermark = number of top-level posts shown (1).
-        notificationsRepository.updateTeamNotification(teamId, voicesRepository.getFilteredNews(teamId))
+        notificationsRepository.updateTeamNotification(teamId, voicesRepository.getFilteredNews(teamId).size)
 
         // No new posts since → chatCount equals the watermark → badge cleared.
         val after = notificationsRepository.getTeamNotifications(listOf(teamId), "user1")
@@ -116,7 +117,7 @@ class TeamChatBadgeIntegrationTest {
 
         val first = topLevel(viewableBy = "teams", viewableId = teamId)
         newsDao.upsertAll(listOf(first))
-        notificationsRepository.updateTeamNotification(teamId, voicesRepository.getFilteredNews(teamId))
+        notificationsRepository.updateTeamNotification(teamId, voicesRepository.getFilteredNews(teamId).size)
 
         assertFalse(notificationsRepository.getTeamNotifications(listOf(teamId), "user1")[teamId]?.hasChat == true)
 
@@ -131,7 +132,7 @@ class TeamChatBadgeIntegrationTest {
         val teamId = "teamC"
         val root = topLevel(viewIn = "[{\"_id\":\"$teamId\",\"section\":\"teams\"}]")
         newsDao.upsertAll(listOf(root))
-        notificationsRepository.updateTeamNotification(teamId, voicesRepository.getFilteredNews(teamId))
+        notificationsRepository.updateTeamNotification(teamId, voicesRepository.getFilteredNews(teamId).size)
 
         newsDao.upsertAll(listOf(replyTo(root, viewIn = "[{\"_id\":\"$teamId\",\"section\":\"teams\"}]")))
         val result = notificationsRepository.getTeamNotifications(listOf(teamId), "user1")

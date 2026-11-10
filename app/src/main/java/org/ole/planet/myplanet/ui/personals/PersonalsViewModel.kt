@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.repository.PersonalUpdate
+import org.ole.planet.myplanet.repository.PersonalUploadResult
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
@@ -43,7 +44,12 @@ class PersonalsViewModel @Inject constructor(
             _uploadState.value = UploadState.Loading
             try {
                 val result = personalsRepository.uploadPersonal(personal)
-                _uploadState.value = UploadState.Success(result)
+                _uploadState.value = when (result) {
+                    is PersonalUploadResult.Success,
+                    is PersonalUploadResult.AlreadyUploaded -> UploadState.Success(result.message)
+                    is PersonalUploadResult.DocumentFailed,
+                    is PersonalUploadResult.AttachmentFailed -> UploadState.Error(result.message)
+                }
             } catch (e: Exception) {
                 _uploadState.value = UploadState.Error(e.message ?: "Upload failed")
             }

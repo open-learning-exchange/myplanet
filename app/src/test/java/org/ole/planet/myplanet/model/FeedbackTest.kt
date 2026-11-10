@@ -1,40 +1,45 @@
 package org.ole.planet.myplanet.model
 
-import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
-import io.mockk.unmockkAll
+import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.verify
-import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 class FeedbackTest {
 
-    @Before
-    fun setup() {
-        mockkStatic(TextUtils::class)
-        every { TextUtils.isEmpty(any()) } answers {
-            val str = firstArg<CharSequence?>()
-            str == null || str.length == 0
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkObject(NetworkUtils)
         }
-        mockkObject(NetworkUtils)
-        every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkObject(NetworkUtils)
+        }
     }
 
-    @After
-    fun tearDown() {
-        unmockkAll()
+    @Before
+    fun setup() {
+        clearAllMocks(answers = false, childMocks = false)
+        every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
     }
 
     @Test
@@ -184,10 +189,14 @@ class FeedbackTest {
             }
         }
 
-        val jsonObject = Feedback.serializeFeedback(feedback)
+        try {
+            val jsonObject = Feedback.serializeFeedback(feedback)
 
-        // When an exception is thrown, the "messages" property is not added
-        assertNull(jsonObject.get("messages"))
+            // When an exception is thrown, the "messages" property is not added
+            assertNull(jsonObject.get("messages"))
+        } finally {
+            unmockkStatic(JsonParser::class)
+        }
     }
 
     @Test

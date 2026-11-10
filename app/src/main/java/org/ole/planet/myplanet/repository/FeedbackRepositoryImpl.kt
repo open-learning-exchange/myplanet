@@ -15,30 +15,19 @@ import org.ole.planet.myplanet.utils.distinctByContent
 
 @Singleton
 class FeedbackRepositoryImpl @Inject constructor(
-    private val feedbackDao: FeedbackDao,
-    private val gson: Gson,
-    private val timeProvider: TimeProvider
+    private val feedbackDao: FeedbackDao, private val gson: Gson, private val timeProvider: TimeProvider
 ) : FeedbackRepository, FeedbackSyncWriter {
 
     override suspend fun createAndSaveFeedback(
-        user: String?,
-        urgent: String,
-        type: String,
-        message: String,
-        item: String?,
-        state: String?,
+        user: String?, urgent: String, type: String, message: String, item: String?,
+        state: String?
     ) {
         val feedback = createFeedback(user, urgent, type, message, item, state)
         saveFeedback(feedback)
     }
 
     fun createFeedback(
-        user: String?,
-        urgent: String,
-        type: String,
-        message: String,
-        item: String?,
-        state: String?,
+        user: String?, urgent: String, type: String, message: String, item: String?, state: String?
     ): Feedback {
         val feedback = Feedback()
         feedback.id = UUID.randomUUID().toString()
@@ -115,32 +104,31 @@ class FeedbackRepositoryImpl @Inject constructor(
         feedbackDao.upsert(feedback)
     }
 
-    suspend fun insertFromJson(jsonObject: JsonObject) {
-        val id = GsonUtils.getString("_id", jsonObject)
-        val existing = feedbackDao.findById(id)
-        feedbackDao.upsert(mapToFeedback(jsonObject, existing, id))
-    }
-
     override suspend fun insertFeedbackList(jsonObjects: List<JsonObject>) {
         val ids = jsonObjects.map { GsonUtils.getString("_id", it) }
-        val existingById = feedbackDao.getByIds(ids).associateBy { it.id }
+        val rows = (feedbackDao.getByIds(ids) + feedbackDao.getByRemoteIds(ids)).distinctBy { it.id }
+        val existingByRemoteId = rows.groupBy { it._id ?: it.id }.mapValues { (remoteId, matches) ->
+            matches.firstOrNull { !it.isUploaded } ?: matches.firstOrNull { it.id != remoteId } ?: matches.first()
+        }
+        val duplicateIds = rows.filter { it.id != existingByRemoteId[it._id ?: it.id]?.id }.map { it.id }
+        if (duplicateIds.isNotEmpty()) feedbackDao.deleteByIds(duplicateIds)
         feedbackDao.upsertAll(
-            jsonObjects.zip(ids) { json, id -> mapToFeedback(json, existingById[id], id) }
+            jsonObjects.zip(ids) { json, id -> mapToFeedback(json, existingByRemoteId[id], id) }
         )
     }
 
-    override suspend fun markFeedbackUploaded(id: String): Boolean {
-        return feedbackDao.markUploaded(id) > 0
+    override suspend fun markFeedbackUploaded(id: String, remoteId: String, remoteRev: String): Boolean {
+        return feedbackDao.markUploaded(id, remoteId, remoteRev) > 0
     }
 
     private fun mapToFeedback(act: JsonObject, existing: Feedback?, idStr: String): Feedback {
-        val hasPendingLocalReply = existing?.isUploaded == false
+        val hasPendingLocalChange = existing?.isUploaded == false
         return Feedback().apply {
-            id = idStr
+            id = existing?.id ?: idStr
             _id = idStr
             title = GsonUtils.getString("title", act)
             source = GsonUtils.getString("source", act)
-            status = GsonUtils.getString("status", act)
+            status = if (hasPendingLocalChange && existing.status == "Closed") existing.status else GsonUtils.getString("status", act)
             priority = GsonUtils.getString("priority", act)
             owner = GsonUtils.getString("owner", act)
             openTime = GsonUtils.getLong("openTime", act)
@@ -150,7 +138,7 @@ class FeedbackRepositoryImpl @Inject constructor(
             item = GsonUtils.getString("item", act)
             state = GsonUtils.getString("state", act)
             _rev = GsonUtils.getString("_rev", act)
-            if (hasPendingLocalReply) {
+            if (hasPendingLocalChange) {
                 messages = existing.messages
                 isUploaded = false
             } else {

@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.DashboardProfile
-import org.ole.planet.myplanet.model.MemberInfo
+import org.ole.planet.myplanet.model.LearnerRegistrationInfo
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
 
@@ -20,14 +20,12 @@ data class ProfileFieldsUpdate(
     val age: String? = null
 )
 
-interface UserRepository : UserAchievementsRepository {
+interface UserRepository : UserAchievementsRepository, UserReadRepository {
     suspend fun getSavedUsers(): List<User>
     suspend fun upsertSavedUser(name: String?, encryptedPassword: String?, source: String, userProfile: String?, userName: String?)
     suspend fun resetGuestAsMember(username: String?)
 
-    suspend fun getUserById(userId: String): UserEntity?
     suspend fun getDashboardProfile(userId: String): DashboardProfile
-    suspend fun getUsersByIds(userIds: List<String>): List<UserEntity>
     suspend fun getUserByAnyId(id: String): UserEntity?
     suspend fun getUserByName(name: String): UserEntity?
     suspend fun findUserByName(name: String): UserEntity?
@@ -75,13 +73,12 @@ interface UserRepository : UserAchievementsRepository {
         update: ProfileFieldsUpdate
     )
 
-    suspend fun createMember(user: MemberInfo): Pair<Boolean, String>
+    suspend fun createMember(user: LearnerRegistrationInfo): Pair<Boolean, String>
 
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
 
     suspend fun getCurrentUserId(): String?
     suspend fun getConnectedCommunityCode(): String
-    suspend fun getUserModel(): UserEntity?
     suspend fun getUserProfile(): UserEntity?
     suspend fun getUserImageUrl(): String?
     suspend fun getActiveUserIdSuspending(): String

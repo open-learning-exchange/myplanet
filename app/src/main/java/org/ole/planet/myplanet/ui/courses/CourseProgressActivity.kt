@@ -8,6 +8,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityCourseProgressBinding
 import org.ole.planet.myplanet.model.CourseProgressData
+import org.ole.planet.myplanet.model.toStepCells
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -49,6 +50,6 @@ class CourseProgressActivity : BaseActivity() {
         )
         val adapter = ProgressGridAdapter(this)
         binding.rvProgress.adapter = adapter
-        adapter.submitList(data.steps.map { it.asJsonObject })
+        adapter.submitList(data.toStepCells())
     }
 }

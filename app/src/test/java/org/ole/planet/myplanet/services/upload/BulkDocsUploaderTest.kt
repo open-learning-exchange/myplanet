@@ -8,10 +8,12 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.repository.UploadRepository
@@ -129,5 +131,19 @@ class BulkDocsUploaderTest {
         ) { item, outcome -> outcomes[item] = outcome }
 
         assertEquals(setOf("a"), outcomes.keys)
+    }
+
+    @Test
+    fun `upload rethrows cancellation instead of reporting RequestFailed`() = runTest {
+        val docA = JsonObject().apply { addProperty("id", "a") }
+        coEvery { uploadRepository.postUploadArray(url, any()) } throws CancellationException("worker stopped")
+        var calls = 0
+
+        val thrown = runCatching {
+            BulkDocsUploader.upload(uploadRepository, url, listOf("a" to docA)) { _, _ -> calls++ }
+        }.exceptionOrNull()
+
+        assertTrue(thrown is CancellationException)
+        assertEquals(0, calls)
     }
 }

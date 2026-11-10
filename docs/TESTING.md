@@ -145,13 +145,10 @@ Pin only when the assertion depends on the level, and say why in a comment so th
 | 26 (`O`) | `utils/NotificationUtilsTest.kt`, `utils/VersionUtilsTest.kt` (one method), `repository/TeamsRepositoryBulkInsertTransactionTest.kt` | notification channels exist only from `O`; the repository test needs to sit below `S` so `processDescription` short-circuits instead of reaching for `MainApplication.context` |
 | 27 (`O_MR1`) | `utils/SecurePrefsTest.kt` | keystore-backed prefs path |
 | 28 (`P`) | `utils/VersionUtilsTest.kt` (one method) | `VersionUtils` branches on `SDK_INT >= P` |
-| 32 | `data/room/dao/CourseDaoTest.kt`, `data/room/dao/ExamDaoTest.kt`, `ui/resources/ResourcesAdapterTest.kt`, `ui/resources/ResourcesFilterFragmentTest.kt`, `ui/enterprises/EnterprisesReportsFragmentTest.kt` | no reason stated in any of the five |
-| 33 | `ui/chat/ChatAdapterTest.kt` | no reason stated |
-| 34 (`UPSIDE_DOWN_CAKE`) | `services/DownloadServiceTest.kt`, `services/DownloadServiceOnDownloadCompleteTest.kt`, `services/DownloadServiceResumeTest.kt`, `ui/life/LifeAdapterTest.kt`, `ui/sync/ServerAddressAdapterTest.kt`, `ui/voices/VoicesActionsTest.kt` | the three `DownloadService` classes assert the API-gated foreground-service/worker branches; the three UI ones state no reason |
 
-The suite therefore needs sandboxes at 26, 27, 28, 32, 33, 34 and the default 36. Two things follow from that table: `robolectricSdkJars` in `app/build.gradle` still stages 30 and 31, which nothing pins any more, and the nine pins marked "no reason stated" are the ones to try deleting first — each is a sandbox per fork bought for an unrecorded reason.
+The suite therefore needs sandboxes at 26, 27, 28 and the default 36.
 
-`DownloadServiceTest` shows the cheaper shape when one class covers several levels: pin the class once (34) and drive the individual branches with `ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", …)`, which costs one sandbox instead of three.
+`DownloadServiceTest` shows the cheaper shape when one class covers several levels: run on the default SDK and drive the individual branches with `ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", …)`.
 
 ### ViewModels
 
@@ -319,29 +316,84 @@ Reference: `services/retry/RetryQueueWorkerTest.kt`
 
 ```kotlin
 class RetryQueueWorkerTest {
-    @MockK(relaxed = true) lateinit var workManagerImpl: WorkManagerImpl
-    @MockK(relaxed = true) lateinit var context: MainApplication
-    @MockK lateinit var workerParams: WorkerParameters
-    @MockK lateinit var retryQueue: RetryQueue
-    @MockK lateinit var apiInterface: ApiInterface
+
+    @MockK(relaxed = true)
+    lateinit var workManagerImpl: WorkManagerImpl
+
+    @MockK(relaxed = true)
+    lateinit var context: MainApplication
+
+    @MockK
+    lateinit var workerParams: WorkerParameters
+
+    @MockK
+    lateinit var retryRepository: RetryRepository
+
+    @MockK
+    lateinit var syncManager: SyncManager
+
+    private lateinit var worker: RetryQueueWorker
+
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkStatic(Log::class)
+            mockkStatic(WorkManagerImpl::class)
+            mockkStatic(WorkManager::class)
+            mockkObject(MainApplication)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkAll()
+        }
+    }
 
     @Before
     fun setUp() {
         MockKAnnotations.init(this, relaxed = true)
-        mockkStatic(Log::class)
+
         every { Log.d(any<String>(), any<String>()) } returns 0
-        // ... stub other Log levels the same way ...
-        mockkStatic(WorkManagerImpl::class)
+        every { Log.i(any<String>(), any<String>()) } returns 0
+        every { Log.w(any<String>(), any<String>()) } returns 0
+        every { Log.e(any<String>(), any<String>()) } returns 0
+        every { Log.e(any<String>(), any<String>(), any<Throwable>()) } returns 0
+
+        every { context.applicationContext } returns context
         every { WorkManagerImpl.getInstance(any()) } returns workManagerImpl
-        mockkStatic(WorkManager::class)
+        every { WorkManager.getInstance(any()) } returns workManagerImpl
+        every { syncManager.isMainSyncActive() } returns false
+
+        worker = RetryQueueWorker(context, workerParams, retryRepository, syncManager)
     }
 
     @After
-    fun tearDown() = unmockkAll()
+    fun tearDown() {
+        clearAllMocks(answers = false, childMocks = false)
+    }
 }
 ```
 
-`mockkStatic(Log::class)` plus stubbing each `Log.d/i/w/e` overload is needed whenever the class under test logs — otherwise the JVM has no `android.util.Log` implementation and the test crashes. Copy that block whenever `Log.*` calls are reachable.
+Understanding `clearAllMocks()` behavior:
+- `clearAllMocks(answers = false)` preserves stubs and only clears recorded call counts, making it safe to run in `@After` without wiping stubs.
+- Default `clearAllMocks()` clears both recorded calls and stubs. When used in `@Before`, any per-test stubs must be re-installed afterwards.
+
+Note on `Log`: `Log` mocking is not required to avoid crashes because `returnDefaultValues = true` (`app/build.gradle:22`) makes `android.util.Log` calls return default values on the JVM. Mock `Log` only when the test explicitly asserts a log call (see `services/NotificationActionReceiverTest.kt:189-204` for an example using scoped `mockkStatic(Log::class)` and `verify`).
+
+### Mock once per class
+
+Calling `mockkStatic` or `mockkObject` inside `@Before` re-instruments the target class before every test method. Prefer mocking static methods and singleton objects once per class using companion `@BeforeClass` and `@AfterClass` methods.
+
+Real codebase examples using this pattern:
+- `services/retry/RetryQueueWorkerTest.kt:63-78` (`@BeforeClass` mocks `Log`, `WorkManagerImpl`, `WorkManager`, and `MainApplication`; `@AfterClass` calls `unmockkAll()`, and `@After` uses `clearAllMocks(answers = false, childMocks = false)`)
+- `services/DownloadServiceTest.kt:60-76` (`@BeforeClass` mocks `ContextCompat`, `DownloadUtils`, and `Log`), using default `clearAllMocks()` in `@Before` at `:83` and re-installing stubs at `:86-90`
+- `services/upload/UploadConfigsTest.kt:47-61` (`@BeforeClass` mocks `VersionUtils` and `NetworkUtils`), using default `clearAllMocks()` in `@Before` at `:65` and re-installing stubs at `:67-71`
+- `services/NotificationActionReceiverTest.kt:55-69` (`@BeforeClass` mocks `NotificationUtils` and `ServiceDependenciesEntryPointKt`), using default `clearAllMocks()` in `@Before` at `:73`
+- `base/BasePermissionActivityTest.kt:26-40` (`@BeforeClass` mocks `ContextCompat` and `Process`), using default `clearAllMocks()` in `@Before` at `:44` and re-installing stubs at `:45-50`
+
+When a static mock is needed for only a single test method, scope `mockkStatic` inside a `try ... finally` block that calls `unmockkStatic` in `finally`, as shown in `utils/UrlUtilsTest.kt:53`.
 
 ### Adapters (`RecyclerView.Adapter` / `ListAdapter`)
 
@@ -451,7 +503,7 @@ The workflow also fails the job if a jar turns up in Robolectric's own runtime c
 | Real SQL / Converters / transactions | `data/room/AppDatabaseRoundTripTest.kt`, `data/room/dao/NewsDaoTest.kt` | Robolectric + `Room.inMemoryDatabaseBuilder` |
 | Transaction atomicity in a repository | `repository/TeamsRepositoryBulkInsertTransactionTest.kt` | In-memory Room + `withTransaction` verification |
 | Entity with role/permission logic | `model/UserEntityTest.kt` | Plain construction; `mockkObject(Utilities)` + `MainApplication.testContext` for side effects |
-| `CoroutineWorker` / WorkManager scheduling | `services/retry/RetryQueueWorkerTest.kt` | `mockkStatic(WorkManager::class)`, mock `Log.*` |
+| `CoroutineWorker` / WorkManager scheduling | `services/retry/RetryQueueWorkerTest.kt` | `mockkStatic(WorkManager::class)` in `@BeforeClass`, `clearAllMocks()` per test |
 | `RecyclerView`/`ListAdapter` | `ui/events/EventsAdapterTest.kt` | `RobolectricTestRunner` + MockK (avoid the Mockito legacy files) |
 | Abstract base class | `base/BaseRecyclerFragmentTest.kt` | Minimal private test subclass implementing only the abstract members |
 | Pure Kotlin utility | `utils/TimeUtilsTest.kt`, `utils/GsonUtilsTest.kt` | Plain JUnit, no `@RunWith` |
@@ -468,9 +520,9 @@ The workflow also fails the job if a jar turns up in Robolectric's own runtime c
 
 **Don't introduce new Mockito usage.** Five legacy files use it (listed under [Libraries in Use](#libraries-in-use)); the other 179 mocking files use MockK. Use MockK for anything new.
 
-**Don't forget `mockkStatic(Log::class)` (and stub each level) when the code under test logs.** Otherwise the test crashes calling into the real `android.util.Log`, which doesn't exist on the JVM.
+**Don't mock `Log` unless asserting log calls.** `returnDefaultValues = true` in `app/build.gradle` allows `android.util.Log` calls to return default values without throwing. Mock `Log` only when verifying specific log invocations.
 
-**Don't forget `unmockkAll()` in `tearDown()`** after any `mockkStatic`/`mockkObject` call, or static mocks leak into other tests in the same JVM process.
+**Don't forget `unmockkAll()`/`unmockkStatic()`** for statics mocked per test; class-level statics are undone once in `@AfterClass`.
 
 **Don't assert query results against a mocked DAO.** A `mockk(relaxed = true)` DAO returns whatever you stub — it doesn't run SQL. If you need to confirm a query actually filters/escapes correctly, use an in-memory Room database (see `NewsDaoTest.kt`), still inside `src/test/`.
 

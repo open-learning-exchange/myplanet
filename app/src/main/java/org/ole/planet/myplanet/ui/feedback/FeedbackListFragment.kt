@@ -45,12 +45,14 @@ class FeedbackListFragment : BaseBindingFragment<FragmentFeedbackListBinding>(Fr
         super.onViewCreated(view, savedInstanceState)
         feedbackAdapter = FeedbackAdapter()
         binding.rvFeedback.layoutManager = LinearLayoutManager(activity)
+        binding.rvFeedback.setHasFixedSize(true)
         binding.rvFeedback.adapter = feedbackAdapter
         observeFeedbackList()
     }
 
     private fun observeFeedbackList() {
         collectWhenStarted(viewModel.feedbackList) { feedbackList ->
+            if (feedbackList == null) return@collectWhenStarted
             updatedFeedbackList(feedbackList)
         }
     }

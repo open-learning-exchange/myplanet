@@ -31,7 +31,7 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 @AndroidEntryPoint
 class CalendarFragment : BaseBindingFragment<FragmentCalendarBinding>(FragmentCalendarBinding::inflate) {
     private val viewModel: CalendarViewModel by viewModels()
-    private var meetups: List<Meetup> = emptyList()
+    private val titleFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(Locale.getDefault())
     var listener: OnHomeItemClickListener? = null
 
     override fun onAttach(context: Context) {
@@ -44,7 +44,6 @@ class CalendarFragment : BaseBindingFragment<FragmentCalendarBinding>(FragmentCa
         binding.calendarView.setDate(Date())
 
         collectWhenStarted(viewModel.meetups) { updatedMeetups ->
-            meetups = updatedMeetups
             val calendarDays = updatedMeetups.map { meetup ->
                 CalendarDay(Calendar.getInstance().apply { timeInMillis = meetup.startDate }).apply {
                     imageResource = R.drawable.ic_calendar
@@ -58,9 +57,7 @@ class CalendarFragment : BaseBindingFragment<FragmentCalendarBinding>(FragmentCa
                 val clickedDate = Instant.ofEpochMilli(calendarDay.calendar.timeInMillis)
                     .atZone(ZoneId.systemDefault())
                     .toLocalDate()
-                val dayMeetups = meetups.filter { meetup ->
-                    Instant.ofEpochMilli(meetup.startDate).atZone(ZoneId.systemDefault()).toLocalDate() == clickedDate
-                }
+                val dayMeetups = viewModel.meetupsByDate.value[clickedDate].orEmpty()
                 if (dayMeetups.isNotEmpty()) {
                     showAgendaDialog(clickedDate, dayMeetups)
                 }
@@ -70,7 +67,6 @@ class CalendarFragment : BaseBindingFragment<FragmentCalendarBinding>(FragmentCa
 
     private fun showAgendaDialog(clickedDate: LocalDate, dayMeetups: List<Meetup>) {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.calendar_agenda_dialog, null)
-        val titleFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(Locale.getDefault())
         dialogView.findViewById<TextView>(R.id.tvTitle).text = clickedDate.format(titleFormatter)
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMeetups)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())

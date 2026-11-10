@@ -7,6 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -16,18 +17,21 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Notification
 import org.ole.planet.myplanet.model.NotificationListItem
 import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.repository.NotificationsRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TaskNotificationUtils
 
 @HiltViewModel
 class NotificationsViewModel @Inject constructor(
     private val notificationsRepository: NotificationsRepository,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
@@ -65,14 +69,19 @@ class NotificationsViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private var currentFilter: String = "all"
+    private var loadJob: Job? = null
 
     fun loadNotifications(userId: String, filter: String, isAdmin: Boolean = false) {
         currentFilter = filter
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             val enrichment = notificationsRepository.getEnrichedNotifications(userId, filter, isAdmin)
-            _notifications.value = enrichment.payloads.map {
-                formatNotification(it, enrichment.taskTeamNames, enrichment.joinRequestDetails, enrichment.parsedTaskDates)
+            val formatted = withContext(dispatcherProvider.default) {
+                enrichment.payloads.map {
+                    formatNotification(it, enrichment.taskTeamNames, enrichment.joinRequestDetails, enrichment.parsedTaskDates)
+                }
             }
+            _notifications.value = formatted
             _unreadCount.value = enrichment.unreadCount
         }
     }
@@ -172,9 +181,9 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    fun markAllAsRead(userId: String) {
+    fun markAllAsRead(userId: String, isAdmin: Boolean = false) {
         viewModelScope.launch {
-            val markedIds = notificationsRepository.markAllUnreadAsRead(userId)
+            val markedIds = notificationsRepository.markAllUnreadAsRead(userId, isAdmin)
             if (markedIds.isNotEmpty()) {
                 _notifications.update { currentList ->
                     if (currentFilter == "unread") {
@@ -350,7 +359,4 @@ class NotificationsViewModel @Inject constructor(
         return notificationsRepository.getJoinRequestTeamId(relatedId)
     }
 
-    suspend fun getUnreadCount(userId: String): Int {
-        return notificationsRepository.getUnreadCount(userId)
-    }
 }

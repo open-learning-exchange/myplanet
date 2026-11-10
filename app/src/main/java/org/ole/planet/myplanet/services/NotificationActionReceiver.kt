@@ -7,10 +7,11 @@ import android.provider.Settings
 import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -27,9 +28,13 @@ class NotificationActionReceiver : BroadcastReceiver() {
     lateinit var notificationsRepository: NotificationsRepository
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
+    @Inject
+    @ApplicationScope
+    lateinit var applicationScope: CoroutineScope
+
     override fun onReceive(context: Context, intent: Intent) {
         val pendingResult = goAsync()
-        MainApplication.applicationScope.launch {
+        applicationScope.launch {
             try {
                 val action = intent.action
                 val notificationId = intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID)
@@ -71,6 +76,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
                         }
                     }
                 }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                Log.e(TAG, "broadcast work failed", e)
             } finally {
                 pendingResult.finish()
             }
@@ -91,7 +99,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
         }
 
         withContext(dispatcherProvider.main) {
-            delay(200)
             val broadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
             broadcastIntent.setPackage(context.packageName)
             broadcastIntent.putExtra("notification_id", notificationId)

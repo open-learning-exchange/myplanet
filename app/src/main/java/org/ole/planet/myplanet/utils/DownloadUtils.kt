@@ -143,35 +143,32 @@ object DownloadUtils {
         }
     }
 
+    fun queuedDownloadUrls(context: Context): Set<String> {
+        val preferences = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+        val priority = preferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+        val pending = preferences.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+        return priority + pending
+    }
+
     @RequiresApi(Build.VERSION_CODES.S)
     fun openPriorityDownloadService(context: Context?, urls: ArrayList<String>) {
-        context?.let { ctx ->
-            val preferences = ctx.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
-
-            val existingPriority = preferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
-            val mergedPriority = existingPriority.toMutableSet().apply { addAll(urls) }
-
-            preferences.edit {
-                putStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, mergedPriority)
-            }
-            startDownloadServiceSafely(ctx, DownloadService.PRIORITY_DOWNLOADS_KEY, false)
-        }
+        context?.let { enqueueUrls(it, DownloadService.PRIORITY_DOWNLOADS_KEY, urls, false) }
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
     fun openDownloadService(context: Context?, urls: ArrayList<String>, fromSync: Boolean) {
-        context?.let { ctx ->
-            val preferences = ctx.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+        context?.let { enqueueUrls(it, DownloadService.PENDING_DOWNLOADS_KEY, urls, fromSync) }
+    }
 
-            val existingUrls = preferences.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, emptySet()) ?: emptySet()
-            val mergedUrls = existingUrls.toMutableSet().apply { addAll(urls) }
-
-            preferences.edit {
-                putStringSet(DownloadService.PENDING_DOWNLOADS_KEY, mergedUrls)
-            }
-
-            startDownloadServiceSafely(ctx, DownloadService.PENDING_DOWNLOADS_KEY, fromSync)
+    @RequiresApi(Build.VERSION_CODES.S)
+    private fun enqueueUrls(context: Context, key: String, urls: Collection<String>, fromSync: Boolean) {
+        val preferences = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+        val existing = preferences.getStringSet(key, emptySet()) ?: emptySet()
+        val merged = existing.toMutableSet().apply { addAll(urls) }
+        preferences.edit {
+            putStringSet(key, merged)
         }
+        startDownloadServiceSafely(context, key, fromSync)
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
@@ -211,7 +208,6 @@ object DownloadUtils {
 
     fun canStartForegroundService(context: Context): Boolean {
         return when {
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.O -> true
             Build.VERSION.SDK_INT < Build.VERSION_CODES.S -> {
                 isAppInForeground(context)
             }
@@ -259,10 +255,4 @@ object DownloadUtils {
         }
         return links
     }
-
-
-
-
-
-
 }

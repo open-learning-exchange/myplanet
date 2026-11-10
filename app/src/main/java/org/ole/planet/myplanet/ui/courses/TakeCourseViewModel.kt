@@ -11,6 +11,7 @@ import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
@@ -28,13 +29,15 @@ sealed interface TakeCourseUiState {
         val course: MyCourse,
         val steps: List<CourseStep>,
         val userModel: UserEntity?,
-        val courseProgress: Int
+        val courseProgress: Int,
+        val blockingStepIndex: Int = -1
     ) : TakeCourseUiState
 }
 
 @HiltViewModel
 class TakeCourseViewModel @Inject constructor(
     private val coursesRepository: CoursesRepository,
+    private val activitiesRepository: ActivitiesRepository,
     private val progressRepository: ProgressRepository,
     private val userRepository: UserRepository,
     private val ratingsRepository: RatingsRepository
@@ -53,11 +56,16 @@ class TakeCourseViewModel @Inject constructor(
     }
 
     suspend fun logCourseVisit(courseId: String, courseTitle: String, userName: String) {
-        coursesRepository.logCourseVisit(courseId, courseTitle, userName)
+        activitiesRepository.logCourseVisit(courseId, courseTitle, userName)
     }
 
     suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int {
         return coursesRepository.getCurrentProgress(steps, userId, courseId)
+    }
+
+    suspend fun getBlockingStepIndex(steps: List<CourseStep?>?, userModel: UserEntity?, courseId: String?): Int {
+        progressRepository.saveEarnedExamPasses(steps, userModel?.id, userModel?.planetCode, userModel?.parentCode, courseId)
+        return progressRepository.getBlockingStepIndex(steps, userModel?.id, courseId)
     }
 
     suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData {
@@ -116,8 +124,9 @@ class TakeCourseViewModel @Inject constructor(
                 val steps = coursesRepository.getCourseSteps(courseId)
                 val progressMap = progressRepository.getCourseProgress(listOf(courseId), userModel?.id)
                 val progress = progressMap[courseId]?.current ?: 0
+                val blockingStepIndex = getBlockingStepIndex(steps, userModel, courseId)
 
-                _uiState.value = TakeCourseUiState.Success(course, steps, userModel, progress)
+                _uiState.value = TakeCourseUiState.Success(course, steps, userModel, progress, blockingStepIndex)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

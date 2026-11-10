@@ -17,6 +17,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
@@ -32,7 +33,6 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
-import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
@@ -120,6 +120,7 @@ class VoicesFragment : BaseVoicesFragment() {
             binding.btnSubmit.isEnabled = true
             if (n != null) {
                 binding.etMessage.setText(R.string.empty_text)
+                binding.tlMessage.error = null
                 binding.llAddNews.visibility = View.GONE
                 binding.btnNewVoice.text = getString(R.string.new_voice)
                 imageList.clear()
@@ -135,16 +136,21 @@ class VoicesFragment : BaseVoicesFragment() {
                 binding.tlMessage.error = getString(R.string.please_enter_message)
                 return@setOnClickListener
             }
+            val userModel = user
+            if (userModel == null) {
+                Utilities.toast(requireContext(), getString(R.string.error, "Failed to create news"))
+                return@setOnClickListener
+            }
             val map = HashMap<String?, String>()
             map["message"] = message
-            map["viewInId"] = "${user?.planetCode ?: ""}@${user?.parentCode ?: ""}"
+            map["viewInId"] = "${userModel.planetCode ?: ""}@${userModel.parentCode ?: ""}"
             map["viewInSection"] = "community"
             map["messageType"] = "sync"
-            map["messagePlanetCode"] = user?.planetCode ?: ""
+            map["messagePlanetCode"] = userModel.planetCode ?: ""
 
             binding.btnSubmit.isEnabled = false
 
-            user?.let { it1 -> voicesViewModel.createNews(map, it1, imageList.toList()) }
+            voicesViewModel.createNews(map, userModel, imageList.toList())
         }
 
         binding.addNewsImage.setOnClickListener {
@@ -244,9 +250,8 @@ class VoicesFragment : BaseVoicesFragment() {
             },
             onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope, dispatcherProvider),
             labelManager = labelManager,
-            voicesEditActions = voicesRepository,
-            leadersList = UserEntity.parseLeadersJson(sharedPrefManager.getCommunityLeaders()),
-            setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
+            voicesEditor = voicesRepository,
+            leadersList = voicesViewModel.getCommunityLeaders()
         )
         adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
         adapterNews?.setListener(this)
@@ -265,13 +270,7 @@ class VoicesFragment : BaseVoicesFragment() {
 
             val chatDetailFragment = ChatDetailFragment()
             chatDetailFragment.arguments = bundle
-
-            FragmentNavigator.replaceFragment(
-                parentFragmentManager,
-                R.id.fragment_container,
-                chatDetailFragment,
-                addToBackStack = true
-            )
+            homeItemClickListener?.openCallFragment(chatDetailFragment)
         }
     }
 
@@ -305,7 +304,7 @@ class VoicesFragment : BaseVoicesFragment() {
     @OptIn(FlowPreview::class)
     private fun setupSearchTextListener() {
         etSearch.textChanges()
-            .debounce(300)
+            .debounce(300.milliseconds)
             .onEach { text ->
                 val searchQuery = text.toString().trim()
                 voicesViewModel.updateSearchQuery(searchQuery)

@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
@@ -22,7 +23,6 @@ import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.LoginActivityData
 import org.ole.planet.myplanet.model.MyPlanet
@@ -42,6 +42,8 @@ import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.distinctByContent
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 class ActivitiesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -56,7 +58,6 @@ class ActivitiesRepositoryImpl @Inject constructor(
     private val offlineActivityDao: OfflineActivityDao,
     private val removedLogDao: RemovedLogDao,
     private val searchActivityDao: SearchActivityDao,
-    private val userDao: UserDao,
     private val deviceNameProvider: DeviceNameProvider
 ) : ActivitiesRepository {
     override suspend fun getOfflineVisitCount(userId: String): Int {
@@ -94,7 +95,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logCourseVisit(courseId: String, title: String, userId: String) {
-        val user = userDao.getByName(userId)
+        val user = userRepository.get().getUserByName(userId)
         val parentCode = user?.parentCode
         val createdOn = user?.planetCode
 
@@ -138,7 +139,10 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun logLogout(userName: String?) {
-        offlineActivityDao.getLatestByType(UserSessionManager.KEY_LOGIN)?.let { activity ->
+        val latestLogin = userName?.takeIf { it.isNotEmpty() }
+            ?.let { offlineActivityDao.getLatestByTypeAndUserName(UserSessionManager.KEY_LOGIN, it) }
+            ?: offlineActivityDao.getLatestByType(UserSessionManager.KEY_LOGIN)
+        latestLogin?.let { activity ->
             offlineActivityDao.updateLogoutTime(activity.id, timeProvider.now())
         }
     }
@@ -149,6 +153,27 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
     override suspend fun getLastVisit(userName: String): Long? {
         return offlineActivityDao.getLastVisit(userName)
+    }
+
+    override suspend fun getLastVisits(userNames: List<String>): Map<String, Long> {
+        if (userNames.isEmpty()) return emptyMap()
+        return offlineActivityDao.getLastVisits(userNames)
+            .mapNotNull { visit ->
+                val name = visit.userName ?: return@mapNotNull null
+                val time = visit.lastVisit ?: return@mapNotNull null
+                name to time
+            }
+            .toMap()
+    }
+
+    override suspend fun getOfflineVisitCounts(userIds: List<String>): Map<String, Int> {
+        if (userIds.isEmpty()) return emptyMap()
+        return offlineActivityDao.countByUserIdsAndType(userIds, UserSessionManager.KEY_LOGIN)
+            .mapNotNull { userCount ->
+                val userId = userCount.userId ?: return@mapNotNull null
+                userId to userCount.count
+            }
+            .toMap()
     }
 
     override suspend fun logResourceOpen(
@@ -224,6 +249,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
         val activities = offlineActivityDao.getByIds(ids.toList())
         activities.forEach { activity ->
             revMap[activity.id]?.let { activity.changeRev(it) }
+            activity.isUpdated = false
         }
         if (activities.isNotEmpty()) {
             offlineActivityDao.upsertAll(activities)
@@ -281,6 +307,10 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
         activity._rev = GsonUtils.getString("_rev", json)
         activity._id = serverId
+        if (activity.isUpdated) {
+            existingActivitiesMap[serverId] = activity
+            return activity
+        }
         activity.loginTime = loginTime
         activity.type = GsonUtils.getString("type", json)
         activity.userName = userName
@@ -317,10 +347,10 @@ class ActivitiesRepositoryImpl @Inject constructor(
         ob.addDocumentOrigin()
         ob.addProperty("deviceName", NetworkUtils.getDeviceName())
         ob.addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
-        if (activity._id != null) {
+        if (!activity._id.isNullOrEmpty()) {
             ob.addProperty("_id", activity._id)
         }
-        if (activity._rev != null) {
+        if (!activity._rev.isNullOrEmpty()) {
             ob.addProperty("_rev", activity._rev)
         }
         return ob
@@ -340,8 +370,8 @@ class ActivitiesRepositoryImpl @Inject constructor(
                             val `object` = semaphore.withPermit {
                                 apiInterface.postDoc(
                                     UrlUtils.header, "application/json",
-                                    "${UrlUtils.getUrl()}/login_activities", activityData.serialized
-                                ).body()
+                                    "${UrlUtils.getUrl()}/login_activities", activityData.serialized.toKotlinx().jsonObject
+                                ).body()?.toGson()
                             }
                             activityData.id to `object`
                         } catch (e: IOException) {
@@ -428,13 +458,21 @@ class ActivitiesRepositoryImpl @Inject constructor(
         return resourceActivityDao.markUploaded(localId, remoteId, rev) != 0
     }
 
+    override suspend fun recordSearchActivity(activity: SearchActivity) {
+        searchActivityDao.insert(activity)
+    }
+
+    override suspend fun getRemovedDocIds(type: String, userId: String?): List<String> {
+        return removedLogDao.getRemovedDocIds(type, userId)
+    }
+
 
     override suspend fun uploadMyPlanetActivities(userModel: UserEntity) {
         apiInterface.postDoc(
             UrlUtils.header,
             "application/json",
             "${UrlUtils.getUrl()}/myplanet_activities",
-            MyPlanet.getNormalMyPlanetActivities(context, sharedPrefManager, userModel)
+            MyPlanet.getNormalMyPlanetActivities(context, sharedPrefManager, userModel).toKotlinx().jsonObject
         )
 
         val response = apiInterface.getJsonObject(
@@ -442,7 +480,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
             "${UrlUtils.getUrl()}/myplanet_activities/${org.ole.planet.myplanet.utils.VersionUtils.getAndroidId(context)}@${NetworkUtils.getUniqueIdentifier()}"
         )
 
-        var `object` = response.body()
+        var `object` = response.body()?.toGson()
 
         if (`object` != null) {
             val usages = `object`.getAsJsonArray("usages")
@@ -461,7 +499,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
             UrlUtils.header,
             "application/json",
             "${UrlUtils.getUrl()}/myplanet_activities",
-            `object`
+            `object`.toKotlinx().jsonObject
         )
     }
 }

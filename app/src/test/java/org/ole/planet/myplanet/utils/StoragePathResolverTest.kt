@@ -5,6 +5,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
+import java.io.File
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -25,6 +26,25 @@ class StoragePathResolverTest {
     @After
     fun tearDown() {
         unmockkObject(FileUtils)
+    }
+
+    @Test
+    fun `resolveExternalFilesDir delegates to FileUtils getExternalFilesDir returning File`() {
+        val expectedFile = File("/storage/emulated/0/Android/data/org.ole.planet.myplanet/files")
+        every { FileUtils.getExternalFilesDir(context) } returns expectedFile
+
+        val actual = resolver.resolveExternalFilesDir()
+
+        assertEquals(expectedFile, actual)
+    }
+
+    @Test
+    fun `resolveExternalFilesDir delegates to FileUtils getExternalFilesDir returning null`() {
+        every { FileUtils.getExternalFilesDir(context) } returns null
+
+        val actual = resolver.resolveExternalFilesDir()
+
+        assertNull(actual)
     }
 
     @Test

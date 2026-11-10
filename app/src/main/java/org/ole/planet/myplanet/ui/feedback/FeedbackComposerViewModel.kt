@@ -12,12 +12,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.repository.FeedbackRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 
 @HiltViewModel
 class FeedbackComposerViewModel @Inject constructor(
     private val feedbackRepository: FeedbackRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserReadRepository
 ) : ViewModel() {
 
     sealed interface SubmitEvent {

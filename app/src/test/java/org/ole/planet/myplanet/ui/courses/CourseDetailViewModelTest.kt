@@ -1,10 +1,9 @@
 package org.ole.planet.myplanet.ui.courses
 
-import android.content.Context
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.CoroutineDispatcher
+import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -24,8 +23,8 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
+import org.ole.planet.myplanet.utils.StoragePathResolver
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CourseDetailViewModelTest {
@@ -37,36 +36,21 @@ class CourseDetailViewModelTest {
 
     private val coursesRepository: CoursesRepository = mockk()
     private val ratingsRepository: RatingsRepository = mockk()
-    private val dispatcherProvider = object : DispatcherProvider {
-        override val main: CoroutineDispatcher = testDispatcher
-        override val mainImmediate: CoroutineDispatcher = testDispatcher
-        override val io: CoroutineDispatcher = testDispatcher
-        override val default: CoroutineDispatcher = testDispatcher
-        override val unconfined: CoroutineDispatcher = testDispatcher
-    }
 
-    private val context: Context = mockk(relaxed = true)
+    private val storagePathResolver: StoragePathResolver = mockk()
 
     private lateinit var viewModel: CourseDetailViewModel
-    private lateinit var courseDetailProvider: CourseDetailProvider
-    private lateinit var ratingSummaryProvider: RatingSummaryProvider
 
     private val courseId = "course_1"
 
     @Before
     fun setUp() {
-        every { context.getExternalFilesDir(null) } returns null
-
-        courseDetailProvider = CourseDetailProvider(coursesRepository)
-
-        ratingSummaryProvider = RatingSummaryProvider(
-            ratingsRepository
-        )
+        every { storagePathResolver.resolveExternalFilesDir() } returns null
 
         viewModel = CourseDetailViewModel(
-            context,
-            courseDetailProvider,
-            ratingSummaryProvider
+            storagePathResolver,
+            coursesRepository,
+            ratingsRepository
         )
     }
 
@@ -102,6 +86,38 @@ class CourseDetailViewModelTest {
         }
         every { coursesRepository.getCourseDetailModel(courseId) } returns flowOf(model)
         every { coursesRepository.getCourseByCourseIdFlow(courseId) } returns flowOf(course)
+    }
+
+    @Test
+    fun loadCourseDetail_whenResolverReturnsFile_usesFileInMarkdownDescription() = runTest {
+        every { storagePathResolver.resolveExternalFilesDir() } returns File("/x")
+        val course = MyCourse().apply {
+            courseId = this@CourseDetailViewModelTest.courseId
+            description = "![image](img.png)"
+        }
+        stubCourseLoad(course = course)
+
+        viewModel.loadCourseDetail(courseId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as CourseDetailUiState.Success
+        assertTrue(state.markdownDescription.contains("file:///x/ole/"))
+    }
+
+    @Test
+    fun loadCourseDetail_whenResolverReturnsNull_usesNullInMarkdownDescription() = runTest {
+        every { storagePathResolver.resolveExternalFilesDir() } returns null
+        val course = MyCourse().apply {
+            courseId = this@CourseDetailViewModelTest.courseId
+            description = "![image](img.png)"
+        }
+        stubCourseLoad(course = course)
+
+        viewModel.loadCourseDetail(courseId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as CourseDetailUiState.Success
+        assertTrue(state.markdownDescription.contains("file://null/ole/"))
     }
 
     @Test

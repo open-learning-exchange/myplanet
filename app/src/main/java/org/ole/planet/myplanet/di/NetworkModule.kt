@@ -16,12 +16,14 @@ import javax.inject.Qualifier
 import javax.inject.Singleton
 import javax.net.SocketFactory
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import okhttp3.ConnectionPool
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
+import org.ole.planet.myplanet.data.api.AllowlistFactory
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.api.RetryInterceptor
-import org.ole.planet.myplanet.data.api.AllowlistFactory
 import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.MyPlanet
@@ -91,7 +93,9 @@ object NetworkModule {
     private val kotlinxHandledTypes: Set<Type> = setOf(
         MyPlanet::class.java,
         ChatResponse::class.java,
-        DocumentResponse::class.java
+        DocumentResponse::class.java,
+        JsonObject::class.java,
+        JsonArray::class.java
     )
 
     private const val MAX_REQUESTS_PER_HOST = 20

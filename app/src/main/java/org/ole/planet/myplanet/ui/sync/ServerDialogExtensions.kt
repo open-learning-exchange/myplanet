@@ -238,7 +238,7 @@ fun SyncActivity.initServerDialog(binding: DialogServerUrlBinding) {
     serverPassword = binding.inputServerPassword
     serverAddresses = binding.serverUrls
     syncToServerText = binding.syncToServerText
-    binding.deviceName.setText(NetworkUtils.getDeviceName())
+    binding.deviceName.setText(prefData.getCustomDeviceName().ifEmpty { NetworkUtils.getDeviceName() })
 }
 
 fun SyncActivity.setRadioProtocolListener(binding: DialogServerUrlBinding) {

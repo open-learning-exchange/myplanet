@@ -11,6 +11,7 @@ import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkObject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
@@ -21,6 +22,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.NewsDao
@@ -40,9 +42,9 @@ class VoicesRepositoryImplTest {
     private val testScope = TestScope(testDispatcher)
     private val gson: Gson = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
-    private val userRepository: UserRepository = mockk(relaxed = true)
     private val newsDao: NewsDao = mockk(relaxed = true)
     private val newsLogDao: org.ole.planet.myplanet.data.room.dao.NewsLogDao = mockk(relaxed = true)
+    private val removedLogDao: org.ole.planet.myplanet.data.room.dao.RemovedLogDao = mockk(relaxed = true)
 
     private fun newRepository(gsonInstance: Gson): VoicesRepositoryImpl {
         return spyk(
@@ -52,7 +54,8 @@ class VoicesRepositoryImplTest {
                 Gson(),
                 sharedPrefManager,
                 newsDao,
-                newsLogDao
+                newsLogDao,
+                removedLogDao
             ),
             recordPrivateCalls = true
         )
@@ -73,7 +76,7 @@ class VoicesRepositoryImplTest {
 
     @Test
     fun getCommunityNews_uses_dispatcherProvider_default() = testScope.runTest {
-        every { newsDao.getTopLevelMessagesFlow() } returns flowOf(emptyList())
+        every { newsDao.getTopLevelCommunityCandidatesFlow() } returns flowOf(emptyList())
 
         val flow = repository.getCommunityNews("testUser")
         val result = flow.toList()
@@ -123,7 +126,8 @@ class VoicesRepositoryImplTest {
             user = "{}"
             conversations = "[]"
         }
-        coEvery { newsDao.getAll() } returns listOf(guestNews, validNews)
+        coEvery { newsDao.getPendingUploads() } returns listOf(guestNews, validNews)
+        coEvery { newsDao.getByIds(any()) } returns emptyList()
 
         val result = repoWithRealGson.getNewsForUpload()
 
@@ -134,6 +138,36 @@ class VoicesRepositoryImplTest {
         assertNotNull(result[0].newsJson.get("user"))
         assertEquals("uniqueIdentifier", result[0].newsJson.get("androidId").asString)
         assertEquals("myplanet", result[0].newsJson.get("app").asString)
+    }
+
+    @Test
+    fun `getNewsForUpload resolves reply parent outside the pending set`() = testScope.runTest {
+        mockkStatic(TextUtils::class)
+        every { TextUtils.isEmpty(any()) } answers { firstArg<CharSequence?>().isNullOrEmpty() }
+
+        val repoWithRealGson = newRepository(Gson())
+
+        val parent = News().apply {
+            id = "parent_local"
+            _id = "parent_remote"
+            userId = "user_123"
+        }
+        val reply = News().apply {
+            id = "reply_local"
+            userId = "user_123"
+            replyTo = "parent_local"
+            message = "Reply"
+            user = "{}"
+            conversations = "[]"
+        }
+        coEvery { newsDao.getPendingUploads() } returns listOf(reply)
+        coEvery { newsDao.getByIds(listOf("parent_local")) } returns listOf(parent)
+
+        val result = repoWithRealGson.getNewsForUpload()
+
+        assertEquals(1, result.size)
+        assertEquals("parent_remote", result[0].newsJson.get("replyTo").asString)
+        coVerify(exactly = 0) { newsDao.getAll() }
     }
 
     @Test
@@ -152,10 +186,6 @@ class VoicesRepositoryImplTest {
         val news1 = News().apply {
             viewableBy = "teams"
             viewableId = "team1"
-        }
-        val news2 = News().apply {
-            viewableBy = "other"
-            viewIn = "[{\"_id\":\"team2\"}]"
         }
         coEvery { newsDao.getTopLevelByTeam(any(), any()) } returns listOf(news1)
 
@@ -179,6 +209,7 @@ class VoicesRepositoryImplTest {
         coVerify(exactly = 1) { newsDao.upsert(capture(slot)) }
         assertTrue(slot.captured.labels!!.contains("testLabel"))
         assertTrue(slot.captured.labels!!.contains("existing"))
+        assertTrue(slot.captured.isUpdated)
     }
 
     @Test
@@ -194,6 +225,7 @@ class VoicesRepositoryImplTest {
         val slot = slot<News>()
         coVerify(exactly = 1) { newsDao.upsert(capture(slot)) }
         assertEquals(listOf("keep"), slot.captured.labels)
+        assertTrue(slot.captured.isUpdated)
     }
 
     @Test
@@ -294,5 +326,73 @@ class VoicesRepositoryImplTest {
 
         assertTrue(counts.isEmpty())
         coVerify(exactly = 0) { newsDao.getTopLevelTeamMembership(any()) }
+    }
+
+    @Test
+    fun `countTopLevelByTeams handles mixed case viewIn and Teams viewableBy correctly`() = testScope.runTest {
+        val teamIds = listOf("team1", "Team2", "team3")
+        val rows = listOf(
+            TeamNewsMembership(
+                viewableBy = "Teams",
+                viewableId = "TEAM1",
+                viewIn = null
+            ),
+            TeamNewsMembership(
+                viewableBy = null,
+                viewableId = null,
+                viewIn = "[{\"_ID\":\"team1\"},{\"_id\":\"TEAM2\"}]"
+            )
+        )
+        coEvery { newsDao.getTopLevelTeamMembership(teamIds) } returns rows
+
+        val counts = repository.countTopLevelByTeams(teamIds)
+
+        val expected = mapOf("team1" to 2L, "Team2" to 1L, "team3" to 0L)
+        assertEquals(expected, counts)
+    }
+
+    @Test
+    fun `createTeamNews propagates CancellationException when newsDao upsert is cancelled`() = testScope.runTest {
+        val user = UserEntity()
+        coEvery { newsDao.upsert(any()) } throws CancellationException("Cancelled")
+
+        try {
+            repository.createTeamNews(hashMapOf("message" to "test"), user, null)
+            fail("Expected CancellationException")
+        } catch (e: CancellationException) {
+            assertEquals("Cancelled", e.message)
+        }
+    }
+
+    @Test
+    fun `createTeamNews returns false on ordinary exception`() = testScope.runTest {
+        val user = UserEntity()
+        coEvery { newsDao.upsert(any()) } throws RuntimeException("Database error")
+
+        val result = repository.createTeamNews(hashMapOf("message" to "test"), user, null)
+
+        assertEquals(false, result)
+    }
+
+    @Test
+    fun `shareNewsToCommunity propagates CancellationException when newsDao throws CancellationException`() = testScope.runTest {
+        coEvery { newsDao.getById("news123") } throws CancellationException("Cancelled")
+
+        try {
+            repository.shareNewsToCommunity("news123", "user1", "planet", "parent", "team")
+            fail("Expected CancellationException")
+        } catch (e: CancellationException) {
+            assertEquals("Cancelled", e.message)
+        }
+    }
+
+    @Test
+    fun `shareNewsToCommunity returns failure Result on ordinary exception`() = testScope.runTest {
+        coEvery { newsDao.getById("news123") } throws RuntimeException("Database error")
+
+        val result = repository.shareNewsToCommunity("news123", "user1", "planet", "parent", "team")
+
+        assertTrue(result.isFailure)
+        assertEquals("Database error", result.exceptionOrNull()?.message)
     }
 }

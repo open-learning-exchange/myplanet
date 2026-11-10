@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
 import com.google.gson.JsonObject
 import java.io.File
-import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.GsonUtils.getString
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.distinctByContent
@@ -19,7 +20,8 @@ import org.ole.planet.myplanet.utils.distinctByContent
 class PersonalsRepositoryImpl @Inject constructor(
     private val personalDao: PersonalDao,
     private val uploadRepository: UploadRepository,
-    private val deviceNameProvider: DeviceNameProvider
+    private val deviceNameProvider: DeviceNameProvider,
+    private val timeProvider: TimeProvider
 ) : PersonalsRepository {
 
     override suspend fun personalTitleExists(title: String, userId: String?): Boolean {
@@ -40,7 +42,7 @@ class PersonalsRepositoryImpl @Inject constructor(
             this.userId = userId
             this.userName = userName
             this.path = path
-            this.date = Date().time
+            this.date = timeProvider.now()
             this.description = description
         }
         personalDao.insert(personal)
@@ -65,11 +67,7 @@ class PersonalsRepositoryImpl @Inject constructor(
         personalDao.updateFields(id, update.title, update.description)
     }
 
-    override suspend fun getPendingPersonalUploads(userId: String): List<Personal> {
-        return personalDao.getPendingUploads(userId)
-    }
-
-    override suspend fun updatePersonalAfterSync(id: String, newId: String, rev: String) {
+    private suspend fun updatePersonalAfterSync(id: String, newId: String, rev: String) {
         personalDao.updateUploadedStatus(id, newId, rev)
     }
 
@@ -83,11 +81,7 @@ class PersonalsRepositoryImpl @Inject constructor(
         if (`object` != null) {
             val rev = getString("rev", `object`)
             val id = getString("id", `object`)
-
-            personal.id.let { personalId ->
-                updatePersonalAfterSync(personalId, id, rev)
-            }
-
+            personalDao.updateRemoteDocRef(personal.id, id, rev)
             return Pair(id, rev)
         }
         return null
@@ -96,7 +90,7 @@ class PersonalsRepositoryImpl @Inject constructor(
     private fun serialize(personal: Personal): JsonObject {
         val `object` = JsonObject()
         `object`.addProperty("title", personal.title)
-        `object`.addProperty("uploadDate", System.currentTimeMillis())
+        `object`.addProperty("uploadDate", timeProvider.now())
         `object`.addProperty("createdDate", personal.date)
         `object`.addProperty("filename", FileUtils.getFileNameFromUrl(personal.path))
         `object`.addProperty("author", personal.userName)
@@ -113,44 +107,57 @@ class PersonalsRepositoryImpl @Inject constructor(
         return `object`
     }
 
-    override suspend fun uploadPersonal(personal: Personal): String {
+    override suspend fun uploadPersonal(personal: Personal): PersonalUploadResult {
         if (personal.isUploaded) {
-            return "Resource already uploaded"
+            return PersonalUploadResult.AlreadyUploaded("Resource already uploaded")
         }
 
         try {
-            val result = uploadPersonalDocument(personal)
-            if (result != null) {
-                val (id, rev) = result
-
-                val path = personal.path
-                if (path != null) {
-                    val file = File(path)
-                    val name = FileUtils.getFileNameFromUrl(path)
-
-                    try {
-                        val response = uploadRepository.uploadAttachment(
-                            file = file,
-                            destinationFormat = "%s/resources/%s/%s",
-                            id = id,
-                            rev = rev,
-                            name = name
-                        )
-                        // Note: ignoring specific response success check to match old behavior
-                        // which relied on callback but didn't block returning success
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        // Attachment upload failed but document succeeded
-                    }
-                }
-
-                return "Personal resource uploaded successfully"
+            val existingId = personal._id
+            val existingRev = personal._rev
+            val (id, rev) = if (!existingId.isNullOrBlank() && !existingRev.isNullOrBlank()) {
+                existingId to existingRev
             } else {
-                return "Failed to upload personal resource: No response"
+                val result = uploadPersonalDocument(personal)
+                    ?: return PersonalUploadResult.DocumentFailed("Failed to upload personal resource: No response")
+                result
             }
+
+            var finalRev = rev
+            val path = personal.path
+            if (path != null) {
+                val file = File(path)
+                val name = FileUtils.getFileNameFromUrl(path)
+
+                val response = try {
+                    uploadRepository.uploadAttachment(
+                        file = file,
+                        destinationFormat = "%s/resources/%s/%s",
+                        id = id,
+                        rev = rev,
+                        name = name
+                    )
+                } catch (e: Exception) {
+                    Log.w(TAG, "Attachment upload failed for ${personal.id}", e)
+                    return PersonalUploadResult.AttachmentFailed("Uploaded document but failed to upload attachment: ${e.message}", e)
+                }
+                
+                if (!response.isSuccessful) {
+                    Log.w(TAG, "Attachment upload failed for ${personal.id}: HTTP ${response.code()}")
+                    return PersonalUploadResult.AttachmentFailed("Uploaded document but failed to upload attachment: HTTP ${response.code()}")
+                }
+                finalRev = getString("rev", response.body()).ifBlank { rev }
+            }
+
+            updatePersonalAfterSync(personal.id, id, finalRev)
+            return PersonalUploadResult.Success("Personal resource uploaded successfully")
         } catch (e: Exception) {
-            e.printStackTrace()
-            return "Unable to upload resource: ${e.message}"
+            Log.w(TAG, "Unable to upload personal resource ${personal.id}", e)
+            return PersonalUploadResult.DocumentFailed("Unable to upload resource: ${e.message}", e)
         }
+    }
+
+    companion object {
+        private const val TAG = "PersonalsRepository"
     }
 }

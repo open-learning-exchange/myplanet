@@ -18,7 +18,6 @@ import androidx.core.view.isGone
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import java.util.Locale
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseBindingBottomSheetFragment
@@ -121,8 +120,9 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
             selectedLang = selectedFilter?.get("languages")?.toMutableSet() ?: selectedLang
             setAdapter(binding.listLevel, levels, selectedLvls)
             setAdapter(binding.listLang, languages, selectedLang)
-            setAdapter(binding.listMedium, mediums, selectedMeds, ::getMediumDisplayName)
+            setAdapter(binding.listMedium, mediums, selectedMeds) { ResourcesMediaType.displayName(requireContext(), it) }
             setAdapter(binding.listSub, subjects, selectedSubs)
+            updateHeaderLabels()
             updateResultCount()
         }
     }
@@ -152,7 +152,7 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
             }
         }
         for (i in arr.indices) {
-                listView.setItemChecked(i, set.contains(arr[i]))
+            listView.setItemChecked(i, set.contains(arr[i]))
         }
     }
 
@@ -165,6 +165,7 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
                 R.id.list_level -> addToList(s, selectedLvls)
                 R.id.list_medium -> addToList(s, selectedMeds)
             }
+            updateHeaderLabels()
             val count = filterListener?.filter(selectedSubs, selectedLang, selectedMeds, selectedLvls) ?: 0
             showResultCount(count)
         }
@@ -183,19 +184,31 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
     }
 
     private fun expand(view: View, listView: ListView, headerTextView: TextView) {
-        val count = listView.adapter.count
-        val itemHeight = 100
-        val topPadding = 80
-        val targetHeight = if(count < 6){
-            count * itemHeight + topPadding
-        } else {
-            5 * itemHeight + topPadding
-        }
+        val targetHeight = measureSectionHeight(view, listView, MAX_VISIBLE_ROWS)
         view.layoutParams.height = 0
         view.visibility = View.VISIBLE
         val animator = slideAnimator(view, 0, targetHeight)
         animator.start()
         rotateDrawable(headerTextView, 180f)
+    }
+
+    private fun measureSectionHeight(section: View, listView: ListView, maxRows: Int): Int {
+        val adapter = listView.adapter ?: return section.paddingTop + section.paddingBottom
+        val rows = minOf(adapter.count, maxRows)
+        val availableWidth = ((section.parent as? View)?.width ?: 0)
+            .takeIf { it > 0 }
+            ?.minus(section.paddingLeft + section.paddingRight)
+            ?: resources.displayMetrics.widthPixels
+        val widthSpec = View.MeasureSpec.makeMeasureSpec(availableWidth, View.MeasureSpec.EXACTLY)
+        val heightSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        var rowsHeight = 0
+        for (i in 0 until rows) {
+            val row = adapter.getView(i, null, listView)
+            row.measure(widthSpec, heightSpec)
+            rowsHeight += row.measuredHeight
+        }
+        val dividers = (rows - 1).coerceAtLeast(0) * listView.dividerHeight
+        return rowsHeight + dividers + section.paddingTop + section.paddingBottom
     }
 
     private fun collapse(view: View, headerTextView: TextView) {
@@ -227,16 +240,18 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
         textView.setCompoundDrawablesWithIntrinsicBounds(0, 0, drawableRes, 0)
     }
 
-    fun getMediumDisplayName(medium: String): String {
-        return when (medium.lowercase(Locale.getDefault())) {
-            "pdf" -> getString(R.string.filter_pdfs)
-            "video" -> getString(R.string.filter_videos)
-            "audio" -> getString(R.string.filter_audio)
-            "image" -> getString(R.string.storage_images)
-            "text/html" -> getString(R.string.medium_text_html)
-            "html" -> getString(R.string.medium_html)
-            "other" -> getString(R.string.other)
-            else -> medium
-        }
+    private fun updateHeaderLabels() {
+        if (_binding == null) return
+        binding.subjectsLayout.text = getHeaderText(getString(R.string.subjects), selectedSubs.size)
+        binding.languagesLayout.text = getHeaderText(getString(R.string.languages), selectedLang.size)
+        binding.mediumsLayout.text = getHeaderText(getString(R.string.mediums), selectedMeds.size)
+        binding.levelsLayout.text = getHeaderText(getString(R.string.levels), selectedLvls.size)
+    }
+
+    private fun getHeaderText(baseTitle: String, count: Int): String {
+        val cleanTitle = baseTitle.replace("*", "").trim()
+        return if (count > 0) getString(R.string.filter_header_with_count, cleanTitle, count) else cleanTitle
     }
 }
+
+private const val MAX_VISIBLE_ROWS = 5

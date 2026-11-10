@@ -3,18 +3,22 @@ package org.ole.planet.myplanet.services.sync
 import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitCancellation
-import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -32,9 +36,6 @@ import org.ole.planet.myplanet.repository.SyncRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import retrofit2.Response
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
@@ -56,7 +57,7 @@ class SyncManagerTest {
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
     private val loginSyncManager: LoginSyncManager = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
-    private val testScope = TestScope(testDispatcher)
+    private lateinit var testScope: CoroutineScope
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = TestDispatcherProvider(testDispatcher)
     private val listener: OnSyncListener = mockk(relaxed = true)
@@ -68,6 +69,7 @@ class SyncManagerTest {
 
     @Before
     fun setup() {
+        testScope = CoroutineScope(testDispatcher + Job())
         mockkObject(MainApplication.Companion)
         every { MainApplication.createLog(any(), any()) } returns Unit
         coEvery { userRepository.getUserModel() } returns userModel
@@ -118,6 +120,46 @@ class SyncManagerTest {
         verify { listener.onSyncStarted() }
         coVerify { transactionSyncManager.authenticate() }
         verify { listener.onSyncFailed(expectedMessage) }
+    }
+
+    @Test
+    fun `failed full sync is not reported as success and does not stamp last sync`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+        coEvery { transactionSyncManager.syncDb(any(), any()) } throws RuntimeException("disk full")
+
+        syncManager.start(listener, "sync", listOf())
+
+        verify { listener.onSyncFailed("disk full") }
+        assertEquals(SyncManager.SyncStatus.Error("disk full"), syncManager.syncStatus.value)
+        verify(exactly = 0) { sharedPrefManager.setLastSync(any()) }
+    }
+
+    @Test
+    fun `a failed table pull fails the sync and does not stamp last sync`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+        coEvery { transactionSyncManager.syncDb(any(), any()) } returns 0
+        coEvery { transactionSyncManager.syncDb("news", any()) } returns TransactionSyncManager.SYNC_FAILED
+        mockkObject(HeavyTableSyncWorker.Companion)
+        every { HeavyTableSyncWorker.schedule(any(), any()) } just Runs
+        val expectedMessage = context.getString(org.ole.planet.myplanet.R.string.sync_tables_failed, "news")
+
+        syncManager.start(listener, "sync", listOf())
+
+        verify { listener.onSyncFailed(expectedMessage) }
+        verify(exactly = 0) { listener.onSyncComplete() }
+        assertEquals(SyncManager.SyncStatus.Error(expectedMessage), syncManager.syncStatus.value)
+        verify(exactly = 0) { sharedPrefManager.setLastSync(any()) }
+    }
+
+    @Test
+    fun `start without a listener publishes Error when authentication fails`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns false
+        val expectedMessage = context.getString(org.ole.planet.myplanet.R.string.invalid_configuration)
+
+        syncManager.start(null, "sync", listOf("exams"))
+
+        assertEquals(SyncManager.SyncStatus.Error(expectedMessage), syncManager.syncStatus.value)
+        assertEquals(false, syncManager.isMainSyncActive())
     }
 
     @Test
@@ -184,12 +226,8 @@ class SyncManagerTest {
     fun `resourceTransactionSync skips removeDeletedResources when batch failure occurs`() = runTest {
         coEvery { transactionSyncManager.authenticate() } returns true
 
-        val totalRowsJson = JsonObject().apply {
-            addProperty("total_rows", 10)
-        }
-        val totalRowsResponse = Response.success(totalRowsJson)
-        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } returns totalRowsResponse
-        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true") }) } throws RuntimeException("Network error")
+        coEvery { syncRepository.fetchResourceTotalRows() } returns 10
+        coEvery { syncRepository.fetchResourceRows(any(), any()) } returns null
 
         syncManager.start(listener, "sync", listOf())
 
@@ -200,29 +238,85 @@ class SyncManagerTest {
     fun `resourceTransactionSync calls removeDeletedResources with full id list when batch succeeds`() = runTest {
         coEvery { transactionSyncManager.authenticate() } returns true
 
-        val totalRowsJson = JsonObject().apply {
-            addProperty("total_rows", 2)
-        }
-        val totalRowsResponse = Response.success(totalRowsJson)
-        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?limit=0") }) } returns totalRowsResponse
+        coEvery { syncRepository.fetchResourceTotalRows() } returns 2
 
-        val doc1 = JsonObject().apply { addProperty("_id", "res_1") }
-        val doc2 = JsonObject().apply { addProperty("_id", "res_2") }
-        val row1 = JsonObject().apply { add("doc", doc1) }
-        val row2 = JsonObject().apply { add("doc", doc2) }
-        val rowsArray = JsonArray().apply {
-            add(row1)
-            add(row2)
-        }
-        val batchJson = JsonObject().apply {
-            add("rows", rowsArray)
-        }
-        val batchResponse = Response.success(batchJson)
-        coEvery { apiInterface.getJsonObject(any(), match { it.contains("resources/_all_docs?include_docs=true") }) } returns batchResponse
-        coEvery { resourcesRepository.batchInsertResources(any()) } returns listOf("res_1", "res_2")
+        val rows = com.google.gson.JsonArray()
+        val doc1 = com.google.gson.JsonObject().apply { addProperty("_id", "res_1") }
+        val doc2 = com.google.gson.JsonObject().apply { addProperty("_id", "res_2") }
+        rows.add(com.google.gson.JsonObject().apply { add("doc", doc1) })
+        rows.add(com.google.gson.JsonObject().apply { add("doc", doc2) })
+
+        coEvery { syncRepository.fetchResourceRows(any(), any()) } returns rows
+        every { syncRepository.filterSyncableResourceDocs(rows) } returns listOf(doc1, doc2)
+        coEvery { resourcesRepository.batchInsertResources(listOf(doc1, doc2)) } returns listOf("res_1", "res_2")
 
         syncManager.start(listener, "sync", listOf())
 
         coVerify(exactly = 1) { resourcesRepository.removeDeletedResources(listOf("res_1", "res_2")) }
+    }
+
+    @Test
+    fun `resource batch fetch cancellation stops processing and does not report failure`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+
+        coEvery { syncRepository.fetchResourceTotalRows() } returns 500
+
+        coEvery {
+            syncRepository.fetchResourceRows(any(), any())
+        } coAnswers {
+            testScope.cancel()
+            throw CancellationException("Cancelled")
+        }
+
+        syncManager.start(listener, "sync", listOf())
+
+        coVerify(exactly = 1) {
+            syncRepository.fetchResourceRows(any(), any())
+        }
+        verify(exactly = 0) { listener.onSyncFailed(any()) }
+    }
+
+    @Test
+    fun `resourceTransactionSync keeps paging and skips cleanup when the resource count is unavailable`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+
+        coEvery { syncRepository.fetchResourceTotalRows() } returns null
+
+        val rows = com.google.gson.JsonArray()
+        val doc1 = com.google.gson.JsonObject().apply { addProperty("_id", "res_1") }
+        rows.add(com.google.gson.JsonObject().apply { add("doc", doc1) })
+
+        coEvery { syncRepository.fetchResourceRows(any(), any()) } returns rows
+        every { syncRepository.filterSyncableResourceDocs(rows) } returns listOf(doc1)
+        coEvery { resourcesRepository.batchInsertResources(listOf(doc1)) } returns listOf("res_1")
+
+        syncManager.start(listener, "sync", listOf())
+
+        coVerify(exactly = 1) { resourcesRepository.batchInsertResources(listOf(doc1)) }
+        coVerify(exactly = 0) { resourcesRepository.removeDeletedResources(any()) }
+    }
+
+    @Test
+    fun `resourceTransactionSync when count is unknown and short page has design doc stops paging after short page and inserts 1 doc`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+
+        coEvery { syncRepository.fetchResourceTotalRows() } returns null
+
+        val rows = com.google.gson.JsonArray()
+        val docDesign = com.google.gson.JsonObject().apply { addProperty("_id", "_design/res") }
+        val doc1 = com.google.gson.JsonObject().apply { addProperty("_id", "res_1") }
+        rows.add(com.google.gson.JsonObject().apply { add("doc", docDesign) })
+        rows.add(com.google.gson.JsonObject().apply { add("doc", doc1) })
+
+        // Page returns 2 raw rows, which is < batchSize (100)
+        coEvery { syncRepository.fetchResourceRows(100, 0) } returns rows
+        every { syncRepository.filterSyncableResourceDocs(rows) } returns listOf(doc1)
+        coEvery { resourcesRepository.batchInsertResources(listOf(doc1)) } returns listOf("res_1")
+
+        syncManager.start(listener, "sync", listOf())
+
+        // Ensure fetchResourceRows was called only once (paging stopped because raw rows.size() < 100)
+        coVerify(exactly = 1) { syncRepository.fetchResourceRows(100, 0) }
+        coVerify(exactly = 1) { resourcesRepository.batchInsertResources(listOf(doc1)) }
     }
 }

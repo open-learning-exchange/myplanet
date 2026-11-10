@@ -12,16 +12,18 @@ import org.mockito.Mock
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.MockitoAnnotations
+import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
+import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [32], application = Application::class)
+@Config(application = Application::class)
 class ResourcesAdapterTest {
 
     @Mock
@@ -137,5 +139,100 @@ class ResourcesAdapterTest {
         assertEquals("2", currentList[1].item.id)
         assertEquals(false, currentList[1].isOpened)
         assertEquals(true, currentList[1].isLocallyOffline)
+    }
+
+    @Test
+    fun `meta line shows the size of a downloaded file stored under the library folder`() {
+        val context = androidx.test.core.app.ApplicationProvider.getApplicationContext<Context>()
+        context.setTheme(com.google.android.material.R.style.Theme_MaterialComponents)
+        val dir = org.ole.planet.myplanet.utils.FileUtils.getExternalFilesDir(context)!!
+        val file = org.ole.planet.myplanet.utils.FileUtils.getLibraryFile(dir, "lib1", "notes.txt")
+        file.parentFile?.mkdirs()
+        file.writeBytes(ByteArray(2048))
+
+        val item = ResourceItem(
+            id = "lib1", title = "Notes", description = "desc", createdDate = 0L, averageRating = "0",
+            timesRated = 0, resourceId = "res1", isOffline = true, _rev = "rev1", uploadDate = "date",
+            filename = "notes.txt"
+        )
+        val library = MyLibrary().apply { id = "lib1"; resourceLocalAddress = "notes.txt" }
+        adapter.setLibraryList(listOf(ResourceListModel(library, item, emptyList())))
+
+        val holder = adapter.onCreateViewHolder(android.widget.LinearLayout(context), adapter.getItemViewType(0)) as ResourcesAdapter.GridViewHolder
+        adapter.onBindViewHolder(holder, 0)
+        org.robolectric.shadows.ShadowLooper.idleMainLooper()
+
+        val expectedSize = org.ole.planet.myplanet.utils.FileUtils.formatSize(context, 2048)
+        org.junit.Assert.assertTrue(
+            "meta was: ${holder.binding.tvMeta.text}",
+            holder.binding.tvMeta.text.toString().contains(expectedSize)
+        )
+    }
+
+    @Test
+    fun `test selectAllItems false clears selections and notifies listener with empty list`() {
+        val item1 = ResourceItem(
+            id = "1", title = "Res 1", description = "desc", createdDate = 0L, averageRating = "0",
+            timesRated = 0, resourceId = "res1", isOffline = false, _rev = "rev1", uploadDate = "date",
+            filename = "file1"
+        )
+        val item2 = ResourceItem(
+            id = "2", title = "Res 2", description = "desc", createdDate = 0L, averageRating = "0",
+            timesRated = 0, resourceId = "res2", isOffline = false, _rev = "rev2", uploadDate = "date",
+            filename = "file2"
+        )
+        val model1 = ResourceListModel(MyLibrary().apply { id = "1" }, item1, emptyList())
+        val model2 = ResourceListModel(MyLibrary().apply { id = "2" }, item2, emptyList())
+        adapter.setLibraryList(listOf(model1, model2))
+
+        var selectedList: List<ResourceItem>? = null
+        val listener = object : OnLibraryItemSelectedListener {
+            override fun onSelectedListChange(list: List<ResourceItem>) {
+                selectedList = list
+            }
+            override fun onTagClicked(tag: TagItem) {}
+            override fun onResourceClicked(item: ResourceItem) {}
+        }
+        adapter.setListener(listener)
+
+        adapter.selectAllItems(true)
+        assertEquals(true, adapter.areAllSelected())
+        assertEquals(2, selectedList?.size)
+
+        adapter.selectAllItems(false)
+        assertEquals(false, adapter.areAllSelected())
+        assertEquals(0, selectedList?.size)
+    }
+
+    @Test
+    fun `selections hidden by a new list are dropped and select all still matches the visible rows`() {
+        fun model(id: String) = ResourceListModel(
+            MyLibrary().apply { this.id = id },
+            ResourceItem(
+                id = id, title = "Res $id", description = "desc", createdDate = 0L, averageRating = "0",
+                timesRated = 0, resourceId = "res$id", isOffline = false, _rev = "rev$id", uploadDate = "date",
+                filename = "file$id"
+            ),
+            emptyList()
+        )
+        adapter.setLibraryList(listOf(model("1"), model("2"), model("3")))
+        var selectedList: List<ResourceItem>? = null
+        adapter.setListener(object : OnLibraryItemSelectedListener {
+            override fun onSelectedListChange(list: List<ResourceItem>) {
+                selectedList = list
+            }
+            override fun onTagClicked(tag: TagItem) {}
+            override fun onResourceClicked(item: ResourceItem) {}
+        })
+        adapter.selectAllItems(true)
+
+        var committed = false
+        adapter.setLibraryList(listOf(model("1"), model("2"))) { committed = true }
+        while (!committed) {
+            org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        }
+
+        assertEquals(listOf("1", "2"), selectedList?.map { it.id })
+        assertEquals(true, adapter.areAllSelected())
     }
 }

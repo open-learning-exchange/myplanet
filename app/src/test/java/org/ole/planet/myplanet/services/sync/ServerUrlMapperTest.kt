@@ -232,10 +232,15 @@ class ServerUrlMapperTest {
             extractedBaseUrl = "http://primary.com"
         )
 
-        val isServerReachable: suspend (String) -> Boolean = { true }
+        val probedUrls = mutableListOf<String>()
+        val isServerReachable: suspend (String) -> Boolean = { url ->
+            probedUrls.add(url)
+            true
+        }
 
         serverUrlMapper.updateServerIfNecessary(mapping, settings, isServerReachable)
 
+        assertEquals(listOf("http://primary.com"), probedUrls)
         verify(exactly = 0) { settings.edit() }
     }
 

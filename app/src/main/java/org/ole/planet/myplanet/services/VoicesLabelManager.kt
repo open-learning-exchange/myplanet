@@ -79,11 +79,7 @@ class VoicesLabelManager(
                     isCloseIconVisible = canManageLabels
                     if (canManageLabels) {
                         setOnCloseIconClickListener {
-                            val selectedLabel = Constants.LABELS[label] ?: labels.firstOrNull { getLabel(it) == text }
-                            val voiceId = voice.id
-                            if (selectedLabel != null && voiceId != null) {
-                                launchLabelWrite("removeLabel") { removeLabelFn(voiceId, selectedLabel) }
-                            }
+                            launchLabelWrite("removeLabel") { removeLabelFn(voice.id, label) }
                         }
                     }
                 }
@@ -126,12 +122,11 @@ class VoicesLabelManager(
     }
 
     private fun getLabel(s: String): String {
-        return reverseLabels[s] ?: formatLabelValue(s)
+        return Constants.LABEL_VALUE_TO_NAME[s] ?: formatLabelValue(s)
     }
 
     companion object {
         private const val TAG = "VoicesLabelManager"
-        private val reverseLabels by lazy { Constants.LABELS.entries.associate { it.value to it.key } }
         private val separatorRegex by lazy { Regex("[_-]") }
         private val whitespaceRegex by lazy { Regex("\\s+") }
 

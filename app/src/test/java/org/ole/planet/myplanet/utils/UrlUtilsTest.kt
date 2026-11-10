@@ -8,6 +8,7 @@ import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -31,7 +32,6 @@ class UrlUtilsTest {
         UrlUtils.resetForTesting()
         UrlUtils.init(mockSpm)
 
-        mockkObject(UrlUtils)
         sharedPrefManager = mockk(relaxed = true)
         every { sharedPrefManager.isAlternativeUrl() } returns false
         every { sharedPrefManager.getCouchdbUrl() } returns "http://example.com"
@@ -51,11 +51,15 @@ class UrlUtilsTest {
         every { mockSpm.getProcessedAlternativeUrl() } returns "invalid://url"
 
         mockkStatic(Uri::class)
-        every { Uri.parse("invalid://url") } throws RuntimeException("Simulated URI Exception")
+        try {
+            every { Uri.parse("invalid://url") } throws RuntimeException("Simulated URI Exception")
 
-        val result = UrlUtils.hostUrl
+            val result = UrlUtils.hostUrl
 
-        assertEquals("http://fallback.org/ml/", result)
+            assertEquals("http://fallback.org/ml/", result)
+        } finally {
+            unmockkStatic(Uri::class)
+        }
     }
 
     @Test
@@ -96,15 +100,20 @@ class UrlUtilsTest {
 
     @Test
     fun testGetUserImageUrlReturnsCorrectFormattedString() {
-        val mockBaseUrl = "http://mockurl.com/db"
-        every { UrlUtils.getUrl() } returns mockBaseUrl
+        mockkObject(UrlUtils)
+        try {
+            val mockBaseUrl = "http://mockurl.com/db"
+            every { UrlUtils.getUrl() } returns mockBaseUrl
 
-        val userId = "user123"
-        val imageName = "profile.jpg"
+            val userId = "user123"
+            val imageName = "profile.jpg"
 
-        val result = UrlUtils.getUserImageUrl(userId, imageName)
+            val result = UrlUtils.getUserImageUrl(userId, imageName)
 
-        assertEquals("$mockBaseUrl/_users/$userId/$imageName", result)
+            assertEquals("$mockBaseUrl/_users/$userId/$imageName", result)
+        } finally {
+            unmockkObject(UrlUtils)
+        }
     }
 
     @Test
@@ -129,15 +138,20 @@ class UrlUtilsTest {
 
     @Test
     fun testGetUserImageUrlWithSpecialCharacters() {
-        val mockBaseUrl = "http://mockurl.com/db"
-        every { UrlUtils.getUrl() } returns mockBaseUrl
+        mockkObject(UrlUtils)
+        try {
+            val mockBaseUrl = "http://mockurl.com/db"
+            every { UrlUtils.getUrl() } returns mockBaseUrl
 
-        val userId = "user@123"
-        val imageName = "my image (1).jpg"
+            val userId = "user@123"
+            val imageName = "my image (1).jpg"
 
-        val result = UrlUtils.getUserImageUrl(userId, imageName)
+            val result = UrlUtils.getUserImageUrl(userId, imageName)
 
-        assertEquals("$mockBaseUrl/_users/user%40123/my%20image%20%281%29.jpg", result)
+            assertEquals("$mockBaseUrl/_users/user%40123/my%20image%20%281%29.jpg", result)
+        } finally {
+            unmockkObject(UrlUtils)
+        }
     }
 
     @Test
@@ -389,7 +403,6 @@ class UrlUtilsTest {
 
     @Test
     fun `baseUrl memoizes base url and reads SharedPreferences once`() {
-        unmockkObject(UrlUtils)
         val spm = mockk<SharedPrefManager>(relaxed = true)
         every { spm.isAlternativeUrl() } returns false
         every { spm.getCouchdbUrl() } returns "http://example.com"
@@ -407,7 +420,6 @@ class UrlUtilsTest {
 
     @Test
     fun `baseUrl invalidates cache when invalidateCaches is called`() {
-        unmockkObject(UrlUtils)
         val spm = mockk<SharedPrefManager>(relaxed = true)
         every { spm.isAlternativeUrl() } returns false
         every { spm.getCouchdbUrl() } returns "http://example.com"
@@ -427,14 +439,12 @@ class UrlUtilsTest {
 
     @Test
     fun `getUrl with explicit base builds resource url without re-deriving base`() {
-        unmockkObject(UrlUtils)
         val result = UrlUtils.getUrl("r1", "f1", "http://example.com/db")
         assertEquals("http://example.com/db/resources/r1/f1", result)
     }
 
     @Test
     fun `getUrl with explicit base resolves base once for many libraries`() {
-        unmockkObject(UrlUtils)
         val spm = mockk<SharedPrefManager>(relaxed = true)
         every { spm.isAlternativeUrl() } returns false
         every { spm.getCouchdbUrl() } returns "http://example.com"
@@ -453,7 +463,6 @@ class UrlUtilsTest {
 
     @Test
     fun `redactForLog strips userinfo from standard CouchDB URL`() {
-        unmockkObject(UrlUtils)
         val input = "http://satellite:1234@host.org:5984/db/resources/abc/file.pdf"
         val result = UrlUtils.redactForLog(input)
         assertEquals("http://host.org:5984/db/resources/abc/file.pdf", result)
@@ -464,7 +473,6 @@ class UrlUtilsTest {
 
     @Test
     fun `redactForLog handles https URL with port`() {
-        unmockkObject(UrlUtils)
         val input = "https://user:pass@securehost.com:8443/db/teams/_bulk_docs"
         val result = UrlUtils.redactForLog(input)
         assertEquals("https://securehost.com:8443/db/teams/_bulk_docs", result)
@@ -475,7 +483,6 @@ class UrlUtilsTest {
 
     @Test
     fun `redactForLog returns URL without userinfo unchanged in substance`() {
-        unmockkObject(UrlUtils)
         val input = "http://host.org:5984/db/resources/abc/file.pdf"
         val result = UrlUtils.redactForLog(input)
         assertEquals("http://host.org:5984/db/resources/abc/file.pdf", result)
@@ -483,7 +490,6 @@ class UrlUtilsTest {
 
     @Test
     fun `redactForLog handles empty and malformed URLs safely`() {
-        unmockkObject(UrlUtils)
         assertEquals("<unparseable url>", UrlUtils.redactForLog(""))
         assertEquals("<unparseable url>", UrlUtils.redactForLog(null))
         assertEquals("<unparseable url>", UrlUtils.redactForLog("not a url"))
@@ -492,7 +498,6 @@ class UrlUtilsTest {
 
     @Test
     fun `redactForLog redacts password containing at sign or colon`() {
-        unmockkObject(UrlUtils)
         val input = "http://admin:p%40ss%3Aword@server.com/db"
         val result = UrlUtils.redactForLog(input)
         assertEquals("http://server.com/db", result)

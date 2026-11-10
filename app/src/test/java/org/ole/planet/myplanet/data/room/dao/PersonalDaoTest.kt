@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.data.room.dao
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -17,6 +18,7 @@ import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.repository.PersonalsRepositoryImpl
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.utils.DeviceNameProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @RunWith(AndroidJUnit4::class)
 class PersonalDaoTest {
@@ -32,10 +34,14 @@ class PersonalDaoTest {
             AppDatabase::class.java
         ).allowMainThreadQueries().build()
         personalDao = database.personalDao()
+        val timeProvider = mockk<TimeProvider> {
+            every { now() } returns 1_700_000_000_000L
+        }
         repository = PersonalsRepositoryImpl(
             personalDao,
             mockk<UploadRepository>(relaxed = true),
-            mockk<DeviceNameProvider>(relaxed = true)
+            mockk<DeviceNameProvider>(relaxed = true),
+            timeProvider
         )
     }
 

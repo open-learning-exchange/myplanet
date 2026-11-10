@@ -30,8 +30,10 @@ import org.ole.planet.myplanet.databinding.AlertTaskBinding
 import org.ole.planet.myplanet.databinding.AlertUsersSpinnerBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamsTasksBinding
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.TaskStatus
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.effectiveStatus
 import org.ole.planet.myplanet.ui.teams.TeamViewModel
 import org.ole.planet.myplanet.ui.user.UserArrayAdapter
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
@@ -53,6 +55,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         val description: String?,
         val deadline: Long,
         val completed: Boolean,
+        val effectiveStatus: String,
         val assignee: String?
     )
     private var lastSubmittedSnapshot: List<TaskSnapshot>? = null
@@ -135,7 +138,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
 
         val titleView = TextView(requireActivity()).apply {
-            text = getString(R.string.add_task)
+            text = getString(if (t == null) R.string.add_task else R.string.edit_task)
             setTextColor(context.getColor(R.color.daynight_textColor))
             setPadding(75, 50, 0, 0)
             textSize = 24f
@@ -149,8 +152,8 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         val alertDialog = builder.create()
         alertDialog.show()
         alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            val task = alertTaskBinding.etTask.text.toString()
-            val desc = alertTaskBinding.etDescription.text.toString()
+            val task = alertTaskBinding.etTask.text.toString().trim()
+            val desc = alertTaskBinding.etDescription.text.toString().trim()
             var isValid = true
             if (task.isEmpty()) {
                 Utilities.toast(activity, getString(R.string.task_title_is_required))
@@ -164,7 +167,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                 isValid = false
             }
             if (isValid) {
-                createOrUpdateTask(task, desc, t, selectedAssignee?.id)
+                createOrUpdateTask(task, desc, t, selectedAssignee?.id ?: t?.assignee)
                 alertDialog.dismiss()
             }
         }
@@ -278,17 +281,11 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
     }
 
-    private fun allTasks(tasks: List<TeamTask>): List<TeamTask> {
-        return tasks.sortedWith(compareBy<TeamTask> { it.completed }.thenByDescending { it.deadline })
-    }
-
-    private fun completedTasks(tasks: List<TeamTask>): List<TeamTask> {
-        return tasks.filter { it.completed }.sortedByDescending { it.deadline }
-    }
-
-    private fun myTasks(tasks: List<TeamTask>): List<TeamTask> {
-        return tasks.filter { !it.completed && it.assignee == user?.id }.sortedByDescending { it.deadline }
-    }
+    private fun allTasks(tasks: List<TeamTask>): List<TeamTask> = filterAllTasks(tasks)
+    private fun todoTasks(tasks: List<TeamTask>): List<TeamTask> = filterTodoTasks(tasks)
+    private fun inProgressTasks(tasks: List<TeamTask>): List<TeamTask> = filterInProgressTasks(tasks)
+    private fun completedTasks(tasks: List<TeamTask>): List<TeamTask> = filterCompletedTasks(tasks)
+    private fun myTasks(tasks: List<TeamTask>): List<TeamTask> = filterMyTasks(tasks, user?.id)
 
     override fun onNewsItemClick(news: News?) {}
     override fun clearImages() {
@@ -306,13 +303,15 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
 
             val (taskList, fetchedNames, currentSnapshot) = withContext(dispatcherProvider.io) {
                 val list = when (currentTab) {
-                    R.id.btn_my -> myTasks(tasksSnapshot)
+                    R.id.btn_todo -> todoTasks(tasksSnapshot)
+                    R.id.btn_in_progress -> inProgressTasks(tasksSnapshot)
                     R.id.btn_completed -> completedTasks(tasksSnapshot)
+                    R.id.btn_my -> myTasks(tasksSnapshot)
                     else -> allTasks(tasksSnapshot)
                 }
 
                 val currentSnapshot = list.map {
-                    TaskSnapshot(it.id, it.title, it.description, it.deadline, it.completed, it.assignee)
+                    TaskSnapshot(it.id, it.title, it.description, it.deadline, it.completed, it.effectiveStatus(), it.assignee)
                 }
                 if (currentSnapshot == lastSubmittedSnapshot) {
                     return@withContext Triple(null, null, currentSnapshot)
@@ -340,9 +339,9 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
     }
 
-    override fun onCheckChange(realmTeamTask: TeamTask?, completed: Boolean) {
-        val taskId = realmTeamTask?.id ?: return
-        teamsTasksViewModel.setTaskCompletion(taskId, completed)
+    override fun onStatusChange(task: TeamTask?, newStatus: String) {
+        val taskId = task?.id ?: return
+        teamsTasksViewModel.setTaskStatus(taskId, newStatus)
     }
 
     override fun onEdit(task: TeamTask?) {
@@ -400,5 +399,27 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         super.onDestroyView()
         binding.rvTask.adapter = null
         _binding = null
+    }
+
+    companion object {
+        fun filterAllTasks(tasks: List<TeamTask>): List<TeamTask> {
+            return tasks.sortedWith(compareBy<TeamTask> { it.effectiveStatus() == TaskStatus.COMPLETED.value }.thenByDescending { it.deadline })
+        }
+
+        fun filterTodoTasks(tasks: List<TeamTask>): List<TeamTask> {
+            return tasks.filter { it.effectiveStatus() == TaskStatus.TODO.value }.sortedByDescending { it.deadline }
+        }
+
+        fun filterInProgressTasks(tasks: List<TeamTask>): List<TeamTask> {
+            return tasks.filter { it.effectiveStatus() == TaskStatus.IN_PROGRESS.value }.sortedByDescending { it.deadline }
+        }
+
+        fun filterCompletedTasks(tasks: List<TeamTask>): List<TeamTask> {
+            return tasks.filter { it.effectiveStatus() == TaskStatus.COMPLETED.value }.sortedByDescending { it.deadline }
+        }
+
+        fun filterMyTasks(tasks: List<TeamTask>, userId: String?): List<TeamTask> {
+            return tasks.filter { it.effectiveStatus() != TaskStatus.COMPLETED.value && it.assignee == userId }.sortedByDescending { it.deadline }
+        }
     }
 }

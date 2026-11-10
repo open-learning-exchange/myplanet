@@ -8,6 +8,7 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
+import android.text.format.DateUtils
 import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
@@ -23,6 +24,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.annotation.RequiresApi
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.lifecycle.lifecycleScope
@@ -30,10 +32,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Date
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
@@ -64,8 +66,6 @@ import org.ole.planet.myplanet.utils.DialogUtils.getUpdateDialog
 import org.ole.planet.myplanet.utils.DialogUtils.showAlert
 import org.ole.planet.myplanet.utils.DialogUtils.showSnack
 import org.ole.planet.myplanet.utils.DialogUtils.showWifiSettingDialog
-import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
-import org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName
@@ -151,7 +151,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initSyncConfigurationCoordinator()
-        collectWhenStarted(syncManager.syncStatus.sample(SYNC_STATUS_SAMPLE_MS)) { status ->
+        collectWhenStarted(syncManager.syncStatus.sample(SYNC_STATUS_SAMPLE_MS.milliseconds)) { status ->
             if (status == lastSyncStatus) return@collectWhenStarted
             lastSyncStatus = status
             when (status) {
@@ -224,6 +224,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
 
                 override fun showErrorDialog(errorMessage: String) {
+                    if (::syncIconDrawable.isInitialized) {
+                        syncIconDrawable.stop()
+                        syncIconDrawable.selectDrawable(0)
+                    }
                     alertDialogOkay(errorMessage)
                 }
 
@@ -325,16 +329,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     suspend fun isServerReachable(processedUrl: String?, type: String): Boolean {
         try {
-            val isAlternativeUrl = prefData.isAlternativeUrl()
-            val url = if (isAlternativeUrl) {
-                if (processedUrl?.contains("/db") == true) {
-                    processedUrl.replace("/db", "") + "/db/_all_dbs"
-                } else {
-                    "$processedUrl/db/_all_dbs"
-                }
-            } else {
-                "$processedUrl/_all_dbs"
-            }
+            val url = reachabilityUrl(processedUrl, prefData.isAlternativeUrl())
 
             val isAvailable = configurationsRepository.checkServerAvailability(url)
             if (isAvailable) {
@@ -371,7 +366,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         return if (lastSynced == 0L) {
             " Never Synced"
         } else {
-            TimeUtils.getRelativeTime(lastSynced, timeProvider)
+            TimeUtils.getRelativeTime(this, lastSynced, timeProvider)
         }
     }
 
@@ -382,6 +377,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         val spinnerArrayAdapter = ArrayAdapter(this, R.layout.spinner_item, list)
         spinnerArrayAdapter.setDropDownViewResource(R.layout.spinner_item)
         spinner.adapter = spinnerArrayAdapter
+        spinner.setSelection(syncTimeInterval.indexOf(prefData.getAutoSyncInterval()).coerceAtLeast(0))
     }
 
     private fun saveSyncInfoToPreference() {
@@ -557,25 +553,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
                     showSnack(activityContext.findViewById(android.R.id.content), getString(R.string.sync_completed))
 
-                    if (prefData.isAlternativeUrl()) {
-                        prefData.setAlternativeUrl("")
-                        prefData.setProcessedAlternativeUrl("")
-                        prefData.setIsAlternativeUrl(false)
-                    }
+                    configurationsRepository.clearAlternativeUrlIfPrimaryReachable()
 
-                    val links = configurationsRepository.getQueuedDownloads()
-                    if (links.isNotEmpty()) {
-                        openDownloadService(context, ArrayList(links), true)
-                    }
-
-                    val betaAutoDownload = prefData.getBetaAutoDownload()
-                    if (betaAutoDownload) {
-                        withContext(dispatcherProvider.io) {
-                            resourceDownloadCoordinator.startBackgroundDownload(
-                                downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
-                            )
-                        }
-                    }
+                    resourceDownloadCoordinator.runPostSyncDownloads()
 
                     cancelAll(activityContext)
 
@@ -608,10 +588,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 dotSync?.backgroundTintList = ColorStateList.valueOf(0xFFEF4444.toInt())
             } else {
                 val lastSyncMillis = prefData.getLastSync()
-                var relativeTime = TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
-
-                if (relativeTime.matches(secondsAgoRegex)) {
-                    relativeTime = getString(R.string.a_few_seconds_ago)
+                val relativeTime = if (timeProvider.now() - lastSyncMillis in 0 until DateUtils.MINUTE_IN_MILLIS) {
+                    getString(R.string.a_few_seconds_ago)
+                } else {
+                    TimeUtils.getRelativeTime(this, lastSyncMillis, timeProvider)
                 }
 
                 lblLastSyncDate.text = getString(R.string.last_sync, relativeTime)
@@ -635,7 +615,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     private fun checkForceSync(maxDays: Int): Boolean {
         val daysDiff = ForceSyncPolicy.overdueDays(
-            prefData.getLastSync(), System.currentTimeMillis(), maxDays
+            prefData.getLastSync(), timeProvider.now(), maxDays
         ) ?: return false
         val alertDialogBuilder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
         alertDialogBuilder.setMessage("${getString(R.string.it_has_been_more_than)}${(daysDiff - 1)}${getString(R.string.days_since_you_last_synced_this_device)}${getString(R.string.connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet)}")
@@ -656,7 +636,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
         prefData.setLoggedIn(true)
         openDashboard()
-        isNetworkConnectedFlow.onEach { isConnected ->
+        loginNetworkJob?.cancel()
+
+        val prefData = prefData
+        val syncRepository = syncRepository
+        val transactionSyncManager = transactionSyncManager
+        val timeProvider = timeProvider
+        loginNetworkJob = isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
                 val serverUrl = prefData.getServerUrl()
                 if (serverUrl.isNotEmpty()) {
@@ -666,7 +652,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                             val state = syncRepository.uploadLoginData()
                                 .first { it is SyncUiState.Success || it is SyncUiState.Error }
                             if (state is SyncUiState.Success) {
-                                prefData.setLastUsageUploaded(Date().time)
+                                prefData.setLastUsageUploaded(timeProvider.now())
                             }
                             transactionSyncManager.syncDb("login_activities")
                         }
@@ -713,8 +699,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             dialog.getActionButton(DialogAction.NEUTRAL).text = getString(R.string.show_more)
         }
     }
+
     fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
         runOnUiThread {
+            saveSyncInfoToPreference()
+            serverDialogBinding?.let { prefData.setCustomDeviceName(it.deviceName.text.toString()) }
             dialog.dismiss()
 
             processedUrl = if (isAlternativeUrl) {
@@ -751,9 +740,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         if (::btnSignIn.isInitialized) {
             showSnack(btnSignIn, success)
         }
-        prefData.setLastUsageUploaded(Date().time)
+        prefData.setLastUsageUploaded(timeProvider.now())
         if (::lblLastSyncDate.isInitialized) {
-            lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, TimeUtils.getRelativeTime(Date().time, timeProvider))} >>")
+            lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, TimeUtils.getRelativeTime(this, timeProvider.now(), timeProvider))} >>")
         }
         syncFailed = false
     }
@@ -811,8 +800,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 if (isSync) {
                     isServerReachable(processedUrl, "sync")
                 } else if (forceSync) {
-                    isServerReachable(processedUrl, "upload")
-                    startUpload("")
+                    if (isServerReachable(processedUrl, "upload")) {
+                        startUpload("")
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -823,10 +813,19 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     override fun onDestroy() {
         super.onDestroy()
     }
+
     companion object {
         private const val TAG = "SyncActivity"
+        private var loginNetworkJob: Job? = null
+        
+        @VisibleForTesting
+        internal fun reachabilityUrl(processedUrl: String?, isAlternativeUrl: Boolean): String =
+            if (isAlternativeUrl) {
+                UrlUtils.dbUrl(processedUrl.orEmpty()) + "/_all_dbs"
+            } else {
+                "$processedUrl/_all_dbs"
+            }
         private const val SYNC_STATUS_SAMPLE_MS = 150L
-        private val secondsAgoRegex by lazy { Regex("^\\d{1,2} seconds ago$") }
         private val urlProtocolRegex by lazy { Regex("^https?://") }
         fun restartApp() {
             val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)

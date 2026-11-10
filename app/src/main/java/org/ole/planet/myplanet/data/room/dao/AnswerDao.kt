@@ -15,7 +15,7 @@ interface AnswerDao {
 
     suspend fun getBySubmissionIds(submissionIds: List<String>): List<Answer> {
         if (submissionIds.isEmpty()) return emptyList()
-        return submissionIds.chunked(900).flatMap { getBySubmissionIdsInternal(it) }
+        return submissionIds.distinct().chunked(900).flatMap { getBySubmissionIdsInternal(it) }
     }
 
     @Query("SELECT * FROM answers WHERE submissionId = :submissionId AND questionId = :questionId LIMIT 1") suspend fun getBySubmissionAndQuestion(submissionId: String, questionId: String?): Answer?
@@ -26,7 +26,7 @@ interface AnswerDao {
     @Transaction
     suspend fun deleteBySubmissionIds(submissionIds: List<String>): Int {
         if (submissionIds.isEmpty()) return 0
-        return submissionIds.chunked(900).sumOf { deleteBySubmissionIdsInternal(it) }
+        return submissionIds.distinct().chunked(900).sumOf { deleteBySubmissionIdsInternal(it) }
     }
 
     @Upsert suspend fun upsertAll(items: List<Answer>)

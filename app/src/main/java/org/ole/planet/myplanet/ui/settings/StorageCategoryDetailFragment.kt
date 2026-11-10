@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.base.BaseBindingBottomSheetFragment
 import org.ole.planet.myplanet.databinding.FragmentStorageCategoryDetailBinding
 import org.ole.planet.myplanet.databinding.ItemDownloadedResourceBinding
 import org.ole.planet.myplanet.model.OfflineResourceItem
+import org.ole.planet.myplanet.model.StorageCategoryType
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -97,7 +98,7 @@ class StorageCategoryDetailFragment : BaseBindingBottomSheetFragment<FragmentSto
         viewModel.loadResources(
             olePath = olePath,
             extensions = category?.extensions ?: emptySet(),
-            allKnownExtensions = StorageCategories.allKnownExtensions
+            allKnownExtensions = StorageCategoryType.allKnownExtensions
         )
     }
 
@@ -178,7 +179,20 @@ class StorageCategoryDetailFragment : BaseBindingBottomSheetFragment<FragmentSto
             val b = ItemDownloadedResourceBinding.inflate(
                 LayoutInflater.from(parent.context), parent, false
             )
-            return ViewHolder(b)
+            val holder = ViewHolder(b)
+            holder.binding.root.setOnClickListener {
+                val pos = holder.bindingAdapterPosition
+                if (pos != RecyclerView.NO_POSITION) {
+                    onItemClicked(getItem(pos))
+                }
+            }
+            holder.binding.checkBox.setOnClickListener {
+                val pos = holder.bindingAdapterPosition
+                if (pos != RecyclerView.NO_POSITION) {
+                    onItemClicked(getItem(pos))
+                }
+            }
+            return holder
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -186,20 +200,12 @@ class StorageCategoryDetailFragment : BaseBindingBottomSheetFragment<FragmentSto
             holder.binding.resourceTitle.text = item.title
             holder.binding.resourceSize.text = FileUtils.formatSize(requireContext(), item.totalSizeBytes)
             holder.binding.checkBox.isChecked = item.isChecked
-            holder.binding.root.setOnClickListener {
-                onItemClicked(item)
-            }
-            holder.binding.checkBox.setOnClickListener {
-                onItemClicked(item)
-            }
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
             if (payloads.isNotEmpty()) {
                 val item = getItem(position)
                 holder.binding.checkBox.isChecked = item.isChecked
-                holder.binding.root.setOnClickListener { onItemClicked(item) }
-                holder.binding.checkBox.setOnClickListener { onItemClicked(item) }
             } else {
                 super.onBindViewHolder(holder, position, payloads)
             }

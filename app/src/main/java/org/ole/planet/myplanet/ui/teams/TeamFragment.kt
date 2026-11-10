@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.SimpleItemAnimator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.OptIn
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -136,7 +137,7 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
                 if (team == null) {
                     createNewTeam(name, description, services, rules, selectedTeamType, userModel, dialog, failureMessage)
                 } else {
-                    updateExistingTeam(team, name, description, services, rules, userModel, dialog, failureMessage)
+                    updateExistingTeam(team, name, description, services, rules, dialog, failureMessage)
                 }
             }
         }
@@ -187,7 +188,7 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
 
     private suspend fun updateExistingTeam(
         team: TeamDetails, name: String, description: String, services: String, rules: String,
-        userModel: UserEntity, dialog: AlertDialog, failureMessage: String
+        dialog: AlertDialog, failureMessage: String
     ) {
         val targetTeamId = team._id ?: team.teamId
         if (targetTeamId.isNullOrBlank()) {
@@ -200,8 +201,7 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
             description = description,
             services = services,
             rules = rules,
-            category = type,
-            updatedBy = userModel._id
+            category = type
         )
         when (result) {
             is TeamActionResult.NameExists -> {
@@ -307,7 +307,7 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
     private fun observeTeamData() {
         collectLatestWhenStarted(viewModel.teamData) { teamDataList ->
             teamListAdapter.submitList(teamDataList)
-            showNoResultsMessage(teamDataList.isEmpty())
+            showNoResultsMessage(teamDataList.isEmpty(), binding.etSearch.text?.toString().orEmpty().trim())
             listContentDescription(conditionApplied)
         }
     }
@@ -316,7 +316,7 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
     private fun setupTextWatcher() {
         binding.etSearch.textChanges()
             .drop(1)
-            .debounce(300)
+            .debounce(300.milliseconds)
             .distinctUntilChanged()
             .onEach { text -> viewModel.searchTeams(text?.toString() ?: "") }
             .launchIn(viewLifecycleOwner.lifecycleScope)

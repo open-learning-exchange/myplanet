@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.teams.resources
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -144,11 +145,11 @@ class TeamResourcesViewModelTest {
     fun `loadResources executes queries concurrently`() = runTest(testDispatcher) {
         val libraries = listOf(MyLibrary().apply { id = "r1"; title = "Resource 1" })
         coEvery { teamsRepository.getTeamResources("team1") } coAnswers {
-            delay(100)
+            delay(100.milliseconds)
             libraries
         }
         coEvery { teamsRepository.isTeamLeader("team1", "user1") } coAnswers {
-            delay(100)
+            delay(100.milliseconds)
             true
         }
 
@@ -164,11 +165,11 @@ class TeamResourcesViewModelTest {
     fun `loadResources ignores duplicate calls while loadJob is active for same team and user`() = runTest(testDispatcher) {
         val libraries = listOf(MyLibrary().apply { id = "r1"; title = "Resource 1" })
         coEvery { teamsRepository.getTeamResources("team1") } coAnswers {
-            delay(100)
+            delay(100.milliseconds)
             libraries
         }
         coEvery { teamsRepository.isTeamLeader("team1", "user1") } coAnswers {
-            delay(100)
+            delay(100.milliseconds)
             true
         }
 
@@ -211,20 +212,20 @@ class TeamResourcesViewModelTest {
         val team2Libraries = listOf(MyLibrary().apply { id = "r2"; title = "Team 2 Resource" })
 
         coEvery { teamsRepository.getTeamResources("team1") } coAnswers {
-            delay(200)
+            delay(200.milliseconds)
             team1Libraries
         }
         coEvery { teamsRepository.isTeamLeader("team1", "user1") } coAnswers {
-            delay(200)
+            delay(200.milliseconds)
             true
         }
 
         coEvery { teamsRepository.getTeamResources("team2") } coAnswers {
-            delay(50)
+            delay(50.milliseconds)
             team2Libraries
         }
         coEvery { teamsRepository.isTeamLeader("team2", "user1") } coAnswers {
-            delay(50)
+            delay(50.milliseconds)
             false
         }
 

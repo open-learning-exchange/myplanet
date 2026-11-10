@@ -8,7 +8,7 @@ import org.ole.planet.myplanet.model.NewsLog
 
 @Dao
 interface NewsLogDao {
-    @Query("SELECT * FROM news_log WHERE _id IS NULL OR _id = ''")
+    @Query("SELECT * FROM news_log WHERE _id IS NULL OR _id = '' ORDER BY time IS NULL, time ASC, id ASC")
     suspend fun getPendingUploads(): List<NewsLog>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

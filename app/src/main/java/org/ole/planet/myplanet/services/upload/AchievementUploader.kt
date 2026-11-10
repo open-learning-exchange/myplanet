@@ -5,9 +5,11 @@ import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.asRequestBody
+import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserAchievementsRepository
 import org.ole.planet.myplanet.services.FileUploader
@@ -39,6 +41,8 @@ class AchievementUploader @Inject constructor(
                             uploadCvAttachment(id, rev, resumeFileName)
                         }
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e(TAG, "Exception in AchievementUploader", e)
                 }
@@ -47,13 +51,16 @@ class AchievementUploader @Inject constructor(
     }
 
     private suspend fun uploadCvAttachment(docId: String, rev: String, resumeFileName: String) {
-        val cvFile = File(FileUtils.getOlePath(context) + "cv/$resumeFileName")
+        val olePath = FileUtils.getOlePath(context)
+        val cvFile = File(olePath + Achievement.resolveCvRelativePath(olePath, docId, resumeFileName))
         if (!cvFile.exists()) return
         try {
             val body = cvFile.asRequestBody("application/pdf".toMediaTypeOrNull())
             // CouchDB attachment key is always "resume.pdf"
             val url = "${UrlUtils.getUrl()}/achievements/$docId/resume.pdf"
             uploadRepository.uploadResource(FileUploader.getHeaderMap("application/pdf", rev), url, body)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to upload CV attachment", e)
         }

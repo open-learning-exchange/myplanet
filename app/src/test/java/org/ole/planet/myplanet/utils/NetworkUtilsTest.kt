@@ -1,53 +1,55 @@
 package org.ole.planet.myplanet.utils
 
+import android.app.Application
 import android.content.Context
-import android.net.wifi.WifiManager
+import android.net.ConnectivityManager
 import android.os.Build
 import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
-import dagger.hilt.android.testing.HiltAndroidRule
-import dagger.hilt.android.testing.HiltAndroidTest
-import dagger.hilt.android.testing.HiltTestApplication
+import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 import org.robolectric.util.ReflectionHelpers
 
-@HiltAndroidTest
 @RunWith(RobolectricTestRunner::class)
-@Config(application = HiltTestApplication::class)
+@Config(application = Application::class)
 @LooperMode(LooperMode.Mode.PAUSED)
 class NetworkUtilsTest {
 
-    @get:Rule
-    val hiltRule = HiltAndroidRule(this)
-
     @Before
     fun init() {
-        hiltRule.inject()
         org.ole.planet.myplanet.MainApplication.testContext = ApplicationProvider.getApplicationContext()
         VersionUtils.resetAndroidIdCacheForTesting()
         NetworkUtils.resetForTesting()
     }
 
+    @After
+    fun tearDown() {
+        NetworkUtils.resetForTesting()
+    }
+
     @Test
-    fun testIsWifiEnabled() {
-        val context = ApplicationProvider.getApplicationContext<Context>()
-        val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
+    fun startListenNetworkState_isIdempotent() {
+        val connectivityManager = ApplicationProvider.getApplicationContext<Context>().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val shadowConnectivityManager = shadowOf(connectivityManager)
 
-        wifiManager.isWifiEnabled = true
-        assertTrue(NetworkUtils.isWifiEnabled())
+        val initialSize = shadowConnectivityManager.networkCallbacks.size
 
-        wifiManager.isWifiEnabled = false
-        assertFalse(NetworkUtils.isWifiEnabled())
+        NetworkUtils.startListenNetworkState()
+        assertEquals(initialSize + 1, shadowConnectivityManager.networkCallbacks.size)
+
+        NetworkUtils.startListenNetworkState()
+        assertEquals(initialSize + 1, shadowConnectivityManager.networkCallbacks.size)
+
+        NetworkUtils.stopListenNetworkState()
+        assertEquals(initialSize, shadowConnectivityManager.networkCallbacks.size)
     }
 
     @Test

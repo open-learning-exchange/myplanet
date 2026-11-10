@@ -307,22 +307,32 @@ class CoursesAdapter(
                 }
             }
             binding.courseProgress.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
+                private var requestedStep: Int? = null
+
                 override fun onProgressChanged(seekBar: SeekBar, i: Int, fromUser: Boolean) {
+                    if (!fromUser) return
                     val position = bindingAdapterPosition
-                    if (position != RecyclerView.NO_POSITION && position < itemCount) {
-                        val course = getItem(position)
-                        val progress = progressMap?.get(course.courseId)
-                        if (progress != null) {
-                            val current = progress.current
-                            if (fromUser && i <= current + 1) {
-                                openCourse(course, seekBar.progress)
-                            }
-                        }
-                    }
+                    if (position == RecyclerView.NO_POSITION || position >= itemCount) return
+                    val current = progressState(getItem(position)).first
+                    requestedStep = i
+                    seekBar.progress = current
                 }
 
-                override fun onStartTrackingTouch(seekBar: SeekBar) {}
-                override fun onStopTrackingTouch(seekBar: SeekBar) {}
+                override fun onStartTrackingTouch(seekBar: SeekBar) {
+                    requestedStep = null
+                }
+
+                override fun onStopTrackingTouch(seekBar: SeekBar) {
+                    val step = requestedStep ?: return
+                    requestedStep = null
+                    val position = bindingAdapterPosition
+                    if (position == RecyclerView.NO_POSITION || position >= itemCount) return
+                    val course = getItem(position)
+                    val progress = progressMap?.get(course.courseId) ?: return
+                    if (step <= progress.current + 1) {
+                        openCourse(course, step)
+                    }
+                }
             })
         }
 

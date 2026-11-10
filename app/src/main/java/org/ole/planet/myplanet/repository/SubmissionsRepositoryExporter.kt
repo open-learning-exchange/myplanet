@@ -44,6 +44,9 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
         private const val LINE_HEIGHT = 20f
     }
 
+    internal fun generatedLine(): String =
+        "Generated: ${dateFormatter.format(Instant.ofEpochMilli(timeProvider.now()))}"
+
     suspend fun generateSubmissionPdf(
         submissionId: String
     ): File? {
@@ -158,10 +161,6 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                     textSize = 20f
                     isFakeBoldText = true
                 }
-                val headerPaint = Paint().apply {
-                    textSize = 16f
-                    isFakeBoldText = true
-                }
                 val subHeaderPaint = Paint().apply {
                     textSize = 14f
                     isFakeBoldText = true
@@ -175,11 +174,10 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
 
                 canvas.drawText("Total Submissions: ${submissions.size}", MARGIN, yPosition, normalPaint)
                 yPosition += LINE_HEIGHT
-                canvas.drawText("Generated: ${dateFormatter.format(Instant.now())}", MARGIN, yPosition, normalPaint)
+                canvas.drawText(generatedLine(), MARGIN, yPosition, normalPaint)
                 yPosition += LINE_HEIGHT * 3
 
-                val examId = getExamId(submissions.firstOrNull()?.parentId)
-                val questions = examId?.let { questionDao.getByExamId(it) }.orEmpty()
+                val questionsByExam = getQuestionsByExam(submissions)
 
                 submissions.forEachIndexed { submissionIndex, submission ->
                     if (yPosition > PAGE_HEIGHT - MARGIN - 100) {
@@ -199,6 +197,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                     yPosition += LINE_HEIGHT * 2
 
                     val answersMap = submission.answers?.associateBy { it.questionId } ?: emptyMap()
+                    val questions = getExamId(submission.parentId)?.let { questionsByExam[it] }.orEmpty()
 
                     questions.forEachIndexed { index, question ->
                         if (yPosition > PAGE_HEIGHT - MARGIN - 100) {
@@ -248,7 +247,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
     private fun drawMultilineText(canvas: Canvas, text: String, x: Float, y: Float, paint: Paint, maxWidth: Float): Float {
         var currentY = y
         val words = text.split(" ")
-        val line = java.lang.StringBuilder()
+        val line = StringBuilder()
         var lineWidth = 0f
 
         words.forEach { word ->
@@ -297,6 +296,12 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
             }
             else -> "No answer provided"
         }
+    }
+
+    internal suspend fun getQuestionsByExam(submissions: List<Submission>): Map<String, List<org.ole.planet.myplanet.model.ExamQuestion>> {
+        val examIds = submissions.map { getExamId(it.parentId) }.filterNotNull().distinct()
+        if (examIds.isEmpty()) return emptyMap()
+        return questionDao.getByExamIds(examIds).groupBy { it.examId.orEmpty() }
     }
 
     private fun getExamId(parentId: String?): String? {

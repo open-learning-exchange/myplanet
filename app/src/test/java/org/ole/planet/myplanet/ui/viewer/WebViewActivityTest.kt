@@ -1,12 +1,12 @@
 package org.ole.planet.myplanet.ui.viewer
 
+import java.io.File
+import kotlin.io.path.createTempDirectory
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import java.io.File
-import kotlin.io.path.createTempDirectory
 
 class WebViewActivityTest {
 

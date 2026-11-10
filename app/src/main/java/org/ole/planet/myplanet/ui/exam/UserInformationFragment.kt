@@ -11,7 +11,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.RadioButton
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
@@ -30,6 +29,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.SubmissionsUploader
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.ui.courses.CoursesFilterFragment
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -47,8 +47,10 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     @Inject
     lateinit var submissionsUploader: SubmissionsUploader
     private var syncStartTime: Long = 0L
+    private var submissionToastShown = false
 
     companion object {
+        private const val TAG = "UserInformationFragment"
         const val PROFILE_UPDATE_REQUEST_KEY = "user_information_profile_updated"
 
         fun getInstance(id: String?, teamId: String?, shouldHideElements: Boolean): UserInformationFragment {
@@ -89,17 +91,17 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                     if (isAdded) dialog?.dismiss()
                 }
                 is UserInformationResult.MarkSubmissionSuccess -> {
-                    Log.d("UserInformationFragment", "Submission marked complete, about to dismiss dialog")
+                    submissionToastShown = true
                     Utilities.toast(
                         requireContext(),
                         getString(R.string.thank_you_for_taking_this_survey)
                     )
                     if (isAdded) {
-                        Log.d("UserInformationFragment", "Dismissing dialog, this will trigger onDismiss()")
                         dialog?.dismiss()
                     }
                 }
                 is UserInformationResult.MarkSubmissionError -> {
+                    submissionToastShown = true
                     if (result.message == "no ID provided") {
                         Utilities.toast(
                             requireContext(),
@@ -143,14 +145,14 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         when (view.id) {
             R.id.btn_cancel -> {
                 syncStartTime = SystemClock.elapsedRealtime()
-                Log.d("UserInformationFragment", "Cancel button clicked - Mini survey sync timer started at: $syncStartTime")
+                Log.d(TAG, "Cancel button clicked - Mini survey sync timer started at: $syncStartTime")
                 if (isAdded) {
                     dialog?.dismiss()
                 }
             }
             R.id.btn_submit -> {
                 syncStartTime = SystemClock.elapsedRealtime()
-                Log.d("UserInformationFragment", "Submit button clicked - Mini survey sync timer started at: $syncStartTime")
+                Log.d(TAG, "Submit button clicked - Mini survey sync timer started at: $syncStartTime")
                 submitForm()
             }
             R.id.txt_dob -> showDatePickerDialog()
@@ -250,7 +252,8 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
         var level = ""
         if (fragmentUserInformationBinding.llLevel.isVisible) {
-            level = fragmentUserInformationBinding.spnLevel.selectedItem.toString()
+            level = CoursesFilterFragment.englishValues(requireContext(), R.array.level)
+                .getOrElse(fragmentUserInformationBinding.spnLevel.selectedItemPosition) { "" }
         }
 
         var gender = ""
@@ -276,26 +279,24 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     }
 
     private fun saveSubmission(user: JsonObject) {
-        Log.d("UserInformationFragment", "saveSubmission called, syncStartTime: $syncStartTime")
+        Log.d(TAG, "saveSubmission called, syncStartTime: $syncStartTime")
         val submissionId = id
-        Log.d("UserInformationFragment", "Marking submission complete for ID: $submissionId")
         viewModel.markSubmissionComplete(submissionId, user)
     }
 
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
         parentFragmentManager.setFragmentResult(PROFILE_UPDATE_REQUEST_KEY, Bundle())
-        Log.d("UserInformationFragment", "onDismiss called, syncStartTime: $syncStartTime")
+        Log.d(TAG, "onDismiss called, syncStartTime: $syncStartTime")
         val safeTeamId = arguments?.getString("teamId") ?: ""
-        Log.d("UserInformationFragment", "teamId: $safeTeamId")
-        if (safeTeamId == "") {
-            Log.d("UserInformationFragment", "No teamId, skipping upload")
+        if (safeTeamId == "" || isStateSaved || activity?.isChangingConfigurations == true) {
             return
         } else {
-            Log.d("UserInformationFragment", "Team survey detected, starting server check and upload process")
             submissionsUploader.checkAvailableServer(syncStartTime)
 
-            Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
+            if (!submissionToastShown) {
+                Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
+            }
             val activity = requireActivity()
             if (activity is androidx.appcompat.app.AppCompatActivity) {
                 FragmentNavigator.popBackStack(activity.supportFragmentManager)

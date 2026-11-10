@@ -11,6 +11,7 @@ import java.io.IOException
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -19,11 +20,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.room.dao.LibraryTitleProjection
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
-import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.OfflineResourceItem
@@ -31,6 +30,7 @@ import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.SearchActivity
+import org.ole.planet.myplanet.model.StorageCategoryType
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.model.UserEntity
@@ -43,18 +43,18 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.StoragePathResolver
+import org.ole.planet.myplanet.utils.StringUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.distinctByContent
 
+@Singleton
 class ResourcesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val activitiesRepository: ActivitiesRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val tagsRepository: TagsRepository,
-    private val searchActivityDao: SearchActivityDao,
     private val resourceActivityDao: ResourceActivityDao,
     private val removedLogDao: RemovedLogDao,
     private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository>,
@@ -79,8 +79,8 @@ class ResourcesRepositoryImpl @Inject constructor(
         return "%\"$escaped\"%"
     }
 
-    override suspend fun getLibraryTitles(): List<LibraryTitleProjection> {
-        return myLibraryDao.getLibraryTitles()
+    override suspend fun getLibraryTitles(): List<LibraryTitle> {
+        return myLibraryDao.getLibraryTitles().map { LibraryTitle(it.id, it.title) }
     }
 
     override suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<MyLibrary> {
@@ -99,8 +99,8 @@ class ResourcesRepositoryImpl @Inject constructor(
         if (isMyCourseLib && userId == null) return emptyList()
 
         val queryParts = query.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
-        val normalizedQuery = Utilities.normalizeText(query)
+        val normalizedQueryParts = queryParts.map { StringUtils.normalizeText(it) }
+        val normalizedQuery = StringUtils.normalizeText(query)
 
         val queryBuilder = StringBuilder("SELECT * FROM my_library WHERE isPrivate = 0")
         val bindArgs = mutableListOf<Any>()
@@ -158,7 +158,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         return runCatching {
             val resource = myLibraryDao.getById(resourceId) ?: return@runCatching
             resource.title = title
-            resource.titleNormal = Utilities.normalizeText(title)
+            resource.titleNormal = StringUtils.normalizeText(title)
             resource.author = author
             resource.year = year
             resource.description = description
@@ -175,7 +175,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         return getLibraryItemById(id) ?: getLibraryItemByResourceId(id)
     }
 
-    override suspend fun resolveLibraryItemByResourceId(resourceId: String): MyLibrary? {
+    internal suspend fun resolveLibraryItemByResourceId(resourceId: String): MyLibrary? {
         return getLibraryItemByResourceId(resourceId) ?: getLibraryItemById(resourceId)
     }
 
@@ -215,7 +215,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         return myLibraryDao.getPublicNeedingUpdateForUserPattern(userIdPattern(userId))
     }
 
-    override suspend fun getMyLibrary(userId: String?): List<MyLibrary> {
+    internal suspend fun getMyLibrary(userId: String?): List<MyLibrary> {
         if (userId.isNullOrBlank()) return emptyList()
         return myLibraryDao.getForUserPattern(userIdPattern(userId))
     }
@@ -250,7 +250,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val title = request.title ?: return Result.failure(Exception("Title is missing"))
 
         if (resourceTitleExists(title)) {
-            return Result.failure(Exception("Resource title already exists"))
+            return Result.failure(DuplicateResourceTitleException())
         }
 
         val sourceFile = request.resourceUrl?.let { File(it) }
@@ -279,7 +279,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val resource = MyLibrary().apply {
             this.id = id
             this.title = title
-            this.titleNormal = Utilities.normalizeText(title)
+            this.titleNormal = StringUtils.normalizeText(title)
             this.addedBy = request.addedBy
             this.author = request.author
             this.resourceId = id
@@ -341,7 +341,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         return if ((updated.userId?.contains(userId) == true) == add) updated else null
     }
 
-    override suspend fun updateUserLibrary(
+    internal suspend fun updateUserLibrary(
         resourceId: String,
         userId: String,
         isAdd: Boolean,
@@ -376,7 +376,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val relativePath = FileUtils.getResourceRelativePathFromUrl(url)
 
         if (localAddress.isNotBlank()) {
-            markResourceOfflineByLocalAddress(localAddress)
+            markResourceOfflineByLocalAddress(localAddress, resourceId)
         }
 
         if (resourceId.isNotBlank()) {
@@ -384,8 +384,9 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun markResourceOfflineByLocalAddress(localAddress: String) {
+    private suspend fun markResourceOfflineByLocalAddress(localAddress: String, resourceId: String) {
         val results = myLibraryDao.getByLocalAddress(localAddress)
+            .filter { resourceId.isBlank() || it.resourceId == resourceId }
         results.forEach { library ->
             library.resourceOffline = true
             library.downloadedRev = library._rev
@@ -396,10 +397,9 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun reconcileHtmlResourceOffline(resourceId: String) {
-        val library = myLibraryDao.getByResourceId(resourceId) ?: return
+    private suspend fun applyHtmlOffline(library: MyLibrary, resourceId: String): Boolean {
         if (library.isResourceOffline()) {
-            return
+            return false
         }
         val entryFile = library.openWhichFile?.takeIf { it.isNotBlank() } ?: "index.html"
         val directory = File(storagePathResolver.resolveOleDirectory(), resourceId)
@@ -407,15 +407,22 @@ class ResourcesRepositoryImpl @Inject constructor(
             FileUtils.resolveHtmlEntryFile(directory, entryFile)?.exists() == true
         }
         if (!entryExists) {
-            return
+            return false
         }
         library.resourceOffline = true
         library.downloadedRev = library._rev
         if (library.resourceLocalAddress.isNullOrBlank()) {
             library.resourceLocalAddress = entryFile
         }
-        myLibraryDao.upsert(library)
-        clearResourceListCache()
+        return true
+    }
+
+    override suspend fun reconcileHtmlResourceOffline(resourceId: String) {
+        val library = myLibraryDao.getByResourceId(resourceId) ?: return
+        if (applyHtmlOffline(library, resourceId)) {
+            myLibraryDao.upsert(library)
+            clearResourceListCache()
+        }
     }
 
     private suspend fun markResourceOfflineByResourceId(resourceId: String, relativePath: String) {
@@ -466,7 +473,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
         val filterPayload = GsonUtils.gson.toJson(filter)
 
-        searchActivityDao.insert(
+        activitiesRepository.recordSearchActivity(
             SearchActivity(
                 id = UUID.randomUUID().toString(),
                 user = userName,
@@ -492,9 +499,11 @@ class ResourcesRepositoryImpl @Inject constructor(
             if (urls.isEmpty()) {
                 return false
             }
-            DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
+            withContext(dispatcherProvider.io) {
+                DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
+            }
             true
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }
@@ -660,7 +669,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                     processedCount++
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w("ResourcesRepository", "batchInsertMyLibrary document insertion failed", e)
             }
         }
         if (librariesToUpsert.isNotEmpty()) {
@@ -708,7 +717,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                     savedIds.add(_id)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w("ResourcesRepository", "batchInsertResources document insertion failed", e)
             }
         }
         if (librariesToUpsert.isNotEmpty()) {
@@ -721,15 +730,34 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     // Detects HTML resources already present on disk from a prior install/sync that never got a resourceLocalAddress.
     private suspend fun reconcileHtmlLibraries(libraries: List<MyLibrary>) {
-        libraries.forEach { library ->
-            if (library.mediaType == "HTML" && library.resourceLocalAddress.isNullOrBlank()) {
-                val resourceId = library.resourceId ?: return@forEach
-                try {
-                    reconcileHtmlResourceOffline(resourceId)
-                } catch (e: Exception) {
-                    Log.w("ResourcesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
+        val qualifyingIds = libraries
+            .filter { it.mediaType == "HTML" && it.resourceLocalAddress.isNullOrBlank() }
+            .mapNotNull { it.resourceId }
+            .distinct()
+
+        if (qualifyingIds.isEmpty()) return
+
+        val rows = myLibraryDao.getByResourceIdsByRowid(qualifyingIds)
+        val firstRowByResourceId = rows
+            .filter { it.resourceId != null }
+            .groupBy { it.resourceId!! }
+            .mapValues { (_, list) -> list.first() }
+
+        val changed = mutableListOf<MyLibrary>()
+        qualifyingIds.forEach { resourceId ->
+            val library = firstRowByResourceId[resourceId] ?: return@forEach
+            try {
+                if (applyHtmlOffline(library, resourceId)) {
+                    changed.add(library)
                 }
+            } catch (e: Exception) {
+                Log.w("ResourcesRepository", "reconcileHtmlResourceOffline failed for $resourceId", e)
             }
+        }
+
+        if (changed.isNotEmpty()) {
+            myLibraryDao.upsertAll(changed)
+            clearResourceListCache()
         }
     }
 
@@ -746,7 +774,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun clearResourceListCache() {
+    internal fun clearResourceListCache() {
         cachedMyCourseLibModels = null
         cachedPublicLibModels = null
     }
@@ -795,7 +823,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             myLibraryDao.getPublic()
         }
 
-        val allResourceIds = allLibraryItems.mapNotNull { it.resourceId ?: it.id }
+        val allResourceIds = allLibraryItems.map { it.resourceId ?: it.id }
         val tagsMap = getResourceTagsBulk(allResourceIds)
 
         return allLibraryItems.map { library ->
@@ -803,11 +831,6 @@ class ResourcesRepositoryImpl @Inject constructor(
             val tags = tagsMap[resourceId] ?: emptyList()
             LibraryWithMetadata(library, tags)
         }
-    }
-
-    override suspend fun getResourceTitlesMap(): Map<String, String> {
-        return myLibraryDao.getResourceTitles()
-            .associate { (it.resourceId ?: "") to (it.title ?: "") }
     }
 
     override suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>) {
@@ -829,7 +852,14 @@ class ResourcesRepositoryImpl @Inject constructor(
         val library = myLibraryDao.getById(localId) ?: return false
         library._id = remoteId
         library._rev = remoteRev
+
+        val rekey = remoteId.isNotBlank() && library.id != remoteId && moveResourceFolder(localId, remoteId)
+        if (rekey) {
+            library.id = remoteId
+            library.resourceId = remoteId
+        }
         myLibraryDao.upsert(library)
+        if (rekey) myLibraryDao.deleteById(localId)
 
         // Private resources also create a local team-resource link.
         if (library.isPrivate && !library.privateFor.isNullOrBlank()) {
@@ -843,6 +873,17 @@ class ResourcesRepositoryImpl @Inject constructor(
         return true
     }
 
+    private suspend fun moveResourceFolder(fromId: String, toId: String): Boolean = withContext(dispatcherProvider.io) {
+        val oleDir = storagePathResolver.resolveOleDirectory()
+        val from = File(oleDir, fromId)
+        val to = File(oleDir, toId)
+        when {
+            !from.exists() -> true
+            to.exists() -> false
+            else -> from.renameTo(to)
+        }
+    }
+
     override suspend fun trackResourceOpen(item: MyLibrary) {
         userSessionManager.setResourceOpenCount(item, UserSessionManager.KEY_RESOURCE_OPEN)
     }
@@ -854,8 +895,6 @@ class ResourcesRepositoryImpl @Inject constructor(
     ): List<OfflineResourceItem> = withContext(dispatcherProvider.io) {
         val oleDir = File(oleDirPath)
         if (!oleDir.exists() || !oleDir.isDirectory) return@withContext emptyList()
-
-        val titleMap = getResourceTitlesMap()
 
         class ResourceAccumulator {
             val filePaths = mutableListOf<String>()
@@ -871,15 +910,26 @@ class ResourcesRepositoryImpl @Inject constructor(
                 ext in extensions
             }
             if (matchesCategory) {
-                val resourceId = file.parentFile?.name ?: return@forEach
+                val relative = file.relativeTo(oleDir).invariantSeparatorsPath
+                if (!relative.contains('/')) return@forEach
+
+                val resourceId = relative.substringBefore('/')
+                if (resourceId in NON_RESOURCE_DIRS) return@forEach
                 val accumulator = grouped.getOrPut(resourceId) { ResourceAccumulator() }
                 accumulator.filePaths.add(file.absolutePath)
                 accumulator.totalSize += file.length()
             }
         }
 
+        if (grouped.isEmpty()) return@withContext emptyList()
+
+        val titleMap = myLibraryDao.getResourceTitlesByResourceIds(grouped.keys.toList())
+            .associate { (it.resourceId ?: "") to (it.title ?: "") }
+
         return@withContext grouped.map { (resourceId, accumulator) ->
-            val title = titleMap[resourceId]?.takeIf { it.isNotBlank() } ?: context.getString(R.string.storage_unknown_resource)
+            accumulator.filePaths.sort()
+            val title = titleMap[resourceId]?.takeIf { it.isNotBlank() }
+                ?: context.getString(R.string.storage_unknown_resource)
             OfflineResourceItem(resourceId, title, accumulator.filePaths, accumulator.totalSize)
         }.sortedBy { it.title }
     }
@@ -888,13 +938,34 @@ class ResourcesRepositoryImpl @Inject constructor(
         val oleDir = File(oleDirPath)
         items.forEach { item ->
             item.filePaths.forEach { File(it).delete() }
-            val parentDir = oleDir.resolve(item.resourceId)
-            if (parentDir.exists() && parentDir.list().isNullOrEmpty()) {
-                parentDir.delete()
+            val resourceDir = oleDir.resolve(item.resourceId)
+            if (resourceDir.exists()) {
+                resourceDir.walkBottomUp().filter { it.isDirectory && it.list().isNullOrEmpty() }.forEach { it.delete() }
             }
         }
         val deletedIds = items.map { it.resourceId }.toSet()
         markResourcesAsNotOffline(deletedIds)
+    }
+
+    override suspend fun getStorageBreakdown(oleDir: File): StorageBreakdown = withContext(dispatcherProvider.io) {
+        val sizes = LongArray(StorageCategoryType.entries.size)
+        val counts = IntArray(StorageCategoryType.entries.size)
+
+        if (!oleDir.exists() || !oleDir.isDirectory) return@withContext StorageBreakdown(0L, sizes, counts)
+
+        var total = 0L
+
+        oleDir.walkTopDown()
+            .onEnter { it == oleDir || it.parentFile != oleDir || it.name !in NON_RESOURCE_DIRS }
+            .filter { it.isFile }
+            .forEach { file ->
+                val index = StorageCategoryType.indexOf(file.extension)
+                val size = file.length()
+                total += size
+                sizes[index] += size
+                counts[index]++
+            }
+        StorageBreakdown(total, sizes, counts)
     }
 
     override suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String> {
@@ -903,30 +974,29 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override fun serializeForUpload(library: MyLibrary, user: UserEntity?): JsonObject {
-        val personal = library
         return JsonObject().apply {
-            addProperty("title", personal.title)
+            addProperty("title", library.title)
             addProperty("uploadDate", timeProvider.now())
-            addProperty("createdDate", personal.createdDate)
-            addProperty("filename", FileUtils.getFileNameFromUrl(personal.resourceLocalAddress))
-            addProperty("author", personal.author ?: "")
+            addProperty("createdDate", library.createdDate)
+            addProperty("filename", FileUtils.getFileNameFromUrl(library.resourceLocalAddress))
+            addProperty("author", library.author ?: "")
             addProperty("addedBy", user?.id)
-            addProperty("medium", personal.medium)
-            addProperty("description", personal.description)
-            addProperty("year", personal.year)
-            addProperty("language", personal.language)
-            addProperty("publisher", personal.publisher ?: "")
-            addProperty("linkToLicense", personal.linkToLicense ?: "")
-            add("subject", GsonUtils.getAsJsonArray(personal.subject))
-            add("level", GsonUtils.getAsJsonArray(personal.level))
-            addProperty("resourceType", personal.resourceType)
-            addProperty("openWith", personal.openWith)
-            addProperty("mediaType", personal.mediaType ?: "other")
-            add("resourceFor", GsonUtils.getAsJsonArray(personal.resourceFor))
-            addProperty("private", personal.isPrivate)
-            if (personal.isPrivate && personal.privateFor != null) {
+            addProperty("medium", library.medium)
+            addProperty("description", library.description)
+            addProperty("year", library.year)
+            addProperty("language", library.language)
+            addProperty("publisher", library.publisher ?: "")
+            addProperty("linkToLicense", library.linkToLicense ?: "")
+            add("subject", GsonUtils.getAsJsonArray(library.subject))
+            add("level", GsonUtils.getAsJsonArray(library.level))
+            addProperty("resourceType", library.resourceType)
+            addProperty("openWith", library.openWith)
+            addProperty("mediaType", library.mediaType ?: "other")
+            add("resourceFor", GsonUtils.getAsJsonArray(library.resourceFor))
+            addProperty("private", library.isPrivate)
+            if (library.isPrivate && library.privateFor != null) {
                 val privateForObj = JsonObject()
-                privateForObj.addProperty("teams", personal.privateFor)
+                privateForObj.addProperty("teams", library.privateFor)
                 add("privateFor", privateForObj)
             }
             addProperty("isDownloadable", true)
@@ -937,5 +1007,9 @@ class ResourcesRepositoryImpl @Inject constructor(
             addProperty("deviceName", NetworkUtils.getDeviceName())
             addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
         }
+    }
+
+    private companion object {
+        val NON_RESOURCE_DIRS = setOf("cv", "team_attachments", "course_attachments", "userimages", "personals")
     }
 }

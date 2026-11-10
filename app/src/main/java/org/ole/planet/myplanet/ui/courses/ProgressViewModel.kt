@@ -10,12 +10,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.CoursesProgressRow
 import org.ole.planet.myplanet.repository.ProgressRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 
 @HiltViewModel
 class ProgressViewModel @Inject constructor(
     private val progressRepository: ProgressRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserReadRepository
 ) : ViewModel() {
 
     private val _courseData = MutableStateFlow<List<CoursesProgressRow>>(emptyList())

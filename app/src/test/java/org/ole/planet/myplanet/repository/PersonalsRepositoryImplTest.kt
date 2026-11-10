@@ -17,6 +17,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -29,6 +31,7 @@ import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
@@ -38,6 +41,7 @@ class PersonalsRepositoryImplTest {
     private lateinit var personalDao: PersonalDao
     private lateinit var uploadRepository: UploadRepository
     private lateinit var deviceNameProvider: DeviceNameProvider
+    private lateinit var timeProvider: TimeProvider
     private lateinit var repository: PersonalsRepositoryImpl
 
     @Before
@@ -48,6 +52,9 @@ class PersonalsRepositoryImplTest {
         deviceNameProvider = mockk(relaxed = true)
         every { deviceNameProvider.getDeviceName() } returns "mock-device-name"
         every { deviceNameProvider.getCustomDeviceName() } returns "mock-custom-device-name"
+
+        timeProvider = mockk(relaxed = true)
+        every { timeProvider.now() } returns 1_700_000_000_000L
 
         mockkObject(UrlUtils)
         every { UrlUtils.header } returns "mock-header"
@@ -61,7 +68,7 @@ class PersonalsRepositoryImplTest {
         mockkObject(FileUtils)
         every { FileUtils.getFileNameFromUrl(any()) } returns "test.txt"
 
-        repository = PersonalsRepositoryImpl(personalDao, uploadRepository, deviceNameProvider)
+        repository = PersonalsRepositoryImpl(personalDao, uploadRepository, deviceNameProvider, timeProvider)
     }
 
     @After
@@ -116,6 +123,34 @@ class PersonalsRepositoryImplTest {
     }
 
     @Test
+    fun `savePersonalResource stores date from timeProvider`() = runTest {
+        val savedObjectSlot = slot<Personal>()
+        coEvery { personalDao.insert(capture(savedObjectSlot)) } returns Unit
+
+        repository.savePersonalResource(
+            title = "Test Title",
+            userId = "user1",
+            userName = "Test User",
+            path = "/path/to/file",
+            description = "Test Desc"
+        )
+
+        val captured = savedObjectSlot.captured
+        assertEquals(1_700_000_000_000L, captured.date)
+    }
+
+    @Test
+    fun `uploadPersonalDocument serializes uploadDate from timeProvider`() = runTest {
+        val personal = Personal().apply { id = "test-id" }
+        val bodySlot = slot<JsonObject>()
+        coEvery { uploadRepository.postUpload(any(), capture(bodySlot)) } returns Response.success(JsonObject())
+
+        repository.uploadPersonalDocument(personal)
+
+        assertEquals(1_700_000_000_000L, bodySlot.captured.get("uploadDate").asLong)
+    }
+
+    @Test
     fun `getPersonalResources returns empty flow for null or blank userId`() = runTest {
         val resultNull = repository.getPersonalResources(null).first()
         assertTrue(resultNull.isEmpty())
@@ -152,23 +187,6 @@ class PersonalsRepositoryImplTest {
     }
 
     @Test
-    fun `getPendingPersonalUploads queries correctly`() = runTest {
-        coEvery { personalDao.getPendingUploads("user1") } returns listOf(Personal(), Personal())
-
-        val results = repository.getPendingPersonalUploads("user1")
-
-        assertEquals(2, results.size)
-        coVerify { personalDao.getPendingUploads("user1") }
-    }
-
-    @Test
-    fun `updatePersonalAfterSync updates fields properly`() = runTest {
-        repository.updatePersonalAfterSync("test-id", "new-id", "rev-1")
-
-        coVerify { personalDao.updateUploadedStatus("test-id", "new-id", "rev-1") }
-    }
-
-    @Test
     fun `uploadPersonalDocument returns Pair of id and rev on success`() = runTest {
         val personal = Personal().apply { id = "test-id" }
 
@@ -182,7 +200,8 @@ class PersonalsRepositoryImplTest {
 
         assertEquals("new-id", result?.first)
         assertEquals("rev-1", result?.second)
-        coVerify { personalDao.updateUploadedStatus("test-id", "new-id", "rev-1") }
+        coVerify { personalDao.updateRemoteDocRef("test-id", "new-id", "rev-1") }
+        coVerify(exactly = 0) { personalDao.updateUploadedStatus(any(), any(), any()) }
     }
 
     @Test
@@ -301,7 +320,7 @@ class PersonalsRepositoryImplTest {
     @Test
     fun `uploadPersonalDocument returns null when response body is null`() = runTest {
         val personal = Personal().apply { id = "test-id" }
-        coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success<JsonObject>(null)
+        coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success(null)
 
         val result = repository.uploadPersonalDocument(personal)
 
@@ -314,7 +333,7 @@ class PersonalsRepositoryImplTest {
 
         val result = repository.uploadPersonal(personal)
 
-        assertEquals("Resource already uploaded", result)
+        assertEquals(PersonalUploadResult.AlreadyUploaded("Resource already uploaded"), result)
     }
 
     @Test
@@ -333,7 +352,7 @@ class PersonalsRepositoryImplTest {
 
         val result = repository.uploadPersonal(personal)
 
-        assertEquals("Personal resource uploaded successfully", result)
+        assertEquals(PersonalUploadResult.Success("Personal resource uploaded successfully"), result)
         coVerify { uploadRepository.postUpload(any(), any()) }
         coVerify(exactly = 0) { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) }
     }
@@ -351,11 +370,11 @@ class PersonalsRepositoryImplTest {
         }
         val mockResponse = Response.success(mockResponseObject)
         coEvery { uploadRepository.postUpload(any(), any()) } returns mockResponse
-        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns mockk()
+        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns Response.success(JsonObject())
 
         val result = repository.uploadPersonal(personal)
 
-        assertEquals("Personal resource uploaded successfully", result)
+        assertEquals(PersonalUploadResult.Success("Personal resource uploaded successfully"), result)
         coVerify { uploadRepository.postUpload(any(), any()) }
         coVerify(exactly = 1) {
             uploadRepository.uploadAttachment(
@@ -366,6 +385,110 @@ class PersonalsRepositoryImplTest {
                 name = "test.txt"
             )
         }
+        coVerify(exactly = 1) { personalDao.updateUploadedStatus("test-id", "new-id", "new-rev") }
+    }
+
+    @Test
+    fun `uploadPersonal does not mark isUploaded when attachment upload fails`() = runTest {
+        val personal = Personal().apply {
+            id = "test-id"
+            isUploaded = false
+            path = "/local/path/to/test.txt"
+        }
+        val mockResponseObject = JsonObject().apply {
+            addProperty("rev", "new-rev")
+            addProperty("id", "new-id")
+        }
+        coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success(mockResponseObject)
+        val causeException = RuntimeException("network dropped")
+        coEvery {
+            uploadRepository.uploadAttachment(any(), any(), any(), any(), any())
+        } throws causeException
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals(
+            PersonalUploadResult.AttachmentFailed(
+                "Uploaded document but failed to upload attachment: network dropped",
+                causeException
+            ),
+            result
+        )
+        coVerify(exactly = 1) { personalDao.updateRemoteDocRef("test-id", "new-id", "new-rev") }
+        coVerify(exactly = 0) { personalDao.updateUploadedStatus(any(), any(), any()) }
+    }
+
+    @Test
+    fun `uploadPersonal does not mark isUploaded when attachment upload returns HTTP error`() = runTest {
+        val personal = Personal().apply {
+            id = "test-id"
+            isUploaded = false
+            path = "/local/path/to/test.txt"
+            _id = "new-id"
+            _rev = "stale-rev"
+        }
+        coEvery {
+            uploadRepository.uploadAttachment(any(), any(), any(), any(), any())
+        } returns Response.error(409, "{\"error\":\"conflict\"}".toResponseBody("application/json".toMediaType()))
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals(
+            PersonalUploadResult.AttachmentFailed("Uploaded document but failed to upload attachment: HTTP 409"),
+            result
+        )
+        coVerify(exactly = 0) { personalDao.updateUploadedStatus(any(), any(), any()) }
+    }
+
+    @Test
+    fun `uploadPersonal persists the rev returned by the attachment upload`() = runTest {
+        val personal = Personal().apply {
+            id = "test-id"
+            isUploaded = false
+            path = "/local/path/to/test.txt"
+            _id = "new-id"
+            _rev = "1-doc"
+        }
+        val attachmentResponse = JsonObject().apply {
+            addProperty("ok", true)
+            addProperty("id", "new-id")
+            addProperty("rev", "2-attachment")
+        }
+        coEvery {
+            uploadRepository.uploadAttachment(any(), any(), any(), any(), any())
+        } returns Response.success(attachmentResponse)
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals(PersonalUploadResult.Success("Personal resource uploaded successfully"), result)
+        coVerify(exactly = 1) { personalDao.updateUploadedStatus("test-id", "new-id", "2-attachment") }
+    }
+
+    @Test
+    fun `uploadPersonal retry reuses stored remote doc ref instead of re-posting`() = runTest {
+        val personal = Personal().apply {
+            id = "test-id"
+            isUploaded = false
+            path = "/local/path/to/test.txt"
+            _id = "new-id"
+            _rev = "new-rev"
+        }
+        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns Response.success(JsonObject())
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals(PersonalUploadResult.Success("Personal resource uploaded successfully"), result)
+        coVerify(exactly = 0) { uploadRepository.postUpload(any(), any()) }
+        coVerify(exactly = 1) {
+            uploadRepository.uploadAttachment(
+                file = any(),
+                destinationFormat = "%s/resources/%s/%s",
+                id = "new-id",
+                rev = "new-rev",
+                name = "test.txt"
+            )
+        }
+        coVerify(exactly = 1) { personalDao.updateUploadedStatus("test-id", "new-id", "new-rev") }
     }
 
     @Test
@@ -379,7 +502,27 @@ class PersonalsRepositoryImplTest {
 
         val result = repository.uploadPersonal(personal)
 
-        assertEquals("Failed to upload personal resource: No response", result)
+        assertEquals(
+            PersonalUploadResult.DocumentFailed("Failed to upload personal resource: No response"),
+            result
+        )
+    }
+
+    @Test
+    fun `uploadPersonal returns DocumentFailed when postUpload throws exception`() = runTest {
+        val personal = Personal().apply {
+            id = "test-id"
+            isUploaded = false
+        }
+        val exception = RuntimeException("Connection failed")
+        coEvery { uploadRepository.postUpload(any(), any()) } throws exception
+
+        val result = repository.uploadPersonal(personal)
+
+        assertEquals(
+            PersonalUploadResult.DocumentFailed("Unable to upload resource: Connection failed", exception),
+            result
+        )
     }
 
     @Test

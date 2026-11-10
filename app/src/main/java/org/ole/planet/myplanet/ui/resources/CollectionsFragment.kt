@@ -10,11 +10,8 @@ import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
 import kotlin.collections.ArrayList
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseBindingDialogFragment
 import org.ole.planet.myplanet.callback.OnTagClickListener
@@ -24,6 +21,7 @@ import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.utils.KeyboardUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.debounceDistinct
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
@@ -37,6 +35,8 @@ class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding
     private var listener: OnTagClickListener? = null
     private var selectedItemsList: ArrayList<TagEntity> = ArrayList()
     private var currentTagDataList: List<TagData> = emptyList()
+    private var filterQuery = ""
+    private var searchChildMatches: Map<String, List<TagEntity>> = emptyMap()
     private var isCollectionSwitchOn = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,8 +68,7 @@ class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding
                     val reconciledList = reconcileSelections(selectedItemsList, list, childMap)
                     selectedItemsList.clear()
                     selectedItemsList.addAll(reconciledList)
-                    currentTagDataList = buildTagDataList(list)
-                    adapter.submitList(currentTagDataList)
+                    refreshTagList()
                     binding.btnOk.visibility = View.VISIBLE
                 }
                 is CollectionsState.Empty -> {
@@ -95,8 +94,7 @@ class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding
             dismiss()
         }
         binding.etFilter.textChanges()
-            .debounce(300L)
-            .distinctUntilChanged()
+            .debounceDistinct(300L)
             .onEach { charSequence ->
                 if (!::adapter.isInitialized) return@onEach
                 charSequence?.let { filterTags(it.toString()) }
@@ -105,15 +103,25 @@ class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding
     }
 
     private fun filterTags(charSequence: String) {
-        val filteredParentList = if (charSequence.isEmpty()) {
+        filterQuery = charSequence.trim()
+        refreshTagList()
+    }
+
+    private fun refreshTagList() {
+        val visibleParents = if (filterQuery.isEmpty()) {
+            searchChildMatches = emptyMap()
             list
         } else {
-            val query = charSequence.lowercase(Locale.ROOT)
-            list.filter {
-                it.name?.lowercase(Locale.ROOT)?.contains(query) == true
-            }
+            val query = filterQuery.lowercase(Locale.ROOT)
+            fun TagEntity.matchesQuery() = name?.lowercase(Locale.ROOT)?.contains(query) == true
+            searchChildMatches = list.mapNotNull { parent ->
+                childMap[parent.id]?.filter { it.matchesQuery() }
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let { parent.id to it }
+            }.toMap()
+            list.filter { it.matchesQuery() || searchChildMatches.containsKey(it.id) }
         }
-        currentTagDataList = buildTagDataList(filteredParentList)
+        currentTagDataList = buildTagDataList(visibleParents)
         adapter.submitList(currentTagDataList)
     }
 
@@ -194,11 +202,14 @@ class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding
 
             tagDataList.add(parent.copy(isSelected = isSelected, isSelectMultiple = isSelectMultiple))
 
-            if (parent.isExpanded) {
-                childMap[parent.tag.id]?.forEach { childTag ->
-                    val isChildSelected = isTagSelected(childTag)
-                    tagDataList.add(TagData.Child(childTag, isChildSelected, isSelectMultiple))
-                }
+            val visibleChildren = if (parent.isExpanded) {
+                childMap[parent.tag.id]
+            } else {
+                searchChildMatches[parent.tag.id]
+            }
+            visibleChildren?.forEach { childTag ->
+                val isChildSelected = isTagSelected(childTag)
+                tagDataList.add(TagData.Child(childTag, isChildSelected, isSelectMultiple))
             }
         }
         return tagDataList
@@ -211,8 +222,7 @@ class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding
 
     override fun onParentTagClicked(parent: TagData.Parent) {
         parent.isExpanded = !parent.isExpanded
-        currentTagDataList = buildTagDataList(list)
-        adapter.submitList(currentTagDataList)
+        refreshTagList()
     }
 
     override fun onCheckboxTagSelected(tag: TagEntity) {
@@ -222,8 +232,7 @@ class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding
         } else {
             selectedItemsList.add(tag)
         }
-        currentTagDataList = buildTagDataList(list)
-        adapter.submitList(currentTagDataList)
+        refreshTagList()
     }
 
     override fun hasChildren(tagId: String?): Boolean {
@@ -232,8 +241,7 @@ class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding
 
     override fun onCheckedChanged(compoundButton: CompoundButton, b: Boolean) {
         isCollectionSwitchOn = b
-        currentTagDataList = buildTagDataList(list)
-        adapter.submitList(currentTagDataList)
+        refreshTagList()
         binding.btnOk.visibility = if (b) View.VISIBLE else View.GONE
     }
 

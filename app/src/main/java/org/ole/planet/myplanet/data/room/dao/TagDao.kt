@@ -25,10 +25,20 @@ interface TagDao {
     suspend fun getByDbAndLinkId(db: String, linkId: String): List<TagEntity>
 
     @Query("SELECT * FROM tag WHERE db = :db AND linkId IN (:linkIds)")
-    suspend fun getByDbAndLinkIds(db: String, linkIds: List<String>): List<TagEntity>
+    suspend fun getByDbAndLinkIdsInternal(db: String, linkIds: List<String>): List<TagEntity>
+
+    suspend fun getByDbAndLinkIds(db: String, linkIds: List<String>): List<TagEntity> {
+        if (linkIds.isEmpty()) return emptyList()
+        return linkIds.distinct().chunked(900).flatMap { chunk -> getByDbAndLinkIdsInternal(db, chunk) }
+    }
 
     @Query("SELECT * FROM tag WHERE id IN (:ids)")
-    suspend fun getByIds(ids: List<String>): List<TagEntity>
+    suspend fun getByIdsInternal(ids: List<String>): List<TagEntity>
+
+    suspend fun getByIds(ids: List<String>): List<TagEntity> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.distinct().chunked(900).flatMap { chunk -> getByIdsInternal(chunk) }
+    }
 
     @Query("SELECT * FROM tag WHERE name IN (:names)")
     suspend fun getByNames(names: List<String>): List<TagEntity>

@@ -9,7 +9,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
+import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.utils.AmountUtils
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileExistenceCache
 import org.ole.planet.myplanet.utils.ImageViewerUtils
@@ -20,17 +22,17 @@ import org.ole.planet.myplanet.utils.TimeUtils
 class EnterprisesReportsAdapter(
     private val context: Context,
     private val teamName: String?,
-    private val onEdit: (MyTeam) -> Unit,
-    private val onDelete: (MyTeam) -> Unit,
+    private val onEdit: (FinanceReport) -> Unit,
+    private val onDelete: (FinanceReport) -> Unit,
     private val timeProvider: TimeProvider = SystemTimeProvider(),
-) : ListAdapter<MyTeam, EnterprisesReportsAdapter.ReportsViewHolder>(diffCallback) {
+) : ListAdapter<FinanceReport, EnterprisesReportsAdapter.ReportsViewHolder>(diffCallback) {
     private var nonTeamMember = false
     private val attachmentPresenceCache = FileExistenceCache()
     private val reportTitle: String by lazy { context.getString(R.string.team_financial_report, teamName) }
 
     override fun onCurrentListChanged(
-        previousList: MutableList<MyTeam>,
-        currentList: MutableList<MyTeam>
+        previousList: MutableList<FinanceReport>,
+        currentList: MutableList<FinanceReport>
     ) {
         super.onCurrentListChanged(previousList, currentList)
         attachmentPresenceCache.clear()
@@ -68,15 +70,15 @@ class EnterprisesReportsAdapter(
             val totals = reportTotals(it)
             with(binding) {
                 date.text = context.getString(R.string.string_range, TimeUtils.formatDate(it.startDate, " MMM dd, yyyy"), TimeUtils.formatDate(it.endDate, "MMM dd, yyyy"))
-                beginningBalanceValue.text = context.getString(R.string.number_placeholder, it.beginningBalance)
-                salesValue.text = context.getString(R.string.number_placeholder, it.sales)
-                otherValue.text = context.getString(R.string.number_placeholder, it.otherIncome)
-                totalIncomeValue.text = context.getString(R.string.number_placeholder, totals.totalIncome)
-                personnelValue.text = context.getString(R.string.number_placeholder, it.wages)
-                nonPersonnelValue.text = context.getString(R.string.number_placeholder, it.otherExpenses)
-                totalExpensesValue.text = context.getString(R.string.number_placeholder, totals.totalExpenses)
-                profitLossValue.text = context.getString(R.string.number_placeholder, totals.profitLoss)
-                endingBalanceValue.text = context.getString(R.string.number_placeholder, totals.endingBalance)
+                beginningBalanceValue.text = AmountUtils.format(it.beginningBalance)
+                salesValue.text = AmountUtils.format(it.sales)
+                otherValue.text = AmountUtils.format(it.otherIncome)
+                totalIncomeValue.text = AmountUtils.format(totals.totalIncome)
+                personnelValue.text = AmountUtils.format(it.wages)
+                nonPersonnelValue.text = AmountUtils.format(it.otherExpenses)
+                totalExpensesValue.text = AmountUtils.format(totals.totalExpenses)
+                profitLossValue.text = AmountUtils.format(totals.profitLoss)
+                endingBalanceValue.text = AmountUtils.format(totals.endingBalance)
                 tvReportDetails.text = context.getString(R.string.message_placeholder, it.description)
                 createUpdate.text = context.getString(R.string.report_date_details, TimeUtils.formatDate(it.createdDate, "MMM dd, yyyy"), TimeUtils.formatDate(it.updatedDate, "MMM dd, yyyy"))
             }
@@ -106,7 +108,7 @@ class EnterprisesReportsAdapter(
         holder.binding.delete.setOnClickListener(null)
     }
 
-    private fun bindReportImage(binding: ReportListItemBinding, report: MyTeam) {
+    private fun bindReportImage(binding: ReportListItemBinding, report: FinanceReport) {
         val imageFile = MyTeam.getAttachmentFile(context, report._id, report.imageName)
         val exists = attachmentPresenceCache.exists(imageFile, timeProvider.now())
 
@@ -146,7 +148,7 @@ class EnterprisesReportsAdapter(
 
     companion object {
         const val PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED = "PAYLOAD_KEY_NON_TEAM_MEMBER_CHANGED"
-        val diffCallback = DiffUtils.itemCallback<MyTeam>(
+        val diffCallback = DiffUtils.itemCallback<FinanceReport>(
             areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
             areContentsTheSame = { oldItem, newItem ->
                 oldItem.startDate == newItem.startDate &&
@@ -166,13 +168,13 @@ class EnterprisesReportsAdapter(
 }
 
 internal data class ReportTotals(
-    val totalIncome: Int,
-    val totalExpenses: Int,
-    val profitLoss: Int,
-    val endingBalance: Int
+    val totalIncome: Double,
+    val totalExpenses: Double,
+    val profitLoss: Double,
+    val endingBalance: Double
 )
 
-internal fun reportTotals(report: MyTeam): ReportTotals {
+internal fun reportTotals(report: FinanceReport): ReportTotals {
     val totalIncome = report.sales + report.otherIncome
     val totalExpenses = report.wages + report.otherExpenses
     val profitLoss = totalIncome - totalExpenses

@@ -1,29 +1,47 @@
 package org.ole.planet.myplanet.ui.enterprises
 
+import android.content.Context
+import android.net.Uri
+import androidx.test.core.app.ApplicationProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.utils.AttachmentReader
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.MainDispatcherRule
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import org.ole.planet.myplanet.utils.TimeProvider
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(manifest = Config.NONE)
 class EnterprisesFinancesViewModelTest {
 
     private lateinit var teamsRepository: TeamsRepository
     private lateinit var viewModel: EnterprisesFinancesViewModel
     private val testDispatcher = StandardTestDispatcher()
+    private val testScope = TestScope(testDispatcher)
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(testDispatcher)
@@ -31,7 +49,14 @@ class EnterprisesFinancesViewModelTest {
     @Before
     fun setup() {
         teamsRepository = mockk()
-        viewModel = EnterprisesFinancesViewModel(teamsRepository)
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val timeProvider = mockk<TimeProvider>()
+        val dispatcherProvider = TestDispatcherProvider(testDispatcher)
+        viewModel = EnterprisesFinancesViewModel(
+            teamsRepository = teamsRepository,
+            appScope = testScope,
+            attachmentReader = AttachmentReader(context, timeProvider, dispatcherProvider)
+        )
     }
 
     @Test
@@ -39,7 +64,7 @@ class EnterprisesFinancesViewModelTest {
         val teamId = "test_team_id"
         val type = "credit"
         val note = "test note"
-        val amount = 100
+        val amount = 100.0
         val date = 123456789L
         val parentCode = "parent"
         val planetCode = "planet"
@@ -84,11 +109,51 @@ class EnterprisesFinancesViewModelTest {
     }
 
     @Test
+    fun `createTransaction emits failure result when attachment read throws`() = runTest {
+        val teamId = "test_team_id"
+        val type = "credit"
+        val note = "test note"
+        val amount = 100.0
+        val date = 123456789L
+        val mockUri = mockk<Uri>()
+        val error = SecurityException("Permission denied")
+
+        mockkObject(FileUtils)
+        try {
+            every { FileUtils.getDisplayName(any(), any(), any()) } throws error
+
+            val results = mutableListOf<Result<Unit>>()
+            val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                viewModel.transactionCreated.collect { results.add(it) }
+            }
+
+            viewModel.createTransaction(
+                teamId = teamId,
+                type = type,
+                note = note,
+                amount = amount,
+                date = date,
+                parentCode = null,
+                planetCode = null,
+                imageUri = mockUri
+            )
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(1, results.size)
+            assertTrue(results[0].isFailure)
+            assertEquals("Permission denied", results[0].exceptionOrNull()?.message)
+            job.cancel()
+        } finally {
+            unmockkObject(FileUtils)
+        }
+    }
+
+    @Test
     fun `createTransaction emits failure result`() = runTest {
         val teamId = "test_team_id"
         val type = "credit"
         val note = "test note"
-        val amount = 100
+        val amount = 100.0
         val date = 123456789L
         val error = Exception("Test error")
 
@@ -131,7 +196,7 @@ class EnterprisesFinancesViewModelTest {
 
     @Test
     fun `getTeamTransactions updates transactions state`() = runTest {
-        val mockTransactions = listOf(Transaction("1", 0L, "desc", "type", 100, 100))
+        val mockTransactions = listOf(Transaction("1", 0L, "desc", "type", 100.0, 100.0))
         val teamId = "test_team_id"
         val sortAscending = true
         val startDate = 1000L
@@ -155,7 +220,7 @@ class EnterprisesFinancesViewModelTest {
 
     @Test
     fun `getTeamTransactions duplicate call while active does not re-query repository`() = runTest {
-        val mockTransactions = listOf(Transaction("1", 0L, "desc", "type", 100, 100))
+        val mockTransactions = listOf(Transaction("1", 0L, "desc", "type", 100.0, 100.0))
         val teamId = "test_team_id"
         val sortAscending = true
         val startDate = 1000L
@@ -186,7 +251,7 @@ class EnterprisesFinancesViewModelTest {
 
     @Test
     fun `getTeamTransactions call with different arguments re-queries repository`() = runTest {
-        val mockTransactions = listOf(Transaction("1", 0L, "desc", "type", 100, 100))
+        val mockTransactions = listOf(Transaction("1", 0L, "desc", "type", 100.0, 100.0))
         val teamId = "test_team_id"
 
         coEvery {
@@ -224,9 +289,9 @@ class EnterprisesFinancesViewModelTest {
     @Test
     fun `getTeamTransactions calculates total and updates financeSummary correctly`() = runTest {
         val mockTransactions = listOf(
-            Transaction("1", 0L, "credit entry", "credit", 500, 500),
-            Transaction("2", 0L, "debit entry 1", "debit", 200, 300),
-            Transaction("3", 0L, "debit entry 2", "debit", 100, 200)
+            Transaction("1", 0L, "credit entry", "credit", 500.0, 500.0),
+            Transaction("2", 0L, "debit entry 1", "debit", 200.0, 300.0),
+            Transaction("3", 0L, "debit entry 2", "debit", 100.0, 200.0)
         )
         val teamId = "test_team_id"
 
@@ -248,9 +313,9 @@ class EnterprisesFinancesViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         val summary = states.last()
-        assertEquals(300, summary.debit)
-        assertEquals(500, summary.credit)
-        assertEquals(200, summary.total)
+        assertEquals(300.0, summary.debit, 0.0)
+        assertEquals(500.0, summary.credit, 0.0)
+        assertEquals(200.0, summary.total, 0.0)
         assertEquals(false, summary.isCautionVisible)
         job.cancel()
     }
@@ -258,8 +323,8 @@ class EnterprisesFinancesViewModelTest {
     @Test
     fun `financeSummary exhibits caution when total is negative`() = runTest {
         val mockTransactions = listOf(
-            Transaction("1", 0L, "credit entry", "credit", 100, 100),
-            Transaction("2", 0L, "debit entry", "debit", 300, -200)
+            Transaction("1", 0L, "credit entry", "credit", 100.0, 100.0),
+            Transaction("2", 0L, "debit entry", "debit", 300.0, -200.0)
         )
         val teamId = "test_team_id"
 
@@ -281,9 +346,9 @@ class EnterprisesFinancesViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         val summary = states.last()
-        assertEquals(300, summary.debit)
-        assertEquals(100, summary.credit)
-        assertEquals(-200, summary.total)
+        assertEquals(300.0, summary.debit, 0.0)
+        assertEquals(100.0, summary.credit, 0.0)
+        assertEquals(-200.0, summary.total, 0.0)
         assertEquals(true, summary.isCautionVisible)
         job.cancel()
     }

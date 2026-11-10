@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.view.doOnLayout
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
@@ -73,9 +74,18 @@ class ChatAdapter(
             if (responseSource == ChatMessage.RESPONSE_SOURCE_NETWORK) {
                 if (shouldAnimate) {
                     textAiMessageBinding.textGchatMessageOther.text = context.getString(R.string.empty_text)
+                    var lastLineCount = -1
                     cancelAnimation = onAnimateTyping(response, { text ->
                         textAiMessageBinding.textGchatMessageOther.text = text
-                        recyclerView.scrollToPosition(bindingAdapterPosition)
+                        textAiMessageBinding.textGchatMessageOther.doOnLayout { view ->
+                            val lines = (view as android.widget.TextView).lineCount
+                            if (lines != lastLineCount || text.length == response.length) {
+                                if (bindingAdapterPosition != RecyclerView.NO_POSITION) {
+                                    recyclerView.scrollToPosition(bindingAdapterPosition)
+                                }
+                                lastLineCount = lines
+                            }
+                        }
                     }, {
                         markAnimated()
                     })
@@ -199,11 +209,5 @@ class ChatAdapter(
         if (holder is ResponseViewHolder) {
             holder.cancelAnimation?.invoke()
         }
-    }
-
-    companion object {
-        const val RESPONSE_SOURCE_SHARED_VIEW_MODEL = ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL
-        const val RESPONSE_SOURCE_NETWORK = ChatMessage.RESPONSE_SOURCE_NETWORK
-        const val RESPONSE_SOURCE_UNKNOWN = ChatMessage.RESPONSE_SOURCE_UNKNOWN
     }
 }

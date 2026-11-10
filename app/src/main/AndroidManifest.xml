@@ -44,7 +44,8 @@
         android:required="false" />
     <application
         android:name=".MainApplication"
-        android:allowBackup="true"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_project_name"
         android:largeHeap="true"
@@ -98,7 +99,7 @@
             android:exported="false"
             android:configChanges="screenSize|screenLayout|orientation|keyboardHidden|keyboard"/>
         <activity
-            android:name=".ui.user.BecomeMemberActivity"
+            android:name=".ui.user.LearnerRegistrationActivity"
             android:windowSoftInputMode="adjustResize|stateHidden"
             android:theme="@style/AppTheme" />
         <activity

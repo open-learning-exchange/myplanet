@@ -24,6 +24,8 @@ class RatingsFragment : BaseBindingDialogFragment<FragmentRatingBinding>(Fragmen
     private var ratingListener: OnRatingChangeListener? = null
     private var dismissListener: (() -> Unit)? = null
     private var isUserReady = false
+    
+    private var hasPrefilledRating = false
     private var currentSubmitState: RatingsViewModel.SubmitState = RatingsViewModel.SubmitState.Idle
     fun setListener(listener: OnRatingChangeListener?) {
         this.ratingListener = listener
@@ -33,6 +35,11 @@ class RatingsFragment : BaseBindingDialogFragment<FragmentRatingBinding>(Fragmen
         this.dismissListener = listener
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_PREFILLED, hasPrefilledRating)
+    }
+
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
         dismissListener?.invoke()
@@ -40,6 +47,7 @@ class RatingsFragment : BaseBindingDialogFragment<FragmentRatingBinding>(Fragmen
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        hasPrefilledRating = savedInstanceState?.getBoolean(KEY_PREFILLED) ?: false
         setStyle(STYLE_NO_TITLE, R.style.AppTheme_Dialog_NoActionBar_MinWidth)
         if (arguments != null) {
             id = requireArguments().getString("id")
@@ -81,9 +89,12 @@ class RatingsFragment : BaseBindingDialogFragment<FragmentRatingBinding>(Fragmen
             when (state) {
                 is RatingsViewModel.RatingUiState.Loading -> {}
                 is RatingsViewModel.RatingUiState.Success -> {
-                    state.existingRating?.let { rating ->
-                        binding.ratingBar.rating = rating.rate.toFloat()
-                        binding.etComment.setText(rating.comment)
+                    if (!hasPrefilledRating) {
+                        state.existingRating?.let { rating ->
+                            binding.ratingBar.rating = rating.rate.toFloat()
+                            binding.etComment.setText(rating.comment)
+                        }
+                        hasPrefilledRating = true
                     }
                 }
                 is RatingsViewModel.RatingUiState.Error -> {
@@ -151,6 +162,7 @@ class RatingsFragment : BaseBindingDialogFragment<FragmentRatingBinding>(Fragmen
     }
 
     companion object {
+        private const val KEY_PREFILLED = "rating_prefilled"
         const val TAG = "RatingsFragment"
 
         fun newInstance(type: String?, id: String?, title: String?): RatingsFragment {

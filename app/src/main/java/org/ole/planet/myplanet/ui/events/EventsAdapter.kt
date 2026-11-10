@@ -1,10 +1,12 @@
 package org.ole.planet.myplanet.ui.events
 
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemMeetupBinding
 import org.ole.planet.myplanet.model.Meetup
@@ -59,7 +61,7 @@ class EventsAdapter(
                             "TIME" -> binding.tvTime.text = "${meetup.startTime} - ${meetup.endTime}"
                             "MEETUP_LOCATION" -> binding.tvLocation.text = context.getString(R.string.message_placeholder, meetup.meetupLocation)
                             "MEETUP_LINK" -> binding.tvLink.text = context.getString(R.string.message_placeholder, meetup.meetupLink)
-                            "RECURRING" -> binding.tvRecurring.text = context.getString(R.string.message_placeholder, meetup.recurring)
+                            "RECURRING" -> binding.tvRecurring.text = context.getString(R.string.message_placeholder, recurringLabel(context, meetup.recurring))
                             "CREATOR" -> binding.tvCreator.text = context.getString(R.string.message_placeholder, meetup.creator)
                         }
                     }
@@ -83,13 +85,21 @@ class EventsAdapter(
         binding.tvTime.text = "${meetup.startTime} - ${meetup.endTime}"
         binding.tvLocation.text = context.getString(R.string.message_placeholder, meetup.meetupLocation)
         binding.tvLink.text = context.getString(R.string.message_placeholder, meetup.meetupLink)
-        binding.tvRecurring.text = context.getString(R.string.message_placeholder, meetup.recurring)
+        binding.tvRecurring.text = context.getString(R.string.message_placeholder, recurringLabel(context, meetup.recurring))
         binding.tvCreator.text = context.getString(R.string.message_placeholder, meetup.creator)
         bindTeamName(binding, meetup)
         binding.root.setOnClickListener {
             onMeetupClick?.invoke(meetup)
         }
     }
+
+    private fun recurringLabel(context: Context, recurring: String?): String? =
+        when (recurring?.lowercase(Locale.ROOT)) {
+            "daily" -> context.getString(R.string.daily)
+            "weekly" -> context.getString(R.string.weekly)
+            "none" -> context.getString(R.string.none)
+            else -> recurring
+        }
 
     private fun bindTeamName(binding: ItemMeetupBinding, meetup: Meetup) {
         val teamName = teamNameProvider?.invoke(meetup)

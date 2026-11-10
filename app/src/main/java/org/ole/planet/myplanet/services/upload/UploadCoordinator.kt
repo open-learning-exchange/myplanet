@@ -6,7 +6,6 @@ import java.io.IOException
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -84,6 +83,8 @@ class UploadCoordinator @Inject constructor(
                 allSucceeded.isEmpty() -> UploadResult.Failure(allFailed)
                 else -> UploadResult.PartialSuccess(allSucceeded, allFailed)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Critical error during upload", e)
             UploadResult.Failure(
@@ -107,6 +108,8 @@ class UploadCoordinator @Inject constructor(
                     is UploadSerializer.Simple -> serializer.serialize(item)
                     is UploadSerializer.Async -> serializer.serialize(item)
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Serialization failed for item", e)
                 return@mapNotNull null

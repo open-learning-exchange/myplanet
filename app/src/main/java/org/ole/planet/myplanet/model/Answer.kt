@@ -7,7 +7,6 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -22,7 +21,7 @@ open class Answer(
     var valueChoices: List<String>? = null,
     var mistakes: Int = 0,
     var isPassed: Boolean = false,
-    var grade: Int = 0,
+    var grade: Int? = null,
     var examId: String? = null,
     var questionId: String? = null,
     var submissionId: String? = null
@@ -56,6 +55,7 @@ open class Answer(
             }
             put("mistakes", ans.mistakes)
             put("passed", ans.isPassed)
+            ans.grade?.let { put("grade", it) }
             if (!ans.questionId.isNullOrEmpty()) {
                 put("questionId", ans.questionId)
             }

@@ -12,8 +12,8 @@ interface ChatDao {
     @Query("SELECT * FROM chat_history WHERE user = :user")
     suspend fun getByUser(user: String): List<ChatHistory>
 
-    @Query("SELECT * FROM chat_history WHERE _id = :docId")
-    suspend fun getByDocId(docId: String): List<ChatHistory>
+    @Query("SELECT _rev FROM chat_history WHERE _id = :docId")
+    suspend fun getRevsByDocId(docId: String): List<String?>
 
     @Query("SELECT * FROM chat_history WHERE _id = :docId LIMIT 1")
     suspend fun findByDocId(docId: String): ChatHistory?

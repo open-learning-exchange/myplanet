@@ -5,7 +5,13 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray as KJsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject as KJsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -19,12 +25,6 @@ import org.ole.planet.myplanet.utils.addDocumentOrigin
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
 
-/**
- * Room replacement for the former `Meetup` model. Meetups are both synced (pulled from
- * the server) and uploaded (locally created/edited meetups). All fields are simple scalars, so no
- * type converters are required. Persistence goes through
- * [org.ole.planet.myplanet.data.room.dao.MeetupDao].
- */
 @Entity(tableName = "meetup", indices = [Index("meetupId"), Index("teamId"), Index("userId")])
 open class Meetup {
     @PrimaryKey
@@ -53,16 +53,12 @@ open class Meetup {
     var updated: Boolean = false
 
     companion object {
-        /**
-         * Builds an unmanaged meetup from a CouchDB document. When [existingMeetup] is supplied its
-         * local-only fields (created date, recurring number, sync/source metadata) are preserved.
-         */
         fun fromJson(meetupDoc: JsonObject, userId: String?, existingMeetup: Meetup?): Meetup {
             val kDoc = meetupDoc.toKotlinx().jsonObject
             val meetup = Meetup()
             meetup.id = JsonUtils.getString("_id", kDoc)
             meetup.meetupId = JsonUtils.getString("_id", kDoc)
-            meetup.userId = userId
+            meetup.userId = userId?.takeIf { it.isNotEmpty() } ?: existingMeetup?.userId ?: userId
             meetup.meetupIdRev = JsonUtils.getString("_rev", kDoc)
             meetup.title = JsonUtils.getString("title", kDoc)
             meetup.description = JsonUtils.getString("description", kDoc)
@@ -80,13 +76,15 @@ open class Meetup {
             meetup.link = kLink.toString()
             meetup.teamId = JsonUtils.getString("teams", kLink)
 
-            if (existingMeetup != null) {
-                meetup.createdDate = existingMeetup.createdDate
-                meetup.recurringNumber = existingMeetup.recurringNumber
-                meetup.sync = existingMeetup.sync
-                meetup.sourcePlanet = existingMeetup.sourcePlanet
-                meetup.updated = existingMeetup.updated
-            }
+            meetup.createdDate = JsonUtils.getLong("createdDate", kDoc)
+                .takeIf { it != 0L } ?: existingMeetup?.createdDate ?: 0L
+            meetup.recurringNumber = JsonUtils.getInt("recurringNumber", kDoc)
+                .takeIf { it > 0 } ?: existingMeetup?.recurringNumber ?: 10
+            meetup.sync = kDoc["sync"]?.takeIf { it !is JsonNull }
+                ?.let { if (it is JsonPrimitive) it.content else it.toString() } ?: existingMeetup?.sync
+            meetup.sourcePlanet = JsonUtils.getString("sourcePlanet", kDoc)
+                .ifEmpty { null } ?: existingMeetup?.sourcePlanet
+            meetup.updated = existingMeetup?.updated ?: false
 
             return meetup
         }
@@ -144,6 +142,7 @@ open class Meetup {
                 put("startTime", meetup.startTime)
                 put("endTime", meetup.endTime)
                 put("recurring", meetup.recurring)
+                parseJson(meetup.day)?.let { if (it is KJsonArray) put("day", it) }
                 put("meetupLocation", meetup.meetupLocation)
                 put("meetupLink", meetup.meetupLink)
                 put("createdBy", meetup.creator)
@@ -152,12 +151,22 @@ open class Meetup {
                 put("createdDate", meetup.createdDate)
                 put("recurringNumber", meetup.recurringNumber)
                 put("sourcePlanet", meetup.sourcePlanet)
-                put("sync", meetup.sync)
+                val sync = parseJson(meetup.sync)
+                if (sync is KJsonObject) put("sync", sync) else put("sync", meetup.sync)
                 if (!meetup.link.isNullOrEmpty()) put("link", linksJson?.toKotlinx() ?: JsonNull)
             }.toGson()
 
             `object`.addDocumentOrigin()
             return `object`
+        }
+
+        private fun parseJson(value: String?): JsonElement? {
+            if (value.isNullOrBlank()) return null
+            return try {
+                Json.parseToJsonElement(value)
+            } catch (e: SerializationException) {
+                null
+            }
         }
     }
 }

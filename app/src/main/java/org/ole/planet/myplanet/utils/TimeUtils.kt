@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utils
 
+import android.content.Context
 import android.text.format.DateUtils
 import android.util.Log
 import java.time.Instant
@@ -10,10 +11,12 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
+import org.ole.planet.myplanet.R
 
 object TimeUtils {
     private const val TAG = "TimeUtils"
     const val DATE_FORMAT = "dd MMM yyyy"
+    private const val DEFAULT_DATE_PATTERN = "EEEE, MMM dd, yyyy"
 
     private val defaultLocale: Locale
         get() = Locale.getDefault()
@@ -43,13 +46,13 @@ object TimeUtils {
             if (zone != null) formatter.withZone(zone) else formatter
         }
     }
+    
+    private fun defaultDateFormatter() = formatterFor(DEFAULT_DATE_PATTERN, ZoneId.systemDefault())
 
-    private val defaultDateFormatter by lazy {
-        DateTimeFormatter.ofPattern("EEEE, MMM dd, yyyy", defaultLocale).withZone(utcZone)
-    }
+    private fun utcDateFormatter() = formatterFor(DEFAULT_DATE_PATTERN, utcZone)
 
     private fun dateTimeFormatter() =
-        formatterFor("EEE dd, MMMM yyyy , hh:mm a", ZoneId.systemDefault())
+        formatterFor("EEE dd, MMMM yyyy, hh:mm a", ZoneId.systemDefault())
 
     private fun tzFormatter() =
         formatterFor("yyyy-MM-dd HH:mm:ss", ZoneId.systemDefault(), locale = null)
@@ -75,16 +78,16 @@ object TimeUtils {
             fallback
         }
 
-    fun getRelativeTime(timestamp: Long, timeProvider: TimeProvider? = null): String {
+    fun getRelativeTime(context: Context, timestamp: Long, timeProvider: TimeProvider? = null): String {
         val timeNow = timeProvider?.now() ?: System.currentTimeMillis()
         return if (timestamp < timeNow) {
             DateUtils.getRelativeTimeSpanString(timestamp, timeNow, 0).toString()
-        } else "Just now"
+        } else context.getString(R.string.just_now)
     }
 
     fun getFormattedDate(date: Long?): String {
         val instant = date?.let { Instant.ofEpochMilli(it) } ?: Instant.now()
-        return formatInstant(instant, "N/A") { defaultDateFormatter }
+        return formatInstant(instant, "N/A") { defaultDateFormatter() }
     }
 
     fun getFormattedShortDate(date: Long): String =
@@ -132,7 +135,7 @@ object TimeUtils {
                 val dateOnlyFormatter = formatterFor("yyyy-MM-dd")
                 LocalDate.parse(stringDate, dateOnlyFormatter).atStartOfDay(utcZone).toInstant()
             }
-            getFormattedDate(instant.toEpochMilli())
+            formatInstant(instant, "N/A") { utcDateFormatter() }
         } catch (e: Exception) {
             Log.w(TAG, "getFormattedDate failed", e)
             "N/A"

@@ -7,6 +7,7 @@ import android.content.SharedPreferences
 import android.content.pm.ServiceInfo
 import android.os.SystemClock
 import android.util.Log
+import androidx.core.content.edit
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
@@ -14,6 +15,8 @@ import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.io.File
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import okio.Buffer
@@ -41,6 +44,7 @@ class DownloadWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, workerParams) {
 
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    private var isForegroundPromoted = false
 
     override suspend fun doWork(): Result = withContext(dispatcherProvider.io) {
         try {
@@ -65,6 +69,8 @@ class DownloadWorker @AssistedInject constructor(
             urls.forEachIndexed { index, url ->
                 val success = try {
                     downloadFile(url, authHeader, index, urls.size)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to download ${getFileNameFromUrl(url)}", e)
                     false
@@ -74,36 +80,51 @@ class DownloadWorker @AssistedInject constructor(
 
                 try {
                     showProgressNotification(completedCount - 1, urls.size, context.getString(R.string.downloaded_files, "$completedCount", "${urls.size}"), 100)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to update progress notification for ${getFileNameFromUrl(url)}", e)
                 }
                 try {
                     sendDownloadUpdate(url, success, completedCount >= urls.size, fromSync)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to send download update for ${getFileNameFromUrl(url)}", e)
                 }
             }
 
             showCompletionNotification(completedCount, urls.size, results.any { !it })
-            Result.success()
+            removeCompletedUrls(urlsKey, urls.filterIndexed { i, _ -> results[i] }.toSet())
+            resultFor(succeeded = results.count { it }, attempted = results.size, runAttemptCount = runAttemptCount)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Download worker failed", e)
             Result.failure()
         }
     }
 
+    private fun removeCompletedUrls(urlsKey: String, completed: Set<String>) {
+        if (completed.isEmpty()) return
+        val remaining = preferences.getStringSet(urlsKey, emptySet())?.toMutableSet() ?: return
+        remaining.removeAll(completed)
+        preferences.edit { putStringSet(urlsKey, remaining) }
+    }
+
     private suspend fun downloadFile(url: String, authHeader: String, index: Int, total: Int): Boolean {
         if (FileUtils.checkFileExist(context, url)) {
             try {
                 resourcesRepository.markResourceOfflineByUrl(url)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to mark existing resource offline: ${UrlUtils.redactForLog(url)}", e)
             }
             return true
         }
         return try {
-            val response = downloadRepository.downloadFileResponse(url, authHeader)
-            when (response) {
+            when (val response = downloadRepository.downloadFileResponse(url, authHeader)) {
                 is DownloadResult.Success -> {
                     downloadFileBody(response.body, url, index, total)
                     true
@@ -113,6 +134,8 @@ class DownloadWorker @AssistedInject constructor(
                     false
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to download file: ${UrlUtils.redactForLog(url)}", e)
             false
@@ -123,6 +146,30 @@ class DownloadWorker @AssistedInject constructor(
         val fileSize = body.contentLength()
         val outputFile: File = FileUtils.getSDPathFromUrl(context, url)
         outputFile.parentFile?.mkdirs()
+        val partFile = File(outputFile.parentFile, "${outputFile.name}.part")
+        try {
+            val totalBytes = writeBody(body, partFile, fileSize, url, index, total)
+            if (fileSize > 0 && totalBytes != fileSize) {
+                throw IOException("Incomplete download: $totalBytes of $fileSize bytes")
+            }
+            if (!partFile.renameTo(outputFile)) {
+                partFile.copyTo(outputFile, overwrite = true)
+            }
+        } finally {
+            partFile.delete()
+        }
+        try {
+            resourcesRepository.markResourceOfflineByUrl(url)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to mark downloaded resource offline: ${UrlUtils.redactForLog(url)}", e)
+        }
+    }
+
+    private suspend fun writeBody(
+        body: ResponseBody, outputFile: File, fileSize: Long, url: String, index: Int, total: Int
+    ): Long {
         var totalBytes: Long = 0
         var lastUpdateTime = 0L
 
@@ -147,11 +194,7 @@ class DownloadWorker @AssistedInject constructor(
                 sink.flush()
             }
         }
-        try {
-            resourcesRepository.markResourceOfflineByUrl(url)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to mark downloaded resource offline: ${UrlUtils.redactForLog(url)}", e)
-        }
+        return totalBytes
     }
 
     private suspend fun showProgressNotification(current: Int, total: Int, fileName: String, fileProgress: Int = -1) {
@@ -163,13 +206,14 @@ class DownloadWorker @AssistedInject constructor(
         val notification = DownloadUtils.buildProgressNotification(
             context, current + 1, total, text, forWorker = true, fileProgress = fileProgress
         )
-        if (DownloadUtils.canStartForegroundService(context)) {
+        if (isForegroundPromoted || DownloadUtils.canStartForegroundService(context)) {
             try {
                 setForeground(
                     ForegroundInfo(WORKER_NOTIFICATION_ID, notification,
                         ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
                     )
                 )
+                isForegroundPromoted = true
                 return
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to promote download worker to foreground, showing plain notification", e)
@@ -207,6 +251,13 @@ class DownloadWorker @AssistedInject constructor(
 
     companion object {
         private const val TAG = "DownloadWorker"
+        internal const val MAX_RETRY_ATTEMPTS = 3
+
+        internal fun resultFor(succeeded: Int, attempted: Int, runAttemptCount: Int): Result = when {
+            attempted == 0 || succeeded > 0 -> Result.success()
+            runAttemptCount < MAX_RETRY_ATTEMPTS -> Result.retry()
+            else -> Result.failure()
+        }
         const val WORKER_NOTIFICATION_ID = 3
         const val COMPLETION_NOTIFICATION_ID = 4
         private const val NOTIFICATION_UPDATE_INTERVAL_MS = 500L

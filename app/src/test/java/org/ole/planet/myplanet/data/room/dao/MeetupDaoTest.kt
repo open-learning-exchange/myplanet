@@ -130,4 +130,38 @@ class MeetupDaoTest {
         val resultBlank = meetupDao.getJoinedMembersByMeetupId("")
         assertTrue(resultBlank.isEmpty())
     }
+
+    @Test
+    fun getByTeamIds_handlesEmptyInputAndDeduplicatesAcrossChunkBoundary() = runBlocking {
+        val emptyResult = meetupDao.getByTeamIds(emptyList())
+        assertTrue(emptyResult.isEmpty())
+
+        val items = (1..1000).map { i ->
+            createTeamMeetup("m_$i", "team_$i")
+        }
+        meetupDao.upsertAll(items)
+
+        val teamIdsWithDuplicate = items.map { it.teamId!! } + "team_1"
+        assertEquals(1001, teamIdsWithDuplicate.size)
+
+        val result = meetupDao.getByTeamIds(teamIdsWithDuplicate)
+        assertEquals(1000, result.size)
+        assertEquals(items.map { it.id }.toSet(), result.map { it.id }.toSet())
+    }
+
+    @Test
+    fun getByMeetupIds_handlesEmptyInputAndLargeChunkedList() = runBlocking {
+        val emptyResult = meetupDao.getByMeetupIds(emptyList())
+        assertTrue(emptyResult.isEmpty())
+
+        val items = (1..1200).map { i ->
+            createMeetup("id_$i", "meetup_$i", "user1")
+        }
+        meetupDao.upsertAll(items)
+
+        val meetupIds = items.mapNotNull { it.meetupId }
+        val result = meetupDao.getByMeetupIds(meetupIds)
+        assertEquals(1200, result.size)
+        assertEquals(meetupIds.toSet(), result.mapNotNull { it.meetupId }.toSet())
+    }
 }

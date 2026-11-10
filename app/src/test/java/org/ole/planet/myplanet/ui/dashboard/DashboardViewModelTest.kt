@@ -6,6 +6,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,7 +28,6 @@ import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
-import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
@@ -42,7 +42,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
-@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class DashboardViewModelTest {
 
     private lateinit var viewModel: DashboardViewModel
@@ -96,7 +96,7 @@ class DashboardViewModelTest {
     @Test
     fun testSyncKeyId_preventOverlappingCalls() = runTest {
         coEvery { syncRepository.syncDashboardKeyId(any()) } coAnswers {
-            kotlinx.coroutines.delay(100)
+            kotlinx.coroutines.delay(100.milliseconds)
             SyncUiState.Success(null)
         }
 
@@ -198,56 +198,6 @@ class DashboardViewModelTest {
         assertEquals("Team1", (state.teams[0] as MyTeam).name)
         assertEquals(1, state.library.size)
         assertEquals("Lib1", (state.library[0] as MyLibrary).title)
-    }
-
-    @Test
-    fun `loadUsers updates uiState with sorted users`() = runTest(testDispatcher) {
-        val users = listOf(
-            UserEntity().apply { name = "User 1" },
-            UserEntity().apply { name = "User 2" }
-        )
-
-        coEvery { userRepository.getUsersSortedBy("joinDate", true) } returns users
-
-        viewModel.loadUsers()
-        advanceUntilIdle()
-
-        val state = viewModel.uiState.value
-        assertEquals(2, state.users.size)
-        assertEquals("User 1", (state.users[0] as UserEntity).name)
-        assertEquals("User 2", (state.users[1] as UserEntity).name)
-    }
-
-    @Test
-    fun `calculateIndividualProgress handles boundary cases properly`() {
-        assertEquals(1, viewModel.calculateIndividualProgress(0, false))
-        assertEquals(0, viewModel.calculateIndividualProgress(0, true))
-
-        assertEquals(3, viewModel.calculateIndividualProgress(1, false))
-        assertEquals(2, viewModel.calculateIndividualProgress(1, true))
-
-        assertEquals(11, viewModel.calculateIndividualProgress(5, false))
-        assertEquals(10, viewModel.calculateIndividualProgress(5, true))
-
-        // Coerced value cases
-        assertEquals(11, viewModel.calculateIndividualProgress(10, false))
-        assertEquals(10, viewModel.calculateIndividualProgress(10, true))
-    }
-
-    @Test
-    fun `calculateCommunityProgress handles boundary cases properly`() {
-        assertEquals(1, viewModel.calculateCommunityProgress(0, false))
-        assertEquals(0, viewModel.calculateCommunityProgress(0, true))
-
-        assertEquals(3, viewModel.calculateCommunityProgress(1, false))
-        assertEquals(2, viewModel.calculateCommunityProgress(1, true))
-
-        assertEquals(11, viewModel.calculateCommunityProgress(5, false))
-        assertEquals(10, viewModel.calculateCommunityProgress(5, true))
-
-        // Ensure cap at 11
-        assertEquals(11, viewModel.calculateCommunityProgress(10, false))
-        assertEquals(10, viewModel.calculateCommunityProgress(10, true))
     }
 
     @Test

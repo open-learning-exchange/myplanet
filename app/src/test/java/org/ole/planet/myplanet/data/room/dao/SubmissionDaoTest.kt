@@ -9,6 +9,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,6 +36,60 @@ class SubmissionDaoTest {
     @After
     fun closeDb() {
         database.close()
+    }
+
+    @Test
+    fun getPendingExamResults_returnsFinishedAttemptsAndChangedUploadsOnly() = runBlocking {
+        fun exam(id: String, status: String, remoteId: String?, updated: Boolean) = Submission(
+            id = id, parentId = "exam1", userId = "user1", type = "exam", status = status, _id = remoteId, isUpdated = updated
+        )
+        submissionDao.upsertAll(
+            listOf(
+                exam("inProgress", "pending", null, true),
+                exam("inProgressUploaded", "pending", "remote0", true),
+                exam("finished", "requires grading", null, true),
+                exam("finishedAfterUpload", "requires grading", "remote1", true),
+                exam("alreadyUploaded", "requires grading", "remote2", false),
+            )
+        )
+
+        val ids = submissionDao.getPendingExamResults().map { it.id }.toSet()
+
+        assertEquals(setOf("finished", "finishedAfterUpload"), ids)
+    }
+
+    @Test
+    fun pendingUploadQueries_pickUpEveryFinishedExamExactlyOnce() = runBlocking {
+        fun exam(id: String, parentId: String?, userId: String?) = Submission(
+            id = id, parentId = parentId, userId = userId, type = "exam", status = "complete", isUpdated = true
+        )
+        submissionDao.upsertAll(
+            listOf(
+                exam("full", "exam1", "user1"),
+                exam("noParent", null, "user1"),
+                exam("noUser", "exam1", null),
+                Submission(id = "survey", parentId = "survey1", userId = "user1", type = "survey", status = "complete", isUpdated = true),
+            )
+        )
+
+        val examResults = submissionDao.getPendingExamResults().map { it.id }
+        val submissions = submissionDao.getPendingSubmissions().map { it.id }
+
+        assertEquals(listOf("full"), examResults)
+        assertEquals(setOf("noParent", "noUser", "survey"), submissions.toSet())
+    }
+
+    @Test
+    fun countFinishedByUserParentAndType_skipsAttemptsStillInProgress() = runBlocking {
+        fun exam(id: String, status: String, parentId: String = "exam1@course1") =
+            Submission(id = id, parentId = parentId, userId = "user1", type = "exam", status = status)
+        submissionDao.upsertAll(listOf(exam("opened", "pending"), exam("otherExam", "complete", "exam2@course1")))
+
+        assertEquals(0, submissionDao.countFinishedByUserParentAndType("user1", "exam1@course1", "exam"))
+
+        submissionDao.upsertAll(listOf(exam("finished", "requires grading")))
+
+        assertEquals(1, submissionDao.countFinishedByUserParentAndType("user1", "exam1@course1", "exam"))
     }
 
     @Test
@@ -86,5 +141,39 @@ class SubmissionDaoTest {
 
         val result = submissionDao.getPendingByUserAndParent("parent1", "user1")
         assertNull(result)
+    }
+
+    @Test
+    fun getByParentIdsAndTeamId_handlesMoreThan1000ParentIdsAndDuplicatesWithoutThrowing() = runBlocking {
+        val teamId = "team1"
+        val submissions = (0 until 1200).map { i ->
+            Submission(id = "sub_$i", parentId = "parent_$i", teamId = teamId)
+        }
+        submissionDao.upsertAll(submissions)
+
+        val parentIds = (0 until 1200).map { "parent_$it" }
+        val parentIdsWithDuplicates = parentIds + parentIds.take(100)
+
+        val result = submissionDao.getByParentIdsAndTeamId(parentIdsWithDuplicates, teamId)
+
+        assertEquals(1200, result.size)
+        assertEquals(1200, result.map { it.id }.distinct().size)
+
+        val emptyResult = submissionDao.getByParentIdsAndTeamId(emptyList(), teamId)
+        assertEquals(0, emptyResult.size)
+    }
+
+    @Test
+    fun getByIds_handlesLargeInputAndDeduplicates() = runBlocking {
+        val sub1 = Submission(id = "sub_0")
+        val sub2 = Submission(id = "sub_1000")
+        submissionDao.upsertAll(listOf(sub1, sub2))
+
+        val queryIds = (0 until 1200).map { "sub_$it" } + listOf("sub_0", "sub_1000")
+        val result = submissionDao.getByIds(queryIds)
+
+        assertEquals(2, result.size)
+        assertTrue(result.any { it.id == "sub_0" })
+        assertTrue(result.any { it.id == "sub_1000" })
     }
 }

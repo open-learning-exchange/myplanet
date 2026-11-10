@@ -9,11 +9,8 @@ import android.widget.ArrayAdapter
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ListAdapter
-import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -26,6 +23,7 @@ import org.ole.planet.myplanet.callback.OnSurveyAdoptListener
 import org.ole.planet.myplanet.databinding.FragmentSurveyBinding
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.debounceDistinct
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
@@ -33,7 +31,6 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener 
     private var _binding: FragmentSurveyBinding? = null
     private val binding get() = _binding!!
     private var adapter: SurveysAdapter? = null
-    private val mutex = Mutex()
     private var isTeam: Boolean = false
     private var teamId: String? = null
     private val viewModel: SurveysViewModel by viewModels()
@@ -83,8 +80,7 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener 
         initializeViews()
         binding.layoutSearch.etSearch.textChanges()
             .drop(1)
-            .debounce(300)
-            .distinctUntilChanged()
+            .debounceDistinct(300)
             .onEach { text -> viewModel.search(text?.toString() ?: "") }
             .launchIn(viewLifecycleOwner.lifecycleScope)
         viewLifecycleOwner.lifecycleScope.launch {
@@ -162,6 +158,7 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener 
         collectWhenStarted(viewModel.errorMessage) { message ->
             message?.let {
                 Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
+                viewModel.onErrorMessageShown()
             }
         }
         collectWhenStarted(viewModel.userMessage) { message ->
@@ -170,6 +167,7 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener 
                 if (it == "Survey adopted successfully") {
                      binding.rbTeamSurvey.isChecked = true
                 }
+                viewModel.onUserMessageShown()
             }
         }
     }
