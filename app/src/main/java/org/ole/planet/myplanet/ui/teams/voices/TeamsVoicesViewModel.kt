@@ -55,10 +55,10 @@ class TeamsVoicesViewModel @Inject constructor(
         }
     }
 
-    suspend fun getFilteredNews(teamId: String): List<News?> {
-        val newsList = voicesRepository.getFilteredNews(teamId)
-        notificationsRepository.updateTeamNotification(teamId, newsList.size)
-        return newsList
+    fun markDiscussionsSeen(teamId: String) {
+        viewModelScope.launch {
+            notificationsRepository.updateTeamNotification(teamId, voicesRepository.countTopLevelByTeam(teamId).toInt())
+        }
     }
 
     fun observeDiscussions(teamId: String) {
