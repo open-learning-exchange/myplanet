@@ -79,6 +79,28 @@ class CourseStepDaoTest {
     }
 
     @Test
+    fun countByCourseIds_handlesMoreThan900Ids() = runBlocking {
+        val steps = (1..1200).flatMap { i ->
+            listOf(createStep("step_${i}_a", "course_$i"), createStep("step_${i}_b", "course_$i"))
+        }
+        courseStepDao.upsertAll(steps)
+
+        val courseIds = (1..1200).map { "course_$it" }
+        val counts = courseStepDao.countByCourseIds(courseIds)
+
+        assertEquals(1200, counts.size)
+        assertEquals(2, counts["course_1"])
+        assertEquals(2, counts["course_1200"])
+    }
+
+    @Test
+    fun countByCourseIds_emptyInput_returnsEmptyMap() = runBlocking {
+        courseStepDao.upsertAll(listOf(createStep("step_1", "course_1")))
+
+        assertTrue(courseStepDao.countByCourseIds(emptyList()).isEmpty())
+    }
+
+    @Test
     fun deleteStaleSteps_removesOnlyThatCoursesOldSteps() = runBlocking {
         courseStepDao.upsertAll(listOf(
             createStep("old", "c1"), createStep("kept", "c1"), createStep("other", "c2")
