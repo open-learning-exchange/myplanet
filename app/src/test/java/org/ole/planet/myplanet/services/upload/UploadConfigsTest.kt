@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services.upload
 
+import androidx.room.withTransaction
 import dagger.Lazy
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
@@ -7,7 +8,10 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.AfterClass
@@ -16,6 +20,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
+import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.NewsLog
@@ -42,6 +47,8 @@ class UploadConfigsTest {
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)
     private val surveysRepository: SurveysRepository = mockk(relaxed = true)
+    private val progressRepository: ProgressRepository = mockk(relaxed = true)
+    private val appDatabase: AppDatabase = mockk(relaxed = true)
     private lateinit var uploadConfigs: UploadConfigs
 
     companion object {
@@ -70,8 +77,15 @@ class UploadConfigsTest {
 
         every { sharedPrefManager.getCustomDeviceName() } returns "test-custom-device"
 
+        mockkStatic("androidx.room.RoomDatabaseKt")
+        val transactionBlock = slot<suspend () -> Any?>()
+        coEvery { appDatabase.withTransaction(capture(transactionBlock)) } coAnswers {
+            transactionBlock.captured.invoke()
+        }
+
         uploadConfigs = UploadConfigs(
             context = mockk(relaxed = true),
+            appDatabase = appDatabase,
             voicesRepository = voicesRepository,
             submissionsRepository = submissionsRepository,
             activitiesRepository = activitiesRepository,
@@ -84,12 +98,13 @@ class UploadConfigsTest {
             eventsRepository = mockk(relaxed = true),
             resourcesRepository = mockk(relaxed = true),
             diagnosticsRepository = diagnosticsRepository,
-            progressRepository = mockk<ProgressRepository>(relaxed = true)
+            progressRepository = progressRepository
         )
     }
 
     @After
     fun tearDown() {
+        unmockkStatic("androidx.room.RoomDatabaseKt")
         clearAllMocks()
     }
 
@@ -350,6 +365,25 @@ class UploadConfigsTest {
 
         assertEquals(expectedFailures, failures)
         coVerify(exactly = 1) { submissionsRepository.markSubmissionsUploaded(results) }
+    }
+
+    @Test
+    fun `CourseProgress markUploaded runs inside a single withTransaction and returns only the failed results`() = runTest {
+        val uploaded = UploadedItemResult("progress-1", "remote-1", "1-rev", mockk(relaxed = true))
+        val failed = UploadedItemResult("progress-2", "remote-2", "2-rev", mockk(relaxed = true))
+        coEvery {
+            progressRepository.markCourseProgressUploaded("progress-1", "remote-1", "1-rev")
+        } returns true
+        coEvery {
+            progressRepository.markCourseProgressUploaded("progress-2", "remote-2", "2-rev")
+        } returns false
+
+        val failures = uploadConfigs.CourseProgress.markUploaded(listOf(uploaded, failed))
+
+        assertEquals(listOf(failed), failures)
+        coVerify(exactly = 1) { appDatabase.withTransaction(any()) }
+        coVerify(exactly = 1) { progressRepository.markCourseProgressUploaded("progress-1", "remote-1", "1-rev") }
+        coVerify(exactly = 1) { progressRepository.markCourseProgressUploaded("progress-2", "remote-2", "2-rev") }
     }
 
 }
