@@ -17,6 +17,11 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
+// Pinned to 28 deliberately, not for an API-level branch: on the default SDK 36 sandbox
+// Robolectric 4.17's FileDescriptorInterceptor bridges FileDescriptor.release$/getInt$/setInt$
+// but not getOwnerId$, so PdfRenderer's constructor (PdfProcessor.create ->
+// ParcelFileDescriptor.detachFd -> IoUtils.acquireRawFd) throws NoSuchMethodError.
+// Levels 26 and 33 work; only the default 36 fails, so this pin cannot be dropped yet.
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class PdfThumbnailLoaderTest {
