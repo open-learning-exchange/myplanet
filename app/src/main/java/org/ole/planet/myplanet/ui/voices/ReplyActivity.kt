@@ -36,9 +36,10 @@ import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utils.FileUtils.resolveUriToPath
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.GsonUtils.getString
+import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.VoiceImagePreparer
 
 @AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
@@ -55,6 +56,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
+    @Inject
+    lateinit var timeProvider: TimeProvider
     @Inject
     lateinit var voicesEditor: VoicesEditor
 
@@ -217,9 +220,20 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         }
         val appContext = applicationContext
         lifecycleScope.launch {
-            val path: String = withContext(dispatcherProvider.io) {
-                resolveUriToPath(appContext, url)
-            } ?: return@launch
+            val prepared = withContext(dispatcherProvider.io) {
+                VoiceImagePreparer.prepare(appContext, url, timeProvider)
+            }
+            val path = when (prepared) {
+                is VoiceImagePreparer.Result.Ready -> prepared.path
+                VoiceImagePreparer.Result.GifTooLarge -> {
+                    Toast.makeText(this@ReplyActivity, R.string.voice_image_gif_too_large, Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                VoiceImagePreparer.Result.Unreadable -> {
+                    Toast.makeText(this@ReplyActivity, R.string.voice_image_unreadable, Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+            }
 
             if (News.containsImagePath(imageList, path)) {
                 Toast.makeText(this@ReplyActivity, R.string.image_already_added, Toast.LENGTH_SHORT).show()
