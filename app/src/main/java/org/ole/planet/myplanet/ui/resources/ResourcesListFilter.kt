@@ -61,7 +61,6 @@ class ResourcesListFilter {
         criteria: ResourcesFilterCriteria,
         locallyOfflineIds: Set<String>
     ): Sequence<ResourceListModel> {
-        val searched = ResourcesSearchUtils.searchLocalModels(models, criteria.searchQuery)
         val searchTagIds = if (criteria.searchTags.isNotEmpty()) {
             criteria.searchTags.mapTo(HashSet()) { it.id }
         } else {
@@ -82,10 +81,16 @@ class ResourcesListFilter {
                 MediumCriteria(canonicalSel, targetType)
             }
         }
-        return searched.asSequence()
+        val filtered = models.asSequence()
             .filter { model -> searchTagIds == null || model.tags.any { it.id in searchTagIds } }
             .filter { model -> matchesFacets(model, criteria, precomputedMediums) }
             .filter { model -> matchesDownloadFilter(model, criteria.downloadFilterIndex, locallyOfflineIds) }
+
+        if (criteria.searchQuery.isEmpty()) {
+            return filtered
+        }
+        val survivors = filtered.toList()
+        return ResourcesSearchUtils.searchLocalModels(survivors, criteria.searchQuery).asSequence()
     }
 
     private fun matchesFacets(
