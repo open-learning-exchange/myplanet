@@ -98,7 +98,7 @@ class SubmissionsRepositoryImplTest {
     @Test
     fun `isStepCompleted keeps survey-only step incomplete until survey is submitted`() = runTest {
         coEvery { examDao.getFirstByStepId("step1") } returns null
-        coEvery { examDao.getByStepIdAndType("step1", "surveys") } returns listOf(StepExam(id = "survey1", type = "surveys"))
+        coEvery { examDao.getFirstByStepIdAndType("step1", "surveys") } returns StepExam(id = "survey1", type = "surveys")
         coEvery { submissionDao.countCompletedByUserAndExamId("user1", "survey1") } returns 0
 
         assertFalse(repository.isStepCompleted("step1", "user1"))
@@ -111,7 +111,7 @@ class SubmissionsRepositoryImplTest {
     @Test
     fun `isStepCompleted treats step without test or survey as completed`() = runTest {
         coEvery { examDao.getFirstByStepId("step1") } returns null
-        coEvery { examDao.getByStepIdAndType("step1", "surveys") } returns emptyList()
+        coEvery { examDao.getFirstByStepIdAndType("step1", "surveys") } returns null
 
         assertTrue(repository.isStepCompleted("step1", "user1"))
     }

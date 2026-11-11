@@ -76,9 +76,21 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return submissionDao.observePendingSurveys(userId)
     }
 
+    private fun sameSubmissionStamps(old: List<Submission>, new: List<Submission>): Boolean {
+        if (old.size != new.size) return false
+        for (i in old.indices) {
+            val o = old[i]
+            val n = new[i]
+            if (o.id != n.id || o.lastUpdateTime != n.lastUpdateTime) {
+                return false
+            }
+        }
+        return true
+    }
+
     override fun getSubmissionsFlow(userId: String): Flow<List<Submission>> {
         return submissionDao.observeByUserId(userId).distinctUntilChanged { old, new ->
-            old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.lastUpdateTime == n.lastUpdateTime }
+            sameSubmissionStamps(old, new)
         }
     }
 
@@ -398,7 +410,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     override suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
         if (stepId == null) return true
         val exam = examDao.getFirstByStepId(stepId)
-            ?: examDao.getByStepIdAndType(stepId, "surveys").firstOrNull()
+            ?: examDao.getFirstByStepIdAndType(stepId, "surveys")
             ?: return true
         return exam.id.let {
             submissionDao.countCompletedByUserAndExamId(userId, it) > 0
