@@ -241,4 +241,18 @@ class MyLifeDaoTest {
         assertEquals(false, map[""]?.isVisible)
         assertEquals(true, map["id2"]?.isVisible)
     }
+
+    @Test
+    fun updateVisibility_exactIdHitAlreadyMatchingValue_leavesRowUnchanged() = runBlocking {
+        val item1 = MyLife("img1", "user1", "Health").apply { _id = "id1"; isVisible = true }
+        val item2 = MyLife("id1", "user2", "Calendar").apply { _id = "id2"; isVisible = false }
+        myLifeDao.insertAll(listOf(item1, item2))
+
+        myLifeDao.updateVisibility("id1", true)
+
+        val updatedList = myLifeDao.getByIds(listOf("id1", "id2"))
+        val map = updatedList.associateBy { it._id }
+        assertEquals(true, map["id1"]?.isVisible)
+        assertEquals(false, map["id2"]?.isVisible)
+    }
 }
