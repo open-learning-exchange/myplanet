@@ -18,11 +18,11 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.ui.resources.DownloadOfferTracker
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities.toast
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
-    @Inject lateinit var dispatcherProvider: DispatcherProvider
     var subjects: MutableSet<String> = mutableSetOf()
     var languages: MutableSet<String> = mutableSetOf()
     var mediums: MutableSet<String> = mutableSetOf()
@@ -86,7 +86,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             }
             if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
                 if (shouldShowDownloadDialog) {
-                    resources?.let { showDownloadDialog(it) }
+                    resources?.let { offerDownloads(it) }
                 }
             }
             startPostponedEnterTransition()
@@ -96,9 +96,17 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 if (shouldShowDownloadDialog) {
                     val userId = sharedPrefManager.getUserId().ifEmpty { "--" }
                     val libraryList = resourcesRepository.getLibraryListForUser(userId)
-                    showDownloadDialog(libraryList)
+                    offerDownloads(libraryList)
                 }
             }
+        }
+    }
+
+    private fun offerDownloads(libraries: List<MyLibrary?>) {
+        val userId = sharedPrefManager.getUserId().ifEmpty { "--" }
+        val ids = libraries.mapNotNull { it?.resourceId ?: it?.id }
+        if (ids.isNotEmpty() && DownloadOfferTracker.shouldOffer(userId, ids)) {
+            showDownloadDialog(libraries)
         }
     }
 
@@ -139,8 +147,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
         itemsToAdd.forEach { item ->
             when (item) {
-                is MyLibrary -> (item.resourceId.takeIf { !it.isNullOrBlank() } ?: item.id.takeIf { !it.isNullOrBlank() } ?: item._id)?.let(resourceIds::add)
-                is MyCourse -> (item.courseId.takeIf { !it.isNullOrBlank() } ?: item.id.takeIf { !it.isNullOrBlank() } ?: item._id)?.let(courseIds::add)
+                is MyLibrary -> (item.resourceId.takeIf { !it.isNullOrBlank() } ?: item.id.takeIf { it.isNotBlank() } ?: item._id)?.let(resourceIds::add)
+                is MyCourse -> (item.courseId.takeIf { !it.isNullOrBlank() } ?: item.id.takeIf { it.isNotBlank() } ?: item._id)?.let(courseIds::add)
                 else -> {}
             }
         }

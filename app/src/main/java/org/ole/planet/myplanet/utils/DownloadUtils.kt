@@ -143,6 +143,13 @@ object DownloadUtils {
         }
     }
 
+    fun queuedDownloadUrls(context: Context): Set<String> {
+        val preferences = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+        val priority = preferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+        val pending = preferences.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+        return priority + pending
+    }
+
     @RequiresApi(Build.VERSION_CODES.S)
     fun openPriorityDownloadService(context: Context?, urls: ArrayList<String>) {
         context?.let { enqueueUrls(it, DownloadService.PRIORITY_DOWNLOADS_KEY, urls, false) }
