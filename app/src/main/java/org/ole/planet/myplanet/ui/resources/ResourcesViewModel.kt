@@ -1,10 +1,12 @@
 package org.ole.planet.myplanet.ui.resources
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -43,6 +45,10 @@ class ResourcesViewModel @Inject constructor(
 
     suspend fun getCurrentUser(): UserEntity? {
         return userDeferred.await()
+    }
+
+    private companion object {
+        const val TAG = "ResourcesViewModel"
     }
 
     enum class SortMode { NONE, DATE, TITLE }
@@ -105,8 +111,10 @@ class ResourcesViewModel @Inject constructor(
             val list = withContext(dispatcherProvider.io) {
                 try {
                     applyCurrentSort(resourcesRepository.getResourceListModels(isMyCourseLib, modelId))
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Loading resources failed", e)
                     null
                 }
             }
