@@ -12,7 +12,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -31,6 +30,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
     @Inject
     @ApplicationScope
     lateinit var applicationScope: CoroutineScope
+    @Inject
+    lateinit var broadcastService: BroadcastService
 
     override fun onReceive(context: Context, intent: Intent) {
         val pendingResult = goAsync()
@@ -107,7 +108,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
             try {
                 val localBroadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM_LOCAL")
                 localBroadcastIntent.putExtra("notification_id", notificationId)
-                val broadcastService = getBroadcastService(context)
                 broadcastService.sendBroadcast(localBroadcastIntent)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to send local broadcast for notification read", e)
