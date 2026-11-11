@@ -96,7 +96,9 @@ build_report() {
             report="playstore save quota: $used of $LIMIT slots used"
         fi
         report="$report -- next slot around $(fmt "$next") ($(in_words "$next")), 24h+${LAG}s after the oldest one in use"
-        [ "$soon" -gt 0 ] && report="$report, then $soon more within the hour"
+        if [ "$soon" -gt 0 ]; then
+            report="$report, then $soon more within the hour"
+        fi
     fi
 }
 
