@@ -674,10 +674,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     password
                 }
             }
-            val userModel = profileDbHandler.getUserModel()
-            val userProfile = userModel?.userImage ?: ""
-            val userName = userModel?.name
-            loginViewModel.saveUsers(name, encryptedPassword, source, userProfile, userName)
+            loginViewModel.saveUsers(name, encryptedPassword, source)
         }
     }
 
