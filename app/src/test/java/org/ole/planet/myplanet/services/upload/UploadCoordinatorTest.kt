@@ -132,7 +132,14 @@ class UploadCoordinatorTest {
         val item = Submission(id = "local-1", _id = "db-1")
 
         val conflictResponse = Response.error<JsonObject>(409, "".toResponseBody(null))
-        coEvery { uploadRepository.putUpload(any(), any()) } returns conflictResponse
+        val sentBodies = mutableListOf<JsonObject>()
+        coEvery { uploadRepository.putUpload("http://mock.url/test_endpoint/db-1", capture(sentBodies)) } returnsMany listOf(
+            conflictResponse,
+            Response.success(JsonObject().apply {
+                addProperty("id", "db-1")
+                addProperty("rev", "3-rebased-rev")
+            })
+        )
 
         val existingDoc = JsonObject().apply {
             addProperty("_id", "db-1")
@@ -144,7 +151,13 @@ class UploadCoordinatorTest {
             modelClass = Submission::class,
             endpoint = "test_endpoint",
             fetchPendingItems = { listOf(item) },
-            serializer = UploadSerializer.Simple { JsonObject() },
+            serializer = UploadSerializer.Simple {
+                JsonObject().apply {
+                    addProperty("_id", "db-1")
+                    addProperty("_rev", "1-stale-rev")
+                    addProperty("answer", "local edit")
+                }
+            },
             idExtractor = { it.id },
             dbIdExtractor = { it._id },
             markUploaded = { emptyList() }
@@ -157,7 +170,49 @@ class UploadCoordinatorTest {
         assertEquals(1, success.data)
         assertEquals("local-1", success.items[0].localId)
         assertEquals("db-1", success.items[0].remoteId)
-        assertEquals("2-existing-rev", success.items[0].remoteRev)
+        assertEquals("3-rebased-rev", success.items[0].remoteRev)
+
+        val rebased = sentBodies.last()
+        assertEquals("2-existing-rev", rebased.get("_rev").asString)
+        assertEquals("local edit", rebased.get("answer").asString)
+    }
+
+    @Test
+    fun `upload 409 leaves item pending when rebased retry also conflicts`() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        uploadCoordinator = UploadCoordinator(
+            uploadRepository = uploadRepository,
+            retryQueue = retryQueue,
+            dispatcherProvider = TestDispatcherProvider(testDispatcher)
+        )
+
+        val item = Submission(id = "local-1", _id = "db-1")
+        coEvery { uploadRepository.putUpload(any(), any()) } returns Response.error(409, "".toResponseBody(null))
+        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/test_endpoint/db-1") } returns Response.success(
+            JsonObject().apply {
+                addProperty("_id", "db-1")
+                addProperty("_rev", "2-existing-rev")
+            }
+        )
+
+        var markUploadedCalled = false
+        val config = UploadConfig(
+            modelClass = Submission::class,
+            endpoint = "test_endpoint",
+            fetchPendingItems = { listOf(item) },
+            serializer = UploadSerializer.Simple { JsonObject() },
+            idExtractor = { it.id },
+            dbIdExtractor = { it._id },
+            markUploaded = { markUploadedCalled = true; emptyList() }
+        )
+
+        val result = uploadCoordinator.upload(config)
+
+        assertTrue(result is UploadResult.Failure)
+        val failure = result as UploadResult.Failure
+        assertEquals("local-1", failure.errors[0].itemId)
+        assertEquals(409, failure.errors[0].httpCode)
+        assertTrue("A conflicting item must not be marked uploaded", !markUploadedCalled)
     }
 
     @Test
@@ -269,10 +324,16 @@ class UploadCoordinatorTest {
         coEvery { uploadRepository.postUpload(any(), any()) } returns conflictResponse
 
         val existingDoc = JsonObject().apply {
-            addProperty("_id", "room-remote-1")
+            addProperty("_id", "room-local-1")
             addProperty("_rev", "3-room-rev")
         }
         coEvery { uploadRepository.fetchExistingDoc("http://mock.url/test_room_endpoint/room-local-1") } returns Response.success(existingDoc)
+        coEvery { uploadRepository.putUpload("http://mock.url/test_room_endpoint/room-local-1", any()) } returns Response.success(
+            JsonObject().apply {
+                addProperty("id", "room-local-1")
+                addProperty("rev", "4-room-rev")
+            }
+        )
 
         val config = RoomUploadConfig(
             endpoint = "test_room_endpoint",
@@ -289,8 +350,8 @@ class UploadCoordinatorTest {
         val success = result as UploadResult.Success
         assertEquals(1, success.data)
         assertEquals("room-local-1", success.items[0].localId)
-        assertEquals("room-remote-1", success.items[0].remoteId)
-        assertEquals("3-room-rev", success.items[0].remoteRev)
+        assertEquals("room-local-1", success.items[0].remoteId)
+        assertEquals("4-room-rev", success.items[0].remoteRev)
     }
 
     @Test

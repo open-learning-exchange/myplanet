@@ -154,57 +154,9 @@ class UploadCoordinator @Inject constructor(
 
                         val responseBody = response.body()
                         if (response.isSuccessful && responseBody != null) {
-                            val responseHandler = config.responseHandler
-                            val (idField, revField) = when (responseHandler) {
-                                is ResponseHandler.Standard -> "id" to "rev"
-                                is ResponseHandler.Custom -> responseHandler.idField to responseHandler.revField
-                            }
-
-                            val uploadedItem = normalizeUploadResult(
-                                preparedItem.localId,
-                                responseBody,
-                                idField,
-                                revField
-                            )
-
-                            config.afterUpload?.invoke(preparedItem.item, uploadedItem)
-                            BatchItemResult.Success(uploadedItem)
+                            uploadSucceeded(preparedItem, config, responseBody)
                         } else if (response.code() == 409) {
-                            try {
-                                val docId = preparedItem.dbId ?: preparedItem.localId
-                                val getResponse = semaphore.withPermit {
-                                    uploadRepository.fetchExistingDoc("$baseUrl/${config.endpoint}/$docId")
-                                }
-                                val existingDoc = getResponse.body()
-                                if (getResponse.isSuccessful && existingDoc != null) {
-                                    val uploadedItem = normalizeUploadResult(
-                                        preparedItem.localId,
-                                        existingDoc,
-                                        "_id",
-                                        "_rev"
-                                    )
-                                    config.afterUpload?.invoke(preparedItem.item, uploadedItem)
-                                    BatchItemResult.Success(uploadedItem)
-                                } else {
-                                    BatchItemResult.Error(UploadError(
-                                        preparedItem.localId,
-                                        Exception("Document exists (409) but couldn't fetch revision"),
-                                        retryable = false,
-                                        httpCode = 409
-                                    ))
-                                }
-                            } catch (e: CancellationException) {
-                                throw e
-                            } catch (e: IOException) {
-                                Log.w(TAG, "Network error fetching existing doc for 409 recovery on item ${preparedItem.localId}", e)
-                                BatchItemResult.Error(UploadError(preparedItem.localId, e, retryable = true, httpCode = 409))
-                            } catch (e: Exception) {
-                                BatchItemResult.Error(UploadError(
-                                    preparedItem.localId,
-                                    Exception("Document exists (409) but fetch failed: ${e.message}"),
-                                    retryable = false, httpCode = 409
-                                ))
-                            }
+                            resolveConflict(preparedItem, config, baseUrl, semaphore)
                         } else {
                             val errorMsg = "Upload failed: HTTP ${response.code()}"
                             Log.w(TAG, "$errorMsg for item ${preparedItem.localId}")
@@ -239,6 +191,68 @@ class UploadCoordinator @Inject constructor(
         }
 
         return succeeded to failed
+    }
+
+    private suspend fun <T : Any> uploadSucceeded(
+        preparedItem: PreparedUpload<T>,
+        config: UploadPipelineConfig<T>,
+        responseBody: JsonObject
+    ): BatchItemResult {
+        val (idField, revField) = when (val responseHandler = config.responseHandler) {
+            is ResponseHandler.Standard -> "id" to "rev"
+            is ResponseHandler.Custom -> responseHandler.idField to responseHandler.revField
+        }
+        val uploadedItem = normalizeUploadResult(preparedItem.localId, responseBody, idField, revField)
+        config.afterUpload?.invoke(preparedItem.item, uploadedItem)
+        return BatchItemResult.Success(uploadedItem)
+    }
+
+    /**
+     * A 409 means the server already holds a newer revision of this document. Re-send the
+     * local content once on top of the server's current `_rev` so the local edit is not lost;
+     * if that also fails, leave the item pending instead of marking it uploaded.
+     */
+    private suspend fun <T : Any> resolveConflict(
+        preparedItem: PreparedUpload<T>,
+        config: UploadPipelineConfig<T>,
+        baseUrl: String,
+        semaphore: Semaphore
+    ): BatchItemResult {
+        val docId = preparedItem.dbId ?: preparedItem.localId
+        val docUrl = "$baseUrl/${config.endpoint}/$docId"
+        return try {
+            val getResponse = semaphore.withPermit { uploadRepository.fetchExistingDoc(docUrl) }
+            val serverRev = getResponse.body()?.let { getString("_rev", it) }.orEmpty()
+            if (!getResponse.isSuccessful || serverRev.isEmpty()) {
+                return conflictError(preparedItem, "Document exists (409) but couldn't fetch revision")
+            }
+
+            val rebased = preparedItem.serialized.deepCopy().apply { addProperty("_rev", serverRev) }
+            val retryResponse = semaphore.withPermit { uploadRepository.putUpload(docUrl, rebased) }
+            val retryBody = retryResponse.body()
+            if (retryResponse.isSuccessful && retryBody != null) {
+                uploadSucceeded(preparedItem, config, retryBody)
+            } else {
+                conflictError(preparedItem, "Conflict retry failed: HTTP ${retryResponse.code()}", retryResponse.code())
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.w(TAG, "Network error resolving 409 for item ${preparedItem.localId}", e)
+            BatchItemResult.Error(UploadError(preparedItem.localId, e, retryable = true, httpCode = 409))
+        } catch (e: Exception) {
+            conflictError(preparedItem, "Document exists (409) but resolution failed: ${e.message}")
+        }
+    }
+
+    private fun conflictError(preparedItem: PreparedUpload<*>, message: String, httpCode: Int = 409): BatchItemResult {
+        Log.w(TAG, "$message for item ${preparedItem.localId}")
+        return BatchItemResult.Error(UploadError(
+            preparedItem.localId,
+            Exception(message),
+            retryable = httpCode >= 500,
+            httpCode = httpCode
+        ))
     }
 
     private suspend fun <T : Any> updateDatabaseBatch(
