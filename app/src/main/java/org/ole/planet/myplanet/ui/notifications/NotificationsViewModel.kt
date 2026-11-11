@@ -203,16 +203,18 @@ class NotificationsViewModel @Inject constructor(
         return map { if (it.id in ids && !it.isRead) it.copy(isRead = true) else it }
     }
 
+    private fun groupTypeOf(rawType: String): String {
+        val t = rawType.lowercase(Locale.ROOT)
+        return if (t in NotificationsRepository.KNOWN_TYPES) t else "notification"
+    }
+
     private fun isGroupDefaultExpanded(type: String, notifications: List<Notification>): Boolean {
-        return notifications.any { it.type == type && !it.isRead }
+        return notifications.any { groupTypeOf(it.type) == type && !it.isRead }
     }
 
     private fun buildNotificationGroups(notifications: List<Notification>): List<NotificationGroup> {
         if (notifications.isEmpty()) return emptyList()
-        val grouped = notifications.groupBy { notif ->
-            val t = notif.type.lowercase(Locale.ROOT)
-            if (t in NotificationsRepository.KNOWN_TYPES) t else "notification"
-        }
+        val grouped = notifications.groupBy { groupTypeOf(it.type) }
         val orderedTypes = TYPE_ORDER.filter { grouped.containsKey(it) } +
                 grouped.keys.filter { it !in TYPE_ORDER }
         return orderedTypes.mapNotNull { type ->
