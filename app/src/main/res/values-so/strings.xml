@@ -103,6 +103,7 @@
     <string name="user">Isticmaal</string>
     <string name="remove_selected">saar\nla xushay</string>
     <string name="stop_download">jooji soo dejinta</string>
+    <string name="download_stopped">Soo dejinta waa la joojiyay</string>
     <string name="downloading_file">soo dejinta faylka…</string>
     <string name="cancel">burin</string>
     <string name="added_to">ku daray</string>
@@ -1143,6 +1144,9 @@
     <string name="show_additional_fields">muuji beeraha dheeraadka ah</string>
     <string name="hide_additional_fields">qari beeraha dheeraadka ah</string>
     <string name="preparing_download">Diyaarinaya soo dejinta…</string>
+    <string name="download_partially_downloaded">Qayb ahaan ayaa la soo dejiyay</string>
+    <string name="download_paused_at_percent">Waa la hakiyay %1$d%%</string>
+    <string name="resume_download">Sii wad soo dejinta</string>
     <string name="downloading_files">Faylasha ayaa la soo dejinayaa</string>
     <string name="edit_mission_and_services">wax ka beddel himilada iyo adeegyada</string>
     <string name="this_team_has_no_description_defined">kooxdani ma laha sharaxaad la cayimay</string>
@@ -1310,6 +1314,9 @@
     <string name="storage_pdfs">Dukumentiyada PDF</string>
     <string name="storage_images">Sawirrada</string>
     <string name="storage_other">Faylasha Kale</string>
+    <string name="storage_partial_downloads">Soo dejimo qayb ah</string>
+    <string name="storage_clear_partial_downloads">Ma tirtirtaa soo dejimaha qayb ahaan?</string>
+    <string name="storage_clear_partial_downloads_message">Kuwani waa soo dejimo la joojiyay intaanay dhammaan. Tirtiriddoodu waxay bannaynaysaa meel, soo dejimahaasina mar kale bilowga ayay ka bilaabmi doonaan.</string>
     <string name="storage_empty">Ma jiro waxyaabo la soo dejiyay</string>
     <string name="storage_delete_confirm">Ma tirtiraysaa dhammaan soo-dejisyada %1$s?</string>
     <string name="storage_delete_selected_confirm">Ma tirtiraysaa %1$d shay(yada) la doortay?</string>

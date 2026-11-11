@@ -176,4 +176,70 @@ class SubmissionDaoTest {
         assertTrue(result.any { it.id == "sub_0" })
         assertTrue(result.any { it.id == "sub_1000" })
     }
+
+    @Test
+    fun updateRevs_updatesRevForMultipleEntries() = runBlocking {
+        val s1 = Submission(id = "s1", _rev = "1-old")
+        val s2 = Submission(id = "s2", _rev = "1-old")
+        val s3 = Submission(id = "s3", _rev = "1-keep")
+        submissionDao.upsertAll(listOf(s1, s2, s3))
+
+        submissionDao.updateRevs(mapOf("s1" to "2-new1", "s2" to "2-new2"))
+
+        val updated1 = submissionDao.getByIdOrRemoteId("s1")
+        val updated2 = submissionDao.getByIdOrRemoteId("s2")
+        val unchanged3 = submissionDao.getByIdOrRemoteId("s3")
+
+        assertEquals("2-new1", updated1?._rev)
+        assertEquals("2-new2", updated2?._rev)
+        assertEquals("1-keep", unchanged3?._rev)
+    }
+
+    @Test
+    fun updateRevs_emptyMap_isNoOp() = runBlocking {
+        val s1 = Submission(id = "s1", _rev = "1-old")
+        submissionDao.upsertAll(listOf(s1))
+
+        submissionDao.updateRevs(emptyMap())
+
+        val result = submissionDao.getByIdOrRemoteId("s1")
+        assertEquals("1-old", result?._rev)
+    }
+
+    @Test
+    fun markUploadedBatch_updatesExistingAndReturnsFailedItemsInOrder() = runBlocking {
+        val s1 = Submission(id = "s1", isUpdated = true)
+        val s3 = Submission(id = "s3", isUpdated = true)
+        submissionDao.upsertAll(listOf(s1, s3))
+
+        val item1 = SubmissionDao.UploadedSubmission("s1", "remote-1", "rev-1")
+        val item2 = SubmissionDao.UploadedSubmission("s2", "remote-2", "rev-2") // does not exist in DB
+        val item3 = SubmissionDao.UploadedSubmission("s3", "remote-3", "rev-3")
+        val item4 = SubmissionDao.UploadedSubmission("s4", "remote-4", "rev-4") // does not exist in DB
+
+        val failed = submissionDao.markUploadedBatch(listOf(item1, item2, item3, item4))
+
+        // item2 and item4 should fail (markUploaded row count == 0) and maintain input order
+        assertEquals(listOf(item2, item4), failed)
+
+        // item1 and item3 should be successfully updated in DB
+        val db1 = submissionDao.getByIdOrRemoteId("s1")
+        val db3 = submissionDao.getByIdOrRemoteId("s3")
+
+        assertNotNull(db1)
+        assertEquals("remote-1", db1?._id)
+        assertEquals("rev-1", db1?._rev)
+        assertEquals(false, db1?.isUpdated)
+
+        assertNotNull(db3)
+        assertEquals("remote-3", db3?._id)
+        assertEquals("rev-3", db3?._rev)
+        assertEquals(false, db3?.isUpdated)
+    }
+
+    @Test
+    fun markUploadedBatch_emptyList_returnsEmptyList() = runBlocking {
+        val failed = submissionDao.markUploadedBatch(emptyList())
+        assertTrue(failed.isEmpty())
+    }
 }
