@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utils
 
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -7,6 +8,7 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.fail
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -97,5 +99,25 @@ class RetryUtilsTest {
 
         assertNull(result)
         assertEquals(3, attempts)
+    }
+
+    @Test
+    fun `test retry rethrows CancellationException after exactly one attempt without delay`() = runTest {
+        var attempts = 0
+        try {
+            RetryUtils.retry<String>(
+                maxAttempts = 3,
+                delayMs = 10_000L,
+                shouldRetry = { it == null }
+            ) {
+                attempts++
+                throw CancellationException("Operation cancelled")
+            }
+            fail("Expected CancellationException to be thrown")
+        } catch (e: CancellationException) {
+            assertEquals("Operation cancelled", e.message)
+        }
+
+        assertEquals(1, attempts)
     }
 }

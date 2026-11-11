@@ -15,13 +15,13 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
     private val eventsRepository: EventsRepository,
     private val teamsRepository: TeamsRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserReadRepository
 ) : ViewModel() {
 
     private val _meetups = MutableStateFlow<List<Meetup>>(emptyList())
