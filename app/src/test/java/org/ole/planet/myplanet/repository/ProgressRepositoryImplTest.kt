@@ -1132,9 +1132,11 @@ class ProgressRepositoryImplTest {
         coEvery { courseProgressDao.findByCourseUserAndStep(any(), any(), any()) } returns null
         coEvery { examDao.getByCourseIdAndType("course1", "courses") } returns gatedExams()
         coEvery { courseProgressDao.getByUserAndCourse("user1", "course1") } returns emptyList()
-        coEvery { mockSubmissionsRepository.getSubmissionsByParentId("exam2@course1", "user1", "complete") } returns
-            listOf(attempt("a1", 28), attempt("a2", 29))
-        coEvery { mockSubmissionsRepository.getSubmissionsByParentId("exam4@course1", "user1", "complete") } returns emptyList()
+        coEvery { mockSubmissionsRepository.getExamSubmissionsByUser("user1") } returns listOf(
+            attempt("a1", 28).apply { parentId = "exam2@course1" },
+            attempt("a2", 29).apply { parentId = "exam2@course1" }
+        )
+        coEvery { mockSubmissionsRepository.getAnswersBySubmissionIds(listOf("a1", "a2")) } returns emptyList()
 
         repository.saveEarnedExamPasses(gatedSteps(), "user1", "planet1", "parent1", "course1")
 
@@ -1148,10 +1150,14 @@ class ProgressRepositoryImplTest {
     fun saveEarnedExamPasses_neverSavesAFailingScore() = testScope.runTest {
         coEvery { examDao.getByCourseIdAndType("course1", "courses") } returns gatedExams()
         coEvery { courseProgressDao.getByUserAndCourse("user1", "course1") } returns emptyList()
-        coEvery { mockSubmissionsRepository.getSubmissionsByParentId("exam2@course1", "user1", "complete") } returns
-            listOf(attempt("a1", 28))
-        coEvery { mockSubmissionsRepository.getSubmissionsByParentId("exam4@course1", "user1", "complete") } returns
-            listOf(attempt("a2", 0, 1, 0))
+        coEvery { mockSubmissionsRepository.getExamSubmissionsByUser("user1") } returns listOf(
+            attempt("a1", 28).apply { parentId = "exam2@course1" },
+            attempt("a2", 0).apply { parentId = "exam4@course1" }
+        )
+        coEvery { mockSubmissionsRepository.getAnswersBySubmissionIds(listOf("a1", "a2")) } returns listOf(
+            Answer(submissionId = "a2", grade = 1),
+            Answer(submissionId = "a2", grade = 0)
+        )
 
         repository.saveEarnedExamPasses(gatedSteps(), "user1", "planet1", "parent1", "course1")
 
@@ -1162,13 +1168,80 @@ class ProgressRepositoryImplTest {
     fun saveEarnedExamPasses_onlyCountsCompletedAttempts() = testScope.runTest {
         coEvery { examDao.getByCourseIdAndType("course1", "courses") } returns gatedExams()
         coEvery { courseProgressDao.getByUserAndCourse("user1", "course1") } returns emptyList()
-        coEvery { mockSubmissionsRepository.getSubmissionsByParentId(any(), any(), any()) } returns emptyList()
+        coEvery { mockSubmissionsRepository.getExamSubmissionsByUser("user1") } returns listOf(
+            attempt("a1", 50).apply { parentId = "exam2@course1"; status = "pending" }
+        )
 
         repository.saveEarnedExamPasses(gatedSteps(), "user1", "planet1", "parent1", "course1")
 
-        coVerify { mockSubmissionsRepository.getSubmissionsByParentId("exam2@course1", "user1", "complete") }
-        coVerify(exactly = 0) { mockSubmissionsRepository.getSubmissionsByParentId(any(), any(), neq("complete")) }
+        coVerify(exactly = 1) { mockSubmissionsRepository.getExamSubmissionsByUser("user1") }
+        coVerify(exactly = 0) { mockSubmissionsRepository.getAnswersBySubmissionIds(any()) }
         coVerify(exactly = 0) { courseProgressDao.upsert(any()) }
+    }
+
+    @Test
+    fun saveEarnedExamPasses_singleSubmissionsAndAnswersCallForTwoUnpassedRequiredSteps() = testScope.runTest {
+        coEvery { courseProgressDao.findByCourseUserAndStep(any(), any(), any()) } returns null
+        coEvery { examDao.getByCourseIdAndType("course1", "courses") } returns gatedExams()
+        coEvery { courseProgressDao.getByUserAndCourse("user1", "course1") } returns emptyList()
+        coEvery { mockSubmissionsRepository.getExamSubmissionsByUser("user1") } returns listOf(
+            attempt("a1", 30).apply { parentId = "exam2@course1" },
+            attempt("a2", 0).apply { parentId = "exam4@course1" }
+        )
+        coEvery { mockSubmissionsRepository.getAnswersBySubmissionIds(listOf("a1", "a2")) } returns listOf(
+            Answer(submissionId = "a2", grade = 1),
+            Answer(submissionId = "a2", grade = 1)
+        )
+
+        repository.saveEarnedExamPasses(gatedSteps(), "user1", "planet1", "parent1", "course1")
+
+        coVerify(exactly = 1) { mockSubmissionsRepository.getExamSubmissionsByUser("user1") }
+        coVerify(exactly = 1) { mockSubmissionsRepository.getAnswersBySubmissionIds(listOf("a1", "a2")) }
+        coVerify(exactly = 1) { courseProgressDao.upsert(match { it.stepNum == 2 && it.passed }) }
+        coVerify(exactly = 1) { courseProgressDao.upsert(match { it.stepNum == 4 && it.passed }) }
+    }
+
+    @Test
+    fun saveEarnedExamPasses_alreadyPassedStepTriggersNoLookup() = testScope.runTest {
+        coEvery { examDao.getByCourseIdAndType("course1", "courses") } returns gatedExams()
+        coEvery { courseProgressDao.getByUserAndCourse("user1", "course1") } returns listOf(
+            CourseProgress().apply { stepNum = 2; passed = true },
+            CourseProgress().apply { stepNum = 4; passed = true }
+        )
+
+        repository.saveEarnedExamPasses(gatedSteps(), "user1", "planet1", "parent1", "course1")
+
+        coVerify(exactly = 0) { mockSubmissionsRepository.getExamSubmissionsByUser(any()) }
+        coVerify(exactly = 0) { mockSubmissionsRepository.getAnswersBySubmissionIds(any()) }
+        coVerify(exactly = 0) { courseProgressDao.upsert(any()) }
+    }
+
+    @Test
+    fun saveEarnedExamPasses_duplicateExamsForOneStepKeepsFirst() = testScope.runTest {
+        coEvery { courseProgressDao.findByCourseUserAndStep(any(), any(), any()) } returns null
+        val steps = listOf(
+            CourseStep(id = "step1", courseId = "course1", passingRequired = true)
+        )
+        val duplicateExams = listOf(
+            StepExam(id = "exam_first", stepId = "step1", courseId = "course1", type = "courses",
+                totalMarks = 50, passingPercentage = "50", noOfQuestions = 5),
+            StepExam(id = "exam_second", stepId = "step1", courseId = "course1", type = "courses",
+                totalMarks = 100, passingPercentage = "90", noOfQuestions = 10)
+        )
+        coEvery { examDao.getByCourseIdAndType("course1", "courses") } returns duplicateExams
+        coEvery { courseProgressDao.getByUserAndCourse("user1", "course1") } returns emptyList()
+        coEvery { mockSubmissionsRepository.getExamSubmissionsByUser("user1") } returns listOf(
+            attempt("sub1", 25).apply { parentId = "exam_first@course1" },
+            attempt("sub2", 25).apply { parentId = "exam_second@course1" }
+        )
+        coEvery { mockSubmissionsRepository.getAnswersBySubmissionIds(listOf("sub1")) } returns emptyList()
+
+        repository.saveEarnedExamPasses(steps, "user1", "planet1", "parent1", "course1")
+
+        coVerify(exactly = 1) { mockSubmissionsRepository.getAnswersBySubmissionIds(listOf("sub1")) }
+        coVerify(exactly = 1) {
+            courseProgressDao.upsert(match { it.stepNum == 1 && it.passed && it.courseId == "course1" && it.userId == "user1" })
+        }
     }
 
 }
