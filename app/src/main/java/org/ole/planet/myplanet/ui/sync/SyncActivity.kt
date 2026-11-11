@@ -23,7 +23,6 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
-import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AlertDialog
@@ -82,7 +81,6 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 @AndroidEntryPoint
 @OptIn(FlowPreview::class)
 abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepository.CheckVersionCallback {
-    protected val loginViewModel: LoginViewModel by viewModels()
     private var serverDialogBinding: DialogServerUrlBinding? = null
     private lateinit var syncDate: TextView
     lateinit var lblLastSyncDate: TextView
@@ -387,17 +385,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         prefData.setAutoSyncInterval(syncTimeInterval[spinner.selectedItemPosition])
         prefData.setAutoSyncPosition(spinner.selectedItemPosition)
         (applicationContext as? MainApplication)?.applyAutoSyncSettings()
-    }
-
-    suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): Boolean {
-        return when (loginViewModel.authenticate(username, password, isManagerMode)) {
-            LoginViewModel.AuthOutcome.NoUsers -> {
-                alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
-                false
-            }
-            LoginViewModel.AuthOutcome.Success -> true
-            LoginViewModel.AuthOutcome.Failed -> false
-        }
     }
 
     fun startSync(type: String) {

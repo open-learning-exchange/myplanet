@@ -171,18 +171,6 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun `createGuestUser forwards argument and returns value from repository`() = runTest {
-        val expected = UserEntity().apply { id = "guest_123"; name = "guest1" }
-        coEvery { userRepository.createGuestUser("guest1") } returns expected
-
-        val viewModel = createViewModel()
-        val result = viewModel.createGuestUser("guest1")
-
-        assertEquals(expected, result)
-        coVerify(exactly = 1) { userRepository.createGuestUser("guest1") }
-    }
-
-    @Test
     fun `syncCommunityDocs forwards call and returns value from repository`() = runTest {
         coEvery { communityRepository.syncCommunityDocs() } returns true
 

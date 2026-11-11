@@ -15,6 +15,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -64,6 +65,19 @@ import org.ole.planet.myplanet.utils.textChanges
 @OptIn(FlowPreview::class)
 @AndroidEntryPoint
 class LoginActivity : SyncActivity(), OnUserProfileClickListener {
+    private val loginViewModel: LoginViewModel by viewModels()
+
+    suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): Boolean {
+        return when (loginViewModel.authenticate(username, password, isManagerMode)) {
+            LoginViewModel.AuthOutcome.NoUsers -> {
+                alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
+                false
+            }
+            LoginViewModel.AuthOutcome.Success -> true
+            LoginViewModel.AuthOutcome.Failed -> false
+        }
+    }
+
     @Inject
     override lateinit var dispatcherProvider: DispatcherProvider
     @Inject

@@ -90,8 +90,6 @@ class LoginViewModel @Inject constructor(
 
     suspend fun findUserByName(name: String): UserEntity? = userRepository.findUserByName(name)
 
-    suspend fun createGuestUser(username: String): UserEntity? = userRepository.createGuestUser(username)
-
     enum class AuthOutcome {
         NoUsers,
         Success,
