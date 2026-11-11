@@ -44,17 +44,21 @@ class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(
     private var currentFilter: String = "all"
     private var isAdmin: Boolean = false
 
-    // The strings outlive this fragment (the ViewModel keeps them), so the formatting lambdas
-    // must capture the application context, never the fragment or its activity.
-    private val notificationStrings by lazy {
-        val appContext = requireContext().applicationContext
-        NotificationStrings(
-            storageRunningLow = appContext.getString(R.string.storage_running_low),
-            storageAvailable = appContext.getString(R.string.storage_available),
-            joinRequestPrefix = appContext.getString(R.string.join_request_prefix),
-            resourceCount = { count -> appContext.getString(R.string.resource_notification, count) },
-            taskDue = { title, date -> appContext.getString(R.string.task_notification, title, date) },
-            userRequestedToJoin = { user, team -> appContext.getString(R.string.user_requested_to_join_team, user, team) }
+    // Resolved against the fragment's current (locale-aware) resources on every call. The format
+    // templates are read eagerly and the lambdas capture only those plain strings, so nothing
+    // here holds the fragment or activity once the ViewModel keeps the result.
+    private fun buildNotificationStrings(): NotificationStrings {
+        val locale = resources.configuration.locales[0]
+        val resourceTemplate = getString(R.string.resource_notification)
+        val taskTemplate = getString(R.string.task_notification)
+        val joinTemplate = getString(R.string.user_requested_to_join_team)
+        return NotificationStrings(
+            storageRunningLow = getString(R.string.storage_running_low),
+            storageAvailable = getString(R.string.storage_available),
+            joinRequestPrefix = getString(R.string.join_request_prefix),
+            resourceCount = { count -> String.format(locale, resourceTemplate, count) },
+            taskDue = { title, date -> String.format(locale, taskTemplate, title, date) },
+            userRequestedToJoin = { user, team -> String.format(locale, joinTemplate, user, team) }
         )
     }
 
@@ -90,7 +94,7 @@ class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(
                 if (filter == currentFilter) return
                 currentFilter = filter
                 updateMarkAllAsReadButton(viewModel.unreadCount.value)
-                viewModel.loadNotifications(userId, currentFilter, isAdmin, notificationStrings)
+                viewModel.loadNotifications(userId, currentFilter, isAdmin, buildNotificationStrings())
             }
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
@@ -100,7 +104,7 @@ class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(
         binding.btnBulkDelete.setOnClickListener { viewModel.deleteSelected() }
         binding.btnCancelSelection.setOnClickListener { viewModel.clearSelection() }
 
-        viewModel.loadNotifications(userId, currentFilter, isAdmin, notificationStrings)
+        viewModel.loadNotifications(userId, currentFilter, isAdmin, buildNotificationStrings())
 
         collectWhenStarted(viewModel.groupedItems) { items ->
             adapter.submitList(items)
@@ -190,7 +194,7 @@ class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(
     fun refreshNotificationsList() {
         if (::adapter.isInitialized && _binding != null) {
             currentFilter = filterAt(binding.status.selectedItemPosition)
-            viewModel.loadNotifications(userId, currentFilter, isAdmin, notificationStrings)
+            viewModel.loadNotifications(userId, currentFilter, isAdmin, buildNotificationStrings())
         }
     }
     
