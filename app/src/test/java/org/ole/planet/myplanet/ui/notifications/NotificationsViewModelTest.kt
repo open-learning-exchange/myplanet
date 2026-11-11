@@ -452,4 +452,86 @@ class NotificationsViewModelTest {
             subType = subType
         )
     }
+
+    @Test
+    fun testGroupingAndFlatteningRunOnComputeDispatcherAcrossMutations() = runTest(testDispatcher) {
+        val computeDispatcher = StandardTestDispatcher(testScheduler)
+        val customDispatcherProvider = object : org.ole.planet.myplanet.utils.DispatcherProvider {
+            override val main = testDispatcher
+            override val mainImmediate = testDispatcher
+            override val io = testDispatcher
+            override val default = computeDispatcher
+            override val unconfined = testDispatcher
+        }
+        val customViewModel = NotificationsViewModel(
+            notificationsRepository = repository,
+            context = mockk<Context>(relaxed = true),
+            dispatcherProvider = customDispatcherProvider
+        )
+
+        backgroundScope.launch { customViewModel.groupedItems.collect {} }
+
+        val task1 = notification(id = "t1", type = "task", isRead = false, message = "Task 1")
+        val task2 = notification(id = "t2", type = "task", isRead = true, message = "Task 2")
+        val resource1 = notification(id = "r1", type = "resource", isRead = true, message = "Resource 1")
+
+        val enrichment = EnrichedNotifications(
+            payloads = listOf(task1, task2, resource1),
+            taskTeamNames = emptyMap(),
+            joinRequestDetails = emptyMap(),
+            parsedTaskDates = emptyMap(),
+            unreadCount = 1
+        )
+        coEvery { repository.getEnrichedNotifications(USER_ID, FILTER_ALL, false) } returns enrichment
+        every { repository.resolveType(any(), any(), any()) } answers { firstArg<String>().lowercase() }
+
+        customViewModel.loadNotifications(USER_ID, FILTER_ALL)
+        advanceUntilIdle()
+
+        // Verify loaded state: task has 1 unread -> expanded by default; resource has 0 unread -> collapsed by default
+        assertEquals(4, customViewModel.groupedItems.value.size)
+        val initialHeaderTask = customViewModel.groupedItems.value[0] as NotificationListItem.Header
+        assertEquals("task", initialHeaderTask.type)
+        assertEquals(1, initialHeaderTask.unreadCount)
+        assertTrue(initialHeaderTask.isExpanded)
+
+        // Select task1
+        customViewModel.toggleSelection("t1")
+        advanceUntilIdle()
+
+        val selectedItem = customViewModel.groupedItems.value.filterIsInstance<NotificationListItem.Item>().first { it.notification.id == "t1" }
+        assertTrue(selectedItem.isSelected)
+        assertTrue(selectedItem.isSelectionMode)
+
+        // Expand resource group
+        customViewModel.toggleGroupExpansion("resource")
+        advanceUntilIdle()
+
+        val expandedResourceHeader = customViewModel.groupedItems.value.filterIsInstance<NotificationListItem.Header>().first { it.type == "resource" }
+        assertTrue(expandedResourceHeader.isExpanded)
+        val resourceItem = customViewModel.groupedItems.value.filterIsInstance<NotificationListItem.Item>().first { it.notification.id == "r1" }
+        assertFalse(resourceItem.isSelected)
+        assertTrue(resourceItem.isSelectionMode)
+
+        // Mark t1 as read
+        coEvery { repository.markNotificationsAsRead(setOf("t1")) } returns setOf("t1")
+        customViewModel.markSelectedAsRead()
+        advanceUntilIdle()
+
+        // Verify final headers and rows
+        val finalHeaders = customViewModel.groupedItems.value.filterIsInstance<NotificationListItem.Header>()
+        assertEquals(2, finalHeaders.size)
+        assertEquals("task", finalHeaders[0].type)
+        assertEquals(0, finalHeaders[0].unreadCount)
+        assertFalse(finalHeaders[0].isExpanded) // task has 0 unread and no override -> collapsed
+        assertEquals("resource", finalHeaders[1].type)
+        assertEquals(0, finalHeaders[1].unreadCount)
+        assertTrue(finalHeaders[1].isExpanded) // resource was expanded by toggle
+
+        val finalItems = customViewModel.groupedItems.value.filterIsInstance<NotificationListItem.Item>()
+        assertEquals(1, finalItems.size)
+        assertEquals("r1", finalItems[0].notification.id)
+        assertFalse(finalItems[0].isSelected)
+        assertFalse(finalItems[0].isSelectionMode)
+    }
 }

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -60,13 +61,16 @@ class NotificationsViewModel @Inject constructor(
 
     private val groupedNotifications: StateFlow<List<NotificationGroup>> = _notifications
         .map { buildNotificationGroups(it) }
+        .flowOn(dispatcherProvider.default)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val groupedItems: StateFlow<List<NotificationListItem>> = combine(
         groupedNotifications, _selectedIds, _collapsedGroups, _expandedGroups
     ) { groups, selected, collapsed, expanded ->
         buildGroupedList(groups, selected, collapsed, expanded)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }
+        .flowOn(dispatcherProvider.default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private var currentFilter: String = "all"
     private var loadJob: Job? = null
