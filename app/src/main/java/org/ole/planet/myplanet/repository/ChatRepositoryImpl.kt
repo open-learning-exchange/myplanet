@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatRequest
+import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Conversation
@@ -24,9 +25,9 @@ import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.ServerReachabilityProvider
+import retrofit2.Response
 
 @Singleton
 class ChatRepositoryImpl @Inject constructor(
@@ -34,7 +35,6 @@ class ChatRepositoryImpl @Inject constructor(
     private val chatApiService: ChatApiService,
     private val serverUrlMapper: ServerUrlMapper,
     private val sharedPrefManager: SharedPrefManager,
-    private val dispatcherProvider: DispatcherProvider,
     private val serverReachabilityProvider: ServerReachabilityProvider,
     @PlainGson private val gson: Gson
 ) : ChatRepository, ChatSyncWriter {
@@ -78,10 +78,12 @@ class ChatRepositoryImpl @Inject constructor(
                 saveNewChat(jsonObject)
                 ChatResult.Success(chatResponse, id, rev)
             } else {
-                ChatResult.Error(responseBody?.message ?: response.message() ?: "Request failed")
+                ChatResult.Error(errorMessageOf(response))
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            ChatResult.Error(e.message ?: "Request failed")
+            ChatResult.Error(e.message?.takeIf { it.isNotBlank() } ?: REQUEST_FAILED)
         }
     }
 
@@ -104,13 +106,23 @@ class ChatRepositoryImpl @Inject constructor(
                 continueConversation(id, message, chatResponse, newRev)
                 ChatResult.Success(chatResponse, id, newRev)
             } else {
-                ChatResult.Error(responseBody?.message ?: response.message() ?: "Request failed")
+                ChatResult.Error(errorMessageOf(response))
             }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            ChatResult.Error(e.message ?: "Request failed")
+            ChatResult.Error(e.message?.takeIf { it.isNotBlank() } ?: REQUEST_FAILED)
         }
+    }
+
+    private fun errorMessageOf(response: Response<ChatResponse>): String {
+        val body = response.body() ?: try {
+            response.errorBody()?.string()?.let { gson.fromJson(it, ChatResponse::class.java) }
+        } catch (_: Exception) {
+            null
+        }
+        return listOf(body?.message, body?.error, response.message())
+            .firstOrNull { !it.isNullOrBlank() } ?: REQUEST_FAILED
     }
 
     override suspend fun fetchAiProviders(serverUrl: String): Map<String, Boolean>? {
@@ -232,5 +244,9 @@ class ChatRepositoryImpl @Inject constructor(
                 }
             }
             .toMap()
+    }
+
+    private companion object {
+        const val REQUEST_FAILED = "Request failed"
     }
 }

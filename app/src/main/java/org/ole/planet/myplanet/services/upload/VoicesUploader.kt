@@ -6,11 +6,12 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
+import java.io.IOException
+import java.util.Base64
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody.Companion.asRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.NewsUpdateData
@@ -18,7 +19,6 @@ import org.ole.planet.myplanet.repository.NewsUploadData
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.services.FileUploader
 import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.services.upload.UploadConstants.BATCH_SIZE
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.VoiceImagePreparer
 import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
@@ -43,11 +44,11 @@ class VoicesUploader @Inject constructor(
     private val dispatcherProvider: DispatcherProvider
 ) {
 
-    private fun createImage(user: UserEntity?, imgObject: JsonObject?): JsonObject {
+    private fun createImage(user: UserEntity?, fileName: String): JsonObject {
         val `object` = JsonObject()
-        `object`.addProperty("title", getString("fileName", imgObject))
+        `object`.addProperty("title", fileName)
         `object`.addProperty("createdDate", timeProvider.now())
-        `object`.addProperty("filename", getString("fileName", imgObject))
+        `object`.addProperty("filename", fileName)
         `object`.addProperty("private", true)
         user?.id?.let { `object`.addProperty("addedBy", it) }
         user?.parentCode?.let { `object`.addProperty("resideOn", it) }
@@ -61,6 +62,22 @@ class VoicesUploader @Inject constructor(
         return `object`
     }
 
+    private suspend fun putImage(user: UserEntity?, resourceId: String, fileName: String, imageFile: File) {
+        val mimeType = FileUtils.getMimeType(fileName) ?: "application/octet-stream"
+        val doc = createImage(user, fileName)
+        val attachment = JsonObject().apply {
+            addProperty("content_type", mimeType)
+            addProperty("data", Base64.getEncoder().encodeToString(imageFile.readBytes()))
+        }
+        doc.add("_attachments", JsonObject().apply { add(fileName, attachment) })
+        val code = uploadRepository.putUpload("${UrlUtils.getUrl()}/resources/$resourceId", doc).code()
+        if (code != 201 && code != 202 && code != 409) {
+            throw IOException("Image upload for $resourceId failed: HTTP $code")
+        }
+    }
+
+    private class PreparedNews(val news: NewsUploadData, val imagesArray: JsonArray, val files: List<File>)
+
     suspend fun uploadNews() {
         val user = userRepository.getUserModel()
         val newsItems = voicesRepository.getNewsForUpload()
@@ -68,37 +85,26 @@ class VoicesUploader @Inject constructor(
         withContext(dispatcherProvider.io) {
             newsItems.processInBatches { batch ->
                 val successfulUpdates = mutableListOf<NewsUpdateData>()
-                val processedNews = mutableListOf<Pair<NewsUploadData, JsonArray>>()
+                val processedNews = mutableListOf<PreparedNews>()
+                val uploadedFiles = mutableListOf<File>()
 
                 batch.forEach { news ->
                     try {
                         val imagesArray = (news.newsJson.get("images") as? JsonArray)?.deepCopy() ?: JsonArray()
                         val messageWithImages = StringBuilder(news.message ?: "")
 
+                        val files = mutableListOf<File>()
                         news.imageUrls.forEach { imageUrl ->
                             val imgObject = gson.fromJson(imageUrl, JsonObject::class.java)
-
-                            // Create image resource document
-                            val imageDoc = createImage(user, imgObject)
-                            val imageResponse = uploadRepository.postUpload(
-                                "${UrlUtils.getUrl()}/resources",
-                                imageDoc
-                            ).body()
-
-                            val resourceId = getString("id", imageResponse)
-                            val resourceRev = getString("rev", imageResponse)
-
-                            // Upload image file as attachment
                             val imageFile = File(getString("imageUrl", imgObject))
-                            val fileName = FileUtils.getFileNameFromUrl(getString("imageUrl", imgObject))
-                            val mimeType = FileUtils.getMimeType(fileName) ?: "application/octet-stream"
-                            val fileBody = imageFile.asRequestBody("application/octet-stream".toMediaTypeOrNull())
-
-                            uploadRepository.uploadResource(
-                                FileUploader.getHeaderMap(mimeType, resourceRev),
-                                "${UrlUtils.getUrl()}/resources/$resourceId/$fileName",
-                                fileBody
-                            )
+                            if (!imageFile.isFile) {
+                                Log.w(TAG, "Dropping image ${imageFile.name} from voice ${news.id}: file is gone")
+                                return@forEach
+                            }
+                            val resourceId = getString("resourceId", imgObject).ifEmpty { legacyResourceId(news, imageUrl) }
+                            val fileName = safeFileName(imageFile.name)
+                            putImage(user, resourceId, fileName, imageFile)
+                            files.add(imageFile)
 
                             val resourceObject = JsonObject()
                             resourceObject.addProperty("resourceId", resourceId)
@@ -114,7 +120,7 @@ class VoicesUploader @Inject constructor(
                         newsJson.addProperty("message", messageWithImages.toString())
                         newsJson.add("images", imagesArray)
 
-                        processedNews.add(Pair(news, imagesArray))
+                        processedNews.add(PreparedNews(news, imagesArray, files))
                     } catch (e: Exception) {
                         Log.e(TAG, "Exception in VoicesUploader processing images for news", e)
                         val isCreate = TextUtils.isEmpty(news._id)
@@ -125,8 +131,9 @@ class VoicesUploader @Inject constructor(
                 BulkDocsUploader.upload(
                     uploadRepository,
                     "${UrlUtils.getUrl()}/news/_bulk_docs",
-                    processedNews.map { (news, imagesArray) -> (news to imagesArray) to news.newsJson }
-                ) { (news, imagesArray), outcome ->
+                    processedNews.map { it to it.news.newsJson }
+                ) { prepared, outcome ->
+                    val news = prepared.news
                     val isCreate = TextUtils.isEmpty(news._id)
                     when (outcome) {
                         is BulkDocsUploader.Outcome.Accepted -> {
@@ -135,11 +142,12 @@ class VoicesUploader @Inject constructor(
                                     id = news.id,
                                     _id = getString("id", outcome.element),
                                     _rev = getString("rev", outcome.element),
-                                    imagesArray = imagesArray,
+                                    imagesArray = prepared.imagesArray,
                                     pendingReactions = news.pendingReactions,
                                     message = getString("message", news.newsJson)
                                 )
                             )
+                            uploadedFiles.addAll(prepared.files)
                         }
                         is BulkDocsUploader.Outcome.Rejected -> {
                             val errorReason = outcome.element.get("error").asString
@@ -154,9 +162,27 @@ class VoicesUploader @Inject constructor(
 
                 if (successfulUpdates.isNotEmpty()) {
                     voicesRepository.markNewsUploaded(successfulUpdates)
+                    deleteLocalCopies(uploadedFiles)
                 }
             }
             uploadNewsDeletions()
+        }
+    }
+
+    private fun legacyResourceId(news: NewsUploadData, imageEntry: String): String =
+        UUID.nameUUIDFromBytes("${news.id}:$imageEntry".toByteArray()).toString()
+
+    private fun safeFileName(name: String): String =
+        name.replace(UNSAFE_FILE_NAME_CHARS, "_").trim('_', '.').ifEmpty { "image.jpg" }
+
+    private fun deleteLocalCopies(files: List<File>) {
+        val context = MainApplication.context
+        files.forEach { file ->
+            try {
+                if (VoiceImagePreparer.isOwnedFile(context, file)) file.delete()
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not delete uploaded image ${file.name}", e)
+            }
         }
     }
 
@@ -210,5 +236,6 @@ class VoicesUploader @Inject constructor(
 
     companion object {
         private const val TAG = "VoicesUploader"
+        private val UNSAFE_FILE_NAME_CHARS = Regex("[^A-Za-z0-9._-]+")
     }
 }

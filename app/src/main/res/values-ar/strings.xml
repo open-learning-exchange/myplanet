@@ -1269,6 +1269,8 @@
     <string name="team_surveys">استطلاعات الفريق</string>
     <string name="enterprise_created">تم إنشاء المؤسسة</string>
     <string name="image_already_added">تمت إضافة هذه الصورة بالفعل</string>
+    <string name="voice_image_gif_too_large">لا يمكن إرفاق صور GIF أكبر من 2 ميغابايت</string>
+    <string name="voice_image_unreadable">تعذرت قراءة هذه الصورة</string>
     <string name="debug_retry_queue">قائمة إعادة المحاولة (تصحيح)</string>
     <string name="debug_retry_queue_summary">عرض وإدارة محاولات الرفع الفاشلة</string>
     <string name="retry_queue_status">حالة قائمة إعادة المحاولة</string>

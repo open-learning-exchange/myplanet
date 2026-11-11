@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.repository.PersonalUpdate
 import org.ole.planet.myplanet.repository.PersonalUploadResult
 import org.ole.planet.myplanet.repository.PersonalsRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 
 sealed class UploadState {
     object Idle : UploadState()
@@ -28,7 +28,7 @@ sealed class UploadState {
 @HiltViewModel
 class PersonalsViewModel @Inject constructor(
     private val personalsRepository: PersonalsRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserReadRepository
 ) : ViewModel() {
 
     val personals: StateFlow<List<Personal>> = flow {

@@ -93,9 +93,8 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
                 val uri = result.data?.data ?: return@registerForActivityResult
                 viewLifecycleOwner.lifecycleScope.launch {
                     val appContext = requireContext().applicationContext
-                    val filesDir = requireContext().filesDir
                     val path = withContext(dispatcherProvider.io) {
-                        FileUtils.resolveUriToPath(appContext, uri, filesDir)
+                        FileUtils.resolveUriToPath(appContext, uri, appContext.filesDir)
                     }
                     if (path != null) {
                         startIntent(path)
@@ -111,9 +110,8 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
             if (isSuccess && uri != null) {
                 viewLifecycleOwner.lifecycleScope.launch {
                     val appContext = requireContext().applicationContext
-                    val filesDir = requireContext().filesDir
                     val path = withContext(dispatcherProvider.io) {
-                        FileUtils.resolveUriToPath(appContext, uri, filesDir)
+                        FileUtils.resolveUriToPath(appContext, uri, appContext.filesDir)
                     }
                     if (path != null) {
                         startIntent(path)
