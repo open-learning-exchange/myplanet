@@ -568,6 +568,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
     }
 
+    private fun otherChoice(): JsonObject =
+        GsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
+
     private fun showCheckBoxes(question: ExamQuestion?, oldAnswer: String) {
         val choices = getStringAsJsonArray(question?.choices)
 
@@ -576,9 +579,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
 
         if (question?.hasOtherOption == true) {
-            val otherChoice = GsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
-
-            addCompoundButton(otherChoice, false, oldAnswer)
+            addCompoundButton(otherChoice(), false, oldAnswer)
         }
     }
 
@@ -596,9 +597,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
         if (question?.hasOtherOption == true) {
             if (!choices.isEmpty() && choices[0].isJsonObject) {
-                val otherChoice = GsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
-
-                addCompoundButton(otherChoice, isRadio, oldAnswer)
+                addCompoundButton(otherChoice(), isRadio, oldAnswer)
             } else {
                 addRadioButton("Other", oldAnswer)
             }
@@ -606,7 +605,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     }
 
     private fun addRadioButton(choice: String, oldAnswer: String) {
-        val inflater = LayoutInflater.from(activity)
+        val inflater = LayoutInflater.from(binding.root.context)
         val rdBtn = inflater.inflate(R.layout.item_radio_btn, binding.groupChoices, false) as RadioButton
         rdBtn.text = choice
         rdBtn.isChecked = choice == oldAnswer
