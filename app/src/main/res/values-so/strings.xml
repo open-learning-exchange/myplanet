@@ -1249,6 +1249,8 @@
     <string name="team_surveys">Sahaminta kooxda</string>
     <string name="enterprise_created">Ganacsi La Sameeyay</string>
     <string name="image_already_added">Sawirkan horay ayaa loo daray</string>
+    <string name="voice_image_gif_too_large">GIF ka weyn 2 MB lama lifaaqi karo</string>
+    <string name="voice_image_unreadable">Sawirkan lama akhrin karo</string>
     <string name="debug_retry_queue">Safka Dib-u-Isku-Dayga (Debug)</string>
     <string name="debug_retry_queue_summary">Eeg oo maamul isku-dayada gelinta ee fashilmay</string>
     <string name="retry_queue_status">Xaaladda Safka Dib-u-Isku-Dayga</string>
