@@ -159,6 +159,8 @@ internal class SubmissionsPayloadBuilder @Inject constructor(
                 }
                 jsonObject.add("user", userJson)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             e.printStackTrace()
         }
