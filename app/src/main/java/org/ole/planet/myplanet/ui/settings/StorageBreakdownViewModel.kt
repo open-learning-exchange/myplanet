@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.PartialDownloads
+import org.ole.planet.myplanet.utils.PartialDownloadCleaner
 import org.ole.planet.myplanet.utils.TimeProvider
 
 data class StorageBreakdownUiState(
@@ -24,7 +24,7 @@ data class StorageBreakdownUiState(
     val availableSpaceText: String = "",
     val totalBytes: Long = 0L,
     val categories: List<StorageBreakdownViewModel.CategoryData> = emptyList(),
-    val partialDownloads: PartialDownloads.Summary = PartialDownloads.Summary(0L, 0)
+    val partialDownloads: PartialDownloadCleaner.Summary = PartialDownloadCleaner.Summary(0L, 0)
 )
 
 @HiltViewModel
@@ -65,7 +65,7 @@ open class StorageBreakdownViewModel @Inject constructor(
             val availableSpaceText = FileUtils.availableOverTotalMemoryFormattedString(context)
             val oleDir = File(FileUtils.getOlePath(context))
             val result = resourcesRepository.getStorageBreakdown(oleDir)
-            val partialDownloads = PartialDownloads.summarize(oleDir)
+            val partialDownloads = PartialDownloadCleaner.summarize(oleDir)
 
             val scannedCategories = categories.mapIndexed { index, category ->
                 category.copy(
@@ -89,10 +89,10 @@ open class StorageBreakdownViewModel @Inject constructor(
     fun clearPartialDownloads() {
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch(dispatcherProvider.io) {
-            PartialDownloads.delete(
+            PartialDownloadCleaner.delete(
                 File(FileUtils.getOlePath(context)),
                 timeProvider.now(),
-                PartialDownloads.ACTIVE_WINDOW_MILLIS
+                PartialDownloadCleaner.ACTIVE_WINDOW_MILLIS
             )
             loadStorage(forceRefresh = true)
         }

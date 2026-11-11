@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.utils
 import java.io.File
 import java.util.concurrent.TimeUnit
 
-object PartialDownloads {
+object PartialDownloadCleaner {
     val STALE_AFTER_MILLIS: Long = TimeUnit.DAYS.toMillis(30)
     val ACTIVE_WINDOW_MILLIS: Long = TimeUnit.MINUTES.toMillis(2)
     private const val PARTIAL_SUFFIX = ".tmp"

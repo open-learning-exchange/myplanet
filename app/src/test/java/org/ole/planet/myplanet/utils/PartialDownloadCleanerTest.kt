@@ -8,7 +8,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
-class PartialDownloadsTest {
+class PartialDownloadCleanerTest {
 
     @get:Rule
     val temporaryFolder = TemporaryFolder()
@@ -24,11 +24,11 @@ class PartialDownloadsTest {
 
     @Test
     fun `isPartialFile matches the partial file and its sidecars only`() {
-        assertTrue(PartialDownloads.isPartialFile("video.mp4.tmp"))
-        assertTrue(PartialDownloads.isPartialFile("video.mp4.tmp.etag"))
-        assertTrue(PartialDownloads.isPartialFile("video.mp4.tmp.size"))
-        assertFalse(PartialDownloads.isPartialFile("video.mp4"))
-        assertFalse(PartialDownloads.isPartialFile("notes.tmpl"))
+        assertTrue(PartialDownloadCleaner.isPartialFile("video.mp4.tmp"))
+        assertTrue(PartialDownloadCleaner.isPartialFile("video.mp4.tmp.etag"))
+        assertTrue(PartialDownloadCleaner.isPartialFile("video.mp4.tmp.size"))
+        assertFalse(PartialDownloadCleaner.isPartialFile("video.mp4"))
+        assertFalse(PartialDownloadCleaner.isPartialFile("notes.tmpl"))
     }
 
     @Test
@@ -39,14 +39,14 @@ class PartialDownloadsTest {
         file(File(ole, "res2"), "book.pdf.tmp", 50)
         file(File(ole, "res2"), "done.pdf", 999)
 
-        assertEquals(PartialDownloads.Summary(160L, 2), PartialDownloads.summarize(ole))
+        assertEquals(PartialDownloadCleaner.Summary(160L, 2), PartialDownloadCleaner.summarize(ole))
     }
 
     @Test
     fun `delete keeps recently written partials and removes older ones with their sidecars`() {
         val ole = temporaryFolder.newFolder("ole")
         val res = File(ole, "res1")
-        val old = now - PartialDownloads.STALE_AFTER_MILLIS - 1
+        val old = now - PartialDownloadCleaner.STALE_AFTER_MILLIS - 1
         val stale = file(res, "old.mp4.tmp", 100, modified = old)
         val staleEtag = file(res, "old.mp4.tmp.etag", 10, modified = old)
         val active = file(res, "new.mp4.tmp", 100, modified = now)
@@ -54,7 +54,7 @@ class PartialDownloadsTest {
         val orphanSize = file(res, "gone.mp4.tmp.size", 4)
         val finished = file(res, "done.mp4", 500, modified = old)
 
-        val freed = PartialDownloads.delete(ole, now, PartialDownloads.STALE_AFTER_MILLIS)
+        val freed = PartialDownloadCleaner.delete(ole, now, PartialDownloadCleaner.STALE_AFTER_MILLIS)
 
         assertEquals(114L, freed)
         assertFalse(stale.exists())

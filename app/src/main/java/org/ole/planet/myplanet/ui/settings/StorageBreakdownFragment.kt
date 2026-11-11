@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.services.FreeSpaceWorker
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.PartialDownloads
+import org.ole.planet.myplanet.utils.PartialDownloadCleaner
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -167,7 +167,7 @@ class StorageBreakdownFragment : BaseBindingBottomSheetFragment<FragmentStorageB
         addPartialDownloadsRow(state.partialDownloads)
     }
 
-    private fun addPartialDownloadsRow(partial: PartialDownloads.Summary) {
+    private fun addPartialDownloadsRow(partial: PartialDownloadCleaner.Summary) {
         if (partial.count == 0) return
         val itemBinding = ItemStorageCategoryBinding.inflate(layoutInflater, binding.categoryContainer, false)
         itemBinding.categoryName.text = getString(R.string.storage_partial_downloads)

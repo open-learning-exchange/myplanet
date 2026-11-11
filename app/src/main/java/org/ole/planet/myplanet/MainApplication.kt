@@ -59,7 +59,7 @@ import org.ole.planet.myplanet.utils.MarkdownUtils
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utils.NetworkUtils.stopListenNetworkState
-import org.ole.planet.myplanet.utils.PartialDownloads
+import org.ole.planet.myplanet.utils.PartialDownloadCleaner
 import org.ole.planet.myplanet.utils.PdfThumbnailLoader
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.ThemeMode
@@ -235,11 +235,11 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             runBestEffort("Utilities.warmUp") { Utilities.warmUp() }
             runBestEffort("defaultPref.warmUp") { defaultPref }
             runBestEffort("GifInfoHandle preload") { Class.forName("pl.droidsonroids.gif.GifInfoHandle") }
-            runBestEffort("PartialDownloads.delete stale") {
-                PartialDownloads.delete(
+            runBestEffort("PartialDownloadCleaner.delete stale") {
+                PartialDownloadCleaner.delete(
                     File(FileUtils.getOlePath(this@MainApplication)),
                     coreDependenciesEntryPoint.timeProvider().now(),
-                    PartialDownloads.STALE_AFTER_MILLIS
+                    PartialDownloadCleaner.STALE_AFTER_MILLIS
                 )
             }
         }
