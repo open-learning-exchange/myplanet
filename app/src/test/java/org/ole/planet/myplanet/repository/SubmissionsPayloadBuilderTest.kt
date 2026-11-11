@@ -239,8 +239,6 @@ class SubmissionsPayloadBuilderTest {
 
         val result = payloadBuilder.submissionPayload(submission, "src", "pCode", null)
         assertNotNull(result)
-        // Note: exception is thrown during getPayloadData (before properties are added)
-        // so result is a partial (empty or whatever was set before the exception) JsonObject
         assertTrue(result.isJsonObject)
     }
 }
