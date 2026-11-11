@@ -339,8 +339,6 @@ class UserRepositoryImpl @Inject constructor(
     private fun sortUsers(users: List<UserEntity>, fieldName: String, descending: Boolean): List<UserEntity> {
         fun value(value: String?) = value.orEmpty().lowercase()
 
-        // Decorate-sort-undecorate so the lowercased key is computed once per user
-        // instead of on every comparison. sortedBy/sortedByDescending keep the sort stable.
         fun sortByValue(selector: (UserEntity) -> String?): List<UserEntity> {
             val decorated = users.map { value(selector(it)) to it }
             val sorted = if (descending) decorated.sortedByDescending { it.first } else decorated.sortedBy { it.first }
