@@ -161,6 +161,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onDestroyView() {
         _binding = null
         stepsAdapter = null
+        isRatingViewInitialized = false
         super.onDestroyView()
     }
 }
