@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.submissions
 
 import androidx.lifecycle.SavedStateHandle
+import io.mockk.coEvery
+import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -13,8 +15,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.mockito.Mockito.`when`
-import org.mockito.Mockito.mock
 import org.ole.planet.myplanet.model.QuestionAnswer
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.SubmissionDetail
@@ -32,8 +32,8 @@ class SubmissionDetailViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        submissionsRepository = mock(SubmissionsRepository::class.java)
-        userRepository = mock(UserRepository::class.java)
+        submissionsRepository = mockk()
+        userRepository = mockk()
     }
 
     @After
@@ -44,7 +44,7 @@ class SubmissionDetailViewModelTest {
     @Test
     fun testInitialUiStateDefaultsWhenSubmissionNotFound() = runTest(testDispatcher) {
         val savedStateHandle = SavedStateHandle(mapOf("id" to "sub1"))
-        `when`(submissionsRepository.getSubmissionByRemoteIdOrParentId("sub1")).thenReturn(null)
+        coEvery { submissionsRepository.getSubmissionByRemoteIdOrParentId("sub1") } returns null
 
         val viewModel = SubmissionDetailViewModel(submissionsRepository, userRepository, savedStateHandle)
 
@@ -91,9 +91,9 @@ class SubmissionDetailViewModelTest {
             questionAnswers = qAnswers
         )
 
-        `when`(submissionsRepository.getSubmissionByRemoteIdOrParentId("sub1")).thenReturn(submission)
-        `when`(userRepository.getUserById("user1")).thenReturn(user)
-        `when`(submissionsRepository.getSubmissionDetail(submission, user)).thenReturn(detail)
+        coEvery { submissionsRepository.getSubmissionByRemoteIdOrParentId("sub1") } returns submission
+        coEvery { userRepository.getUserById("user1") } returns user
+        coEvery { submissionsRepository.getSubmissionDetail(submission, user) } returns detail
 
         val viewModel = SubmissionDetailViewModel(submissionsRepository, userRepository, savedStateHandle)
 
