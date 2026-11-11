@@ -44,14 +44,17 @@ class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(
     private var currentFilter: String = "all"
     private var isAdmin: Boolean = false
 
+    // The strings outlive this fragment (the ViewModel keeps them), so the formatting lambdas
+    // must capture the application context, never the fragment or its activity.
     private val notificationStrings by lazy {
+        val appContext = requireContext().applicationContext
         NotificationStrings(
-            storageRunningLow = getString(R.string.storage_running_low),
-            storageAvailable = getString(R.string.storage_available),
-            joinRequestPrefix = getString(R.string.join_request_prefix),
-            resourceCount = { count -> getString(R.string.resource_notification, count) },
-            taskDue = { title, date -> getString(R.string.task_notification, title, date) },
-            userRequestedToJoin = { user, team -> getString(R.string.user_requested_to_join_team, user, team) }
+            storageRunningLow = appContext.getString(R.string.storage_running_low),
+            storageAvailable = appContext.getString(R.string.storage_available),
+            joinRequestPrefix = appContext.getString(R.string.join_request_prefix),
+            resourceCount = { count -> appContext.getString(R.string.resource_notification, count) },
+            taskDue = { title, date -> appContext.getString(R.string.task_notification, title, date) },
+            userRequestedToJoin = { user, team -> appContext.getString(R.string.user_requested_to_join_team, user, team) }
         )
     }
 
