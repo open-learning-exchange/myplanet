@@ -11,6 +11,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -45,6 +46,7 @@ import org.ole.planet.myplanet.services.upload.UploadCoordinator
 import org.ole.planet.myplanet.services.upload.UploadError
 import org.ole.planet.myplanet.services.upload.UploadResult
 import org.ole.planet.myplanet.services.upload.VoicesUploader
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
@@ -65,6 +67,7 @@ class UploadManagerTest {
     private val achievementUploader: AchievementUploader = mockk(relaxed = true)
     private val voicesUploader: VoicesUploader = mockk(relaxed = true)
 
+    private val externalFilesDir = File("/storage/files")
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
 
@@ -77,6 +80,7 @@ class UploadManagerTest {
             mockkStatic(android.text.TextUtils::class)
             io.mockk.mockkObject(org.ole.planet.myplanet.utils.NetworkUtils)
             io.mockk.mockkObject(UrlUtils)
+            io.mockk.mockkObject(FileUtils)
         }
 
         @AfterClass
@@ -94,6 +98,7 @@ class UploadManagerTest {
         every { org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName() } returns "deviceName"
         every { org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(any()) } returns "customDeviceName"
         every { SystemClock.elapsedRealtime() } returns 0L
+        every { FileUtils.getExternalFilesDir(any()) } returns externalFilesDir
         every { UrlUtils.header } returns "mockHeader"
         every { UrlUtils.getUrl() } returns "http://mock.url"
         every { Log.d(any(), any()) } returns 0
@@ -103,6 +108,7 @@ class UploadManagerTest {
         photoUploader = PhotoUploader(submissionsRepository, TestDispatcherProvider(testDispatcher), testScope, uploadRepository)
 
         uploadManager = UploadManager(
+            context,
             uploadCoordinator,
             uploadRepository,
             userRepository,
@@ -411,7 +417,29 @@ class UploadManagerTest {
         advanceUntilIdle()
 
         coVerify { resourcesRepository.getLibraryItemsByIds(listOf("lib1", "remote1")) }
-        coVerify { uploadRepository.uploadAttachment(any(), any(), "remote1", "rev1", any()) }
+        coVerify {
+            uploadRepository.uploadAttachment(
+                File("/storage/files/ole/lib1/file.pdf"), any(), "remote1", "rev1", "file.pdf"
+            )
+        }
+    }
+
+    @Test
+    fun `uploadResource skips attachment when library has no local address`() = testScope.runTest {
+        val uploadedItem = org.ole.planet.myplanet.services.upload.UploadedItem(
+            localId = "lib1",
+            remoteId = "remote1",
+            remoteRev = "rev1",
+            response = JsonObject()
+        )
+        val library = MyLibrary().apply { id = "lib1" }
+        coEvery { uploadCoordinator.uploadRoom<MyLibrary>(any()) } returns UploadResult.Success(1, listOf(uploadedItem))
+        coEvery { resourcesRepository.getLibraryItemsByIds(listOf("lib1", "remote1")) } returns listOf(library)
+
+        uploadManager.uploadResource(null)
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) }
     }
 
     @Test
