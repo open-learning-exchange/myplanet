@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -114,15 +116,21 @@ class TakeCourseViewModel @Inject constructor(
             try {
                 _uiState.value = TakeCourseUiState.Loading
 
-                val userModel = userRepository.getUserModel()
-                val course = coursesRepository.getCourseById(courseId)
+                val (userModel, course) = coroutineScope {
+                    val user = async { userRepository.getUserModel() }
+                    val courseDeferred = async { coursesRepository.getCourseById(courseId) }
+                    user.await() to courseDeferred.await()
+                }
                 if (course == null) {
                     _uiState.value = TakeCourseUiState.NotFound
                     return@launch
                 }
 
-                val steps = coursesRepository.getCourseSteps(courseId)
-                val progressMap = progressRepository.getCourseProgress(listOf(courseId), userModel?.id)
+                val (steps, progressMap) = coroutineScope {
+                    val stepsDeferred = async { coursesRepository.getCourseSteps(courseId) }
+                    val progressDeferred = async { progressRepository.getCourseProgress(listOf(courseId), userModel?.id) }
+                    stepsDeferred.await() to progressDeferred.await()
+                }
                 val progress = progressMap[courseId]?.current ?: 0
                 val blockingStepIndex = getBlockingStepIndex(steps, userModel, courseId)
 
