@@ -15,7 +15,8 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.MyTeam
-import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.TeamsMembersRepository
+import org.ole.planet.myplanet.repository.TeamsShareRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -24,34 +25,35 @@ class CommunityServicesViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val teamsRepository: TeamsRepository = mockk()
+    private val teamsShareRepository: TeamsShareRepository = mockk()
+    private val teamsMembersRepository: TeamsMembersRepository = mockk()
 
     @Before
     fun setup() {
-        coEvery { teamsRepository.getTeamLinks() } returns emptyList()
+        coEvery { teamsShareRepository.getTeamLinks() } returns emptyList()
     }
 
     @Test
     fun `init populates teamLinks flow with values from teamsRepository`() = runTest {
         val mockTeam = MyTeam().apply { title = "Health Services" }
-        coEvery { teamsRepository.getTeamLinks() } returns listOf(mockTeam)
+        coEvery { teamsShareRepository.getTeamLinks() } returns listOf(mockTeam)
 
-        val viewModel = CommunityServicesViewModel(teamsRepository)
+        val viewModel = CommunityServicesViewModel(teamsShareRepository, teamsMembersRepository)
         advanceUntilIdle()
 
         val links = viewModel.teamLinks.first { it != null }
         assertNotNull(links)
         assertEquals(1, links?.size)
         assertEquals("Health Services", links?.get(0)?.title)
-        coVerify { teamsRepository.getTeamLinks() }
+        coVerify { teamsShareRepository.getTeamLinks() }
     }
 
     @Test
     fun `isMember queries teamsRepository with user id and team id`() = runTest {
-        coEvery { teamsRepository.isMember("user_123", "team_456") } returns true
-        coEvery { teamsRepository.isMember(null, "team_456") } returns false
+        coEvery { teamsMembersRepository.isMember("user_123", "team_456") } returns true
+        coEvery { teamsMembersRepository.isMember(null, "team_456") } returns false
 
-        val viewModel = CommunityServicesViewModel(teamsRepository)
+        val viewModel = CommunityServicesViewModel(teamsShareRepository, teamsMembersRepository)
         advanceUntilIdle()
 
         val isMemberUser = viewModel.isMember("user_123", "team_456")
@@ -60,20 +62,20 @@ class CommunityServicesViewModelTest {
         val isMemberNull = viewModel.isMember(null, "team_456")
         assertFalse(isMemberNull)
 
-        coVerify { teamsRepository.isMember("user_123", "team_456") }
-        coVerify { teamsRepository.isMember(null, "team_456") }
+        coVerify { teamsMembersRepository.isMember("user_123", "team_456") }
+        coVerify { teamsMembersRepository.isMember(null, "team_456") }
     }
 
     @Test
     fun `isMember returns the repository's answer unchanged for a null userId`() = runTest {
-        coEvery { teamsRepository.isMember(null, "t") } returns false
+        coEvery { teamsMembersRepository.isMember(null, "t") } returns false
 
-        val viewModel = CommunityServicesViewModel(teamsRepository)
+        val viewModel = CommunityServicesViewModel(teamsShareRepository, teamsMembersRepository)
         advanceUntilIdle()
 
         val result = viewModel.isMember(null, "t")
         assertFalse(result)
 
-        coVerify { teamsRepository.isMember(null, "t") }
+        coVerify { teamsMembersRepository.isMember(null, "t") }
     }
 }
