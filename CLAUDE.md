@@ -392,7 +392,7 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 **Doc-only pushes start no code workflow.** `build.yml` and `test.yml` share `paths-ignore: ['docs/**', '**/*.md']`, so a push touching nothing outside those paths runs neither. A documentation-only PR therefore collects only the myPlanet labels check, and that one green check is its complete CI state — there is no build or test run pending behind it.
 
 **Build Workflow** (`.github/workflows/build.yml`)
-- Triggers: push to every branch except `master` (so `claude/**`, `codex/**`, `dependabot/**`, `jules/**` all build), minus the doc-only exclusion above; no manual dispatch. `permissions: contents: read`
+- Triggers: push to every branch **including `master`** (so `claude/**`, `codex/**`, `dependabot/**`, `jules/**` all build; the `master` run also warms the cache that branch builds restore, under the same job id so `setup-gradle` keys match), minus the doc-only exclusion above; no manual dispatch. `permissions: contents: read`
 - Ubuntu 24.04, 10-min job timeout; `default` + `lite` matrix with `fail-fast: false`; a new push to the same ref cancels the run in flight
 - Build command: `./gradlew assemble${FLAVOR^}Debug --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4`
 
