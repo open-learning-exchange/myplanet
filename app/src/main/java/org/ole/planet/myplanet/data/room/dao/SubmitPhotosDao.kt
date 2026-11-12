@@ -28,6 +28,9 @@ interface SubmitPhotosDao {
     @Query("UPDATE submit_photos SET uploaded = 1, _rev = :rev, _id = :remoteId WHERE id = :photoId")
     suspend fun markUploaded(photoId: String, rev: String, remoteId: String): Int
 
+    @Query("UPDATE submit_photos SET _rev = :rev, _id = :remoteId WHERE id = :photoId")
+    suspend fun recordRemoteDoc(photoId: String, rev: String, remoteId: String): Int
+
     @Update(entity = SubmitPhotos::class)
     suspend fun markUploadedBatchInternal(updates: List<UploadUpdate>)
 

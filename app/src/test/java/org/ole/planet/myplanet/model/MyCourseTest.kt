@@ -71,6 +71,60 @@ class MyCourseTest {
     }
 
     @Test
+    fun testSaveConcatenatedLinksToPrefs_drainsBuffer_soSecondSaveIsNoOp() {
+        val spm = io.mockk.mockk<org.ole.planet.myplanet.services.SharedPrefManager>(relaxed = true)
+        io.mockk.every { spm.getConcatenatedLinks() } returns "[\"http://example.com/link1\"]"
+
+        val capturedJson = io.mockk.slot<String>()
+        io.mockk.every { spm.setConcatenatedLinks(capture(capturedJson)) } returns Unit
+
+        MyCourse.addConcatenatedLink("http://example.com/link2")
+
+        MyCourse.saveConcatenatedLinksToPrefs(spm)
+        MyCourse.saveConcatenatedLinksToPrefs(spm)
+
+        io.mockk.verify(exactly = 1) { spm.setConcatenatedLinks(any()) }
+        assertEquals(
+            setOf("http://example.com/link1", "http://example.com/link2"),
+            org.ole.planet.myplanet.utils.GsonUtils.gson.fromJson(
+                capturedJson.captured,
+                Array<String>::class.java
+            ).toHashSet()
+        )
+    }
+
+    @Test
+    fun testSaveConcatenatedLinksToPrefs_writeFailure_keepsBufferForRetry() {
+        val spm = io.mockk.mockk<org.ole.planet.myplanet.services.SharedPrefManager>(relaxed = true)
+        io.mockk.every { spm.getConcatenatedLinks() } returns null
+
+        val writtenJson = io.mockk.slot<String>()
+        var attempts = 0
+        io.mockk.every { spm.setConcatenatedLinks(capture(writtenJson)) } answers {
+            attempts++
+            if (attempts == 1) throw RuntimeException("prefs write failed")
+        }
+
+        MyCourse.addConcatenatedLink("http://example.com/link2")
+        try {
+            MyCourse.saveConcatenatedLinksToPrefs(spm)
+        } catch (_: RuntimeException) {
+        }
+
+        // The first write failed, so the buffer must still hold the link for this retry.
+        MyCourse.saveConcatenatedLinksToPrefs(spm)
+
+        assertEquals(2, attempts)
+        assertEquals(
+            setOf("http://example.com/link2"),
+            org.ole.planet.myplanet.utils.GsonUtils.gson.fromJson(
+                writtenJson.captured,
+                Array<String>::class.java
+            ).toHashSet()
+        )
+    }
+
+    @Test
     fun testSerialize_embedsStepsAndTheirResources() {
         val resource = MyLibrary().apply {
             _id = "resource1"

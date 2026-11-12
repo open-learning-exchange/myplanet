@@ -25,6 +25,7 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
+import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -58,6 +59,7 @@ import org.ole.planet.myplanet.utils.MarkdownUtils
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utils.NetworkUtils.stopListenNetworkState
+import org.ole.planet.myplanet.utils.PartialDownloadCleaner
 import org.ole.planet.myplanet.utils.PdfThumbnailLoader
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.ThemeMode
@@ -233,6 +235,13 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             runBestEffort("Utilities.warmUp") { Utilities.warmUp() }
             runBestEffort("defaultPref.warmUp") { defaultPref }
             runBestEffort("GifInfoHandle preload") { Class.forName("pl.droidsonroids.gif.GifInfoHandle") }
+            runBestEffort("PartialDownloadCleaner.delete stale") {
+                PartialDownloadCleaner.delete(
+                    File(FileUtils.getOlePath(this@MainApplication)),
+                    coreDependenciesEntryPoint.timeProvider().now(),
+                    PartialDownloadCleaner.STALE_AFTER_MILLIS
+                )
+            }
         }
         applicationScope.launch {
             initApp()
