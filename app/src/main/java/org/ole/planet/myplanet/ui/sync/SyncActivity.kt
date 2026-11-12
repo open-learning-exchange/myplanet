@@ -393,26 +393,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         (applicationContext as? MainApplication)?.applyAutoSyncSettings()
     }
 
-    suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): Boolean {
-        return try {
-            if (!userRepository.hasAtLeastOneUser()) {
-                alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
-                false
-            } else {
-                val user = userRepository.authenticateUser(username, password, isManagerMode)
-                if (user != null) {
-                    profileDbHandler.saveUserInfoPref(password, user)
-                    true
-                } else {
-                    false
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to authenticate user", e)
-            false
-        }
-    }
-
     fun startSync(type: String) {
         syncManager.start(null, type)
     }
