@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import com.google.gson.JsonArray
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -54,12 +53,7 @@ class CommunityRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.w(TAG, "syncCommunityDocs failed", e)
             false
         }
-    }
-
-    companion object {
-        private const val TAG = "CommunityRepositoryImpl"
     }
 }
