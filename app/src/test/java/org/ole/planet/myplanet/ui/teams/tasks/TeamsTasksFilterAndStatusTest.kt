@@ -52,19 +52,19 @@ class TeamsTasksFilterAndStatusTest {
 
         val allTasksList = listOf(task1LegacyTodo, task2ExplicitTodo, task3InProgress, task4Completed, task5MyTask, task6OtherUser)
 
-        val todoResult = TeamsTasksFragment.filterTodoTasks(allTasksList)
+        val todoResult = TeamsTasksViewModel.filterTodoTasks(allTasksList)
         assertEquals(listOf("6", "5", "2", "1"), todoResult.map { it.id })
 
-        val inProgressResult = TeamsTasksFragment.filterInProgressTasks(allTasksList)
+        val inProgressResult = TeamsTasksViewModel.filterInProgressTasks(allTasksList)
         assertEquals(listOf("3"), inProgressResult.map { it.id })
 
-        val completedResult = TeamsTasksFragment.filterCompletedTasks(allTasksList)
+        val completedResult = TeamsTasksViewModel.filterCompletedTasks(allTasksList)
         assertEquals(listOf("4"), completedResult.map { it.id })
 
-        val myTasksResult = TeamsTasksFragment.filterMyTasks(allTasksList, "user123")
+        val myTasksResult = TeamsTasksViewModel.filterMyTasks(allTasksList, "user123")
         assertEquals(listOf("5"), myTasksResult.map { it.id })
 
-        val allResult = TeamsTasksFragment.filterAllTasks(allTasksList)
+        val allResult = TeamsTasksViewModel.filterAllTasks(allTasksList)
         // Completed task4 must be at the bottom
         assertEquals("4", allResult.last().id)
         // Non-completed tasks sorted by deadline descending

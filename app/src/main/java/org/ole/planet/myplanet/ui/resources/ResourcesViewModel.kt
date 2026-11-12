@@ -24,13 +24,13 @@ import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class ResourcesViewModel @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
-    private val userRepository: UserRepository,
+    private val userRepository: UserReadRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
@@ -182,23 +182,27 @@ class ResourcesViewModel @Inject constructor(
         return resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
     }
 
-    suspend fun toggleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
+    suspend fun toggleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> {
         sortMode = SortMode.DATE
         isAscending = !isAscending
-        applyCurrentSort(list).also {
-            if (_resourcesState.value.isNotEmpty()) _resourcesState.value = it
+        val sorted = withContext(dispatcherProvider.default) {
+            applyCurrentSortSynchronous(list)
         }
+        if (_resourcesState.value.isNotEmpty()) _resourcesState.value = sorted
+        return sorted
     }
 
-    suspend fun toggleTitleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
+    suspend fun toggleTitleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> {
         sortMode = SortMode.TITLE
         isTitleAscending = !isTitleAscending
-        applyCurrentSort(list).also {
-            if (_resourcesState.value.isNotEmpty()) _resourcesState.value = it
+        val sorted = withContext(dispatcherProvider.default) {
+            applyCurrentSortSynchronous(list)
         }
+        if (_resourcesState.value.isNotEmpty()) _resourcesState.value = sorted
+        return sorted
     }
 
-    suspend fun applyCurrentSort(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
+    suspend fun applyCurrentSort(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.default) {
         applyCurrentSortSynchronous(list)
     }
 
