@@ -74,7 +74,6 @@ interface UserRepository : UserAchievementsRepository, UserReadRepository {
 
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
 
-    suspend fun getCurrentUserId(): String?
     suspend fun getConnectedCommunityCode(): String
     suspend fun getUserProfile(): UserEntity?
     suspend fun getUserImageUrl(): String?

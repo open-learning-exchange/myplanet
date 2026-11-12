@@ -116,8 +116,10 @@ class HealthExaminationViewModel @Inject constructor(
                     healthRepository.saveExamination(examination, pojo, user)
                 }
                 _saveResult.send(true)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Saving the examination failed", e)
                 _saveResult.send(false)
             } finally {
                 _isSaving.value = false
