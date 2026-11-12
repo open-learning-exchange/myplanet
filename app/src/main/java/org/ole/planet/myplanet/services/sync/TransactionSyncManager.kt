@@ -95,6 +95,7 @@ class TransactionSyncManager @Inject constructor(
     private val dbWriteMutex = Mutex()
 
     companion object {
+        private const val TAG = "TransactionSyncManager"
         private const val MAX_CONCURRENT_ATTACHMENT_DOWNLOADS = 6
         const val SYNC_FAILED = -1
     }
@@ -131,8 +132,10 @@ class TransactionSyncManager @Inject constructor(
             val targetUrl = "${UrlUtils.getUrl()}/tablet_users/_all_docs"
             val response = apiInterface.getDocuments(UrlUtils.header, targetUrl)
             return response.code() == 200 && response.body() != null
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "authenticate failed", e)
         }
         return false
     }
@@ -184,7 +187,7 @@ class TransactionSyncManager @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "syncHealthData failed", e)
         }
     }
 
@@ -315,7 +318,7 @@ class TransactionSyncManager @Inject constructor(
             Log.d("SyncPerf", "  ⏸ Interrupted $table sync after ${stopDuration}ms; will resume from checkpoint")
             throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "syncDb $table failed", e)
             val failDuration = SystemClock.elapsedRealtime() - syncStartTime
             Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
             SYNC_FAILED
@@ -462,7 +465,7 @@ class TransactionSyncManager @Inject constructor(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "syncNotificationReads failed", e)
                     null
                 }
             }
