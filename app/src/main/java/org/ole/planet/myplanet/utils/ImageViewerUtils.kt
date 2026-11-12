@@ -13,11 +13,9 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogZoomableImageBinding
 
 object ImageViewerUtils {
-    // Weak so a dialog leaked by a configuration change (rotation) can't pin its destroyed activity.
     private var activeDialog: WeakReference<Dialog>? = null
 
     private fun dismissActive() {
-        // After rotation the window is torn down without onDismiss; dismiss() on it would throw.
         runCatching { activeDialog?.get()?.takeIf { it.isShowing }?.dismiss() }
         activeDialog = null
     }
