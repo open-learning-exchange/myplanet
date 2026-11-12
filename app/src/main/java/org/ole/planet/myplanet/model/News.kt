@@ -16,17 +16,8 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.toGson
 
-/**
- * Room replacement for the former `News` model (voices/discussion posts).
- *
- * `imageUrls` and `labels` (formerly `RealmList<String>`) are plain `List<String>` stored as JSON
- * via the shared [org.ole.planet.myplanet.data.room.Converters]. Persistence goes through
- * [org.ole.planet.myplanet.data.room.dao.NewsDao]. The class name is kept (`News`) so the
- * large voices UI surface is untouched.
- */
 @Entity(tableName = "news", indices = [Index("userId"), Index("replyTo"), Index("_id")])
 open class News {
-    // @JvmField on id/_id so Room does not see ambiguous getId/get_id accessors.
     @PrimaryKey
     @JvmField
     var id: String = ""
@@ -239,9 +230,6 @@ open class News {
     }
 
     companion object {
-        /**
-         * Builds an unmanaged [News] from a form map. The caller persists it via the DAO.
-         */
         fun createNews(
             map: HashMap<String?, String>,
             user: UserEntity?,
