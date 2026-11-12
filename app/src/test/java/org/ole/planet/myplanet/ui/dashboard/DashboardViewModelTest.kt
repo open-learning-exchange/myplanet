@@ -214,26 +214,54 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun `evaluateChallengeDialog uses voice date count for both user and community counts`() = runTest(testDispatcher) {
+    fun `evaluateChallengeDialog outside window makes zero repository calls and emits no event`() = runTest(testDispatcher) {
         val userId = "user1"
         val validUrl = "https://example.org"
 
-        coEvery { progressRepository.fetchCourseData(userId) } returns JsonArray()
-        coEvery { voicesRepository.getCommunityVoiceDateCount(any(), any(), eq(userId)) } returns 5
-        coEvery { voicesRepository.getCommunityVoiceDateCount(any(), any(), isNull()) } returns 7
-        coEvery { coursesRepository.getCourseTitleById(any()) } returns "Course"
-        coEvery { submissionsRepository.hasPendingSurvey(any(), eq(userId)) } returns false
-        every { application.getString(any(), any<String>()) } returns "completed"
-        every { application.getString(any(), any<String>(), any<Int>(), any<Int>()) } returns "in progress"
-        every { progressRepository.findProgressForCourse(any(), any()) } returns null
-        coEvery { progressRepository.hasUserCompletedSync(userId) } returns false
+        val events = mutableListOf<ChallengeDialogData>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.challengeDialogEvent.collect { events.add(it) }
+        }
 
         viewModel.evaluateChallengeDialog(userId, isGuest = false, validUrls = listOf(validUrl), serverUrl = validUrl)
 
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { voicesRepository.getCommunityVoiceDateCount(any(), any(), eq(userId)) }
-        coVerify(exactly = 1) { voicesRepository.getCommunityVoiceDateCount(any(), any(), isNull()) }
+        assertEquals(0, events.size)
+        coVerify(exactly = 0) { progressRepository.fetchCourseData(any()) }
+        coVerify(exactly = 0) { voicesRepository.getCommunityVoiceDateCount(any(), any(), any()) }
+        coVerify(exactly = 0) { coursesRepository.getCourseTitleById(any()) }
+        coVerify(exactly = 0) { submissionsRepository.hasPendingSurvey(any(), any()) }
+    }
+
+    @Test
+    fun `isChallengeWindowOpen respects date window boundaries, guest status, and server url`() {
+        val validUrls = listOf("https://valid.planet.org")
+        val validUrl = "https://valid.planet.org"
+        val invalidUrl = "https://other.planet.org"
+
+        val insideDate = java.time.LocalDate.of(2024, 12, 15)
+        val startBoundary = java.time.LocalDate.of(2024, 11, 30)
+        val dayAfterStart = java.time.LocalDate.of(2024, 12, 1)
+        val endBoundary = java.time.LocalDate.of(2025, 1, 16)
+        val dayBeforeEnd = java.time.LocalDate.of(2025, 1, 15)
+        val afterEnd = java.time.LocalDate.of(2025, 1, 17)
+
+        // Inside window
+        assertEquals(true, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = validUrl, validUrls = validUrls, today = insideDate))
+        assertEquals(true, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = validUrl, validUrls = validUrls, today = dayAfterStart))
+        assertEquals(true, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = validUrl, validUrls = validUrls, today = dayBeforeEnd))
+
+        // Boundary days (exclusive: strictly after 2024-11-30, strictly before 2025-01-16)
+        assertEquals(false, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = validUrl, validUrls = validUrls, today = startBoundary))
+        assertEquals(false, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = validUrl, validUrls = validUrls, today = endBoundary))
+        assertEquals(false, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = validUrl, validUrls = validUrls, today = afterEnd))
+
+        // Guest user inside window
+        assertEquals(false, viewModel.isChallengeWindowOpen(isGuest = true, serverUrl = validUrl, validUrls = validUrls, today = insideDate))
+
+        // Invalid server URL inside window
+        assertEquals(false, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = invalidUrl, validUrls = validUrls, today = insideDate))
     }
 
     @Test

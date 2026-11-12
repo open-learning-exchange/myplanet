@@ -152,6 +152,18 @@ class NotificationsViewModelTest {
     }
 
     @Test
+    fun testUnknownTypeIsGroupedUnderNotificationAndCollapsedOnFirstToggle() = runTest(testDispatcher) {
+        loadNotifications(notification(id = "3", type = "unknown_type", isRead = false))
+
+        assertTrue(header("notification").isExpanded)
+
+        viewModel.toggleGroupExpansion("notification")
+        runCurrent()
+
+        assertFalse(header("notification").isExpanded)
+    }
+
+    @Test
     fun testMarkAllAsReadClearsOverridesAndCollapsesEveryGroup() = runTest(testDispatcher) {
         loadNotifications(unreadTask, readResource)
         coEvery { repository.markAllUnreadAsRead(USER_ID) } returns setOf(unreadTask.id)

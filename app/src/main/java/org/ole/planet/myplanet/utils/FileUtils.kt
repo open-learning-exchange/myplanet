@@ -214,7 +214,7 @@ object FileUtils {
     fun getDisplayName(context: Context, uri: Uri, timeProvider: TimeProvider): String {
         var name: String? = null
         if (uri.scheme == "content") {
-            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
                 if (cursor.moveToFirst()) {
                     val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                     if (idx >= 0) name = cursor.getString(idx)
@@ -240,7 +240,7 @@ object FileUtils {
         uri ?: return null
         if (uri.scheme == "file") return uri.path
         return try {
-            val displayName = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val displayName = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
                 if (cursor.moveToFirst()) {
                     val columnIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                     if (columnIndex >= 0) cursor.getString(columnIndex) else null
