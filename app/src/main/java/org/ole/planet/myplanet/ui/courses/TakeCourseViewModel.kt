@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.ui.courses
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -99,7 +101,10 @@ class TakeCourseViewModel @Inject constructor(
         val hasRated = try {
             val summary = ratingsRepository.getRatingSummary("course", courseId, userId)
             summary.userRating != null || summary.existingRating != null
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
+            Log.e(TAG, "Failed to read the rating summary for course $courseId", e)
             false
         }
         return if (hasRated) RatingPromptDecision.Skip else RatingPromptDecision.Show
@@ -127,9 +132,16 @@ class TakeCourseViewModel @Inject constructor(
                 val blockingStepIndex = getBlockingStepIndex(steps, userModel, courseId)
 
                 _uiState.value = TakeCourseUiState.Success(course, steps, userModel, progress, blockingStepIndex)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to load course $courseId", e)
+                _uiState.value = TakeCourseUiState.NotFound
             }
         }
+    }
+
+    companion object {
+        private const val TAG = "TakeCourseViewModel"
     }
 }

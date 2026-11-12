@@ -107,7 +107,7 @@ class CoursesStepsViewModel @Inject constructor(
                             it
                         }
                     }
-                    viewModelScope.launch {
+                    launch {
                         if (!resourcesRepository.downloadResourcesPriority(notDownloaded)) {
                             _uiState.update {
                                 if (it.step?.id == data.step.id) {
@@ -122,7 +122,7 @@ class CoursesStepsViewModel @Inject constructor(
             }
 
             if (nextStepId != null) {
-                viewModelScope.launch {
+                launch {
                     val nextResources = resourcesRepository.getAllStepResources(nextStepId)
                     val nextNotDownloaded = nextResources.filter { !it.isResourceOffline() }
                     if (nextNotDownloaded.isNotEmpty()) {
