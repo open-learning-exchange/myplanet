@@ -198,16 +198,20 @@ class P2pTransferActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 var received: Pair<String, File>? = null
-                val success = p2pManager.receiveFile({ metadata, tempFile ->
+                val result = p2pManager.receiveFile({ metadata, tempFile ->
                     received = metadata to tempFile
                 }) { progress ->
                     runOnUiThread { binding.pbTransfer.progress = progress }
                 }
                 val imported = received?.let { (metadata, tempFile) -> importResource(metadata, tempFile) }
-                binding.tvStatus.text = if (success && imported != null) {
-                    getString(R.string.status_received_imported)
-                } else {
-                    getString(R.string.status_receive_failed)
+                binding.tvStatus.text = when {
+                    result == P2pTransferManager.ReceiveResult.NO_SENDER -> {
+                        binding.pbTransfer.visibility = View.GONE
+                        getString(R.string.status_receive_no_sender)
+                    }
+                    result == P2pTransferManager.ReceiveResult.RECEIVED && imported != null ->
+                        getString(R.string.status_received_imported)
+                    else -> getString(R.string.status_receive_failed)
                 }
                 if (imported != null) {
                     Toast.makeText(this@P2pTransferActivity, getString(R.string.imported_resource, imported.title), Toast.LENGTH_SHORT).show()

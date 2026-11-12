@@ -16,6 +16,7 @@
     <string name="status_waiting_receive">État : En attente de réception…</string>
     <string name="status_received_imported">État : Reçu et importé !</string>
     <string name="status_receive_failed">État : Échec de la réception</string>
+    <string name="status_receive_no_sender">État : Aucun expéditeur ne s’est connecté. Appuyez sur « Recevoir une ressource » pour réessayer.</string>
     <string name="imported_resource">Importé : %1$s</string>
     <string name="status_connecting">État : Connexion à %1$s…</string>
     <string name="status_connection_failed">État : Échec de la connexion (%1$d)</string>

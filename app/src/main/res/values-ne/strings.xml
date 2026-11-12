@@ -16,6 +16,7 @@
     <string name="status_waiting_receive">अवस्था: प्राप्त गर्न पर्खँदै…</string>
     <string name="status_received_imported">अवस्था: प्राप्त र आयात गरियो!</string>
     <string name="status_receive_failed">अवस्था: प्राप्त गर्न असफल भयो</string>
+    <string name="status_receive_no_sender">अवस्था: कुनै पठाउने उपकरण जडान भएन। फेरि प्रयास गर्न ‘संसाधन प्राप्त गर्नुहोस्’ थिच्नुहोस्।</string>
     <string name="imported_resource">आयात गरियो: %1$s</string>
     <string name="status_connecting">अवस्था: %1$s मा जडान गर्दै…</string>
     <string name="status_connection_failed">अवस्था: जडान असफल भयो (%1$d)</string>

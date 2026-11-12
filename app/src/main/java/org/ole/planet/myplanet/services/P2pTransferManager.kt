@@ -114,16 +114,19 @@ class P2pTransferManager(private val context: Context) {
         }
     }
 
+    enum class ReceiveResult { RECEIVED, NO_SENDER, FAILED }
+
     /**
-     * Waits up to [acceptTimeoutMs] for a sender to connect, then receives one file. Returns false
-     * if nobody connects in time, the sender stalls for [READ_TIMEOUT_MS], or the transfer is
-     * incomplete. Cancelling the calling coroutine (e.g. leaving the screen) stops the wait at once.
+     * Waits up to [acceptTimeoutMs] for a sender to connect, then receives one file. Returns
+     * [ReceiveResult.NO_SENDER] if nobody connects in time, and [ReceiveResult.FAILED] if the sender
+     * stalls for [READ_TIMEOUT_MS] or the transfer is incomplete. Cancelling the calling coroutine
+     * (e.g. leaving the screen) stops the wait at once.
      */
     suspend fun receiveFile(
         onReceived: (String, File) -> Unit,
         acceptTimeoutMs: Int = ACCEPT_TIMEOUT_MS,
         onProgress: (Int) -> Unit
-    ): Boolean = withContext(Dispatchers.IO) {
+    ): ReceiveResult = withContext(Dispatchers.IO) {
         val serverSocket = ServerSocket()
         val client = AtomicReference<Socket?>(null)
         // accept() and read() ignore coroutine cancellation; closing the sockets is what unblocks them.
@@ -136,19 +139,24 @@ class P2pTransferManager(private val context: Context) {
             serverSocket.reuseAddress = true
             serverSocket.soTimeout = acceptTimeoutMs
             serverSocket.bind(InetSocketAddress(PORT))
-            val socket = serverSocket.accept().also { client.set(it) }
+            val socket = try {
+                serverSocket.accept().also { client.set(it) }
+            } catch (e: SocketTimeoutException) {
+                Log.i(TAG, "P2P receive timed out")
+                return@withContext ReceiveResult.NO_SENDER
+            }
             socket.soTimeout = READ_TIMEOUT_MS
 
             val dataInputStream = DataInputStream(socket.getInputStream().buffered())
 
             val metadataSize = dataInputStream.readInt()
-            if (metadataSize !in 0..MAX_METADATA_BYTES) return@withContext false
+            if (metadataSize !in 0..MAX_METADATA_BYTES) return@withContext ReceiveResult.FAILED
             val metadataBytes = ByteArray(metadataSize)
             dataInputStream.readFully(metadataBytes)
             val metadata = String(metadataBytes, Charsets.UTF_8)
 
             val fileSize = dataInputStream.readLong()
-            if (fileSize < 0) return@withContext false
+            if (fileSize < 0) return@withContext ReceiveResult.FAILED
             val file = File(context.cacheDir, "p2p_received_${System.currentTimeMillis()}").also { tempFile = it }
 
             var totalReceived = 0L
@@ -164,14 +172,14 @@ class P2pTransferManager(private val context: Context) {
                 }
             }
 
-            if (totalReceived < fileSize) return@withContext false
+            if (totalReceived < fileSize) return@withContext ReceiveResult.FAILED
             tempFile = null
             onReceived(metadata, file)
-            true
+            ReceiveResult.RECEIVED
         } catch (e: Exception) {
             if (e is CancellationException) throw e
-            if (e is SocketTimeoutException) Log.i(TAG, "P2P receive timed out") else Log.w(TAG, "P2P receive failed", e)
-            false
+            Log.w(TAG, "P2P receive failed", e)
+            ReceiveResult.FAILED
         } finally {
             closeOnCancel.cancel()
             client.get()?.closeQuietly()

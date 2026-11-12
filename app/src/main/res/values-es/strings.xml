@@ -16,6 +16,7 @@
     <string name="status_waiting_receive">Estado: Esperando para recibir…</string>
     <string name="status_received_imported">Estado: ¡Recibido e importado!</string>
     <string name="status_receive_failed">Estado: Fallo al recibir</string>
+    <string name="status_receive_no_sender">Estado: Ningún remitente se conectó. Toca «Recibir recurso» para intentarlo de nuevo.</string>
     <string name="imported_resource">Importado: %1$s</string>
     <string name="status_connecting">Estado: Conectando a %1$s…</string>
     <string name="status_connection_failed">Estado: Fallo en la conexión (%1$d)</string>

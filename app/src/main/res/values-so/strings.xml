@@ -16,6 +16,7 @@
     <string name="status_waiting_receive">Xaaladda: Sugaya helidda…</string>
     <string name="status_received_imported">Xaaladda: Waa la helay lana soo dhoofiyay!</string>
     <string name="status_receive_failed">Xaaladda: Helidda waa fashilantay</string>
+    <string name="status_receive_no_sender">Xaaladda: Ma jiro dire ku xirmay. Riix “Hel Kheyraad” si aad mar kale isku daydo.</string>
     <string name="imported_resource">La soo dhoofiyay: %1$s</string>
     <string name="status_connecting">Xaaladda: Ku xirmaya %1$s…</string>
     <string name="status_connection_failed">Xaaladda: Xiriirka waa fashilmay (%1$d)</string>

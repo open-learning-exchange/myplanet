@@ -16,6 +16,7 @@
     <string name="status_waiting_receive">Status: Waiting to receive…</string>
     <string name="status_received_imported">Status: Received and imported!</string>
     <string name="status_receive_failed">Status: Receive failed</string>
+    <string name="status_receive_no_sender">Status: No sender connected. Tap “Receive Resource” to try again.</string>
     <string name="imported_resource">Imported: %1$s</string>
     <string name="status_connecting">Status: Connecting to %1$s…</string>
     <string name="status_connection_failed">Status: Connection failed (%1$d)</string>

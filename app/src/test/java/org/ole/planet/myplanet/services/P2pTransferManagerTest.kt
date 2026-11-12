@@ -6,7 +6,6 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
-import io.mockk.verify
 import java.io.File
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
@@ -15,12 +14,12 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import org.ole.planet.myplanet.services.P2pTransferManager.ReceiveResult
 
 class P2pTransferManagerTest {
 
@@ -52,7 +51,7 @@ class P2pTransferManagerTest {
             manager.receiveFile({ _, _ -> }, acceptTimeoutMs = 200) { }
         }
 
-        assertFalse(result)
+        assertEquals(ReceiveResult.NO_SENDER, result)
     }
 
     @Test
@@ -82,7 +81,7 @@ class P2pTransferManagerTest {
             val sent = manager.sendFile("127.0.0.1", source, metadata) { }
 
             assertTrue(sent)
-            assertTrue(receive.await())
+            assertEquals(ReceiveResult.RECEIVED, receive.await())
         }
 
         val (receivedMetadata, receivedFile) = received.await()
@@ -91,11 +90,22 @@ class P2pTransferManagerTest {
     }
 
     @Test
-    fun `the port can be reused straight after a timed-out wait`() = runBlocking {
-        assertFalse(manager.receiveFile({ _, _ -> }, acceptTimeoutMs = 100) { })
-        assertFalse(manager.receiveFile({ _, _ -> }, acceptTimeoutMs = 100) { })
+    fun `a sender that connects but sends nothing valid is a failure, not a missing sender`() = runBlocking {
+        withTimeout(10_000) {
+            val receive = async { manager.receiveFile({ _, _ -> }, acceptTimeoutMs = 5_000) { } }
+            delay(200)
+            java.net.Socket("127.0.0.1", P2pTransferManager.PORT).use { socket ->
+                java.io.DataOutputStream(socket.getOutputStream()).writeInt(-1)
+            }
 
-        // Both calls reached accept() and timed out, rather than the second failing to bind.
-        verify(exactly = 2) { Log.i(any(), "P2P receive timed out") }
+            assertEquals(ReceiveResult.FAILED, receive.await())
+        }
+    }
+
+    @Test
+    fun `the port can be reused straight after a timed-out wait`() = runBlocking {
+        // Both calls reach accept() and time out, rather than the second failing to bind the port.
+        assertEquals(ReceiveResult.NO_SENDER, manager.receiveFile({ _, _ -> }, acceptTimeoutMs = 100) { })
+        assertEquals(ReceiveResult.NO_SENDER, manager.receiveFile({ _, _ -> }, acceptTimeoutMs = 100) { })
     }
 }

@@ -16,6 +16,7 @@
     <string name="status_waiting_receive">الحالة: في انتظار الاستلام…</string>
     <string name="status_received_imported">الحالة: تم الاستلام والاستيراد!</string>
     <string name="status_receive_failed">الحالة: فشل الاستلام</string>
+    <string name="status_receive_no_sender">الحالة: لم يتصل أي مُرسِل. اضغط على «استلام مورد» للمحاولة مرة أخرى.</string>
     <string name="imported_resource">تم استيراد: %1$s</string>
     <string name="status_connecting">الحالة: جارٍ الاتصال بـ %1$s…</string>
     <string name="status_connection_failed">الحالة: فشل الاتصال (%1$d)</string>
