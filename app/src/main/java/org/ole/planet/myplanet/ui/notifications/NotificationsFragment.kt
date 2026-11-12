@@ -44,9 +44,6 @@ class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(
     private var currentFilter: String = "all"
     private var isAdmin: Boolean = false
 
-    // Resolved against the fragment's current (locale-aware) resources on every call. The format
-    // templates are read eagerly and the lambdas capture only those plain strings, so nothing
-    // here holds the fragment or activity once the ViewModel keeps the result.
     private fun buildNotificationStrings(): NotificationStrings {
         val locale = resources.configuration.locales[0]
         val resourceTemplate = getString(R.string.resource_notification)
