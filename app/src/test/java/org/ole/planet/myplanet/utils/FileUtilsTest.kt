@@ -15,6 +15,7 @@ import android.provider.OpenableColumns
 import androidx.core.content.IntentCompat
 import java.io.File
 import org.junit.After
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -342,6 +343,7 @@ class FileUtilsTest {
         val sourceBytes = "fake image bytes".toByteArray()
         val sourceFile = File(tempDir, "provider_source.jpg").apply { writeBytes(sourceBytes) }
         val contentUri = Uri.parse("content://$authority/$displayName")
+        val receivedProjections = mutableListOf<Array<out String>?>()
 
         val provider = object : ContentProvider() {
             override fun onCreate() = true
@@ -353,6 +355,7 @@ class FileUtilsTest {
                 selectionArgs: Array<out String>?,
                 sortOrder: String?
             ): Cursor {
+                receivedProjections += projection
                 return MatrixCursor(arrayOf(OpenableColumns.DISPLAY_NAME)).apply {
                     addRow(arrayOf(displayName))
                 }
@@ -379,6 +382,8 @@ class FileUtilsTest {
 
         assertEquals(displayName, resolved?.let { File(it).name })
         assertEquals("fake image bytes", resolved?.let { File(it).readText() })
+        assertEquals(1, receivedProjections.size)
+        assertArrayEquals(arrayOf(OpenableColumns.DISPLAY_NAME), receivedProjections.single())
     }
 
     @Test
@@ -388,6 +393,7 @@ class FileUtilsTest {
         val sourceBytes = "fake image bytes".toByteArray()
         val sourceFile = File(tempDir, "provider_source_traversal.jpg").apply { writeBytes(sourceBytes) }
         val contentUri = Uri.parse("content://$authority/malicious")
+        val receivedProjections = mutableListOf<Array<out String>?>()
 
         val provider = object : ContentProvider() {
             override fun onCreate() = true
@@ -399,6 +405,7 @@ class FileUtilsTest {
                 selectionArgs: Array<out String>?,
                 sortOrder: String?
             ): Cursor {
+                receivedProjections += projection
                 return MatrixCursor(arrayOf(OpenableColumns.DISPLAY_NAME)).apply {
                     addRow(arrayOf(maliciousDisplayName))
                 }
@@ -427,6 +434,138 @@ class FileUtilsTest {
         val resolvedFile = File(requireNotNull(resolved))
         assertEquals(destinationDir.canonicalFile, resolvedFile.parentFile?.canonicalFile)
         assertEquals("evil.txt", resolvedFile.name)
+        assertEquals(1, receivedProjections.size)
+        assertArrayEquals(arrayOf(OpenableColumns.DISPLAY_NAME), receivedProjections.single())
+    }
+
+    @Test
+    fun getDisplayName_queriesDisplayNameProjectionAndReturnsColumnValue() {
+        val authority = "org.ole.planet.myplanet.test.fileutils.displayname"
+        val displayName = "report.pdf"
+        val contentUri = Uri.parse("content://$authority/$displayName")
+        val receivedProjections = mutableListOf<Array<out String>?>()
+
+        val provider = object : ContentProvider() {
+            override fun onCreate() = true
+
+            override fun query(
+                uri: Uri,
+                projection: Array<out String>?,
+                selection: String?,
+                selectionArgs: Array<out String>?,
+                sortOrder: String?
+            ): Cursor {
+                receivedProjections += projection
+                return MatrixCursor(arrayOf(OpenableColumns.DISPLAY_NAME)).apply {
+                    addRow(arrayOf(displayName))
+                }
+            }
+
+            override fun getType(uri: Uri): String? = null
+            override fun insert(uri: Uri, values: ContentValues?): Uri? = null
+            override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?) = 0
+            override fun update(
+                uri: Uri,
+                values: ContentValues?,
+                selection: String?,
+                selectionArgs: Array<out String>?
+            ) = 0
+        }
+        val providerInfo = ProviderInfo().apply { this.authority = authority }
+        provider.attachInfo(context, providerInfo)
+        ShadowContentResolver.registerProviderInternal(authority, provider)
+
+        val name = FileUtils.getDisplayName(context, contentUri, TestTimeProvider())
+
+        assertEquals(displayName, name)
+        assertEquals(1, receivedProjections.size)
+        assertArrayEquals(arrayOf(OpenableColumns.DISPLAY_NAME), receivedProjections.single())
+    }
+
+    @Test
+    fun getDisplayName_fallsBackToLastPathSegmentWhenColumnMissingWithoutSecondQuery() {
+        val authority = "org.ole.planet.myplanet.test.fileutils.displayname.missing"
+        val lastSegment = "fallback-name"
+        val contentUri = Uri.parse("content://$authority/$lastSegment")
+        val receivedProjections = mutableListOf<Array<out String>?>()
+
+        val provider = object : ContentProvider() {
+            override fun onCreate() = true
+
+            override fun query(
+                uri: Uri,
+                projection: Array<out String>?,
+                selection: String?,
+                selectionArgs: Array<out String>?,
+                sortOrder: String?
+            ): Cursor {
+                receivedProjections += projection
+                return MatrixCursor(arrayOf("unrelated_column")).apply {
+                    addRow(arrayOf("unrelated"))
+                }
+            }
+
+            override fun getType(uri: Uri): String? = null
+            override fun insert(uri: Uri, values: ContentValues?): Uri? = null
+            override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?) = 0
+            override fun update(
+                uri: Uri,
+                values: ContentValues?,
+                selection: String?,
+                selectionArgs: Array<out String>?
+            ) = 0
+        }
+        val providerInfo = ProviderInfo().apply { this.authority = authority }
+        provider.attachInfo(context, providerInfo)
+        ShadowContentResolver.registerProviderInternal(authority, provider)
+
+        val name = FileUtils.getDisplayName(context, contentUri, TestTimeProvider())
+
+        assertEquals(lastSegment, name)
+        assertEquals(1, receivedProjections.size)
+        assertArrayEquals(arrayOf(OpenableColumns.DISPLAY_NAME), receivedProjections.single())
+    }
+
+    @Test
+    fun getDisplayName_fallsBackToLastPathSegmentWhenCursorEmptyWithoutSecondQuery() {
+        val authority = "org.ole.planet.myplanet.test.fileutils.displayname.empty"
+        val lastSegment = "empty-cursor-name"
+        val contentUri = Uri.parse("content://$authority/$lastSegment")
+        val receivedProjections = mutableListOf<Array<out String>?>()
+
+        val provider = object : ContentProvider() {
+            override fun onCreate() = true
+
+            override fun query(
+                uri: Uri,
+                projection: Array<out String>?,
+                selection: String?,
+                selectionArgs: Array<out String>?,
+                sortOrder: String?
+            ): Cursor {
+                receivedProjections += projection
+                return MatrixCursor(arrayOf(OpenableColumns.DISPLAY_NAME))
+            }
+
+            override fun getType(uri: Uri): String? = null
+            override fun insert(uri: Uri, values: ContentValues?): Uri? = null
+            override fun delete(uri: Uri, selection: String?, selectionArgs: Array<out String>?) = 0
+            override fun update(
+                uri: Uri,
+                values: ContentValues?,
+                selection: String?,
+                selectionArgs: Array<out String>?
+            ) = 0
+        }
+        val providerInfo = ProviderInfo().apply { this.authority = authority }
+        provider.attachInfo(context, providerInfo)
+        ShadowContentResolver.registerProviderInternal(authority, provider)
+
+        val name = FileUtils.getDisplayName(context, contentUri, TestTimeProvider())
+
+        assertEquals(lastSegment, name)
+        assertEquals(1, receivedProjections.size)
+        assertArrayEquals(arrayOf(OpenableColumns.DISPLAY_NAME), receivedProjections.single())
     }
 
     @Test
