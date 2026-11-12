@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MarkdownUtils
@@ -46,7 +46,7 @@ data class CourseStepUiState(
 class CoursesStepsViewModel @Inject constructor(
     private val storagePathResolver: StoragePathResolver,
     private val coursesRepository: CoursesRepository,
-    private val userRepository: UserRepository,
+    private val userRepository: UserReadRepository,
     private val resourcesRepository: ResourcesRepository,
     private val configurationsRepository: ConfigurationsRepository,
     private val progressRepository: ProgressRepository,
