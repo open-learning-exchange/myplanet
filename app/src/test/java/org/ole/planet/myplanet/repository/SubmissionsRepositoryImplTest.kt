@@ -1356,19 +1356,21 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `markSubmissionsUploaded delegates submission updates to dao`() = runTest {
-        coEvery { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") } returns 1
+        val expectedDaoUploads = listOf(SubmissionDao.UploadedSubmission("sub-1", "remote-1", "rev-1"))
+        coEvery { submissionDao.markUploadedBatch(expectedDaoUploads) } returns emptyList()
 
         val failed = repository.markSubmissionsUploaded(
             listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", JsonObject()))
         )
 
         assertEquals(emptyList<UploadedItemResult>(), failed)
-        coVerify { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") }
+        coVerify(exactly = 1) { submissionDao.markUploadedBatch(expectedDaoUploads) }
     }
 
     @Test
     fun `markSubmissionsUploaded returns failure if dao returns 0`() = runTest {
-        coEvery { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") } returns 0
+        val expectedDaoUploads = listOf(SubmissionDao.UploadedSubmission("sub-1", "remote-1", "rev-1"))
+        coEvery { submissionDao.markUploadedBatch(expectedDaoUploads) } returns expectedDaoUploads
 
         val failed = repository.markSubmissionsUploaded(
             listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", JsonObject()))
@@ -1376,6 +1378,37 @@ class SubmissionsRepositoryImplTest {
 
         assertEquals(1, failed.size)
         assertEquals("sub-1", failed.first().localId)
-        coVerify { submissionDao.markUploaded("sub-1", "remote-1", "rev-1") }
+        coVerify(exactly = 1) { submissionDao.markUploadedBatch(expectedDaoUploads) }
+    }
+
+    @Test
+    fun `markSubmissionsUploaded empty list no-op does not call dao`() = runTest {
+        val failed = repository.markSubmissionsUploaded(emptyList())
+
+        assertTrue(failed.isEmpty())
+        coVerify(exactly = 0) { submissionDao.markUploadedBatch(any()) }
+    }
+
+    @Test
+    fun `markSubmissionsUploaded preserves input order and returns failed items when one missing`() = runTest {
+        val r1 = UploadedItemResult("sub-1", "remote-1", "rev-1", JsonObject())
+        val r2 = UploadedItemResult("sub-2", "remote-2", "rev-2", JsonObject())
+        val r3 = UploadedItemResult("sub-3", "remote-3", "rev-3", JsonObject())
+        val allResults = listOf(r1, r2, r3)
+
+        val daoItems = listOf(
+            SubmissionDao.UploadedSubmission("sub-1", "remote-1", "rev-1"),
+            SubmissionDao.UploadedSubmission("sub-2", "remote-2", "rev-2"),
+            SubmissionDao.UploadedSubmission("sub-3", "remote-3", "rev-3")
+        )
+        // Simulate dao returning only sub-2 as failed
+        coEvery { submissionDao.markUploadedBatch(daoItems) } returns listOf(
+            SubmissionDao.UploadedSubmission("sub-2", "remote-2", "rev-2")
+        )
+
+        val failed = repository.markSubmissionsUploaded(allResults)
+
+        assertEquals(listOf(r2), failed)
+        coVerify(exactly = 1) { submissionDao.markUploadedBatch(daoItems) }
     }
 }

@@ -64,6 +64,7 @@ interface SubmissionsRepository {
     suspend fun getUnuploadedPhotos(): List<Pair<String?, JsonObject>>
     suspend fun markPhotoUploaded(photoId: String?, rev: String, id: String)
     suspend fun markPhotosUploadedBatch(uploads: List<PhotoUpload>)
+    suspend fun recordPhotoRemoteDoc(photoId: String, rev: String, remoteId: String)
     suspend fun getOrCreateSubmission(userId: String?, parentId: String): Submission
     suspend fun getPhotosByIds(ids: Array<String>): List<SubmitPhotos>
     suspend fun bulkInsertFromSync(jsonArray: JsonArray)
