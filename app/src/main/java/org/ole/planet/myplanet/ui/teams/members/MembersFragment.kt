@@ -62,7 +62,7 @@ class MembersFragment : BaseTeamFragment() {
         binding.rvMembers.adapter = membersAdapter
 
         val initialUser = UserEntity()
-        requestsAdapter = RequestsAdapter(requireActivity(), initialUser) { reqUser, isAccepted ->
+        requestsAdapter = RequestsAdapter(initialUser) { reqUser, isAccepted ->
             requestsViewModel.respondToRequest(teamId, reqUser, isAccepted)
         }.apply { setTeamId(teamId) }
         binding.rvRequests.layoutManager = GridLayoutManager(activity, columns)
@@ -79,7 +79,7 @@ class MembersFragment : BaseTeamFragment() {
         requestsViewModel.fetchMembers(teamId)
 
         collectWhenStarted(requestsViewModel.uiState) { state ->
-            requestsAdapter?.setData(state.members, state.isLeader, state.memberCount)
+            requestsAdapter?.setData(state.members, state.isLeader, state.memberCount, state.memberLimit)
             val hasRequests = state.members.isNotEmpty()
             binding.llRequestsSection.visibility = if (hasRequests) View.VISIBLE else View.GONE
             if (hasRequests) {
@@ -90,73 +90,61 @@ class MembersFragment : BaseTeamFragment() {
             onMemberChangeListener?.onChanged()
             loadMembers()
         }
+        collectWhenStarted(requestsViewModel.membersState) { state ->
+            if (!state.isLoaded) return@collectWhenStarted
+            membersAdapter?.setUserId(state.currentUserId)
+            membersAdapter?.updateData(state.members, state.isLeader)
+            BaseRecyclerFragment.showNoData(binding.tvNodata, state.members.size, "")
+        }
+        collectWhenStarted(requestsViewModel.actionResults) { result ->
+            when (result) {
+                MemberActionResult.LeftTeam -> {
+                    Toast.makeText(requireContext(), getString(R.string.left_team), Toast.LENGTH_SHORT).show()
+                    requireActivity().supportFragmentManager.popBackStack()
+                }
+                MemberActionResult.MemberRemoved -> {
+                    onMemberChangeListener?.onChanged()
+                    requestsViewModel.fetchMembers(teamId)
+                }
+                MemberActionResult.CannotRemoveLastLeader -> {
+                    Toast.makeText(requireContext(), R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
+                }
+                MemberActionResult.LeaderChanged -> {
+                    Toast.makeText(requireContext(), getString(R.string.leader_selected), Toast.LENGTH_SHORT).show()
+                    onMemberChangeListener?.onChanged()
+                }
+                is MemberActionResult.Failed -> {
+                    val actionStr = when (result.action) {
+                        MemberAction.LEAVE_TEAM -> "leaving team"
+                        MemberAction.REMOVE_MEMBER -> "removing member"
+                        MemberAction.MAKE_LEADER -> "making leader"
+                    }
+                    Toast.makeText(requireContext(), "Error $actionStr: ${result.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 
     private fun loadMembers() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val members = teamsRepository.getJoinedMembersWithVisitInfo(teamId)
-            val currentUserId = ensureUserResolved()?.id
-            val isLeader = members.any { it.user.id == currentUserId && it.isLeader }
-            membersAdapter?.setUserId(currentUserId)
-            membersAdapter?.updateData(members, isLeader)
-            BaseRecyclerFragment.showNoData(binding.tvNodata, members.size, "")
-        }
+        requestsViewModel.loadJoinedMembers(teamId)
     }
 
     private fun handleLeaveTeam() {
         requireContext().confirmDialog(
             message = getString(R.string.confirm_exit),
             onPositive = {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    try {
-                        val nextLeader = teamsRepository.getNextLeaderCandidate(teamId, user?.id)
-                        nextLeader?.id?.let { teamsRepository.updateTeamLeader(teamId, it) }
-                        user?.id?.let { teamsRepository.removeMember(teamId, it) }
-                        loadMembers()
-                        Toast.makeText(requireContext(), getString(R.string.left_team), Toast.LENGTH_SHORT).show()
-                        requireActivity().supportFragmentManager.popBackStack()
-                    } catch (e: Exception) {
-                        Toast.makeText(requireContext(), "Error leaving team: ${e.message}", Toast.LENGTH_SHORT).show()
-                    }
-                }
+                requestsViewModel.leaveTeam(teamId)
             }
         )
     }
 
     private fun handleRemoveMember(member: JoinedMemberData) {
         val memberId = member.user.id ?: return
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                if (user?.id == memberId) {
-                    val nextLeader = teamsRepository.getNextLeaderCandidate(teamId, memberId)
-                    if (nextLeader != null) {
-                        nextLeader.id?.let { teamsRepository.updateTeamLeader(teamId, it) }
-                    } else {
-                        Toast.makeText(requireContext(), R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
-                        return@launch
-                    }
-                }
-                teamsRepository.removeMember(teamId, memberId)
-                loadMembers()
-                onMemberChangeListener?.onChanged()
-                requestsViewModel.fetchMembers(teamId)
-            } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Error removing member: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
+        requestsViewModel.removeMember(teamId, memberId)
     }
 
     private fun handleMakeLeader(userId: String) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                teamsRepository.updateTeamLeader(teamId, userId)
-                loadMembers()
-                Toast.makeText(requireContext(), getString(R.string.leader_selected), Toast.LENGTH_SHORT).show()
-                onMemberChangeListener?.onChanged()
-            } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Error making leader: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
+        requestsViewModel.makeLeader(teamId, userId)
     }
 
     override fun onNewsItemClick(news: News?) {}

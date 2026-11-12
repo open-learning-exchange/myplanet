@@ -1,23 +1,30 @@
 package org.ole.planet.myplanet.ui.health
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.model.Examination
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.utils.AndroidDecrypter
+import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
+import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.GsonUtils
 
 data class HealthExaminationState(
     val isLoading: Boolean = true,
@@ -25,7 +32,8 @@ data class HealthExaminationState(
     val pojo: HealthExamination? = null,
     val health: MyHealth? = null,
     val examination: HealthExamination? = null,
-    val conditionsMap: Map<String, Boolean> = emptyMap()
+    val conditionsMap: Map<String, Boolean> = emptyMap(),
+    val currentUser: UserEntity? = null
 )
 
 @HiltViewModel
@@ -41,8 +49,8 @@ class HealthExaminationViewModel @Inject constructor(
     private val _isSaving = MutableStateFlow(false)
     val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
 
-    private val _saveResult = MutableSharedFlow<Boolean>()
-    val saveResult: SharedFlow<Boolean> = _saveResult.asSharedFlow()
+    private val _saveResult = Channel<Boolean>(Channel.BUFFERED)
+    val saveResult: Flow<Boolean> = _saveResult.receiveAsFlow()
 
     fun loadData(userId: String?, examinationId: String?) {
         viewModelScope.launch {
@@ -53,12 +61,14 @@ class HealthExaminationViewModel @Inject constructor(
             var health: MyHealth? = null
             var examination: HealthExamination? = null
             var conditionsMap: Map<String, Boolean> = emptyMap()
+            var currentUser: UserEntity? = null
 
             withContext(dispatcherProvider.io) {
+                currentUser = userRepository.getUserModel()
+
                 if (userId != null) {
-                    val (u, p) = healthRepository.getHealthEntry(userId)
-                    user = u
-                    pojo = p
+                    user = userRepository.getUserById(userId)
+                    pojo = healthRepository.getByIdOrUserId(userId)
 
                     val updatedUser = userRepository.ensureUserSecurityKeys(userId)
                     if (updatedUser != null) {
@@ -84,27 +94,52 @@ class HealthExaminationViewModel @Inject constructor(
                 pojo = pojo,
                 health = health,
                 examination = examination,
-                conditionsMap = conditionsMap
+                conditionsMap = conditionsMap,
+                currentUser = currentUser
             )
         }
     }
 
-    fun saveExamination(examination: HealthExamination?, pojo: HealthExamination?, user: UserEntity?) {
+    fun saveExamination(
+        examination: HealthExamination?,
+        pojo: HealthExamination?,
+        user: UserEntity?,
+        sign: Examination
+    ) {
         if (_isSaving.value) return
 
         viewModelScope.launch {
             _isSaving.value = true
             try {
                 withContext(dispatcherProvider.io) {
+                    encryptSign(examination, user, sign)
                     healthRepository.saveExamination(examination, pojo, user)
                 }
-                _saveResult.emit(true)
+                _saveResult.send(true)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
-                _saveResult.emit(false)
+                Log.e(TAG, "Saving the examination failed", e)
+                _saveResult.send(false)
             } finally {
                 _isSaving.value = false
             }
         }
+    }
+
+    private fun encryptSign(examination: HealthExamination?, user: UserEntity?, sign: Examination) {
+        try {
+            val key = user?.key ?: generateKey().also { user?.key = it }
+            val iv = user?.iv ?: generateIv().also { user?.iv = it }
+            examination?.data = AndroidDecrypter.encrypt(GsonUtils.gson.toJson(sign), key, iv)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "Encrypting examination data failed", e)
+        }
+    }
+
+    companion object {
+        private const val TAG = "HealthExaminationViewModel"
     }
 }

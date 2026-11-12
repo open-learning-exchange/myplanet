@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -32,7 +33,8 @@ class TeamsVoicesViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
     private val userRepository: UserRepository,
     private val resourcesRepository: ResourcesRepository,
-    private val notificationsRepository: NotificationsRepository
+    private val notificationsRepository: NotificationsRepository,
+    private val configurationsRepository: ConfigurationsRepository
 ) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository) {
 
     private val _teamPolicy = MutableStateFlow<Pair<MyTeam?, VoicePostingPolicy?>?>(null)
@@ -53,10 +55,10 @@ class TeamsVoicesViewModel @Inject constructor(
         }
     }
 
-    suspend fun getFilteredNews(teamId: String): List<News?> {
-        val newsList = voicesRepository.getFilteredNews(teamId)
-        notificationsRepository.updateTeamNotification(teamId, newsList)
-        return newsList
+    fun markDiscussionsSeen(teamId: String) {
+        viewModelScope.launch {
+            notificationsRepository.updateTeamNotification(teamId, voicesRepository.countTopLevelByTeam(teamId).toInt())
+        }
     }
 
     fun observeDiscussions(teamId: String) {
@@ -110,5 +112,7 @@ class TeamsVoicesViewModel @Inject constructor(
     suspend fun getLibraryResource(resourceId: String): MyLibrary? {
         return resourcesRepository.getLibraryItemByResourceId(resourceId)
     }
+
+    fun getCommunityLeaders(): List<UserEntity> = configurationsRepository.getCommunityLeaders()
 
 }

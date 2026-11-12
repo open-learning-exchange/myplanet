@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.ui.chat
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.Typeface
 import android.os.Bundle
 import android.speech.RecognitionListener
@@ -20,7 +20,6 @@ import android.widget.LinearLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.view.isNotEmpty
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -29,12 +28,12 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isPrimaryServerReachable
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatMessage
@@ -46,14 +45,15 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.TextRevealer
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.hasPermission
+import org.ole.planet.myplanet.utils.showPermissionDeniedFeedback
 
 @AndroidEntryPoint
-class ChatDetailFragment : Fragment() {
-    private var _binding: FragmentChatDetailBinding? = null
-    private val binding get() = _binding!!
+class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(FragmentChatDetailBinding::inflate) {
     private lateinit var mAdapter: ChatAdapter
     private val sharedViewModel: ChatViewModel by activityViewModels()
     private lateinit var messageTextWatcher: TextWatcher
@@ -88,13 +88,18 @@ class ChatDetailFragment : Fragment() {
     private var isListening = false
     private var textBeforeVoice: String = ""
 
-    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        if (isGranted) {
-            startSpeechToText()
-        } else {
-            Utilities.toast(requireContext(), getString(R.string.microphone_permission_required))
+    private val requestMicPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                startSpeechToText()
+            } else {
+                requireActivity().showPermissionDeniedFeedback(
+                    Manifest.permission.RECORD_AUDIO,
+                    R.string.microphone_permission_required,
+                )
+            }
         }
-    }
+
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
@@ -116,9 +121,9 @@ class ChatDetailFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentChatDetailBinding.inflate(inflater, container, false)
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-        return binding.root
+        return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -153,12 +158,10 @@ class ChatDetailFragment : Fragment() {
         binding.buttonGchatMic.setOnClickListener {
             if (isListening) {
                 stopSpeechToText()
+            } else if (requireContext().hasPermission(Manifest.permission.RECORD_AUDIO)) {
+                startSpeechToText()
             } else {
-                if (ContextCompat.checkSelfPermission(requireContext(), android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                    startSpeechToText()
-                } else {
-                    requestPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
-                }
+                requestMicPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
             }
         }
         initSpeechRecognizer()
@@ -236,7 +239,7 @@ class ChatDetailFragment : Fragment() {
         textBeforeVoice = binding.editGchatMessage.text.toString().trim()
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag())
         intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
         speechRecognizer?.startListening(intent)
     }
@@ -266,13 +269,7 @@ class ChatDetailFragment : Fragment() {
         }
         mAdapter = ChatAdapter(requireContext(), binding.recyclerGchat) { response, onUpdate, onComplete ->
             val job = viewLifecycleOwner.lifecycleScope.launch {
-                var currentIndex = 0
-                while (currentIndex < response.length) {
-                    if (!kotlin.coroutines.coroutineContext.isActive) return@launch
-                    onUpdate(response.substring(0, currentIndex + 1))
-                    currentIndex++
-                    kotlinx.coroutines.delay(10L)
-                }
+                TextRevealer.reveal(response, onUpdate)
                 onComplete()
             }
             return@ChatAdapter { job.cancel() }
@@ -540,6 +537,10 @@ class ChatDetailFragment : Fragment() {
         _id = ""
         _rev = ""
         currentID = ""
+        lastChatHistory = emptyList()
+        sharedViewModel.setSelectedChatHistory(emptyList())
+        sharedViewModel.setSelectedId("")
+        sharedViewModel.setSelectedRev("")
         binding.editGchatMessage.text.clear()
         binding.textGchatIndicator.visibility = View.GONE
     }
@@ -562,7 +563,7 @@ class ChatDetailFragment : Fragment() {
         }
         viewLifecycleOwner.lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            sendNewChatRequest(contextualQuery, userName, aiProvider)
+            sendNewChatRequest(contextualQuery, userName, aiProvider, displayQuery = query)
         }
     }
 
@@ -613,7 +614,7 @@ class ChatDetailFragment : Fragment() {
             return cachedModelsMap!!
         }
         val parsedMap: Map<String, String> = if (modelsString.isNotEmpty()) {
-            JsonUtils.gson.fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type) ?: emptyMap()
+            GsonUtils.gson.fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type) ?: emptyMap()
         } else {
             emptyMap()
         }
@@ -641,41 +642,65 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
-    private fun sendNewChatRequest(query: String, userName: String?, aiProvider: AiProvider) {
+    private fun sendNewChatRequest(query: String, userName: String?, aiProvider: AiProvider, displayQuery: String = query) {
         viewLifecycleOwner.lifecycleScope.launch {
             val result = sharedViewModel.sendNewChatRequest(query, userName, aiProvider)
-            handleChatResult(result)
+            handleChatResult(result, displayQuery)
         }
     }
 
     private fun sendContinueChatRequest(query: String, userName: String?, aiProvider: AiProvider, id: String, rev: String) {
         viewLifecycleOwner.lifecycleScope.launch {
             val result = sharedViewModel.sendContinueChatRequest(query, userName, aiProvider, id, rev)
-            handleChatResult(result)
+            handleChatResult(result, query)
         }
     }
 
-    private fun handleChatResult(result: ChatResult) {
+    private fun handleChatResult(result: ChatResult, query: String) {
         when (result) {
             is ChatResult.Success -> {
                 mAdapter.addResponse(result.response, ChatMessage.RESPONSE_SOURCE_NETWORK)
                 _rev = result.rev
                 currentID = result.id
+                keepConversationInViewModel(result, query)
                 if (isAdded && activity is DashboardActivity) {
                     (activity as DashboardActivity).refreshChatHistory()
                 }
             }
             is ChatResult.Error -> {
+                restoreUnsentQuery(query)
                 showError(result.message)
             }
         }
         enableUI()
     }
 
+    private fun keepConversationInViewModel(result: ChatResult.Success, query: String) {
+        val turn = Conversation().apply {
+            this.query = query
+            response = result.response
+        }
+        val history = sharedViewModel.selectedChatHistory.value.orEmpty() + turn
+        lastChatHistory = history
+        sharedViewModel.setSelectedChatHistory(history)
+        sharedViewModel.setSelectedId(result.id)
+        sharedViewModel.setSelectedRev(result.rev)
+    }
+
+    private fun restoreUnsentQuery(query: String) {
+        _binding?.editGchatMessage?.let { input ->
+            if (input.text.isNullOrEmpty()) {
+                input.setText(query)
+                input.setSelection(query.length)
+            }
+        }
+    }
+
     private fun showError(message: String?) {
         _binding?.let { binding ->
             binding.textGchatIndicator.visibility = View.VISIBLE
-            binding.textGchatIndicator.text = context?.getString(R.string.message_placeholder, message)
+            binding.textGchatIndicator.text = message?.takeIf { it.isNotBlank() }
+                ?: getString(R.string.request_failed_please_retry)
         }
     }
 
@@ -711,7 +736,6 @@ class ChatDetailFragment : Fragment() {
         cachedRawModelsString = null
         cachedModelsMap = null
 
-        _binding = null
         super.onDestroyView()
     }
 

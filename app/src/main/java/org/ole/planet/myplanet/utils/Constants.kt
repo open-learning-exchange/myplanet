@@ -20,10 +20,8 @@ import org.ole.planet.myplanet.model.TeamTask
 object Constants {
     const val HTTP_PROTOCOL = "http://"
     const val HTTPS_PROTOCOL = "https://"
-    const val KEY_LOGIN = "isLoggedIn"
     const val DICTIONARY_URL = "http://157.245.241.39:8000/output.json"
     var shelfDataList = mutableListOf<ShelfData>()
-    const val KEY_SYNC = "beta_wifi_switch"
     const val KEY_MEETUPS = "key_meetup"
     const val KEY_AUTOSYNC_ = "auto_sync_with_server"
     const val KEY_AUTOSYNC_WEEKLY = "force_weekly_sync"
@@ -37,8 +35,6 @@ object Constants {
         "Request for advice" to "advice"
     )
     val LABEL_VALUE_TO_NAME: Map<String, String> by lazy { LABELS.entries.associate { it.value to it.key } }
-    const val KEY_NOTIFICATION_SHOWN = "notification_shown"
-    const val SELECTED_LANGUAGE = "app_language"
     const val ACTION_RETRY_EVENT = "ACTION_RETRY_EVENT"
     const val NETWORK_TRAFFIC_TAG = 0x4F_4C_45 // "OLE"
 
@@ -72,13 +68,6 @@ object Constants {
     fun showBetaFeature(s: String, context: Context): Boolean {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
         return preferences.getBoolean("beta_function", false)
-    }
-
-    fun isBetaWifiFeatureEnabled(context: Context): Boolean {
-        val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-        val betaEnabled = preferences.getBoolean("beta_function", false)
-        val wifiSwitchEnabled = preferences.getBoolean(KEY_SYNC, false)
-        return betaEnabled && wifiSwitchEnabled
     }
 
     fun autoSynFeature(s: String?, context: Context): Boolean {

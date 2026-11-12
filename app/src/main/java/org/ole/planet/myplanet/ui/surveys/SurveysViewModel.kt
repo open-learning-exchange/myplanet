@@ -4,10 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
@@ -21,15 +25,17 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.StringUtils
 
 @HiltViewModel
 class SurveysViewModel @Inject constructor(
     private val surveysRepository: SurveysRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val userRepository: UserRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val realtimeSyncManager: RealtimeSyncManager
 ) : ViewModel() {
 
     enum class SortOption {
@@ -42,14 +48,13 @@ class SurveysViewModel @Inject constructor(
     private var isTeam: Boolean = false
     private var teamId: String? = null
     private var filterSortJob: Job? = null
+    private var loadJob: Job? = null
 
     private val _surveys = MutableStateFlow<List<StepExam>>(emptyList())
 
     private val _surveyInfos = MutableStateFlow<Map<String, SurveyInfo>>(emptyMap())
-    val surveyInfos: StateFlow<Map<String, SurveyInfo>> = _surveyInfos.asStateFlow()
 
     private val _bindingData = MutableStateFlow<Map<String, SurveyFormState>>(emptyMap())
-    val bindingData: StateFlow<Map<String, SurveyFormState>> = _bindingData.asStateFlow()
 
     val surveys: StateFlow<List<SurveyRow>> = combine(_surveys, _surveyInfos, _bindingData) { surveys, infos, bindingData ->
         surveys.map { exam ->
@@ -69,21 +74,51 @@ class SurveysViewModel @Inject constructor(
     private val _userMessage = MutableStateFlow<String?>(null)
     val userMessage: StateFlow<String?> = _userMessage.asStateFlow()
 
+    fun onErrorMessageShown() {
+        _errorMessage.value = null
+    }
+
+    fun onUserMessageShown() {
+        _userMessage.value = null
+    }
+
     private val _users = MutableStateFlow<List<UserEntity>>(emptyList())
     val users: StateFlow<List<UserEntity>> = _users.asStateFlow()
 
     private val _surveySent = MutableStateFlow(false)
     val surveySent: StateFlow<Boolean> = _surveySent.asStateFlow()
 
+    private val _isSendingSurvey = MutableStateFlow(false)
+    val isSendingSurvey: StateFlow<Boolean> = _isSendingSurvey.asStateFlow()
+
+    private val _surveySendFailed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val surveySendFailed: SharedFlow<Unit> = _surveySendFailed.asSharedFlow()
+
+    init {
+        viewModelScope.launch {
+            realtimeSyncManager.updatesFor("exams").collect { update ->
+                if (update.shouldRefreshUI) {
+                    loadSurveys(isTeam, teamId, _isTeamShareAllowed.value)
+                }
+            }
+        }
+    }
+
     fun loadSurveys(isTeam: Boolean, teamId: String?, isTeamShareAllowed: Boolean) {
+        loadJob?.cancel()
         this.isTeam = isTeam
         this.teamId = teamId
         _isLoading.value = true
         _isTeamShareAllowed.value = isTeamShareAllowed
-        viewModelScope.launch {
+
+        val capturedIsTeamShareAllowed = isTeamShareAllowed
+
+        loadJob = viewModelScope.launch {
             try {
                 val currentSurveysList = when {
-                    isTeam && isTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(teamId)
+                    isTeam && capturedIsTeamShareAllowed -> surveysRepository.getAdoptableTeamSurveys(
+                        teamId
+                    )
                     isTeam -> surveysRepository.getTeamOwnedSurveys(teamId)
                     else -> surveysRepository.getIndividualSurveys()
                 }
@@ -97,15 +132,25 @@ class SurveysViewModel @Inject constructor(
                 )
                 val bindingData = surveysRepository.getSurveyFormState(currentSurveysList, teamId)
 
-                _surveyInfos.value = surveyInfos
-                _bindingData.value = bindingData
+                if (!coroutineContext[Job]!!.isCancelled &&
+                    this@SurveysViewModel.isTeam == isTeam &&
+                    this@SurveysViewModel.teamId == teamId &&
+                    _isTeamShareAllowed.value == capturedIsTeamShareAllowed
+                ) {
+                    _surveyInfos.value = surveyInfos
+                    _bindingData.value = bindingData
 
-                rawSurveys = currentSurveysList
-                applyFilterAndSort()
+                    rawSurveys = currentSurveysList
+                    applyFilterAndSort()
+                }
             } catch (e: Exception) {
-                _errorMessage.value = "Failed to load surveys: ${e.message}"
+                if (!coroutineContext[Job]!!.isCancelled) {
+                    _errorMessage.value = "Failed to load surveys: ${e.message}"
+                }
             } finally {
-                _isLoading.value = false
+                if (!coroutineContext[Job]!!.isCancelled) {
+                    _isLoading.value = false
+                }
             }
         }
     }
@@ -164,14 +209,14 @@ class SurveysViewModel @Inject constructor(
     private fun filter(s: String, list: List<StepExam>): List<StepExam> {
         val normalizedQueryParts = s.splitToSequence(" ")
             .filterNot { it.isEmpty() }
-            .map { Utilities.normalizeText(it) }
+            .map { StringUtils.normalizeText(it) }
             .toList()
-        val normalizedQuery = Utilities.normalizeText(s)
+        val normalizedQuery = StringUtils.normalizeText(s)
         val startsWithQuery = mutableListOf<StepExam>()
         val containsQuery = mutableListOf<StepExam>()
 
         for (item in list) {
-            val title = item.name?.let { Utilities.normalizeText(it) } ?: continue
+            val title = item.name?.let { StringUtils.normalizeText(it) } ?: continue
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                 startsWithQuery.add(item)
             } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
@@ -203,9 +248,19 @@ class SurveysViewModel @Inject constructor(
     }
 
     fun sendSurveyToUsers(surveyId: String, selectedUserIds: List<String>) {
+        if (_isSendingSurvey.value) return
+        _isSendingSurvey.value = true
         viewModelScope.launch {
-            submissionsRepository.createBulkSurveySubmissions(surveyId, selectedUserIds)
-            _surveySent.value = true
+            try {
+                submissionsRepository.createBulkSurveySubmissions(surveyId, selectedUserIds)
+                _surveySent.value = true
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _surveySendFailed.tryEmit(Unit)
+            } finally {
+                _isSendingSurvey.value = false
+            }
         }
     }
 }

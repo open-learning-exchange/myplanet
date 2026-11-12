@@ -1,5 +1,9 @@
 package org.ole.planet.myplanet.utils
 
+import kotlin.coroutines.cancellation.CancellationException
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.delay
+
 object RetryUtils {
     suspend fun <T> retry(
         maxAttempts: Int = 3,
@@ -9,13 +13,13 @@ object RetryUtils {
     ): T? {
         var attempt = 0
         var result: T? = null
-        var lastException: Exception? = null
 
         while (attempt < maxAttempts) {
             try {
                 result = block()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                lastException = e
                 result = null
             }
             if (!shouldRetry(result)) {
@@ -23,10 +27,9 @@ object RetryUtils {
             }
             attempt++
             if (attempt < maxAttempts) {
-                kotlinx.coroutines.delay(delayMs)
+                delay(delayMs.milliseconds)
             }
         }
-        lastException?.printStackTrace()
         return result
     }
 }

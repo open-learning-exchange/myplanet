@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.resources
 
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.utils.ResourcesSearchUtils
@@ -26,6 +27,11 @@ class ResourcesListFilter {
         val locallyOfflineIds: Set<String>
     )
 
+    private data class MediumCriteria(
+        val canonicalSel: String,
+        val targetType: ResourcesMediaType?
+    )
+
     private var lastSignature: Signature? = null
 
     fun reset() {
@@ -45,37 +51,119 @@ class ResourcesListFilter {
     }
 
     fun countMatching(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): Int =
-        filter(models, criteria, locallyOfflineIds).size
+        matching(models, criteria, locallyOfflineIds).count()
 
-    private fun filter(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): List<ResourceListModel> {
-        val bySearchAndTags = filterBySearchAndTags(models, criteria.searchQuery, criteria.searchTags)
-        return filterByFacetsAndDownloadStatus(bySearchAndTags, criteria, locallyOfflineIds)
-    }
+    private fun filter(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): List<ResourceListModel> =
+        matching(models, criteria, locallyOfflineIds).toList()
 
-    private fun filterBySearchAndTags(models: List<ResourceListModel>, searchQuery: String, tags: List<TagEntity>): List<ResourceListModel> {
-        var filteredList = ResourcesSearchUtils.searchLocalModels(models, searchQuery)
-        if (tags.isNotEmpty()) {
-            val searchTagIds = tags.mapTo(HashSet()) { it.id }
-            filteredList = filteredList.filter { model ->
-                model.tags.any { it.id in searchTagIds }
+    private fun matching(
+        models: List<ResourceListModel>,
+        criteria: ResourcesFilterCriteria,
+        locallyOfflineIds: Set<String>
+    ): Sequence<ResourceListModel> {
+        val searchTagIds = if (criteria.searchTags.isNotEmpty()) {
+            criteria.searchTags.mapTo(HashSet()) { it.id }
+        } else {
+            null
+        }
+        val precomputedMediums = if (criteria.mediums.isEmpty()) {
+            emptyList()
+        } else {
+            criteria.mediums.map { selected ->
+                val canonicalSel = ResourcesMediaType.canonicalMedium(selected)
+                val targetType = when (canonicalSel) {
+                    "audio" -> ResourcesMediaType.AUDIO
+                    "video" -> ResourcesMediaType.VIDEO
+                    "pdf" -> ResourcesMediaType.PDF
+                    "book" -> ResourcesMediaType.BOOK
+                    else -> null
+                }
+                MediumCriteria(canonicalSel, targetType)
             }
         }
-        return filteredList
-    }
+        val filtered = models.asSequence()
+            .filter { model -> searchTagIds == null || model.tags.any { it.id in searchTagIds } }
+            .filter { model -> matchesFacets(model, criteria, precomputedMediums) }
+            .filter { model -> matchesDownloadFilter(model, criteria.downloadFilterIndex, locallyOfflineIds) }
 
-    private fun filterByFacetsAndDownloadStatus(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): List<ResourceListModel> {
-        return models.filter { model ->
-            matchesFacets(model, criteria) && matchesDownloadFilter(model, criteria.downloadFilterIndex, locallyOfflineIds)
+        if (criteria.searchQuery.isEmpty()) {
+            return filtered
         }
+        val survivors = filtered.toList()
+        return ResourcesSearchUtils.searchLocalModels(survivors, criteria.searchQuery).asSequence()
     }
 
-    private fun matchesFacets(model: ResourceListModel, criteria: ResourcesFilterCriteria): Boolean {
+    private fun matchesFacets(
+        model: ResourceListModel,
+        criteria: ResourcesFilterCriteria,
+        precomputedMediums: List<MediumCriteria>
+    ): Boolean {
         val library = model.library
-        val subject = criteria.subjects.isEmpty() || library.subject?.containsAll(criteria.subjects) == true
-        val level = criteria.levels.isEmpty() || library.level?.containsAll(criteria.levels) == true
-        val language = criteria.languages.isEmpty() || criteria.languages.contains(library.language)
-        val medium = criteria.mediums.isEmpty() || criteria.mediums.contains(library.mediaType)
-        return subject && level && language && medium
+
+        if (criteria.subjects.isNotEmpty()) {
+            val libSubjects = library.subject
+            if (libSubjects == null || !criteria.subjects.all { critSub ->
+                    libSubjects.any { libSub -> libSub.equals(critSub, ignoreCase = true) }
+                }) {
+                return false
+            }
+        }
+
+        if (criteria.levels.isNotEmpty()) {
+            val libLevels = library.level
+            if (libLevels == null || !criteria.levels.all { critLvl ->
+                    libLevels.any { libLvl -> libLvl.equals(critLvl, ignoreCase = true) }
+                }) {
+                return false
+            }
+        }
+
+        if (criteria.languages.isNotEmpty()) {
+            if (!criteria.languages.any { it.equals(library.language, ignoreCase = true) }) {
+                return false
+            }
+        }
+
+        if (precomputedMediums.isNotEmpty()) {
+            if (!matchesMedium(library, precomputedMediums)) {
+                return false
+            }
+        }
+
+        return true
+    }
+
+    private fun matchesMedium(library: MyLibrary, precomputedMediums: List<MediumCriteria>): Boolean {
+        var classifiedType: ResourcesMediaType? = null
+        var isNonBook: Boolean? = null
+        var libCanonical: String? = null
+        var libCanonicalSet = false
+
+        fun getClassified(): ResourcesMediaType =
+            classifiedType ?: ResourcesMediaType.classify(library).also { classifiedType = it }
+
+        fun getIsNonBook(): Boolean =
+            isNonBook ?: ResourcesMediaType.isExplicitNonBook(library).also { isNonBook = it }
+
+        fun getLibCanonical(): String? {
+            if (!libCanonicalSet) {
+                libCanonical = library.mediaType?.let { ResourcesMediaType.canonicalMedium(it) }
+                libCanonicalSet = true
+            }
+            return libCanonical
+        }
+
+        return precomputedMediums.any { crit ->
+            if (crit.targetType != null) {
+                if (crit.targetType == ResourcesMediaType.BOOK) {
+                    getClassified() == ResourcesMediaType.BOOK && !getIsNonBook()
+                } else {
+                    getClassified() == crit.targetType
+                }
+            } else {
+                getLibCanonical()?.equals(crit.canonicalSel, ignoreCase = true) == true
+            }
+        }
     }
 
     private fun matchesDownloadFilter(model: ResourceListModel, downloadFilterIndex: Int, locallyOfflineIds: Set<String>): Boolean {

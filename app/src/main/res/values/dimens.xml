@@ -113,6 +113,7 @@
     <dimen name="dashboard_chip_icon_size">16dp</dimen>
     <dimen name="dashboard_page_padding">12dp</dimen>
     <dimen name="dashboard_tile_gap">12dp</dimen>
+    <dimen name="dashboard_profile_badges_max_width">140dp</dimen>
 
     <dimen name="dashboard_tile_color_block_width">72dp</dimen>
     <dimen name="dashboard_chip_width">92dp</dimen>

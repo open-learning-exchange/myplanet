@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.ui.courses
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -11,6 +13,7 @@ import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
@@ -28,13 +31,15 @@ sealed interface TakeCourseUiState {
         val course: MyCourse,
         val steps: List<CourseStep>,
         val userModel: UserEntity?,
-        val courseProgress: Int
+        val courseProgress: Int,
+        val blockingStepIndex: Int = -1
     ) : TakeCourseUiState
 }
 
 @HiltViewModel
 class TakeCourseViewModel @Inject constructor(
     private val coursesRepository: CoursesRepository,
+    private val activitiesRepository: ActivitiesRepository,
     private val progressRepository: ProgressRepository,
     private val userRepository: UserRepository,
     private val ratingsRepository: RatingsRepository
@@ -53,11 +58,16 @@ class TakeCourseViewModel @Inject constructor(
     }
 
     suspend fun logCourseVisit(courseId: String, courseTitle: String, userName: String) {
-        coursesRepository.logCourseVisit(courseId, courseTitle, userName)
+        activitiesRepository.logCourseVisit(courseId, courseTitle, userName)
     }
 
     suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int {
         return coursesRepository.getCurrentProgress(steps, userId, courseId)
+    }
+
+    suspend fun getBlockingStepIndex(steps: List<CourseStep?>?, userModel: UserEntity?, courseId: String?): Int {
+        progressRepository.saveEarnedExamPasses(steps, userModel?.id, userModel?.planetCode, userModel?.parentCode, courseId)
+        return progressRepository.getBlockingStepIndex(steps, userModel?.id, courseId)
     }
 
     suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData {
@@ -91,7 +101,10 @@ class TakeCourseViewModel @Inject constructor(
         val hasRated = try {
             val summary = ratingsRepository.getRatingSummary("course", courseId, userId)
             summary.userRating != null || summary.existingRating != null
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
+            Log.e(TAG, "Failed to read the rating summary for course $courseId", e)
             false
         }
         return if (hasRated) RatingPromptDecision.Skip else RatingPromptDecision.Show
@@ -116,11 +129,19 @@ class TakeCourseViewModel @Inject constructor(
                 val steps = coursesRepository.getCourseSteps(courseId)
                 val progressMap = progressRepository.getCourseProgress(listOf(courseId), userModel?.id)
                 val progress = progressMap[courseId]?.current ?: 0
+                val blockingStepIndex = getBlockingStepIndex(steps, userModel, courseId)
 
-                _uiState.value = TakeCourseUiState.Success(course, steps, userModel, progress)
+                _uiState.value = TakeCourseUiState.Success(course, steps, userModel, progress, blockingStepIndex)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to load course $courseId", e)
+                _uiState.value = TakeCourseUiState.NotFound
             }
         }
+    }
+
+    companion object {
+        private const val TAG = "TakeCourseViewModel"
     }
 }

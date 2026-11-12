@@ -79,13 +79,6 @@ import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserChallengeActions
 import org.ole.planet.myplanet.model.UserEntity
 
-/**
- * Room database that is progressively replacing the legacy Realm store.
- *
- * Entities and DAOs are added here as each domain is migrated off Realm. Because the migration
- * uses a drop-and-resync strategy (data is re-pulled from the Planet/CouchDB server on first
- * launch), destructive schema migrations are acceptable and configured in the Hilt module.
- */
 @Database(
     entities = [
         DictionaryEntity::class,
@@ -127,7 +120,7 @@ import org.ole.planet.myplanet.model.UserEntity
         Answer::class,
         MyTeam::class,
     ],
-    version = 12,
+    version = 19,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)

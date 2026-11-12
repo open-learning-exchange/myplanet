@@ -11,17 +11,12 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@RunWith(RobolectricTestRunner::class)
-@Config(application = android.app.Application::class)
 class LeadersViewModelTest {
 
     @get:Rule

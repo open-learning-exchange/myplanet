@@ -176,7 +176,6 @@ class VersionUtilsTest {
     }
 
     @Test
-    @Config(sdk = [Build.VERSION_CODES.P])
     fun getVersionCode_should_return_longVersionCode_for_P_and_above() {
         val mockContext = mockk<Context>()
         val mockPackageManager = mockk<PackageManager>()

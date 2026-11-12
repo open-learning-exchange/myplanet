@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.core.content.edit
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -9,11 +10,14 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.jsonObject
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
@@ -31,10 +35,12 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 class SurveysRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -55,6 +61,7 @@ class SurveysRepositoryImpl @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "SurveysRepository"
         private const val PREF_SURVEY_REMINDERS = "survey_reminders"
         private const val KEY_LAST_SURVEY_DIALOG_SHOWN = "last_survey_dialog_shown"
     }
@@ -207,7 +214,7 @@ class SurveysRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun createMappedSubmission(
+    private fun createMappedSubmission(
         adoptionId: String,
         examId: String,
         parentJsonString: String,
@@ -217,7 +224,7 @@ class SurveysRepositoryImpl @Inject constructor(
         sParentCode: String,
         isTeam: Boolean,
         teamId: String?
-    ): Submission? {
+    ): Submission {
         val submission = Submission().apply {
             id = adoptionId
             parentId = examId
@@ -379,23 +386,30 @@ class SurveysRepositoryImpl @Inject constructor(
 
         for (row in jsonArray) {
             var jsonDoc = row.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = GsonUtils.getJsonObject("doc", jsonDoc)
+            val id = GsonUtils.getString("_id", jsonDoc)
             if (id.startsWith("_design")) continue
 
             val exam = StepExam.insertCourseStepsExams("", "", jsonDoc, "")
             exams += exam
             questions += ExamQuestion.insertExamQuestions(
-                JsonUtils.getJsonArray("questions", jsonDoc),
+                GsonUtils.getJsonArray("questions", jsonDoc),
                 exam.id
             )
         }
 
         if (exams.isNotEmpty()) {
-            examDao.upsertAll(exams.mapNotNull { it })
+            val existingById = examDao.getByIds(exams.map { it.id }).associateBy { it.id }
+            exams.forEach { exam ->
+                val existing = existingById[exam.id] ?: return@forEach
+                if (exam.courseId.isNullOrBlank()) exam.courseId = existing.courseId
+                if (exam.stepId.isNullOrBlank()) exam.stepId = existing.stepId
+            }
+            examDao.upsertAll(exams)
         }
         if (questions.isNotEmpty()) {
             questionDao.upsertAll(questions.mapNotNull { it })
+            questionDao.deleteStaleQuestions(questions)
         }
     }
 
@@ -425,7 +439,7 @@ class SurveysRepositoryImpl @Inject constructor(
                     }
                 }
             }
-            delay(60_000)
+            delay(60_000.milliseconds)
         }
     }.flowOn(dispatcherProvider.io)
 
@@ -459,6 +473,31 @@ class SurveysRepositoryImpl @Inject constructor(
         return examDao.getPendingAdoptedSurveys()
     }
 
+    override suspend fun markExamsUploaded(
+        results: List<UploadedItemResult>
+    ): List<UploadedItemResult> {
+        if (results.isEmpty()) return emptyList()
+        val existing = examDao.getByIds(results.map { it.localId }).associateBy { it.id }
+        val updated = ArrayList<StepExam>(results.size)
+        val failed = ArrayList<UploadedItemResult>(results.size)
+
+        results.forEach { result ->
+            val exam = existing[result.localId]
+            if (exam == null) {
+                failed += result
+            } else {
+                exam._rev = result.remoteRev
+                updated += exam
+            }
+        }
+
+        if (updated.isNotEmpty()) {
+            examDao.upsertAll(updated)
+        }
+
+        return failed
+    }
+
     override suspend fun fetchPublicSurvey(baseUrl: String, teamId: String, surveyId: String): JsonObject? {
         return withContext(dispatcherProvider.io) {
             fetchPublicSurveyFrom(baseUrl, teamId, surveyId)
@@ -488,9 +527,11 @@ class SurveysRepositoryImpl @Inject constructor(
         return try {
             val url = "${baseUrl.trimEnd('/')}/api/public/surveys/$teamId/$surveyId"
             val response = apiInterface.getJsonObject(null, url)
-            if (response.isSuccessful) response.body() else null
+            if (response.isSuccessful) response.body()?.toGson() else null
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "fetchPublicSurveyFrom failed", e)
             null
         }
     }
@@ -502,9 +543,11 @@ class SurveysRepositoryImpl @Inject constructor(
                 add("answers", answers)
                 respondent?.let { add("user", it) }
             }
-            apiInterface.postDoc(null, "application/json", url, body).isSuccessful
+            apiInterface.postDoc(null, "application/json", url, body.toKotlinx().jsonObject).isSuccessful
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "submitPublicSurveyTo failed", e)
             false
         }
     }

@@ -103,6 +103,7 @@
     <string name="user">Utilisateur</string>
     <string name="remove_selected">Supprimer\nla sélection</string>
     <string name="stop_download">Arrêter le téléchargement</string>
+    <string name="download_stopped">Téléchargement arrêté</string>
     <string name="downloading_file">Téléchargement du fichier en cours…</string>
     <string name="cancel">Annuler</string>
     <string name="added_to">ajouté à</string>
@@ -159,6 +160,9 @@
     <string name="select_gallery">Sélectionner depuis la galerie</string>
     <string name="add_resource">Ajouter une ressource :</string>
     <string name="reply">Répondre</string>
+    <string name="react">Réagir</string>
+    <string name="reaction_chip_description">Réaction %1$s, total %2$d</string>
+    <string name="more_reactions">Plus de réactions</string>
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">Affichage de la réponse de :</string>
@@ -585,7 +589,6 @@
     <string name="format_removed_from_mylibrary">%1$s retiré de myLibrary</string>
     <string name="added_to_my_courses">ajouté à myCourses</string>
     <string name="do_you_want_to_stay_online">Voulez-vous rester en ligne ?</string>
-    <string name="device_not_connected_to_planet">Appareil non connecté à la planète.</string>
     <string name="all_files_downloaded_successfully">Tous les fichiers ont été téléchargés avec succès</string>
     <string name="removed_from_mylibrary">Supprimé de ma bibliothèque</string>
     <string name="removed_from_mycourse">Supprimé de mon cours</string>
@@ -611,6 +614,7 @@
     <string name="file_already_exists">Le fichier existe déjà…</string>
     <string name="feature_not_available">Fonctionnalité non disponible</string>
     <string name="sync">Synchroniser</string>
+    <string name="remove_item_format">Supprimer %s</string>
     <string name="session_expired">Session expirée.</string>
     <string name="downloading_started_please_check_notificati">Téléchargement commencé, veuillez vérifier les notifications…</string>
     <string name="dictionary">Dictionnaire</string>
@@ -743,6 +747,7 @@
     <string name="sync_step_of">Étape %1$d sur %2$d</string>
     <string name="sync_items_of">%1$d / %2$d</string>
     <string name="sync_table_progress">%1$s  ·  %2$d / %3$d tables</string>
+    <string name="sync_tables_failed">Certaines données n’ont pas pu être téléchargées : %1$s</string>
     <string name="sync_in_progress_wait">Synchronisation en cours. Veuillez attendre la fin.</string>
     <string name="sync_shelves_progress">%1$d / %2$d étagères</string>
     <string name="team_leader">Chef d\'équipe</string>
@@ -752,11 +757,12 @@
     <string name="completed_colon">\n Terminé: %s</string>
     <string name="assigned_to_colon">Assigné à: %s</string>
     <string name="add_task">Ajouter une tâche</string>
+    <string name="edit_task">Modifier la tâche</string>
     <string name="task_title_is_required">Le titre de la tâche est requis</string>
     <string name="deadline_is_required">La date limite est requise</string>
     <string name="updated">mis à jour</string>
     <string name="added">ajouté</string>
-    <string name="task_s_successfully">Tâche %s ajoutée avec succès</string>
+    <string name="task_s_successfully">Tâche %s avec succès</string>
     <string name="task_deleted_successfully">Tâche supprimée avec succès</string>
     <string name="requested">Demandé</string>
     <string name="left_team">A quitté l\'équipe</string>
@@ -914,11 +920,14 @@
     <string name="video_player">lecteur vidéo</string>
     <string name="video_unavailable">Vidéo indisponible — fichier introuvable et connexion au serveur impossible</string>
     <string name="video_playback_error">Erreur de lecture vidéo. Réessayez ou vérifiez votre connexion</string>
+    <string name="audio_unavailable">Audio indisponible — fichier introuvable et connexion au serveur impossible</string>
+    <string name="audio_playback_error">Erreur de lecture audio. Réessayez ou vérifiez votre connexion</string>
     <string name="video_loading_checking_server">Vérification de la disponibilité du serveur…</string>
     <string name="video_loading_connecting">Connexion au serveur…</string>
     <string name="video_loading_buffering">Mise en mémoire tampon…</string>
     <string name="video_loading_local">Chargement de la vidéo…</string>
     <string name="unable_to_play_video">Impossible de lire la vidéo</string>
+    <string name="unable_to_play_audio">Impossible de lire l\'audio</string>
     <string name="go_back">Retour</string>
     <string name="progress_bar">barre de progression</string>
     <string name="web_view">vue web</string>
@@ -984,6 +993,7 @@
     <string name="location_colon">emplacement:&#160;</string>
     <string name="recurring_colon">récurrent:&#160;</string>
     <string name="created_by_colon">créé par:&#160;</string>
+    <string name="team_colon">équipe:&#160;</string>
     <string name="you_want_to_connect_to_a_different_server">Vous souhaitez vous connecter à un autre serveur. Effacez les données de l\'application pour continuer</string>
     <string name="are_you_sure_you_want_to_clear_data">Êtes-vous sûr de vouloir effacer toutes les données ?</string>
     <string name="feedback_list">liste des retours</string>
@@ -997,9 +1007,9 @@
     <string name="no_teams">équipes non disponibles</string>
     <string name="no_chats">aucune discussion précédente</string>
     <string name="no_feedback">aucun commentaire disponible</string>
-    <string name="medium_text_html">Texte / HTML</string>
     <string name="medium_html">HTML</string>
     <string name="empty_text" />
+    <string name="filter_header_with_count">%1$s (%2$d)</string>
     <string name="message_placeholder">%s</string>
     <string name="reports">rapports</string>
     <string name="number_placeholder">%d</string>
@@ -1020,9 +1030,10 @@
     <string name="user_name">%1$s (%2$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
-    <string name="member_description">%1$s (%2$d visites)</string>
+    <string name="member_description">%1$s (%2$d visites d’équipe)</string>
     <string name="last_visit">Dernière visite: %1$s</string>
     <string name="no_visit">Pas de visite</string>
+    <string name="no_logout_record_found">Aucun enregistrement de déconnexion trouvé</string>
     <string name="dark_mode">Mode Sombre</string>
     <string name="dark_mode_off">Désactivé</string>
     <string name="dark_mode_on">Activé</string>
@@ -1134,6 +1145,9 @@
     <string name="show_additional_fields">afficher les champs supplémentaires</string>
     <string name="hide_additional_fields">masquer les champs supplémentaires</string>
     <string name="preparing_download">Préparation du téléchargement…</string>
+    <string name="download_partially_downloaded">Partiellement téléchargé</string>
+    <string name="download_paused_at_percent">En pause à %1$d%%</string>
+    <string name="resume_download">Reprendre le téléchargement</string>
     <string name="downloading_files">Téléchargement des fichiers</string>
     <string name="edit_mission_and_services">modifier la mission et les services</string>
     <string name="this_team_has_no_description_defined">cette équipe n\'a aucune description définie</string>
@@ -1247,6 +1261,8 @@
     <string name="video_already_added">Vidéo déjà ajoutée</string>
     <string name="please_select_video">Veuillez sélectionner un fichier vidéo</string>
     <string name="please_select_image_or_video">Veuillez sélectionner une image ou un fichier vidéo</string>
+    <string name="voice_image_gif_too_large">Les GIF de plus de 2 Mo ne peuvent pas être joints</string>
+    <string name="voice_image_unreadable">Impossible de lire cette image</string>
     <string name="debug_retry_queue">File de réessai (Debug)</string>
     <string name="debug_retry_queue_summary">Afficher et gérer les tentatives de téléversement échouées</string>
     <string name="retry_queue_status">Statut de la file de réessai</string>
@@ -1289,6 +1305,7 @@
     <string name="warning_icon">Icône d\'avertissement</string>
     <string name="close_banner">Fermer la bannière d\'avertissement</string>
     <string name="status_not_started">Non commencé</string>
+    <string name="status_todo">À faire</string>
     <string name="status_in_progress">En cours</string>
     <string name="status_completed">Terminé</string>
     <string name="read_aloud">Lire à haute voix</string>
@@ -1305,6 +1322,9 @@
     <string name="storage_pdfs">PDFs</string>
     <string name="storage_images">Images</string>
     <string name="storage_other">Autres fichiers</string>
+    <string name="storage_partial_downloads">Téléchargements partiels</string>
+    <string name="storage_clear_partial_downloads">Effacer les téléchargements partiels ?</string>
+    <string name="storage_clear_partial_downloads_message">Ce sont des téléchargements arrêtés avant la fin. Les effacer libère de l\'espace, et ces téléchargements recommenceront depuis le début la prochaine fois.</string>
     <string name="storage_empty">Aucun contenu téléchargé trouvé</string>
     <string name="storage_delete_confirm">Supprimer tous les téléchargements de %1$s ?</string>
     <string name="storage_delete_selected_confirm">Supprimer %1$d élément(s) sélectionné(s) ?</string>
@@ -1323,7 +1343,7 @@
     <string name="download_pdf">Télécharger le PDF</string>
     <string name="label_answer">Réponse :</string>
     <string name="label_link">Lien : </string>
-    <string name="number_of_visits">Nombre de visites</string>
+    <string name="number_of_visits">Visites totales</string>
     <string name="label_name_with_colon">Nom :</string>
     <string name="label_relationship">Relation :</string>
     <string name="label_phone_no">N° de tél. :</string>
@@ -1360,6 +1380,7 @@
     <string name="yesterday">Hier</string>
     <string name="days_ago">Il y a %1$d jour(s)</string>
     <string name="please_complete_test">Veuillez compléter le test pour continuer</string>
+    <string name="please_pass_test">Veuillez réussir le test de l\'étape %1$d pour continuer</string>
     <string name="edit_meetup">Modifier la réunion</string>
     <string name="meetup_updated">Réunion mise à jour avec succès</string>
     <string name="meetup_not_updated">Échec de la mise à jour de la réunion</string>

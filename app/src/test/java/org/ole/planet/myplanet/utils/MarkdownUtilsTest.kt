@@ -115,6 +115,22 @@ class MarkdownUtilsTest {
     }
 
     @Test
+    fun parseMarkdown_parses_markdown_to_spanned() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val spanned = MarkdownUtils.parseMarkdown(context, "**bold** text")
+        assertEquals("bold text", spanned.toString())
+    }
+
+    @Test
+    fun setParsedMarkdown_sets_movement_method() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val textView = TextView(context)
+        val spanned = MarkdownUtils.parseMarkdown(context, "**bold** text")
+        MarkdownUtils.setParsedMarkdown(textView, spanned)
+        assertNotNull(textView.movementMethod)
+    }
+
+    @Test
     fun setMarkdownText_reuses_same_movement_method_instance() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         MarkdownUtils.warmUp(context)
@@ -130,5 +146,17 @@ class MarkdownUtilsTest {
         assertNotNull(secondMovementMethod)
 
         assertSame(firstMovementMethod, secondMovementMethod)
+    }
+
+    @Test
+    fun prependBaseUrlToImages_returns_identical_string_when_no_bracket_present() {
+        val markdown = "plain text with no bracket at all"
+        assertSame(markdown, MarkdownUtils.prependBaseUrlToImages(markdown, "http://base.url/"))
+    }
+
+    @Test
+    fun prependBaseUrlToImages_returns_identical_string_when_brackets_present_without_image_markup() {
+        val markdown = "plain text with (parens) and a ! and [brackets]"
+        assertSame(markdown, MarkdownUtils.prependBaseUrlToImages(markdown, "http://base.url/"))
     }
 }

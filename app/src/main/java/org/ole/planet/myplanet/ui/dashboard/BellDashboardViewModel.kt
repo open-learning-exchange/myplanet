@@ -5,14 +5,13 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.CoursesRepository
@@ -22,6 +21,7 @@ import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
+import org.ole.planet.myplanet.utils.ServerReachabilityProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 
 @HiltViewModel
@@ -32,7 +32,8 @@ class BellDashboardViewModel @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val userRepository: UserRepository,
     private val coursesRepository: CoursesRepository,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val serverReachabilityProvider: ServerReachabilityProvider
 ) : ViewModel() {
 
     companion object {
@@ -45,8 +46,8 @@ class BellDashboardViewModel @Inject constructor(
     val completedCourses: StateFlow<List<CourseCompletion>> = _completedCourses.asStateFlow()
 
 
-    private val _surveyPrompt = kotlinx.coroutines.flow.MutableSharedFlow<SurveyPrompt>(replay = 0)
-    val surveyPrompt: kotlinx.coroutines.flow.SharedFlow<SurveyPrompt> = _surveyPrompt.asSharedFlow()
+    private val _surveyPrompt = Channel<SurveyPrompt>(Channel.BUFFERED)
+    val surveyPrompt: Flow<SurveyPrompt> = _surveyPrompt.receiveAsFlow()
 
     init {
         viewModelScope.launch {
@@ -89,7 +90,7 @@ class BellDashboardViewModel @Inject constructor(
 
             if (pendingSurveys.isNotEmpty()) {
                 val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
-                _surveyPrompt.emit(SurveyPrompt(pendingSurveys, surveyTitles, isReminder = true))
+                _surveyPrompt.send(SurveyPrompt(pendingSurveys, surveyTitles, isReminder = true))
             }
         }
     }
@@ -104,7 +105,7 @@ class BellDashboardViewModel @Inject constructor(
                 val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
                 if (surveysRepository.isReminderScheduled(surveyIds)) return@launch
                 val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
-                _surveyPrompt.emit(SurveyPrompt(pendingSurveys, surveyTitles, isReminder = false))
+                _surveyPrompt.send(SurveyPrompt(pendingSurveys, surveyTitles, isReminder = false))
             }
         }
     }
@@ -134,7 +135,7 @@ class BellDashboardViewModel @Inject constructor(
     }
 
     suspend fun checkServerConnection(serverUrl: String): Boolean {
-        val reachable = isServerReachable(serverUrl)
+        val reachable = serverReachabilityProvider.isServerReachable(serverUrl)
         updateNetworkStatus(if (reachable) NetworkStatus.Connected else NetworkStatus.Disconnected)
         return reachable
     }

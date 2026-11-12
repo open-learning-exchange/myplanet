@@ -5,10 +5,12 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.viewModels
 import androidx.core.text.HtmlCompat
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding
@@ -51,7 +53,7 @@ class DictionaryActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         fragmentDictionaryBinding = FragmentDictionaryBinding.inflate(layoutInflater)
         setContentView(fragmentDictionaryBinding.root)
-        EdgeToEdgeUtils.setupEdgeToEdge(this, fragmentDictionaryBinding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, fragmentDictionaryBinding.root)
         initActionBar()
         title = getString(R.string.dictionary)
 
@@ -72,7 +74,7 @@ class DictionaryActivity : BaseActivity() {
         }
     }
 
-    private fun renderLoadState(state: DictionaryLoadState) {
+    private suspend fun renderLoadState(state: DictionaryLoadState) {
         when (state) {
             is DictionaryLoadState.Idle -> Unit
             is DictionaryLoadState.Populated -> {
@@ -86,9 +88,12 @@ class DictionaryActivity : BaseActivity() {
                     this@DictionaryActivity,
                     getString(R.string.downloading_started_please_check_notificati)
                 )
-                DownloadUtils.openDownloadService(this@DictionaryActivity, list, false)
+                withContext(dispatcherProvider.io) {
+                    DownloadUtils.openDownloadService(this@DictionaryActivity, list, false)
+                }
             }
             is DictionaryLoadState.Failed -> {
+                Log.e("DictionaryActivity", "Failed to load dictionary data", state.cause)
                 Utilities.toast(
                     this@DictionaryActivity,
                     getString(R.string.dictionary_parsing_failed)
@@ -111,10 +116,7 @@ class DictionaryActivity : BaseActivity() {
                 )
             }
             is DictionarySearchState.NotFound -> {
-                Utilities.toast(
-                    this@DictionaryActivity,
-                    getString(R.string.word_not_available_in_our_database)
-                )
+                fragmentDictionaryBinding.tvResult.text = getString(R.string.word_not_available_in_our_database)
             }
         }
     }

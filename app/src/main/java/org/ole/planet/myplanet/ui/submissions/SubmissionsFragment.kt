@@ -1,9 +1,7 @@
 package org.ole.planet.myplanet.ui.submissions
 
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -11,11 +9,13 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
@@ -23,9 +23,7 @@ import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
 @OptIn(kotlinx.coroutines.FlowPreview::class)
-class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
-    private var _binding: FragmentMySubmissionBinding? = null
-    private val binding get() = _binding!!
+class SubmissionsFragment : BaseBindingFragment<FragmentMySubmissionBinding>(FragmentMySubmissionBinding::inflate), CompoundButton.OnCheckedChangeListener {
     private val viewModel: SubmissionViewModel by viewModels()
 
     private lateinit var adapter: SubmissionsAdapter
@@ -34,11 +32,6 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) type = requireArguments().getString("type")
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentMySubmissionBinding.inflate(inflater, container, false)
-        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -63,16 +56,11 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
 
         binding.etSearch.textChanges()
             .drop(1)
-            .debounce(300)
+            .debounce(300.milliseconds)
             .distinctUntilChanged()
             .onEach { text -> viewModel.setFilter(type ?: "", text?.toString() ?: "") }
             .launchIn(viewLifecycleOwner.lifecycleScope)
         showHideRadioButton()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        // Filter is already set in onViewCreated and maintained by ViewModel
     }
 
     private fun showHideRadioButton() {
@@ -119,13 +107,14 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
                 binding.title.visibility = View.VISIBLE
                 binding.tlSearch.visibility = View.VISIBLE
             }
+        } else {
+            showNoData(binding.tvMessage, itemCount, "submissions_filtered")
         }
     }
 
     override fun onDestroyView() {
         binding.rbExam.setOnCheckedChangeListener(null)
         binding.rbSurvey.setOnCheckedChangeListener(null)
-        _binding = null
         super.onDestroyView()
     }
 

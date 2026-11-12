@@ -3,10 +3,21 @@ package org.ole.planet.myplanet.repository
 import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.model.RetryOperation
 
-data class RetryQueueDetails(val pendingCount: Long = 0, val pendingOps: List<RetryOperation> = emptyList(), val isProcessing: Boolean = false)
+sealed class RetryOperationResult {
+    data object Success : RetryOperationResult()
+    data class RetryableFailure(val message: String?, val httpCode: Int? = null) : RetryOperationResult()
+    data class TerminalFailure(val message: String?, val httpCode: Int? = null) : RetryOperationResult()
+}
+
+data class RetryQueueDetails(
+    val pendingCount: Long = 0,
+    val pendingOps: List<RetryOperation> = emptyList(),
+    val isProcessing: Boolean = false,
+    val pendingDueCount: Long = 0
+)
 
 interface RetryRepository {
-    suspend fun enqueue(
+    suspend fun recordFailure(
         uploadType: String,
         failure: RetryFailure,
         payload: String,
@@ -16,21 +27,16 @@ interface RetryRepository {
         modelClassName: String,
         userId: String?
     )
-    suspend fun updateAttempt(
-        operationId: String,
-        failure: RetryFailure
-    )
     suspend fun markInProgress(operationId: String)
     suspend fun markCompleted(operationId: String)
     suspend fun markFailed(operationId: String, errorMessage: String?, httpCode: Int?)
+    suspend fun executeOperation(operation: RetryOperation): RetryOperationResult
     suspend fun getPending(): List<RetryOperation>
-    suspend fun getPendingCount(): Long
     suspend fun cleanup()
-    suspend fun getExistingOperation(itemId: String, uploadType: String): RetryOperation?
-    suspend fun deletePendingAndAbandonedOperations()
     suspend fun recoverStuckOperations()
     fun isCurrentlyProcessing(): Boolean
-    fun setProcessing(processing: Boolean)
+    fun tryStartProcessing(): Boolean
+    fun finishProcessing()
     suspend fun safeClearQueue(): Boolean
     suspend fun getRetryQueueSnapshot(): RetryQueueDetails
 }

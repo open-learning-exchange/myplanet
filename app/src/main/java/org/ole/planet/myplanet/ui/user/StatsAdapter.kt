@@ -28,5 +28,5 @@ class StatsAdapter(private val context: Context) : ListAdapter<Pair<String, Stri
         holder.rowStatBinding.divider.visibility = if (position == itemCount - 1) View.GONE else View.VISIBLE
     }
 
-    inner class ViewHolderRowStat(val rowStatBinding: RowStatBinding) : RecyclerView.ViewHolder(rowStatBinding.root)
+    class ViewHolderRowStat(val rowStatBinding: RowStatBinding) : RecyclerView.ViewHolder(rowStatBinding.root)
 }

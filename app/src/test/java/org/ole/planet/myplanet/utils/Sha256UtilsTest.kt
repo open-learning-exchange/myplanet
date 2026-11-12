@@ -41,7 +41,6 @@ class Sha256UtilsTest {
         file.deleteOnExit()
 
         // Remove read permission
-        val success = file.setReadable(false)
 
         // Skip this test if the environment (e.g., running as root in CI) prevents us from removing read permissions.
         assumeFalse("Could not restrict read permissions on the file; skipping test.", file.canRead())

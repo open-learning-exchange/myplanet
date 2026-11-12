@@ -11,10 +11,10 @@ import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -80,7 +80,7 @@ class UploadCoordinatorTest {
             if (current > maxConcurrentRequests) {
                 maxConcurrentRequests = current
             }
-            delay(10)
+            delay(10.milliseconds)
             activeRequests.decrementAndGet()
 
             val url = invocation.args[0] as String
@@ -99,7 +99,8 @@ class UploadCoordinatorTest {
             serializer = UploadSerializer.Simple { JsonObject() },
             idExtractor = { it.id },
             dbIdExtractor = { it._id },
-            batchSize = 10
+            batchSize = 10,
+            markUploaded = { emptyList() }
         )
 
         val result = uploadCoordinator.upload(config)
@@ -145,7 +146,8 @@ class UploadCoordinatorTest {
             fetchPendingItems = { listOf(item) },
             serializer = UploadSerializer.Simple { JsonObject() },
             idExtractor = { it.id },
-            dbIdExtractor = { it._id }
+            dbIdExtractor = { it._id },
+            markUploaded = { emptyList() }
         )
 
         val result = uploadCoordinator.upload(config)
@@ -179,7 +181,8 @@ class UploadCoordinatorTest {
             fetchPendingItems = { listOf(item) },
             serializer = UploadSerializer.Simple { JsonObject() },
             idExtractor = { it.id },
-            dbIdExtractor = { it._id }
+            dbIdExtractor = { it._id },
+            markUploaded = { emptyList() }
         )
 
         val result = uploadCoordinator.upload(config)
@@ -210,7 +213,7 @@ class UploadCoordinatorTest {
             if (current > maxConcurrentRequests) {
                 maxConcurrentRequests = current
             }
-            delay(10)
+            delay(10.milliseconds)
             activeRequests.decrementAndGet()
 
             val reqBody = invocation.args[1] as JsonObject
@@ -335,7 +338,7 @@ class UploadCoordinatorTest {
         val item = Submission(id = "local-1")
 
         coEvery { uploadRepository.postUpload(any(), any()) } coAnswers {
-            delay(100)
+            delay(100.milliseconds)
             Response.success(JsonObject())
         }
 
@@ -344,14 +347,15 @@ class UploadCoordinatorTest {
             endpoint = "test_endpoint",
             fetchPendingItems = { listOf(item) },
             serializer = UploadSerializer.Simple { JsonObject() },
-            idExtractor = { it.id }
+            idExtractor = { it.id },
+            markUploaded = { emptyList() }
         )
 
         val job = async {
             uploadCoordinator.upload(config)
         }
 
-        delay(10)
+        delay(10.milliseconds)
         job.cancel(CancellationException("Test cancellation"))
 
         try {
@@ -375,7 +379,6 @@ class UploadCoordinatorTest {
 
         val items = listOf(sampleItem("local-1"), sampleItem("local-2"))
         coEvery { uploadRepository.postUpload(any(), any()) } returns successResponse("remote-1", "rev-1") andThen successResponse("remote-2", "rev-2")
-        coEvery { uploadRepository.markUploaded(any(), any()) } returns emptyList()
 
         val config = roomConfig(items)
         uploadCoordinator.uploadRoom(config)
@@ -397,7 +400,6 @@ class UploadCoordinatorTest {
 
         val items = listOf(sampleItem("local-1"), sampleItem("local-2"))
         coEvery { uploadRepository.postUpload(any(), any()) } returns errorResponse(404)
-        coEvery { uploadRepository.markUploaded(any(), any()) } returns emptyList()
 
         val config = roomConfig(items)
         uploadCoordinator.uploadRoom(config)
@@ -419,7 +421,6 @@ class UploadCoordinatorTest {
 
         val items = listOf(sampleItem("local-1"), sampleItem("local-2"))
         coEvery { uploadRepository.postUpload(any(), any()) } returns errorResponse(500)
-        coEvery { uploadRepository.markUploaded(any(), any()) } returns emptyList()
 
         val config = roomConfig(items)
         uploadCoordinator.uploadRoom(config)
@@ -513,7 +514,6 @@ class UploadCoordinatorTest {
 
         val items = listOf(Submission(id = "local-1"), Submission(id = "local-2"))
         coEvery { uploadRepository.postUpload(any(), any()) } returns errorResponse(404)
-        coEvery { uploadRepository.markUploaded(any(), any()) } returns emptyList()
 
         val config = submissionConfig(items)
         uploadCoordinator.upload(config)
@@ -535,7 +535,6 @@ class UploadCoordinatorTest {
 
         val items = listOf(Submission(id = "local-1"), Submission(id = "local-2"))
         coEvery { uploadRepository.postUpload(any(), any()) } returns errorResponse(500)
-        coEvery { uploadRepository.markUploaded(any(), any()) } returns emptyList()
 
         val config = submissionConfig(items)
         uploadCoordinator.upload(config)
@@ -568,7 +567,7 @@ class UploadCoordinatorTest {
     private fun errorResponse(code: Int): Response<JsonObject> =
         Response.error(code, "error".toResponseBody(null))
 
-    private fun roomConfig(items: List<SampleItem>) = RoomUploadConfig<SampleItem>(
+    private fun roomConfig(items: List<SampleItem>) = RoomUploadConfig(
         endpoint = "samples",
         modelClassName = "SampleItem",
         fetchPendingItems = { items },
@@ -578,13 +577,14 @@ class UploadCoordinatorTest {
         markUploaded = { _: List<UploadedItemResult> -> emptyList() }
     )
 
-    private fun submissionConfig(items: List<Submission>) = UploadConfig<Submission>(
+    private fun submissionConfig(items: List<Submission>) = UploadConfig(
         modelClass = Submission::class,
         endpoint = "submissions",
         fetchPendingItems = { items },
         serializer = UploadSerializer.Simple { JsonObject().apply { addProperty("localId", it.id) } },
         idExtractor = { it.id },
-        dbIdExtractor = null
+        dbIdExtractor = null,
+        markUploaded = { emptyList() }
     )
 
     private data class TestRoomItem(val id: String, val dbId: String?)

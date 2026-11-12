@@ -15,13 +15,21 @@ interface SubmitPhotosDao {
     suspend fun getUnuploaded(): List<SubmitPhotos>
 
     @Query("SELECT * FROM submit_photos WHERE id IN (:ids)")
-    suspend fun getByIds(ids: Array<String>): List<SubmitPhotos>
+    suspend fun getByIdsInternal(ids: List<String>): List<SubmitPhotos>
+
+    suspend fun getByIds(ids: Array<String>): List<SubmitPhotos> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.distinct().chunked(900).flatMap { chunk -> getByIdsInternal(chunk) }
+    }
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(photo: SubmitPhotos)
 
     @Query("UPDATE submit_photos SET uploaded = 1, _rev = :rev, _id = :remoteId WHERE id = :photoId")
     suspend fun markUploaded(photoId: String, rev: String, remoteId: String): Int
+
+    @Query("UPDATE submit_photos SET _rev = :rev, _id = :remoteId WHERE id = :photoId")
+    suspend fun recordRemoteDoc(photoId: String, rev: String, remoteId: String): Int
 
     @Update(entity = SubmitPhotos::class)
     suspend fun markUploadedBatchInternal(updates: List<UploadUpdate>)

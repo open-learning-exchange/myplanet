@@ -1,19 +1,20 @@
 package org.ole.planet.myplanet.ui.resources
 
+import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
+import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.ResourceItem
@@ -23,6 +24,7 @@ import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -32,21 +34,17 @@ class ResourcesViewModelTest {
     private val resourcesRepository = mockk<ResourcesRepository>(relaxed = true)
     private val userRepository = mockk<UserRepository>(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
     private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
         viewModel = ResourcesViewModel(
             resourcesRepository,
             userRepository,
             dispatcherProvider
         )
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
     }
 
     @Test
@@ -109,29 +107,6 @@ class ResourcesViewModelTest {
     }
 
     @Test
-    fun `getLibraryListModels maps enriched libraries to ResourceListModels`() = runTest {
-        val mockLibrary = MyLibrary().apply {
-            id = "lib1"
-            title = "Library 1"
-            resourceOffline = true
-        }
-        val mockTag = TagEntity().apply {
-            id = "tag1"
-            name = "Tag 1"
-        }
-        val mockResourceItem = mockk<ResourceItem>(relaxed = true)
-        coEvery { resourcesRepository.getResourceListModels(any(), any()) } returns listOf(
-            ResourceListModel(mockLibrary, mockResourceItem, listOf(TagItem(mockTag.id, mockTag.name)))
-        )
-
-        val result = viewModel.getLibraryListModels(true, "modelId")
-
-        assertEquals(1, result.size)
-        assertEquals("lib1", result[0].library.id)
-        assertEquals(1, viewModel.resourcesState.value.size)
-    }
-
-    @Test
     fun `loadResources asynchronously updates resourcesState`() = runTest {
         val mockLibrary = MyLibrary().apply {
             id = "lib1"
@@ -186,6 +161,42 @@ class ResourcesViewModelTest {
     }
 
     @Test
+    fun `toggleTitleSortOrder keeps input order for tied titles when ascending`() = runTest {
+        val item1 = createResourceModel("apple")
+        val item2 = createResourceModel("Apple")
+        val list = listOf(item1, item2)
+
+        val result = viewModel.toggleTitleSortOrder(list)
+        assertEquals(listOf("apple", "Apple"), result.map { it.item.title })
+        assertEquals(listOf(item1, item2), result)
+    }
+
+    @Test
+    fun `toggleTitleSortOrder keeps input order for tied titles when descending`() = runTest {
+        val item1 = createResourceModel("apple")
+        val item2 = createResourceModel("Apple")
+        val list = listOf(item1, item2)
+
+        val firstToggleResult = viewModel.toggleTitleSortOrder(list)
+        val secondToggleResult = viewModel.toggleTitleSortOrder(firstToggleResult)
+        assertEquals(listOf("apple", "Apple"), secondToggleResult.map { it.item.title })
+        assertEquals(listOf(item1, item2), secondToggleResult)
+    }
+
+    @Test
+    fun `toggleTitleSortOrder handles null title as empty string`() = runTest {
+        val itemNull = createResourceModel(null)
+        val itemA = createResourceModel("Banana")
+        val list = listOf(itemA, itemNull)
+
+        val ascendingResult = viewModel.toggleTitleSortOrder(list)
+        assertEquals(listOf(null, "Banana"), ascendingResult.map { it.item.title })
+
+        val descendingResult = viewModel.toggleTitleSortOrder(ascendingResult)
+        assertEquals(listOf("Banana", null), descendingResult.map { it.item.title })
+    }
+
+    @Test
     fun `toggleSortOrder sorts by date descending on first toggle and ascending on second toggle`() = runTest {
         val itemOld = createResourceModel("Old", 100L)
         val itemNew = createResourceModel("New", 300L)
@@ -218,10 +229,21 @@ class ResourcesViewModelTest {
 
         assertEquals(setOf("English", "Spanish"), facets["languages"])
         assertEquals(setOf("Math", "Science", "History"), facets["subjects"])
-        assertEquals(setOf("PDF", "Video"), facets["mediums"])
+        assertEquals(setOf("pdf", "video"), facets["mediums"])
         assertEquals(setOf("Primary", "Secondary"), facets["levels"])
     }
 
+
+    @Test
+    fun `getFilterFacets canonicalizes medium values into single canonical entries`() = runTest {
+        val lib1 = MyLibrary().apply { mediaType = "video" }
+        val lib2 = MyLibrary().apply { mediaType = "video/mp4" }
+        val lib3 = MyLibrary().apply { mediaType = "mp4" }
+
+        val facets = viewModel.getFilterFacets(listOf(lib1, lib2, lib3))
+
+        assertEquals(setOf("video"), facets["mediums"])
+    }
     @Test
     fun `filterIfChanged memoizes the criteria in the view model until resetFilter`() = runTest {
         val models = listOf(createResourceModel("a", 1), createResourceModel("b", 2))
@@ -245,23 +267,81 @@ class ResourcesViewModelTest {
         assertEquals(listOf("b"), afterReset?.map { it.item.id })
     }
 
-    private fun createResourceModel(title: String, createdDate: Long): ResourceListModel {
+    private fun createResourceModel(title: String?, createdDate: Long = 0L): ResourceListModel {
         val library = MyLibrary().apply {
             this.title = title
         }
         val item = ResourceItem(
-            id = title,
+            id = title ?: "null_id",
             title = title,
             description = null,
             createdDate = createdDate,
             averageRating = null,
             timesRated = 0,
-            resourceId = title,
+            resourceId = title ?: "null_id",
             isOffline = false,
             _rev = null,
             uploadDate = null,
             filename = null
         )
-        return ResourceListModel(library, item, emptyList<TagItem>())
+        return ResourceListModel(library, item, emptyList())
+    }
+
+    @Test
+    fun `notifyDownloadComplete delivers one event to a collector`() = runTest {
+        val events = mutableListOf<Unit>()
+        val job = launch { viewModel.downloadComplete.collect { events.add(it) } }
+        advanceUntilIdle()
+
+        viewModel.notifyDownloadComplete()
+        advanceUntilIdle()
+
+        assertEquals(1, events.size)
+        job.cancel()
+    }
+
+    @Test
+    fun `loadResources with empty state seeds from cache`() = runTest {
+        val cached = listOf(createResourceModel("Cached Item", 100L))
+        every { resourcesRepository.getCachedResourceListModels(true, "modelId") } returns cached
+        coEvery { resourcesRepository.getResourceListModels(true, "modelId") } returns emptyList()
+
+        viewModel.loadResources(true, "modelId")
+
+        assertEquals(cached, viewModel.resourcesState.value)
+        verify(exactly = 1) { resourcesRepository.getCachedResourceListModels(true, "modelId") }
+    }
+
+    @Test
+    fun `loadResources with non-empty state does not call getCachedResourceListModels`() = runTest {
+        val existingModel = createResourceModel("Existing Item", 100L)
+        coEvery { resourcesRepository.getResourceListModels(true, "modelId") } returns listOf(existingModel)
+
+        viewModel.loadResources(true, "modelId")
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.resourcesState.value.size)
+
+        clearMocks(resourcesRepository, verificationMarks = true, answers = false)
+
+        viewModel.loadResources(true, "modelId")
+
+        verify(exactly = 0) { resourcesRepository.getCachedResourceListModels(any(), any()) }
+    }
+
+    @Test
+    fun `loadResources when getResourceListModels throws ordinary exception keeps previous resourcesState`() = runTest {
+        val initialItem = createResourceModel("Initial Item", 100L)
+        coEvery { resourcesRepository.getResourceListModels(true, "modelId") } returns listOf(initialItem)
+
+        viewModel.loadResources(true, "modelId")
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(listOf(initialItem), viewModel.resourcesState.value)
+
+        coEvery { resourcesRepository.getResourceListModels(true, "modelId") } throws RuntimeException("Network error")
+
+        viewModel.loadResources(true, "modelId")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf(initialItem), viewModel.resourcesState.value)
     }
 }

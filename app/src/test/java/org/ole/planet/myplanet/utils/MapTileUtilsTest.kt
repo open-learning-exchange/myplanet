@@ -117,7 +117,6 @@ class MapTileUtilsTest {
 
     @Test
     fun copyAssets_continuesOnPartialFailure() {
-        val dhulikhelContent = "dhulikhel content".toByteArray()
         val somaliaContent = "somalia content".toByteArray()
 
         // The first file throws an exception

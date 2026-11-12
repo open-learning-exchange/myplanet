@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
-import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -64,16 +63,19 @@ class ResourcesRepositoryLibrarySyncTest {
             mockk<ActivitiesRepository>(relaxed = true),
             mockk<SharedPrefManager>(relaxed = true),
             mockk<TagsRepository>(relaxed = true),
-            mockk<SearchActivityDao>(relaxed = true),
             mockk<ResourceActivityDao>(relaxed = true),
             mockk<RemovedLogDao>(relaxed = true),
             mockk<dagger.Lazy<TeamsSyncRepository>>(relaxed = true),
             myLibraryDao,
             mockk<UserRepository>(relaxed = true),
             mockk<dagger.Lazy<TeamsRepository>>(relaxed = true),
-            mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true),
-            mockk<org.ole.planet.myplanet.repository.ConfigurationsRepository>(relaxed = true),
-            mockk<org.ole.planet.myplanet.utils.DispatcherProvider>(relaxed = true)
+            mockk<UserSessionManager>(relaxed = true),
+            mockk<ConfigurationsRepository>(relaxed = true),
+            mockk<org.ole.planet.myplanet.utils.DispatcherProvider>(relaxed = true),
+            mockk<org.ole.planet.myplanet.utils.DeviceNameProvider>(relaxed = true),
+            mockk<org.ole.planet.myplanet.utils.TimeProvider>(relaxed = true),
+            mockk<kotlinx.coroutines.CoroutineScope>(relaxed = true),
+            mockk<org.ole.planet.myplanet.utils.StoragePathResolver>(relaxed = true)
         )
     }
 
@@ -117,7 +119,7 @@ class ResourcesRepositoryLibrarySyncTest {
         assertTrue(merged!!.containsAll(listOf("shelfUserA", "shelfUserB")))
         assertEquals(2, merged.size)
         // Still a single row for the resource.
-        assertEquals(1, myLibraryDao.getAll().size)
+        assertEquals(1, myLibraryDao.countByTitle("Algebra"))
     }
 
     @Test

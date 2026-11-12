@@ -1,44 +1,74 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
+import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.slot
+import io.mockk.unmockkAll
+import java.io.IOException
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.RetryDao
 import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.utils.TestTimeProvider
+import org.ole.planet.myplanet.utils.UrlUtils
+import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RetryRepositoryImplTest {
     private lateinit var retryDao: RetryDao
+    private lateinit var apiInterface: ApiInterface
     private lateinit var repository: RetryRepositoryImpl
     private val timeProvider = TestTimeProvider(currentTime = 1_700_000_000_000L)
 
     @After
     fun tearDown() {
-        io.mockk.unmockkAll()
+        unmockkAll()
     }
 
     @Before
     fun setUp() {
+        MockKAnnotations.init(this, relaxed = true)
+        mockkStatic(Log::class)
+        every { Log.w(any<String>(), any<String>(), any<Throwable>()) } returns 0
+        every { Log.e(any<String>(), any<String>(), any<Throwable>()) } returns 0
+
         retryDao = mockk(relaxed = true)
-        repository = RetryRepositoryImpl(retryDao, timeProvider)
+        apiInterface = mockk(relaxed = true)
+        mockkObject(UrlUtils)
+        every { UrlUtils.getUrl() } returns "http://mock.url"
+        every { UrlUtils.header } returns "mockHeader"
+        repository = RetryRepositoryImpl(retryDao, apiInterface, timeProvider)
     }
 
     @Test
-    fun `enqueue inserts a created operation`() = runTest {
+    fun `recordFailure inserts when none exists`() = runTest {
+        coEvery { retryDao.findExistingId("itemId", "testUploadType") } returns null
         val insertedSlot = slot<RetryOperation>()
         coEvery { retryDao.insert(capture(insertedSlot)) } returns Unit
 
         val retryFailure = RetryFailure("itemId", "test error", 500)
-        repository.enqueue(
+        repository.recordFailure(
             "testUploadType", retryFailure, "testPayload", "testEndpoint",
             "POST", "testDbId", "TestClass", "testUserId"
         )
@@ -55,15 +85,48 @@ class RetryRepositoryImplTest {
         assertEquals(RetryOperation.STATUS_PENDING, op.status)
         assertEquals(1, op.attemptCount)
         assertEquals(500, op.httpCode)
+        coVerify(exactly = 0) { retryDao.recordFailedAttempt(any(), any(), any(), any()) }
     }
 
     @Test
-    fun `updateAttempt delegates to recordFailedAttempt`() = runTest {
-        coEvery { retryDao.recordFailedAttempt("opId", "Test Error", 503, timeProvider.now()) } returns 1
+    fun `recordFailure marks failed when one exists`() = runTest {
+        coEvery { retryDao.findExistingId("itemId", "testUploadType") } returns "existingOpId"
+        coEvery { retryDao.recordFailedAttempt("existingOpId", "test error", 500, timeProvider.now()) } returns 1
 
-        repository.updateAttempt("opId", RetryFailure("itemId", "Test Error", 503))
+        val retryFailure = RetryFailure("itemId", "test error", 500)
+        repository.recordFailure(
+            "testUploadType", retryFailure, "testPayload", "testEndpoint",
+            "POST", "testDbId", "TestClass", "testUserId"
+        )
 
-        coVerify { retryDao.recordFailedAttempt("opId", "Test Error", 503, timeProvider.now()) }
+        coVerify { retryDao.recordFailedAttempt("existingOpId", "test error", 500, timeProvider.now()) }
+        coVerify(exactly = 0) { retryDao.insert(any()) }
+    }
+
+    @Test
+    fun `recordFailure concurrent calls for same item inserts only once`() = runTest {
+        var existingOpId: String? = null
+        coEvery { retryDao.findExistingId("item1", "type1") } coAnswers {
+            val result = existingOpId
+            delay(10.milliseconds)
+            result
+        }
+        coEvery { retryDao.insert(any()) } answers {
+            val op = firstArg<RetryOperation>()
+            existingOpId = op.id
+        }
+
+        val failure = RetryFailure("item1", "error msg", 500)
+        val job1 = launch {
+            repository.recordFailure("type1", failure, "{}", "endpoint", "POST", null, "Model", null)
+        }
+        val job2 = launch {
+            repository.recordFailure("type1", failure, "{}", "endpoint", "POST", null, "Model", null)
+        }
+        job1.join()
+        job2.join()
+
+        coVerify(exactly = 1) { retryDao.insert(any()) }
     }
 
     @Test
@@ -112,6 +175,190 @@ class RetryRepositoryImplTest {
     }
 
     @Test
+    fun `executeOperation 2xx returns Success and marks completed`() = runTest {
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = "{}"
+            endpoint = "test"
+            httpMethod = "PUT"
+            dbId = "doc1"
+        }
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } returns Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
+
+        val result = repository.executeOperation(op)
+
+        assertTrue(result is RetryOperationResult.Success)
+        coVerify { retryDao.markInProgress("op1") }
+        coVerify { retryDao.markCompleted("op1", timeProvider.now()) }
+        coVerify(exactly = 0) { retryDao.recordFailedAttempt(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `executeOperation 409 conflict returns Success and marks completed`() = runTest {
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = "{}"
+            endpoint = "test"
+            httpMethod = "PUT"
+            dbId = "doc1"
+        }
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } returns Response.error(409, "Conflict".toResponseBody(null))
+
+        val result = repository.executeOperation(op)
+
+        assertTrue(result is RetryOperationResult.Success)
+        coVerify { retryDao.markInProgress("op1") }
+        coVerify { retryDao.markCompleted("op1", timeProvider.now()) }
+    }
+
+    @Test
+    fun `executeOperation 5xx error returns RetryableFailure and records failure`() = runTest {
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = "{}"
+            endpoint = "test"
+            httpMethod = "PUT"
+            dbId = "doc1"
+        }
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } returns Response.error(500, "Server Error".toResponseBody(null))
+
+        val result = repository.executeOperation(op)
+
+        assertTrue(result is RetryOperationResult.RetryableFailure)
+        assertEquals(500, (result as RetryOperationResult.RetryableFailure).httpCode)
+        coVerify { retryDao.recordFailedAttempt("op1", "HTTP 500", 500, timeProvider.now()) }
+    }
+
+    @Test
+    fun `executeOperation IOException returns RetryableFailure and records failure`() = runTest {
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = "{}"
+            endpoint = "test"
+            httpMethod = "PUT"
+            dbId = "doc1"
+        }
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } throws IOException("Connection failed")
+
+        val result = repository.executeOperation(op)
+
+        assertTrue(result is RetryOperationResult.RetryableFailure)
+        assertEquals("Connection failed", (result as RetryOperationResult.RetryableFailure).message)
+        coVerify { retryDao.recordFailedAttempt("op1", "Connection failed", null, timeProvider.now()) }
+    }
+
+    @Test
+    fun `executeOperation 4xx client error returns TerminalFailure and records failure`() = runTest {
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = "{}"
+            endpoint = "test"
+            httpMethod = "PUT"
+            dbId = "doc1"
+        }
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } returns Response.error(400, "Bad Request".toResponseBody(null))
+
+        val result = repository.executeOperation(op)
+
+        assertTrue(result is RetryOperationResult.TerminalFailure)
+        assertEquals(400, (result as RetryOperationResult.TerminalFailure).httpCode)
+        coVerify { retryDao.recordFailedAttempt("op1", "Non-retryable HTTP 400", 400, timeProvider.now()) }
+    }
+
+    @Test
+    fun `executeOperation invalid payload returns TerminalFailure and records failure`() = runTest {
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = "invalid-json"
+            endpoint = "test"
+            httpMethod = "PUT"
+            dbId = "doc1"
+        }
+
+        val result = repository.executeOperation(op)
+
+        assertTrue(result is RetryOperationResult.TerminalFailure)
+        assertEquals("Invalid payload", (result as RetryOperationResult.TerminalFailure).message)
+        coVerify { retryDao.recordFailedAttempt("op1", "Invalid payload", null, timeProvider.now()) }
+    }
+
+    @Test
+    fun `executeOperation array payload returns TerminalFailure and records failure`() = runTest {
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = "[1,2]"
+            endpoint = "test"
+            httpMethod = "PUT"
+            dbId = "doc1"
+        }
+
+        val result = repository.executeOperation(op)
+
+        assertTrue(result is RetryOperationResult.TerminalFailure)
+        assertEquals("Invalid payload", (result as RetryOperationResult.TerminalFailure).message)
+        coVerify { retryDao.recordFailedAttempt("op1", "Invalid payload", null, timeProvider.now()) }
+    }
+
+    @Test
+    fun `executeOperation valid object payload reaches apiInterface with equal kotlinx JsonObject`() = runTest {
+        val payloadJson = """{"key":"value","num":123}"""
+        val expectedJsonObject = Json.parseToJsonElement(payloadJson).jsonObject
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = payloadJson
+            endpoint = "test"
+            httpMethod = "PUT"
+            dbId = "doc1"
+        }
+        val payloadSlot = slot<kotlinx.serialization.json.JsonObject>()
+        coEvery { apiInterface.putDoc(any(), any(), any(), capture(payloadSlot)) } returns Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
+
+        val result = repository.executeOperation(op)
+
+        assertTrue(result is RetryOperationResult.Success)
+        assertEquals(expectedJsonObject, payloadSlot.captured)
+    }
+
+    @Test
+    fun `executeOperation CancellationException is rethrown without recording failure`() = runTest {
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = "{}"
+            endpoint = "test"
+            httpMethod = "PUT"
+            dbId = "doc1"
+        }
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } throws CancellationException("Job cancelled")
+
+        try {
+            repository.executeOperation(op)
+            fail("Should have thrown CancellationException")
+        } catch (e: CancellationException) {
+            assertEquals("Job cancelled", e.message)
+        }
+
+        coVerify(exactly = 0) { retryDao.recordFailedAttempt(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { retryDao.markCompleted(any(), any()) }
+    }
+
+    @Test
+    fun `executeOperation create is completed without being sent`() = runTest {
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = "{}"
+            endpoint = "test"
+            httpMethod = "POST"
+        }
+
+        val result = repository.executeOperation(op)
+
+        assertTrue(result is RetryOperationResult.Success)
+        coVerify { retryDao.markCompleted("op1", timeProvider.now()) }
+        coVerify(exactly = 0) { apiInterface.postDoc(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { retryDao.markInProgress(any()) }
+    }
+
+    @Test
     fun `getPending returns dao result for current time`() = runTest {
         val operation1 = RetryOperation().apply { attemptCount = 1; maxAttempts = 5 }
         coEvery { retryDao.getPending(timeProvider.now()) } returns listOf(operation1)
@@ -123,22 +370,21 @@ class RetryRepositoryImplTest {
     }
 
     @Test
-    fun `getPendingCount returns dao active count`() = runTest {
+    fun `getRetryQueueSnapshot returns snapshot with active count and pending ops`() = runTest {
+        val op1 = RetryOperation().apply { id = "op1"; attemptCount = 1; maxAttempts = 5 }
         coEvery { retryDao.getActiveCount() } returns 10L
+        coEvery { retryDao.getPendingPreview(timeProvider.now(), 10) } returns listOf(op1)
+        coEvery { retryDao.getPendingDueCount(timeProvider.now()) } returns 15L
 
-        val count = repository.getPendingCount()
+        val snapshot = repository.getRetryQueueSnapshot()
 
-        assertEquals(10L, count)
-    }
+        assertEquals(10L, snapshot.pendingCount)
+        assertEquals(1, snapshot.pendingOps.size)
+        assertEquals(op1, snapshot.pendingOps[0])
+        assertEquals(false, snapshot.isProcessing)
+        assertEquals(15L, snapshot.pendingDueCount)
 
-    @Test
-    fun `getExistingOperation returns dao result`() = runTest {
-        val operation = RetryOperation()
-        coEvery { retryDao.findExisting("item123", "typeA") } returns operation
-
-        val result = repository.getExistingOperation("item123", "typeA")
-
-        assertEquals(operation, result)
+        coVerify(exactly = 0) { retryDao.getPending(any()) }
     }
 
     @Test
@@ -150,13 +396,6 @@ class RetryRepositoryImplTest {
     }
 
     @Test
-    fun `deletePendingAndAbandonedOperations delegates to dao`() = runTest {
-        repository.deletePendingAndAbandonedOperations()
-
-        coVerify { retryDao.deletePendingAndAbandoned() }
-    }
-
-    @Test
     fun `recoverStuckOperations schedules a near-term retry`() = runTest {
         repository.recoverStuckOperations()
 
@@ -164,8 +403,16 @@ class RetryRepositoryImplTest {
     }
 
     @Test
+    fun `tryStartProcessing returns true then false until finishProcessing`() {
+        assertEquals(true, repository.tryStartProcessing())
+        assertEquals(false, repository.tryStartProcessing())
+        repository.finishProcessing()
+        assertEquals(true, repository.tryStartProcessing())
+    }
+
+    @Test
     fun `safeClearQueue returns false and skips deletion while processing`() = runTest {
-        repository.setProcessing(true)
+        assertTrue(repository.tryStartProcessing())
 
         val result = repository.safeClearQueue()
 
@@ -174,8 +421,9 @@ class RetryRepositoryImplTest {
     }
 
     @Test
-    fun `safeClearQueue returns true and deletes pending and abandoned when idle`() = runTest {
-        repository.setProcessing(false)
+    fun `safeClearQueue returns true and deletes pending and abandoned after finishProcessing`() = runTest {
+        assertTrue(repository.tryStartProcessing())
+        repository.finishProcessing()
 
         val result = repository.safeClearQueue()
 

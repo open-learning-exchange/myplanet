@@ -15,23 +15,18 @@ import com.bumptech.glide.Glide
 import com.google.android.material.textfield.TextInputLayout
 import com.google.gson.JsonObject
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.AlertInputBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.VoicesEditActions
+import org.ole.planet.myplanet.repository.VoicesEditor
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.ui.teams.members.MembersDetailInfo
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 object VoicesActions {
-    private val dateFormatter = ThreadLocal.withInitial { SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()) }
-
     data class EditDialogComponents(
         val binding: AlertInputBinding,
         val view: View,
@@ -60,8 +55,8 @@ object VoicesActions {
         if (!imageUrls.isNullOrEmpty()) {
             imageUrls.forEach { imageUrl ->
                 try {
-                    val imgObject = JsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
-                    val path = JsonUtils.getString("imageUrl", imgObject)
+                    val imgObject = GsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
+                    val path = GsonUtils.getString("imageUrl", imgObject)
                     if (path.isNotEmpty()) {
                         addImageWithRemoveIcon(context, path, imageLayout, imagesToRemove)
                     }
@@ -132,7 +127,7 @@ object VoicesActions {
         isEdit: Boolean,
         components: EditDialogComponents,
         news: News?,
-        repository: VoicesEditActions,
+        repository: VoicesEditor,
         currentUser: UserEntity?,
         imageList: List<String>?,
         listener: OnNewsItemClickListener?,
@@ -173,7 +168,7 @@ object VoicesActions {
         currentUser: UserEntity?,
         listener: OnNewsItemClickListener?,
         viewHolder: RecyclerView.ViewHolder,
-        repository: VoicesEditActions,
+        repository: VoicesEditor,
         updateReplyButton: (RecyclerView.ViewHolder, News?, Int) -> Unit = { _, _, _ -> },
         launchAction: (suspend () -> Unit) -> Unit
     ) {
@@ -191,10 +186,15 @@ object VoicesActions {
             components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
             loadExistingImages(context, news, components.imageLayout, imagesToRemove)
         }
+        val imagesBeforeDialog = listener?.getCurrentImageList()?.toList().orEmpty()
         val dialog = AlertDialog.Builder(context, R.style.ReplyAlertDialog)
             .setView(components.view)
             .setPositiveButton(R.string.button_submit, null)
-            .setNegativeButton(R.string.cancel) { d, _ -> d.dismiss() }
+            .setNegativeButton(R.string.cancel) { d, _ ->
+                listener?.restoreImages(imagesBeforeDialog)
+                d.dismiss()
+            }
+            .setOnCancelListener { listener?.restoreImages(imagesBeforeDialog) }
             .create()
 
         dialog.show()
@@ -208,26 +208,11 @@ object VoicesActions {
         }
     }
 
-    suspend fun showMemberDetails(
-        userModel: UserEntity?,
-        activitiesRepository: ActivitiesRepository
+    fun showMemberDetails(
+        userModel: UserEntity?
     ): MembersDetailFragment? {
         if (userModel == null) return null
-        val userName = "${userModel.firstName} ${userModel.lastName}".trim().ifBlank { userModel.name }
-        val visitStats = activitiesRepository.getMemberVisitStats(userModel.id, userModel.name)
-        val fragment = MembersDetailFragment.newInstance(
-            userName.toString(),
-            userModel.email.toString(),
-            userModel.dob.toString().substringBefore("T"),
-            userModel.language.toString(),
-            userModel.phoneNumber.toString(),
-            visitStats.offlineVisitCount.toString(),
-            (visitStats.lastVisit?.let { dateFormatter.get()?.format(Date(it)) } ?: "No logout record found"),
-            "${userModel.firstName} ${userModel.lastName}",
-            userModel.level.toString(),
-            userModel.userImage
-        )
-        return fragment
+        return MembersDetailFragment.newInstance(MembersDetailInfo.fromUser(userModel))
     }
 
 }

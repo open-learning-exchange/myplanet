@@ -6,22 +6,44 @@ import android.net.Uri
 import android.util.Base64
 import androidx.core.net.toUri
 import io.mockk.MockKAnnotations
+import io.mockk.clearStaticMockk
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.unmockkAll
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import java.io.ByteArrayInputStream
 import java.io.File
 import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 
 class UserEntityEncodeImageTest {
+
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkStatic(Base64::class)
+            // Mock toUri extension function
+            mockkStatic(Uri::class)
+            mockkStatic("androidx.core.net.UriKt")
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkStatic(Base64::class)
+            unmockkStatic(Uri::class)
+            unmockkStatic("androidx.core.net.UriKt")
+        }
+    }
 
     @MockK
     lateinit var mockContext: Context
@@ -44,11 +66,6 @@ class UserEntityEncodeImageTest {
         MainApplication.testContext = mockContext
         every { mockContext.contentResolver } returns mockContentResolver
 
-        mockkStatic(Base64::class)
-        // Mock toUri extension function
-        mockkStatic(Uri::class)
-        mockkStatic("androidx.core.net.UriKt")
-
         realmUser = UserEntity()
     }
 
@@ -58,7 +75,7 @@ class UserEntityEncodeImageTest {
             MainApplication.testContext = originalContext
         } finally {
             originalContext = null
-            unmockkAll()
+            clearStaticMockk(Base64::class, Uri::class, Class.forName("androidx.core.net.UriKt").kotlin)
         }
     }
 
@@ -66,6 +83,24 @@ class UserEntityEncodeImageTest {
     fun testEncodeImageToBase64NullOrEmpty() {
         assertNull(realmUser.encodeImageToBase64(null))
         assertNull(realmUser.encodeImageToBase64(""))
+    }
+
+    @Test
+    fun testEncodeImageToBase64HttpsUrlReturnsNull() {
+        val url = "https://example.com/_users/123/img.jpg"
+        assertNull(realmUser.encodeImageToBase64(url))
+    }
+
+    @Test
+    fun testEncodeImageToBase64HttpUrlUpperCaseReturnsNull() {
+        val url = "HTTP://EXAMPLE.COM/IMAGE.JPG"
+        assertNull(realmUser.encodeImageToBase64(url))
+    }
+
+    @Test
+    fun testEncodeImageToBase64NonExistentFileReturnsNull() {
+        val nonExistentPath = "/path/to/non_existent_file.jpg"
+        assertNull(realmUser.encodeImageToBase64(nonExistentPath))
     }
 
     @Test

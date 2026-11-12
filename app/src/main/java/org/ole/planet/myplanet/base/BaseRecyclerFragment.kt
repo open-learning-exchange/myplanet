@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.base
 
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,16 +12,17 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.ui.resources.DownloadOfferTracker
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities.toast
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
-    @Inject lateinit var dispatcherProvider: DispatcherProvider
     var subjects: MutableSet<String> = mutableSetOf()
     var languages: MutableSet<String> = mutableSetOf()
     var mediums: MutableSet<String> = mutableSetOf()
@@ -84,7 +86,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             }
             if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
                 if (shouldShowDownloadDialog) {
-                    resources?.let { showDownloadDialog(it) }
+                    resources?.let { offerDownloads(it) }
                 }
             }
             startPostponedEnterTransition()
@@ -94,9 +96,17 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 if (shouldShowDownloadDialog) {
                     val userId = sharedPrefManager.getUserId().ifEmpty { "--" }
                     val libraryList = resourcesRepository.getLibraryListForUser(userId)
-                    showDownloadDialog(libraryList)
+                    offerDownloads(libraryList)
                 }
             }
+        }
+    }
+
+    private fun offerDownloads(libraries: List<MyLibrary?>) {
+        val userId = sharedPrefManager.getUserId().ifEmpty { "--" }
+        val ids = libraries.mapNotNull { it?.resourceId ?: it?.id }
+        if (ids.isNotEmpty() && DownloadOfferTracker.shouldOffer(userId, ids)) {
+            showDownloadDialog(libraries)
         }
     }
 
@@ -120,15 +130,15 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    open fun addToMyList(onComplete: (() -> Unit)? = null) {
+    open fun addToMyList(onComplete: ((succeeded: Boolean) -> Unit)? = null) {
         if (isAddInProgress) {
-            onComplete?.invoke()
+            onComplete?.invoke(false)
             return
         }
 
         val itemsToAdd = selectedItems?.toList() ?: emptyList()
         if (itemsToAdd.isEmpty()) {
-            onComplete?.invoke()
+            onComplete?.invoke(false)
             return
         }
 
@@ -137,14 +147,14 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
         itemsToAdd.forEach { item ->
             when (item) {
-                is MyLibrary -> (item.resourceId.takeIf { !it.isNullOrBlank() } ?: item.id.takeIf { !it.isNullOrBlank() } ?: item._id)?.let(resourceIds::add)
-                is MyCourse -> (item.courseId.takeIf { !it.isNullOrBlank() } ?: item.id.takeIf { !it.isNullOrBlank() } ?: item._id)?.let(courseIds::add)
+                is MyLibrary -> (item.resourceId.takeIf { !it.isNullOrBlank() } ?: item.id.takeIf { it.isNotBlank() } ?: item._id)?.let(resourceIds::add)
+                is MyCourse -> (item.courseId.takeIf { !it.isNullOrBlank() } ?: item.id.takeIf { it.isNotBlank() } ?: item._id)?.let(courseIds::add)
                 else -> {}
             }
         }
 
         if (resourceIds.isEmpty() && courseIds.isEmpty()) {
-            onComplete?.invoke()
+            onComplete?.invoke(false)
             return
         }
 
@@ -152,6 +162,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         setJoinInProgress(true)
 
         viewLifecycleOwner.lifecycleScope.launch {
+            var succeeded = false
             try {
                 val userId = userRepository.getUserModel()?.id ?: return@launch
                 var libraryAdded = false
@@ -183,17 +194,19 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 postAddRefresh()
 
                 errorOccurred?.let {
-                    it.printStackTrace()
+                    if (it is CancellationException) throw it
+                    Log.w(TAG, "addToMyList failed", it)
                     toast(activity, "An error occurred: ${it.message}")
                     return@launch
                 }
 
                 if (libraryAdded) toast(activity, getString(R.string.added_to_my_library))
                 if (courseAdded) toast(activity, getString(R.string.added_to_my_courses))
+                succeeded = true
             } finally {
                 isAddInProgress = false
                 setJoinInProgress(false)
-                onComplete?.invoke()
+                onComplete?.invoke(succeeded)
             }
         }
     }
@@ -237,10 +250,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         selectedItems?.clear()
     }
 
-    fun countSelected(): Int {
-        return selectedItems?.size ?: 0
-    }
-
     override fun onDestroyView() {
         super.onDestroyView()
         if (::recyclerView.isInitialized) {
@@ -262,8 +271,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     companion object {
+        private const val TAG = "BaseRecyclerFragment"
         private val noDataMessages = mapOf(
             "courses" to R.string.no_courses,
+            "courses_filtered" to R.string.no_results_for_filter,
             "resources" to R.string.no_resources,
             "resources_filtered" to R.string.no_results_for_filter,
             "finances" to R.string.no_finance_record,
@@ -277,6 +288,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             "survey" to R.string.no_surveys,
             "survey_submission" to R.string.no_survey_submissions,
             "exam_submission" to R.string.no_exam_submissions,
+            "submissions_filtered" to R.string.no_results_for_filter,
             "team" to R.string.no_teams,
             "enterprise" to R.string.no_enterprise,
             "chatHistory" to R.string.no_chats,

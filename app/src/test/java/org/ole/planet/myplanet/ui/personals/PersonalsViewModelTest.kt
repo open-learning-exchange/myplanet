@@ -18,6 +18,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.PersonalUploadResult
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
@@ -76,7 +77,7 @@ class PersonalsViewModelTest {
     @Test
     fun `uploadPersonal transitions through Loading to Success on a successful upload`() = runTest {
         val personal = Personal().apply { id = "p-1"; title = "Title" }
-        coEvery { personalsRepository.uploadPersonal(personal) } returns "uploaded-id"
+        coEvery { personalsRepository.uploadPersonal(personal) } returns PersonalUploadResult.Success("uploaded-id")
 
         assertEquals(UploadState.Idle, viewModel.uploadState.value)
 
@@ -85,6 +86,21 @@ class PersonalsViewModelTest {
 
         assertEquals(UploadState.Success("uploaded-id"), viewModel.uploadState.value)
         coVerify { personalsRepository.uploadPersonal(personal) }
+    }
+
+    @Test
+    fun `uploadPersonal transitions through Loading to Error on AttachmentFailed`() = runTest {
+        val personal = Personal().apply { id = "p-1"; title = "Title" }
+        val errorMessage = "Uploaded document but failed to upload attachment: HTTP 500"
+        coEvery { personalsRepository.uploadPersonal(personal) } returns
+            PersonalUploadResult.AttachmentFailed(errorMessage)
+
+        assertEquals(UploadState.Idle, viewModel.uploadState.value)
+
+        viewModel.uploadPersonal(personal)
+        advanceUntilIdle()
+
+        assertEquals(UploadState.Error(errorMessage), viewModel.uploadState.value)
     }
 
     @Test
@@ -114,7 +130,7 @@ class PersonalsViewModelTest {
     @Test
     fun `uploadState starts as Idle and resetUploadState returns it to Idle`() = runTest {
         val personal = Personal().apply { id = "p-1"; title = "Title" }
-        coEvery { personalsRepository.uploadPersonal(personal) } returns "uploaded-id"
+        coEvery { personalsRepository.uploadPersonal(personal) } returns PersonalUploadResult.Success("uploaded-id")
 
         assertEquals(UploadState.Idle, viewModel.uploadState.value)
 

@@ -5,9 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
-import android.os.Build
-import androidx.core.net.toUri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,8 +21,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.google.gson.JsonObject
 import java.io.File
-import javax.inject.Inject
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
@@ -31,21 +30,18 @@ import org.ole.planet.myplanet.databinding.ImageThumbBinding
 import org.ole.planet.myplanet.databinding.VideoThumbBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.ReplyActivity
 import org.ole.planet.myplanet.ui.voices.VoicesActions
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.VoiceImagePreparer
 
 abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickListener {
     lateinit var imageList: MutableList<String>
     lateinit var videoList: MutableList<String>
 
-    @Inject
-    lateinit var activitiesRepository: ActivitiesRepository
     protected var llImage: ViewGroup? = null
     @JvmField
     protected var llVideo: ViewGroup? = null
@@ -60,63 +56,33 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         super.onCreate(savedInstanceState)
         imageList = mutableListOf()
         videoList = mutableListOf()
-        openFolderLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                val data = result.data
-                val clipData = data?.clipData
-                if (clipData != null) {
-                    for (i in 0 until clipData.itemCount) {
-                        val uri = clipData.getItemAt(i).uri
-                        processImageUri(uri, result.resultCode)
-                    }
-                } else {
-                    val uri = data?.data
-                    processImageUri(uri, result.resultCode)
-                }
-            }
-        }
-        openVideoLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                val data = result.data
-                val clipData = data?.clipData
-                if (clipData != null) {
-                    for (i in 0 until clipData.itemCount) {
-                        val uri = clipData.getItemAt(i).uri
-                        processVideoUri(uri, result.resultCode)
-                    }
-                } else {
-                    val uri = data?.data
-                    processVideoUri(uri, result.resultCode)
-                }
-            }
-        }
-        openMediaLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                val data = result.data
-                val clipData = data?.clipData
-                if (clipData != null) {
-                    for (i in 0 until clipData.itemCount) {
-                        val uri = clipData.getItemAt(i).uri
-                        processMediaUri(uri, result.resultCode)
-                    }
-                } else {
-                    val uri = data?.data
-                    processMediaUri(uri, result.resultCode)
-                }
-            }
-        }
+        openFolderLauncher = registerMediaPicker(MediaKind.IMAGE)
+        openVideoLauncher = registerMediaPicker(MediaKind.VIDEO)
+        openMediaLauncher = registerMediaPicker(MediaKind.ANY)
         replyActivityLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == Activity.RESULT_OK) {
                 val newsId = result.data?.getStringExtra("newsId")
                 newsId.let { adapterNews?.updateReplyBadge(it) }
-                adapterNews?.submitList(adapterNews?.currentList?.toList())
+                val recyclerView = view?.findViewById<RecyclerView>(R.id.rv_news)
+                val layoutManager = recyclerView?.layoutManager as? LinearLayoutManager
+                val scrollPosition = layoutManager?.findFirstVisibleItemPosition() ?: 0
+                val scrollOffset = layoutManager?.findViewByPosition(scrollPosition)?.top ?: 0
+                adapterNews?.submitList(adapterNews?.currentList?.toList()) {
+                    layoutManager?.scrollToPositionWithOffset(scrollPosition, scrollOffset)
+                }
             }
         }
     }
 
     override fun onDataChanged() {
-        adapterNews?.submitList(adapterNews?.currentList?.toList())
+        val recyclerView = view?.findViewById<RecyclerView>(R.id.rv_news)
+        val layoutManager = recyclerView?.layoutManager as? LinearLayoutManager
+        val scrollPosition = layoutManager?.findFirstVisibleItemPosition() ?: 0
+        val scrollOffset = layoutManager?.findViewByPosition(scrollPosition)?.top ?: 0
+        adapterNews?.submitList(adapterNews?.currentList?.toList()) {
+            layoutManager?.scrollToPositionWithOffset(scrollPosition, scrollOffset)
+        }
     }
 
     override fun onReplyPosted(newsId: String?) {
@@ -141,7 +107,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         if (!isAdded) return
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val fragment = VoicesActions.showMemberDetails(userModel, activitiesRepository) ?: return@launch
+            val fragment = VoicesActions.showMemberDetails(userModel) ?: return@launch
             if (!isAdded) return@launch
             FragmentNavigator.replaceFragment(
                 requireActivity().supportFragmentManager,
@@ -188,22 +154,83 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         return if (::videoList.isInitialized) videoList else null
     }
 
-    private fun processImageUri(uri: Uri?, resultCode: Int) {
-        if (uri == null) return
+    override fun restoreImages(snapshot: List<String>) {
+        if (::imageList.isInitialized) imageList.retainAll(snapshot.toSet())
+    }
 
-        val path: String? = FileUtils.resolveUriToPath(requireActivity(), uri)
+    private enum class MediaKind { IMAGE, VIDEO, ANY }
 
+    private fun registerMediaPicker(accept: MediaKind): ActivityResultLauncher<Intent> =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
+            if (result.resultCode != Activity.RESULT_OK) return@registerForActivityResult
+            val data = result.data
+            val clipData = data?.clipData
+            val uris = if (clipData != null) {
+                (0 until clipData.itemCount).map { clipData.getItemAt(it).uri }
+            } else {
+                listOf(data?.data)
+            }
+            if (view == null) return@registerForActivityResult
+            handlePickedMedia(uris.filterNotNull(), accept, result.resultCode)
+        }
+
+    private fun handlePickedMedia(uris: List<Uri>, accept: MediaKind, resultCode: Int) {
+        val appContext = requireContext().applicationContext
+        viewLifecycleOwner.lifecycleScope.launch {
+            for (uri in uris) {
+                if (!isAdded) return@launch
+                val isVideo = appContext.contentResolver.getType(uri)?.startsWith("video/")
+                    ?: (FileUtils.getFileNameFromUrl(uri.toString()).substringAfterLast('.', "").lowercase() in VIDEO_EXTENSIONS)
+                when {
+                    isVideo && accept != MediaKind.IMAGE -> addVideoUri(appContext, uri, resultCode)
+                    !isVideo && accept != MediaKind.VIDEO -> addImageUri(appContext, uri, resultCode)
+                    accept == MediaKind.VIDEO ->
+                        Toast.makeText(requireContext(), R.string.please_select_video, Toast.LENGTH_SHORT).show()
+                    else ->
+                        Toast.makeText(requireContext(), R.string.voice_image_unreadable, Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private suspend fun addImageUri(appContext: Context, uri: Uri, resultCode: Int) {
+        val prepared = withContext(dispatcherProvider.io) {
+            VoiceImagePreparer.prepare(appContext, uri, timeProvider)
+        }
+        if (!isAdded) return
+        when (prepared) {
+            is VoiceImagePreparer.Result.Ready -> addImagePath(prepared.path, resultCode)
+            VoiceImagePreparer.Result.GifTooLarge ->
+                Toast.makeText(requireContext(), R.string.voice_image_gif_too_large, Toast.LENGTH_SHORT).show()
+            VoiceImagePreparer.Result.Unreadable ->
+                Toast.makeText(requireContext(), R.string.voice_image_unreadable, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private suspend fun addVideoUri(appContext: Context, uri: Uri, resultCode: Int) {
+        // External files dir, not cacheDir: the cache can be evicted before upload, and
+        // ResourceViewerActivity only plays full paths under external storage roots.
+        val path = withContext(dispatcherProvider.io) {
+            val dir = File(appContext.getExternalFilesDir(null) ?: appContext.filesDir, VOICE_VIDEO_DIR).apply { mkdirs() }
+            FileUtils.resolveUriToPath(appContext, uri, dir)
+        }
+        if (!isAdded) return
+        if (path.isNullOrEmpty()) {
+            Toast.makeText(requireContext(), R.string.please_select_video, Toast.LENGTH_SHORT).show()
+            return
+        }
+        addVideoPath(path, resultCode)
+    }
+
+    private fun addImagePath(path: String?, resultCode: Int) {
         if (path.isNullOrEmpty()) return
 
-        if (isImageAlreadyAdded(path)) {
+        if (News.containsImagePath(imageList, path)) {
             Toast.makeText(requireContext(), R.string.image_already_added, Toast.LENGTH_SHORT).show()
             return
         }
 
-        val `object` = JsonObject()
-        `object`.addProperty("imageUrl", path)
-        `object`.addProperty("fileName", getFileNameFromUrl(path))
-        imageList.add(JsonUtils.gson.toJson(`object`))
+        imageList.add(News.createImageListEntry(path))
 
         try {
             llImage?.visibility = View.VISIBLE
@@ -214,87 +241,51 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
             llImage?.addView(imageBinding.root)
             if (resultCode == 102) adapterNews?.setImageList(imageList)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "addImagePath failed", e)
         }
     }
 
-    private fun isImageAlreadyAdded(path: String): Boolean {
-        return imageList.any { imageJson ->
-            try {
-                val imgObject = JsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
-                JsonUtils.getString("imageUrl", imgObject) == path
-            } catch (e: Exception) {
-                false
-            }
-        }
+    companion object {
+        private const val TAG = "BaseVoicesFragment"
+        private const val VIDEO_THUMB_FRAME_US = 1_000_000L
+        private const val VOICE_VIDEO_DIR = "voice_videos"
+        private val VIDEO_EXTENSIONS = setOf("mp4", "mkv", "avi", "mov", "wmv", "flv", "webm", "3gp")
     }
 
-    private fun processVideoUri(uri: Uri?, resultCode: Int) {
-        if (uri == null) return
-
-        val path: String? = FileUtils.resolveUriToPath(requireActivity(), uri)
-
-        if (path.isNullOrEmpty()) return
-
-        // Check if the file is a video
-        val extension = path.substringAfterLast('.', "").lowercase()
-        val videoExtensions = listOf("mp4", "mkv", "avi", "mov", "wmv", "flv", "webm", "3gp")
-        if (extension !in videoExtensions) {
-            Toast.makeText(requireContext(), R.string.please_select_video, Toast.LENGTH_SHORT).show()
-            return
-        }
-
+    private fun addVideoPath(path: String, resultCode: Int) {
         if (isVideoAlreadyAdded(path)) {
             Toast.makeText(requireContext(), R.string.video_already_added, Toast.LENGTH_SHORT).show()
             return
         }
 
-        val `object` = JsonObject()
-        `object`.addProperty("videoUrl", path)
-        `object`.addProperty("fileName", getFileNameFromUrl(path))
-        videoList.add(JsonUtils.gson.toJson(`object`))
+        val entry = JsonObject()
+        entry.addProperty("videoUrl", path)
+        entry.addProperty("fileName", FileUtils.getFileNameFromUrl(path))
+        videoList.add(GsonUtils.gson.toJson(entry))
 
         try {
             llVideo?.visibility = View.VISIBLE
             val videoBinding = VideoThumbBinding.inflate(LayoutInflater.from(activity), llVideo, false)
             Glide.with(requireActivity())
                 .asBitmap()
-                .load(Uri.fromFile(File(path)))
-                .frame(1000000) // 1 second in microseconds
+                .load(File(path))
+                .frame(VIDEO_THUMB_FRAME_US)
                 .into(videoBinding.thumb)
             llVideo?.addView(videoBinding.root)
             if (resultCode == 102) adapterNews?.setVideoList(videoList)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "addVideoPath failed", e)
         }
     }
 
     private fun isVideoAlreadyAdded(path: String): Boolean {
         return videoList.any { videoJson ->
             try {
-                val vidObject = JsonUtils.gson.fromJson(videoJson, JsonObject::class.java)
-                JsonUtils.getString("videoUrl", vidObject) == path
+                val vidObject = GsonUtils.gson.fromJson(videoJson, JsonObject::class.java)
+                GsonUtils.getString("videoUrl", vidObject) == path
             } catch (e: Exception) {
                 false
             }
-        }
-    }
-
-    private fun processMediaUri(uri: Uri?, resultCode: Int) {
-        if (uri == null) return
-
-        val path: String? = FileUtils.resolveUriToPath(requireActivity(), uri)
-
-        if (path.isNullOrEmpty()) return
-
-        val extension = path.substringAfterLast('.', "").lowercase()
-        val videoExtensions = listOf("mp4", "mkv", "avi", "mov", "wmv", "flv", "webm", "3gp")
-        val imageExtensions = listOf("jpg", "jpeg", "png", "gif", "bmp", "webp")
-
-        when {
-            extension in videoExtensions -> processVideoUri(uri, resultCode)
-            extension in imageExtensions -> processImageUri(uri, resultCode)
-            else -> Toast.makeText(requireContext(), R.string.please_select_image_or_video, Toast.LENGTH_SHORT).show()
         }
     }
 }

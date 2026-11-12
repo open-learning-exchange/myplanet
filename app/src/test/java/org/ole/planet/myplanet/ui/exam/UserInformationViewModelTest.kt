@@ -13,6 +13,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
@@ -39,24 +40,24 @@ class UserInformationViewModelTest {
     @Test
     fun `updateProfile success emits UpdateProfileSuccess`() = runTest {
         val userId = "user123"
-        val jsonUser = JsonObject()
-        coEvery { userRepository.updateProfileFields(userId, jsonUser) } returns Unit
+        val update = ProfileFieldsUpdate(firstName = "Jane")
+        coEvery { userRepository.updateProfileFields(userId, update) } returns Unit
 
-        viewModel.updateProfile(userId, jsonUser)
+        viewModel.updateProfile(userId, update)
 
         val result = viewModel.resultEvent.first()
         assertEquals(UserInformationResult.UpdateProfileSuccess, result)
-        coVerify(exactly = 1) { userRepository.updateProfileFields(userId, jsonUser) }
+        coVerify(exactly = 1) { userRepository.updateProfileFields(userId, update) }
     }
 
     @Test
     fun `updateProfile exception emits UpdateProfileError`() = runTest {
         val userId = "user123"
-        val jsonUser = JsonObject()
+        val update = ProfileFieldsUpdate(firstName = "Jane")
         val errorMessage = "Database error"
-        coEvery { userRepository.updateProfileFields(userId, jsonUser) } throws Exception(errorMessage)
+        coEvery { userRepository.updateProfileFields(userId, update) } throws Exception(errorMessage)
 
-        viewModel.updateProfile(userId, jsonUser)
+        viewModel.updateProfile(userId, update)
 
         val result = viewModel.resultEvent.first()
         assertTrue(result is UserInformationResult.UpdateProfileError)

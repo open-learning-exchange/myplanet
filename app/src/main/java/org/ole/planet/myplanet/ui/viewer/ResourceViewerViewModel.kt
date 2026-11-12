@@ -1,38 +1,44 @@
 package org.ole.planet.myplanet.ui.viewer
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
-import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
-import com.tom_roush.pdfbox.pdmodel.PDDocument
-import com.tom_roush.pdfbox.text.PDFTextStripper
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.DownloadUtils
-import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.PdfTextExtractor
+import org.ole.planet.myplanet.utils.StoragePathResolver
 
 @HiltViewModel
 class ResourceViewerViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val resourcesRepository: ResourcesRepository,
     private val authSessionUpdaterFactory: AuthSessionUpdater.Factory,
     private val ratingsRepository: RatingsRepository,
     private val configurationsRepository: ConfigurationsRepository,
+    private val userRepository: UserRepository,
     private val sharedPrefManager: SharedPrefManager,
-    private val dispatcherProvider: DispatcherProvider
+    private val storagePathResolver: StoragePathResolver,
+    private val resourceDownloadCoordinator: ResourceDownloadCoordinator,
+    private val pdfTextExtractor: PdfTextExtractor,
+    private val dispatcherProvider: DispatcherProvider,
+    @ApplicationScope private val appScope: CoroutineScope
 ) : ViewModel() {
 
-    suspend fun shouldShowResourceRatingDialog(userId: String, resourceId: String): Boolean {
+    suspend fun shouldShowResourceRatingDialog(resourceId: String): Boolean {
+        val userId = userRepository.getUserModel()?.id?.takeIf { it.isNotBlank() } ?: return false
+
         if (isRatingPrompted(userId, resourceId)) {
             return false
         }
@@ -53,7 +59,8 @@ class ResourceViewerViewModel @Inject constructor(
         return ratingsRepository.isRatingPrompted(userId, resourceId)
     }
 
-    suspend fun setRatingPrompted(userId: String, resourceId: String) {
+    suspend fun setRatingPrompted(resourceId: String) {
+        val userId = userRepository.getUserModel()?.id?.takeIf { it.isNotBlank() } ?: return
         ratingsRepository.setRatingPrompted(userId, resourceId)
     }
 
@@ -103,23 +110,18 @@ class ResourceViewerViewModel @Inject constructor(
     suspend fun updateLibraryItemTranslationAudioPath(id: String, outputFile: String?) {
         resourcesRepository.updateLibraryItem(id) { it.translationAudioPath = outputFile }
     }
+    
+    fun saveTranslationAudioPath(id: String, outputFile: String?) {
+        appScope.launch { updateLibraryItemTranslationAudioPath(id, outputFile) }
+    }
 
     suspend fun getExternalFilesDir(): File? = withContext(dispatcherProvider.io) {
-        context.getExternalFilesDir(null)
+        storagePathResolver.resolveExternalFilesDir()
     }
 
-    suspend fun downloadResource(url: String) = withContext(dispatcherProvider.io) {
-        if (!FileUtils.checkFileExist(context, url)) {
-            DownloadUtils.openDownloadService(context, arrayListOf(url), false)
-        }
+    suspend fun downloadResource(url: String) {
+        resourceDownloadCoordinator.downloadIfMissing(url)
     }
 
-    suspend fun extractPdfText(file: File): String = withContext(dispatcherProvider.io) {
-        try {
-            PDFBoxResourceLoader.init(context)
-            PDDocument.load(file).use {
-                PDFTextStripper().getText(it).trim()
-            }
-        } catch (e: Exception) { "" }
-    }
+    suspend fun extractPdfText(file: File): String = pdfTextExtractor.extractText(file)
 }

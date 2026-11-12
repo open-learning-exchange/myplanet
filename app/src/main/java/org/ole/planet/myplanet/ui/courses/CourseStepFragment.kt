@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.courses
 import android.os.Bundle
 import android.text.Spannable
 import android.text.style.URLSpan
+import android.util.Log
 import android.view.ActionMode
 import android.view.LayoutInflater
 import android.view.Menu
@@ -42,6 +43,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
     private var nextStepId: String? = null
+    private var trackedDownloadUrls: List<String> = emptyList()
     private lateinit var step: CourseStep
     private var resources: List<MyLibrary> = emptyList()
     private var stepExams: List<StepExam> = emptyList()
@@ -104,6 +106,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                     fragmentCourseStepBinding.btnAskAi.visibility = View.VISIBLE
                     setupInlineResources()
 
+                    if (state.downloadingUrls != trackedDownloadUrls) {
+                        trackedDownloadUrls = state.downloadingUrls
+                        if (state.downloadingUrls.isNotEmpty()) trackDownloadUrls(state.downloadingUrls)
+                    }
                     if (state.isDownloadingResources) {
                         fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.VISIBLE
                     } else {
@@ -192,7 +198,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 viewModel.saveCourseProgress(stepNumber)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "setMenuVisibility failed", e)
         }
     }
 
@@ -256,11 +262,16 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private companion object {
+        private const val TAG = "CourseStepFragment"
         const val MENU_ITEM_ASK_AI = 42
     }
 
     override fun onDownloadComplete() {
         super.onDownloadComplete()
+        viewModel.refreshInlineResources(stepId)
+    }
+
+    override fun onDownloadFailed() {
         viewModel.refreshInlineResources(stepId)
     }
 

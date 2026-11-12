@@ -7,6 +7,7 @@ import androidx.test.core.app.ApplicationProvider
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
@@ -26,6 +27,7 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.textChanges
 import org.robolectric.RobolectricTestRunner
@@ -49,8 +51,8 @@ class HealthSearchDebounceTest {
     fun setup() {
         userRepository = mockk()
         healthRepository = mockk()
-        viewModel = HealthViewModel(userRepository, healthRepository)
-        coEvery { healthRepository.searchPatients(any(), any(), any()) } returns emptyList()
+        viewModel = HealthViewModel(userRepository, healthRepository, RealtimeSyncManager())
+        coEvery { userRepository.searchUsers(any(), any(), any()) } returns emptyList()
     }
 
     @Test
@@ -58,11 +60,11 @@ class HealthSearchDebounceTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val etSearch = EditText(context)
         val patients = listOf(UserEntity().apply { id = "1"; name = "John Doe" })
-        coEvery { healthRepository.searchPatients("John", "joinDate", true) } returns patients
+        coEvery { userRepository.searchUsers("John", "joinDate", true) } returns patients
 
         val searchJob = etSearch.textChanges()
             .drop(1)
-            .debounce(300)
+            .debounce(300.milliseconds)
             .distinctUntilChanged()
             .onEach { query -> viewModel.searchPatients(query?.toString() ?: "", "joinDate", true) }
             .launchIn(this)
@@ -72,13 +74,13 @@ class HealthSearchDebounceTest {
             runCurrent()
         }
 
-        coVerify(exactly = 0) { healthRepository.searchPatients(any(), any(), any()) }
+        coVerify(exactly = 0) { userRepository.searchUsers(any(), any(), any()) }
 
         advanceTimeBy(300)
         runCurrent()
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { healthRepository.searchPatients("John", "joinDate", true) }
+        coVerify(exactly = 1) { userRepository.searchUsers("John", "joinDate", true) }
         assertEquals(patients, viewModel.patientList.value)
 
         searchJob.cancel()

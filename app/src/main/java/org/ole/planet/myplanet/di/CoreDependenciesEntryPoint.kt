@@ -8,6 +8,7 @@ import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.ServerReachabilityProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 
@@ -21,4 +22,5 @@ interface CoreDependenciesEntryPoint {
     fun diagnosticsRepository(): DiagnosticsRepository
     fun serverReachabilityProvider(): ServerReachabilityProvider
     fun timeProvider(): TimeProvider
+    fun notificationManager(): NotificationUtils.NotificationManager
 }

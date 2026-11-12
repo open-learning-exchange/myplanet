@@ -1,25 +1,19 @@
 package org.ole.planet.myplanet.services.upload
 
 import android.content.Context
+import androidx.room.withTransaction
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.CourseActivity
-import org.ole.planet.myplanet.model.CourseProgress
-import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.NewsLog
-import org.ole.planet.myplanet.model.Rating
-import org.ole.planet.myplanet.model.ResourceActivity
-import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
-import org.ole.planet.myplanet.model.SubmitPhotos
-import org.ole.planet.myplanet.model.TeamLog
-import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ApkLogUpload
@@ -40,6 +34,7 @@ import org.ole.planet.myplanet.utils.VersionUtils
 @Singleton
 class UploadConfigs @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val appDatabase: AppDatabase,
     private val voicesRepository: VoicesRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val activitiesRepository: ActivitiesRepository,
@@ -57,6 +52,8 @@ class UploadConfigs @Inject constructor(
     private val androidId: String? get() = VersionUtils.getAndroidId(context)
     private val customDeviceName: String get() = sharedPrefManager.getCustomDeviceName()
 
+    private suspend fun <T> inTransaction(block: suspend () -> T): T = appDatabase.withTransaction { block() }
+
     val NewsActivities = RoomUploadConfig(
         endpoint = "myplanet_activities",
         modelClassName = "NewsLog",
@@ -64,8 +61,10 @@ class UploadConfigs @Inject constructor(
         serializer = UploadSerializer.Simple { log -> NewsLog.serialize(log, customDeviceName) },
         idExtractor = { it.id },
         markUploaded = { results ->
-            results.filter { result ->
-                !voicesRepository.markNewsLogUploaded(result.localId, result.remoteId, result.remoteRev)
+            inTransaction {
+                results.filter { result ->
+                    !voicesRepository.markNewsLogUploaded(result.localId, result.remoteId, result.remoteRev)
+                }
             }
         }
     )
@@ -77,8 +76,10 @@ class UploadConfigs @Inject constructor(
         serializer = UploadSerializer.Simple(org.ole.planet.myplanet.model.CourseProgress::serializeProgress),
         idExtractor = { it.id },
         markUploaded = { results ->
-            results.filter { result ->
-                !progressRepository.markCourseProgressUploaded(result.localId, result.remoteId, result.remoteRev)
+            inTransaction {
+                results.filter { result ->
+                    !progressRepository.markCourseProgressUploaded(result.localId, result.remoteId, result.remoteRev)
+                }
             }
         }
     )
@@ -93,8 +94,10 @@ class UploadConfigs @Inject constructor(
         },
         idExtractor = { it.id },
         markUploaded = { results ->
-            results.filter { result ->
-                !teamsSyncRepository.get().markTaskUploaded(result.localId, result.remoteId, result.remoteRev)
+            inTransaction {
+                results.filter { result ->
+                    !teamsSyncRepository.get().markTaskUploaded(result.localId, result.remoteId, result.remoteRev)
+                }
             }
         }
     )
@@ -106,8 +109,10 @@ class UploadConfigs @Inject constructor(
         serializer = UploadSerializer.Simple { log -> teamsSyncRepository.get().serializeTeamActivities(log) },
         idExtractor = { it.id },
         markUploaded = { results ->
-            results.filter { result ->
-                !teamsSyncRepository.get().markTeamLogUploaded(result.localId, result.remoteId, result.remoteRev)
+            inTransaction {
+                results.filter { result ->
+                    !teamsSyncRepository.get().markTeamLogUploaded(result.localId, result.remoteId, result.remoteRev)
+                }
             }
         }
     )
@@ -119,12 +124,14 @@ class UploadConfigs @Inject constructor(
         serializer = UploadSerializer.Simple { it.serialize(androidId, customDeviceName) },
         idExtractor = { it.id },
         markUploaded = { results ->
-            results.filter { result ->
-                !activitiesRepository.markSearchActivityUploaded(
-                    localId = result.localId,
-                    remoteId = result.remoteId,
-                    rev = result.remoteRev
-                )
+            inTransaction {
+                results.filter { result ->
+                    !activitiesRepository.markSearchActivityUploaded(
+                        localId = result.localId,
+                        remoteId = result.remoteId,
+                        rev = result.remoteRev
+                    )
+                }
             }
         }
     )
@@ -136,8 +143,10 @@ class UploadConfigs @Inject constructor(
         serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
         idExtractor = { it.id },
         markUploaded = { results ->
-            results.filter { result ->
-                !activitiesRepository.markResourceActivityUploaded(result.localId, result.remoteId, result.remoteRev)
+            inTransaction {
+                results.filter { result ->
+                    !activitiesRepository.markResourceActivityUploaded(result.localId, result.remoteId, result.remoteRev)
+                }
             }
         }
     )
@@ -149,8 +158,10 @@ class UploadConfigs @Inject constructor(
         serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
         idExtractor = { it.id },
         markUploaded = { results ->
-            results.filter { result ->
-                !activitiesRepository.markResourceActivityUploaded(result.localId, result.remoteId, result.remoteRev)
+            inTransaction {
+                results.filter { result ->
+                    !activitiesRepository.markResourceActivityUploaded(result.localId, result.remoteId, result.remoteRev)
+                }
             }
         }
     )
@@ -162,12 +173,14 @@ class UploadConfigs @Inject constructor(
         serializer = UploadSerializer.Simple(CourseActivity::serialize),
         idExtractor = { it.id },
         markUploaded = { results ->
-            results.filter { result ->
-                !activitiesRepository.markCourseActivityUploaded(
-                    localId = result.localId,
-                    remoteId = result.remoteId,
-                    rev = result.remoteRev
-                )
+            inTransaction {
+                results.filter { result ->
+                    !activitiesRepository.markCourseActivityUploaded(
+                        localId = result.localId,
+                        remoteId = result.remoteId,
+                        rev = result.remoteRev
+                    )
+                }
             }
         }
     )
@@ -181,8 +194,10 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it.id },
         responseHandler = ResponseHandler.Custom("id", "rev"),
         markUploaded = { results ->
-            results.filter { result ->
-                !eventsRepository.markMeetupUploaded(result.localId, result.remoteId, result.remoteRev)
+            inTransaction {
+                results.filter { result ->
+                    !eventsRepository.markMeetupUploaded(result.localId, result.remoteId, result.remoteRev)
+                }
             }
         }
     )
@@ -192,10 +207,11 @@ class UploadConfigs @Inject constructor(
         endpoint = "exams",
         fetchPendingItems = { surveysRepository.getPendingAdoptedSurveys() },
         serializer = UploadSerializer.Async { exam ->
-            val questions = surveysRepository.getExamQuestions(exam.id ?: "")
+            val questions = surveysRepository.getExamQuestions(exam.id)
             StepExam.serializeExam(exam, questions)
         },
-        idExtractor = { it.id }
+        idExtractor = { it.id },
+        markUploaded = { surveysRepository.markExamsUploaded(it) }
     )
 
     // Migrated to Room: uses the database-agnostic RoomUploadConfig path in UploadCoordinator.
@@ -206,8 +222,10 @@ class UploadConfigs @Inject constructor(
         serializer = UploadSerializer.Simple(org.ole.planet.myplanet.model.Feedback::serializeFeedback),
         idExtractor = { it.id },
         markUploaded = { results ->
-            // Mark each uploaded feedback; rows that no longer exist are reported as failures.
-            results.filter { result -> !feedbackRepository.markFeedbackUploaded(result.localId) }
+            inTransaction {
+                // Mark each uploaded feedback; rows that no longer exist are reported as failures.
+                results.filter { result -> !feedbackRepository.markFeedbackUploaded(result.localId, result.remoteId, result.remoteRev) }
+            }
         }
     )
 
@@ -233,8 +251,10 @@ class UploadConfigs @Inject constructor(
         serializer = UploadSerializer.Simple(org.ole.planet.myplanet.model.SubmitPhotos::serialize),
         idExtractor = { it.id },
         markUploaded = { results ->
-            results.filter { result ->
-                !submissionsRepository.markSubmitPhotosUploaded(result.localId, result.remoteId, result.remoteRev)
+            inTransaction {
+                results.filter { result ->
+                    !submissionsRepository.markSubmitPhotosUploaded(result.localId, result.remoteId, result.remoteRev)
+                }
             }
         }
     )
@@ -252,7 +272,8 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it.id },
         dbIdExtractor = { it._id },
         filterGuests = true,
-        guestUserIdExtractor = { it.userId }
+        guestUserIdExtractor = { it.userId },
+        markUploaded = { submissionsRepository.markSubmissionsUploaded(it) }
     )
 
     val Submissions = UploadConfig(
@@ -265,9 +286,7 @@ class UploadConfigs @Inject constructor(
         },
         idExtractor = { it.id },
         dbIdExtractor = { it._id },
-        additionalUpdates = { submission, _ ->
-            submission.isUpdated = false
-        }
+        markUploaded = { submissionsRepository.markSubmissionsUploaded(it) }
     )
 
     // Migrated to Room: uses the database-agnostic RoomUploadConfig path in UploadCoordinator.
@@ -278,7 +297,7 @@ class UploadConfigs @Inject constructor(
             modelClassName = "MyLibrary",
             fetchPendingItems = { resourcesRepository.getPendingResourceUploads() },
             serializer = UploadSerializer.Simple { library ->
-                MyLibrary.serialize(library, user)
+                resourcesRepository.serializeForUpload(library, user)
             },
             idExtractor = { it.id },
             markUploaded = { results ->
@@ -304,7 +323,11 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it.id },
         dbIdExtractor = { it._id }, // Enables POST/PUT logic
         markUploaded = { results ->
-            results.filter { result -> !ratingsRepository.markRatingUploaded(result.localId) }
+            inTransaction {
+                results.filter { result ->
+                    !ratingsRepository.markRatingUploaded(result.localId, result.remoteId, result.remoteRev)
+                }
+            }
         }
     )
 }

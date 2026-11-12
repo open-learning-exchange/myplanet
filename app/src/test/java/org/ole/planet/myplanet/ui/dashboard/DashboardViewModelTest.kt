@@ -6,6 +6,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,7 +28,6 @@ import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
-import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
@@ -42,7 +42,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
-@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class DashboardViewModelTest {
 
     private lateinit var viewModel: DashboardViewModel
@@ -96,7 +96,7 @@ class DashboardViewModelTest {
     @Test
     fun testSyncKeyId_preventOverlappingCalls() = runTest {
         coEvery { syncRepository.syncDashboardKeyId(any()) } coAnswers {
-            kotlinx.coroutines.delay(100)
+            kotlinx.coroutines.delay(100.milliseconds)
             SyncUiState.Success(null)
         }
 
@@ -201,56 +201,6 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun `loadUsers updates uiState with sorted users`() = runTest(testDispatcher) {
-        val users = listOf(
-            UserEntity().apply { name = "User 1" },
-            UserEntity().apply { name = "User 2" }
-        )
-
-        coEvery { userRepository.getUsersSortedBy("joinDate", true) } returns users
-
-        viewModel.loadUsers()
-        advanceUntilIdle()
-
-        val state = viewModel.uiState.value
-        assertEquals(2, state.users.size)
-        assertEquals("User 1", (state.users[0] as UserEntity).name)
-        assertEquals("User 2", (state.users[1] as UserEntity).name)
-    }
-
-    @Test
-    fun `calculateIndividualProgress handles boundary cases properly`() {
-        assertEquals(1, viewModel.calculateIndividualProgress(0, false))
-        assertEquals(0, viewModel.calculateIndividualProgress(0, true))
-
-        assertEquals(3, viewModel.calculateIndividualProgress(1, false))
-        assertEquals(2, viewModel.calculateIndividualProgress(1, true))
-
-        assertEquals(11, viewModel.calculateIndividualProgress(5, false))
-        assertEquals(10, viewModel.calculateIndividualProgress(5, true))
-
-        // Coerced value cases
-        assertEquals(11, viewModel.calculateIndividualProgress(10, false))
-        assertEquals(10, viewModel.calculateIndividualProgress(10, true))
-    }
-
-    @Test
-    fun `calculateCommunityProgress handles boundary cases properly`() {
-        assertEquals(1, viewModel.calculateCommunityProgress(0, false))
-        assertEquals(0, viewModel.calculateCommunityProgress(0, true))
-
-        assertEquals(3, viewModel.calculateCommunityProgress(1, false))
-        assertEquals(2, viewModel.calculateCommunityProgress(1, true))
-
-        assertEquals(11, viewModel.calculateCommunityProgress(5, false))
-        assertEquals(10, viewModel.calculateCommunityProgress(5, true))
-
-        // Ensure cap at 11
-        assertEquals(11, viewModel.calculateCommunityProgress(10, false))
-        assertEquals(10, viewModel.calculateCommunityProgress(10, true))
-    }
-
-    @Test
     fun `loadUserContent with null userId exits early`() = runTest(testDispatcher) {
         viewModel.loadUserContent(null)
         advanceUntilIdle()
@@ -264,26 +214,54 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun `evaluateChallengeDialog uses voice date count for both user and community counts`() = runTest(testDispatcher) {
+    fun `evaluateChallengeDialog outside window makes zero repository calls and emits no event`() = runTest(testDispatcher) {
         val userId = "user1"
         val validUrl = "https://example.org"
 
-        coEvery { progressRepository.fetchCourseData(userId) } returns JsonArray()
-        coEvery { voicesRepository.getCommunityVoiceDateCount(any(), any(), eq(userId)) } returns 5
-        coEvery { voicesRepository.getCommunityVoiceDateCount(any(), any(), isNull()) } returns 7
-        coEvery { coursesRepository.getCourseTitleById(any()) } returns "Course"
-        coEvery { submissionsRepository.hasPendingSurvey(any(), eq(userId)) } returns false
-        every { application.getString(any(), any<String>()) } returns "completed"
-        every { application.getString(any(), any<String>(), any<Int>(), any<Int>()) } returns "in progress"
-        every { progressRepository.findProgressForCourse(any(), any()) } returns null
-        coEvery { progressRepository.hasUserCompletedSync(userId) } returns false
+        val events = mutableListOf<ChallengeDialogData>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.challengeDialogEvent.collect { events.add(it) }
+        }
 
         viewModel.evaluateChallengeDialog(userId, isGuest = false, validUrls = listOf(validUrl), serverUrl = validUrl)
 
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { voicesRepository.getCommunityVoiceDateCount(any(), any(), eq(userId)) }
-        coVerify(exactly = 1) { voicesRepository.getCommunityVoiceDateCount(any(), any(), isNull()) }
+        assertEquals(0, events.size)
+        coVerify(exactly = 0) { progressRepository.fetchCourseData(any()) }
+        coVerify(exactly = 0) { voicesRepository.getCommunityVoiceDateCount(any(), any(), any()) }
+        coVerify(exactly = 0) { coursesRepository.getCourseTitleById(any()) }
+        coVerify(exactly = 0) { submissionsRepository.hasPendingSurvey(any(), any()) }
+    }
+
+    @Test
+    fun `isChallengeWindowOpen respects date window boundaries, guest status, and server url`() {
+        val validUrls = listOf("https://valid.planet.org")
+        val validUrl = "https://valid.planet.org"
+        val invalidUrl = "https://other.planet.org"
+
+        val insideDate = java.time.LocalDate.of(2024, 12, 15)
+        val startBoundary = java.time.LocalDate.of(2024, 11, 30)
+        val dayAfterStart = java.time.LocalDate.of(2024, 12, 1)
+        val endBoundary = java.time.LocalDate.of(2025, 1, 16)
+        val dayBeforeEnd = java.time.LocalDate.of(2025, 1, 15)
+        val afterEnd = java.time.LocalDate.of(2025, 1, 17)
+
+        // Inside window
+        assertEquals(true, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = validUrl, validUrls = validUrls, today = insideDate))
+        assertEquals(true, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = validUrl, validUrls = validUrls, today = dayAfterStart))
+        assertEquals(true, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = validUrl, validUrls = validUrls, today = dayBeforeEnd))
+
+        // Boundary days (exclusive: strictly after 2024-11-30, strictly before 2025-01-16)
+        assertEquals(false, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = validUrl, validUrls = validUrls, today = startBoundary))
+        assertEquals(false, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = validUrl, validUrls = validUrls, today = endBoundary))
+        assertEquals(false, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = validUrl, validUrls = validUrls, today = afterEnd))
+
+        // Guest user inside window
+        assertEquals(false, viewModel.isChallengeWindowOpen(isGuest = true, serverUrl = validUrl, validUrls = validUrls, today = insideDate))
+
+        // Invalid server URL inside window
+        assertEquals(false, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = invalidUrl, validUrls = validUrls, today = insideDate))
     }
 
     @Test

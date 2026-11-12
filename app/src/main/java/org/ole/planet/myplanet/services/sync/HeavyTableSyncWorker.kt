@@ -15,6 +15,7 @@ import androidx.work.workDataOf
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 @HiltWorker
@@ -23,13 +24,17 @@ class HeavyTableSyncWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     private val transactionSyncManager: TransactionSyncManager,
     private val sharedPrefManager: SharedPrefManager,
-    private val syncManager: SyncManager
+    private val syncManager: SyncManager,
+    private val configurationsRepository: ConfigurationsRepository
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
         val table = inputData.getString(KEY_TABLE) ?: return Result.failure()
         if (syncManager.isMainSyncActive()) return Result.retry()
-        transactionSyncManager.syncDb(table, useCheckpoint = true)
+        configurationsRepository.ensureServerUrlUpdated()
+        if (transactionSyncManager.syncDb(table, useCheckpoint = true) == TransactionSyncManager.SYNC_FAILED) {
+            return Result.retry()
+        }
         val interrupted = sharedPrefManager.rawPreferences.getInt("heavy_sync_skip_$table", 0) > 0
         return if (interrupted) Result.retry() else Result.success()
     }

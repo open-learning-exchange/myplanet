@@ -1,31 +1,23 @@
 package org.ole.planet.myplanet.model
 
-import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockkObject
-import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import java.util.UUID
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.model.ExamQuestion
-import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 class StepExamTest {
 
     @Before
     fun setup() {
-        mockkStatic(TextUtils::class)
-        every { TextUtils.isEmpty(any()) } answers {
-            val str = arg<CharSequence?>(0)
-            str.isNullOrEmpty()
-        }
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
     }
@@ -90,6 +82,68 @@ class StepExamTest {
     }
 
     @Test
+    fun testInsertCourseStepsExams_questionsThree() {
+        val examJson = JsonObject().apply {
+            addProperty("_id", "exam3")
+            add("questions", JsonArray().apply {
+                add(JsonObject())
+                add(JsonObject())
+                add(JsonObject())
+            })
+        }
+
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+
+        assertEquals(3, result.noOfQuestions)
+    }
+
+    @Test
+    fun testInsertCourseStepsExams_questionsNull() {
+        val examJson = JsonObject().apply {
+            addProperty("_id", "examNull")
+            add("questions", com.google.gson.JsonNull.INSTANCE)
+        }
+
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+
+        assertEquals(0, result.noOfQuestions)
+    }
+
+    @Test
+    fun testInsertCourseStepsExams_questionsObject() {
+        val examJson = JsonObject().apply {
+            addProperty("_id", "examObj")
+            add("questions", JsonObject())
+        }
+
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+
+        assertEquals(0, result.noOfQuestions)
+    }
+
+    @Test
+    fun testInsertCourseStepsExams_questionsMissing() {
+        val examJson = JsonObject().apply {
+            addProperty("_id", "examMissing")
+        }
+
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+
+        assertEquals(0, result.noOfQuestions)
+    }
+
+    @Test
+    fun testInsertCourseStepsExams_missingTypeDefaultsToExam() {
+        val examJson = JsonObject().apply {
+            addProperty("_id", "examNoType")
+        }
+
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
+
+        assertEquals("exam", result.type)
+    }
+
+    @Test
     fun testSerializeExam() {
         val exam = StepExam().apply {
             id = "exam1"
@@ -128,5 +182,36 @@ class StepExamTest {
         assertTrue(json.has("questions"))
         assertEquals("uniqueIdentifier", json.get("androidId").asString)
         assertEquals("myplanet", json.get("app").asString)
+    }
+
+    @Test
+    fun isPassingAttempt_exactPassMarkPasses() {
+        // 29 / 50 * 100 is 57.99999999999999 in floating point; the comparison must not divide
+        val exam = StepExam(totalMarks = 50, passingPercentage = "58")
+
+        assertTrue(exam.isPassingAttempt(29, allAnswersCorrect = false))
+    }
+
+    @Test
+    fun isPassingAttempt_oneMarkBelowPassMarkFails() {
+        val exam = StepExam(totalMarks = 50, passingPercentage = "58")
+
+        assertFalse(exam.isPassingAttempt(28, allAnswersCorrect = false))
+    }
+
+    @Test
+    fun isPassingAttempt_zeroTotalPassesOnlyWhenEveryAnswerIsCorrect() {
+        val exam = StepExam(totalMarks = 0, passingPercentage = "58")
+
+        assertTrue(exam.isPassingAttempt(0, allAnswersCorrect = true))
+        assertFalse(exam.isPassingAttempt(0, allAnswersCorrect = false))
+    }
+
+    @Test
+    fun isPassingAttempt_missingPassingPercentageRequiresFullMarks() {
+        val exam = StepExam(totalMarks = 50, passingPercentage = null)
+
+        assertFalse(exam.isPassingAttempt(49, allAnswersCorrect = false))
+        assertTrue(exam.isPassingAttempt(50, allAnswersCorrect = false))
     }
 }

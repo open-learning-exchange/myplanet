@@ -1,11 +1,11 @@
 package org.ole.planet.myplanet
 
 import android.app.Application
-import android.content.ComponentCallbacks2
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
+import android.os.Build
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
@@ -14,6 +14,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.Configuration as WorkManagerConfiguration
@@ -24,7 +25,7 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
-import java.lang.ref.WeakReference
+import java.io.File
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -35,7 +36,6 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
@@ -59,6 +59,7 @@ import org.ole.planet.myplanet.utils.MarkdownUtils
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utils.NetworkUtils.stopListenNetworkState
+import org.ole.planet.myplanet.utils.PartialDownloadCleaner
 import org.ole.planet.myplanet.utils.PdfThumbnailLoader
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.ThemeMode
@@ -111,13 +112,8 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
         val context: Context get() = testContext ?: instance.applicationContext
         var syncFailedCount = 0
-        var isCollectionSwitchOn = false
         var showDownload = false
         val isSyncRunning = AtomicBoolean(false)
-        private var _listener: WeakReference<OnTeamPageListener>? = null
-        var listener: OnTeamPageListener?
-            get() = _listener?.get()
-            set(value) { _listener = value?.let { WeakReference(it) } }
         val androidId: String get() {
             try {
                 return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
@@ -147,7 +143,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         private fun warnBestEffortFailed(what: String, failure: Throwable) {
             try {
                 Log.w(TAG, "$what failed", failure)
-            } catch (loggingFailure: RuntimeException) {
+            } catch (_: RuntimeException) {
             }
         }
 
@@ -239,6 +235,13 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             runBestEffort("Utilities.warmUp") { Utilities.warmUp() }
             runBestEffort("defaultPref.warmUp") { defaultPref }
             runBestEffort("GifInfoHandle preload") { Class.forName("pl.droidsonroids.gif.GifInfoHandle") }
+            runBestEffort("PartialDownloadCleaner.delete stale") {
+                PartialDownloadCleaner.delete(
+                    File(FileUtils.getOlePath(this@MainApplication)),
+                    coreDependenciesEntryPoint.timeProvider().now(),
+                    PartialDownloadCleaner.STALE_AFTER_MILLIS
+                )
+            }
         }
         applicationScope.launch {
             initApp()
@@ -288,11 +291,13 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
     private fun setupStrictMode() {
         if (BuildConfig.DEBUG) {
-            val threadPolicy = StrictMode.ThreadPolicy.Builder()
+            val threadPolicyBuilder = StrictMode.ThreadPolicy.Builder()
                 .detectAll()
                 .penaltyLog()
-                .build()
-            StrictMode.setThreadPolicy(threadPolicy)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                threadPolicyBuilder.permitExplicitGc()
+            }
+            StrictMode.setThreadPolicy(threadPolicyBuilder.build())
 
             val vmPolicy = VmPolicy.Builder()
                 .detectAll()
@@ -303,7 +308,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     }
 
     private suspend fun setupAnrWatchdog() {
-        withContext(dispatcherProvider.default) {
+        withContext(dispatcherProvider.main) {
             anrWatchdog = ANRWatchdog(
                 scope = applicationScope,
                 timeout = 5000L,
@@ -315,7 +320,9 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 },
                 dispatcherProvider = dispatcherProvider
             )
-            anrWatchdog.start()
+            if (ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+                anrWatchdog.start()
+            }
         }
     }
 
@@ -357,7 +364,16 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     private fun setupLifecycleCallbacks() {
         ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
+                if (::anrWatchdog.isInitialized) {
+                    anrWatchdog.start()
+                }
                 onAppForegrounded()
+            }
+
+            override fun onStop(owner: LifecycleOwner) {
+                if (::anrWatchdog.isInitialized) {
+                    anrWatchdog.stop()
+                }
             }
         })
         onAppStarted()
@@ -368,7 +384,9 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             val savedThemeMode = withContext(dispatcherProvider.io) {
                 getCurrentThemeMode()
             }
-            applyThemeMode(savedThemeMode)
+            withContext(dispatcherProvider.main) {
+                applyThemeMode(savedThemeMode)
+            }
         } finally {
             // success
         }
@@ -474,7 +492,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
-        if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
+        if (level >= TRIM_MEMORY_RUNNING_LOW) {
             PdfThumbnailLoader.evictAll()
         }
     }

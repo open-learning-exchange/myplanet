@@ -18,7 +18,6 @@ import androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale
 import androidx.core.content.ContextCompat
 import java.io.File
 import java.util.UUID
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnAudioRecordListener
@@ -33,9 +32,16 @@ class AudioRecorder {
     private lateinit var permissionLauncher: ActivityResultLauncher<String>
 
     fun forceStop() {
-        myAudioRecorder?.apply {
-            stop()
-            release()
+        myAudioRecorder?.let { recorder ->
+            try {
+                recorder.stop()
+            } catch (_: RuntimeException) {
+            } finally {
+                try {
+                    recorder.release()
+                } catch (_: Exception) {
+                }
+            }
         }
         myAudioRecorder = null
         audioRecordListener?.onError("Recording stopped")
@@ -93,15 +99,22 @@ class AudioRecorder {
 
     fun stopRecording() {
         myAudioRecorder?.let { recorder ->
+            var stoppedSuccessfully = false
             try {
                 if (isRecording()) {
                     recorder.stop()
-                    recorder.release()
+                    stoppedSuccessfully = true
                 }
             } catch (e: RuntimeException) {
-                MainApplication.handleUncaughtException(e)
+                audioRecordListener?.onError(e.message)
             } finally {
+                try {
+                    recorder.release()
+                } catch (_: Exception) {
+                }
                 myAudioRecorder = null
+            }
+            if (stoppedSuccessfully) {
                 audioRecordListener?.onRecordStopped(outputFile)
             }
         }

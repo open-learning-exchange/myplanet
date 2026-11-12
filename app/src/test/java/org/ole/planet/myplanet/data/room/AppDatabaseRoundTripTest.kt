@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.data.room
 
 import android.app.Application
 import androidx.room.Room
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -103,7 +104,7 @@ class AppDatabaseRoundTripTest {
         assertEquals(listOf("Offer", "Request"), loaded?.labels)
 
         // Top-level message feed query runs real SQL.
-        val topLevel = db.newsDao().getTopLevelMessages().map { it.id }
+        val topLevel = db.newsDao().getTopLevelMessagesFlow().first().map { it.id }
         assertEquals(listOf("n1"), topLevel)
     }
 

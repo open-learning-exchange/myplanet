@@ -1,26 +1,28 @@
 package org.ole.planet.myplanet.ui.voices
 
 import android.annotation.SuppressLint
-import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Build
+import android.text.Spanned
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
@@ -33,18 +35,21 @@ import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.VoicesEditActions
+import org.ole.planet.myplanet.repository.VoicesEditor
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
-import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
+import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.ImageUtils
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.ImageViewerUtils
+import org.ole.planet.myplanet.utils.MarkdownUtils.parseMarkdown
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
+import org.ole.planet.myplanet.utils.MarkdownUtils.setParsedMarkdown
 import org.ole.planet.myplanet.utils.StableIdGenerator
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.makeExpandable
@@ -64,9 +69,8 @@ class VoicesAdapter(
     private val onEditAction: (suspend () -> Unit) -> Unit,
     private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit),
     private val labelManager: VoicesLabelManager,
-    private val voicesEditActions: VoicesEditActions,
-    private val leadersList: List<UserEntity>,
-    private val setRepliedNewsIdFn: (String?) -> Unit
+    private val voicesEditor: VoicesEditor,
+    private val leadersList: List<UserEntity>
 ) : ListAdapter<News, RecyclerView.ViewHolder>(
     DiffUtils.itemCallback<News>(
         areItemsTheSame = { oldItem, newItem ->
@@ -85,7 +89,8 @@ class VoicesAdapter(
                         oldItem.userName == newItem.userName && oldItem.userId == newItem.userId &&
                         oldItem.sharedBy == newItem.sharedBy && oldItem.labels == newItem.labels &&
                         oldItem.avatar == newItem.avatar && oldItem.imageUrls == newItem.imageUrls &&
-                        oldItem.images == newItem.images && oldItem.replyTo == newItem.replyTo
+                        oldItem.images == newItem.images && oldItem.replyTo == newItem.replyTo &&
+                        oldItem.viewIn == newItem.viewIn && oldItem.reactions == newItem.reactions
             } catch (e: Exception) {
                 false
             }
@@ -106,6 +111,13 @@ class VoicesAdapter(
                 payloads.add(PAYLOAD_EDIT_ACTION)
             }
 
+            if (oldItem.viewIn != newItem.viewIn) {
+                payloads.add(PAYLOAD_VIEW_IN_CHANGED)
+            }
+            if (oldItem.reactions != newItem.reactions) {
+                payloads.add(PAYLOAD_REACTIONS_CHANGED)
+            }
+
             // Every field checked in areContentsTheSame is covered by the buckets above.
             // If payloads is empty here, it means a future field was added to areContentsTheSame
             // without a corresponding bucket. We MUST return null to trigger a full rebind to prevent stale UI.
@@ -114,6 +126,8 @@ class VoicesAdapter(
     )
 ) {
     companion object {
+        private const val TAG = "VoicesAdapter"
+        private const val VIDEO_THUMB_FRAME_US = 1_000_000L
         const val PAYLOAD_TEAM_LEADER_CHANGED = "PAYLOAD_TEAM_LEADER_CHANGED"
         const val PAYLOAD_CURRENT_USER_CHANGED = "PAYLOAD_CURRENT_USER_CHANGED"
         const val PAYLOAD_NON_TEAM_MEMBER_CHANGED = "PAYLOAD_NON_TEAM_MEMBER_CHANGED"
@@ -122,6 +136,8 @@ class VoicesAdapter(
         const val PAYLOAD_EDIT_ACTION = "PAYLOAD_EDIT_ACTION"
         const val PAYLOAD_LABELS_CHANGED = "PAYLOAD_LABELS_CHANGED"
         const val PAYLOAD_IMAGES_CHANGED = "PAYLOAD_IMAGES_CHANGED"
+        const val PAYLOAD_VIEW_IN_CHANGED = "PAYLOAD_VIEW_IN_CHANGED"
+        const val PAYLOAD_REACTIONS_CHANGED = "PAYLOAD_REACTIONS_CHANGED"
     }
 
     private data class RowState(
@@ -177,6 +193,9 @@ class VoicesAdapter(
     }
 
     private val externalFilesDir = FileUtils.getExternalFilesDir(context)
+    private val thumbnailSize120 by lazy { context.resources.getDimensionPixelSize(R.dimen.image_thumbnail_size_120) }
+    private val thumbnailSize100 by lazy { context.resources.getDimensionPixelSize(R.dimen.image_thumbnail_size_100) }
+    private val thumbnailMarginPx by lazy { (4 * context.resources.displayMetrics.density).toInt() }
     private var listener: OnNewsItemClickListener? = null
     private var imageList: List<String>? = null
     private var videoList: List<String>? = null
@@ -184,6 +203,7 @@ class VoicesAdapter(
     private var nonTeamMember = false
     private var recyclerView: RecyclerView? = null
     private val userCache = object : LinkedHashMap<String, UserEntity?>(64, 0.75f, true) { override fun removeEldestEntry(e: Map.Entry<String, UserEntity?>) = size > 128 }
+    private val markdownCache = object : LinkedHashMap<String, Spanned>(64, 0.75f, true) { override fun removeEldestEntry(e: Map.Entry<String, Spanned>) = size > 100 }
     private val fetchingUserIds = mutableSetOf<String>()
     private val replyCountCache = mutableMapOf<String, Int>()
     private val userIdPositions = mutableMapOf<String, MutableList<Int>>()
@@ -315,12 +335,18 @@ class VoicesAdapter(
                         configureEditDeleteButtons(holder, news)
                     }
                     PAYLOAD_EDIT_ACTION -> {
-                        val sharedTeamName = news.parsedSharedTeamName ?: JsonUtils.extractSharedTeamName(news)
+                        val sharedTeamName = news.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)
                         setMessageAndDate(holder, news, sharedTeamName)
                         configureEditDeleteButtons(holder, news)
                         showReplyButton(holder, news, position)
                         handleChat(holder, news)
                     }
+                    PAYLOAD_VIEW_IN_CHANGED -> {
+                        showShareButton(holder, news)
+                        val sharedTeamName = news.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)
+                        setMessageAndDate(holder, news, sharedTeamName)
+                    }
+                    PAYLOAD_REACTIONS_CHANGED -> showReactions(holder, news)
                 }
             }
         }
@@ -334,7 +360,7 @@ class VoicesAdapter(
             val news = getNews(holder, position)
 
             run {
-                val sharedTeamName = news.parsedSharedTeamName ?: JsonUtils.extractSharedTeamName(news)
+                val sharedTeamName = news.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)
                 resetViews(holder)
                 updateReplyCount(holder, news, position)
                 val userModel = configureUser(holder, news)
@@ -346,6 +372,7 @@ class VoicesAdapter(
                 showReplyButton(holder, news, position)
                 updateLabels(holder, news)
                 handleChat(holder, news)
+                showReactions(holder, news)
                 val currentLeader = getCurrentLeader(userModel, news)
                 setMemberClickListeners(holder, userModel, currentLeader)
             }
@@ -417,6 +444,8 @@ class VoicesAdapter(
             llNewsVideos.removeAllViews()
             recyclerGchat.visibility = View.GONE
             sharedChat.visibility = View.GONE
+            flReactions.removeAllViews()
+            btnReact.text = context.getString(R.string.react)
         }
     }
 
@@ -464,7 +493,7 @@ class VoicesAdapter(
             600,
             350
         )
-        setMarkdownText(holder.binding.tvMessage, markdownContentWithLocalPaths)
+        setMessageMarkdown(holder.binding.tvMessage, news, markdownContentWithLocalPaths)
         val fulltext = holder.binding.tvMessage.text
         holder.binding.tvMessage.makeExpandable(
             fullText = fulltext,
@@ -477,6 +506,18 @@ class VoicesAdapter(
                 "${formatDate(news.time)} | Shared from $sharedTeamName"
             }
         holder.binding.tvEdited.visibility = if (news.isEdited) View.VISIBLE else View.GONE
+    }
+
+    private fun setMessageMarkdown(textView: TextView, news: News, markdown: String) {
+        val cacheable = news.id.isNotEmpty() && !markdown.contains("![") &&
+            markdown.none { it == '<' || it == '|' }
+        if (!cacheable) {
+            setMarkdownText(textView, markdown)
+            return
+        }
+        val key = "${news.id}:${markdown.hashCode()}"
+        val spanned = markdownCache.getOrPut(key) { parseMarkdown(context, markdown) }
+        setParsedMarkdown(textView, spanned)
     }
 
     private fun configureEditDeleteButtons(holder: VoicesViewHolder, news: News) {
@@ -508,7 +549,7 @@ class VoicesAdapter(
                         currentUser,
                         listener,
                         holder,
-                        voicesEditActions,
+                        voicesEditor,
                         { h, updatedNews, pos ->
                             val targetNews = updatedNews ?: news
                             preParseNews(targetNews)
@@ -591,9 +632,9 @@ class VoicesAdapter(
     private fun parseViewIn(viewIn: String?): JsonArray? {
         if (TextUtils.isEmpty(viewIn)) return null
         return try {
-            JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
+            GsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "parseViewIn failed", e)
             null
         }
     }
@@ -601,9 +642,9 @@ class VoicesAdapter(
     private fun parseConversations(conversations: String?): List<Conversation>? {
         if (conversations.isNullOrEmpty()) return null
         return try {
-            JsonUtils.gson.fromJson(conversations, Array<Conversation>::class.java).toList()
+            GsonUtils.gson.fromJson(conversations, Array<Conversation>::class.java).toList()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "parseConversations failed", e)
             null
         }
     }
@@ -611,9 +652,9 @@ class VoicesAdapter(
     private fun parseImageUrls(imageUrls: List<String>?): List<JsonObject>? {
         if (imageUrls.isNullOrEmpty()) return null
         return try {
-            imageUrls.map { JsonUtils.gson.fromJson(it, JsonObject::class.java) }
+            imageUrls.map { GsonUtils.gson.fromJson(it, JsonObject::class.java) }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "parseImageUrls failed", e)
             null
         }
     }
@@ -649,10 +690,10 @@ class VoicesAdapter(
                         it.rawImageUrls = null
                     }
                 }
-                it.parsedSharedTeamName = JsonUtils.extractSharedTeamName(it)
+                it.parsedSharedTeamName = GsonUtils.extractSharedTeamName(it)
             } catch (e: Exception) {
                 // Catch any parsing exceptions so one bad row doesn't break submitList
-                e.printStackTrace()
+                Log.w(TAG, "preParseNews failed", e)
             }
         }
     }
@@ -735,7 +776,7 @@ class VoicesAdapter(
                 replyCountCache[newsId] = replyCount
                 applyReplyCount(viewHolder.binding, replyCount, position)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "updateReplyCount failed", e)
             }
         }
     }
@@ -775,7 +816,7 @@ class VoicesAdapter(
                         currentUser,
                         listener,
                         viewHolder,
-                        voicesEditActions,
+                        voicesEditor,
                         { _, _, _ -> },
                         onEditAction
                     )
@@ -788,11 +829,154 @@ class VoicesAdapter(
         updateReplyCount(viewHolder, finalNews, position)
 
         viewHolder.binding.btnShowReply.setOnClickListener {
-            setRepliedNewsIdFn(finalNews?.id)
             listener?.showReply(finalNews, fromLogin, nonTeamMember)
         }
     }
 
+    private fun reactorId(): String? {
+        val user = currentUser ?: return null
+        if (isGuestUser()) return null
+        return user._id?.takeIf { it.isNotEmpty() } ?: user.name?.let { "org.couchdb.user:$it" }
+    }
+
+    private fun showReactions(holder: VoicesViewHolder, news: News) {
+        val userId = reactorId()
+        val binding = holder.binding
+        val reactionsMap = news.reactionsMap
+        binding.flReactions.removeAllViews()
+        if (reactionsMap.isEmpty()) {
+            binding.flReactions.visibility = View.GONE
+        } else {
+            binding.flReactions.visibility = View.VISIBLE
+            reactionsMap.forEach { (emoji, users) ->
+                val isOwn = users.contains(userId)
+                val chipPaddingH = context.resources.getDimensionPixelSize(R.dimen.padding_normal)
+                val chipPaddingV = context.resources.getDimensionPixelSize(R.dimen.padding_small)
+                val chipMargin = context.resources.getDimensionPixelSize(R.dimen._2dp)
+                val chip = TextView(context).apply {
+                    text = "$emoji ${users.size}"
+                    textSize = 14f
+                    setTextColor(
+                        ContextCompat.getColor(context, if (isOwn) R.color.chip_selected_text else R.color.daynight_textColor)
+                    )
+                    setPadding(chipPaddingH, chipPaddingV, chipPaddingH, chipPaddingV)
+                    setBackgroundResource(
+                        if (isOwn) R.drawable.reaction_chip_active
+                        else R.drawable.reaction_chip_inactive
+                    )
+                    isSelected = isOwn
+                    contentDescription = context.getString(R.string.reaction_chip_description, emoji, users.size)
+                    val params = ViewGroup.MarginLayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    )
+                    params.setMargins(chipMargin, chipMargin, chipMargin, chipMargin)
+                    layoutParams = params
+                    if (userId != null) {
+                        setOnClickListener { react(news, emoji, userId) }
+                    }
+                }
+                binding.flReactions.addView(chip)
+            }
+        }
+
+        if (userId == null) {
+            binding.btnReact.visibility = View.GONE
+            return
+        }
+        binding.btnReact.visibility = View.VISIBLE
+        binding.btnReact.setOnClickListener {
+            showEmojiPicker(news, userId, binding.btnReact)
+        }
+    }
+
+    private fun react(news: News, emoji: String, userId: String) {
+        news.updateReaction(emoji, userId)
+        safeNotifyItemChanged(currentList.indexOfFirst { it.id == news.id }, PAYLOAD_REACTIONS_CHANGED)
+        onEditAction { voicesEditor.toggleReaction(news.id, emoji, userId) }
+    }
+
+    private fun showEmojiPicker(news: News, userId: String, anchorView: View) {
+        val emojis = listOf("😀", "❤️", "👍", "😂", "😮", "😢")
+        val moreEmojis = listOf("😅", "😍", "🔥", "👏", "🙏", "😭", "😤", "😎", "🤩", "💀", "🤣", "💪", "👀", "🎉", "✨", "💯","🤔", "✅", "🤯", "🥳" )
+        val popupView = LayoutInflater.from(context).inflate(R.layout.popup_emoji_picker, null)
+        val container = popupView.findViewById<LinearLayout>(R.id.ll_emoji_container)
+        val popup = android.widget.PopupWindow(
+            popupView,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            true
+        )
+        popup.elevation = 10f
+        emojis.forEach { emoji ->
+            val tv = TextView(context).apply {
+                text = emoji
+                textSize = context.resources.getDimension(R.dimen.text_size_large) / context.resources.displayMetrics.scaledDensity
+                setPadding(
+                    context.resources.getDimensionPixelSize(R.dimen.padding_normal),
+                    context.resources.getDimensionPixelSize(R.dimen.padding_small),
+                    context.resources.getDimensionPixelSize(R.dimen.padding_normal),
+                    context.resources.getDimensionPixelSize(R.dimen.padding_small)
+                )
+                setOnClickListener {
+                    popup.dismiss()
+                    react(news, emoji, userId)
+                }
+            }
+            container.addView(tv)
+        }
+        // Add + button at the end
+        val plusBtn = TextView(context).apply {
+            text = "+"
+            contentDescription = context.getString(R.string.more_reactions)
+            textSize = context.resources.getDimension(R.dimen.text_size_large) / context.resources.displayMetrics.scaledDensity
+            setTextColor(ContextCompat.getColor(context, R.color.daynight_textColor))
+            setPadding(
+                context.resources.getDimensionPixelSize(R.dimen.padding_normal),
+                context.resources.getDimensionPixelSize(R.dimen.padding_small),
+                context.resources.getDimensionPixelSize(R.dimen.padding_normal),
+                context.resources.getDimensionPixelSize(R.dimen.padding_small)
+            )
+            setOnClickListener {
+                popup.dismiss()
+                val gridView = android.widget.GridView(context)
+                gridView.numColumns = 5
+                gridView.adapter = object : android.widget.BaseAdapter() {
+                    override fun getCount() = moreEmojis.size
+                    override fun getItem(p: Int) = moreEmojis[p]
+                    override fun getItemId(p: Int) = p.toLong()
+                    override fun getView(p: Int, v: View?, parent: ViewGroup): View {
+                        val tv = TextView(context)
+                        tv.text = moreEmojis[p]
+                        tv.textSize = context.resources.getDimension(R.dimen.text_size_large) / context.resources.displayMetrics.scaledDensity
+                        tv.gravity = android.view.Gravity.CENTER
+                        tv.setPadding(
+                            context.resources.getDimensionPixelSize(R.dimen.padding_large),
+                            context.resources.getDimensionPixelSize(R.dimen.padding_large),
+                            context.resources.getDimensionPixelSize(R.dimen.padding_large),
+                            context.resources.getDimensionPixelSize(R.dimen.padding_large)
+                        )
+                        return tv
+                    }
+                }
+                AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                    .setTitle(context.getString(R.string.react))
+                    .setView(gridView)
+                    .setNegativeButton(R.string.cancel, null)
+                    .show()
+                    .also { dialog ->
+                        gridView.setOnItemClickListener { _, _, position, _ ->
+                            val emoji = moreEmojis[position]
+                            dialog.dismiss()
+                            react(news, emoji, userId)
+                        }
+                    }
+            }
+        }
+        container.addView(plusBtn)
+
+        popup.showAsDropDown(anchorView, 0, -context.resources.getDimensionPixelSize(R.dimen._40dp))
+    }
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: News?) {
         val viewHolder = holder as VoicesViewHolder
 
@@ -848,6 +1032,7 @@ class VoicesAdapter(
         super.onViewRecycled(holder)
         if (holder is VoicesViewHolder) {
             holder.cancelJob?.invoke()
+            holder.binding.llNewsImages.tag = null
         }
     }
 
@@ -859,18 +1044,21 @@ class VoicesAdapter(
         binding.imgNews.visibility = View.GONE
         binding.llNewsImages.visibility = View.GONE
         binding.llNewsImages.removeAllViews()
+        
+        val imageBindToken = Any()
+        binding.llNewsImages.tag = imageBindToken
 
         val parsedImageUrls = getParsedImageUrls(news)
 
         if (!parsedImageUrls.isNullOrEmpty()) {
             try {
                 if (parsedImageUrls.size == 1) {
-                    val path = JsonUtils.getString("imageUrl", parsedImageUrls[0])
+                    val path = GsonUtils.getString("imageUrl", parsedImageUrls[0])
                     loadSingleImage(binding, path)
                 } else {
                     binding.llNewsImages.visibility = View.VISIBLE
                     for (imgObject in parsedImageUrls) {
-                        val path = JsonUtils.getString("imageUrl", imgObject)
+                        val path = GsonUtils.getString("imageUrl", imgObject)
                         addImageToContainer(binding, path)
                     }
                 }
@@ -885,14 +1073,14 @@ class VoicesAdapter(
             if (!imagesArray.isEmpty()) {
                 if (size == 1) {
                     val ob = imagesArray[0]?.asJsonObject
-                    val resourceId = JsonUtils.getString("resourceId", ob)
-                    loadLibraryImage(binding, resourceId)
+                    val resourceId = GsonUtils.getString("resourceId", ob)
+                    loadLibraryImage(binding, resourceId, imageBindToken)
                 } else {
                     binding.llNewsImages.visibility = View.VISIBLE
                     for (i in 0 until size) {
                         val ob = imagesArray[i]?.asJsonObject
-                        val resourceId = JsonUtils.getString("resourceId", ob)
-                        addLibraryImageToContainer(binding, resourceId)
+                        val resourceId = GsonUtils.getString("resourceId", ob)
+                        addLibraryImageToContainer(binding, resourceId, imageBindToken)
                     }
                 }
             }
@@ -920,19 +1108,19 @@ class VoicesAdapter(
     private fun loadSingleImage(binding: RowNewsBinding, path: String?) {
         if (path == null) return
         val file = File(path)
-        val size = binding.imgNews.context.resources.getDimensionPixelSize(R.dimen.image_thumbnail_size_120)
+        val size = thumbnailSize120
         loadGlideImage(file, binding.imgNews, size)
         binding.imgNews.visibility = View.VISIBLE
         binding.imgNews.setOnClickListener {
-            showZoomableImage(it.context, path)
+            ImageViewerUtils.showZoomableImage(it.context, path)
         }
     }
 
     private fun addImageToContainer(binding: RowNewsBinding, path: String?) {
         if (path == null) return
         val imageView = ImageView(context)
-        val size = context.resources.getDimensionPixelSize(R.dimen.image_thumbnail_size_100)
-        val margin = (4 * context.resources.displayMetrics.density).toInt()
+        val size = thumbnailSize100
+        val margin = thumbnailMarginPx
         val params = ViewGroup.MarginLayoutParams(size, size)
         params.setMargins(margin, margin, margin, margin)
         imageView.layoutParams = params
@@ -942,37 +1130,39 @@ class VoicesAdapter(
         loadGlideImage(file, imageView, size)
 
         imageView.setOnClickListener {
-            showZoomableImage(context, path)
+            ImageViewerUtils.showZoomableImage(context, path)
         }
 
         binding.llNewsImages.addView(imageView)
     }
 
-    private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?) {
+    private fun loadLibraryImage(binding: RowNewsBinding, resourceId: String?, imageBindToken: Any) {
         if (resourceId == null) return
         getLibraryResourceFn(resourceId) { library ->
+            if (binding.llNewsImages.tag !== imageBindToken) return@getLibraryResourceFn
             val basePath = externalFilesDir
             if (library != null && basePath != null) {
                 val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-                val size = binding.imgNews.context.resources.getDimensionPixelSize(R.dimen.image_thumbnail_size_120)
+                val size = thumbnailSize120
                 loadGlideImage(imageFile, binding.imgNews, size)
                 binding.imgNews.visibility = View.VISIBLE
                 binding.imgNews.setOnClickListener {
-                    showZoomableImage(it.context, imageFile.toString())
+                    ImageViewerUtils.showZoomableImage(it.context, imageFile.toString())
                 }
             }
         }
     }
 
-    private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?) {
+    private fun addLibraryImageToContainer(binding: RowNewsBinding, resourceId: String?, imageBindToken: Any) {
         if (resourceId == null) return
         getLibraryResourceFn(resourceId) { library ->
+            if (binding.llNewsImages.tag !== imageBindToken) return@getLibraryResourceFn
             val basePath = externalFilesDir
             if (library != null && basePath != null) {
                 val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
                 val imageView = ImageView(context)
-                val size = context.resources.getDimensionPixelSize(R.dimen.image_thumbnail_size_100)
-                val margin = (4 * context.resources.displayMetrics.density).toInt()
+                val size = thumbnailSize100
+                val margin = thumbnailMarginPx
                 val params = ViewGroup.MarginLayoutParams(size, size)
                 params.setMargins(margin, margin, margin, margin)
                 imageView.layoutParams = params
@@ -981,7 +1171,7 @@ class VoicesAdapter(
                 loadGlideImage(imageFile, imageView, size)
 
                 imageView.setOnClickListener {
-                    showZoomableImage(context, imageFile.toString())
+                    ImageViewerUtils.showZoomableImage(context, imageFile.toString())
                 }
 
                 binding.llNewsImages.addView(imageView)
@@ -994,186 +1184,92 @@ class VoicesAdapter(
         binding.llNewsVideos.visibility = View.GONE
         binding.llNewsVideos.removeAllViews()
 
-        val videoUrls = news?.videoUrls
-        if (!videoUrls.isNullOrEmpty()) {
+        val videoBindToken = Any()
+        binding.llNewsVideos.tag = videoBindToken
+
+        val localPaths = news?.videoUrls?.mapNotNull { entry ->
             try {
-                if (videoUrls.size == 1) {
-                    val vidObject = JsonUtils.gson.fromJson(videoUrls[0], JsonObject::class.java)
-                    val path = JsonUtils.getString("videoUrl", vidObject)
-                    loadSingleVideo(binding, path)
-                } else {
-                    binding.llNewsVideos.visibility = View.VISIBLE
-                    for (videoUrl in videoUrls) {
-                        val vidObject = JsonUtils.gson.fromJson(videoUrl, JsonObject::class.java)
-                        val path = JsonUtils.getString("videoUrl", vidObject)
-                        addVideoToContainer(binding, path)
-                    }
-                }
-                return
+                GsonUtils.getString("videoUrl", GsonUtils.gson.fromJson(entry, JsonObject::class.java)).takeIf { it.isNotEmpty() }
             } catch (_: Exception) {
+                null
             }
         }
+        if (!localPaths.isNullOrEmpty()) {
+            if (localPaths.size == 1) {
+                showSingleVideo(binding, File(localPaths[0]))
+            } else {
+                binding.llNewsVideos.visibility = View.VISIBLE
+                localPaths.forEach { addVideoTile(binding, File(it)) }
+            }
+            return
+        }
 
-        news?.videosArray?.let { videosArray ->
-            if (videosArray.size() > 0) {
-                if (videosArray.size() == 1) {
-                    val ob = videosArray[0]?.asJsonObject
-                    val resourceId = JsonUtils.getString("resourceId", ob)
-                    loadLibraryVideo(binding, resourceId)
-                } else {
-                    binding.llNewsVideos.visibility = View.VISIBLE
-                    for (i in 0 until videosArray.size()) {
-                        val ob = videosArray[i]?.asJsonObject
-                        val resourceId = JsonUtils.getString("resourceId", ob)
-                        addLibraryVideoToContainer(binding, resourceId)
-                    }
+        val videosArray = news?.videosArray ?: return
+        val resourceIds = (0 until videosArray.size()).mapNotNull { i ->
+            GsonUtils.getString("resourceId", videosArray[i]?.asJsonObject).takeIf { it.isNotEmpty() }
+        }
+        if (resourceIds.size > 1) binding.llNewsVideos.visibility = View.VISIBLE
+        resourceIds.forEach { resourceId ->
+            getLibraryResourceFn(resourceId) { library ->
+                if (binding.llNewsVideos.tag !== videoBindToken) return@getLibraryResourceFn
+                val basePath = externalFilesDir
+                if (library != null && basePath != null) {
+                    val videoFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+                    if (resourceIds.size == 1) showSingleVideo(binding, videoFile) else addVideoTile(binding, videoFile)
                 }
             }
         }
     }
 
-    private fun loadSingleVideo(binding: RowNewsBinding, path: String?) {
-        if (path == null) return
-        val file = File(path)
-
-        Glide.with(binding.imgVideoThumb.context)
+    private fun loadVideoThumbnail(file: File, target: ImageView, size: Int) {
+        Glide.with(target.context)
             .asBitmap()
             .load(file)
-            .frame(1000000) // 1 second in microseconds
+            .frame(VIDEO_THUMB_FRAME_US)
             .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .override(size, size)
             .placeholder(R.drawable.ic_loading)
             .error(R.drawable.ic_loading)
-            .into(binding.imgVideoThumb)
-
-        binding.flSingleVideo.visibility = View.VISIBLE
-        binding.flSingleVideo.setOnClickListener {
-            playVideo(it.context, path)
-        }
+            .into(target)
     }
 
-    private fun addVideoToContainer(binding: RowNewsBinding, path: String?) {
-        if (path == null) return
-        val file = File(path)
+    private fun showSingleVideo(binding: RowNewsBinding, file: File) {
+        loadVideoThumbnail(file, binding.imgVideoThumb, thumbnailSize120)
+        binding.flSingleVideo.visibility = View.VISIBLE
+        binding.flSingleVideo.setOnClickListener { playVideo(it.context, file.absolutePath) }
+    }
 
-        val frameLayout = android.widget.FrameLayout(context)
-        val size = (100 * context.resources.displayMetrics.density).toInt()
-        val margin = (4 * context.resources.displayMetrics.density).toInt()
-        val params = ViewGroup.MarginLayoutParams(size, size)
-        params.setMargins(margin, margin, margin, margin)
-        frameLayout.layoutParams = params
+    private fun addVideoTile(binding: RowNewsBinding, file: File) {
+        val density = context.resources.displayMetrics.density
+        val size = thumbnailSize100
+        val frameLayout = android.widget.FrameLayout(context).apply {
+            layoutParams = ViewGroup.MarginLayoutParams(size, size).apply {
+                setMargins(thumbnailMarginPx, thumbnailMarginPx, thumbnailMarginPx, thumbnailMarginPx)
+            }
+        }
 
-        val thumbnailView = ImageView(context)
-        thumbnailView.layoutParams = ViewGroup.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
-        thumbnailView.scaleType = ImageView.ScaleType.CENTER_CROP
+        val thumbnailView = ImageView(context).apply {
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            scaleType = ImageView.ScaleType.CENTER_CROP
+        }
+        loadVideoThumbnail(file, thumbnailView, size)
 
-        Glide.with(context)
-            .asBitmap()
-            .load(file)
-            .frame(1000000)
-            .diskCacheStrategy(DiskCacheStrategy.ALL)
-            .placeholder(R.drawable.ic_loading)
-            .error(R.drawable.ic_loading)
-            .into(thumbnailView)
-
-        val playIcon = ImageView(context)
-        val iconSize = (32 * context.resources.displayMetrics.density).toInt()
-        val iconParams = android.widget.FrameLayout.LayoutParams(iconSize, iconSize)
-        iconParams.gravity = android.view.Gravity.CENTER
-        playIcon.layoutParams = iconParams
-        playIcon.setImageResource(R.drawable.ic_play)
-        playIcon.setBackgroundResource(R.drawable.circle_background)
-        val padding = (8 * context.resources.displayMetrics.density).toInt()
-        playIcon.setPadding(padding, padding, padding, padding)
-        playIcon.setColorFilter(Color.WHITE)
+        val iconSize = (32 * density).toInt()
+        val padding = (8 * density).toInt()
+        val playIcon = ImageView(context).apply {
+            layoutParams = android.widget.FrameLayout.LayoutParams(iconSize, iconSize).apply {
+                gravity = android.view.Gravity.CENTER
+            }
+            setImageResource(R.drawable.ic_play)
+            setBackgroundResource(R.drawable.circle_background)
+            setPadding(padding, padding, padding, padding)
+            setColorFilter(Color.WHITE)
+        }
 
         frameLayout.addView(thumbnailView)
         frameLayout.addView(playIcon)
-
-        frameLayout.setOnClickListener {
-            playVideo(context, path)
-        }
-
+        frameLayout.setOnClickListener { playVideo(context, file.absolutePath) }
         binding.llNewsVideos.addView(frameLayout)
-    }
-
-    private fun loadLibraryVideo(binding: RowNewsBinding, resourceId: String?) {
-        if (resourceId == null) return
-        getLibraryResourceFn(resourceId) { library ->
-            val basePath = context.getExternalFilesDir(null)
-            if (library != null && basePath != null) {
-                val videoFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-
-                Glide.with(binding.imgVideoThumb.context)
-                    .asBitmap()
-                    .load(videoFile)
-                    .frame(1000000)
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .placeholder(R.drawable.ic_loading)
-                    .error(R.drawable.ic_loading)
-                    .into(binding.imgVideoThumb)
-
-                binding.flSingleVideo.visibility = View.VISIBLE
-                binding.flSingleVideo.setOnClickListener {
-                    playVideo(it.context, videoFile.absolutePath)
-                }
-            }
-        }
-    }
-
-    private fun addLibraryVideoToContainer(binding: RowNewsBinding, resourceId: String?) {
-        if (resourceId == null) return
-        getLibraryResourceFn(resourceId) { library ->
-            val basePath = context.getExternalFilesDir(null)
-            if (library != null && basePath != null) {
-                val videoFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-
-                val frameLayout = android.widget.FrameLayout(context)
-                val size = (100 * context.resources.displayMetrics.density).toInt()
-                val margin = (4 * context.resources.displayMetrics.density).toInt()
-                val params = ViewGroup.MarginLayoutParams(size, size)
-                params.setMargins(margin, margin, margin, margin)
-                frameLayout.layoutParams = params
-
-                val thumbnailView = ImageView(context)
-                thumbnailView.layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
-                thumbnailView.scaleType = ImageView.ScaleType.CENTER_CROP
-
-                Glide.with(context)
-                    .asBitmap()
-                    .load(videoFile)
-                    .frame(1000000)
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .placeholder(R.drawable.ic_loading)
-                    .error(R.drawable.ic_loading)
-                    .into(thumbnailView)
-
-                val playIcon = ImageView(context)
-                val iconSize = (32 * context.resources.displayMetrics.density).toInt()
-                val iconParams = android.widget.FrameLayout.LayoutParams(iconSize, iconSize)
-                iconParams.gravity = android.view.Gravity.CENTER
-                playIcon.layoutParams = iconParams
-                playIcon.setImageResource(R.drawable.ic_play)
-                playIcon.setBackgroundResource(R.drawable.circle_background)
-                val padding = (8 * context.resources.displayMetrics.density).toInt()
-                playIcon.setPadding(padding, padding, padding, padding)
-                playIcon.setColorFilter(Color.WHITE)
-
-                frameLayout.addView(thumbnailView)
-                frameLayout.addView(playIcon)
-
-                frameLayout.setOnClickListener {
-                    playVideo(context, videoFile.absolutePath)
-                }
-
-                binding.llNewsVideos.addView(frameLayout)
-            }
-        }
     }
 
     private fun playVideo(context: Context, videoPath: String) {
@@ -1182,29 +1278,6 @@ class VoicesAdapter(
         intent.putExtra("isFullPath", true)
         intent.putExtra("resourceType", ResourceViewerFragment.ResourceType.VIDEO.name)
         context.startActivity(intent)
-    }
-
-    private fun showZoomableImage(context: Context, imageUrl: String) {
-        val dialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
-        val view = LayoutInflater.from(context).inflate(R.layout.dialog_zoomable_image, null)
-        val photoView = view.findViewById<PhotoView>(R.id.photoView)
-        val closeButton = view.findViewById<ImageView>(R.id.closeButton)
-
-        dialog.setContentView(view)
-        dialog.window?.setBackgroundDrawable(ContextCompat.getColor(context, R.color.md_black_1000).toDrawable())
-
-        val request = Glide.with(photoView.context)
-        val file = File(imageUrl)
-        val target = if (isGif(imageUrl)) {
-            request.asGif().load(file).error(request.asGif().load(imageUrl))
-        } else {
-            request.load(file).error(request.load(imageUrl))
-        }
-        target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().error(R.drawable.ic_loading).into(photoView)
-
-        closeButton.setOnClickListener { dialog.dismiss() }
-
-        dialog.show()
     }
 
     internal inner class VoicesViewHolder(val binding: RowNewsBinding) : RecyclerView.ViewHolder(binding.root) {

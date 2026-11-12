@@ -12,8 +12,9 @@ data class NewsUploadData(
     val _id: String?,
     val message: String?,
     val imageUrls: List<String>,
-    val videoUrls: List<String> = emptyList(),
-    val newsJson: JsonObject
+    val newsJson: JsonObject,
+    val pendingReactions: String? = null,
+    val videoUrls: List<String> = emptyList()
 )
 
 data class NewsUpdateData(
@@ -21,16 +22,18 @@ data class NewsUpdateData(
     val _id: String?,
     val _rev: String?,
     val imagesArray: JsonArray,
+    val pendingReactions: String? = null,
+    val message: String? = null,
     val videosArray: JsonArray = JsonArray()
 )
 
-interface VoicesRepository : VoicesEditActions {
+interface VoicesRepository : VoicesEditor, VoicesShareRepository {
     suspend fun getNewsForUpload(): List<NewsUploadData>
     suspend fun markNewsUploaded(updates: List<NewsUpdateData>)
+    suspend fun getPendingNewsDeletions(): List<String>
+    suspend fun markNewsDeletionsUploaded(remoteIds: List<String>)
     suspend fun getCommunityNews(userIdentifier: String): Flow<List<News>>
     suspend fun getNewsWithReplies(newsId: String): Pair<News?, List<News>>
-    suspend fun isAlreadyShared(chatId: String, viewInId: String): Boolean
-    suspend fun createNews(map: HashMap<String?, String>, user: UserEntity?, imageList: List<String>?, videoList: List<String>? = null): News
     suspend fun createTeamNews(newsData: HashMap<String?, String>, user: UserEntity, imageList: List<String>?, videoList: List<String>? = null): Boolean
     suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<News>>
     suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit>
@@ -40,10 +43,10 @@ interface VoicesRepository : VoicesEditActions {
     suspend fun addLabel(newsId: String, label: String)
     suspend fun removeLabel(newsId: String, label: String)
     suspend fun getCommunityVoiceDateCount(startTime: Long, endTime: Long, userId: String?): Int
-    suspend fun getPlanetNewsMessages(planetCode: String?): List<News>
     suspend fun insertNewsList(docs: List<JsonObject>)
     suspend fun countTeamChats(teamId: String): Long
     suspend fun countTopLevelByTeam(teamId: String): Long
+    suspend fun countTopLevelByTeams(teamIds: List<String>): Map<String, Long>
     suspend fun getPendingNewsLogUploads(): List<org.ole.planet.myplanet.model.NewsLog>
     suspend fun markNewsLogUploaded(localId: String, remoteId: String, rev: String): Boolean
 }

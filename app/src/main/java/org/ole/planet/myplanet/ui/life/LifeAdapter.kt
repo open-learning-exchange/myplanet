@@ -44,36 +44,21 @@ class LifeAdapter(
         return LifeViewHolder(binding)
     }
 
-    @SuppressLint("ClickableViewAccessibility")
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val myLife = getItem(position)
         if (holder is LifeViewHolder) {
             holder.title.text = myLife.title
             myLife.imageId?.let { imgId ->
-                val resId = drawableCache.getOrPut(imgId) {
+                // Keep drawableCache and getIdentifier fallback for names outside the seven known defaults (legacy or unknown rows)
+                val resId = LifeItemDefaults.knownDrawables[imgId] ?: drawableCache.getOrPut(imgId) {
                     context.resources.getIdentifier(imgId, "drawable", context.packageName)
                 }
                 holder.imageView.setImageResource(resId)
             }
             holder.imageView.contentDescription = context.getString(R.string.icon, myLife.title)
+            holder.dragImageButton.contentDescription = context.getString(R.string.drag, myLife.title)
+            holder.visibility.contentDescription = context.getString(R.string.visibility_of, myLife.title)
 
-            holder.imageView.setOnClickListener { view: View ->
-                val fragment = findFragment(myLife.imageId)
-                if (fragment != null) {
-                    transactionFragment(fragment, view)
-                }
-            }
-            holder.dragImageButton.setOnTouchListener { _: View?, event: MotionEvent ->
-                holder.dragImageButton.contentDescription = context.getString(R.string.drag, myLife.title)
-                if (event.actionMasked == MotionEvent.ACTION_DOWN) {
-                    mDragStartListener.onStartDrag(holder)
-                }
-                false
-            }
-            holder.visibility.setOnClickListener {
-                holder.visibility.contentDescription = context.getString(R.string.visibility_of, myLife.title)
-                updateVisibility(holder)
-            }
             if (!myLife.isVisible) {
                 changeVisibility(holder, R.drawable.ic_visibility, hide)
             } else {
@@ -143,7 +128,28 @@ class LifeAdapter(
         val imageView get() = binding.itemImageView
         val dragImageButton get() = binding.dragImageButton
         val visibility get() = binding.visibilityImageButton
-        val rvItemContainer get() = binding.rvItemParentLayout
+        val rvItemContainer get() = binding.rvItemContent
+
+        init {
+            imageView.setOnClickListener { view: View ->
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                val item = getItem(pos)
+                findFragment(item.imageId)?.let {
+                    transactionFragment(it, view)
+                }
+            }
+            @SuppressLint("ClickableViewAccessibility")
+            dragImageButton.setOnTouchListener { _: View?, event: MotionEvent ->
+                if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+                    mDragStartListener.onStartDrag(this)
+                }
+                false
+            }
+            visibility.setOnClickListener {
+                updateVisibility(this)
+            }
+        }
 
         override fun onItemSelected() {
             itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.user_profile_background))

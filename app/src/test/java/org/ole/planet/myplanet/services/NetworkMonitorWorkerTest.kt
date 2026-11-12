@@ -90,7 +90,7 @@ class NetworkMonitorWorkerTest {
         every {
             workManagerImpl.enqueueUniqueWork(
                 "server_reachability_work",
-                ExistingWorkPolicy.REPLACE,
+                ExistingWorkPolicy.KEEP,
                 capture(slot)
             )
         } returns mockk(relaxed = true)
@@ -101,7 +101,7 @@ class NetworkMonitorWorkerTest {
         verify(exactly = 1) {
             workManagerImpl.enqueueUniqueWork(
                 "server_reachability_work",
-                ExistingWorkPolicy.REPLACE,
+                ExistingWorkPolicy.KEEP,
                 any<OneTimeWorkRequest>()
             )
         }

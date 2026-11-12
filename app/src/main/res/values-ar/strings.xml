@@ -103,6 +103,7 @@
     <string name="user">مستخدم</string>
     <string name="remove_selected">إزالة المحدد</string>
     <string name="stop_download">إيقاف التنزيل</string>
+    <string name="download_stopped">تم إيقاف التنزيل</string>
     <string name="downloading_file">جارٍ تنزيل الملف…</string>
     <string name="cancel">إلغاء</string>
     <string name="added_to">تمت الإضافة إلى</string>
@@ -159,6 +160,9 @@
     <string name="select_gallery">اختيار من المعرض</string>
     <string name="add_resource">إضافة مصدر:</string>
     <string name="reply">الرد</string>
+    <string name="react">تفاعل</string>
+    <string name="reaction_chip_description">تفاعل %1$s، العدد %2$d</string>
+    <string name="more_reactions">المزيد من التفاعلات</string>
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">عرض الرد على:</string>
@@ -277,6 +281,7 @@
     <string name="assign_task_to">المهمة المخصصة لـ</string>
     <string name="leader_selected">القائد المختار</string>
     <string name="remove">إزالة</string>
+    <string name="remove_item_format">إزالة %s</string>
     <string name="make_leader">جعله قائدًا</string>
     <string name="mission"><![CDATA[المهمة والخدمات]]></string>
     <string name="team">الفرق</string>
@@ -585,7 +590,6 @@
     <string name="format_removed_from_mylibrary">%1$s تمت إزالتها من myLibrary</string>
     <string name="added_to_my_courses">تمت الإضافة إلى myCourses</string>
     <string name="do_you_want_to_stay_online">هل ترغب في البقاء متصلاً على الإنترنت؟</string>
-    <string name="device_not_connected_to_planet">الجهاز غير متصل بالكوكب.</string>
     <string name="all_files_downloaded_successfully">تم تنزيل جميع الملفات بنجاح</string>
     <string name="removed_from_mylibrary">تمت الإزالة من مكتبتي</string>
     <string name="removed_from_mycourse">تمت الإزالة من دوراتي</string>
@@ -743,6 +747,7 @@
     <string name="sync_step_of">الخطوة %1$d من %2$d</string>
     <string name="sync_items_of">%1$d / %2$d</string>
     <string name="sync_table_progress">%1$s  ·  %2$d / %3$d جداول</string>
+    <string name="sync_tables_failed">تعذر تنزيل بعض البيانات: %1$s</string>
     <string name="sync_in_progress_wait">المزامنة قيد التقدم. يرجى الانتظار حتى تنتهي.</string>
     <string name="sync_shelves_progress">%1$d / %2$d أرفف</string>
     <string name="team_leader">قائد الفريق</string>
@@ -752,6 +757,7 @@
     <string name="completed_colon">%s :اكتمل\n</string>
     <string name="assigned_to_colon">%s :معيّن لـ</string>
     <string name="add_task">إضافة مهمة</string>
+    <string name="edit_task">تعديل المهمة</string>
     <string name="task_title_is_required">اسم المهمة مطلوب</string>
     <string name="deadline_is_required">الموعد النهائي مطلوب</string>
     <string name="updated">تم التحديث</string>
@@ -917,11 +923,14 @@
     <string name="video_player">مشغل الفيديو</string>
     <string name="video_unavailable">الفيديو غير متاح — الملف غير موجود ولا يمكن الاتصال بالخادم</string>
     <string name="video_playback_error">خطأ في تشغيل الفيديو. حاول مرة أخرى أو تحقق من اتصالك</string>
+    <string name="audio_unavailable">الصوت غير متاح — الملف غير موجود ولا يمكن الاتصال بالخادم</string>
+    <string name="audio_playback_error">خطأ في تشغيل الصوت. حاول مرة أخرى أو تحقق من اتصالك</string>
     <string name="video_loading_checking_server">جارٍ التحقق من توفر الخادم…</string>
     <string name="video_loading_connecting">جارٍ الاتصال بالخادم…</string>
     <string name="video_loading_buffering">جارٍ التخزين المؤقت…</string>
     <string name="video_loading_local">جارٍ تحميل الفيديو…</string>
     <string name="unable_to_play_video">تعذر تشغيل الفيديو</string>
+    <string name="unable_to_play_audio">تعذر تشغيل الصوت</string>
     <string name="go_back">رجوع</string>
     <string name="progress_bar">شريط التقدم</string>
     <string name="web_view">عرض الويب</string>
@@ -987,6 +996,7 @@
     <string name="location_colon">&#160;الموقع:</string>
     <string name="recurring_colon">&#160;متكرر:</string>
     <string name="created_by_colon">&#160;تم إنشاؤه بواسطة:</string>
+    <string name="team_colon">&#160;الفريق:</string>
     <string name="you_want_to_connect_to_a_different_server">تريد الاتصال بخادم مختلف. امسح بيانات التطبيق للمتابعة</string>
     <string name="are_you_sure_you_want_to_clear_data">هل أنت متأكد أنك تريد مسح جميع البيانات؟</string>
     <string name="feedback_list">قائمة التغذية الراجعة</string>
@@ -1000,9 +1010,9 @@
     <string name="no_teams">الفرق غير متوفرة</string>
     <string name="no_chats">لا توجد محادثات سابقة</string>
     <string name="no_feedback">لا توجد تعليقات متاحة</string>
-    <string name="medium_text_html">نص / HTML</string>
     <string name="medium_html">HTML</string>
     <string name="empty_text" />
+    <string name="filter_header_with_count">%1$s (%2$d)</string>
     <string name="message_placeholder">%s</string>
     <string name="reports">التقارير</string>
     <string name="number_placeholder">%d</string>
@@ -1023,9 +1033,10 @@
     <string name="user_name">%1$s (%2$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
-    <string name="member_description"><![CDATA[(\u200E%2$d زيارة) \u200E%1$s]]></string>
+    <string name="member_description"><![CDATA[(\u200E%2$d زيارة للفريق) \u200E%1$s]]></string>
     <string name="last_visit">الزيارة الأخيرة: %1$s</string>
     <string name="no_visit">لا زيارة</string>
+    <string name="no_logout_record_found">لم يتم العثور على سجل تسجيل خروج</string>
     <string name="dark_mode">الوضع الداكن</string>
     <string name="dark_mode_off">إيقاف</string>
     <string name="dark_mode_on">تشغيل</string>
@@ -1137,6 +1148,9 @@
     <string name="show_additional_fields">عرض الحقول الإضافية</string>
     <string name="hide_additional_fields">إخفاء الحقول الإضافية</string>
     <string name="preparing_download">جارٍ تحضير التنزيل…</string>
+    <string name="download_partially_downloaded">تم تنزيل جزء منه</string>
+    <string name="download_paused_at_percent">متوقف عند %1$d%%</string>
+    <string name="resume_download">استئناف التنزيل</string>
     <string name="downloading_files">جارٍ تنزيل الملفات</string>
     <string name="edit_mission_and_services">تعديل المهمة والخدمات</string>
     <string name="this_team_has_no_description_defined">هذا الفريق ليس لديه وصف محدد</string>
@@ -1259,6 +1273,8 @@
     <string name="video_already_added">تمت إضافة الفيديو بالفعل</string>
     <string name="please_select_video">يرجى تحديد ملف فيديو</string>
     <string name="please_select_image_or_video">يرجى تحديد ملف صورة أو فيديو</string>
+    <string name="voice_image_gif_too_large">لا يمكن إرفاق صور GIF أكبر من 2 ميغابايت</string>
+    <string name="voice_image_unreadable">تعذرت قراءة هذه الصورة</string>
     <string name="debug_retry_queue">قائمة إعادة المحاولة (تصحيح)</string>
     <string name="debug_retry_queue_summary">عرض وإدارة محاولات الرفع الفاشلة</string>
     <string name="retry_queue_status">حالة قائمة إعادة المحاولة</string>
@@ -1301,6 +1317,7 @@
     <string name="warning_icon">أيقونة التحذير</string>
     <string name="close_banner">إغلاق لافتة التحذير</string>
     <string name="status_not_started">لم يبدأ</string>
+    <string name="status_todo">المهام المطلوبة</string>
     <string name="status_in_progress">قيد التنفيذ</string>
     <string name="status_completed">مكتمل</string>
     <string name="read_aloud">اقرأ بصوت عالٍ</string>
@@ -1317,6 +1334,9 @@
     <string name="storage_pdfs">ملفات PDF</string>
     <string name="storage_images">الصور</string>
     <string name="storage_other">ملفات أخرى</string>
+    <string name="storage_partial_downloads">التنزيلات الجزئية</string>
+    <string name="storage_clear_partial_downloads">مسح التنزيلات الجزئية؟</string>
+    <string name="storage_clear_partial_downloads_message">هذه تنزيلات توقفت قبل اكتمالها. مسحها يحرر المساحة، وستبدأ هذه التنزيلات من جديد في المرة القادمة.</string>
     <string name="storage_empty">لم يُعثر على أي محتوى منزَّل</string>
     <string name="storage_delete_confirm">حذف جميع تنزيلات %1$s؟</string>
     <string name="storage_delete_selected_confirm">حذف %1$d عنصر(عناصر) محدد؟</string>
@@ -1335,7 +1355,7 @@
     <string name="download_pdf">تحميل PDF</string>
     <string name="label_answer">الإجابة:</string>
     <string name="label_link">الرابط: </string>
-    <string name="number_of_visits">عدد الزيارات</string>
+    <string name="number_of_visits">إجمالي الزيارات</string>
     <string name="label_name_with_colon">الاسم:</string>
     <string name="label_relationship">العلاقة:</string>
     <string name="label_phone_no">رقم الهاتف:</string>
@@ -1372,6 +1392,7 @@
     <string name="yesterday">أمس</string>
     <string name="days_ago">منذ %1$d أيام</string>
     <string name="please_complete_test">يرجى إكمال الاختبار للمتابعة</string>
+    <string name="please_pass_test">يرجى اجتياز الاختبار في الخطوة %1$d للمتابعة</string>
     <string name="edit_meetup">تعديل الاجتماع</string>
     <string name="meetup_updated">تم تحديث الاجتماع بنجاح</string>
     <string name="meetup_not_updated">فشل تحديث الاجتماع</string>

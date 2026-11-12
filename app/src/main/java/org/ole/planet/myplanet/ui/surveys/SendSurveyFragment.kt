@@ -45,10 +45,17 @@ class SendSurveyFragment : BaseDialogFragment() {
                 dismiss()
             }
         }
+        collectWhenStarted(viewModel.isSendingSurvey) { sending ->
+            fragmentSendSurveyBinding.sendSurvey.isEnabled = !sending
+        }
+        collectWhenStarted(viewModel.surveySendFailed) {
+            Utilities.toast(activity, getString(R.string.request_failed_please_retry))
+        }
         viewModel.loadUsers()
 
         fragmentSendSurveyBinding.sendSurvey.setOnClickListener {
             val surveyId = id ?: return@setOnClickListener
+            it.isEnabled = false
             val selectedItems = (fragmentSendSurveyBinding.listUsers.adapter as CheckboxAdapter).selectedItemsList
             val selectedUserIds = selectedItems.mapNotNull { users.getOrNull(it)?.id }
             viewModel.sendSurveyToUsers(surveyId, selectedUserIds)

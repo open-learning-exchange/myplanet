@@ -5,9 +5,9 @@ data class EnterpriseReportCsvProjection(
     val endDate: Long,
     val createdDate: Long,
     val updatedDate: Long,
-    val beginningBalance: Int,
-    val sales: Int,
-    val otherIncome: Int,
-    val wages: Int,
-    val otherExpenses: Int
+    val beginningBalance: Double,
+    val sales: Double,
+    val otherIncome: Double,
+    val wages: Double,
+    val otherExpenses: Double
 )

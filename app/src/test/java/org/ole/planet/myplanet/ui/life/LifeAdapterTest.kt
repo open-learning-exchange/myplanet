@@ -12,13 +12,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnStartDragListener
 import org.ole.planet.myplanet.model.MyLife
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(application = Application::class, sdk = [34])
+@Config(application = Application::class)
 class LifeAdapterTest {
 
     private lateinit var adapter: LifeAdapter
@@ -81,6 +82,20 @@ class LifeAdapterTest {
     }
 
     @Test
+    fun `onBindViewHolder sets contentDescription for all views at bind time`() {
+        val life = MyLife("ic_myhealth", "user1", "My Health").apply { isVisible = true }
+        adapter.submitList(listOf(life))
+
+        val parent = LinearLayout(context)
+        val holder = adapter.onCreateViewHolder(parent, 0) as LifeAdapter.LifeViewHolder
+        adapter.onBindViewHolder(holder, 0)
+
+        assertEquals(context.getString(R.string.icon, "My Health"), holder.imageView.contentDescription)
+        assertEquals(context.getString(R.string.drag, "My Health"), holder.dragImageButton.contentDescription)
+        assertEquals(context.getString(R.string.visibility_of, "My Health"), holder.visibility.contentDescription)
+    }
+
+    @Test
     fun `onBindViewHolder applies visibility alpha based on isVisible`() {
         val visible = MyLife("ic_calendar", "user1", "Calendar").apply { isVisible = true }
         val hidden = MyLife("ic_references", "user1", "References").apply { isVisible = false }
@@ -89,11 +104,11 @@ class LifeAdapterTest {
         val parent = LinearLayout(context)
         val holder = adapter.onCreateViewHolder(parent, 0)
         adapter.onBindViewHolder(holder, 0)
-        val visibleAlpha = (holder as LifeAdapter.LifeViewHolder).binding.rvItemParentLayout.alpha
+        val visibleAlpha = (holder as LifeAdapter.LifeViewHolder).binding.rvItemContent.alpha
 
         val holder2 = adapter.onCreateViewHolder(parent, 0)
         adapter.onBindViewHolder(holder2, 1)
-        val hiddenAlpha = (holder2 as LifeAdapter.LifeViewHolder).binding.rvItemParentLayout.alpha
+        val hiddenAlpha = (holder2 as LifeAdapter.LifeViewHolder).binding.rvItemContent.alpha
 
         assertEquals(1f, visibleAlpha, 0.001f)
         assertEquals(0.5f, hiddenAlpha, 0.001f)

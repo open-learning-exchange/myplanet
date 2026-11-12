@@ -3,7 +3,10 @@ package org.ole.planet.myplanet.utils
 import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import com.opencsv.CSVParserBuilder
+import com.opencsv.CSVReaderBuilder
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.StringReader
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -84,6 +87,7 @@ class TTSManager @Inject constructor(
 
     companion object {
         private const val UTTERANCE_ID = "tts_utterance"
+        private const val MARKDOWN_CHARS = "`#*_[]>|-+."
 
         private val CODE_BLOCK_REGEX = Regex("```[\\s\\S]*?```")
         private val INLINE_CODE_REGEX = Regex("`[^`]*`")
@@ -97,6 +101,7 @@ class TTSManager @Inject constructor(
         private val TABLE_PIPE_REGEX = Regex("\\|")
 
         fun stripMarkdown(text: String): String {
+            if (text.none { it in MARKDOWN_CHARS || it.isDigit() }) return text.trim()
             return text
                 .replace(CODE_BLOCK_REGEX, "")
                 .replace(INLINE_CODE_REGEX, "")
@@ -112,15 +117,29 @@ class TTSManager @Inject constructor(
         }
 
         fun formatCsvForSpeech(rows: List<Array<String>>): String {
-            if (rows.isEmpty()) return ""
-            val header = rows.first()
-            return rows.drop(1).mapIndexed { index, row ->
-                val cells = row.mapIndexed { col, value ->
-                    val colName = header.getOrElse(col) { "column ${col + 1}" }
-                    "$colName: $value"
-                }.joinToString(", ")
-                "Row ${index + 1}. $cells"
-            }.joinToString(". ")
+            if (rows.size <= 1) return ""
+            val header = rows[0]
+            return buildString {
+                for (rowIndex in 1 until rows.size) {
+                    if (rowIndex > 1) append(". ")
+                    append("Row $rowIndex. ")
+                    val row = rows[rowIndex]
+                    for (col in row.indices) {
+                        if (col > 0) append(", ")
+                        append(header.getOrElse(col) { "column ${col + 1}" })
+                        append(": ")
+                        append(row[col])
+                    }
+                }
+            }
+        }
+
+        fun formatCsvTextForSpeech(csv: String): String {
+            val rows = CSVReaderBuilder(StringReader(csv))
+                .withCSVParser(CSVParserBuilder().withSeparator(',').withQuoteChar('"').build())
+                .build()
+                .use { it.readAll() }
+            return formatCsvForSpeech(rows)
         }
     }
 }

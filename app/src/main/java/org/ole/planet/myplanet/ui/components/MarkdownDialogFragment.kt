@@ -75,8 +75,9 @@ class MarkdownDialogFragment : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val state = viewModel.challengeDialogState(courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey)
         setupMarkdown()
-        setupCourseButton((activity as DashboardActivity).result)
+        setupCourseButton((activity as? DashboardActivity)?.result, state)
         dialogCampaignChallengeBinding.markdownTextView.movementMethod = LinkMovementMethod.getInstance()
         val textWithSpans = dialogCampaignChallengeBinding.markdownTextView.text
         if (textWithSpans is Spannable) {
@@ -91,11 +92,7 @@ class MarkdownDialogFragment : DialogFragment() {
         }
         setupCloseButton()
 
-        val earnedDollarsVoice = allVoiceCount * 2
-        val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
-        val total = earnedDollarsVoice + earnedDollarsSurvey
-        val progressValue = ((total.toDouble() / 500) * 100).toInt().coerceAtMost(100)
-        dialogCampaignChallengeBinding.progressBar.progress = progressValue
+        dialogCampaignChallengeBinding.progressBar.progress = state.progress
     }
 
     override fun onStart() {
@@ -109,27 +106,24 @@ class MarkdownDialogFragment : DialogFragment() {
         setMarkdownText(dialogCampaignChallengeBinding.markdownTextView, markdownContent)
     }
 
-    private fun setupCourseButton(drawer: Drawer?) {
+    private fun setupCourseButton(drawer: Drawer?, state: ChallengeDialogState) {
         dialogCampaignChallengeBinding.btnStart.apply {
-            val buttonText = when {
-                courseStatus.contains("no iniciado") -> context.getString(R.string.start)
-                courseStatus.contains("terminado") && voiceCount < 5 -> context.getString(R.string.next)
-                courseStatus.contains("terminado") && voiceCount >= 5 -> context.getString(R.string.sync)
-                else -> context.getString(R.string.continuation)
+            text = when (state.action) {
+                ChallengeAction.START -> context.getString(R.string.start)
+                ChallengeAction.CONTINUE -> context.getString(R.string.continuation)
+                ChallengeAction.NEXT -> context.getString(R.string.next)
+                ChallengeAction.SYNC -> context.getString(R.string.sync)
             }
 
-            text = buttonText
-
             viewLifecycleOwner.lifecycleScope.launch {
-                val hasSyncAction = viewModel.hasActiveUserSyncAction()
-                val isCompleted = courseStatus.contains("terminado") && voiceCount >= 5 && hasSyncAction
+                val isCompleted = viewModel.isChallengeCompleted(courseStatus, voiceCount, viewModel.hasActiveUserSyncAction())
                 visibility = if (isCompleted) View.GONE else View.VISIBLE
             }
 
             setOnClickListener {
                 val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
-                when (buttonText) {
-                    context.getString(R.string.start), context.getString(R.string.continuation) -> {
+                when (state.action) {
+                    ChallengeAction.START, ChallengeAction.CONTINUE -> {
                         val fragment = TakeCourseFragment().apply {
                             arguments = Bundle().apply {
                                 putString("id", courseId)
@@ -137,10 +131,10 @@ class MarkdownDialogFragment : DialogFragment() {
                         }
                         (activity as? OnHomeItemClickListener)?.openCallFragment(fragment)
                     }
-                    context.getString(R.string.next) -> {
+                    ChallengeAction.NEXT -> {
                         (activity as DashboardActivity).openCallFragment(CommunityTabFragment())
                     }
-                    context.getString(R.string.sync) -> {
+                    ChallengeAction.SYNC -> {
                         viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
                             (activity as DashboardElementActivity).logSyncInSharedPrefs()
                         }

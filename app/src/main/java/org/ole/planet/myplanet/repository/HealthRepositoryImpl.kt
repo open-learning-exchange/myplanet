@@ -1,17 +1,20 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
 import java.util.Date
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.di.PlainGson
@@ -24,6 +27,8 @@ import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class HealthRepositoryImpl @Inject constructor(
@@ -33,13 +38,6 @@ class HealthRepositoryImpl @Inject constructor(
     private val userRepository: Lazy<UserRepository>,
     @PlainGson private val gson: Gson
 ) : HealthRepository {
-    override suspend fun getHealthEntry(userId: String): Pair<UserEntity?, HealthExamination?> {
-        val userCopy = userRepository.get().getUserById(userId)
-        val pojoCopy = healthExaminationDao.getByIdOrUserId(userId)
-
-        return Pair(userCopy, pojoCopy)
-    }
-
     override suspend fun getExaminationById(id: String): HealthExamination? {
         return healthExaminationDao.getById(id)
     }
@@ -55,16 +53,28 @@ class HealthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getUpdatedHealthExaminations(): List<HealthExamination> {
+    suspend fun getUpdatedHealthExaminations(): List<HealthExamination> {
         return healthExaminationDao.getUpdated()
     }
 
-    override suspend fun getUpdatedHealthForUser(userId: String): List<HealthExamination> {
+    suspend fun getUpdatedHealthForUser(userId: String): List<HealthExamination> {
         return healthExaminationDao.getUpdatedForUser(userId)
     }
 
-    override suspend fun markHealthExaminationsUploaded(idToRevMap: Map<String, String?>) {
+    suspend fun markHealthExaminationsUploaded(idToRevMap: Map<String, String?>) {
         healthExaminationDao.markUploaded(idToRevMap)
+    }
+
+    override suspend fun syncPendingHealthExaminations() {
+        val myHealths = getUpdatedHealthExaminations()
+        val uploadedHealths = uploadHealthData(myHealths)
+        markHealthExaminationsUploaded(uploadedHealths)
+    }
+
+    override suspend fun syncPendingHealthExaminationsForUser(userId: String) {
+        val myHealths = getUpdatedHealthForUser(userId)
+        val uploadedHealths = uploadHealthData(myHealths)
+        markHealthExaminationsUploaded(uploadedHealths)
     }
 
     override suspend fun saveExamination(examination: HealthExamination?, pojo: HealthExamination?, user: UserEntity?) {
@@ -78,7 +88,10 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
-        val examinations = jsonArray.toSyncDocuments().map { (_, doc) -> HealthExamination.fromJson(doc) }
+        val locallyUpdatedIds = healthExaminationDao.getUpdatedIds().toHashSet()
+        val examinations = jsonArray.toSyncDocuments()
+            .map { (_, doc) -> HealthExamination.fromJson(doc) }
+            .filterNot { it._id in locallyUpdatedIds }
         healthExaminationDao.upsertAll(examinations)
     }
 
@@ -92,7 +105,7 @@ class HealthRepositoryImpl @Inject constructor(
                         result[key] = value != null && !value.isJsonNull && value.isJsonPrimitive && value.asBoolean
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e("HealthRepository", "Failed to parse examination conditions", e)
                 }
             }
             result
@@ -111,15 +124,18 @@ class HealthRepositoryImpl @Inject constructor(
                                 UrlUtils.header,
                                 "application/json",
                                 "${UrlUtils.getUrl()}/health",
-                                serialize(pojo)
+                                serialize(pojo).toKotlinx().jsonObject
                             )
+                            val resBody = res.body()?.toGson()
 
-                            if (res.body() != null && res.body()?.has("id") == true) {
-                                val rev = res.body()?.get("rev")?.asString
+                            if (resBody != null && resBody.has("id") == true) {
+                                val rev = resBody.get("rev")?.asString
                                 return@async pojo._id to rev
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Throwable) {
-                            e.printStackTrace()
+                            Log.e("HealthRepository", "Failed to upload health data", e)
                         }
                         null
                     }
@@ -143,21 +159,6 @@ class HealthRepositoryImpl @Inject constructor(
         healthExaminationDao.upsert(examination)
     }
 
-    override suspend fun getPatientById(id: String): UserEntity? {
-        return userRepository.get().getUserById(id)
-    }
-
-    override suspend fun getPatientsSortedBy(fieldName: String, descending: Boolean): List<UserEntity> {
-        return userRepository.get().getUsersSortedBy(fieldName, descending)
-    }
-
-    override suspend fun searchPatients(query: String, sortField: String, descending: Boolean): List<UserEntity> {
-        return if (query.isBlank()) {
-            userRepository.get().getUsersSortedBy(sortField, descending)
-        } else {
-            userRepository.get().searchUsers(query, sortField, descending)
-        }
-    }
 
     private fun decodeHealth(healthPojo: HealthExamination?, userModel: UserEntity?): MyHealth? {
         val data = healthPojo?.data
@@ -166,7 +167,7 @@ class HealthRepositoryImpl @Inject constructor(
             val decrypted = AndroidDecrypter.decrypt(data, userModel?.key, userModel?.iv)
             gson.fromJson(decrypted, MyHealth::class.java)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("HealthRepository", "Failed to decode health data", e)
             null
         }
     }
@@ -231,8 +232,10 @@ class HealthRepositoryImpl @Inject constructor(
             val iv = userModel?.iv ?: AndroidDecrypter.generateIv().also { newIv -> userModel?.iv = newIv }
             healthPojo.data = AndroidDecrypter.encrypt(gson.toJson(myHealth), key, iv)
             userModel?.let { userRepository.get().saveUser(it) }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("HealthRepository", "Failed to encrypt or save user health profile", e)
         }
         healthExaminationDao.upsert(healthPojo)
     }
@@ -246,7 +249,7 @@ class HealthRepositoryImpl @Inject constructor(
             try {
                 gson.fromJson(json, MyHealth::class.java)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("HealthRepository", "Failed to parse health record JSON", e)
                 null
             }
         } ?: return null

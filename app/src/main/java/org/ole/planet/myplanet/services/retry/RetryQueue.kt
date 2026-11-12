@@ -17,12 +17,6 @@ class RetryQueue @Inject constructor(
         private const val TAG = "RetryQueue"
     }
 
-    fun isCurrentlyProcessing(): Boolean = retryRepository.isCurrentlyProcessing()
-
-    internal fun setProcessing(processing: Boolean) {
-        retryRepository.setProcessing(processing)
-    }
-
     suspend fun queueFailedOperation(
         uploadType: String,
         error: UploadError,
@@ -37,37 +31,21 @@ class RetryQueue @Inject constructor(
             Log.d(TAG, "Skipping non-retryable error for item ${error.itemId}: ${error.message}")
             return
         }
+        if (RetryOperation.createsDocument(httpMethod, dbId)) {
+            Log.d(TAG, "Skipping create for item ${error.itemId}; the next upload re-sends it")
+            return
+        }
 
         val failure = RetryFailure(error.itemId, error.message, error.httpCode)
-        val existingOperation = retryRepository.getExistingOperation(error.itemId, uploadType)
-
-        if (existingOperation != null) {
-            retryRepository.updateAttempt(existingOperation.id, failure)
-            Log.d(TAG, "Updated existing retry operation for item ${error.itemId}")
-        } else {
-            retryRepository.enqueue(
-                uploadType, failure, payload.toString(), endpoint,
-                httpMethod, dbId, modelClassName, userId
-            )
-            Log.i(TAG, "RETRY_QUEUE: Queued new operation - type=$uploadType, itemId=${error.itemId}, error=${error.message}")
-        }
-    }
-
-    suspend fun getPendingOperations(): List<RetryOperation> {
-        return retryRepository.getPending()
+        retryRepository.recordFailure(
+            uploadType, failure, payload.toString(), endpoint,
+            httpMethod, dbId, modelClassName, userId
+        )
+        Log.i(TAG, "RETRY_QUEUE: Recorded failure - type=$uploadType, itemId=${error.itemId}, error=${error.message}")
     }
 
     suspend fun markInProgress(operationId: String) {
         retryRepository.markInProgress(operationId)
-    }
-
-    suspend fun markCompleted(operationId: String) {
-        retryRepository.markCompleted(operationId)
-        Log.d(TAG, "Marked operation $operationId as completed")
-    }
-
-    suspend fun markFailed(operationId: String, errorMessage: String?, httpCode: Int?) {
-        retryRepository.markFailed(operationId, errorMessage, httpCode)
     }
 
     suspend fun cleanup() {

@@ -3,7 +3,10 @@ package org.ole.planet.myplanet.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toGson
 
 @Entity(tableName = "submit_photos", indices = [androidx.room.Index("uploaded")])
 open class SubmitPhotos {
@@ -24,16 +27,17 @@ open class SubmitPhotos {
 
     companion object {
         fun serialize(submit: SubmitPhotos): JsonObject {
-            val obj = JsonObject()
-            obj.addProperty("id", submit.id)
-            obj.addProperty("submissionId", submit.submissionId)
-            obj.addProperty("type", "photo")
-            obj.addProperty("courseId", submit.courseId)
-            obj.addProperty("examId", submit.examId)
-            obj.addProperty("memberId", submit.memberId)
-            obj.addProperty("date", submit.date)
-            obj.addProperty("macAddress", submit.uniqueId)
-            obj.addProperty("photoLocation", submit.photoLocation)
+            val obj = buildJsonObject {
+                put("id", submit.id)
+                put("submissionId", submit.submissionId)
+                put("type", "photo")
+                put("courseId", submit.courseId)
+                put("examId", submit.examId)
+                put("memberId", submit.memberId)
+                put("date", submit.date)
+                put("macAddress", submit.uniqueId)
+                put("photoLocation", submit.photoLocation)
+            }.toGson()
             obj.addDocumentOrigin()
             return obj
         }

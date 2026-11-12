@@ -86,7 +86,8 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
                 safeActivity,
                 state.canRemove,
                 this@TeamResourcesFragment,
-            ) { resource, position ->
+                dispatcherProvider,
+                ) { resource, position ->
                 handleResourceRemoval(resource, position)
             }
             binding.rvResource.layoutManager = GridLayoutManager(safeActivity, 3)
@@ -171,6 +172,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
     }
 
     fun checkAndShowNoData() {
+        val binding = _binding ?: return
         if (::adapterLibrary.isInitialized) {
             showNoData(binding.tvNodata, adapterLibrary.itemCount, "teamResources")
         }

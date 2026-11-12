@@ -11,13 +11,25 @@ import org.ole.planet.myplanet.model.TagItem
 
 class ResourcesListFilterTest {
 
-    private fun model(id: String, title: String, subject: List<String>? = null, level: List<String>? = null, language: String? = null, mediaType: String? = null, isOffline: Boolean = false, isLocallyOffline: Boolean = false, tags: List<TagItem> = emptyList()): ResourceListModel {
+    private fun model(
+        id: String,
+        title: String,
+        subject: List<String>? = null,
+        level: List<String>? = null,
+        language: String? = null,
+        mediaType: String? = null,
+        isOffline: Boolean = false,
+        isLocallyOffline: Boolean = false,
+        tags: List<TagItem> = emptyList(),
+        localAddress: String? = null
+    ): ResourceListModel {
         val library = MyLibrary().apply {
             this.id = id
             this.subject = subject
             this.level = level
             this.language = language
             this.mediaType = mediaType
+            this.resourceLocalAddress = localAddress
         }
         val item = ResourceItem(
             id = id,
@@ -30,7 +42,8 @@ class ResourcesListFilterTest {
             isOffline = isOffline,
             _rev = null,
             uploadDate = null,
-            filename = null
+            filename = null,
+            resourceLocalAddress = localAddress
         )
         return ResourceListModel(library, item, tags = tags, isLocallyOffline = isLocallyOffline)
     }
@@ -223,5 +236,232 @@ class ResourcesListFilterTest {
         val filtered = filter.filterIfChanged(models, sameCriteria, emptySet())
 
         assertEquals(listOf("1"), filtered?.map { it.item.id })
+    }
+
+    @Test
+    fun `apply filters matching case-insensitive subjects`() {
+        val models = listOf(
+            model(id = "1", title = "Math Book", subject = listOf("Math"))
+        )
+        val filter = ResourcesListFilter()
+
+        val result = filter.apply(models, noFilters.copy(subjects = setOf("math")), emptySet())
+
+        assertEquals(1, result.size)
+        assertEquals("1", result[0].item.id)
+    }
+
+    @Test
+    fun `apply filters resource with blank mediaType using classified fallback`() {
+        val pdfModel = model(
+            id = "1",
+            title = "PDF Doc",
+            mediaType = "",
+            localAddress = "document.pdf"
+        )
+        val filter = ResourcesListFilter()
+
+        val result = filter.apply(listOf(pdfModel), noFilters.copy(mediums = setOf("pdf")), emptySet())
+
+        assertEquals(1, result.size)
+        assertEquals("1", result[0].item.id)
+    }
+
+    @Test
+    fun `book filter does not return image or text html resources`() {
+        val imageModel = model(
+            id = "1",
+            title = "Image Resource",
+            mediaType = "image",
+            localAddress = "photo.png"
+        )
+        val htmlModel = model(
+            id = "2",
+            title = "HTML Article",
+            mediaType = "text/html",
+            localAddress = "index.html"
+        )
+        val bookModel = model(
+            id = "3",
+            title = "Physics Textbook",
+            mediaType = "book",
+            localAddress = "physics.epub"
+        )
+        val filter = ResourcesListFilter()
+
+        val result = filter.apply(
+            listOf(imageModel, htmlModel, bookModel),
+            noFilters.copy(mediums = setOf("book")),
+            emptySet()
+        )
+
+        assertEquals(1, result.size)
+        assertEquals("3", result[0].item.id)
+    }
+    
+    @Test
+    fun `countMatching equals apply size under combined criteria`() {
+        val tag1 = TagEntity().apply { id = "t1" }
+        val tag2 = TagEntity().apply { id = "t2" }
+
+        val matchingModel = model(
+            id = "1", title = "Algebra 101",
+            subject = listOf("Math"), level = listOf("Grade 1"),
+            language = "English", mediaType = "Video",
+            isOffline = true,
+            tags = listOf(TagItem(id = "t1", name = "MathTag"))
+        )
+
+        val nonMatchingTag = model(
+            id = "2", title = "Algebra 102",
+            subject = listOf("Math"), level = listOf("Grade 1"),
+            language = "English", mediaType = "Video",
+            isOffline = true,
+            tags = listOf(TagItem(id = "t3", name = "OtherTag"))
+        )
+
+        val nonMatchingSubject = model(
+            id = "3", title = "Algebra 103",
+            subject = listOf("Science"), level = listOf("Grade 1"),
+            language = "English", mediaType = "Video",
+            isOffline = true,
+            tags = listOf(TagItem(id = "t1", name = "MathTag"))
+        )
+
+        val nonMatchingDownload = model(
+            id = "4", title = "Algebra 104",
+            subject = listOf("Math"), level = listOf("Grade 1"),
+            language = "English", mediaType = "Video",
+            isOffline = false,
+            tags = listOf(TagItem(id = "t1", name = "MathTag"))
+        )
+
+        val models = listOf(matchingModel, nonMatchingTag, nonMatchingSubject, nonMatchingDownload)
+        val filter = ResourcesListFilter()
+
+        val criteria = noFilters.copy(
+            searchQuery = "algebra",
+            searchTags = listOf(tag1, tag2),
+            subjects = setOf("Math"),
+            levels = setOf("Grade 1"),
+            languages = setOf("English"),
+            mediums = setOf("Video"),
+            downloadFilterIndex = 1
+        )
+        val locallyOfflineIds = setOf("99")
+
+        assertEquals(
+            filter.apply(models, criteria, locallyOfflineIds).size,
+            filter.countMatching(models, criteria, locallyOfflineIds)
+        )
+    }
+
+    @Test
+    fun `mixed-case medium aliases agree between apply and countMatching`() {
+        val pdfModel = model(id = "1", title = "PDF Doc", mediaType = "pdf", localAddress = "doc.pdf")
+        val videoModel = model(id = "2", title = "Video Clip", mediaType = "video", localAddress = "clip.mp4")
+        val audioModel = model(id = "3", title = "Audio Track", mediaType = "mp3", localAddress = "track.mp3")
+        val bookModel = model(id = "4", title = "Book", mediaType = "book", localAddress = "book.epub")
+
+        val filter = ResourcesListFilter()
+        val criteria = noFilters.copy(mediums = setOf("PDF", "Videos", "mp3"))
+
+        val models = listOf(pdfModel, videoModel, audioModel, bookModel)
+        val applied = filter.apply(models, criteria, emptySet())
+        val count = filter.countMatching(models, criteria, emptySet())
+
+        assertEquals(3, applied.size)
+        assertEquals(applied.size, count)
+        assertEquals(setOf("1", "2", "3"), applied.map { it.item.id }.toSet())
+    }
+
+    @Test
+    fun `non-target custom medium matches on canonical mediaType`() {
+        val customModel = model(id = "1", title = "Custom Resource", mediaType = "InteractiveApp")
+        val otherModel = model(id = "2", title = "Other Resource", mediaType = "Document")
+
+        val filter = ResourcesListFilter()
+        val criteria = noFilters.copy(mediums = setOf("interactiveapp"))
+
+        val models = listOf(customModel, otherModel)
+        val applied = filter.apply(models, criteria, emptySet())
+        val count = filter.countMatching(models, criteria, emptySet())
+
+        assertEquals(1, applied.size)
+        assertEquals("1", applied[0].item.id)
+        assertEquals(applied.size, count)
+    }
+
+    @Test
+    fun `mixed offline tag facet prefix and contains preserves prefix before contains order and count parity`() {
+        val tag1 = TagEntity().apply { id = "t1" }
+        val model1 = model(
+            id = "1", title = "Algebra 1",
+            subject = listOf("Math"), level = listOf("G1"), language = "En", mediaType = "Video",
+            isOffline = true, tags = listOf(TagItem(id = "t1", name = "T1"))
+        )
+        val model2 = model(
+            id = "2", title = "Advanced Algebra",
+            subject = listOf("Math"), level = listOf("G1"), language = "En", mediaType = "Video",
+            isOffline = true, tags = listOf(TagItem(id = "t1", name = "T1"))
+        )
+        val model3 = model(
+            id = "3", title = "Algebra 2",
+            subject = listOf("Math"), level = listOf("G1"), language = "En", mediaType = "Video",
+            isOffline = true, tags = listOf(TagItem(id = "t1", name = "T1"))
+        )
+        val model4 = model(
+            id = "4", title = "Algebra Fail Tag",
+            subject = listOf("Math"), level = listOf("G1"), language = "En", mediaType = "Video",
+            isOffline = true, tags = listOf(TagItem(id = "other", name = "Other"))
+        )
+        val model5 = model(
+            id = "5", title = "Algebra Fail Subject",
+            subject = listOf("Science"), level = listOf("G1"), language = "En", mediaType = "Video",
+            isOffline = true, tags = listOf(TagItem(id = "t1", name = "T1"))
+        )
+        val model6 = model(
+            id = "6", title = "Algebra Fail Offline",
+            subject = listOf("Math"), level = listOf("G1"), language = "En", mediaType = "Video",
+            isOffline = false, tags = listOf(TagItem(id = "t1", name = "T1"))
+        )
+        val model7 = model(
+            id = "7", title = "Introductory Algebra",
+            subject = listOf("Math"), level = listOf("G1"), language = "En", mediaType = "Video",
+            isOffline = true, tags = listOf(TagItem(id = "t1", name = "T1"))
+        )
+
+        val models = listOf(model1, model2, model3, model4, model5, model6, model7)
+        val criteria = noFilters.copy(
+            searchQuery = "algebra",
+            searchTags = listOf(tag1),
+            subjects = setOf("Math"),
+            levels = setOf("G1"),
+            languages = setOf("En"),
+            mediums = setOf("Video"),
+            downloadFilterIndex = 1
+        )
+        val filter = ResourcesListFilter()
+
+        val applied = filter.apply(models, criteria, emptySet())
+        val count = filter.countMatching(models, criteria, emptySet())
+
+        assertEquals(listOf("1", "3", "2", "7"), applied.map { it.item.id })
+        assertEquals(4, count)
+        assertEquals(applied.size, count)
+    }
+
+    @Test
+    fun `whitespace-only query calls searchLocalModels preserving searchList distinction`() {
+        val model1 = model(id = "1", title = "Hello World")
+        val model2 = model(id = "2", title = "HelloWorld")
+        val models = listOf(model1, model2)
+
+        val filter = ResourcesListFilter()
+        val result = filter.apply(models, noFilters.copy(searchQuery = " "), emptySet())
+        val count = filter.countMatching(models, noFilters.copy(searchQuery = " "), emptySet())
+
+        assertEquals(listOf("1", "2"), result.map { it.item.id })
+        assertEquals(result.size, count)
     }
 }

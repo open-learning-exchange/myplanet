@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -31,16 +32,18 @@ class UploadToShelfService @Inject constructor(
     fun uploadUserData(listener: OnSuccessListener) {
         appScope.launch(dispatcherProvider.io) {
             try {
-                val userModels = userRepository.getPendingSyncUsers(100)
+                val userModels = userSyncRepository.getPendingSyncUsers(100)
 
-                if (userModels.isEmpty()) return@launch
-
-                val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
-                userModels.forEach { model ->
-                    userSyncRepository.checkAndUploadUser(model, password) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
+                if (userModels.isNotEmpty()) {
+                    val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
+                    userModels.forEach { model ->
+                        userSyncRepository.checkAndUploadUser(model, password) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
+                    }
                 }
 
                 uploadToShelf(listener)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 withContext(dispatcherProvider.main) {
                     listener.onSuccess("Error during user data sync: ${e.localizedMessage}")
@@ -59,6 +62,8 @@ class UploadToShelfService @Inject constructor(
                     userSyncRepository.checkAndUploadUser(userModel, password) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
                 }
                 uploadSingleUserToShelf(userName, listener)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 withContext(dispatcherProvider.main) {
                     listener.onSuccess("Error during user data sync: ${e.localizedMessage}")
@@ -69,9 +74,7 @@ class UploadToShelfService @Inject constructor(
 
     fun uploadHealth() {
         appScope.launch(dispatcherProvider.io) {
-            val myHealths = healthRepository.getUpdatedHealthExaminations()
-            val uploadedHealths = healthRepository.uploadHealthData(myHealths)
-            healthRepository.markHealthExaminationsUploaded(uploadedHealths)
+            healthRepository.syncPendingHealthExaminations()
         }
     }
 
@@ -80,13 +83,13 @@ class UploadToShelfService @Inject constructor(
             try {
                 if (userId.isNullOrEmpty()) return@launch
 
-                val myHealths = healthRepository.getUpdatedHealthForUser(userId)
-                val uploadedHealths = healthRepository.uploadHealthData(myHealths)
-                healthRepository.markHealthExaminationsUploaded(uploadedHealths)
+                healthRepository.syncPendingHealthExaminationsForUser(userId)
 
                 withContext(dispatcherProvider.main) {
                     listener?.onSuccess("Health data for user $userId uploaded successfully")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Throwable) {
                 withContext(dispatcherProvider.main) {
                     listener?.onSuccess("Error uploading health data for user $userId: ${e.localizedMessage}")
@@ -96,7 +99,7 @@ class UploadToShelfService @Inject constructor(
     }
 
     private suspend fun uploadToShelf(listener: OnSuccessListener) {
-        val unmanagedUsers = userRepository.getSyncedUsers()
+        val unmanagedUsers = userSyncRepository.getSyncedUsers()
 
         if (unmanagedUsers.isEmpty()) {
             withContext(dispatcherProvider.main) {
@@ -119,7 +122,7 @@ class UploadToShelfService @Inject constructor(
 
     private suspend fun uploadSingleUserToShelf(userName: String?, listener: OnSuccessListener) {
         try {
-            val model = userName?.let { userRepository.getSyncedUserByName(it) }
+            val model = userName?.let { userSyncRepository.getSyncedUserByName(it) }
 
             if (model != null) {
                 userSyncRepository.uploadShelfData(model)
@@ -127,8 +130,9 @@ class UploadToShelfService @Inject constructor(
             withContext(dispatcherProvider.main) {
                 listener.onSuccess("Single user shelf sync completed successfully")
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
             withContext(dispatcherProvider.main) {
                 listener.onSuccess("Unable to update document: ${e.localizedMessage}")
             }

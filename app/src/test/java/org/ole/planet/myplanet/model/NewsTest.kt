@@ -1,15 +1,39 @@
 package org.ole.planet.myplanet.model
 
+import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.mockk.every
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.utils.FileUtils
 
 class NewsTest {
+
+    // News logs its parse-failure fallbacks through android.util.Log, and GsonUtils logs on its
+    // own fallback path, neither of which has a JVM implementation in a plain unit test. The
+    // malformed-input cases below reach both, so Log needs stubbing. Mirrors HealthExaminationTest.
+    @Before
+    fun setUp() {
+        mockkStatic(Log::class)
+        every { Log.isLoggable(any(), any()) } returns true
+        every { Log.d(any(), any()) } returns 0
+        every { Log.w(any<String>(), any<String>(), any<Throwable>()) } returns 0
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
+    }
 
     @Test
     fun testUpdateMessage() {
@@ -201,5 +225,59 @@ class NewsTest {
 
         news.viewIn = "not a valid json"
         assertFalse(news.isCommunityNews)
+    }
+
+    @Test
+    fun testUpdateReactionAddsSwitchesAndRemoves() {
+        val news = News()
+        val user = "org.couchdb.user:alice"
+
+        news.updateReaction("👍", user)
+        assertEquals(mapOf("👍" to listOf(user)), news.reactionsMap)
+
+        news.updateReaction("😎", user)
+        assertEquals(mapOf("😎" to listOf(user)), news.reactionsMap)
+
+        news.updateReaction("😎", user)
+        assertTrue(news.reactionsMap.isEmpty())
+        assertEquals("{}", news.reactions)
+    }
+
+    @Test
+    fun testReactionsMapKeepsOtherUsersAndIgnoresMalformedJson() {
+        val news = News()
+        news.reactions = """{"🎉":["org.couchdb.user:bob"]}"""
+        news.updateReaction("🎉", "org.couchdb.user:alice")
+        assertEquals(listOf("org.couchdb.user:bob", "org.couchdb.user:alice"), news.reactionsMap["🎉"])
+
+        news.reactions = "not json"
+        assertTrue(news.reactionsMap.isEmpty())
+    }
+
+    @Test
+    fun `createImageListEntry yields imageUrl and fileName`() {
+        mockkObject(FileUtils)
+        every { FileUtils.getFileNameFromUrl("/path/to/image.jpg") } returns "image.jpg"
+
+        val jsonResult = News.createImageListEntry("/path/to/image.jpg")
+
+        assertTrue(jsonResult.contains(""""imageUrl":"/path/to/image.jpg""""))
+        assertTrue(jsonResult.contains(""""fileName":"image.jpg""""))
+    }
+
+    @Test
+    fun `containsImagePath returns true for matching imageUrl and false otherwise`() {
+        mockkObject(FileUtils)
+        every { FileUtils.getFileNameFromUrl(any()) } answers { firstArg<String>().substringAfterLast('/') }
+
+        val entry1 = News.createImageListEntry("/path/to/image1.jpg")
+        val entry2 = News.createImageListEntry("/path/to/image2.jpg")
+        val invalidEntry = "invalid json"
+
+        val imageList = listOf(entry1, entry2, invalidEntry)
+
+        assertTrue(News.containsImagePath(imageList, "/path/to/image1.jpg"))
+        assertTrue(News.containsImagePath(imageList, "/path/to/image2.jpg"))
+        assertFalse(News.containsImagePath(imageList, "/path/to/image3.jpg"))
     }
 }

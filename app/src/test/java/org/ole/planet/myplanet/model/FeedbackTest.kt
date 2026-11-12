@@ -1,40 +1,45 @@
 package org.ole.planet.myplanet.model
 
-import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
-import io.mockk.unmockkAll
+import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.verify
-import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 class FeedbackTest {
 
-    @Before
-    fun setup() {
-        mockkStatic(TextUtils::class)
-        every { TextUtils.isEmpty(any()) } answers {
-            val str = firstArg<CharSequence?>()
-            str == null || str.length == 0
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkObject(NetworkUtils)
         }
-        mockkObject(NetworkUtils)
-        every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkObject(NetworkUtils)
+        }
     }
 
-    @After
-    fun tearDown() {
-        unmockkAll()
+    @Before
+    fun setup() {
+        clearAllMocks(answers = false, childMocks = false)
+        every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
     }
 
     @Test
@@ -184,10 +189,14 @@ class FeedbackTest {
             }
         }
 
-        val jsonObject = Feedback.serializeFeedback(feedback)
+        try {
+            val jsonObject = Feedback.serializeFeedback(feedback)
 
-        // When an exception is thrown, the "messages" property is not added
-        assertNull(jsonObject.get("messages"))
+            // When an exception is thrown, the "messages" property is not added
+            assertNull(jsonObject.get("messages"))
+        } finally {
+            unmockkStatic(JsonParser::class)
+        }
     }
 
     @Test
@@ -239,5 +248,50 @@ class FeedbackTest {
         }
         feedback.setMessages(jsonArray)
         assertEquals("second", feedback.message)
+    }
+
+    @Test
+    fun testMessageListConsecutiveReadsReturnEqualContent() {
+        val feedback = Feedback()
+        feedback.messages = """
+            [
+              {"message": "msg0", "user": "user0", "time": "time0"},
+              {"message": "msg1", "user": "user1", "time": "time1"}
+            ]
+        """.trimIndent()
+
+        val read1 = feedback.messageList
+        val read2 = feedback.messageList
+
+        assertEquals(read1, read2)
+        assertTrue(read1 === read2)
+    }
+
+    @Test
+    fun testMessageListReflectsWriteBetweenReads() {
+        val feedback = Feedback()
+        feedback.messages = """
+            [
+              {"message": "msg0", "user": "user0", "time": "time0"},
+              {"message": "msg1", "user": "user1", "time": "time1"}
+            ]
+        """.trimIndent()
+
+        val read1 = feedback.messageList
+        assertEquals(1, read1?.size)
+        assertEquals("msg1", read1?.get(0)?.message)
+
+        feedback.messages = """
+            [
+              {"message": "msg0", "user": "user0", "time": "time0"},
+              {"message": "msg1_updated", "user": "user1", "time": "time1"},
+              {"message": "msg2", "user": "user2", "time": "time2"}
+            ]
+        """.trimIndent()
+
+        val read2 = feedback.messageList
+        assertEquals(2, read2?.size)
+        assertEquals("msg1_updated", read2?.get(0)?.message)
+        assertEquals("msg2", read2?.get(1)?.message)
     }
 }

@@ -4,14 +4,24 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MyHealth
@@ -19,11 +29,13 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.effectiveId
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 
 @HiltViewModel
 class HealthViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val healthRepository: HealthRepository
+    private val healthRepository: HealthRepository,
+    realtimeSyncManager: RealtimeSyncManager
 ) : ViewModel() {
 
     private val _healthData = MutableStateFlow<HealthData?>(null)
@@ -34,6 +46,9 @@ class HealthViewModel @Inject constructor(
 
     private val _isSaved = MutableStateFlow(false)
     val isSaved: StateFlow<Boolean> = _isSaved.asStateFlow()
+
+    private val _saveFailed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val saveFailed: SharedFlow<Unit> = _saveFailed.asSharedFlow()
 
 
     private val _patientList = MutableStateFlow<List<UserEntity>>(emptyList())
@@ -55,24 +70,53 @@ class HealthViewModel @Inject constructor(
     private var selectPatientJob: Job? = null
     private var currentPatientId: String? = null
 
-    fun loadPatients(sortBy: String = "joinDate", descending: Boolean = true) {
+    private val syncActive = MutableStateFlow(false)
+
+    fun setSyncActive(active: Boolean) {
+        syncActive.value = active
+    }
+
+    init {
+        @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
         viewModelScope.launch {
-            _patientList.value = healthRepository.getPatientsSortedBy(sortBy, descending)
+            syncActive.flatMapLatest { active ->
+                if (active) {
+                    realtimeSyncManager.updatesFor(HEALTH_TABLE)
+                        .filter { it.shouldRefreshUI }
+                        .debounce(SYNC_REFRESH_DEBOUNCE_MS.milliseconds)
+                } else {
+                    emptyFlow()
+                }
+            }.collect {
+                refreshSelectedPatient()
+            }
         }
+    }
+
+    fun loadPatients(sortBy: String = "joinDate", descending: Boolean = true) {
+        searchPatients("", sortBy, descending)
     }
 
     fun searchPatients(query: String, sortBy: String = "joinDate", descending: Boolean = true) {
         searchJob?.cancel()
-        searchJob = viewModelScope.launch {
+        var job: Job? = null
+        job = viewModelScope.launch {
             val loadingJob = launch {
-                delay(100)
+                delay(100.milliseconds)
                 _isListLoading.value = true
             }
-            val result = healthRepository.searchPatients(query, sortBy, descending)
-            loadingJob.cancel()
-            _patientList.value = result
-            _isListLoading.value = false
+            try {
+                val result = if (query.isBlank()) userRepository.getUsersSortedBy(sortBy, descending) else userRepository.searchUsers(query, sortBy, descending)
+                loadingJob.cancel()
+                _patientList.value = result
+            } finally {
+                loadingJob.cancel()
+                if (searchJob === job) {
+                    _isListLoading.value = false
+                }
+            }
         }
+        searchJob = job
     }
 
     fun loadInitialPatient() {
@@ -112,18 +156,16 @@ class HealthViewModel @Inject constructor(
         job = viewModelScope.launch {
             _isLoading.value = true
             try {
-                val user = healthRepository.getPatientById(userId)
+                val user = userRepository.getUserById(userId)
                 if (user != null) {
                     val record = healthRepository.getPatientHealthRecords(userId, user)
                     _patientDetailState.value = PatientDetailState(user, record)
                 } else {
-                    currentPatientId = null
-                    _patientDetailState.value = PatientDetailState(null, null)
+                    clearPatientUnlessDisplayed(userId)
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
-                currentPatientId = null
-                _patientDetailState.value = PatientDetailState(null, null)
+                clearPatientUnlessDisplayed(userId)
             } finally {
                 if (selectPatientJob === job) {
                     _isLoading.value = false
@@ -131,6 +173,25 @@ class HealthViewModel @Inject constructor(
             }
         }
         selectPatientJob = job
+    }
+
+    /**
+     * Clears the detail view unless [userId] is the patient currently on screen: a failed or
+     * empty re-read of the displayed patient is far more likely to be transient than a real
+     * deletion, and blanking the screen for it loses data the user was reading. The trade-off is
+     * that a patient genuinely deleted server-side keeps showing until another patient is picked.
+     * The mirror case is deliberate too: a failed load for a *different* patient does clear the
+     * display, since the user asked for that patient and showing the previous one would mislead.
+     */
+    private fun clearPatientUnlessDisplayed(userId: String) {
+        val displayed = _patientDetailState.value.user
+        val isDisplayedPatient = displayed != null &&
+            (displayed.effectiveId == userId || displayed.id == userId)
+        if (isDisplayedPatient) {
+            return
+        }
+        currentPatientId = null
+        _patientDetailState.value = PatientDetailState(null, null)
     }
 
     fun loadHealthData(userId: String) {
@@ -160,9 +221,19 @@ class HealthViewModel @Inject constructor(
 
     fun saveHealthData(userId: String, userData: Map<String, Any?>) {
         viewModelScope.launch {
-            healthRepository.updateUserHealthProfile(userId, userData)
-            _isSaved.value = true
+            try {
+                healthRepository.updateUserHealthProfile(userId, userData)
+                _isSaved.value = true
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                _saveFailed.emit(Unit)
+            }
         }
+    }
+
+    private companion object {
+        const val HEALTH_TABLE = "health"
+        const val SYNC_REFRESH_DEBOUNCE_MS = 200L
     }
 }
 

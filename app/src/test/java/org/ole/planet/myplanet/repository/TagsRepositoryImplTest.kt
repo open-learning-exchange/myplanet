@@ -59,14 +59,11 @@ class TagsRepositoryImplTest {
             name = "Child2"
             attachedTo = listOf("parent1", "parent2")
         }
-        val unattachedChild = TagEntity().apply {
-            name = "UnattachedChild"
-        }
 
         coEvery { tagDao.getParentTags("resources") } returns
             listOf(parentTag1, parentTag2, childlessParentTag)
-        coEvery { tagDao.getAll() } returns
-            listOf(parentTag1, parentTag2, childlessParentTag, child1, child2, unattachedChild)
+        coEvery { tagDao.getAttached() } returns
+            listOf(child1, child2)
 
         val result = repository.getTagsWithChildren("resources")
 

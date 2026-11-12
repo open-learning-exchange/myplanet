@@ -6,7 +6,9 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 import androidx.core.app.NotificationCompat
@@ -18,9 +20,11 @@ import java.util.regex.Pattern
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.DownloadService
+import org.ole.planet.myplanet.services.DownloadStopReceiver
 import org.ole.planet.myplanet.services.DownloadWorker
 
 object DownloadUtils {
+    private const val TAG = "DownloadUtils"
     private const val DOWNLOAD_CHANNEL = "DownloadChannel"
     private const val COMPLETION_CHANNEL = "DownloadCompletionChannel"
     private const val WORKER_CHANNEL = "DownloadWorkerChannel"
@@ -78,6 +82,7 @@ object DownloadUtils {
             .setOngoing(true)
             .setSilent(true)
             .setOnlyAlertOnce(true)
+            .addAction(DownloadStopReceiver.stopAction(context))
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
     }
@@ -100,6 +105,7 @@ object DownloadUtils {
             .setOngoing(!forWorker)
             .setSilent(true)
             .setOnlyAlertOnce(true)
+            .addAction(DownloadStopReceiver.stopAction(context))
 
         if (fileProgress in 0..100) {
             builder.setProgress(100, fileProgress, false)
@@ -141,34 +147,60 @@ object DownloadUtils {
         }
     }
 
+    fun queuedDownloadUrls(context: Context): Set<String> {
+        val preferences = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+        val priority = preferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+        val pending = preferences.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+        return priority + pending
+    }
+
     @RequiresApi(Build.VERSION_CODES.S)
     fun openPriorityDownloadService(context: Context?, urls: ArrayList<String>) {
-        context?.let { ctx ->
-            val preferences = ctx.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
-
-            val existingPriority = preferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
-            val mergedPriority = existingPriority.toMutableSet().apply { addAll(urls) }
-
-            preferences.edit {
-                putStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, mergedPriority)
-            }
-            startDownloadServiceSafely(ctx, DownloadService.PRIORITY_DOWNLOADS_KEY, false)
-        }
+        context?.let { enqueueUrls(it, DownloadService.PRIORITY_DOWNLOADS_KEY, urls, false) }
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
     fun openDownloadService(context: Context?, urls: ArrayList<String>, fromSync: Boolean) {
-        context?.let { ctx ->
-            val preferences = ctx.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+        context?.let { enqueueUrls(it, DownloadService.PENDING_DOWNLOADS_KEY, urls, fromSync) }
+    }
 
-            val existingUrls = preferences.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, emptySet()) ?: emptySet()
-            val mergedUrls = existingUrls.toMutableSet().apply { addAll(urls) }
+    @RequiresApi(Build.VERSION_CODES.S)
+    private fun enqueueUrls(context: Context, key: String, urls: Collection<String>, fromSync: Boolean) {
+        val preferences = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+        val existing = preferences.getStringSet(key, emptySet()) ?: emptySet()
+        val merged = existing.toMutableSet().apply { addAll(urls) }
+        val syncOwned = if (fromSync) {
+            (preferences.getStringSet(DownloadService.SYNC_DOWNLOADS_KEY, emptySet()) ?: emptySet()) + urls
+        } else {
+            null
+        }
+        preferences.edit {
+            putStringSet(key, merged)
+            syncOwned?.let { putStringSet(DownloadService.SYNC_DOWNLOADS_KEY, it) }
+        }
+        startDownloadServiceSafely(context, key, fromSync)
+    }
 
-            preferences.edit {
-                putStringSet(DownloadService.PENDING_DOWNLOADS_KEY, mergedUrls)
-            }
+    /**
+     * The one Stop path, shared by the progress dialog and the notification action so the two can't drift.
+     * Drops user-queued URLs (sync-owned ones stay queued), then halts whatever is in flight — the service
+     * and every download worker, sync-owned included — the same way the service's own onDestroy stops
+     * mid-file whatever it was fetching. Sync's queued URLs survive, so the next sync picks them back up.
+     */
+    fun stopDownloads(context: Context) {
+        dropUserQueuedDownloads(context)
+        context.stopService(Intent(context, DownloadService::class.java))
+        cancelDownloadWork(context)
+    }
 
-            startDownloadServiceSafely(ctx, DownloadService.PENDING_DOWNLOADS_KEY, fromSync)
+    fun dropUserQueuedDownloads(context: Context) {
+        val preferences = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+        val syncOwned = preferences.getStringSet(DownloadService.SYNC_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+        val priority = preferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+        val pending = preferences.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+        preferences.edit(commit = true) {
+            putStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, priority.intersect(syncOwned))
+            putStringSet(DownloadService.PENDING_DOWNLOADS_KEY, pending.intersect(syncOwned))
         }
     }
 
@@ -178,7 +210,7 @@ object DownloadUtils {
             try {
                 DownloadService.startService(context, urlsKey, fromSync)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "startDownloadServiceSafely failed", e)
                 handleForegroundServiceNotAllowed(context, urlsKey, fromSync)
             }
         } else {
@@ -201,15 +233,18 @@ object DownloadUtils {
                     "fromSync" to fromSync
                 )
             )
-            .addTag("download_work")
+            .addTag(DownloadWorker.WORK_TAG)
             .build()
 
         WorkManager.getInstance(context).enqueue(workRequest)
     }
 
+    fun cancelDownloadWork(context: Context) {
+        WorkManager.getInstance(context).cancelAllWorkByTag(DownloadWorker.WORK_TAG)
+    }
+
     fun canStartForegroundService(context: Context): Boolean {
         return when {
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.O -> true
             Build.VERSION.SDK_INT < Build.VERSION_CODES.S -> {
                 isAppInForeground(context)
             }
@@ -257,10 +292,4 @@ object DownloadUtils {
         }
         return links
     }
-
-
-
-
-
-
 }

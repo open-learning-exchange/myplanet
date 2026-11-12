@@ -10,17 +10,17 @@ import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
+import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
-import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.AppNotification
-import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.NotificationPayload
+import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.model.TeamNotificationInfo
+import org.ole.planet.myplanet.utils.TaskNotificationUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.toSyncDocuments
 
@@ -32,8 +32,8 @@ class NotificationsRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider,
     private val teamNotificationDao: TeamNotificationDao,
     private val notificationDao: NotificationDao,
-    private val teamTaskDao: TeamTaskDao,
-    private val voicesRepository: VoicesRepository
+    private val voicesRepository: VoicesRepository,
+    private val removedLogDao: RemovedLogDao
 ) : NotificationsRepository {
     override suspend fun refresh() = Unit
 
@@ -98,13 +98,14 @@ class NotificationsRepositoryImpl @Inject constructor(
             val valueChanged = previousValue != value
 
             val formattedMessage = formatMessage(value)
+            if (existingNotification != null && existingNotification.message == formattedMessage && existingNotification.relatedId == relatedId) return
 
             val notification = existingNotification?.apply {
                 message = formattedMessage
                 this.relatedId = relatedId
                 if (valueChanged) {
                     this.isRead = false
-                    this.createdAt = Date()
+                    this.createdAt = Date(timeProvider.now())
                 }
             } ?: AppNotification().apply {
                 this.id = notificationId
@@ -112,7 +113,7 @@ class NotificationsRepositoryImpl @Inject constructor(
                 this.type = type
                 this.message = formattedMessage
                 this.relatedId = relatedId
-                this.createdAt = Date()
+                this.createdAt = Date(timeProvider.now())
             }
             notificationDao.upsert(notification)
         } else {
@@ -122,49 +123,102 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun markNotificationsAsRead(notificationIds: Set<String>): Set<String> {
         if (notificationIds.isEmpty()) return emptySet()
-
-        val existingIds = notificationDao.getIdsByIds(notificationIds.toList())
-        if (existingIds.isEmpty()) return emptySet()
-        notificationDao.markAsRead(existingIds, Date())
-        return existingIds.toSet()
+        return notificationDao.markExistingAsRead(notificationIds.toList()).toSet()
     }
 
-    override suspend fun markAllUnreadAsRead(userId: String?): Set<String> {
+    override suspend fun markAllUnreadAsRead(userId: String?, isAdmin: Boolean): Set<String> {
         val actualUserId = userId ?: return emptySet()
-        val unreadIds = notificationDao.getUnreadIds(actualUserId).toSet()
-        if (unreadIds.isEmpty()) return emptySet()
-        notificationDao.markAllUnreadAsRead(actualUserId, Date())
-        return unreadIds
+        return notificationDao.markAllUnreadAsReadReturningIds(actualUserId, isAdmin).toSet()
     }
 
-    override suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean): List<NotificationPayload> {
+    suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean = false): List<NotificationPayload> {
         val normalizedFilter = when (filter) {
             "read", "unread" -> filter
             else -> ""
         }
-        return notificationDao.getNotifications(userId, normalizedFilter, isAdmin).map {
-            NotificationPayload(
-                id = it.id,
-                userId = it.userId,
-                message = it.message,
-                isRead = it.isRead,
-                createdAt = it.createdAt.time,
-                type = it.type,
-                relatedId = it.relatedId,
-                title = it.title,
-                link = it.link,
-                priority = it.priority,
-                isFromServer = it.isFromServer,
-                rev = it.rev,
-                needsSync = it.needsSync,
-                subType = it.subType
+        return notificationDao.getNotifications(userId, normalizedFilter, isAdmin)
+    }
+
+    override suspend fun getEnrichedNotifications(userId: String, filter: String, isAdmin: Boolean): EnrichedNotifications {
+        val payloadNotifications = getNotifications(userId, filter, isAdmin)
+
+        val taskNotifications = mutableListOf<NotificationPayload>()
+        val joinRequestNotifications = mutableListOf<NotificationPayload>()
+        for (notification in payloadNotifications) {
+            if (notification.type.equals("task", ignoreCase = true)) {
+                taskNotifications.add(notification)
+            } else if (notification.type.equals("join_request", ignoreCase = true)) {
+                joinRequestNotifications.add(notification)
+            }
+        }
+
+        val taskIds = taskNotifications
+            .mapNotNull { it.relatedId }
+            .distinct()
+
+        val parsedTaskDates: Map<String, Pair<String, String>?> =
+            taskNotifications.associateBy({ it.id }, { TaskNotificationUtils.splitTitleAndDate(it.message) })
+
+        val taskTitles = taskNotifications
+            .mapNotNull { parsedTaskDates[it.id]?.first }
+            .distinct()
+
+        val joinRequestIds = joinRequestNotifications
+            .mapNotNull { it.relatedId }
+            .distinct()
+
+        val joinRequestsWithoutRelatedId = joinRequestNotifications
+            .filter { it.relatedId.isNullOrEmpty() }
+
+        val (taskTeamNames, joinRequestDetails, unreadCount) = coroutineScope {
+            val taskTeamNamesByIdsDeferred = async {
+                getTaskTeamNamesByTaskIds(taskIds)
+            }
+
+            val taskTeamNamesByTitlesDeferred = async {
+                if (taskTitles.isNotEmpty()) {
+                    getTaskTeamNamesByTaskTitles(taskTitles)
+                } else {
+                    emptyMap()
+                }
+            }
+
+            val joinRequestDetailsDeferred = async {
+                val details = getJoinRequestDetailsBatch(joinRequestIds).toMutableMap()
+                if (joinRequestsWithoutRelatedId.isNotEmpty()) {
+                    val fallbackDetail = getJoinRequestDetails(null)
+                    details[""] = fallbackDetail
+                }
+                details
+            }
+
+            val unreadCountDeferred = async {
+                getUnreadCount(userId, isAdmin)
+            }
+
+            val combinedTaskTeamNames = taskTeamNamesByTitlesDeferred.await().toMutableMap().apply {
+                putAll(taskTeamNamesByIdsDeferred.await())
+            }
+
+            Triple(
+                combinedTaskTeamNames,
+                joinRequestDetailsDeferred.await(),
+                unreadCountDeferred.await()
             )
         }
+
+        return EnrichedNotifications(
+            payloads = payloadNotifications,
+            taskTeamNames = taskTeamNames,
+            joinRequestDetails = joinRequestDetails,
+            parsedTaskDates = parsedTaskDates,
+            unreadCount = unreadCount
+        )
     }
 
     override suspend fun getTaskDetails(relatedId: String?): TaskNotificationResult? {
         return relatedId?.let {
-            val task = teamTaskDao.getById(it)
+            val task = teamsRepository.get().getTaskById(it)
             val linkJson = org.json.JSONObject(task?.link ?: "{}")
             val teamId = linkJson.optString("teams")
             if (teamId.isNotEmpty()) {
@@ -187,7 +241,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getJoinRequestDetails(relatedId: String?): Pair<String, String> {
+    private suspend fun getJoinRequestDetails(relatedId: String?): Pair<String, String> {
         val joinRequest = teamsRepository.get().getJoinRequestInfo(relatedId)
         val teamName = joinRequest?.teamId?.let { tid ->
             teamsRepository.get().getTeamLabelInfo(tid)?.name
@@ -198,11 +252,11 @@ class NotificationsRepositoryImpl @Inject constructor(
         return Pair(requester?.name ?: "Unknown User", teamName)
     }
 
-    override suspend fun getTaskTeamNamesByTaskIds(taskIds: List<String>): Map<String, String> {
+    private suspend fun getTaskTeamNamesByTaskIds(taskIds: List<String>): Map<String, String> {
         if (taskIds.isEmpty()) return emptyMap()
         val map = mutableMapOf<String, String>()
 
-        val tasks = teamTaskDao.getByIds(taskIds)
+        val tasks = teamsRepository.get().getTasksByIds(taskIds)
 
         val teamIds = LinkedHashSet<String>()
         tasks.forEach { task -> task.teamId?.takeIf { it.isNotEmpty() }?.let { teamIds.add(it) } }
@@ -222,51 +276,50 @@ class NotificationsRepositoryImpl @Inject constructor(
         return map
     }
 
-    override suspend fun getJoinRequestDetailsBatch(relatedIds: List<String>): Map<String, Pair<String, String>> {
+    private suspend fun getJoinRequestDetailsBatch(relatedIds: List<String>): Map<String, Pair<String, String>> {
         if (relatedIds.isEmpty()) return emptyMap()
 
         val joinRequests = teamsRepository.get().getJoinRequestsInfo(relatedIds)
 
         val teamIds = LinkedHashSet<String>()
-        joinRequests.forEach { jr -> jr.teamId.takeIf { it.isNotEmpty() }?.let { teamIds.add(it) } }
+        val userIds = LinkedHashSet<String>()
 
-        val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds.toList())
-
-        val intermediateList = ArrayList<Triple<String, String, String>>(joinRequests.size)
-        joinRequests.forEach { jr ->
-            val id = jr.id
-            if (id.isNotEmpty()) {
-                val tName = teamMap[jr.teamId] ?: "Unknown Team"
-                intermediateList.add(Triple(id, jr.userId, tName))
+        for (jr in joinRequests) {
+            if (jr.teamId.isNotEmpty()) {
+                teamIds.add(jr.teamId)
+            }
+            if (jr.id.isNotEmpty() && jr.userId.isNotEmpty()) {
+                userIds.add(jr.userId)
             }
         }
 
-        val map = mutableMapOf<String, Pair<String, String>>()
-        val userIds = LinkedHashSet<String>()
-        intermediateList.forEach { triple -> triple.second.takeIf { it.isNotEmpty() }?.let { userIds.add(it) } }
+        val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds.toList())
+
         val userMap = mutableMapOf<String, String>()
         if (userIds.isNotEmpty()) {
             val users = userRepository.get().getUsersByIds(userIds.toList())
             for (user in users) {
-                user.id?.let { id ->
-                    userMap[id] = user.name ?: "Unknown User"
-                }
+                userMap[user.id] = user.name ?: "Unknown User"
             }
         }
 
-        for (triple in intermediateList) {
-            val uName = if (triple.second.isNotEmpty()) userMap[triple.second] ?: "Unknown User" else "Unknown User"
-            map[triple.first] = Pair(uName, triple.third)
+        val map = mutableMapOf<String, Pair<String, String>>()
+        for (jr in joinRequests) {
+            val id = jr.id
+            if (id.isEmpty()) continue
+            val teamName = teamMap[jr.teamId] ?: "Unknown Team"
+            val userName = if (jr.userId.isNotEmpty()) userMap[jr.userId] ?: "Unknown User" else "Unknown User"
+            map[id] = Pair(userName, teamName)
         }
 
         return map
     }
 
-    override suspend fun getTaskTeamNamesByTaskTitles(taskTitles: List<String>): Map<String, String> {
+    private suspend fun getTaskTeamNamesByTaskTitles(taskTitles: List<String>): Map<String, String> {
         if (taskTitles.isEmpty()) return emptyMap()
         val map = mutableMapOf<String, String>()
 
-        val tasks = teamTaskDao.getByTitles(taskTitles)
+        val tasks = teamsRepository.get().getTasksByTitles(taskTitles)
 
         val teamIds = LinkedHashSet<String>()
         tasks.forEach { task -> task.teamId?.takeIf { it.isNotEmpty() }?.let { teamIds.add(it) } }
@@ -286,20 +339,14 @@ class NotificationsRepositoryImpl @Inject constructor(
         return map
     }
 
-    override suspend fun updateTeamNotification(teamId: String, news: List<News>) {
-        val count = news.size
-        val existing = teamNotificationDao.findByParentAndType(teamId, "chat")
-        if (existing != null) {
-            existing.lastCount = count
-            teamNotificationDao.update(existing)
-        } else {
-            val notification = TeamNotification().apply {
+    override suspend fun updateTeamNotification(teamId: String, count: Int) {
+        if (teamNotificationDao.updateCount(teamId, "chat", count) == 0) {
+            teamNotificationDao.insert(TeamNotification().apply {
                 id = UUID.randomUUID().toString()
                 parentId = teamId
                 type = "chat"
                 lastCount = count
-            }
-            teamNotificationDao.insert(notification)
+            })
         }
     }
 
@@ -317,22 +364,18 @@ class NotificationsRepositoryImpl @Inject constructor(
             }
         }
 
-        val chatCountsById = coroutineScope {
-            notificationsById.keys.map { teamId ->
-                async { teamId to voicesRepository.countTopLevelByTeam(teamId) }
-            }.awaitAll().toMap()
-        }
+        val chatCountsById = voicesRepository.countTopLevelByTeams(notificationsById.keys.toList())
 
         val current = timeProvider.now()
         val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
-        val tasks = teamTaskDao.getTasksForUserBetween(userId, current, tomorrow.timeInMillis)
-        val hasTask = tasks.isNotEmpty()
+        val tasks = teamsRepository.get().getTasksForUserBetween(userId, current, tomorrow.timeInMillis)
+        val taskTeamIds = tasks.mapNotNull { it.teamId }.toSet()
 
         for (teamId in teamIds) {
             val notification = notificationsById[teamId]
             val chatCount = chatCountsById[teamId] ?: 0L
             val hasChat = notification != null && notification.lastCount < chatCount
-            notificationMap[teamId] = TeamNotificationInfo(hasTask, hasChat)
+            notificationMap[teamId] = TeamNotificationInfo(teamId in taskTeamIds, hasChat)
         }
         return notificationMap
     }
@@ -390,7 +433,7 @@ class NotificationsRepositoryImpl @Inject constructor(
             priority = doc.get("priority")?.asInt ?: 0
             rev = doc.get("_rev")?.asString
             isRead = doc.get("status")?.asString != "unread"
-            createdAt = doc.get("time")?.let { Date(it.asLong) } ?: Date()
+            createdAt = doc.get("time")?.let { Date(it.asLong) } ?: Date(timeProvider.now())
             isFromServer = true
         }
     }
@@ -419,38 +462,32 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun insert(doc: JsonObject) {
         val parsed = parseNotification(doc) ?: return
-        val existing = notificationDao.getById(parsed.id)
-        if (existing?.needsSync == true) {
-            parsed.needsSync = true
-            parsed.isRead = existing.isRead
-        }
-        notificationDao.upsert(parsed)
+        notificationDao.upsertPreservingPendingRead(parsed)
     }
 
     override suspend fun deleteNotifications(ids: Set<String>): Set<String> {
         if (ids.isEmpty()) return emptySet()
-        val deletedIds = notificationDao.getIdsByIds(ids.toList())
-        if (deletedIds.isNotEmpty()) {
-            notificationDao.deleteByIds(deletedIds)
+        val serverIds = notificationDao.getByIds(ids.toList()).filter { it.isFromServer }.map { it.id }
+        if (serverIds.isNotEmpty()) {
+            removedLogDao.insertAll(serverIds.map { serverId ->
+                RemovedLog().apply {
+                    id = UUID.randomUUID().toString()
+                    type = DELETED_NOTIFICATION_TYPE
+                    docId = serverId
+                }
+            })
         }
-        return deletedIds.toSet()
+        return notificationDao.deleteExisting(ids.toList()).toSet()
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
+        val deletedIds = removedLogDao.getRemovedDocIds(DELETED_NOTIFICATION_TYPE, null).toHashSet()
         val documentList = jsonArray.toSyncDocuments().map { it.second }
-        val parsedList = documentList.mapNotNull { parseNotification(it) }
-        val existingNotifications = if (parsedList.isNotEmpty()) {
-            notificationDao.getByIds(parsedList.map { it.id }).associateBy { it.id }
-        } else {
-            emptyMap()
-        }
-        parsedList.forEach { parsed ->
-            val existing = existingNotifications[parsed.id]
-            if (existing?.needsSync == true) {
-                parsed.needsSync = true
-                parsed.isRead = existing.isRead
-            }
-        }
-        notificationDao.upsertAll(parsedList)
+        val parsedList = documentList.mapNotNull { parseNotification(it) }.filterNot { it.id in deletedIds }
+        notificationDao.upsertAllPreservingPendingRead(parsedList)
+    }
+
+    private companion object {
+        const val DELETED_NOTIFICATION_TYPE = "notification"
     }
 }

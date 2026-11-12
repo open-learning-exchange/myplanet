@@ -15,7 +15,9 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.Transaction
+import org.ole.planet.myplanet.utils.AmountUtils
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.FileExistenceCache
 import org.ole.planet.myplanet.utils.ImageViewerUtils
 import org.ole.planet.myplanet.utils.SystemTimeProvider
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -30,15 +32,14 @@ class EnterprisesFinancesAdapter(
         areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
     )
 ) {
-    private val attachmentExistsCache = HashMap<String, Pair<Boolean, Long>>()
-    private val cacheTtlMs = 5000L
+    private val attachmentPresenceCache = FileExistenceCache()
 
     override fun onCurrentListChanged(
         previousList: MutableList<Transaction>,
         currentList: MutableList<Transaction>
     ) {
         super.onCurrentListChanged(previousList, currentList)
-        attachmentExistsCache.clear()
+        attachmentPresenceCache.clear()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FinanceViewHolder {
@@ -52,13 +53,13 @@ class EnterprisesFinancesAdapter(
         binding.date.text = item.date?.let { formatDate(it, "MMM dd, yyyy") } ?: ""
         binding.note.text = item.description
         if (item.type.equals("debit", ignoreCase = true)) {
-            binding.debit.text = context.getString(R.string.number_placeholder, item.amount)
+            binding.debit.text = AmountUtils.format(item.amount)
             binding.credit.text = context.getString(R.string.message_placeholder, " -")
         } else {
-            binding.credit.text = context.getString(R.string.number_placeholder, item.amount)
+            binding.credit.text = AmountUtils.format(item.amount)
             binding.debit.text = context.getString(R.string.message_placeholder, " -")
         }
-        binding.balance.text = item.balance.toString()
+        binding.balance.text = AmountUtils.format(item.balance)
         bindFinanceImage(binding, item)
         updateBackgroundColor(holder, position)
     }
@@ -71,19 +72,7 @@ class EnterprisesFinancesAdapter(
 
     private fun bindFinanceImage(binding: RowFinanceBinding, item: Transaction) {
         val imageFile = MyTeam.getAttachmentFile(context, item.id, item.imageName)
-        val now = timeProvider.now()
-        val exists = if (imageFile != null) {
-            val cached = attachmentExistsCache[imageFile.absolutePath]
-            if (cached != null && now - cached.second < cacheTtlMs) {
-                cached.first
-            } else {
-                val freshExists = imageFile.exists()
-                attachmentExistsCache[imageFile.absolutePath] = Pair(freshExists, now)
-                freshExists
-            }
-        } else {
-            false
-        }
+        val exists = attachmentPresenceCache.exists(imageFile, timeProvider.now())
 
         if (imageFile != null && exists) {
             binding.financeImage.visibility = View.VISIBLE

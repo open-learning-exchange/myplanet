@@ -19,21 +19,24 @@ class ReferencesAdapter : ListAdapter<Reference, ViewHolderReference>(
 ) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderReference {
         val rowReferenceBinding = RowReferenceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolderReference(rowReferenceBinding)
+        val holder = ViewHolderReference(rowReferenceBinding)
+        holder.rowReferenceBinding.root.setOnClickListener {
+            val pos = holder.bindingAdapterPosition
+            if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+            val context = holder.rowReferenceBinding.root.context
+            if (pos == 0) {
+                context.startActivity(Intent(context, OfflineMapsActivity::class.java))
+            } else {
+                context.startActivity(Intent(context, DictionaryActivity::class.java))
+            }
+        }
+        return holder
     }
 
     override fun onBindViewHolder(holder: ViewHolderReference, position: Int) {
         val reference = getItem(position)
         holder.rowReferenceBinding.title.text = reference.title
         holder.rowReferenceBinding.icon.setImageResource(reference.icon)
-        holder.rowReferenceBinding.root.setOnClickListener {
-            val context = holder.rowReferenceBinding.root.context
-            if (holder.bindingAdapterPosition == 0)
-                context.startActivity(Intent(context, OfflineMapsActivity::class.java))
-            else {
-                context.startActivity(Intent(context, DictionaryActivity::class.java))
-            }
-        }
     }
 }
 

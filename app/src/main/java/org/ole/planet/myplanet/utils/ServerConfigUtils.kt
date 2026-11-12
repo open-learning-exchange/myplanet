@@ -110,14 +110,16 @@ object ServerConfigUtils {
             Triple(user, password, dbUrl)
         }
 
-        sharedPrefManager.setServerPin(password)
-        sharedPrefManager.setUrlUser(urlUser)
-        sharedPrefManager.setUrlPwd(urlPwd)
-        sharedPrefManager.setUrlScheme(uri.scheme ?: "")
-        sharedPrefManager.setUrlHost(uri.host ?: "")
-        sharedPrefManager.setAlternativeUrl(url)
-        sharedPrefManager.setProcessedAlternativeUrl(couchdbURL)
-        sharedPrefManager.setIsAlternativeUrl(true)
+        sharedPrefManager.saveAlternativeServerConfig(
+            serverPin = password,
+            urlUser = urlUser,
+            urlPwd = urlPwd,
+            urlScheme = uri.scheme ?: "",
+            urlHost = uri.host ?: "",
+            alternativeUrl = url,
+            processedAlternativeUrl = couchdbURL,
+            isAlternativeUrl = true
+        )
 
         return couchdbURL
     }
@@ -131,10 +133,9 @@ object ServerConfigUtils {
 
     fun getCommunityConfig(selected: Community, httpsProtocol: String): CommunityConfig {
         val domain = selected.localDomain
-        val protocol = httpsProtocol
         val pin = if (selected.weight == 0) BuildConfig.PLANET_LEARNING_PIN else ""
         val isPinEnabled = selected.weight != 0
-        return CommunityConfig(domain, protocol, pin, isPinEnabled)
+        return CommunityConfig(domain, httpsProtocol, pin, isPinEnabled)
     }
 
     private val _trustedServerHosts: List<String> by lazy {

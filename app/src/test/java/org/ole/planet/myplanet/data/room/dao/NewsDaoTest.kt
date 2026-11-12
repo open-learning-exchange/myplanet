@@ -7,9 +7,11 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.UUID
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -54,6 +56,33 @@ class NewsDaoTest {
             .replace("%", "\\%")
             .replace("_", "\\_")
         return "%\"_id\":\"$escaped\"%"
+    }
+
+    @Test
+    fun getPendingUploads_returnsOnlyRowsThatNeedUploading() = runBlocking {
+        val synced = News().apply { id = "synced"; _id = "synced"; imageUrls = emptyList() }
+        val created = News().apply { id = "created" }
+        val edited = News().apply { id = "edited"; _id = "edited"; isUpdated = true }
+        val reacted = News().apply { id = "reacted"; _id = "reacted"; pendingReactions = "{}" }
+        val withImage = News().apply { id = "withImage"; _id = "withImage"; imageUrls = listOf("{}") }
+        newsDao.upsertAll(listOf(synced, created, edited, reacted, withImage))
+
+        val pendingIds = newsDao.getPendingUploads().map { it.id }.toSet()
+
+        assertEquals(setOf("created", "edited", "reacted", "withImage"), pendingIds)
+    }
+
+    @Test
+    fun getTopLevelCommunityCandidatesFlow_leavesOutTeamOnlyPosts() = runBlocking {
+        val community = News().apply { id = "community"; docType = "message"; viewableBy = "community"; time = 300L }
+        val sharedToCommunity = News().apply { id = "shared"; docType = "message"; viewableBy = "teams"; viewIn = communityViewIn(); time = 200L }
+        val teamOnly = News().apply { id = "team"; docType = "message"; viewableBy = "teams"; viewIn = teamViewIn(); time = 100L }
+        val reply = News().apply { id = "reply"; docType = "message"; viewableBy = "community"; replyTo = "community"; time = 50L }
+        newsDao.upsertAll(listOf(community, sharedToCommunity, teamOnly, reply))
+
+        val ids = newsDao.getTopLevelCommunityCandidatesFlow().first().map { it.id }
+
+        assertEquals(listOf("community", "shared"), ids)
     }
 
     @Test
@@ -161,6 +190,43 @@ class NewsDaoTest {
     }
 
     @Test
+    fun getTopLevelTeamMembership_returnsCandidatesForAllRequestedTeams() = runBlocking {
+        val teamAViaViewIn = News().apply {
+            id = UUID.randomUUID().toString()
+            time = 100L
+            viewIn = "[{\"_id\":\"teamA\",\"section\":\"teams\"}]"
+        }
+        val teamBViaViewable = News().apply {
+            id = UUID.randomUUID().toString()
+            time = 200L
+            viewableBy = "teams"
+            viewableId = "teamB"
+        }
+        val reply = News().apply {
+            id = UUID.randomUUID().toString()
+            time = 150L
+            replyTo = teamAViaViewIn.id
+            viewIn = "[{\"_id\":\"teamA\",\"section\":\"teams\"}]"
+        }
+        val otherTeam = News().apply {
+            id = UUID.randomUUID().toString()
+            time = 300L
+            viewIn = "[{\"_id\":\"teamC\",\"section\":\"teams\"}]"
+        }
+
+        newsDao.upsertAll(listOf(teamAViaViewIn, teamBViaViewable, reply, otherTeam))
+
+        val rows = newsDao.getTopLevelTeamMembership(listOf("teamA", "teamB"))
+
+        // Top-level only (reply excluded); teamC's post is fetched too since it also carries a
+        // "_id" viewIn marker, matching for consumers to filter down to the teams they asked about.
+        assertEquals(3, rows.size)
+        assertTrue(rows.any { it.viewIn?.contains("teamA") == true })
+        assertTrue(rows.any { it.viewableBy == "teams" && it.viewableId == "teamB" })
+        assertTrue(rows.any { it.viewIn?.contains("teamC") == true })
+    }
+
+    @Test
     fun countDistinctCommunityVoiceDates_returns_unique_day_count() = runBlocking {
         // 2024-12-27 00:00 UTC
         val day1 = News().apply {
@@ -231,5 +297,106 @@ class NewsDaoTest {
         // All-community count covers both users (two distinct days across the set).
         val allCount = newsDao.countDistinctCommunityVoiceDates(1735257600000L, 1735430400000L)
         assertEquals(2, allCount)
+    }
+
+    @Test
+    fun isSharedWith_matches_nonMatches_and_handles_escaped_metacharacters() = runBlocking {
+        val newsMatch = News().apply {
+            id = UUID.randomUUID().toString()
+            newsId = "chat_1"
+            viewIn = "[{\"_id\":\"view_1\"}]"
+        }
+
+        val newsSpecial = News().apply {
+            id = UUID.randomUUID().toString()
+            newsId = "chat_special"
+            viewIn = "[{\"_id\":\"team_100%\"}]"
+        }
+
+        val newsWildcardTarget = News().apply {
+            id = UUID.randomUUID().toString()
+            newsId = "chat_wildcard"
+            viewIn = "[{\"_id\":\"teamX100Y\"}]"
+        }
+
+        newsDao.upsertAll(listOf(newsMatch, newsSpecial, newsWildcardTarget))
+
+        // 1. Match
+        val patternMatch = "%\"_id\":\"view_1\"%"
+        assertTrue(newsDao.isSharedWith("chat_1", patternMatch))
+
+        // 2. Non-match (wrong viewInId)
+        val patternNonMatch = "%\"_id\":\"view_2\"%"
+        assertFalse(newsDao.isSharedWith("chat_1", patternNonMatch))
+
+        // Non-match (wrong chatId)
+        assertFalse(newsDao.isSharedWith("chat_other", patternMatch))
+
+        // 3. ID containing % and _ metacharacters must not match a row holding a different ID
+        val viewInIdWithMeta = "team_100%"
+        val escaped = viewInIdWithMeta
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_")
+        val patternSpecial = "%\"_id\":\"$escaped\"%"
+
+        // Must match exact literal "team_100%"
+        assertTrue(newsDao.isSharedWith("chat_special", patternSpecial))
+
+        // Must NOT match "teamX100Y" where _ and % would have acted as wildcards if unescaped
+        assertFalse(newsDao.isSharedWith("chat_wildcard", patternSpecial))
+    }
+
+    @Test
+    fun getByUnderscoreIds_handlesEmptyInputAndLargeChunkedList() = runBlocking {
+        val emptyResult = newsDao.getByUnderscoreIds(emptyList())
+        assertTrue(emptyResult.isEmpty())
+
+        val requestIds = (1..1200).map { "underscore_id_$it" }
+
+        val seededIndices = listOf(1, 900, 901, 1200)
+        val seededItems = seededIndices.map { i ->
+            News().apply {
+                id = "id_$i"
+                _id = "underscore_id_$i"
+            }
+        } + News().apply {
+            id = "id_control"
+            _id = "underscore_id_control"
+        }
+        newsDao.upsertAll(seededItems)
+
+        val result = newsDao.getByUnderscoreIds(requestIds)
+        assertEquals(4, result.size)
+        val expectedIds = setOf("underscore_id_1", "underscore_id_900", "underscore_id_901", "underscore_id_1200")
+        assertEquals(expectedIds, result.mapNotNull { it._id }.toSet())
+        assertFalse(result.any { it._id == "underscore_id_control" })
+    }
+
+    @Test
+    fun getByIds_handlesLargeInputAndDeduplicates() = runBlocking {
+        val news1 = News().apply { id = "news_0" }
+        val news2 = News().apply { id = "news_1000" }
+        newsDao.upsertAll(listOf(news1, news2))
+
+        val queryIds = (0 until 1200).map { "news_$it" } + listOf("news_0", "news_1000")
+        val result = newsDao.getByIds(queryIds)
+
+        assertEquals(2, result.size)
+        assertTrue(result.any { it.id == "news_0" })
+        assertTrue(result.any { it.id == "news_1000" })
+    }
+
+    @Test
+    fun deleteByIds_handlesLargeInputAndDeduplicates() = runBlocking {
+        val news1 = News().apply { id = "news_0" }
+        val news2 = News().apply { id = "news_1000" }
+        newsDao.upsertAll(listOf(news1, news2))
+
+        val queryIds = (0 until 1200).map { "news_$it" } + listOf("news_0", "news_1000")
+        newsDao.deleteByIds(queryIds)
+
+        val remaining = newsDao.getAll()
+        assertTrue(remaining.isEmpty())
     }
 }

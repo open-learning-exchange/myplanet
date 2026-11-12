@@ -3,9 +3,7 @@ package org.ole.planet.myplanet.base
 import android.content.DialogInterface
 import android.graphics.Typeface
 import android.os.Bundle
-import android.text.Editable
 import android.text.TextUtils
-import android.text.TextWatcher
 import android.view.Gravity
 import android.view.View
 import android.widget.EditText
@@ -15,38 +13,35 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import io.noties.markwon.Markwon
 import io.noties.markwon.editor.MarkwonEditor
-import io.noties.markwon.editor.MarkwonEditorTextWatcher
 import java.util.Date
-import javax.inject.Inject
-import kotlinx.coroutines.CoroutineScope
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.ui.exam.ExamViewModel
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.surveys.SurveyFragment
 import org.ole.planet.myplanet.utils.CameraUtils
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
+import org.ole.planet.myplanet.utils.MarkdownPreRenderer
+import org.ole.planet.myplanet.utils.MarkdownUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var exam: StepExam? = null
-    @Inject
-    lateinit var submissionsRepository: SubmissionsRepository
-    @Inject
-    @ApplicationScope
-    lateinit var applicationScope: CoroutineScope
+    private val viewModel: ExamViewModel by viewModels()
     var stepId: String? = null
     var id: String? = ""
     var type: String? = "exam"
@@ -63,10 +58,21 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var submitId = ""
     var isTeam: Boolean = false
     var teamId: String? = null
-    internal var answerTextWatcher: TextWatcher? = null
+    private var answerTextWatcher: MarkdownPreRenderer? = null
     private var currentAnswerEditText: EditText? = null
-    private val markwon by lazy(LazyThreadSafetyMode.NONE) { Markwon.create(requireActivity()) }
+    private var markwonExecutor: ExecutorService? = null
+    private val markwon by lazy(LazyThreadSafetyMode.NONE) { MarkdownUtils.create(requireActivity()) }
     private val markwonEditor by lazy(LazyThreadSafetyMode.NONE) { MarkwonEditor.create(markwon) }
+
+    private fun getMarkwonExecutor(): ExecutorService {
+        val executor = markwonExecutor
+        if (executor == null || executor.isShutdown) {
+            val newExecutor = Executors.newSingleThreadExecutor()
+            markwonExecutor = newExecutor
+            return newExecutor
+        }
+        return executor
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -85,7 +91,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             id = requireArguments().getString("id")
             if (isMySurvey) {
                 id?.let {
-                    sub = submissionsRepository.getSubmissionById(it)
+                    sub = viewModel.getSubmissionById(it)
                 }
                 id = sub?.parentId?.substringBefore("@")
             }
@@ -101,9 +107,9 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     suspend fun initExam() {
         checkId()
         exam = if (!TextUtils.isEmpty(stepId)) {
-            stepId?.let { submissionsRepository.getExamByStepId(it) }
+            stepId?.let { viewModel.getExamByStepId(it) }
         } else {
-            id?.let { submissionsRepository.getExamById(it) }
+            id?.let { viewModel.getExamById(it) }
         }
     }
 
@@ -118,7 +124,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             val toast = Toast.makeText(activity, getString(R.string.incorrect_ans), Toast.LENGTH_SHORT)
             toast.show()
             viewLifecycleOwner.lifecycleScope.launch {
-                delay(1000)
+                delay(1000.milliseconds)
                 toast.cancel()
             }
         }
@@ -155,7 +161,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             UserInformationFragment.getInstance(sub?.id, teamId, exam?.isFromNation != true).show(childFragmentManager, "")
         } else {
             viewLifecycleOwner.lifecycleScope.launch {
-                submissionsRepository.updateSubmissionStatus(sub?.id, "complete")
+                viewModel.updateSubmissionStatus(sub?.id, "complete")
                 sub?.status = "complete"
                 Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
                 navigateToSurveyList(requireActivity())
@@ -175,15 +181,13 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
     abstract fun startExam(question: ExamQuestion?)
     private fun insertIntoSubmitPhotos(submitId: String?) {
-        applicationScope.launch {
-            submissionsRepository.addSubmissionPhoto(
-                submitId,
-                exam?.id,
-                exam?.courseId,
-                user?.id,
-                photoPath
-            )
-        }
+        viewModel.addSubmissionPhoto(
+            submitId,
+            exam?.id,
+            exam?.courseId,
+            user?.id,
+            photoPath
+        )
     }
 
     override fun onImageCapture(fileUri: String?) {
@@ -192,32 +196,41 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     fun setMarkdownViewAndShowInput(etAnswer: EditText, type: String, oldAnswer: String?) {
-        currentAnswerEditText?.removeTextChangedListener(answerTextWatcher)
-        currentAnswerEditText = etAnswer
+        if (currentAnswerEditText !== etAnswer) {
+            releaseAnswerTextWatcher()
+            currentAnswerEditText = etAnswer
+        }
         etAnswer.visibility = View.VISIBLE
-        if (type.equals("textarea", ignoreCase = true)) {
-            answerTextWatcher = MarkwonEditorTextWatcher.withProcess(markwonEditor)
-            etAnswer.addTextChangedListener(answerTextWatcher)
-        } else {
-            answerTextWatcher = object : TextWatcher {
-                @Suppress("EmptyMethod")
-                override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-                @Suppress("EmptyMethod")
-                override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-                @Suppress("EmptyMethod")
-                override fun afterTextChanged(editable: Editable) {}
-            }
-            etAnswer.addTextChangedListener(answerTextWatcher)
+        // One watcher per EditText, attached until onDestroyView: it has to see every setText, plain-text
+        // questions included, or a render still in flight from the last textarea lands on the new answer.
+        val isMarkdown = type.equals("textarea", ignoreCase = true)
+        val watcher = answerTextWatcher
+        if (watcher != null) {
+            watcher.isRenderingEnabled = isMarkdown
+        } else if (isMarkdown) {
+            answerTextWatcher = MarkdownPreRenderer(markwonEditor, getMarkwonExecutor(), etAnswer)
+                .also { etAnswer.addTextChangedListener(it) }
         }
         etAnswer.setText(oldAnswer)
     }
 
+    private fun releaseAnswerTextWatcher() {
+        answerTextWatcher?.let {
+            it.cancel()
+            currentAnswerEditText?.removeTextChangedListener(it)
+        }
+        answerTextWatcher = null
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
-        currentAnswerEditText?.removeTextChangedListener(answerTextWatcher)
+        releaseAnswerTextWatcher()
+        currentAnswerEditText = null
     }
 
     override fun onDestroy() {
+        markwonExecutor?.shutdown()
+        markwonExecutor = null
         CameraUtils.release()
         super.onDestroy()
     }

@@ -19,14 +19,12 @@ import androidx.core.net.toUri
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
-import java.util.Locale
 import java.util.UUID
 import kotlin.math.roundToLong
 
 object FileUtils {
     private const val TAG = "FileUtils"
+    private val STRAY_PERCENT = Regex("%(?![0-9A-Fa-f]{2})")
 
     @Volatile private var cachedExternalFilesDir: File? = null
 
@@ -72,7 +70,10 @@ object FileUtils {
 
     private fun parseUrlSegments(url: String?): List<String>? {
         return try {
-            url?.toUri()?.pathSegments
+            url?.toUri()?.encodedPath
+                ?.split('/')
+                ?.filter { it.isNotEmpty() }
+                ?.map { if (STRAY_PERCENT.containsMatchIn(it)) it else Uri.decode(it) }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to parse path segments from url", e)
             null
@@ -87,36 +88,16 @@ object FileUtils {
 
     private fun getResourceRelativePathFromSegments(segments: List<String>?): String {
         if (segments == null) return ""
-        return try {
-            val idx = segments.indexOf("resources")
-            if (idx != -1 && idx + 2 < segments.size) {
-                segments.subList(idx + 2, segments.size).joinToString("/") {
-                    URLDecoder.decode(it, StandardCharsets.UTF_8.name())
-                }
-            } else {
-                getFileNameFromSegments(segments)
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to resolve resource relative path from url", e)
+        val idx = segments.indexOf("resources")
+        return if (idx != -1 && idx + 2 < segments.size) {
+            segments.subList(idx + 2, segments.size).joinToString("/")
+        } else {
             getFileNameFromSegments(segments)
         }
     }
 
-    private fun getFileNameFromSegments(segments: List<String>?): String {
-        val lastSegment = segments?.lastOrNull() ?: return ""
-        return try {
-            URLDecoder.decode(lastSegment, StandardCharsets.UTF_8.name())
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to decode file name from url segment", e)
-            ""
-        }
-    }
+    private fun getFileNameFromSegments(segments: List<String>?): String = segments?.lastOrNull().orEmpty()
 
-    /**
-     * Resolves an HTML resource's entry file (e.g. from `openWhichFile`, which may nest the
-     * entry point in a subfolder like `sudoku/index.html`) against its download directory,
-     * defaulting to `index.html` when unset and refusing to resolve outside [baseDirectory].
-     */
     fun resolveHtmlEntryFile(baseDirectory: File, relativePath: String?): File? {
         val candidate = relativePath?.takeIf { it.isNotBlank() } ?: "index.html"
         if (candidate.startsWith("/") || candidate.startsWith("\\") || candidate.contains("..")) {
@@ -174,28 +155,18 @@ object FileUtils {
         return path.substringAfterLast('/')
     }
 
-    fun getFileNameFromUrl(url: String?): String {
-        return try {
-            val segments = url?.toUri()?.pathSegments
-            getFileNameFromSegments(segments)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to extract file name from url", e)
-            ""
-        }
-    }
+    fun getFileNameFromUrl(url: String?): String = getFileNameFromSegments(parseUrlSegments(url))
 
-    fun getIdFromUrl(url: String?): String {
-        return try {
-            val segments = url?.toUri()?.pathSegments
-            getIdFromSegments(segments)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to extract resource id from url", e)
-            ""
-        }
-    }
+    fun getIdFromUrl(url: String?): String = getIdFromSegments(parseUrlSegments(url))
 
     fun getFileExtension(address: String?): String {
-        return address?.let { File(it).extension.lowercase() } ?: ""
+        if (address.isNullOrBlank()) return ""
+        val cleanAddress = if (address.startsWith("http://", ignoreCase = true) || address.startsWith("https://", ignoreCase = true)) {
+            address.substringBefore('?').substringBefore('#')
+        } else {
+            address
+        }
+        return File(cleanAddress).extension.lowercase()
     }
 
     fun installApk(activity: Context, file: String?) {
@@ -232,8 +203,8 @@ object FileUtils {
 
     fun getMimeType(fileName: String?): String? {
         if (fileName.isNullOrBlank()) return null
-        val ext = MimeTypeMap.getFileExtensionFromUrl(fileName)?.lowercase(Locale.getDefault())
-        return if (!ext.isNullOrBlank()) {
+        val ext = getFileExtension(fileName)
+        return if (ext.isNotBlank()) {
             MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
         } else {
             null
@@ -243,7 +214,7 @@ object FileUtils {
     fun getDisplayName(context: Context, uri: Uri, timeProvider: TimeProvider): String {
         var name: String? = null
         if (uri.scheme == "content") {
-            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
                 if (cursor.moveToFirst()) {
                     val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                     if (idx >= 0) name = cursor.getString(idx)
@@ -269,7 +240,7 @@ object FileUtils {
         uri ?: return null
         if (uri.scheme == "file") return uri.path
         return try {
-            val displayName = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val displayName = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
                 if (cursor.moveToFirst()) {
                     val columnIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                     if (columnIndex >= 0) cursor.getString(columnIndex) else null
@@ -281,7 +252,7 @@ object FileUtils {
             copyUriToFile(context, uri, destinationFile)
             destinationFile.absolutePath
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "resolveUriToPath failed", e)
             null
         }
     }
@@ -304,9 +275,6 @@ object FileUtils {
     }
 
     val availableExternalMemorySize: Long
-        /**
-         * Find space left in the external memory.
-         */
         get() =// Not the best way to check, shows internal memory
             // when there is not external memory mounted
             if (externalMemoryAvailable()) {
@@ -319,19 +287,9 @@ object FileUtils {
                 0
             }
 
-    /**
-     * Coverts Bytes to KB/MB/GB and changes magnitude accordingly.
-     *
-     * @param size
-     * @return A string with size followed by an appropriate suffix
-     */
     fun formatSize(context: Context, size: Long): String {
         return Formatter.formatFileSize(context, size)
     }
-
-    fun totalMemoryCapacity(context: Context): Long = getStorageStats(context).first
-
-    fun totalAvailableMemory(context: Context): Long = getStorageStats(context).second
 
     fun totalAvailableMemoryRatio(context: Context): Long {
         val (total, available) = getStorageStats(context)
@@ -379,5 +337,32 @@ object FileUtils {
             Log.e(TAG, "Failed to open PDF", e)
             Toast.makeText(context, "Could not open PDF. File saved at: ${file.absolutePath}", Toast.LENGTH_LONG).show()
         }
+    }
+}
+
+class FileExistenceCache(
+    private val ttlMs: Long = DEFAULT_TTL_MS
+) {
+    private val cache = HashMap<String, Pair<Boolean, Long>>()
+
+    fun clear() {
+        cache.clear()
+    }
+
+    fun exists(file: File?, now: Long): Boolean {
+        if (file == null) return false
+        val path = file.absolutePath
+        val cached = cache[path]
+        return if (cached != null && now - cached.second < ttlMs) {
+            cached.first
+        } else {
+            val freshExists = file.exists()
+            cache[path] = Pair(freshExists, now)
+            freshExists
+        }
+    }
+
+    companion object {
+        const val DEFAULT_TTL_MS = 5000L
     }
 }

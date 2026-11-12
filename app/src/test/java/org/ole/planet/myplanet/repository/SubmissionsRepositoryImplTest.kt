@@ -1,11 +1,11 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -23,6 +23,8 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -33,6 +35,7 @@ import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao.UploadedPhoto
+import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.ExamQuestion
@@ -42,6 +45,7 @@ import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.TeamReference
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 @ExperimentalCoroutinesApi
@@ -49,9 +53,9 @@ class SubmissionsRepositoryImplTest {
 
     private lateinit var teamsRepositoryProvider: Provider<TeamsRepository>
     private lateinit var surveysRepositoryProvider: Provider<SurveysRepository>
-    private lateinit var context: Context
     private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var exporter: SubmissionsRepositoryExporter
+    private lateinit var deviceNameProvider: DeviceNameProvider
 
     private val submitPhotosDao: SubmitPhotosDao = mockk(relaxed = true)
     private val submissionDao: SubmissionDao = mockk(relaxed = true)
@@ -67,14 +71,13 @@ class SubmissionsRepositoryImplTest {
         teamsRepositoryProvider = mockk(relaxed = true)
         every { teamsRepositoryProvider.get() } returns teamsRepo
         surveysRepositoryProvider = mockk(relaxed = true)
-        context = mockk(relaxed = true)
         sharedPrefManager = mockk(relaxed = true)
         exporter = mockk(relaxed = true)
+        deviceNameProvider = mockk(relaxed = true)
 
         repository = spyk(SubmissionsRepositoryImpl(
             teamsRepositoryProvider,
             userRepository,
-            context,
             sharedPrefManager,
             exporter,
             submitPhotosDao,
@@ -82,13 +85,35 @@ class SubmissionsRepositoryImplTest {
             answerDao,
             examDao,
             questionDao,
-            Gson()
+            Gson(),
+            deviceNameProvider
         ), recordPrivateCalls = true)
     }
 
     @After
     fun tearDown() {
         unmockkAll()
+    }
+
+    @Test
+    fun `isStepCompleted keeps survey-only step incomplete until survey is submitted`() = runTest {
+        coEvery { examDao.getFirstByStepId("step1") } returns null
+        coEvery { examDao.getFirstByStepIdAndType("step1", "surveys") } returns StepExam(id = "survey1", type = "surveys")
+        coEvery { submissionDao.countCompletedByUserAndExamId("user1", "survey1") } returns 0
+
+        assertFalse(repository.isStepCompleted("step1", "user1"))
+
+        coEvery { submissionDao.countCompletedByUserAndExamId("user1", "survey1") } returns 1
+
+        assertTrue(repository.isStepCompleted("step1", "user1"))
+    }
+
+    @Test
+    fun `isStepCompleted treats step without test or survey as completed`() = runTest {
+        coEvery { examDao.getFirstByStepId("step1") } returns null
+        coEvery { examDao.getFirstByStepIdAndType("step1", "surveys") } returns null
+
+        assertTrue(repository.isStepCompleted("step1", "user1"))
     }
 
     @Test
@@ -100,11 +125,14 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `getPendingSurveysFlow handles null userId`() = runTest {
-        every { submissionDao.observePendingSurveys(null) } returns kotlinx.coroutines.flow.flowOf(emptyList())
+    fun `getPendingSurveysFlow handles null or empty userId`() = runTest {
+        val nullResult = repository.getPendingSurveysFlow(null).first()
+        assertTrue(nullResult.isEmpty())
 
-        val result = repository.getPendingSurveysFlow(null).first()
-        assertTrue(result.isEmpty())
+        val emptyResult = repository.getPendingSurveysFlow("").first()
+        assertTrue(emptyResult.isEmpty())
+
+        verify(exactly = 0) { submissionDao.observePendingSurveys(any()) }
     }
 
     @Test
@@ -211,6 +239,74 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `getUniquePendingSurveys deduplicates candidates across exams returning one per exam in candidate order with answers`() = runTest {
+        val candidate1 = Submission(id = "sub1", parentId = "exam1@course1")
+        val candidate2 = Submission(id = "sub2", parentId = "exam1@course2")
+        val candidate3 = Submission(id = "sub3", parentId = "exam2@course1")
+
+        coEvery { submissionDao.getUniquePendingSurveyCandidates("user") } returns listOf(
+            candidate1, candidate2, candidate3
+        )
+        coEvery { examDao.getByIds(listOf("exam1", "exam2")) } returns listOf(
+            StepExam(id = "exam1", name = "Exam 1"),
+            StepExam(id = "exam2", name = "Exam 2")
+        )
+        val answer1 = Answer(id = "ans1", submissionId = "sub1", value = "ans1_val")
+        val answer3 = Answer(id = "ans3", submissionId = "sub3", value = "ans3_val")
+        coEvery { answerDao.getBySubmissionIds(listOf("sub1", "sub3")) } returns listOf(answer1, answer3)
+
+        val result = repository.getUniquePendingSurveys("user")
+
+        assertEquals(2, result.size)
+        assertEquals("sub1", result[0].id)
+        assertEquals("sub3", result[1].id)
+        assertEquals(1, result[0].answers?.size)
+        assertEquals("ans1_val", result[0].answers?.get(0)?.value)
+        assertEquals(1, result[1].answers?.size)
+        assertEquals("ans3_val", result[1].answers?.get(0)?.value)
+        coVerify(exactly = 1) { answerDao.getBySubmissionIds(listOf("sub1", "sub3")) }
+    }
+
+    @Test
+    fun `getUniquePendingSurveys drops candidate whose exam id is not returned by examDao`() = runTest {
+        val candidate1 = Submission(id = "sub1", parentId = "exam1@course1")
+        val candidate2 = Submission(id = "sub2", parentId = "invalid_exam@course1")
+
+        coEvery { submissionDao.getUniquePendingSurveyCandidates("user") } returns listOf(candidate1, candidate2)
+        coEvery { examDao.getByIds(listOf("exam1", "invalid_exam")) } returns listOf(
+            StepExam(id = "exam1", name = "Exam 1")
+        )
+        coEvery { answerDao.getBySubmissionIds(listOf("sub1")) } returns emptyList()
+
+        val result = repository.getUniquePendingSurveys("user")
+
+        assertEquals(1, result.size)
+        assertEquals("sub1", result[0].id)
+        coVerify(exactly = 1) { answerDao.getBySubmissionIds(listOf("sub1")) }
+    }
+
+    @Test
+    fun `getUniquePendingSurveys narrows hydration to surviving submission ids only`() = runTest {
+        val candidate1 = Submission(id = "sub1", parentId = "exam1@course1")
+        val candidate2 = Submission(id = "sub2", parentId = "exam1@course2")
+        val candidate3 = Submission(id = "sub3", parentId = "exam2@course1")
+
+        coEvery { submissionDao.getUniquePendingSurveyCandidates("user") } returns listOf(
+            candidate1, candidate2, candidate3
+        )
+        coEvery { examDao.getByIds(listOf("exam1", "exam2")) } returns listOf(
+            StepExam(id = "exam1", name = "Exam 1"),
+            StepExam(id = "exam2", name = "Exam 2")
+        )
+        coEvery { answerDao.getBySubmissionIds(any()) } returns emptyList()
+
+        repository.getUniquePendingSurveys("user")
+
+        coVerify(exactly = 1) { answerDao.getBySubmissionIds(listOf("sub1", "sub3")) }
+        coVerify(exactly = 0) { answerDao.getBySubmissionIds(match { it.contains("sub2") }) }
+    }
+
+    @Test
     fun `getSurveyTitlesFromSubmissions returns empty list when examIds is empty`() = runTest {
         val result = repository.getSurveyTitlesFromSubmissions(emptyList())
         assertTrue(result.isEmpty())
@@ -254,7 +350,7 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `createBulkSurveySubmissions with mixed users only inserts new users`() = runTest {
+    fun `createBulkSurveySubmissions with mixed users only inserts new users preserving input order`() = runTest {
         val examId = "examId"
         val userIds = listOf("user1", "user2", "user3")
         val parentId = "examId@courseId"
@@ -268,7 +364,8 @@ class SubmissionsRepositoryImplTest {
         coVerify(exactly = 1) {
             submissionDao.upsertAll(match {
                 it.size == 2 &&
-                it.map { sub -> sub.userId }.containsAll(listOf("user1", "user3"))
+                it[0].userId == "user1" &&
+                it[1].userId == "user3"
             })
         }
     }
@@ -395,13 +492,15 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `deleteExamSubmissions deletes answers and submissions through Room`() = runTest {
-        coEvery { submissionDao.getByParentUserAndStatus("exam@course", "user", null) } returns listOf(Submission(id = "submission1"))
+    fun `deleteExamSubmissions deletes only pending attempts and their answers`() = runTest {
+        coEvery { submissionDao.getByParentUserAndStatus("exam@course", "user", "pending") } returns listOf(Submission(id = "submission1"))
 
         repository.deleteExamSubmissions("exam", "course", "user")
 
         coVerify { answerDao.deleteBySubmissionIds(listOf("submission1")) }
-        coVerify { submissionDao.deleteByParentAndUser("exam@course", "user") }
+        coVerify { submissionDao.deleteByIds(listOf("submission1")) }
+        coVerify(exactly = 0) { submissionDao.getByParentUserAndStatus(any(), any(), null) }
+        coVerify(exactly = 0) { submissionDao.deleteByParentAndUser(any(), any()) }
     }
 
     @Test
@@ -428,7 +527,7 @@ class SubmissionsRepositoryImplTest {
         val result = repository.startExamSession("exam_id", "parentId", "user", request, recreate = true, deleteStale = true)
 
         assertEquals("exam_id@course_id", result.parentId)
-        coVerify { submissionDao.getByParentUserAndStatus("exam_id@course_id", "user", null) }
+        coVerify { submissionDao.getByParentUserAndStatus("exam_id@course_id", "user", "pending") }
         coVerify { submissionDao.upsertAll(match { it.single().parentId == "exam_id@course_id" }) }
     }
 
@@ -461,7 +560,7 @@ class SubmissionsRepositoryImplTest {
         val request = CreateExamSubmissionRequest("user", "dob", "gender", exam, "survey", null)
         val existingSubmission = Submission().apply { id = "existing_id" }
 
-        coEvery { submissionDao.getByParentUserAndStatus("parentId", "user", "pending") } returns listOf(existingSubmission)
+        coEvery { submissionDao.getPendingByUserAndParent("parentId", "user") } returns existingSubmission
 
         val result = repository.startExamSession("exam_id", "parentId", "user", request, recreate = false)
 
@@ -477,7 +576,7 @@ class SubmissionsRepositoryImplTest {
         }
         val request = CreateExamSubmissionRequest("user", "dob", "gender", exam, "survey", null)
 
-        coEvery { submissionDao.getByParentUserAndStatus("parentId", "user", "pending") } returns emptyList()
+        coEvery { submissionDao.getPendingByUserAndParent("parentId", "user") } returns null
         coEvery { answerDao.deleteBySubmissionIds(any()) } returns 1
 
         val result = repository.startExamSession("exam_id", "parentId", "user", request, recreate = false)
@@ -544,11 +643,166 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `saveExamAnswer keeps an exam pending when the final answer is wrong`() = runTest {
+        val question = ExamQuestion().apply {
+            id = "question1"; examId = "exam1"; type = "select"
+            choices = """[{"id":"a","text":"Right"},{"id":"b","text":"Wrong"}]"""
+            correctChoiceList = listOf("Right")
+        }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1" }
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1", userId = "user1")
+
+        val result = repository.saveExamAnswer(
+            ExamAnswerData(submission, question, "b", null, null, false, "exam", 0, 1, true, "user1")
+        )
+
+        assertFalse(result)
+        coVerify { submissionDao.updateStatusAndLastUpdate("submission1", "pending", any()) }
+        coVerify(exactly = 0) { submissionDao.updateStatusAndLastUpdate("submission1", "requires grading", any()) }
+    }
+
+    @Test
+    fun `saveExamAnswer completes an exam without written questions and saves its grade`() = runTest {
+        val question = ExamQuestion().apply {
+            id = "question2"; examId = "exam1"; type = "select"; marks = "3"
+            choices = """[{"id":"a","text":"Right"},{"id":"b","text":"Wrong"}]"""
+            correctChoiceList = listOf("Right")
+        }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1@course1" }
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1@course1", userId = "user1")
+        coEvery { questionDao.getByExamId("exam1") } returns listOf(
+            ExamQuestion().apply { id = "question1"; examId = "exam1"; type = "selectMultiple"; marks = "2" },
+            question
+        )
+        coEvery { answerDao.getBySubmissionId("submission1") } returns listOf(
+            Answer(id = "answer1", questionId = "question1", submissionId = "submission1", grade = 1),
+            Answer(id = "answer2", questionId = "question2", submissionId = "submission1", grade = 1)
+        )
+
+        repository.saveExamAnswer(ExamAnswerData(submission, question, "a", null, null, false, "exam", 1, 2, true, "user1"))
+
+        coVerify { submissionDao.updateStatusGradeAndLastUpdate("submission1", "complete", 5L, any()) }
+    }
+
+    @Test
+    fun `saveExamAnswer leaves an exam with a written question for grading`() = runTest {
+        val question = ExamQuestion().apply {
+            id = "question2"; examId = "exam1"; type = "select"
+            choices = """[{"id":"a","text":"Right"},{"id":"b","text":"Wrong"}]"""
+            correctChoiceList = listOf("Right")
+        }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1@course1" }
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1@course1", userId = "user1")
+        coEvery { questionDao.getByExamId("exam1") } returns listOf(
+            ExamQuestion().apply { id = "question1"; examId = "exam1"; type = "textarea" },
+            question
+        )
+
+        repository.saveExamAnswer(ExamAnswerData(submission, question, "a", null, null, false, "exam", 1, 2, true, "user1"))
+
+        coVerify { submissionDao.updateStatusAndLastUpdate("submission1", "requires grading", any()) }
+        coVerify(exactly = 0) { submissionDao.updateStatusGradeAndLastUpdate(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `saveExamAnswer grades a multiple-choice exam answer 1`() = runTest {
+        val question = ExamQuestion().apply {
+            id = "question1"; examId = "exam1"; type = "select"
+            choices = """[{"id":"a","text":"Right"},{"id":"b","text":"Wrong"}]"""
+            correctChoiceList = listOf("Right")
+        }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1@course1" }
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1@course1", userId = "user1")
+
+        repository.saveExamAnswer(ExamAnswerData(submission, question, "a", null, null, false, "exam", 0, 2, false, "user1"))
+
+        coVerify { answerDao.upsertAll(match { it.single().questionId == "question1" && it.single().grade == 1 }) }
+    }
+
+    @Test
+    fun `saveExamAnswer leaves a written exam answer ungraded`() = runTest {
+        val question = ExamQuestion().apply {
+            id = "question1"; examId = "exam1"; type = "textarea"
+            correctChoiceList = listOf("photosynthesis")
+        }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1@course1" }
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1@course1", userId = "user1")
+
+        repository.saveExamAnswer(ExamAnswerData(submission, question, "Photosynthesis", null, null, false, "exam", 0, 2, false, "user1"))
+
+        coVerify { answerDao.upsertAll(match { it.single().questionId == "question1" && it.single().grade == null }) }
+    }
+
+    @Test
+    fun `saveExamAnswer keeps choice JSON valid when other text has quotes and backslashes`() = runTest {
+        val question = ExamQuestion().apply { id = "question1"; examId = "exam1"; type = "selectMultiple" }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1" }
+        val otherText = """my "own" answer \ here"""
+        val answerData = ExamAnswerData(
+            submission = submission,
+            question = question,
+            ans = "",
+            listAns = mapOf("Say \"hi\"" to "c1", "Other" to "other"),
+            otherText = otherText,
+            otherVisible = true,
+            type = "survey",
+            index = 0,
+            total = 1,
+            isExplicitSubmission = true,
+            userId = "user1",
+        )
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1", userId = "user1")
+        val saved = slot<List<Answer>>()
+        coEvery { answerDao.upsertAll(capture(saved)) } returns Unit
+
+        repository.saveExamAnswer(answerData)
+
+        val choices = saved.captured.single().valueChoicesArray
+        assertEquals(2, choices.size())
+        assertEquals("c1", choices[0].asJsonObject.get("id").asString)
+        assertEquals("Say \"hi\"", choices[0].asJsonObject.get("text").asString)
+        assertEquals("other", choices[1].asJsonObject.get("id").asString)
+        assertEquals(otherText, choices[1].asJsonObject.get("text").asString)
+    }
+
+    @Test
+    fun `serializeSubmission carries DeviceNameProvider device name`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { deviceNameProvider.getCustomDeviceName() } returns "Test Custom Device Name"
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
+        }
+
+        val result = repository.serializeSubmission(submission, "planet", "parent", null)
+
+        assertEquals("Test Custom Device Name", result.get("customDeviceName").asString)
+    }
+
+    @Test
+    fun `getExamUploadPayload carries DeviceNameProvider device name`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { deviceNameProvider.getCustomDeviceName() } returns "Test Custom Device Name"
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "exam"
+        }
+
+        val result = repository.getExamUploadPayload(submission, null)
+
+        assertEquals("Test Custom Device Name", result.get("customDeviceName").asString)
+    }
+
+    @Test
     fun `serializeSubmission uploads fresh user data instead of the stored blob`() = runTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
 
         // Fresh user record from Room (attachment-free, current) must win over the persisted
         // blob, whose _attachments were stripped for storage safety.
@@ -570,7 +824,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
 
         val submission = Submission().apply {
             id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
@@ -587,7 +841,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
         coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns null
 
         val persistedSubmissions = slot<List<Submission>>()
@@ -626,7 +880,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
         coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns null
 
         val submission = Submission().apply {
@@ -647,7 +901,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
         coEvery { teamsRepositoryProvider.get().getTeamById("team1") } throws IllegalStateException("lookup failed")
 
         val submission = Submission().apply {
@@ -668,7 +922,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
 
         coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns MyTeam().apply {
             _id = "team1"
@@ -694,7 +948,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
 
         val submission = Submission().apply {
             id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
@@ -719,7 +973,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
 
         val submission = Submission().apply {
             id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
@@ -735,7 +989,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
         coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns null
 
         val submission = Submission().apply {
@@ -756,7 +1010,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
         coEvery { teamsRepositoryProvider.get().getTeamById("team1") } throws IllegalStateException("lookup failed")
 
         val submission = Submission().apply {
@@ -777,7 +1031,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
 
         coEvery { teamsRepositoryProvider.get().getTeamById("team1") } returns MyTeam().apply {
             _id = "team1"
@@ -803,7 +1057,7 @@ class SubmissionsRepositoryImplTest {
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
         every { NetworkUtils.getDeviceName() } returns "device"
-        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+        every { deviceNameProvider.getCustomDeviceName() } returns "custom"
 
         val submission = Submission().apply {
             id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "exam"
@@ -932,6 +1186,24 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `getSubmissionProjections ignores surrounding whitespace in query`() = runTest {
+        val s1 = Submission().apply { id = "1"; parentId = "p1"; type = "exam"; status = "complete"; lastUpdateTime = 100L; userId = "user1" }
+        val s2 = Submission().apply { id = "2"; parentId = "p2"; type = "exam"; status = "complete"; lastUpdateTime = 200L; userId = "user1" }
+
+        val examMap = mapOf<String?, StepExam>(
+            "p1" to StepExam().apply { name = "Math Quiz" },
+            "p2" to StepExam().apply { name = "Science Test" }
+        )
+
+        coEvery { userRepository.getUsersByIds(any()) } returns emptyList()
+
+        val projections = repository.getSubmissionProjections(listOf(s1, s2), "user1", "exam", " Math ", examMap)
+
+        assertEquals(1, projections.size)
+        assertEquals("1", projections[0].submission.id)
+    }
+
+    @Test
     fun `getNormalizedSubmitterName returns null when user is blank`() {
         val submission = Submission().apply {
             user = "   "
@@ -953,19 +1225,190 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `markPhotosUploadedBatch delegates batch to dao in one call`() = runTest {
+    fun `markPhotosUploadedBatch maps PhotoUpload to SubmitPhotosDao UploadedPhoto and delegates to dao`() = runTest {
         val uploads = listOf(
-            UploadedPhoto("photo1", "rev1", "remote1"),
-            UploadedPhoto("photo2", "rev2", "remote2"),
-            UploadedPhoto("photo3", "rev3", "remote3")
+            PhotoUpload(photoId = "photo1", rev = "rev1", remoteId = "remote1"),
+            PhotoUpload(photoId = "photo2", rev = "rev2", remoteId = "remote2")
         )
+        val expectedDaoUploads = listOf(
+            UploadedPhoto(photoId = "photo1", rev = "rev1", remoteId = "remote1"),
+            UploadedPhoto(photoId = "photo2", rev = "rev2", remoteId = "remote2")
+        )
+
         repository.markPhotosUploadedBatch(uploads)
-        coVerify(exactly = 1) { submitPhotosDao.markUploadedBatch(uploads) }
+
+        coVerify(exactly = 1) { submitPhotosDao.markUploadedBatch(expectedDaoUploads) }
     }
 
     @Test
     fun `markPhotosUploadedBatch does not call dao for empty batch`() = runTest {
         repository.markPhotosUploadedBatch(emptyList())
         coVerify(exactly = 0) { submitPhotosDao.markUploadedBatch(any()) }
+    }
+
+    @Test
+    fun `getPendingExamResults fetches answers in one batched query`() = runTest {
+        val s1 = Submission().apply { id = "s1" }
+        val s2 = Submission().apply { id = "s2" }
+        val s3 = Submission().apply { id = "s3" }
+        coEvery { submissionDao.getPendingExamResults() } returns listOf(s1, s2, s3)
+
+        val a1 = Answer(id = "a1", submissionId = "s1")
+        val a3 = Answer(id = "a3", submissionId = "s3")
+        coEvery { answerDao.getBySubmissionIds(listOf("s1", "s2", "s3")) } returns listOf(a1, a3)
+
+        val results = repository.getPendingExamResults()
+
+        assertEquals(3, results.size)
+        assertEquals(listOf(a1), results[0].answers)
+        assertTrue(results[1].answers.isNullOrEmpty())
+        assertEquals(listOf(a3), results[2].answers)
+
+        coVerify(exactly = 1) { answerDao.getBySubmissionIds(any()) }
+        coVerify(exactly = 0) { answerDao.getBySubmissionId(any()) }
+    }
+
+    @Test
+    fun `getPendingSubmissionsForUpload fetches answers in one batched query`() = runTest {
+        val s1 = Submission().apply { id = "s1" }
+        val s2 = Submission().apply { id = "s2" }
+        val s3 = Submission().apply { id = "s3" }
+        coEvery { submissionDao.getPendingSubmissions() } returns listOf(s1, s2, s3)
+
+        val a1 = Answer(id = "a1", submissionId = "s1")
+        val a3 = Answer(id = "a3", submissionId = "s3")
+        coEvery { answerDao.getBySubmissionIds(listOf("s1", "s2", "s3")) } returns listOf(a1, a3)
+
+        val results = repository.getPendingSubmissionsForUpload()
+
+        assertEquals(3, results.size)
+        assertEquals(listOf(a1), results[0].answers)
+        assertTrue(results[1].answers.isNullOrEmpty())
+        assertEquals(listOf(a3), results[2].answers)
+
+        coVerify(exactly = 1) { answerDao.getBySubmissionIds(any()) }
+        coVerify(exactly = 0) { answerDao.getBySubmissionId(any()) }
+    }
+
+    @Test
+    fun `getExamSubmissionsByUser delegates to submissionDao`() = runTest {
+        val expected = listOf(Submission(id = "sub1"))
+        coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns expected
+
+        val result = repository.getExamSubmissionsByUser("user1")
+
+        assertEquals(expected, result)
+        coVerify(exactly = 1) { submissionDao.getExamSubmissionsByUser("user1") }
+    }
+
+    @Test
+    fun `getAnswersBySubmissionIds delegates to answerDao`() = runTest {
+        val expected = listOf(Answer(id = "ans1"))
+        coEvery { answerDao.getBySubmissionIds(listOf("sub1")) } returns expected
+
+        val result = repository.getAnswersBySubmissionIds(listOf("sub1"))
+
+        assertEquals(expected, result)
+        coVerify(exactly = 1) { answerDao.getBySubmissionIds(listOf("sub1")) }
+    }
+
+    @Test
+    fun `getUnuploadedNonSurveySubmissionsByParentIds delegates to submissionDao`() = runTest {
+        val expected = listOf(Submission(id = "sub1"))
+        coEvery { submissionDao.getUnuploadedNonSurveyByParentIds(listOf("p1")) } returns expected
+
+        val result = repository.getUnuploadedNonSurveySubmissionsByParentIds(listOf("p1"))
+
+        assertEquals(expected, result)
+        coVerify(exactly = 1) { submissionDao.getUnuploadedNonSurveyByParentIds(listOf("p1")) }
+    }
+
+    @Test
+    fun `deleteSubmissionsWithAnswers calls answerDao then submissionDao in order`() = runTest {
+        val ids = listOf("sub1", "sub2")
+        coEvery { answerDao.deleteBySubmissionIds(ids) } returns 2
+        coEvery { submissionDao.deleteByIds(ids) } returns 2
+
+        repository.deleteSubmissionsWithAnswers(ids)
+
+        coVerifyOrder {
+            answerDao.deleteBySubmissionIds(ids)
+            submissionDao.deleteByIds(ids)
+        }
+    }
+
+    @Test
+    fun `getPendingExamResults preserves the DAO order and sets membershipDoc from teamId`() = runTest {
+        val s1 = Submission().apply { id = "s1" }
+        val s2 = Submission().apply { id = "s2"; teamId = "team123" }
+        val s3 = Submission().apply { id = "s3" }
+        coEvery { submissionDao.getPendingExamResults() } returns listOf(s1, s2, s3)
+        coEvery { answerDao.getBySubmissionIds(listOf("s1", "s2", "s3")) } returns emptyList()
+
+        val results = repository.getPendingExamResults()
+
+        assertEquals(listOf("s1", "s2", "s3"), results.map { it.id })
+        assertNull(results[0].membershipDoc)
+        assertNotNull(results[1].membershipDoc)
+        assertEquals("team123", results[1].membershipDoc?.teamId)
+        assertNull(results[2].membershipDoc)
+    }
+
+    @Test
+    fun `markSubmissionsUploaded delegates submission updates to dao`() = runTest {
+        val expectedDaoUploads = listOf(SubmissionDao.UploadedSubmission("sub-1", "remote-1", "rev-1"))
+        coEvery { submissionDao.markUploadedBatch(expectedDaoUploads) } returns emptyList()
+
+        val failed = repository.markSubmissionsUploaded(
+            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", JsonObject()))
+        )
+
+        assertEquals(emptyList<UploadedItemResult>(), failed)
+        coVerify(exactly = 1) { submissionDao.markUploadedBatch(expectedDaoUploads) }
+    }
+
+    @Test
+    fun `markSubmissionsUploaded returns failure if dao returns 0`() = runTest {
+        val expectedDaoUploads = listOf(SubmissionDao.UploadedSubmission("sub-1", "remote-1", "rev-1"))
+        coEvery { submissionDao.markUploadedBatch(expectedDaoUploads) } returns expectedDaoUploads
+
+        val failed = repository.markSubmissionsUploaded(
+            listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", JsonObject()))
+        )
+
+        assertEquals(1, failed.size)
+        assertEquals("sub-1", failed.first().localId)
+        coVerify(exactly = 1) { submissionDao.markUploadedBatch(expectedDaoUploads) }
+    }
+
+    @Test
+    fun `markSubmissionsUploaded empty list no-op does not call dao`() = runTest {
+        val failed = repository.markSubmissionsUploaded(emptyList())
+
+        assertTrue(failed.isEmpty())
+        coVerify(exactly = 0) { submissionDao.markUploadedBatch(any()) }
+    }
+
+    @Test
+    fun `markSubmissionsUploaded preserves input order and returns failed items when one missing`() = runTest {
+        val r1 = UploadedItemResult("sub-1", "remote-1", "rev-1", JsonObject())
+        val r2 = UploadedItemResult("sub-2", "remote-2", "rev-2", JsonObject())
+        val r3 = UploadedItemResult("sub-3", "remote-3", "rev-3", JsonObject())
+        val allResults = listOf(r1, r2, r3)
+
+        val daoItems = listOf(
+            SubmissionDao.UploadedSubmission("sub-1", "remote-1", "rev-1"),
+            SubmissionDao.UploadedSubmission("sub-2", "remote-2", "rev-2"),
+            SubmissionDao.UploadedSubmission("sub-3", "remote-3", "rev-3")
+        )
+        // Simulate dao returning only sub-2 as failed
+        coEvery { submissionDao.markUploadedBatch(daoItems) } returns listOf(
+            SubmissionDao.UploadedSubmission("sub-2", "remote-2", "rev-2")
+        )
+
+        val failed = repository.markSubmissionsUploaded(allResults)
+
+        assertEquals(listOf(r2), failed)
+        coVerify(exactly = 1) { submissionDao.markUploadedBatch(daoItems) }
     }
 }

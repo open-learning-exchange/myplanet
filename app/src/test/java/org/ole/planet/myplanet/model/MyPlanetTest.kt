@@ -87,6 +87,54 @@ class MyPlanetTest {
         assertEquals(3000L, statJson.get("firstTimeUsed").asLong)
         assertEquals(1000L, statJson.get("totalForegroundTime").asLong)
         assertEquals(2000L, statJson.get("totalUsed").asLong)
+        assertEquals("mock_custom_device", statJson.get("customDeviceName").asString)
+        assertEquals("mock_device", statJson.get("deviceName").asString)
+        assertEquals(pinnedNow, statJson.get("time").asLong)
+    }
+
+    @Test
+    fun `getTabletUsages carries identical time across matching rows and skips non-matching packages`() {
+        val lastUsageUploaded = 1000L
+        val pinnedNow = 9999L
+        every { sharedPrefManager.getLastUsageUploaded() } returns lastUsageUploaded
+
+        val matchingStats1 = mockk<UsageStats>(relaxed = true) {
+            every { packageName } returns "org.ole.planet.myplanet"
+            every { lastTimeUsed } returns 4000L
+            every { firstTimeStamp } returns 2000L
+            every { lastTimeStamp } returns 3000L
+            every { totalTimeInForeground } returns 1000L
+        }
+
+        val nonMatchingStats = mockk<UsageStats>(relaxed = true) {
+            every { packageName } returns "com.other.app"
+        }
+
+        val matchingStats2 = mockk<UsageStats>(relaxed = true) {
+            every { packageName } returns "org.ole.planet.myplanet"
+            every { lastTimeUsed } returns 8000L
+            every { firstTimeStamp } returns 5000L
+            every { lastTimeStamp } returns 6000L
+            every { totalTimeInForeground } returns 3000L
+        }
+
+        every {
+            usageStatsManager.queryUsageStats(
+                UsageStatsManager.INTERVAL_DAILY,
+                lastUsageUploaded,
+                pinnedNow
+            )
+        } returns listOf(matchingStats1, nonMatchingStats, matchingStats2)
+
+        val result = MyPlanet.getTabletUsages(context, sharedPrefManager, now = pinnedNow)
+
+        assertEquals(2, result.size())
+        for (elem in result) {
+            val statJson = elem.asJsonObject
+            assertEquals(pinnedNow, statJson.get("time").asLong)
+            assertEquals("mock_custom_device", statJson.get("customDeviceName").asString)
+            assertEquals("mock_device", statJson.get("deviceName").asString)
+        }
     }
 
     @Test
@@ -120,5 +168,26 @@ class MyPlanetTest {
         assertEquals("parent123", json.get("parentCode").asString)
         assertEquals("planet123", json.get("createdOn").asString)
         assertEquals(0, json.getAsJsonArray("usages").size())
+    }
+
+    @Test
+    fun `getNormalMyPlanetActivities builds a sync-type payload with device metadata`() {
+        val userModel = UserEntity().apply {
+            parentCode = "parent123"
+            planetCode = "planet123"
+        }
+        every { sharedPrefManager.getLastSync() } returns 123456789L
+        every { sharedPrefManager.getVersionDetail() } returns null
+
+        val json = MyPlanet.getNormalMyPlanetActivities(context, sharedPrefManager, userModel)
+
+        assertEquals("sync", json.get("type").asString)
+        assertEquals(123456789L, json.get("last_synced").asLong)
+        assertEquals("parent123", json.get("parentCode").asString)
+        assertEquals("planet123", json.get("createdOn").asString)
+        assertEquals("mock_custom_device", json.get("customDeviceName").asString)
+        assertEquals("mock_device", json.get("deviceName").asString)
+        assertEquals("mock_android_id", json.get("uniqueAndroidId").asString)
+        assertEquals(false, json.has("planetVersion"))
     }
 }

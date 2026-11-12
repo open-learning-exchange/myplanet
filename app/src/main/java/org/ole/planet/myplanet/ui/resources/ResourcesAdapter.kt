@@ -1,19 +1,17 @@
 package org.ole.planet.myplanet.ui.resources
 
 import android.content.Context
-import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
 import android.widget.ImageView
 import android.widget.PopupMenu
+import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.widget.ImageViewCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -21,7 +19,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
 import org.ole.planet.myplanet.databinding.ItemLibraryGridBinding
@@ -31,12 +28,8 @@ import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.LibraryType
-import org.ole.planet.myplanet.utils.LibraryTypeClassifier
 import org.ole.planet.myplanet.utils.ListViewMode
-import org.ole.planet.myplanet.utils.PdfThumbnailLoader
 import org.ole.planet.myplanet.utils.StableIdGenerator
-import org.ole.planet.myplanet.utils.Utilities
 
 class ResourcesAdapter(
     private val context: Context,
@@ -56,6 +49,7 @@ class ResourcesAdapter(
     private var adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
     private val htmlCoverCache = mutableMapOf<String, File?>()
     private val fileLengthCache = mutableMapOf<String, Long?>()
+    private val partialDownloads = mutableMapOf<String, PartialDownload>()
 
     init {
         setHasStableIds(true)
@@ -104,27 +98,6 @@ class ResourcesAdapter(
                 payloads.ifEmpty { null }
             }
         )
-
-        private fun typeColorRes(type: LibraryType): Int = when (type) {
-            LibraryType.PDF -> R.color.type_pdf
-            LibraryType.VIDEO -> R.color.type_video
-            LibraryType.AUDIO -> R.color.type_audio
-            LibraryType.BOOK -> R.color.type_book
-        }
-
-        private fun typeIconRes(type: LibraryType): Int = when (type) {
-            LibraryType.PDF -> R.drawable.ic_type_pdf
-            LibraryType.VIDEO -> R.drawable.ic_type_video
-            LibraryType.AUDIO -> R.drawable.ic_type_audio
-            LibraryType.BOOK -> R.drawable.ic_type_book
-        }
-
-        private fun typeLabelRes(type: LibraryType): Int = when (type) {
-            LibraryType.PDF -> R.string.filter_pdfs
-            LibraryType.VIDEO -> R.string.filter_videos
-            LibraryType.AUDIO -> R.string.filter_audio
-            LibraryType.BOOK -> R.string.filter_books
-        }
     }
 
     fun setViewMode(mode: ListViewMode, onChanged: (() -> Unit)? = null) {
@@ -164,13 +137,24 @@ class ResourcesAdapter(
     }
 
     fun setLibraryList(libraryList: List<ResourceListModel?>, onComplete: (() -> Unit)? = null) {
-        val updatedList = libraryList.filterNotNull().map {
-            it.copy(
+        val updatedList = libraryList.mapNotNull {
+            it?.copy(
                 isOpened = openedResourceIds.contains(it.item.id),
                 isLocallyOffline = locallyOfflineIds.contains(it.item.id)
             )
         }
-        submitList(updatedList, onComplete)
+        submitList(updatedList) {
+            pruneSelection()
+            onComplete?.invoke()
+        }
+    }
+    
+    private fun pruneSelection() {
+        val visibleIds = currentList.mapNotNullTo(HashSet()) { it.item.id }
+        if (selectedItemIds.retainAll(visibleIds)) {
+            selectedItemsMap.keys.retainAll(visibleIds)
+            listener?.onSelectedListChange(selectedItemsMap.values.toList())
+        }
     }
 
     override fun getItemViewType(position: Int): Int {
@@ -200,11 +184,8 @@ class ResourcesAdapter(
             val current = currentMap[id]
             if (current == null || current.library.resourceLocalAddress != prev.library.resourceLocalAddress) {
                 htmlCoverCache.remove(id)
-                prev.item.resourceLocalAddress?.takeIf { it.isNotBlank() }?.let {
-                    fileLengthCache.remove(File(it).path)
-                }
                 val address = prev.library.resourceLocalAddress
-                if (dir != null && !address.isNullOrBlank() && !id.isNullOrBlank()) {
+                if (dir != null && !address.isNullOrBlank() && id.isNotBlank()) {
                     fileLengthCache.remove(FileUtils.getLibraryFile(dir, id, address).path)
                 }
             }
@@ -214,8 +195,14 @@ class ResourcesAdapter(
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
         super.onViewRecycled(holder)
         when (holder) {
-            is GridViewHolder -> holder.cancelPreviewJob()
-            is ListViewHolder -> holder.cancelPreviewJob()
+            is GridViewHolder -> {
+                holder.cancelPreviewJob()
+                ResourcesCardBinder.showTypeIconOnly(context, holder.binding.ivCoverPreview, holder.binding.ivTypeIcon)
+            }
+            is ListViewHolder -> {
+                holder.cancelPreviewJob()
+                ResourcesCardBinder.showTypeIconOnly(context, holder.binding.ivCoverPreview, holder.binding.ivTypeIcon)
+            }
         }
     }
 
@@ -271,177 +258,113 @@ class ResourcesAdapter(
     }
 
     private fun bindGrid(holder: GridViewHolder, model: ResourceListModel) {
+        holder.cancelPreviewJob()
         val binding = holder.binding
-        val type = LibraryTypeClassifier.classify(model.library)
+        val type = ResourcesMediaType.classify(model.library)
         binding.title.text = model.item.title
-        binding.tvMeta.text = buildMetaLine(model, type, fileSize = null)
+        binding.tvMeta.text = ResourcesCardBinder.buildMetaLine(context, type, model.library.language, fileSize = null, mediaType = model.library.mediaType)
         bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, model)
         bindClicks(holder.itemView, binding.checkbox, model)
-        setCoverColor(binding.coverContainer, type)
-        binding.ivTypeIcon.setImageResource(typeIconRes(type))
+        ResourcesCardBinder.setCoverColor(binding.coverContainer, type)
+        binding.ivTypeIcon.setImageResource(ResourcesCardBinder.typeIconRes(type))
+        ResourcesCardBinder.showTypeIconOnly(context, binding.ivCoverPreview, binding.ivTypeIcon)
         holder.setPreviewJob(adapterScope.launch {
-            bindCover(binding.ivCoverPreview, binding.ivTypeIcon, model, GRID_COVER_WIDTH_DP)
+            val isOffline = model.item.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
+            ResourcesCardBinder.bindCover(
+                CoverBindParams(
+                    context = context,
+                    ivPreview = binding.ivCoverPreview,
+                    ivTypeIcon = binding.ivTypeIcon,
+                    isOffline = isOffline,
+                    address = model.library.resourceLocalAddress,
+                    libraryId = model.library.id,
+                    externalFilesDir = externalFilesDir,
+                    coverWidthDp = GRID_COVER_WIDTH_DP,
+                    dispatcherProvider = dispatcherProvider,
+                    htmlCoverCache = htmlCoverCache,
+                    fileLengthCache = fileLengthCache
+                )
+            )
             val fileSize = resourceFileLength(model)
-            binding.tvMeta.text = buildMetaLine(model, type, fileSize)
+            binding.tvMeta.text = ResourcesCardBinder.buildMetaLine(context, type, model.library.language, fileSize, mediaType = model.library.mediaType)
+            bindPartialDownload(model, binding.tvMeta, binding.ivDownloaded)
         })
     }
 
     private fun bindList(holder: ListViewHolder, model: ResourceListModel) {
+        holder.cancelPreviewJob()
         val binding = holder.binding
-        val type = LibraryTypeClassifier.classify(model.library)
+        val type = ResourcesMediaType.classify(model.library)
         binding.title.text = model.item.title
-        binding.tvMeta.text = buildMetaLine(model, type, fileSize = null)
+        binding.tvMeta.text = ResourcesCardBinder.buildMetaLine(context, type, model.library.language, fileSize = null, mediaType = model.library.mediaType)
         bindSelectionAndDownload(binding.checkbox, binding.ivDownloaded, model)
         bindClicks(holder.itemView, binding.checkbox, model)
-        setCoverColor(binding.coverContainer, type)
-        binding.ivTypeIcon.setImageResource(typeIconRes(type))
+        ResourcesCardBinder.setCoverColor(binding.coverContainer, type)
+        binding.ivTypeIcon.setImageResource(ResourcesCardBinder.typeIconRes(type))
+        ResourcesCardBinder.showTypeIconOnly(context, binding.ivCoverPreview, binding.ivTypeIcon)
+
         holder.setPreviewJob(adapterScope.launch {
-            bindCover(binding.ivCoverPreview, binding.ivTypeIcon, model, LIST_COVER_WIDTH_DP)
+            val isOffline = model.item.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
+            ResourcesCardBinder.bindCover(
+                CoverBindParams(
+                    context = context,
+                    ivPreview = binding.ivCoverPreview,
+                    ivTypeIcon = binding.ivTypeIcon,
+                    isOffline = isOffline,
+                    address = model.library.resourceLocalAddress,
+                    libraryId = model.library.id,
+                    externalFilesDir = externalFilesDir,
+                    coverWidthDp = LIST_COVER_WIDTH_DP,
+                    dispatcherProvider = dispatcherProvider,
+                    htmlCoverCache = htmlCoverCache,
+                    fileLengthCache = fileLengthCache
+                )
+            )
             val fileSize = resourceFileLength(model)
-            binding.tvMeta.text = buildMetaLine(model, type, fileSize)
+            binding.tvMeta.text = ResourcesCardBinder.buildMetaLine(context, type, model.library.language, fileSize, mediaType = model.library.mediaType)
+            bindPartialDownload(model, binding.tvMeta, binding.ivDownloaded)
         })
     }
 
-    private fun setCoverColor(view: View, type: LibraryType) {
-        val background = view.background?.mutate()
-        if (background is GradientDrawable) {
-            background.setColor(ContextCompat.getColor(context, typeColorRes(type)))
-        }
-    }
-
-    private suspend fun bindCover(
-        ivPreview: ImageView,
-        ivTypeIcon: ImageView,
-        model: ResourceListModel,
-        coverWidthDp: Int
-    ) {
-        val isOffline = model.item.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
-        val address = model.library.resourceLocalAddress
-        val libraryId = model.library.id
-        val dir = externalFilesDir
-        if (!isOffline || address.isNullOrBlank() || libraryId.isNullOrBlank() || dir == null) {
-            showTypeIconOnly(ivPreview, ivTypeIcon)
+    private suspend fun bindPartialDownload(model: ResourceListModel, tvMeta: TextView, ivDownloaded: ImageView) {
+        val id = model.item.id ?: return
+        val isOffline = model.item.isOffline || locallyOfflineIds.contains(id) || model.isLocallyOffline
+        val partial = if (isOffline) null else partialDownloadFor(model)
+        if (partial == null) {
+            partialDownloads.remove(id)
             return
         }
-
-        val file = FileUtils.getLibraryFile(dir, libraryId, address)
-        val mimeType = Utilities.getMimeType(address)
-        when {
-            mimeType?.startsWith("image") == true -> {
-                showTypeIconOnly(ivPreview, ivTypeIcon)
-                showImagePreview(ivPreview, ivTypeIcon, file)
-            }
-            mimeType?.startsWith("video") == true -> {
-                showTypeIconOnly(ivPreview, ivTypeIcon)
-                showVideoPreview(ivPreview, ivTypeIcon, file)
-            }
-            mimeType?.contains("pdf") == true -> {
-                showTypeIconOnly(ivPreview, ivTypeIcon)
-                val targetWidthPx = (coverWidthDp * context.resources.displayMetrics.density).toInt()
-                showPdfPreview(ivPreview, ivTypeIcon, file, targetWidthPx)
-            }
-            mimeType?.contains("html") == true -> {
-                showTypeIconOnly(ivPreview, ivTypeIcon)
-                val resourceDir = File(dir, "ole/$libraryId")
-                showHtmlPreview(ivPreview, ivTypeIcon, libraryId, resourceDir)
-            }
-            else -> {
-                showTypeIconOnly(ivPreview, ivTypeIcon)
-            }
-        }
+        partialDownloads[id] = partial
+        tvMeta.text = "${tvMeta.text} · ${ResourcesCardBinder.partialLabel(context, partial)}"
+        applyPartialIcon(ivDownloaded)
     }
 
-    private fun showTypeIconOnly(ivPreview: ImageView, ivTypeIcon: ImageView) {
-        Glide.with(context).clear(ivPreview)
-        ivPreview.visibility = View.GONE
-        ivTypeIcon.visibility = View.VISIBLE
+    private suspend fun partialDownloadFor(model: ResourceListModel): PartialDownload? {
+        val address = model.library.resourceLocalAddress?.takeIf { it.isNotBlank() } ?: return null
+        val libraryId = model.library.id.takeIf { it.isNotBlank() } ?: return null
+        val dir = externalFilesDir ?: return null
+        return ResourcesCardBinder.partialDownloadPercent(FileUtils.getLibraryFile(dir, libraryId, address), dispatcherProvider)
     }
 
-    private suspend fun showImagePreview(ivPreview: ImageView, ivTypeIcon: ImageView, file: File) {
-        if (cachedFileLength(file) == null) {
-            showTypeIconOnly(ivPreview, ivTypeIcon)
-            return
-        }
-        ivTypeIcon.visibility = View.GONE
-        ivPreview.visibility = View.VISIBLE
-        Glide.with(context)
-            .load(file)
-            .diskCacheStrategy(DiskCacheStrategy.ALL)
-            .centerCrop()
-            .placeholder(R.drawable.ole_logo)
-            .error(R.drawable.ole_logo)
-            .into(ivPreview)
-    }
-
-    private suspend fun showVideoPreview(ivPreview: ImageView, ivTypeIcon: ImageView, file: File) {
-        if (cachedFileLength(file) == null) {
-            showTypeIconOnly(ivPreview, ivTypeIcon)
-            return
-        }
-        ivTypeIcon.visibility = View.GONE
-        ivPreview.visibility = View.VISIBLE
-        Glide.with(context)
-            .load(file)
-            .diskCacheStrategy(DiskCacheStrategy.ALL)
-            .centerCrop()
-            .placeholder(R.drawable.ole_logo)
-            .error(R.drawable.ole_logo)
-            .into(ivPreview)
-    }
-
-    private suspend fun showPdfPreview(ivPreview: ImageView, ivTypeIcon: ImageView, file: File, targetWidthPx: Int) {
-        if (!file.exists()) {
-            showTypeIconOnly(ivPreview, ivTypeIcon)
-            return
-        }
-        Glide.with(context).clear(ivPreview)
-        val bitmap = PdfThumbnailLoader.firstPageBitmap(file, dispatcherProvider, targetWidthPx)
-
-        if (bitmap != null) {
-            ivTypeIcon.visibility = View.GONE
-            ivPreview.visibility = View.VISIBLE
-            ivPreview.setImageBitmap(bitmap)
-        } else {
-            showTypeIconOnly(ivPreview, ivTypeIcon)
-        }
-    }
-
-    private suspend fun showHtmlPreview(ivPreview: ImageView, ivTypeIcon: ImageView, libraryId: String, resourceDir: File) {
-        val coverImage = if (htmlCoverCache.containsKey(libraryId)) {
-            htmlCoverCache.getValue(libraryId)
-        } else {
-            withContext(dispatcherProvider.io) { FileUtils.findHtmlCoverImage(resourceDir) }.also {
-                htmlCoverCache[libraryId] = it
-            }
-        }
-        if (coverImage != null) {
-            showImagePreview(ivPreview, ivTypeIcon, coverImage)
-        } else {
-            showTypeIconOnly(ivPreview, ivTypeIcon)
-        }
-    }
-
-    private fun buildMetaLine(model: ResourceListModel, type: LibraryType, fileSize: Long?): String {
-        val parts = mutableListOf<String>()
-        parts.add(context.getString(typeLabelRes(type)))
-        if (fileSize != null) {
-            parts.add(FileUtils.formatSize(context, fileSize))
-        }
-        model.library.language?.takeIf { it.isNotBlank() }?.let { parts.add(it) }
-        return parts.joinToString(" · ")
+    private fun applyPartialIcon(ivDownloaded: ImageView) {
+        ivDownloaded.setImageResource(R.drawable.ic_download)
+        ImageViewCompat.setImageTintList(
+            ivDownloaded,
+            android.content.res.ColorStateList.valueOf(ContextCompat.getColor(context, R.color.list_status_in_progress_text))
+        )
+        ivDownloaded.contentDescription = context.getString(R.string.resume_download)
     }
 
     private suspend fun resourceFileLength(model: ResourceListModel): Long? {
-        val localPath = model.item.resourceLocalAddress?.takeIf { it.isNotBlank() } ?: return null
-        return cachedFileLength(File(localPath))
-    }
+        val isOffline = model.item.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
+        if (!isOffline) return null
 
-    private suspend fun cachedFileLength(file: File): Long? {
-        val path = file.path
-        if (fileLengthCache.containsKey(path)) return fileLengthCache[path]
-        val length = withContext(dispatcherProvider.io) { if (file.exists()) file.length() else null }
-        fileLengthCache[path] = length
-        return length
+        val address = model.library.resourceLocalAddress?.takeIf { it.isNotBlank() } ?: return null
+        val libraryId = model.library.id.takeIf { it.isNotBlank() } ?: return null
+        val dir = externalFilesDir ?: return null
+
+        val file = FileUtils.getLibraryFile(dir, libraryId, address)
+        return ResourcesCardBinder.cachedFileLength(file, dispatcherProvider, fileLengthCache)
     }
 
     private fun bindSelectionAndDownload(checkbox: CheckBox, ivDownloaded: ImageView, model: ResourceListModel) {
@@ -464,6 +387,7 @@ class ResourcesAdapter(
             context.getString(R.string.download)
         }
         ivDownloaded.visibility = if (isResourceOpened && isOffline) View.INVISIBLE else View.VISIBLE
+        if (!isOffline && partialDownloads.containsKey(model.item.id)) applyPartialIcon(ivDownloaded)
     }
 
     private fun bindClicks(itemView: View, checkbox: CheckBox, model: ResourceListModel) {
@@ -514,7 +438,7 @@ class ResourcesAdapter(
     }
 
     fun areAllSelected(): Boolean {
-        return currentList.isNotEmpty() && selectedItemIds.size == currentList.size
+        return currentList.isNotEmpty() && currentList.all { it.item.id in selectedItemIds }
     }
 
     fun selectAllItems(selectAll: Boolean) {

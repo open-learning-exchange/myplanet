@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.events
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -69,9 +70,9 @@ class EventsDetailViewModelTest {
         val meetup = Meetup().apply { id = "meetup-local-1"; title = "Team Sync" }
         val members = listOf(UserEntity(id = "user-2", name = "Bob"))
 
-        coEvery { userRepository.getUserModel() } coAnswers { delay(100); user }
-        coEvery { eventsRepository.getMeetupByLocalId("meetup-local-1") } coAnswers { delay(100); meetup }
-        coEvery { eventsRepository.getJoinedMembers("meetup-local-1") } coAnswers { delay(100); members }
+        coEvery { userRepository.getUserModel() } coAnswers { delay(100.milliseconds); user }
+        coEvery { eventsRepository.getMeetupByLocalId("meetup-local-1") } coAnswers { delay(100.milliseconds); meetup }
+        coEvery { eventsRepository.getJoinedMembers("meetup-local-1") } coAnswers { delay(100.milliseconds); members }
 
         val start = currentTime
         viewModel.loadData("meetup-local-1")

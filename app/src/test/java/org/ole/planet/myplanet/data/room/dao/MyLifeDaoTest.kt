@@ -3,9 +3,11 @@ package org.ole.planet.myplanet.data.room.dao
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -75,5 +77,182 @@ class MyLifeDaoTest {
         val list = myLifeDao.getByUserId("user1")
         assertEquals("Item2", list[0].title)
         assertEquals("Item1", list[1].title)
+    }
+
+    @Test
+    fun getByIds_emptyInput_returnsEmptyList() = runBlocking {
+        val result = myLifeDao.getByIds(emptyList())
+        assertEquals(0, result.size)
+    }
+
+    @Test
+    fun getByIds_belowChunkSize_returnsMatchingItems() = runBlocking {
+        val item1 = MyLife("img1", "user1", "Item1").apply { _id = "id1" }
+        val item2 = MyLife("img2", "user1", "Item2").apply { _id = "id2" }
+        myLifeDao.insertAll(listOf(item1, item2))
+
+        val result = myLifeDao.getByIds(listOf("id1", "id2"))
+        assertEquals(2, result.size)
+        assertEquals(setOf("id1", "id2"), result.map { it._id }.toSet())
+    }
+
+    @Test
+    fun getByIds_aboveChunkSize_returnsMatchingItems() = runBlocking {
+        val totalItems = 950
+        val items = (1..totalItems).map { i ->
+            MyLife("img$i", "user1", "Item$i").apply { _id = "id_$i" }
+        }
+        myLifeDao.insertAll(items)
+
+        val queryIds = (1..totalItems).map { "id_$it" }
+        val result = myLifeDao.getByIds(queryIds)
+
+        assertEquals(totalItems, result.size)
+        val returnedIds = result.map { it._id }
+        assertEquals(totalItems, returnedIds.distinct().size)
+        assertEquals(queryIds.toSet(), returnedIds.toSet())
+    }
+
+    @Test
+    fun observeByUserId_emitsUserRowsOrderedByWeightAscending() = runBlocking {
+        val item1 = MyLife("img1", "user1", "Health").apply { _id = "1"; weight = 2 }
+        val item2 = MyLife("img2", "user1", "Calendar").apply { _id = "2"; weight = 1 }
+        val item3 = MyLife("img3", "user1", "Surveys").apply { _id = "3"; weight = 3 }
+        myLifeDao.insertAll(listOf(item1, item2, item3))
+
+        val list = myLifeDao.observeByUserId("user1").first()
+        assertEquals(3, list.size)
+        assertEquals("Calendar", list[0].title)
+        assertEquals("Health", list[1].title)
+        assertEquals("Surveys", list[2].title)
+    }
+
+    @Test
+    fun observeByUserId_emitsUpdatedRowsAfterUpdateAndUpdateVisibility() = runBlocking {
+        val item1 = MyLife("img1", "user1", "Item1").apply { _id = "1"; weight = 1; isVisible = true }
+        val item2 = MyLife("img2", "user1", "Item2").apply { _id = "2"; weight = 2; isVisible = true }
+        myLifeDao.insertAll(listOf(item1, item2))
+
+        val initialList = myLifeDao.observeByUserId("user1").first()
+        assertEquals(2, initialList.size)
+        assertTrue(initialList[0].isVisible)
+
+        myLifeDao.updateVisibility("1", false)
+        val afterVisibilityChange = myLifeDao.observeByUserId("user1").first()
+        assertEquals(false, afterVisibilityChange.find { it._id == "1" }?.isVisible)
+
+        item1.weight = 5
+        myLifeDao.update(listOf(item1))
+        val afterReorder = myLifeDao.observeByUserId("user1").first()
+        assertEquals("Item2", afterReorder[0].title)
+        assertEquals("Item1", afterReorder[1].title)
+    }
+
+    @Test
+    fun observeByUserId_withNullMatchesRowsWithNullEmptyOrPlaceholderUserId() = runBlocking {
+        val nullUserItem = MyLife("img1", null, "Null User").apply { _id = "1"; weight = 1 }
+        val emptyUserItem = MyLife("img2", "", "Empty User").apply { _id = "2"; weight = 2 }
+        val dashUserItem = MyLife("img3", "--", "Dash User").apply { _id = "3"; weight = 3 }
+        val specificUserItem = MyLife("img4", "user123", "Specific User").apply { _id = "4"; weight = 4 }
+        myLifeDao.insertAll(listOf(nullUserItem, emptyUserItem, dashUserItem, specificUserItem))
+
+        val result = myLifeDao.observeByUserId(null).first()
+        assertEquals(3, result.size)
+        assertEquals(listOf("1", "2", "3"), result.map { it._id })
+    }
+
+    @Test
+    fun updateVisibility_exactIdHit_changesOnlyThatRow() = runBlocking {
+        val item1 = MyLife("img1", "user1", "Health").apply { _id = "id1"; isVisible = true }
+        val item2 = MyLife("img2", "user2", "Health").apply { _id = "id2"; isVisible = true }
+        myLifeDao.insertAll(listOf(item1, item2))
+
+        myLifeDao.updateVisibility("id1", false)
+
+        val updatedList = myLifeDao.getByIds(listOf("id1", "id2"))
+        val map = updatedList.associateBy { it._id }
+        assertEquals(false, map["id1"]?.isVisible)
+        assertEquals(true, map["id2"]?.isVisible)
+    }
+
+    @Test
+    fun updateVisibility_uniqueImageIdAliasHit_updatesRow() = runBlocking {
+        val item1 = MyLife("unique_img", "user1", "Health").apply { _id = "id1"; isVisible = true }
+        val item2 = MyLife("other_img", "user2", "Calendar").apply { _id = "id2"; isVisible = true }
+        myLifeDao.insertAll(listOf(item1, item2))
+
+        myLifeDao.updateVisibility("unique_img", false)
+
+        val updatedList = myLifeDao.getByIds(listOf("id1", "id2"))
+        val map = updatedList.associateBy { it._id }
+        assertEquals(false, map["id1"]?.isVisible)
+        assertEquals(true, map["id2"]?.isVisible)
+    }
+
+    @Test
+    fun updateVisibility_uniqueTitleAliasHit_updatesRow() = runBlocking {
+        val item1 = MyLife("img1", "user1", "Unique Title").apply { _id = "id1"; isVisible = true }
+        val item2 = MyLife("img2", "user2", "Other Title").apply { _id = "id2"; isVisible = true }
+        myLifeDao.insertAll(listOf(item1, item2))
+
+        myLifeDao.updateVisibility("Unique Title", false)
+
+        val updatedList = myLifeDao.getByIds(listOf("id1", "id2"))
+        val map = updatedList.associateBy { it._id }
+        assertEquals(false, map["id1"]?.isVisible)
+        assertEquals(true, map["id2"]?.isVisible)
+    }
+
+    @Test
+    fun updateVisibility_sameAliasOnTwoUsersRows_leavesBothUnchanged() = runBlocking {
+        val item1 = MyLife("shared_alias", "user1", "Health").apply { _id = "id1"; isVisible = true }
+        val item2 = MyLife("shared_alias", "user2", "Calendar").apply { _id = "id2"; isVisible = true }
+        myLifeDao.insertAll(listOf(item1, item2))
+
+        myLifeDao.updateVisibility("shared_alias", false)
+
+        val updatedList = myLifeDao.getByIds(listOf("id1", "id2"))
+        val map = updatedList.associateBy { it._id }
+        assertEquals(true, map["id1"]?.isVisible)
+        assertEquals(true, map["id2"]?.isVisible)
+    }
+
+    @Test
+    fun updateVisibility_unknownId_changesNothing() = runBlocking {
+        val item1 = MyLife("img1", "user1", "Health").apply { _id = "id1"; isVisible = true }
+        myLifeDao.insertAll(listOf(item1))
+
+        myLifeDao.updateVisibility("non_existent_id", false)
+
+        val updatedList = myLifeDao.getByIds(listOf("id1"))
+        assertEquals(true, updatedList[0].isVisible)
+    }
+
+    @Test
+    fun updateVisibility_blankIdHit_updatesRowByExactId() = runBlocking {
+        val blankRow = MyLife("img1", "user1", "Shared Default").apply { _id = ""; isVisible = true }
+        val otherRow = MyLife("img2", "user2", "Shared Default").apply { _id = "id2"; isVisible = true }
+        myLifeDao.insertAll(listOf(blankRow, otherRow))
+
+        myLifeDao.updateVisibility("", false)
+
+        val updatedList = myLifeDao.getByIds(listOf("", "id2"))
+        val map = updatedList.associateBy { it._id }
+        assertEquals(false, map[""]?.isVisible)
+        assertEquals(true, map["id2"]?.isVisible)
+    }
+
+    @Test
+    fun updateVisibility_exactIdHitAlreadyMatchingValue_leavesRowUnchanged() = runBlocking {
+        val item1 = MyLife("img1", "user1", "Health").apply { _id = "id1"; isVisible = true }
+        val item2 = MyLife("id1", "user2", "Calendar").apply { _id = "id2"; isVisible = false }
+        myLifeDao.insertAll(listOf(item1, item2))
+
+        myLifeDao.updateVisibility("id1", true)
+
+        val updatedList = myLifeDao.getByIds(listOf("id1", "id2"))
+        val map = updatedList.associateBy { it._id }
+        assertEquals(true, map["id1"]?.isVisible)
+        assertEquals(false, map["id2"]?.isVisible)
     }
 }

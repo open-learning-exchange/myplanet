@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.ServerReachabilityProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -38,6 +39,7 @@ class BellDashboardViewModelTest {
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val coursesRepository: CoursesRepository = mockk(relaxed = true)
     private val timeProvider = TestTimeProvider(1_700_000_000_000L)
+    private val serverReachabilityProvider: ServerReachabilityProvider = mockk(relaxed = true)
 
     private lateinit var viewModel: BellDashboardViewModel
     private val testDispatcher = StandardTestDispatcher()
@@ -51,7 +53,8 @@ class BellDashboardViewModelTest {
 
         viewModel = BellDashboardViewModel(
             progressRepository, teamsRepository, surveysRepository,
-            submissionsRepository, userRepository, coursesRepository, timeProvider
+            submissionsRepository, userRepository, coursesRepository, timeProvider,
+            serverReachabilityProvider
         )
     }
 
@@ -123,7 +126,8 @@ class BellDashboardViewModelTest {
 
         viewModel = BellDashboardViewModel(
             progressRepository, teamsRepository, surveysRepository,
-            submissionsRepository, userRepository, coursesRepository, timeProvider
+            submissionsRepository, userRepository, coursesRepository, timeProvider,
+            serverReachabilityProvider
         )
 
         val emitted = mutableListOf<SurveyPrompt?>()
@@ -134,6 +138,31 @@ class BellDashboardViewModelTest {
         assertEquals(2, emitted.size)
         assertEquals(true, emitted[0]?.isReminder)
         assertEquals(true, emitted[1]?.isReminder)
+
+        job.cancel()
+    }
+
+    @Test
+    fun `due reminder is kept until the dashboard collects it`() = runTest {
+        val submission = Submission().apply { id = "sub1"; status = "pending" }
+
+        every { surveysRepository.dueRemindersFlow() } returns flowOf(listOf("sub1"))
+        coEvery { submissionsRepository.getSubmissionsByIds(any()) } returns listOf(submission)
+        coEvery { submissionsRepository.getSurveyTitlesFromSubmissions(any()) } returns listOf("Title")
+
+        viewModel = BellDashboardViewModel(
+            progressRepository, teamsRepository, surveysRepository,
+            submissionsRepository, userRepository, coursesRepository, timeProvider,
+            serverReachabilityProvider
+        )
+        advanceUntilIdle()
+
+        val emitted = mutableListOf<SurveyPrompt?>()
+        val job = launch(kotlinx.coroutines.test.UnconfinedTestDispatcher(testScheduler)) { viewModel.surveyPrompt.collect { emitted.add(it) } }
+        advanceUntilIdle()
+
+        assertEquals(1, emitted.size)
+        assertEquals(true, emitted[0]?.isReminder)
 
         job.cancel()
     }
@@ -150,7 +179,8 @@ class BellDashboardViewModelTest {
 
         viewModel = BellDashboardViewModel(
             progressRepository, teamsRepository, surveysRepository,
-            submissionsRepository, userRepository, coursesRepository, timeProvider
+            submissionsRepository, userRepository, coursesRepository, timeProvider,
+            serverReachabilityProvider
         )
 
         val emitted = mutableListOf<SurveyPrompt?>()
@@ -162,5 +192,27 @@ class BellDashboardViewModelTest {
         assertEquals(listOf("sub1", "sub2"), capturedIds[0])
 
         job.cancel()
+    }
+
+    @Test
+    fun `checkServerConnection returns true and sets Connected status when server reachable`() = runTest {
+        val serverUrl = "http://192.168.1.1:5984"
+        coEvery { serverReachabilityProvider.isServerReachable(serverUrl) } returns true
+
+        val result = viewModel.checkServerConnection(serverUrl)
+
+        assertEquals(true, result)
+        assertEquals(NetworkStatus.Connected, viewModel.networkStatus.value)
+    }
+
+    @Test
+    fun `checkServerConnection returns false and sets Disconnected status when server unreachable`() = runTest {
+        val serverUrl = "http://192.168.1.1:5984"
+        coEvery { serverReachabilityProvider.isServerReachable(serverUrl) } returns false
+
+        val result = viewModel.checkServerConnection(serverUrl)
+
+        assertEquals(false, result)
+        assertEquals(NetworkStatus.Disconnected, viewModel.networkStatus.value)
     }
 }

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.repository.ProfileFieldsUpdate
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
@@ -28,10 +29,10 @@ class UserInformationViewModel @Inject constructor(
     private val _resultEvent = MutableSharedFlow<UserInformationResult>(extraBufferCapacity = 1)
     val resultEvent: SharedFlow<UserInformationResult> = _resultEvent.asSharedFlow()
 
-    fun updateProfile(userId: String?, user: JsonObject) {
+    fun updateProfile(userId: String?, update: ProfileFieldsUpdate) {
         viewModelScope.launch {
             try {
-                userRepository.updateProfileFields(userId, user)
+                userRepository.updateProfileFields(userId, update)
                 _resultEvent.emit(UserInformationResult.UpdateProfileSuccess)
             } catch (e: Exception) {
                 _resultEvent.emit(UserInformationResult.UpdateProfileError(e.message ?: ""))

@@ -16,4 +16,5 @@ interface OnNewsItemClickListener {
     fun onMemberSelected(userModel: UserEntity?)
     fun getCurrentImageList(): List<String>?
     fun getCurrentVideoList(): List<String>?
+    fun restoreImages(snapshot: List<String>) {}
 }

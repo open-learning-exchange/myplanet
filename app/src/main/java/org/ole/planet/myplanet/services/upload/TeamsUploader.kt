@@ -6,6 +6,7 @@ import android.util.Log
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.asRequestBody
@@ -18,7 +19,7 @@ import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.services.upload.UploadConstants.BATCH_SIZE
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.UrlUtils
 
 private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
@@ -116,6 +117,8 @@ class TeamsUploader @Inject constructor(
             } else {
                 rev
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to upload team image attachment", e)
             rev

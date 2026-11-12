@@ -57,12 +57,8 @@ open class TagEntity {
     }
 
     companion object {
-        fun getTagsArray(list: List<TagEntity>): JsonArray {
-            val array = JsonArray()
-            for (t in list) {
-                array.add(t._id)
-            }
-            return array
+        fun getTagsArray(list: List<TagEntity>): JsonArray = JsonArray().also { a ->
+            list.forEach { a.add(it._id) }
         }
     }
 }

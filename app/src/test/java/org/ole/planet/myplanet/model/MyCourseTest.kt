@@ -59,7 +59,7 @@ class MyCourseTest {
 
         MyCourse.saveConcatenatedLinksToPrefs(spm)
 
-        val savedSet = org.ole.planet.myplanet.utils.JsonUtils.gson.fromJson(
+        val savedSet = org.ole.planet.myplanet.utils.GsonUtils.gson.fromJson(
             capturedJson.captured,
             Array<String>::class.java
         ).toHashSet()
@@ -68,5 +68,108 @@ class MyCourseTest {
             setOf("http://example.com/link1", "http://example.com/link2"),
             savedSet
         )
+    }
+
+    @Test
+    fun testSaveConcatenatedLinksToPrefs_drainsBuffer_soSecondSaveIsNoOp() {
+        val spm = io.mockk.mockk<org.ole.planet.myplanet.services.SharedPrefManager>(relaxed = true)
+        io.mockk.every { spm.getConcatenatedLinks() } returns "[\"http://example.com/link1\"]"
+
+        val capturedJson = io.mockk.slot<String>()
+        io.mockk.every { spm.setConcatenatedLinks(capture(capturedJson)) } returns Unit
+
+        MyCourse.addConcatenatedLink("http://example.com/link2")
+
+        MyCourse.saveConcatenatedLinksToPrefs(spm)
+        MyCourse.saveConcatenatedLinksToPrefs(spm)
+
+        io.mockk.verify(exactly = 1) { spm.setConcatenatedLinks(any()) }
+        assertEquals(
+            setOf("http://example.com/link1", "http://example.com/link2"),
+            org.ole.planet.myplanet.utils.GsonUtils.gson.fromJson(
+                capturedJson.captured,
+                Array<String>::class.java
+            ).toHashSet()
+        )
+    }
+
+    @Test
+    fun testSaveConcatenatedLinksToPrefs_writeFailure_keepsBufferForRetry() {
+        val spm = io.mockk.mockk<org.ole.planet.myplanet.services.SharedPrefManager>(relaxed = true)
+        io.mockk.every { spm.getConcatenatedLinks() } returns null
+
+        val writtenJson = io.mockk.slot<String>()
+        var attempts = 0
+        io.mockk.every { spm.setConcatenatedLinks(capture(writtenJson)) } answers {
+            attempts++
+            if (attempts == 1) throw RuntimeException("prefs write failed")
+        }
+
+        MyCourse.addConcatenatedLink("http://example.com/link2")
+        try {
+            MyCourse.saveConcatenatedLinksToPrefs(spm)
+        } catch (_: RuntimeException) {
+        }
+
+        // The first write failed, so the buffer must still hold the link for this retry.
+        MyCourse.saveConcatenatedLinksToPrefs(spm)
+
+        assertEquals(2, attempts)
+        assertEquals(
+            setOf("http://example.com/link2"),
+            org.ole.planet.myplanet.utils.GsonUtils.gson.fromJson(
+                writtenJson.captured,
+                Array<String>::class.java
+            ).toHashSet()
+        )
+    }
+
+    @Test
+    fun testSerialize_embedsStepsAndTheirResources() {
+        val resource = MyLibrary().apply {
+            _id = "resource1"
+            title = "Resource One"
+        }
+        val course = MyCourse(
+            id = "c1",
+            courseId = "course1",
+            courseRev = "1-abc",
+            courseTitle = "Course One",
+            description = "A course",
+            memberLimit = 20
+        )
+        course.courseSteps = mutableListOf(
+            CourseStep(id = "step1", stepTitle = "Step One", description = "First step")
+        )
+
+        val json = MyCourse.serialize(course, mapOf("step1" to listOf(resource)))
+
+        assertEquals("course1", json.get("_id").asString)
+        assertEquals("1-abc", json.get("_rev").asString)
+        assertEquals("Course One", json.get("courseTitle").asString)
+        assertEquals(20, json.get("memberLimit").asInt)
+
+        val steps = json.getAsJsonArray("steps")
+        assertEquals(1, steps.size())
+        val step = steps[0].asJsonObject
+        assertEquals("Step One", step.get("stepTitle").asString)
+        assertEquals("step1", step.get("id").asString)
+
+        val resources = step.getAsJsonArray("resources")
+        assertEquals(1, resources.size())
+        assertEquals("resource1", resources[0].asJsonObject.get("_id").asString)
+
+        assertEquals(0, json.getAsJsonArray("images").size())
+    }
+
+    @Test
+    fun testSerialize_stepWithNoMatchingResources_getsEmptyResourcesArray() {
+        val course = MyCourse(id = "c1", courseId = "course1")
+        course.courseSteps = mutableListOf(CourseStep(id = "step1", stepTitle = "Step One"))
+
+        val json = MyCourse.serialize(course, emptyMap())
+
+        val step = json.getAsJsonArray("steps")[0].asJsonObject
+        assertEquals(0, step.getAsJsonArray("resources").size())
     }
 }

@@ -12,10 +12,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.model.StepExam
-import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
-@Config(sdk = [32])
 class ExamDaoTest {
     private lateinit var database: AppDatabase
     private lateinit var examDao: ExamDao
@@ -32,6 +30,24 @@ class ExamDaoTest {
     @After
     fun teardown() {
         database.close()
+    }
+
+    @Test
+    fun getByCourseIds_handles1200Courses() = runBlocking {
+        val seededIndices = listOf(1, 900, 901, 1200, 1201)
+        val exams = seededIndices.map { i ->
+            StepExam().apply {
+                id = "exam_$i"
+                courseId = "course_$i"
+            }
+        }
+        examDao.upsertAll(exams)
+
+        val courseIds = (1..1200).map { "course_$it" }
+        val results = examDao.getByCourseIds(courseIds)
+
+        assertEquals(4, results.size)
+        assertEquals(setOf("exam_1", "exam_900", "exam_901", "exam_1200"), results.map { it.id }.toSet())
     }
 
     @Test
@@ -79,6 +95,24 @@ class ExamDaoTest {
 
         val result = examDao.getByTypeAndName("surveys", "Survey 1")
         assertNull(result)
+    }
+
+    @Test
+    fun getFirstByStepId_skipsStepSurvey() = runBlocking {
+        val survey = StepExam().apply {
+            id = "a-survey"
+            type = "surveys"
+            stepId = "step1"
+        }
+        val test = StepExam().apply {
+            id = "b-test"
+            type = "courses"
+            stepId = "step1"
+        }
+
+        examDao.upsertAll(listOf(survey, test))
+
+        assertEquals("b-test", examDao.getFirstByStepId("step1")?.id)
     }
 
     @Test
@@ -174,5 +208,102 @@ class ExamDaoTest {
 
         val result = examDao.getIndividualSurveys()
         assertEquals(listOf("1", "4"), result.map { it.id })
+    }
+
+    @Test
+    fun getByIds_with1200IdsAndDuplicates_returnsAllMatchesWithoutDuplicates() = runBlocking {
+        val seededIndices = listOf(1, 900, 901, 1200, 1201)
+        val exams = seededIndices.map { i ->
+            StepExam().apply {
+                id = "exam_$i"
+            }
+        }
+        examDao.upsertAll(exams)
+
+        val queryIds = (1..1200).map { i -> "exam_$i" } + listOf("exam_1", "exam_500", "exam_1200")
+        val results = examDao.getByIds(queryIds)
+
+        assertEquals(4, results.size)
+        assertEquals(setOf("exam_1", "exam_900", "exam_901", "exam_1200"), results.map { it.id }.toSet())
+    }
+
+    @Test
+    fun getByStepIds_with1200Ids_returnsAllMatches() = runBlocking {
+        val seededIndices = listOf(1, 900, 901, 1200, 1201)
+        val exams = seededIndices.map { i ->
+            StepExam().apply {
+                id = "exam_$i"
+                stepId = "step_$i"
+            }
+        }
+        examDao.upsertAll(exams)
+
+        val queryStepIds = (1..1200).map { i -> "step_$i" } + listOf("step_1")
+        val results = examDao.getByStepIds(queryStepIds)
+
+        assertEquals(4, results.size)
+        assertEquals(setOf("exam_1", "exam_900", "exam_901", "exam_1200"), results.map { it.id }.toSet())
+    }
+
+    @Test
+    fun getByCourseIds_with1200Ids_returnsAllMatches() = runBlocking {
+        val seededIndices = listOf(1, 900, 901, 1200, 1201)
+        val exams = seededIndices.map { i ->
+            StepExam().apply {
+                id = "exam_$i"
+                courseId = "course_$i"
+            }
+        }
+        examDao.upsertAll(exams)
+
+        val queryCourseIds = (1..1200).map { i -> "course_$i" } + listOf("course_1")
+        val results = examDao.getByCourseIds(queryCourseIds)
+
+        assertEquals(4, results.size)
+        assertEquals(setOf("exam_1", "exam_900", "exam_901", "exam_1200"), results.map { it.id }.toSet())
+    }
+
+    @Test
+    fun getTeamOwnedSurveys_with1200SubmissionIds_returnsTeamOwnedAndSubmissionSurveysWithoutDuplicates() = runBlocking {
+        val teamExam = StepExam().apply {
+            id = "team_exam"
+            type = "surveys"
+            teamId = "team1"
+        }
+        val seededIndices = listOf(1, 900, 901, 1200, 1201)
+        val submissionExams = seededIndices.map { i ->
+            StepExam().apply {
+                id = "sub_exam_$i"
+                type = "surveys"
+                teamId = "other_team"
+            }
+        }
+        examDao.upsertAll(listOf(teamExam) + submissionExams)
+
+        val querySubmissionIds = (1..1200).map { i -> "sub_exam_$i" } + listOf("sub_exam_1", "sub_exam_100")
+        val results = examDao.getTeamOwnedSurveys("team1", querySubmissionIds)
+
+        assertEquals(5, results.size)
+        assertEquals(setOf("team_exam", "sub_exam_1", "sub_exam_900", "sub_exam_901", "sub_exam_1200"), results.map { it.id }.toSet())
+    }
+
+    @Test
+    fun getTeamOwnedSurveys_withEmptySubmissionIds_returnsTeamSurveys() = runBlocking {
+        val teamExam = StepExam().apply {
+            id = "team_exam"
+            type = "surveys"
+            teamId = "team1"
+        }
+        val otherExam = StepExam().apply {
+            id = "other_exam"
+            type = "surveys"
+            teamId = "team2"
+        }
+        examDao.upsertAll(listOf(teamExam, otherExam))
+
+        val results = examDao.getTeamOwnedSurveys("team1", emptyList())
+
+        assertEquals(1, results.size)
+        assertEquals("team_exam", results[0].id)
     }
 }

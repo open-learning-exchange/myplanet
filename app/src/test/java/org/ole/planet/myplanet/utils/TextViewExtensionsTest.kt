@@ -69,13 +69,13 @@ class TextViewExtensionsTest {
                                     textView.text = visiblePortion
                                     textView.maxLines = 1
                                 }
-                            }, s, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                            }, s, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                         }
                         textView.text = expanded
                         textView.maxLines = Int.MAX_VALUE
                         textView.ellipsize = null
                     }
-                }, start, sb.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }, start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
             textView.text = visiblePortion
             textView.maxLines = 1

@@ -103,6 +103,7 @@
     <string name="user">User</string>
     <string name="remove_selected">Remove Selected</string>
     <string name="stop_download">Stop Download</string>
+    <string name="download_stopped">Download stopped</string>
     <string name="downloading_file">Downloading file…</string>
     <string name="cancel">cancel</string>
     <string name="added_to">added to</string>
@@ -159,6 +160,9 @@
     <string name="select_gallery">Select From Gallery</string>
     <string name="add_resource">Add Resource:</string>
     <string name="reply">Reply</string>
+    <string name="react">React</string>
+    <string name="reaction_chip_description">%1$s reaction, count %2$d</string>
+    <string name="more_reactions">More reactions</string>
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">Showing reply of:</string>
@@ -543,7 +547,7 @@
     <string name="description_colon">Description:&#160;</string>
     <string name="download_resources">download Resources</string>
     <string name="take_test">take test [%d]</string>
-    <string name="search">search</string>
+    <string name="search">Search</string>
     <string name="submit_feedback">Submit Feedback</string>
     <string name="media">Media:</string>
     <string name="filter">Filter</string>
@@ -585,7 +589,6 @@
     <string name="format_removed_from_mylibrary">%1$s removed from myLibrary</string>
     <string name="added_to_my_courses">added to myCourses</string>
     <string name="do_you_want_to_stay_online">Do you want to stay online?</string>
-    <string name="device_not_connected_to_planet">Device not connected to planet.</string>
     <string name="all_files_downloaded_successfully">All files downloaded successfully</string>
     <string name="removed_from_mylibrary">Removed from myLibrary</string>
     <string name="removed_from_mycourse">Removed from myCourse</string>
@@ -610,10 +613,11 @@
     <string name="file_already_exists">File already exists…</string>
     <string name="feature_not_available">Feature Not Available</string>
     <string name="sync">sync</string>
+    <string name="filter_header_with_count">%1$s (%2$d)</string>
     <string name="session_expired">Session expired.</string>
+    <string name="remove_item_format">Remove %s</string>
     <string name="downloading_started_please_check_notificati">Downloading started, please check notification…</string>
     <string name="dictionary_parsing_failed">Dictionary parsing failed.</string>
-    <string name="medium_text_html">Text / HTML</string>
     <string name="medium_html">HTML</string>
     <string name="dictionary">Dictionary</string>
     <string name="list_size">List size %d</string>
@@ -745,6 +749,7 @@
     <string name="sync_step_of">Step %1$d of %2$d</string>
     <string name="sync_items_of">%1$d / %2$d</string>
     <string name="sync_table_progress">%1$s  ·  %2$d / %3$d tables</string>
+    <string name="sync_tables_failed">Some data could not be downloaded: %1$s</string>
     <string name="sync_in_progress_wait">Sync in progress. Please wait for it to finish.</string>
     <string name="sync_shelves_progress">%1$d / %2$d shelves</string>
     <string name="team_leader">Team Leader</string>
@@ -754,6 +759,7 @@
     <string name="completed_colon">\n Completed: %s</string>
     <string name="assigned_to_colon">Assigned to: %s</string>
     <string name="add_task">Add Task</string>
+    <string name="edit_task">Edit Task</string>
     <string name="task_title_is_required">Task title is required</string>
     <string name="deadline_is_required">Deadline is required</string>
     <string name="updated">updated</string>
@@ -916,11 +922,14 @@
     <string name="video_player">video player</string>
     <string name="video_unavailable">Video unavailable — file not found and could not connect to server</string>
     <string name="video_playback_error">Video playback error. Please try again or check your connection</string>
+    <string name="audio_unavailable">Audio unavailable — file not found and could not connect to server</string>
+    <string name="audio_playback_error">Audio playback error. Please try again or check your connection</string>
     <string name="video_loading_checking_server">Checking server availability…</string>
     <string name="video_loading_connecting">Connecting to server…</string>
     <string name="video_loading_buffering">Buffering…</string>
     <string name="video_loading_local">Loading video…</string>
     <string name="unable_to_play_video">Unable to Play Video</string>
+    <string name="unable_to_play_audio">Unable to Play Audio</string>
     <string name="go_back">Go Back</string>
     <string name="progress_bar">progress bar</string>
     <string name="web_view">web view</string>
@@ -989,6 +998,7 @@
     <string name="location_colon">location:&#160;</string>
     <string name="recurring_colon">recurring:&#160;</string>
     <string name="created_by_colon">created by:&#160;</string>
+    <string name="team_colon">team:&#160;</string>
     <string name="you_want_to_connect_to_a_different_server">Are you sure you want to change the configuration? This action will clear the app data.</string>
     <string name="are_you_sure_you_want_to_clear_data">are you sure you want to clear all data?</string>
     <string name="feedback_list">list of feedback</string>
@@ -1023,9 +1033,10 @@
     <string name="user_name">%1$s (%2$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
-    <string name="member_description">%1$s (%2$d visits)</string>
+    <string name="member_description">%1$s (%2$d team visits)</string>
     <string name="last_visit">Last visit: %1$s</string>
     <string name="no_visit">No visit</string>
+    <string name="no_logout_record_found">No logout record found</string>
     <string name="dark_mode">Dark mode</string>
     <string name="dark_mode_off">Off</string>
     <string name="dark_mode_on">On</string>
@@ -1138,6 +1149,9 @@
     <string name="show_additional_fields">show additional fields</string>
     <string name="hide_additional_fields">hide additional fields</string>
     <string name="preparing_download">Preparing download…</string>
+    <string name="download_partially_downloaded">Partially downloaded</string>
+    <string name="download_paused_at_percent">Paused at %1$d%%</string>
+    <string name="resume_download">Resume download</string>
     <string name="downloading_files">Downloading files</string>
     <string name="edit_mission_and_services">edit mission and services</string>
     <string name="this_team_has_no_description_defined">this team has no description defined</string>
@@ -1248,6 +1262,8 @@
     <string name="video_already_added">Video already added</string>
     <string name="please_select_video">Please select a video file</string>
     <string name="please_select_image_or_video">Please select an image or video file</string>
+    <string name="voice_image_gif_too_large">GIFs larger than 2 MB can\'t be attached</string>
+    <string name="voice_image_unreadable">This image couldn\'t be read</string>
     <string name="debug_retry_queue">Retry Queue (Debug)</string>
     <string name="debug_retry_queue_summary">View and manage failed upload retries</string>
     <string name="retry_queue_status">Retry Queue Status</string>
@@ -1293,8 +1309,10 @@
     <string name="load_earlier_messages">Load earlier messages</string>
     <string name="already_shared">Already shared</string>
     <string name="status_not_started">Not Started</string>
+    <string name="status_todo">To Do</string>
     <string name="status_in_progress">In Progress</string>
     <string name="status_completed">Completed</string>
+    <string name="status_dropdown" translatable="false">%1$s ▾</string>
     <string name="read_aloud">Read aloud</string>
     <string name="stop_reading">Stop reading</string>
     <string name="tts_not_available">Text-to-speech is not available on this device</string>
@@ -1309,6 +1327,9 @@
     <string name="storage_pdfs">PDFs</string>
     <string name="storage_images">Images</string>
     <string name="storage_other">Other Files</string>
+    <string name="storage_partial_downloads">Partial downloads</string>
+    <string name="storage_clear_partial_downloads">Clear partial downloads?</string>
+    <string name="storage_clear_partial_downloads_message">These are downloads that were stopped before they finished. Clearing them frees the space, and those downloads will start over next time.</string>
     <string name="storage_empty">No downloaded content found</string>
     <string name="storage_delete_confirm">Delete all %1$s downloads?</string>
     <string name="storage_delete_selected_confirm">Delete %1$d selected item(s)?</string>
@@ -1327,7 +1348,7 @@
     <string name="download_pdf">Download PDF</string>
     <string name="label_answer">Answer:</string>
     <string name="label_link">Link: </string>
-    <string name="number_of_visits">Number of Visits</string>
+    <string name="number_of_visits">Total Visits</string>
     <string name="label_name_with_colon">Name:</string>
     <string name="label_relationship">Relationship:</string>
     <string name="label_phone_no">Phone No.:</string>
@@ -1364,6 +1385,7 @@
     <string name="yesterday">Yesterday</string>
     <string name="days_ago">%1$d days ago</string>
     <string name="please_complete_test">please complete the test to proceed</string>
+    <string name="please_pass_test">Please pass the test in step %1$d to proceed</string>
     <string name="edit_meetup">Edit Meetup</string>
     <string name="meetup_updated">Meetup updated successfully</string>
     <string name="meetup_not_updated">Failed to update meetup</string>

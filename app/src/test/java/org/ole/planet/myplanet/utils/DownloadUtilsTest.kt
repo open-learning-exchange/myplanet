@@ -7,17 +7,20 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.mockk.clearAllMocks
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.spyk
-import io.mockk.unmockkAll
 import io.mockk.unmockkObject
 import io.mockk.verify
 import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.model.MyLibrary
@@ -34,8 +37,27 @@ class DownloadUtilsTest {
     private lateinit var sharedPreferencesEditor: SharedPreferences.Editor
     private lateinit var activityManager: ActivityManager
 
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setupClass() {
+            mockkObject(Utilities)
+            mockkObject(DownloadService.Companion)
+            mockkObject(DownloadUtils, recordPrivateCalls = true)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkObject(Utilities)
+            unmockkObject(DownloadService.Companion)
+            unmockkObject(DownloadUtils)
+        }
+    }
+
     @Before
     fun setup() {
+        clearAllMocks()
         context = spyk(ApplicationProvider.getApplicationContext())
         DownloadUtils.resetChannelsCreatedForTesting()
 
@@ -49,19 +71,13 @@ class DownloadUtilsTest {
         every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns activityManager
         every { activityManager.getRunningServices(any()) } returns mutableListOf()
 
-        mockkObject(Utilities)
         every { Utilities.toast(any(), any()) } returns Unit
-
-        mockkObject(DownloadService.Companion)
-
-        mockkObject(DownloadUtils, recordPrivateCalls = true)
         every { DownloadUtils["startDownloadWork"](any<Context>(), any<String>(), any<Boolean>()) } returns Unit
     }
 
     @After
     fun tearDown() {
         DownloadUtils.resetChannelsCreatedForTesting()
-        unmockkAll()
     }
 
     @Test
@@ -205,7 +221,7 @@ class DownloadUtilsTest {
 
     @Test
     fun `downloadAllFiles resolves base url once and builds urls against it`() {
-        unmockkObject(DownloadUtils)
+        clearMocks(DownloadUtils, answers = true)
         UrlUtils.resetForTesting()
         val spm = mockk<SharedPrefManager>(relaxed = true)
         every { spm.isAlternativeUrl() } returns false
@@ -225,7 +241,7 @@ class DownloadUtilsTest {
 
     @Test
     fun `downloadAllFiles returns empty list for empty input`() {
-        unmockkObject(DownloadUtils)
+        clearMocks(DownloadUtils, answers = true)
         UrlUtils.resetForTesting()
         val spm = mockk<SharedPrefManager>(relaxed = true)
         every { spm.isAlternativeUrl() } returns false

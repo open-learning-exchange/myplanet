@@ -22,7 +22,7 @@ sealed interface DictionaryLoadState {
 sealed interface DictionarySearchState {
     data object Idle : DictionarySearchState
     data class Found(val entry: DictionaryWord) : DictionarySearchState
-    data object NotFound : DictionarySearchState
+    data class NotFound(val query: String) : DictionarySearchState
 }
 
 @HiltViewModel
@@ -55,12 +55,14 @@ class DictionaryViewModel @Inject constructor(
     }
 
     fun searchWord(word: String) {
+        val query = word.trim()
+        if (query.isEmpty()) return
         viewModelScope.launch {
-            val entry = dictionaryRepository.findByWord(word)
+            val entry = dictionaryRepository.findByWord(query)
             _searchState.value = if (entry != null) {
                 DictionarySearchState.Found(entry)
             } else {
-                DictionarySearchState.NotFound
+                DictionarySearchState.NotFound(query)
             }
         }
     }

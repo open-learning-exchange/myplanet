@@ -6,6 +6,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
+import java.util.Locale
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.CoroutineDispatcher
@@ -14,10 +15,13 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RatingAggregate
 import org.ole.planet.myplanet.data.room.dao.RatingDao
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -26,6 +30,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 class RatingsRepositoryImplTest {
 
     private lateinit var ratingDao: RatingDao
+    private lateinit var myLibraryDao: MyLibraryDao
     private lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var gson: Gson
     private lateinit var repository: RatingsRepositoryImpl
@@ -34,6 +39,7 @@ class RatingsRepositoryImplTest {
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
         ratingDao = mockk(relaxed = true)
+        myLibraryDao = mockk(relaxed = true)
         val testDispatcher = StandardTestDispatcher()
         dispatcherProvider = object : DispatcherProvider {
             override val main: CoroutineDispatcher = testDispatcher
@@ -43,60 +49,21 @@ class RatingsRepositoryImplTest {
         }
         gson = Gson()
 
-        repository = RatingsRepositoryImpl(gson, ratingDao)
+        repository = RatingsRepositoryImpl(gson, ratingDao, myLibraryDao)
     }
 
     @Test
-    fun `getRatings aggregates ratings properly`() = runTest {
-        val rating1 = Rating().apply { type = "course"; item = "course1"; rate = 4; userId = "user1" }
-        val rating2 = Rating().apply { type = "course"; item = "course1"; rate = 5; userId = "user2" }
-        coEvery { ratingDao.getByType("course") } returns listOf(rating1, rating2)
-
-        val result = repository.getRatings("course", "user1")
-
-        assertEquals(1, result.size)
-        val aggregated = result["course1"]
-        assertNotNull(aggregated)
-        assertEquals(4, aggregated!!.get("ratingByUser").asInt)
-        assertEquals(2, aggregated.get("total").asInt)
-        assertEquals(4.5f, aggregated.get("averageRating").asFloat)
-    }
-
-    @Test
-    fun `getRatingsById returns specific aggregated rating summary`() = runTest {
+    fun `getRatingSummary returns specific aggregated rating summary`() = runTest {
         val rating = Rating().apply { id = "rating1"; type = "course"; item = "course1"; rate = 5; userId = "user1"; comment = "Great" }
         coEvery { ratingDao.getAggregate("course", "course1") } returns RatingAggregate(1, 5.0)
         coEvery { ratingDao.findByTypeUserItem("course", "user1", "course1") } returns rating
 
-        val result = repository.getRatingsById("course", "course1", "user1")
+        val result = repository.getRatingSummary("course", "course1", "user1")
 
-        assertNotNull(result)
-        assertEquals(5, result!!.userRating)
+        assertEquals(5, result.userRating)
         assertEquals(1, result.totalRatings)
         assertEquals(5.0f, result.averageRating)
         assertEquals("Great", result.existingRating?.comment)
-    }
-
-    @Test
-    fun `getCourseRatings returns aggregated course ratings`() = runTest {
-        val rating = Rating().apply { type = "course"; item = "course1"; rate = 3; userId = "user1" }
-        coEvery { ratingDao.getByType("course") } returns listOf(rating)
-
-        val result = repository.getCourseRatings("user1")
-
-        assertEquals(1, result.size)
-        assertNotNull(result["course1"])
-    }
-
-    @Test
-    fun `getResourceRatings returns aggregated resource ratings`() = runTest {
-        val rating = Rating().apply { type = "resource"; item = "resource1"; rate = 5; userId = "user1" }
-        coEvery { ratingDao.getByType("resource") } returns listOf(rating)
-
-        val result = repository.getResourceRatings("user1")
-
-        assertEquals(1, result.size)
-        assertNotNull(result["resource1"])
     }
 
     @Test
@@ -180,6 +147,32 @@ class RatingsRepositoryImplTest {
         assertEquals(5, summary.userRating)
     }
 
+    @Test
+    fun `submitRating on a resource refreshes the cached library rating`() = runTest {
+        val testUser = UserEntity(id = "user1", _id = "user1", parentCode = "parent", planetCode = "planet")
+        val library = MyLibrary().apply { id = "lib1"; resourceId = "res1"; timesRated = 0; averageRating = null }
+        coEvery { ratingDao.findByTypeUserItem("resource", "user1", "res1") } returns null
+        coEvery { ratingDao.getAggregate("resource", "res1") } returns RatingAggregate(2, 4.5)
+        coEvery { myLibraryDao.getByResourceId("res1") } returns library
+
+        repository.submitRating("resource", "res1", "Book", testUser, 5f, "Good")
+
+        assertEquals(2, library.timesRated)
+        assertEquals(String.format(Locale.getDefault(), "%.2f", 4.5f), library.averageRating)
+        coVerify { myLibraryDao.upsert(library) }
+    }
+
+    @Test
+    fun `submitRating on a course leaves library untouched`() = runTest {
+        val testUser = UserEntity(id = "user1", _id = "user1", parentCode = "parent", planetCode = "planet")
+        coEvery { ratingDao.findByTypeUserItem("course", "user1", "course1") } returns null
+        coEvery { ratingDao.getAggregate("course", "course1") } returns RatingAggregate(1, 4.0)
+
+        repository.submitRating("course", "course1", "Good", testUser, 4f, "Nice")
+
+        coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun `submitRating throws when user id is blank`() = runTest {
         val blankUser = UserEntity(id = "", _id = "")
@@ -201,9 +194,27 @@ class RatingsRepositoryImplTest {
         repository.insertRatingsFromSync(docs)
 
         coVerify(exactly = 1) { ratingDao.upsertAll(any()) }
+        coVerify(exactly = 1) { ratingDao.deleteUploadedWithoutServerId() }
         assertEquals(1, savedSlot.captured.size)
         assertEquals("rating1", savedSlot.captured[0].id)
         assertEquals("user1", savedSlot.captured[0].userId)
+    }
+
+    @Test
+    fun `insertRatingsFromSync keeps ratings edited locally but not yet uploaded`() = runTest {
+        val savedSlot = slot<List<Rating>>()
+        coEvery { ratingDao.getUpdatedIds() } returns listOf("rating1")
+        coEvery { ratingDao.upsertAll(capture(savedSlot)) } returns Unit
+
+        val docs = listOf("rating1", "rating2").map { ratingId ->
+            JsonObject().apply {
+                addProperty("_id", ratingId)
+                add("user", JsonObject().apply { addProperty("_id", "user1") })
+            }
+        }
+        repository.insertRatingsFromSync(docs)
+
+        assertEquals(listOf("rating2"), savedSlot.captured.map { it.id })
     }
 
     @Test
@@ -230,5 +241,13 @@ class RatingsRepositoryImplTest {
         // CursorWindow limit and crash getByType with SQLiteBlobTooBigException.
         org.junit.Assert.assertFalse(storedUser!!.contains("_attachments"))
         assertEquals("user1", savedSlot.captured[0].userId)
+    }
+
+    @Test
+    fun `markRatingUploaded passes server id and rev to dao`() = runTest {
+        coEvery { ratingDao.markUploaded("local", "server", "1-a") } returns 1
+
+        assertTrue(repository.markRatingUploaded("local", "server", "1-a"))
+        coVerify(exactly = 1) { ratingDao.markUploaded("local", "server", "1-a") }
     }
 }

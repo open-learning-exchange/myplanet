@@ -147,7 +147,6 @@ class PlanFragment : BaseTeamFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             val currentUser = userRepository.getUserModel()
             val userId = currentUser?.id ?: return@launch
-            val createdBy = userId
             val teamIdentifier = team._id?.takeIf { it.isNotBlank() }
                 ?: team.teamId?.takeIf { it.isNotBlank() }
             if (teamIdentifier == null) {
@@ -165,7 +164,6 @@ class PlanFragment : BaseTeamFragment() {
             val isPublic = binding.switchPublic.isChecked
 
             try {
-                val teamTypeForValidation = team.type ?: "team"
                 val wasUpdated = teamsRepository.updateTeamDetails(
                     teamId = teamIdentifier,
                     name = name,
@@ -174,7 +172,7 @@ class PlanFragment : BaseTeamFragment() {
                     rules = rulesToSave,
                     teamType = teamType,
                     isPublic = isPublic,
-                    createdBy = createdBy,
+                    createdBy = userId,
                 )
 
                 if (wasUpdated) {
@@ -188,7 +186,7 @@ class PlanFragment : BaseTeamFragment() {
                         this.description = descriptionToSave
                         this.teamType = teamType
                         this.isPublic = isPublic
-                        this.createdBy = createdBy.takeIf { it.isNotBlank() } ?: this.createdBy
+                        this.createdBy = userId.takeIf { it.isNotBlank() } ?: this.createdBy
                         this.updated = true
                     }
 

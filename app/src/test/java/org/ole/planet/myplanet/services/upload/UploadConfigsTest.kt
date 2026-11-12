@@ -1,18 +1,26 @@
 package org.ole.planet.myplanet.services.upload
 
+import androidx.room.withTransaction
 import dagger.Lazy
+import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.unmockkAll
+import io.mockk.mockkStatic
+import io.mockk.slot
+import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
+import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.NewsLog
@@ -23,6 +31,8 @@ import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ApkLogUpload
 import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.repository.VoicesRepository
@@ -35,40 +45,67 @@ class UploadConfigsTest {
     private val voicesRepository: VoicesRepository = mockk(relaxed = true)
     private val diagnosticsRepository: DiagnosticsRepository = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+    private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)
+    private val surveysRepository: SurveysRepository = mockk(relaxed = true)
+    private val progressRepository: ProgressRepository = mockk(relaxed = true)
+    private val appDatabase: AppDatabase = mockk(relaxed = true)
     private lateinit var uploadConfigs: UploadConfigs
+
+    companion object {
+        @JvmStatic
+        @BeforeClass
+        fun setupClass() {
+            mockkObject(VersionUtils)
+            mockkObject(NetworkUtils)
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun tearDownClass() {
+            unmockkObject(VersionUtils)
+            unmockkObject(NetworkUtils)
+        }
+    }
 
     @Before
     fun setup() {
-        mockkObject(VersionUtils)
-        every { VersionUtils.getAndroidId(any()) } returns "test-android-id"
+        clearAllMocks()
 
-        mockkObject(NetworkUtils)
+        every { VersionUtils.getAndroidId(any()) } returns "test-android-id"
         every { NetworkUtils.getDeviceName() } returns "test-device-name"
         every { NetworkUtils.getUniqueIdentifier() } returns "test-unique-id"
 
         every { sharedPrefManager.getCustomDeviceName() } returns "test-custom-device"
 
+        mockkStatic("androidx.room.RoomDatabaseKt")
+        val transactionBlock = slot<suspend () -> Any?>()
+        coEvery { appDatabase.withTransaction(capture(transactionBlock)) } coAnswers {
+            transactionBlock.captured.invoke()
+        }
+
         uploadConfigs = UploadConfigs(
             context = mockk(relaxed = true),
+            appDatabase = appDatabase,
             voicesRepository = voicesRepository,
-            submissionsRepository = mockk(relaxed = true),
+            submissionsRepository = submissionsRepository,
             activitiesRepository = activitiesRepository,
             teamsSyncRepository = mockk<Lazy<TeamsSyncRepository>>(relaxed = true),
             sharedPrefManager = sharedPrefManager,
             userRepository = mockk(relaxed = true),
-            surveysRepository = mockk(relaxed = true),
+            surveysRepository = surveysRepository,
             feedbackRepository = mockk(relaxed = true),
             ratingsRepository = mockk(relaxed = true),
             eventsRepository = mockk(relaxed = true),
             resourcesRepository = mockk(relaxed = true),
             diagnosticsRepository = diagnosticsRepository,
-            progressRepository = mockk<ProgressRepository>(relaxed = true)
+            progressRepository = progressRepository
         )
     }
 
     @After
     fun tearDown() {
-        unmockkAll()
+        unmockkStatic("androidx.room.RoomDatabaseKt")
+        clearAllMocks()
     }
 
     @Test
@@ -292,6 +329,61 @@ class UploadConfigsTest {
 
         assertEquals(listOf(result2), failures)
         coVerify(exactly = 1) { diagnosticsRepository.markApkLogsUploaded(expectedUpdates) }
+    }
+
+    @Test
+    fun `AdoptedSurveys persistUploaded delegates to surveysRepository markExamsUploaded`() = runTest {
+        val results = listOf(UploadedItemResult("exam-1", "remote-1", "rev-1", mockk(relaxed = true)))
+        val expectedFailures = listOf(UploadedItemResult("exam-2", "remote-2", "rev-2", mockk(relaxed = true)))
+        coEvery { surveysRepository.markExamsUploaded(results) } returns expectedFailures
+
+        val failures = uploadConfigs.AdoptedSurveys.persistUploaded(mockk(relaxed = true), results)
+
+        assertEquals(expectedFailures, failures)
+        coVerify(exactly = 1) { surveysRepository.markExamsUploaded(results) }
+    }
+
+    @Test
+    fun `Submissions persistUploaded delegates to submissionsRepository markSubmissionsUploaded`() = runTest {
+        val results = listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", mockk(relaxed = true)))
+        val expectedFailures = listOf(UploadedItemResult("sub-2", "remote-2", "rev-2", mockk(relaxed = true)))
+        coEvery { submissionsRepository.markSubmissionsUploaded(results) } returns expectedFailures
+
+        val failures = uploadConfigs.Submissions.persistUploaded(mockk(relaxed = true), results)
+
+        assertEquals(expectedFailures, failures)
+        coVerify(exactly = 1) { submissionsRepository.markSubmissionsUploaded(results) }
+    }
+
+    @Test
+    fun `ExamResults persistUploaded delegates to submissionsRepository markSubmissionsUploaded`() = runTest {
+        val results = listOf(UploadedItemResult("sub-1", "remote-1", "rev-1", mockk(relaxed = true)))
+        val expectedFailures = listOf(UploadedItemResult("sub-2", "remote-2", "rev-2", mockk(relaxed = true)))
+        coEvery { submissionsRepository.markSubmissionsUploaded(results) } returns expectedFailures
+
+        val failures = uploadConfigs.ExamResults.persistUploaded(mockk(relaxed = true), results)
+
+        assertEquals(expectedFailures, failures)
+        coVerify(exactly = 1) { submissionsRepository.markSubmissionsUploaded(results) }
+    }
+
+    @Test
+    fun `CourseProgress markUploaded runs inside a single withTransaction and returns only the failed results`() = runTest {
+        val uploaded = UploadedItemResult("progress-1", "remote-1", "1-rev", mockk(relaxed = true))
+        val failed = UploadedItemResult("progress-2", "remote-2", "2-rev", mockk(relaxed = true))
+        coEvery {
+            progressRepository.markCourseProgressUploaded("progress-1", "remote-1", "1-rev")
+        } returns true
+        coEvery {
+            progressRepository.markCourseProgressUploaded("progress-2", "remote-2", "2-rev")
+        } returns false
+
+        val failures = uploadConfigs.CourseProgress.markUploaded(listOf(uploaded, failed))
+
+        assertEquals(listOf(failed), failures)
+        coVerify(exactly = 1) { appDatabase.withTransaction(any()) }
+        coVerify(exactly = 1) { progressRepository.markCourseProgressUploaded("progress-1", "remote-1", "1-rev") }
+        coVerify(exactly = 1) { progressRepository.markCourseProgressUploaded("progress-2", "remote-2", "2-rev") }
     }
 
 }
