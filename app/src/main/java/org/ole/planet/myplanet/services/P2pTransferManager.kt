@@ -77,13 +77,8 @@ class P2pTransferManager(private val context: Context) {
         }
     }
 
-    /** One file in a transfer, stored at [relativePath] under the resource's folder on the receiver. */
     data class TransferFile(val relativePath: String, val file: File)
 
-    /**
-     * Sends [metadata] followed by [files]. Wire format: metadata length + UTF-8 metadata, file
-     * count, total bytes, then for each file its relative path (writeUTF), length and contents.
-     */
     suspend fun sendFiles(host: String, files: List<TransferFile>, metadata: String, onProgress: (Int) -> Unit): Boolean = withContext(Dispatchers.IO) {
         if (files.isEmpty()) return@withContext false
         val socket = Socket()
@@ -212,7 +207,6 @@ class P2pTransferManager(private val context: Context) {
         }
     }
 
-    /** Resolves a path sent by the other device, refusing anything that would land outside [dir]. */
     private fun resolveInside(dir: File, relativePath: String): File? {
         if (relativePath.isBlank() || relativePath.startsWith("/") || relativePath.startsWith("\\")) return null
         if (relativePath.split('/', '\\').any { it == ".." }) return null
@@ -220,7 +214,7 @@ class P2pTransferManager(private val context: Context) {
         val resolved = File(base, relativePath).canonicalFile
         return resolved.takeIf { it.path.startsWith(base.path + File.separator) }
     }
-    
+
     private fun CoroutineScope.closeOnCancel(onCancel: () -> Unit): Job = launch {
         try {
             awaitCancellation()

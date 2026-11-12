@@ -226,7 +226,6 @@ class ResourcesRepositoryImpl @Inject constructor(
         return library
     }
 
-    /** Merges the received folder into [target]; succeeds only if the page HTML resources open from arrived. */
     private fun placeHtmlFolder(receivedDir: File, target: File, library: MyLibrary): Boolean {
         target.mkdirs()
         receivedDir.walkTopDown().filter { it.isFile }.forEach { file ->
@@ -240,10 +239,9 @@ class ResourcesRepositoryImpl @Inject constructor(
         return true
     }
 
-    /** Moves the one received file to ole/<id>/<name>, where the viewer looks for it. */
     private fun placeSingleFile(receivedDir: File, externalFilesDir: File, id: String, incoming: MyLibrary, library: MyLibrary): Boolean {
         val received = receivedDir.walkTopDown().firstOrNull { it.isFile && it.length() > 0 } ?: return false
-        // Only the last path segment is trusted: the name comes from another device.
+
         val fileName = FileUtils.getFileNameFromLocalAddress(incoming.resourceLocalAddress)
             .ifBlank { FileUtils.getFileNameFromLocalAddress(incoming.filename) }
             .ifBlank { received.name }

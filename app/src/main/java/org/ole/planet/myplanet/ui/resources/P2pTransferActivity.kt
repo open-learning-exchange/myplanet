@@ -182,10 +182,6 @@ class P2pTransferActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * The files that make up [library] on this device: the whole folder for an HTML resource
-     * (skipping half-finished downloads), otherwise its single file. Empty if it isn't all here.
-     */
     private suspend fun resolveResourceFiles(library: MyLibrary): List<P2pTransferManager.TransferFile> = withContext(Dispatchers.IO) {
         val externalDir = FileUtils.getExternalFilesDir(this@P2pTransferActivity) ?: return@withContext emptyList()
         if (library.mediaType == "HTML") {
