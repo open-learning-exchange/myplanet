@@ -7,6 +7,8 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
 import io.mockk.Runs
+import io.mockk.clearMocks
+import io.mockk.clearStaticMockk
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -31,11 +33,12 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody.Companion.toResponseBody
-import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -79,16 +82,36 @@ class UserRepositoryImplTest {
 
     private val testDispatcher = StandardTestDispatcher()
 
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkObject(UrlUtils)
+            mockkObject(NetworkUtils)
+            mockkObject(SecurePrefs)
+            mockkStatic(Log::class)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkObject(UrlUtils)
+            unmockkObject(NetworkUtils)
+            unmockkObject(SecurePrefs)
+            unmockkStatic(Log::class)
+        }
+    }
+
     @Before
     fun setup() {
-        mockkObject(UrlUtils)
+        clearMocks(UrlUtils, NetworkUtils, SecurePrefs, answers = true, recordedCalls = true)
+        clearStaticMockk(Log::class)
+
         every { UrlUtils.header } returns "Basic auth"
         every { UrlUtils.getUrl() } returns "http://test.url"
 
-        mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "mock_unique_id"
 
-        mockkStatic(Log::class)
         every { Log.e(any(), any()) } returns 0
         every { Log.e(any(), any(), any()) } returns 0
 
@@ -145,13 +168,6 @@ class UserRepositoryImplTest {
             mockk(relaxed = true),
             deviceNameProvider
         )
-    }
-
-    @After
-    fun tearDown() {
-        unmockkObject(UrlUtils)
-        unmockkObject(NetworkUtils)
-        unmockkStatic(Log::class)
     }
 
     @Test
@@ -552,84 +568,64 @@ class UserRepositoryImplTest {
 
     @Test
     fun `checkIfUserExists properly encodes password containing special characters`() = runTest(testDispatcher) {
-        mockkObject(SecurePrefs)
-        try {
-            every { SecurePrefs.getPassword(context, settings) } returns "p\$a@s\\s"
-            every { UrlUtils.getUrl() } returns "http://admin:secret@localhost:5984"
+        every { SecurePrefs.getPassword(context, settings) } returns "p\$a@s\\s"
+        every { UrlUtils.getUrl() } returns "http://admin:secret@localhost:5984"
 
-            val urlSlot = slot<String>()
-            coEvery { apiInterface.getJsonObject(any(), capture(urlSlot)) } returns Response.success(buildJsonObject { put("ok", true) })
+        val urlSlot = slot<String>()
+        coEvery { apiInterface.getJsonObject(any(), capture(urlSlot)) } returns Response.success(buildJsonObject { put("ok", true) })
 
-            val user = UserEntity().apply { name = "john" }
-            repository.checkIfUserExists("Basic auth", user)
+        val user = UserEntity().apply { name = "john" }
+        repository.checkIfUserExists("Basic auth", user)
 
-            assertTrue("URL missing %24", urlSlot.captured.contains("%24"))
-            assertTrue("URL missing %40", urlSlot.captured.contains("%40"))
-            assertTrue("URL missing %5C", urlSlot.captured.contains("%5C"))
+        assertTrue("URL missing %24", urlSlot.captured.contains("%24"))
+        assertTrue("URL missing %40", urlSlot.captured.contains("%40"))
+        assertTrue("URL missing %5C", urlSlot.captured.contains("%5C"))
 
-            val hostAfterAt = urlSlot.captured.substringAfterLast("@")
-            val expectedHostPath = "localhost:5984/_users/org.couchdb.user:john"
-            assertTrue("Host after last @ mismatch", hostAfterAt == expectedHostPath)
-        } finally {
-            unmockkObject(SecurePrefs)
-        }
+        val hostAfterAt = urlSlot.captured.substringAfterLast("@")
+        val expectedHostPath = "localhost:5984/_users/org.couchdb.user:john"
+        assertTrue("Host after last @ mismatch", hostAfterAt == expectedHostPath)
     }
 
     @Test
     fun `checkIfUserExists matches expected URL output for plain alphanumeric password`() = runTest(testDispatcher) {
-        mockkObject(SecurePrefs)
-        try {
-            every { SecurePrefs.getPassword(context, settings) } returns "plainpass123"
-            every { UrlUtils.getUrl() } returns "http://admin:secret@localhost:5984"
+        every { SecurePrefs.getPassword(context, settings) } returns "plainpass123"
+        every { UrlUtils.getUrl() } returns "http://admin:secret@localhost:5984"
 
-            val urlSlot = slot<String>()
-            coEvery { apiInterface.getJsonObject(any(), capture(urlSlot)) } returns Response.success(buildJsonObject { put("ok", true) })
+        val urlSlot = slot<String>()
+        coEvery { apiInterface.getJsonObject(any(), capture(urlSlot)) } returns Response.success(buildJsonObject { put("ok", true) })
 
-            val user = UserEntity().apply { name = "john" }
-            repository.checkIfUserExists("Basic auth", user)
+        val user = UserEntity().apply { name = "john" }
+        repository.checkIfUserExists("Basic auth", user)
 
-            val expectedUrl = "http://john:plainpass123@localhost:5984/_users/org.couchdb.user:john"
-            val matches = urlSlot.captured == expectedUrl
-            assertTrue("URL mismatch for plain password", matches)
-        } finally {
-            unmockkObject(SecurePrefs)
-        }
+        val expectedUrl = "http://john:plainpass123@localhost:5984/_users/org.couchdb.user:john"
+        val matches = urlSlot.captured == expectedUrl
+        assertTrue("URL mismatch for plain password", matches)
     }
 
     @Test
     fun `checkAndUploadUser skips a user whose credentials are not on the device`() = runTest(testDispatcher) {
-        mockkObject(SecurePrefs)
-        try {
-            every { SecurePrefs.getUserName(context, settings) } returns "alice"
-            every { SecurePrefs.getPassword(context, settings) } returns "alicePassword"
-            val bob = UserEntity().apply { name = "bob"; isUpdated = true }
+        every { SecurePrefs.getUserName(context, settings) } returns "alice"
+        every { SecurePrefs.getPassword(context, settings) } returns "alicePassword"
+        val bob = UserEntity().apply { name = "bob"; isUpdated = true }
 
-            repository.checkAndUploadUser(bob, "alicePassword") { _, _ -> }
+        repository.checkAndUploadUser(bob, "alicePassword") { _, _ -> }
 
-            coVerify(exactly = 0) { apiInterface.getJsonObject(any(), any()) }
-            coVerify(exactly = 0) { apiInterface.putDoc(any(), any(), any(), any()) }
-        } finally {
-            unmockkObject(SecurePrefs)
-        }
+        coVerify(exactly = 0) { apiInterface.getJsonObject(any(), any()) }
+        coVerify(exactly = 0) { apiInterface.putDoc(any(), any(), any(), any()) }
     }
 
     @Test
     fun `checkAndUploadUser does not create the user when the existence check is unauthorized`() = runTest(testDispatcher) {
-        mockkObject(SecurePrefs)
-        try {
-            every { SecurePrefs.getUserName(context, settings) } returns "bob"
-            every { SecurePrefs.getPassword(context, settings) } returns "stalePassword"
-            every { UrlUtils.getUrl() } returns "http://admin:secret@localhost:5984"
-            coEvery { apiInterface.getJsonObject(any(), any()) } returns
-                Response.error(401, "{}".toResponseBody("application/json".toMediaTypeOrNull()))
-            val bob = UserEntity().apply { name = "bob"; isUpdated = true }
+        every { SecurePrefs.getUserName(context, settings) } returns "bob"
+        every { SecurePrefs.getPassword(context, settings) } returns "stalePassword"
+        every { UrlUtils.getUrl() } returns "http://admin:secret@localhost:5984"
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns
+            Response.error(401, "{}".toResponseBody("application/json".toMediaTypeOrNull()))
+        val bob = UserEntity().apply { name = "bob"; isUpdated = true }
 
-            repository.checkAndUploadUser(bob, "stalePassword") { _, _ -> }
+        repository.checkAndUploadUser(bob, "stalePassword") { _, _ -> }
 
-            coVerify(exactly = 0) { apiInterface.putDoc(any(), any(), any(), any()) }
-        } finally {
-            unmockkObject(SecurePrefs)
-        }
+        coVerify(exactly = 0) { apiInterface.putDoc(any(), any(), any(), any()) }
     }
 
     @Test
