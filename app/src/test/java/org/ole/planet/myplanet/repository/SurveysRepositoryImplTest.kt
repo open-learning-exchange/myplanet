@@ -16,6 +16,8 @@ import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -320,6 +322,26 @@ class SurveysRepositoryImplTest {
 
         verify(exactly = 0) { sharedPreferencesEditor.remove("reminder_time_survey2") }
         verify(exactly = 0) { sharedPreferencesEditor.remove("reminder_surveys_survey2") }
+    }
+
+    @Test
+    fun `getTeamSurveyCompletionTimestamps groups distinct completed surveys by user`() = runTest {
+        val exam = StepExam(id = "survey1", type = "surveys", teamId = "team1")
+
+        val completedSubmission = Submission(
+            parentId = "survey1",
+            status = "complete",
+            userId = "alice",
+            startTime = 1_700_000_000_000L,
+            lastUpdateTime = 1_700_000_500_000L
+        )
+        coEvery { submissionDao.getByTeamId("team1") } returns listOf(completedSubmission)
+        coEvery { examDao.getByTeamIdAndType("team1", "surveys") } returns emptyList()
+        coEvery { examDao.getTeamOwnedSurveys("team1", any()) } returns listOf(exam)
+
+        val result = repository.getTeamSurveyCompletionTimestamps("team1")
+
+        assertEquals(mapOf("alice" to listOf(1_700_000_500_000L)), result)
     }
 
     @Test

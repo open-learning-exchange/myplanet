@@ -45,9 +45,16 @@ class ProgressRepositoryImpl @Inject constructor(
         for (courseId in courseIds) {
             val count = allCounts[courseId] ?: 0
             val progresses = progressesByCourseId[courseId] ?: emptyList()
+            val current = calculateCurrentProgress(count, progresses)
+            val completedAt = if (count > 0 && current >= count) {
+                progresses.filter { it.stepNum in 1..count }.maxOfOrNull { it.createdDate } ?: 0L
+            } else {
+                0L
+            }
             map[courseId] = CourseProgressState(
                 max = count,
-                current = calculateCurrentProgress(count, progresses)
+                current = current,
+                completedAt = completedAt
             )
         }
         map

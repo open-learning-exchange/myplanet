@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/leaderboard_page_bg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingStart="@dimen/padding_large"
+        android:paddingTop="@dimen/padding_normal"
+        android:paddingEnd="@dimen/padding_large"
+        android:paddingBottom="@dimen/padding_very_large">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btn_period_all_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_period_chip_active"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingStart="15dp"
+                android:paddingTop="7dp"
+                android:paddingEnd="15dp"
+                android:paddingBottom="7dp"
+                android:text="@string/leaderboard_all_time"
+                android:textAllCaps="false"
+                android:textColor="@color/colorPrimaryDark"
+                android:textSize="12.5sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btn_period_this_month"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/padding_normal"
+                android:background="@drawable/bg_period_chip_inactive"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                android:paddingStart="15dp"
+                android:paddingTop="7dp"
+                android:paddingEnd="15dp"
+                android:paddingBottom="7dp"
+                android:text="@string/leaderboard_this_month"
+                android:textAllCaps="false"
+                android:textColor="@color/leaderboard_ink_2"
+                android:textSize="12.5sp"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/tv_filter_caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/leaderboard_ink_3"
+                android:textSize="11.5sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/summary_banner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_normal"
+            android:background="@drawable/bg_summary_banner"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="11dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                app:srcCompat="@drawable/ic_groups"
+                app:tint="@color/colorPrimary" />
+
+            <TextView
+                android:id="@+id/tv_team_progress"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:textColor="@color/colorPrimaryDark"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="@dimen/padding_normal">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_leaderboard"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:id="@+id/tv_nodata"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:textColor="@color/leaderboard_ink_1" />
+        </FrameLayout>
+    </LinearLayout>
+</FrameLayout>
