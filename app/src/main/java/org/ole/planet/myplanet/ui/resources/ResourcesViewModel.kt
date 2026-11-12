@@ -1,10 +1,12 @@
 package org.ole.planet.myplanet.ui.resources
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -22,13 +24,13 @@ import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class ResourcesViewModel @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
-    private val userRepository: UserRepository,
+    private val userRepository: UserReadRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
@@ -43,6 +45,10 @@ class ResourcesViewModel @Inject constructor(
 
     suspend fun getCurrentUser(): UserEntity? {
         return userDeferred.await()
+    }
+
+    private companion object {
+        const val TAG = "ResourcesViewModel"
     }
 
     enum class SortMode { NONE, DATE, TITLE }
@@ -105,8 +111,10 @@ class ResourcesViewModel @Inject constructor(
             val list = withContext(dispatcherProvider.io) {
                 try {
                     applyCurrentSort(resourcesRepository.getResourceListModels(isMyCourseLib, modelId))
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Loading resources failed", e)
                     null
                 }
             }
@@ -174,23 +182,27 @@ class ResourcesViewModel @Inject constructor(
         return resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
     }
 
-    suspend fun toggleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
+    suspend fun toggleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> {
         sortMode = SortMode.DATE
         isAscending = !isAscending
-        applyCurrentSort(list).also {
-            if (_resourcesState.value.isNotEmpty()) _resourcesState.value = it
+        val sorted = withContext(dispatcherProvider.default) {
+            applyCurrentSortSynchronous(list)
         }
+        if (_resourcesState.value.isNotEmpty()) _resourcesState.value = sorted
+        return sorted
     }
 
-    suspend fun toggleTitleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
+    suspend fun toggleTitleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> {
         sortMode = SortMode.TITLE
         isTitleAscending = !isTitleAscending
-        applyCurrentSort(list).also {
-            if (_resourcesState.value.isNotEmpty()) _resourcesState.value = it
+        val sorted = withContext(dispatcherProvider.default) {
+            applyCurrentSortSynchronous(list)
         }
+        if (_resourcesState.value.isNotEmpty()) _resourcesState.value = sorted
+        return sorted
     }
 
-    suspend fun applyCurrentSort(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.io) {
+    suspend fun applyCurrentSort(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.default) {
         applyCurrentSortSynchronous(list)
     }
 

@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.PartialDownloadCleaner
 import org.ole.planet.myplanet.utils.StoragePathResolver
 import org.ole.planet.myplanet.utils.StringUtils
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -902,7 +903,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
 
         val grouped = mutableMapOf<String, ResourceAccumulator>()
-        oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
+        oleDir.walkTopDown().filter { it.isFile && !PartialDownloadCleaner.isPartialFile(it.name) }.forEach { file ->
             val ext = file.extension.lowercase()
             val matchesCategory = if (extensions.isEmpty()) {
                 ext !in allKnownExtensions
@@ -957,7 +958,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
         oleDir.walkTopDown()
             .onEnter { it == oleDir || it.parentFile != oleDir || it.name !in NON_RESOURCE_DIRS }
-            .filter { it.isFile }
+            .filter { it.isFile && !PartialDownloadCleaner.isPartialFile(it.name) }
             .forEach { file ->
                 val index = StorageCategoryType.indexOf(file.extension)
                 val size = file.length()
