@@ -89,7 +89,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private var allResourceModels: List<ResourceListModel> = emptyList()
         set(value) {
             field = value
-            val indexes = buildResourceIndexes(value)
+            val indexes = buildResourcesListIndexes(value)
             modelsById = indexes.modelsById
             modelsByLocalAddress = indexes.modelsByLocalAddress
             tagsById = indexes.tagsById

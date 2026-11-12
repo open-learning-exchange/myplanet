@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagItem
 
-class ResourcesIndexesTest {
+class ResourcesListIndexesTest {
 
     private fun model(
         id: String?,
@@ -42,7 +42,7 @@ class ResourcesIndexesTest {
         val first = model("a", localAddress = "a.mp4")
         val second = model("b", localAddress = "b.mp4")
 
-        val indexes = buildResourceIndexes(listOf(first, second))
+        val indexes = buildResourcesListIndexes(listOf(first, second))
 
         assertEquals(first, indexes.modelsById["a"])
         assertEquals(second, indexes.modelsById["b"])
@@ -55,7 +55,7 @@ class ResourcesIndexesTest {
         val first = model("dup")
         val second = model("dup")
 
-        val indexes = buildResourceIndexes(listOf(first, second))
+        val indexes = buildResourcesListIndexes(listOf(first, second))
 
         assertEquals(first, indexes.modelsById["dup"])
     }
@@ -65,7 +65,7 @@ class ResourcesIndexesTest {
         val first = model("a", localAddress = "same.mp4")
         val second = model("b", localAddress = "same.mp4")
 
-        val indexes = buildResourceIndexes(listOf(first, second))
+        val indexes = buildResourcesListIndexes(listOf(first, second))
 
         assertEquals(first, indexes.modelsByLocalAddress["same.mp4"])
     }
@@ -77,7 +77,7 @@ class ResourcesIndexesTest {
         val first = model("a", tags = listOf(firstTag))
         val second = model("b", tags = listOf(secondTag))
 
-        val indexes = buildResourceIndexes(listOf(first, second))
+        val indexes = buildResourcesListIndexes(listOf(first, second))
 
         assertEquals(firstTag, indexes.tagsById["t1"])
         assertEquals("First", indexes.tagsById["t1"]?.name)
@@ -88,7 +88,7 @@ class ResourcesIndexesTest {
         val nullId = model(id = null, localAddress = null, tags = listOf(TagItem(id = null, name = "No id")))
         val real = model(id = "a", localAddress = "a.mp4")
 
-        val indexes = buildResourceIndexes(listOf(nullId, real))
+        val indexes = buildResourcesListIndexes(listOf(nullId, real))
 
         assertEquals(1, indexes.modelsById.size)
         assertEquals(1, indexes.modelsByLocalAddress.size)
