@@ -12,7 +12,7 @@ import org.ole.planet.myplanet.utils.SharedPrefDeviceNameProvider
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class PlatformBindingsModule {
+abstract class AndroidImplementationsModule {
 
     @Binds
     @Singleton
