@@ -87,7 +87,19 @@ class ResourcesPreviewLoader(private val dispatcherProvider: DispatcherProvider)
             synchronized(textCache) { textCache[key] }?.let { return@withContext it }
 
             val result = try {
-                file.bufferedReader().useLines { it.take(8).joinToString("\n") }.takeIf { it.isNotEmpty() }
+                val buffer = CharArray(MAX_PREVIEW_CHARS)
+                var total = 0
+                file.bufferedReader().use { reader ->
+                    while (total < buffer.size) {
+                        val read = reader.read(buffer, total, buffer.size - total)
+                        if (read < 0) break
+                        total += read
+                    }
+                }
+                String(buffer, 0, total)
+                    .reader()
+                    .useLines { it.take(MAX_PREVIEW_LINES).joinToString("\n") }
+                    .takeIf { it.isNotEmpty() }
             } catch (e: Exception) {
                 null
             }
@@ -101,5 +113,7 @@ class ResourcesPreviewLoader(private val dispatcherProvider: DispatcherProvider)
 
     companion object {
         const val MAX_CACHE_SIZE = 64
+        const val MAX_PREVIEW_CHARS = 4096
+        const val MAX_PREVIEW_LINES = 8
     }
 }

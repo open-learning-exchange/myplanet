@@ -20,6 +20,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TeamCoursesViewModelTest {
@@ -32,7 +33,7 @@ class TeamCoursesViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        viewModel = TeamCoursesViewModel(teamsRepository, coursesRepository)
+        viewModel = TeamCoursesViewModel(teamsRepository, coursesRepository, TestDispatcherProvider(testDispatcher))
     }
 
     @After
