@@ -391,4 +391,77 @@ class ResourcesListFilterTest {
         assertEquals("1", applied[0].item.id)
         assertEquals(applied.size, count)
     }
+
+    @Test
+    fun `mixed offline tag facet prefix and contains preserves prefix before contains order and count parity`() {
+        val tag1 = TagEntity().apply { id = "t1" }
+        val model1 = model(
+            id = "1", title = "Algebra 1",
+            subject = listOf("Math"), level = listOf("G1"), language = "En", mediaType = "Video",
+            isOffline = true, tags = listOf(TagItem(id = "t1", name = "T1"))
+        )
+        val model2 = model(
+            id = "2", title = "Advanced Algebra",
+            subject = listOf("Math"), level = listOf("G1"), language = "En", mediaType = "Video",
+            isOffline = true, tags = listOf(TagItem(id = "t1", name = "T1"))
+        )
+        val model3 = model(
+            id = "3", title = "Algebra 2",
+            subject = listOf("Math"), level = listOf("G1"), language = "En", mediaType = "Video",
+            isOffline = true, tags = listOf(TagItem(id = "t1", name = "T1"))
+        )
+        val model4 = model(
+            id = "4", title = "Algebra Fail Tag",
+            subject = listOf("Math"), level = listOf("G1"), language = "En", mediaType = "Video",
+            isOffline = true, tags = listOf(TagItem(id = "other", name = "Other"))
+        )
+        val model5 = model(
+            id = "5", title = "Algebra Fail Subject",
+            subject = listOf("Science"), level = listOf("G1"), language = "En", mediaType = "Video",
+            isOffline = true, tags = listOf(TagItem(id = "t1", name = "T1"))
+        )
+        val model6 = model(
+            id = "6", title = "Algebra Fail Offline",
+            subject = listOf("Math"), level = listOf("G1"), language = "En", mediaType = "Video",
+            isOffline = false, tags = listOf(TagItem(id = "t1", name = "T1"))
+        )
+        val model7 = model(
+            id = "7", title = "Introductory Algebra",
+            subject = listOf("Math"), level = listOf("G1"), language = "En", mediaType = "Video",
+            isOffline = true, tags = listOf(TagItem(id = "t1", name = "T1"))
+        )
+
+        val models = listOf(model1, model2, model3, model4, model5, model6, model7)
+        val criteria = noFilters.copy(
+            searchQuery = "algebra",
+            searchTags = listOf(tag1),
+            subjects = setOf("Math"),
+            levels = setOf("G1"),
+            languages = setOf("En"),
+            mediums = setOf("Video"),
+            downloadFilterIndex = 1
+        )
+        val filter = ResourcesListFilter()
+
+        val applied = filter.apply(models, criteria, emptySet())
+        val count = filter.countMatching(models, criteria, emptySet())
+
+        assertEquals(listOf("1", "3", "2", "7"), applied.map { it.item.id })
+        assertEquals(4, count)
+        assertEquals(applied.size, count)
+    }
+
+    @Test
+    fun `whitespace-only query calls searchLocalModels preserving searchList distinction`() {
+        val model1 = model(id = "1", title = "Hello World")
+        val model2 = model(id = "2", title = "HelloWorld")
+        val models = listOf(model1, model2)
+
+        val filter = ResourcesListFilter()
+        val result = filter.apply(models, noFilters.copy(searchQuery = " "), emptySet())
+        val count = filter.countMatching(models, noFilters.copy(searchQuery = " "), emptySet())
+
+        assertEquals(listOf("1", "2"), result.map { it.item.id })
+        assertEquals(result.size, count)
+    }
 }
