@@ -18,7 +18,8 @@ object ResourcesSearchUtils {
             if (title.startsWith(normalizedQuery)) startsWithQuery.add(item)
             else if (normalizedQueryParts.all { title.contains(it) }) containsQuery.add(item)
         }
-        return startsWithQuery + containsQuery
+        startsWithQuery.addAll(containsQuery)
+        return startsWithQuery
     }
 
     fun searchLocalModels(models: List<ResourceListModel>, query: String): List<ResourceListModel> {
