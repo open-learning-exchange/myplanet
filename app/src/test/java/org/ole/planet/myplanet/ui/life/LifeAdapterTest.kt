@@ -104,11 +104,11 @@ class LifeAdapterTest {
         val parent = LinearLayout(context)
         val holder = adapter.onCreateViewHolder(parent, 0)
         adapter.onBindViewHolder(holder, 0)
-        val visibleAlpha = (holder as LifeAdapter.LifeViewHolder).binding.rvItemParentLayout.alpha
+        val visibleAlpha = (holder as LifeAdapter.LifeViewHolder).binding.rvItemContent.alpha
 
         val holder2 = adapter.onCreateViewHolder(parent, 0)
         adapter.onBindViewHolder(holder2, 1)
-        val hiddenAlpha = (holder2 as LifeAdapter.LifeViewHolder).binding.rvItemParentLayout.alpha
+        val hiddenAlpha = (holder2 as LifeAdapter.LifeViewHolder).binding.rvItemContent.alpha
 
         assertEquals(1f, visibleAlpha, 0.001f)
         assertEquals(0.5f, hiddenAlpha, 0.001f)
