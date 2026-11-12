@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.util.Log
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
@@ -17,17 +16,8 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.toGson
 
-/**
- * Room replacement for the former `News` model (voices/discussion posts).
- *
- * `imageUrls` and `labels` (formerly `RealmList<String>`) are plain `List<String>` stored as JSON
- * via the shared [org.ole.planet.myplanet.data.room.Converters]. Persistence goes through
- * [org.ole.planet.myplanet.data.room.dao.NewsDao]. The class name is kept (`News`) so the
- * large voices UI surface is untouched.
- */
 @Entity(tableName = "news", indices = [Index("userId"), Index("replyTo"), Index("_id")])
 open class News {
-    // @JvmField on id/_id so Room does not see ambiguous getId/get_id accessors.
     @PrimaryKey
     @JvmField
     var id: String = ""
@@ -260,8 +250,8 @@ open class News {
                         }
                     }
                 }
-            } catch (e: Exception) {
-                Log.w(TAG, "community section check failed", e)
+            } catch (_: Exception) {
+                // malformed viewIn: keep the default (not community)
             }
             return false
         }
@@ -277,18 +267,13 @@ open class News {
                     }
                 }
             }
-        } catch (e: Exception) {
-            Log.w(TAG, "calculateSortDate failed", e)
+        } catch (_: Exception) {
+            // malformed viewIn: keep the default (time)
         }
         return time
     }
 
     companion object {
-        private const val TAG = "News"
-
-        /**
-         * Builds an unmanaged [News] from a form map. The caller persists it via the DAO.
-         */
         fun createNews(
             map: HashMap<String?, String>,
             user: UserEntity?,
@@ -316,8 +301,8 @@ open class News {
 
             try {
                 news.updatedDate = map["updatedDate"]?.toLong() ?: 0
-            } catch (e: Exception) {
-                Log.w(TAG, "updatedDate parse failed", e)
+            } catch (_: Exception) {
+                // malformed updatedDate: keep the default (0)
             }
 
             news.userId = user?.id
@@ -351,15 +336,15 @@ open class News {
                                     }
                                     news.conversations = GsonUtils.gson.toJson(conversationsList)
                                 }
-                            } catch (e: JsonSyntaxException) {
-                                Log.w(TAG, "conversation parse failed", e)
+                            } catch (_: JsonSyntaxException) {
+                                // malformed conversations: keep the default (unset)
                             }
                         }
                     }
                     news.newsCreatedDate = GsonUtils.getLong("createdDate", newsJson)
                     news.newsUpdatedDate = GsonUtils.getLong("updatedDate", newsJson)
-                } catch (e: JsonSyntaxException) {
-                    Log.w(TAG, "news json parse failed", e)
+                } catch (_: JsonSyntaxException) {
+                    // malformed news json: keep the defaults (unset)
                 }
             }
 
