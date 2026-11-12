@@ -674,6 +674,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
+    override suspend fun recordPhotoRemoteDoc(photoId: String, rev: String, remoteId: String) {
+        submitPhotosDao.recordRemoteDoc(photoId, rev, remoteId)
+    }
+
     override suspend fun getPendingSubmitPhotosUploads(): List<SubmitPhotos> {
         return submitPhotosDao.getUnuploaded()
     }
