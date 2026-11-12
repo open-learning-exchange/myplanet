@@ -16,7 +16,11 @@ data class CommunityTabState(
     val parentCode: String,
     val communityName: String,
     val planetType: String?
-)
+) {
+    val planetViewInId: String get() = "$planetCode@$parentCode"
+    val communityViewInId: String get() = "$communityName@$parentCode"
+    val title: String get() = planetCode.ifEmpty { communityName }
+}
 
 @HiltViewModel
 class CommunityTabViewModel @Inject constructor(

@@ -80,6 +80,8 @@ open class MyCourse(
     companion object {
         private val concatenatedLinks = HashSet<String>()
 
+        internal val concatenatedLinksPrefLock = Any()
+
         fun getCoverImageFile(context: Context, courseId: String?, fileName: String?): java.io.File? {
             if (courseId.isNullOrBlank() || fileName.isNullOrBlank()) return null
             return java.io.File(
@@ -94,19 +96,25 @@ open class MyCourse(
         }
 
         fun saveConcatenatedLinksToPrefs(spm: SharedPrefManager) {
-            val existingJsonLinks = spm.getConcatenatedLinks()
-            val existingConcatenatedLinks = if (existingJsonLinks != null) {
-                GsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toHashSet()
-            } else {
-                hashSetOf()
+            synchronized(concatenatedLinksPrefLock) {
+                val linksToProcess: List<String>
+                synchronized(concatenatedLinks) {
+                    linksToProcess = concatenatedLinks.toList()
+                }
+                if (linksToProcess.isEmpty()) return
+                val existingJsonLinks = spm.getConcatenatedLinks()
+                val existingConcatenatedLinks = if (existingJsonLinks != null) {
+                    GsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toHashSet()
+                } else {
+                    hashSetOf()
+                }
+                existingConcatenatedLinks.addAll(linksToProcess)
+                val jsonConcatenatedLinks = GsonUtils.gson.toJson(existingConcatenatedLinks)
+                spm.setConcatenatedLinks(jsonConcatenatedLinks)
+                synchronized(concatenatedLinks) {
+                    concatenatedLinks.removeAll(linksToProcess.toSet())
+                }
             }
-            val linksToProcess: List<String>
-            synchronized(concatenatedLinks) {
-                linksToProcess = concatenatedLinks.toList()
-            }
-            existingConcatenatedLinks.addAll(linksToProcess)
-            val jsonConcatenatedLinks = GsonUtils.gson.toJson(existingConcatenatedLinks)
-            spm.setConcatenatedLinks(jsonConcatenatedLinks)
         }
 
         fun serialize(course: MyCourse, resourcesByStepId: Map<String?, List<MyLibrary>>): JsonObject = buildJsonObject {
