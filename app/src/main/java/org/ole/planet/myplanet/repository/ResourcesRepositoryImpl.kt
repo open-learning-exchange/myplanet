@@ -184,8 +184,55 @@ class ResourcesRepositoryImpl @Inject constructor(
         return myLibraryDao.getById(id)
     }
 
-    override suspend fun saveImportedResource(library: MyLibrary) {
-        myLibraryDao.upsert(library)
+    override suspend fun importReceivedResource(incoming: MyLibrary, receivedFile: File): MyLibrary? {
+        val externalFilesDir = FileUtils.getExternalFilesDir(context) ?: return null
+        val incomingId: String? = incoming.id
+        val id = incomingId?.takeIf { it.isNotBlank() }
+            ?: incoming._id?.takeIf { it.isNotBlank() }
+            ?: incoming.resourceId?.takeIf { it.isNotBlank() }
+            ?: UUID.randomUUID().toString()
+        // Only the last path segment is trusted: the name comes from another device.
+        val fileName = FileUtils.getFileNameFromLocalAddress(incoming.resourceLocalAddress)
+            .ifBlank { FileUtils.getFileNameFromLocalAddress(incoming.filename) }
+            .takeIf { it.isNotBlank() && it != "." && it != ".." }
+            ?: receivedFile.name
+
+        val destination = FileUtils.getLibraryFile(externalFilesDir, id, fileName)
+        val moved = withContext(dispatcherProvider.io) {
+            runCatching {
+                destination.parentFile?.mkdirs()
+                if (!receivedFile.renameTo(destination)) {
+                    receivedFile.copyTo(destination, overwrite = true)
+                    receivedFile.delete()
+                }
+                destination.exists() && destination.length() > 0
+            }.getOrDefault(false)
+        }
+        if (!moved) return null
+
+        val library = myLibraryDao.getById(id) ?: incoming.apply {
+            this.id = id
+            userId = emptyList()
+            titleNormal = title?.let { StringUtils.normalizeText(it) }
+        }
+        library.apply {
+            if (resourceId.isNullOrBlank()) resourceId = _id?.takeIf { it.isNotBlank() } ?: id
+            resourceLocalAddress = fileName
+            resourceOffline = true
+            downloadedRev = _rev
+        }
+
+        val currentUserId = userRepository.getUserModel()?.id
+        if (!currentUserId.isNullOrBlank() && !library.isPrivate) {
+            library.setUserId(currentUserId)
+        }
+        saveLibraryItem(library)
+        if (!currentUserId.isNullOrBlank() && !library.isPrivate) {
+            library.resourceId?.let {
+                removedLogDao.deleteByTypeUserAndDocsChunked("resources", currentUserId, listOf(it))
+            }
+        }
+        return library
     }
 
     override suspend fun getLibraryItemByResourceId(resourceId: String): MyLibrary? {

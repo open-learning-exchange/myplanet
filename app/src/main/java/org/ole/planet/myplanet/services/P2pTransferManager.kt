@@ -29,6 +29,18 @@ class P2pTransferManager(private val context: Context) {
         }
     }
 
+    fun requestPeers(listener: WifiP2pManager.PeerListListener) {
+        channel?.let {
+            manager?.requestPeers(it, listener)
+        }
+    }
+
+    fun requestConnectionInfo(listener: WifiP2pManager.ConnectionInfoListener) {
+        channel?.let {
+            manager?.requestConnectionInfo(it, listener)
+        }
+    }
+
     fun connect(config: WifiP2pConfig, listener: WifiP2pManager.ActionListener) {
         channel?.let {
             manager?.connect(it, config, listener)
@@ -58,9 +70,7 @@ class P2pTransferManager(private val context: Context) {
             val outputStream = socket.getOutputStream()
             
             // Send metadata length then metadata
-            val metadataBytes = metadata.toByteArray()
-            outputStream.write(metadataBytes.size) // This is simplified, usually we need 4 bytes for length
-            // Better: use DataOutputStream
+            val metadataBytes = metadata.toByteArray(Charsets.UTF_8)
             val dataOutputStream = java.io.DataOutputStream(outputStream)
             dataOutputStream.writeInt(metadataBytes.size)
             dataOutputStream.write(metadataBytes)
@@ -76,7 +86,7 @@ class P2pTransferManager(private val context: Context) {
             while (inputStream.read(buffer).also { len = it } != -1) {
                 dataOutputStream.write(buffer, 0, len)
                 totalSent += len
-                onProgress(((totalSent * 100) / fileSize).toInt())
+                if (fileSize > 0) onProgress(((totalSent * 100) / fileSize).toInt())
             }
             
             inputStream.close()
@@ -104,7 +114,7 @@ class P2pTransferManager(private val context: Context) {
             val metadataSize = dataInputStream.readInt()
             val metadataBytes = ByteArray(metadataSize)
             dataInputStream.readFully(metadataBytes)
-            val metadata = String(metadataBytes)
+            val metadata = String(metadataBytes, Charsets.UTF_8)
 
             // Read file
             val fileSize = dataInputStream.readLong()
@@ -120,10 +130,14 @@ class P2pTransferManager(private val context: Context) {
                 if (len == -1) break
                 outputStream.write(buffer, 0, len)
                 totalReceived += len
-                onProgress(((totalReceived * 100) / fileSize).toInt())
+                if (fileSize > 0) onProgress(((totalReceived * 100) / fileSize).toInt())
             }
 
             outputStream.close()
+            if (totalReceived < fileSize) {
+                tempFile.delete()
+                return@withContext false
+            }
             onReceived(metadata, tempFile)
             true
         } catch (e: Exception) {

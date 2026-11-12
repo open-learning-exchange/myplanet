@@ -1672,4 +1672,84 @@ class ResourcesRepositoryImplTest {
             teamId = null
         )
     }
+
+    private suspend fun <T> withFilesDir(dir: File, block: suspend () -> T): T {
+        mockkObject(FileUtils)
+        try {
+            every { FileUtils.getExternalFilesDir(any()) } returns dir
+            return block()
+        } finally {
+            unmockkObject(FileUtils)
+        }
+    }
+
+    private fun receivedFile(content: String = "payload"): File =
+        temporaryFolder.newFile().apply { writeText(content) }
+
+    @Test
+    fun `importReceivedResource keeps sender metadata and stores file at the standard location`() = runTest {
+        val filesDir = temporaryFolder.newFolder("files")
+        coEvery { myLibraryDao.getById("res1") } returns null
+        coEvery { userRepository.getUserModel() } returns UserEntity().apply { id = "user1" }
+        val incoming = MyLibrary().apply {
+            id = "res1"; _id = "res1"; _rev = "3-abc"; title = "Book"
+            mediaType = "pdf"; resourceLocalAddress = "book.pdf"
+            subject = listOf("math"); userId = listOf("sender")
+        }
+
+        val saved = withFilesDir(filesDir) { repository.importReceivedResource(incoming, receivedFile()) }
+
+        assertNotNull(saved)
+        val file = File(filesDir, "ole/res1/book.pdf")
+        assertTrue(file.exists())
+        assertEquals("pdf", saved!!.mediaType)
+        assertEquals(listOf("math"), saved.subject)
+        assertEquals("book.pdf", saved.resourceLocalAddress)
+        assertTrue(saved.isResourceOffline())
+        assertEquals(listOf("user1"), saved.userId)
+        coVerify { myLibraryDao.upsert(saved) }
+        coVerify { removedLogDao.deleteByTypeUserAndDocsChunked("resources", "user1", listOf("res1")) }
+    }
+
+    @Test
+    fun `importReceivedResource updates an existing row instead of duplicating it`() = runTest {
+        val filesDir = temporaryFolder.newFolder("files")
+        val existing = MyLibrary().apply {
+            id = "res1"; _id = "res1"; resourceId = "res1"; _rev = "2-x"; title = "Local title"; userId = listOf("user1")
+        }
+        coEvery { myLibraryDao.getById("res1") } returns existing
+        coEvery { userRepository.getUserModel() } returns UserEntity().apply { id = "user1" }
+        val incoming = MyLibrary().apply { id = "res1"; title = "Sender title"; resourceLocalAddress = "a.mp4" }
+
+        val saved = withFilesDir(filesDir) { repository.importReceivedResource(incoming, receivedFile()) }
+
+        assertSame(existing, saved)
+        assertEquals("Local title", existing.title)
+        assertEquals(listOf("user1"), existing.userId)
+        assertTrue(existing.isResourceOffline())
+        coVerify(exactly = 1) { myLibraryDao.upsert(existing) }
+    }
+
+    @Test
+    fun `importReceivedResource strips directories from the sender's file name`() = runTest {
+        val filesDir = temporaryFolder.newFolder("files")
+        coEvery { myLibraryDao.getById(any()) } returns null
+        val incoming = MyLibrary().apply { id = "res1"; resourceLocalAddress = "../../evil.sh" }
+
+        val saved = withFilesDir(filesDir) { repository.importReceivedResource(incoming, receivedFile()) }
+
+        assertEquals("evil.sh", saved?.resourceLocalAddress)
+        assertTrue(File(filesDir, "ole/res1/evil.sh").exists())
+    }
+
+    @Test
+    fun `importReceivedResource returns null and saves nothing when the file is empty`() = runTest {
+        val filesDir = temporaryFolder.newFolder("files")
+        val incoming = MyLibrary().apply { id = "res1"; resourceLocalAddress = "a.pdf" }
+
+        val saved = withFilesDir(filesDir) { repository.importReceivedResource(incoming, receivedFile("")) }
+
+        assertNull(saved)
+        coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
+    }
 }

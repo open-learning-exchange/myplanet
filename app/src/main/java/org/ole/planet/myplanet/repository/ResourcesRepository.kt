@@ -67,7 +67,12 @@ data class LocalResourceRequest(
 interface ResourcesRepository : ResourcesSyncWriter {
     suspend fun getLibraryTitles(): List<LibraryTitle>
     suspend fun getLibraryItemById(id: String): MyLibrary?
-    suspend fun saveImportedResource(library: MyLibrary)
+    /**
+     * Stores a resource received from a nearby device: moves [receivedFile] to the resource's
+     * standard location, merges into an existing row with the same id instead of duplicating it,
+     * and adds the resource to the current user's library. Returns the saved row, or null on failure.
+     */
+    suspend fun importReceivedResource(incoming: MyLibrary, receivedFile: File): MyLibrary?
     suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<MyLibrary>
     suspend fun getLibraryItemByResourceId(resourceId: String): MyLibrary?
     suspend fun getLibraryItemsByIds(ids: Collection<String>): List<MyLibrary>
