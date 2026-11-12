@@ -207,33 +207,35 @@ class UploadCoordinator @Inject constructor(
         return BatchItemResult.Success(uploadedItem)
     }
 
-    /**
-     * A 409 means the server already holds a newer revision of this document. Re-send the
-     * local content once on top of the server's current `_rev` so the local edit is not lost;
-     * if that also fails, leave the item pending instead of marking it uploaded.
-     */
     private suspend fun <T : Any> resolveConflict(
         preparedItem: PreparedUpload<T>,
         config: UploadPipelineConfig<T>,
         baseUrl: String,
         semaphore: Semaphore
     ): BatchItemResult {
-        val docId = preparedItem.dbId ?: preparedItem.localId
+        val merge = config.mergeConflict
+            ?: return conflictError(preparedItem, "Conflict (409): server holds a newer revision; left pending")
+        val docId = preparedItem.dbId
+            ?: getString("_id", preparedItem.serialized).ifEmpty { preparedItem.localId }
         val docUrl = "$baseUrl/${config.endpoint}/$docId"
         return try {
             val getResponse = semaphore.withPermit { uploadRepository.fetchExistingDoc(docUrl) }
-            val serverRev = getResponse.body()?.let { getString("_rev", it) }.orEmpty()
-            if (!getResponse.isSuccessful || serverRev.isEmpty()) {
+            val serverDoc = getResponse.body()
+            val serverRev = serverDoc?.let { getString("_rev", it) }.orEmpty()
+            if (!getResponse.isSuccessful || serverDoc == null || serverRev.isEmpty()) {
                 return conflictError(preparedItem, "Document exists (409) but couldn't fetch revision")
             }
 
-            val rebased = preparedItem.serialized.deepCopy().apply { addProperty("_rev", serverRev) }
-            val retryResponse = semaphore.withPermit { uploadRepository.putUpload(docUrl, rebased) }
+            val merged = merge(preparedItem.serialized.deepCopy(), serverDoc.deepCopy())
+                ?: return conflictError(preparedItem, "Conflict (409): local and server copies can't be merged; left pending")
+            merged.addProperty("_id", docId)
+            merged.addProperty("_rev", serverRev)
+            val retryResponse = semaphore.withPermit { uploadRepository.putUpload(docUrl, merged) }
             val retryBody = retryResponse.body()
             if (retryResponse.isSuccessful && retryBody != null) {
                 uploadSucceeded(preparedItem, config, retryBody)
             } else {
-                conflictError(preparedItem, "Conflict retry failed: HTTP ${retryResponse.code()}", retryResponse.code())
+                conflictError(preparedItem, "Conflict merge upload failed: HTTP ${retryResponse.code()}", retryResponse.code())
             }
         } catch (e: CancellationException) {
             throw e

@@ -198,6 +198,7 @@ class UploadConfigs @Inject constructor(
         fetchPendingItems = { feedbackRepository.getPendingFeedback() },
         serializer = UploadSerializer.Simple(org.ole.planet.myplanet.model.Feedback::serializeFeedback),
         idExtractor = { it.id },
+        mergeConflict = org.ole.planet.myplanet.model.Feedback::mergeConflict,
         markUploaded = { results ->
             // Mark each uploaded feedback; rows that no longer exist are reported as failures.
             results.filter { result -> !feedbackRepository.markFeedbackUploaded(result.localId, result.remoteId, result.remoteRev) }

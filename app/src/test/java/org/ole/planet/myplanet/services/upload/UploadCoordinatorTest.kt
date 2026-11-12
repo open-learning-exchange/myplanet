@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.services.upload
 
 import android.util.Log
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -8,6 +9,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkAll
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
@@ -22,9 +24,11 @@ import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UploadedItemResult
@@ -121,7 +125,7 @@ class UploadCoordinatorTest {
     }
 
     @Test
-    fun `upload handles 409 conflict recovery path`() = runTest {
+    fun `upload 409 without a merge leaves item pending and never overwrites the server`() = runTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         uploadCoordinator = UploadCoordinator(
             uploadRepository = uploadRepository,
@@ -130,55 +134,103 @@ class UploadCoordinatorTest {
         )
 
         val item = Submission(id = "local-1", _id = "db-1")
+        coEvery { uploadRepository.putUpload(any(), any()) } returns Response.error(409, "".toResponseBody(null))
 
-        val conflictResponse = Response.error<JsonObject>(409, "".toResponseBody(null))
-        val sentBodies = mutableListOf<JsonObject>()
-        coEvery { uploadRepository.putUpload("http://mock.url/test_endpoint/db-1", capture(sentBodies)) } returnsMany listOf(
-            conflictResponse,
-            Response.success(JsonObject().apply {
-                addProperty("id", "db-1")
-                addProperty("rev", "3-rebased-rev")
-            })
-        )
-
-        val existingDoc = JsonObject().apply {
-            addProperty("_id", "db-1")
-            addProperty("_rev", "2-existing-rev")
-        }
-        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/test_endpoint/db-1") } returns Response.success(existingDoc)
-
+        var markUploadedCalled = false
         val config = UploadConfig(
             modelClass = Submission::class,
             endpoint = "test_endpoint",
             fetchPendingItems = { listOf(item) },
-            serializer = UploadSerializer.Simple {
-                JsonObject().apply {
-                    addProperty("_id", "db-1")
-                    addProperty("_rev", "1-stale-rev")
-                    addProperty("answer", "local edit")
-                }
-            },
+            serializer = UploadSerializer.Simple { JsonObject().apply { addProperty("answer", "local edit") } },
             idExtractor = { it.id },
             dbIdExtractor = { it._id },
-            markUploaded = { emptyList() }
+            markUploaded = { markUploadedCalled = true; emptyList() }
         )
 
         val result = uploadCoordinator.upload(config)
 
-        assertTrue(result is UploadResult.Success)
-        val success = result as UploadResult.Success
-        assertEquals(1, success.data)
-        assertEquals("local-1", success.items[0].localId)
-        assertEquals("db-1", success.items[0].remoteId)
-        assertEquals("3-rebased-rev", success.items[0].remoteRev)
-
-        val rebased = sentBodies.last()
-        assertEquals("2-existing-rev", rebased.get("_rev").asString)
-        assertEquals("local edit", rebased.get("answer").asString)
+        assertTrue(result is UploadResult.Failure)
+        val error = (result as UploadResult.Failure).errors.single()
+        assertEquals("local-1", error.itemId)
+        assertEquals(409, error.httpCode)
+        assertFalse("A conflict is not retried blindly", error.retryable)
+        assertFalse("A conflicting item must not be marked uploaded", markUploadedCalled)
+        coVerify(exactly = 1) { uploadRepository.putUpload(any(), any()) }
+        coVerify(exactly = 0) { uploadRepository.fetchExistingDoc(any()) }
     }
 
     @Test
-    fun `upload 409 leaves item pending when rebased retry also conflicts`() = runTest {
+    fun `upload 409 with a merge keeps the server's newer edits`() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        uploadCoordinator = UploadCoordinator(
+            uploadRepository = uploadRepository,
+            retryQueue = retryQueue,
+            dispatcherProvider = TestDispatcherProvider(testDispatcher)
+        )
+
+        fun reply(user: String, message: String, time: Long) = JsonObject().apply {
+            addProperty("user", user)
+            addProperty("message", message)
+            addProperty("time", time)
+        }
+        val original = reply("learner", "The video won't play", 1L)
+        val adminReply = reply("admin", "Fixed, please retry", 2L)
+        val learnerReply = reply("learner", "Works now, thanks", 3L)
+
+        val localDoc = JsonObject().apply {
+            addProperty("_id", "fb-1")
+            addProperty("_rev", "1-stale-rev")
+            addProperty("status", "Open")
+            addProperty("priority", "No")
+            add("messages", JsonArray().apply { add(original); add(learnerReply) })
+        }
+        val serverDoc = JsonObject().apply {
+            addProperty("_id", "fb-1")
+            addProperty("_rev", "2-admin-rev")
+            addProperty("status", "Open")
+            addProperty("priority", "Yes")
+            add("messages", JsonArray().apply { add(original); add(adminReply) })
+        }
+
+        val item = TestRoomItem("local-fb-1", null)
+        coEvery { uploadRepository.postUpload(any(), any()) } returns Response.error(409, "".toResponseBody(null))
+        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/feedback/fb-1") } returns Response.success(serverDoc)
+        val sent = slot<JsonObject>()
+        coEvery { uploadRepository.putUpload("http://mock.url/feedback/fb-1", capture(sent)) } returns Response.success(
+            JsonObject().apply {
+                addProperty("id", "fb-1")
+                addProperty("rev", "3-merged-rev")
+            }
+        )
+
+        val config = RoomUploadConfig(
+            endpoint = "feedback",
+            modelClassName = "Feedback",
+            fetchPendingItems = { listOf(item) },
+            serializer = UploadSerializer.Simple { localDoc },
+            idExtractor = { it.id },
+            mergeConflict = Feedback::mergeConflict,
+            markUploaded = { emptyList() }
+        )
+
+        val result = uploadCoordinator.uploadRoom(config)
+
+        assertTrue(result is UploadResult.Success)
+        assertEquals("3-merged-rev", (result as UploadResult.Success).items.single().remoteRev)
+
+        val merged = sent.captured
+        assertEquals("2-admin-rev", merged.get("_rev").asString)
+        assertEquals("fb-1", merged.get("_id").asString)
+        assertEquals("Server-side field edits survive", "Yes", merged.get("priority").asString)
+        assertEquals(
+            "The admin's reply and the learner's reply both survive",
+            JsonArray().apply { add(original); add(adminReply); add(learnerReply) },
+            merged.getAsJsonArray("messages")
+        )
+    }
+
+    @Test
+    fun `upload 409 leaves item pending when the merge declines`() = runTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         uploadCoordinator = UploadCoordinator(
             uploadRepository = uploadRepository,
@@ -203,6 +255,45 @@ class UploadCoordinatorTest {
             serializer = UploadSerializer.Simple { JsonObject() },
             idExtractor = { it.id },
             dbIdExtractor = { it._id },
+            mergeConflict = { _, _ -> null },
+            markUploaded = { markUploadedCalled = true; emptyList() }
+        )
+
+        val result = uploadCoordinator.upload(config)
+
+        assertTrue(result is UploadResult.Failure)
+        assertEquals(409, (result as UploadResult.Failure).errors.single().httpCode)
+        assertFalse(markUploadedCalled)
+        coVerify(exactly = 1) { uploadRepository.putUpload(any(), any()) }
+    }
+
+    @Test
+    fun `upload 409 leaves item pending when the merged upload also conflicts`() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        uploadCoordinator = UploadCoordinator(
+            uploadRepository = uploadRepository,
+            retryQueue = retryQueue,
+            dispatcherProvider = TestDispatcherProvider(testDispatcher)
+        )
+
+        val item = Submission(id = "local-1", _id = "db-1")
+        coEvery { uploadRepository.putUpload(any(), any()) } returns Response.error(409, "".toResponseBody(null))
+        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/test_endpoint/db-1") } returns Response.success(
+            JsonObject().apply {
+                addProperty("_id", "db-1")
+                addProperty("_rev", "2-existing-rev")
+            }
+        )
+
+        var markUploadedCalled = false
+        val config = UploadConfig(
+            modelClass = Submission::class,
+            endpoint = "test_endpoint",
+            fetchPendingItems = { listOf(item) },
+            serializer = UploadSerializer.Simple { JsonObject() },
+            idExtractor = { it.id },
+            dbIdExtractor = { it._id },
+            mergeConflict = { _, server -> server },
             markUploaded = { markUploadedCalled = true; emptyList() }
         )
 
@@ -212,7 +303,8 @@ class UploadCoordinatorTest {
         val failure = result as UploadResult.Failure
         assertEquals("local-1", failure.errors[0].itemId)
         assertEquals(409, failure.errors[0].httpCode)
-        assertTrue("A conflicting item must not be marked uploaded", !markUploadedCalled)
+        assertFalse("A conflicting item must not be marked uploaded", markUploadedCalled)
+        coVerify(exactly = 2) { uploadRepository.putUpload(any(), any()) }
     }
 
     @Test
@@ -237,6 +329,7 @@ class UploadCoordinatorTest {
             serializer = UploadSerializer.Simple { JsonObject() },
             idExtractor = { it.id },
             dbIdExtractor = { it._id },
+            mergeConflict = { _, server -> server },
             markUploaded = { emptyList() }
         )
 
@@ -310,51 +403,6 @@ class UploadCoordinatorTest {
     }
 
     @Test
-    fun `uploadRoom handles 409 conflict recovery path`() = runTest {
-        val testDispatcher = StandardTestDispatcher(testScheduler)
-        uploadCoordinator = UploadCoordinator(
-            uploadRepository = uploadRepository,
-            retryQueue = retryQueue,
-            dispatcherProvider = TestDispatcherProvider(testDispatcher)
-        )
-
-        val item = TestRoomItem("room-local-1", null)
-
-        val conflictResponse = Response.error<JsonObject>(409, "".toResponseBody(null))
-        coEvery { uploadRepository.postUpload(any(), any()) } returns conflictResponse
-
-        val existingDoc = JsonObject().apply {
-            addProperty("_id", "room-local-1")
-            addProperty("_rev", "3-room-rev")
-        }
-        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/test_room_endpoint/room-local-1") } returns Response.success(existingDoc)
-        coEvery { uploadRepository.putUpload("http://mock.url/test_room_endpoint/room-local-1", any()) } returns Response.success(
-            JsonObject().apply {
-                addProperty("id", "room-local-1")
-                addProperty("rev", "4-room-rev")
-            }
-        )
-
-        val config = RoomUploadConfig(
-            endpoint = "test_room_endpoint",
-            modelClassName = "TestRoomItem",
-            fetchPendingItems = { listOf(item) },
-            serializer = UploadSerializer.Simple { JsonObject() },
-            idExtractor = { it.id },
-            markUploaded = { emptyList() }
-        )
-
-        val result = uploadCoordinator.uploadRoom(config)
-
-        assertTrue(result is UploadResult.Success)
-        val success = result as UploadResult.Success
-        assertEquals(1, success.data)
-        assertEquals("room-local-1", success.items[0].localId)
-        assertEquals("room-local-1", success.items[0].remoteId)
-        assertEquals("4-room-rev", success.items[0].remoteRev)
-    }
-
-    @Test
     fun `uploadRoom 409 conflict recovery handles network IOException as retryable`() = runTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         uploadCoordinator = UploadCoordinator(
@@ -375,6 +423,7 @@ class UploadCoordinatorTest {
             fetchPendingItems = { listOf(item) },
             serializer = UploadSerializer.Simple { JsonObject() },
             idExtractor = { it.id },
+            mergeConflict = { _, server -> server },
             markUploaded = { emptyList() }
         )
 
