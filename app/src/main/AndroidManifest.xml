@@ -180,5 +180,7 @@
                 <action android:name="storage_settings" />
             </intent-filter>
         </receiver>
+        <receiver android:name=".services.DownloadStopReceiver"
+            android:exported="false" />
     </application>
 </manifest>
