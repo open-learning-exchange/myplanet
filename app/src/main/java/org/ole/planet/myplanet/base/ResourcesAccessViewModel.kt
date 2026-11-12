@@ -6,7 +6,7 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.repository.ResourceUrlsResponse
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 
 sealed interface HtmlOpenOutcome {
     data class DownloadNeeded(val urls: List<String>) : HtmlOpenOutcome
@@ -18,7 +18,7 @@ sealed interface HtmlOpenOutcome {
 @HiltViewModel
 class ResourcesAccessViewModel @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserReadRepository
 ) : ViewModel() {
 
     suspend fun trackOpen(item: MyLibrary) {
