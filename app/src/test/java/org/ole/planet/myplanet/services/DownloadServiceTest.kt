@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -63,7 +62,6 @@ class DownloadServiceTest {
         fun setUpClass() {
             mockkStatic(ContextCompat::class)
             mockkObject(DownloadUtils)
-            mockkStatic(Log::class)
         }
 
         @JvmStatic
@@ -71,7 +69,6 @@ class DownloadServiceTest {
         fun tearDownClass() {
             unmockkStatic(ContextCompat::class)
             unmockkObject(DownloadUtils)
-            unmockkStatic(Log::class)
         }
     }
 
@@ -83,11 +80,6 @@ class DownloadServiceTest {
         clearAllMocks()
         originalSdkInt = Build.VERSION.SDK_INT
         mockPreferences = mockk(relaxed = true)
-        every { Log.d(any(), any()) } returns 0
-        every { Log.e(any(), any()) } returns 0
-        every { Log.e(any(), any(), any()) } returns 0
-        every { Log.w(any(), any<String>()) } returns 0
-        every { Log.i(any(), any()) } returns 0
     }
 
     @After

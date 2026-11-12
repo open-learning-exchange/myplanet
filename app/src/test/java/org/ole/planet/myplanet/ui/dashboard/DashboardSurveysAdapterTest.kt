@@ -8,13 +8,12 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ApplicationProvider
+import io.mockk.mockk
+import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.Mockito.mock
-import org.mockito.Mockito.never
-import org.mockito.Mockito.verify
 import org.ole.planet.myplanet.R
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -31,7 +30,7 @@ class DashboardSurveysAdapterTest {
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
         context.setTheme(R.style.AppTheme)
-        mockDialog = mock(AlertDialog::class.java)
+        mockDialog = mockk(relaxed = true)
         clickedPosition = null
     }
 
@@ -70,7 +69,7 @@ class DashboardSurveysAdapterTest {
         viewHolder.itemView.performClick()
 
         assertEquals(0, clickedPosition)
-        verify(mockDialog).dismiss()
+        verify(exactly = 1) { mockDialog.dismiss() }
     }
 
     @Test
@@ -85,6 +84,6 @@ class DashboardSurveysAdapterTest {
         viewHolder.itemView.performClick()
 
         assertEquals(null, clickedPosition)
-        verify(mockDialog, never()).dismiss()
+        verify(exactly = 0) { mockDialog.dismiss() }
     }
 }

@@ -18,4 +18,7 @@ interface UserSyncRepository {
     suspend fun uploadShelfData(user: UserEntity)
     suspend fun uploadAllSyncedUsersToShelf(users: List<UserEntity>): Result<Unit>
     suspend fun checkShelfBatchForDataOptimized(shelfIds: List<String>): List<String>
+    suspend fun getSyncedUsers(): List<UserEntity>
+    suspend fun getSyncedUserByName(name: String): UserEntity?
+    suspend fun getPendingSyncUsers(limit: Int): List<UserEntity>
 }

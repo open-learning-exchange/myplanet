@@ -169,4 +169,51 @@ class ResourcesPreviewLoaderTest {
         assertEquals("", secondCall)
         verify(exactly = 2) { anyConstructed<MediaMetadataRetriever>().setDataSource(file.absolutePath) }
     }
+
+    @Test
+    @Suppress("UNCHECKED_CAST")
+    fun `getTextPreview caps a very long single line and caches only the bounded result`() = runTest {
+        val file = tempFolder.newFile("long_line.txt")
+        val longLine = "x".repeat(10_000)
+        file.writeText(longLine)
+
+        val preview = previewLoader.getTextPreview(file)
+
+        assertEquals(ResourcesPreviewLoader.MAX_PREVIEW_CHARS, preview?.length)
+        assertEquals(longLine.take(ResourcesPreviewLoader.MAX_PREVIEW_CHARS), preview)
+
+        val cacheField = ResourcesPreviewLoader::class.java.getDeclaredField("textCache")
+        cacheField.isAccessible = true
+        val cached = cacheField.get(previewLoader) as Map<*, String>
+        assertEquals(1, cached.size)
+        assertEquals(ResourcesPreviewLoader.MAX_PREVIEW_CHARS, cached.values.first().length)
+    }
+
+    @Test
+    fun `getTextPreview stops at the character limit before eight lines`() = runTest {
+        val file = tempFolder.newFile("long_lines.txt")
+        val line = "y".repeat(1_000)
+        val content = (1..5).joinToString("\n") { line }
+        file.writeText(content)
+
+        val preview = previewLoader.getTextPreview(file)
+
+        assertEquals(ResourcesPreviewLoader.MAX_PREVIEW_CHARS, preview?.length)
+        assertEquals(content.take(ResourcesPreviewLoader.MAX_PREVIEW_CHARS), preview)
+    }
+
+    @Test
+    fun `getTextPreview leaves short file previews unchanged for LF CRLF and CR endings`() = runTest {
+        val lf = tempFolder.newFile("short_lf.txt")
+        lf.writeText("a\nb\nc")
+        assertEquals("a\nb\nc", previewLoader.getTextPreview(lf))
+
+        val crlf = tempFolder.newFile("short_crlf.txt")
+        crlf.writeText("a\r\nb\r\nc")
+        assertEquals("a\nb\nc", previewLoader.getTextPreview(crlf))
+
+        val cr = tempFolder.newFile("short_cr.txt")
+        cr.writeText("a\rb\rc")
+        assertEquals("a\nb\nc", previewLoader.getTextPreview(cr))
+    }
 }
