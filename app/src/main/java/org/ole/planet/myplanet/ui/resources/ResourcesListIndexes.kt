@@ -9,12 +9,6 @@ internal data class ResourcesListIndexes(
     val tagsById: Map<String, TagItem>
 )
 
-/**
- * Builds the lookup indexes for [models] in list order.
- *
- * Each index keeps the FIRST model/tag seen for a key, matching `List.find` semantics; `associateBy`
- * would keep the last. Null keys are skipped so they never match, again matching `find`.
- */
 internal fun buildResourcesListIndexes(models: List<ResourceListModel>): ResourcesListIndexes {
     val modelsById = LinkedHashMap<String, ResourceListModel>()
     val modelsByLocalAddress = LinkedHashMap<String, ResourceListModel>()
