@@ -15,8 +15,6 @@ interface PersonalDao {
     @Query("SELECT COUNT(*) FROM my_personal WHERE title = :title COLLATE NOCASE AND userId = :userId")
     suspend fun countByTitleAndUserId(title: String, userId: String): Int
 
-    // COLLATE NOCASE mirrors Realm's Case.INSENSITIVE title match. A null/empty userId matches any
-    // user, mirroring the original conditional userId filter.
     suspend fun countByTitle(title: String, userId: String?): Int {
         return if (userId.isNullOrEmpty()) {
             countByTitle(title)
