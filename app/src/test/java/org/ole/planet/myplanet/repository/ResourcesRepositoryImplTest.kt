@@ -1683,8 +1683,12 @@ class ResourcesRepositoryImplTest {
         }
     }
 
-    private fun receivedFile(content: String = "payload"): File =
-        temporaryFolder.newFile().apply { writeText(content) }
+    private fun receivedDir(vararg files: Pair<String, String>): File =
+        temporaryFolder.newFolder().apply {
+            files.forEach { (path, content) -> File(this, path).apply { parentFile?.mkdirs(); writeText(content) } }
+        }
+
+    private fun receivedFile(content: String = "payload"): File = receivedDir("received.bin" to content)
 
     @Test
     fun `importReceivedResource keeps sender metadata and stores file at the standard location`() = runTest {
@@ -1740,6 +1744,46 @@ class ResourcesRepositoryImplTest {
 
         assertEquals("evil.sh", saved?.resourceLocalAddress)
         assertTrue(File(filesDir, "ole/res1/evil.sh").exists())
+    }
+
+    @Test
+    fun `importReceivedResource places an HTML resource's whole folder where the viewer opens it`() = runTest {
+        val filesDir = temporaryFolder.newFolder("files")
+        coEvery { myLibraryDao.getById("site1") } returns null
+        val incoming = MyLibrary().apply {
+            id = "site1"; _id = "site1"; resourceId = "site1"; _rev = "1-a"
+            mediaType = "HTML"; openWhichFile = "pages/start.html"
+        }
+        val received = receivedDir(
+            "pages/start.html" to "<html/>",
+            "css/style.css" to "body{}",
+            "img/logo.png" to "png"
+        )
+
+        val saved = withFilesDir(filesDir) { repository.importReceivedResource(incoming, received) }
+
+        assertNotNull(saved)
+        val folder = File(filesDir, "ole/site1")
+        assertEquals("<html/>", File(folder, "pages/start.html").readText())
+        assertEquals("body{}", File(folder, "css/style.css").readText())
+        assertEquals("png", File(folder, "img/logo.png").readText())
+        assertEquals("pages/start.html", saved!!.resourceLocalAddress)
+        assertTrue(saved.isResourceOffline())
+        assertFalse(received.exists())
+    }
+
+    @Test
+    fun `importReceivedResource rejects an HTML resource whose entry page did not arrive`() = runTest {
+        val filesDir = temporaryFolder.newFolder("files")
+        coEvery { myLibraryDao.getById(any()) } returns null
+        val incoming = MyLibrary().apply { id = "site1"; resourceId = "site1"; mediaType = "HTML" }
+
+        val saved = withFilesDir(filesDir) {
+            repository.importReceivedResource(incoming, receivedDir("css/style.css" to "body{}"))
+        }
+
+        assertNull(saved)
+        coVerify(exactly = 0) { myLibraryDao.upsert(any()) }
     }
 
     @Test

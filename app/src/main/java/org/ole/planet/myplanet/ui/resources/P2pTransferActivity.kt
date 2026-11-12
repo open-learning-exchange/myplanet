@@ -27,7 +27,9 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityP2pTransferBinding
 import org.ole.planet.myplanet.model.MyLibrary
@@ -155,8 +157,8 @@ class P2pTransferActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val library = resourcesRepository.getLibraryItemById(rId) ?: return@launch
-                val file = resolveResourceFile(library)
-                if (file == null) {
+                val files = resolveResourceFiles(library)
+                if (files.isEmpty()) {
                     Toast.makeText(this@P2pTransferActivity, getString(R.string.file_not_found_locally), Toast.LENGTH_SHORT).show()
                     return@launch
                 }
@@ -169,7 +171,7 @@ class P2pTransferActivity : AppCompatActivity() {
                 binding.tvStatus.text = getString(R.string.status_sending, library.title)
                 binding.pbTransfer.visibility = View.VISIBLE
 
-                val success = p2pManager.sendFile(host, file, metadata) { progress ->
+                val success = p2pManager.sendFiles(host, files, metadata) { progress ->
                     runOnUiThread { binding.pbTransfer.progress = progress }
                 }
 
@@ -180,14 +182,28 @@ class P2pTransferActivity : AppCompatActivity() {
         }
     }
 
-    private fun resolveResourceFile(library: MyLibrary): File? {
+    /**
+     * The files that make up [library] on this device: the whole folder for an HTML resource
+     * (skipping half-finished downloads), otherwise its single file. Empty if it isn't all here.
+     */
+    private suspend fun resolveResourceFiles(library: MyLibrary): List<P2pTransferManager.TransferFile> = withContext(Dispatchers.IO) {
+        val externalDir = FileUtils.getExternalFilesDir(this@P2pTransferActivity) ?: return@withContext emptyList()
+        if (library.mediaType == "HTML") {
+            val folder = File(externalDir, "ole/${library.resourceId}")
+            if (FileUtils.resolveHtmlEntryFile(folder, library.openWhichFile)?.exists() != true) return@withContext emptyList()
+            return@withContext folder.walkTopDown()
+                .filter { it.isFile && PARTIAL_DOWNLOAD_SUFFIXES.none { suffix -> it.name.endsWith(suffix) } }
+                .map { P2pTransferManager.TransferFile(it.relativeTo(folder).invariantSeparatorsPath, it) }
+                .toList()
+        }
+
         val address = library.resourceLocalAddress?.takeIf { it.isNotBlank() }
-        val dir = FileUtils.getExternalFilesDir(this)
-        val localFile = if (address != null && dir != null) FileUtils.getLibraryFile(dir, library.id, address) else null
-        if (localFile != null && localFile.exists() && localFile.length() > 0) return localFile
-        val remoteFile = library.resourceRemoteAddress?.takeIf { it.isNotBlank() }
-            ?.let { FileUtils.getSDPathFromUrl(this, it) }
-        return remoteFile?.takeIf { it.exists() && it.length() > 0 }
+        val localFile = address?.let { FileUtils.getLibraryFile(externalDir, library.id, it) }
+        val file = localFile?.takeIf { it.exists() && it.length() > 0 }
+            ?: library.resourceRemoteAddress?.takeIf { it.isNotBlank() }
+                ?.let { FileUtils.getSDPathFromUrl(this@P2pTransferActivity, it) }
+                ?.takeIf { it.exists() && it.length() > 0 }
+        listOfNotNull(file?.let { P2pTransferManager.TransferFile(it.name, it) })
     }
 
     private fun startReceiveProcess() {
@@ -198,12 +214,12 @@ class P2pTransferActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 var received: Pair<String, File>? = null
-                val result = p2pManager.receiveFile({ metadata, tempFile ->
-                    received = metadata to tempFile
+                val result = p2pManager.receiveFiles({ metadata, receivedDir ->
+                    received = metadata to receivedDir
                 }) { progress ->
                     runOnUiThread { binding.pbTransfer.progress = progress }
                 }
-                val imported = received?.let { (metadata, tempFile) -> importResource(metadata, tempFile) }
+                val imported = received?.let { (metadata, receivedDir) -> importResource(metadata, receivedDir) }
                 binding.tvStatus.text = when {
                     result == P2pTransferManager.ReceiveResult.NO_SENDER -> {
                         binding.pbTransfer.visibility = View.GONE
@@ -222,7 +238,7 @@ class P2pTransferActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun importResource(metadataJson: String, tempFile: File): MyLibrary? {
+    private suspend fun importResource(metadataJson: String, receivedDir: File): MyLibrary? {
         val incoming = try {
             val json = gson.fromJson(metadataJson, JsonObject::class.java)
             val libraryJson = json?.get(KEY_LIBRARY)?.takeIf { it.isJsonObject }
@@ -232,12 +248,10 @@ class P2pTransferActivity : AppCompatActivity() {
             null
         }
         if (incoming == null) {
-            tempFile.delete()
+            withContext(Dispatchers.IO) { receivedDir.deleteRecursively() }
             return null
         }
-        return resourcesRepository.importReceivedResource(incoming, tempFile).also {
-            if (it == null) tempFile.delete()
-        }
+        return resourcesRepository.importReceivedResource(incoming, receivedDir)
     }
 
     override fun onResume() {
@@ -258,7 +272,8 @@ class P2pTransferActivity : AppCompatActivity() {
     companion object {
         private const val KEY_VERSION = "version"
         private const val KEY_LIBRARY = "library"
-        private const val PROTOCOL_VERSION = 2
+        private const val PROTOCOL_VERSION = 3
+        private val PARTIAL_DOWNLOAD_SUFFIXES = listOf(".tmp", ".part", ".tmp.etag", ".tmp.size")
         private val gson = Gson()
     }
 
@@ -275,7 +290,6 @@ class P2pTransferActivity : AppCompatActivity() {
             holder.itemView.setOnClickListener {
                 val config = android.net.wifi.p2p.WifiP2pConfig().apply {
                     deviceAddress = device.deviceAddress
-                    // The receiver listens as group owner, so the sender should end up as the client.
                     groupOwnerIntent = if (isReceiver) 15 else 0
                 }
                 binding.tvStatus.text = getString(R.string.status_connecting, device.deviceName)

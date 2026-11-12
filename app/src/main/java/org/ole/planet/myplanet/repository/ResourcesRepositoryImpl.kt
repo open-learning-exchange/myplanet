@@ -184,43 +184,34 @@ class ResourcesRepositoryImpl @Inject constructor(
         return myLibraryDao.getById(id)
     }
 
-    override suspend fun importReceivedResource(incoming: MyLibrary, receivedFile: File): MyLibrary? {
+    override suspend fun importReceivedResource(incoming: MyLibrary, receivedDir: File): MyLibrary? {
         val externalFilesDir = FileUtils.getExternalFilesDir(context) ?: return null
         val incomingId: String? = incoming.id
         val id = incomingId?.takeIf { it.isNotBlank() }
             ?: incoming._id?.takeIf { it.isNotBlank() }
             ?: incoming.resourceId?.takeIf { it.isNotBlank() }
             ?: UUID.randomUUID().toString()
-        // Only the last path segment is trusted: the name comes from another device.
-        val fileName = FileUtils.getFileNameFromLocalAddress(incoming.resourceLocalAddress)
-            .ifBlank { FileUtils.getFileNameFromLocalAddress(incoming.filename) }
-            .takeIf { it.isNotBlank() && it != "." && it != ".." }
-            ?: receivedFile.name
-
-        val destination = FileUtils.getLibraryFile(externalFilesDir, id, fileName)
-        val moved = withContext(dispatcherProvider.io) {
-            runCatching {
-                destination.parentFile?.mkdirs()
-                if (!receivedFile.renameTo(destination)) {
-                    receivedFile.copyTo(destination, overwrite = true)
-                    receivedFile.delete()
-                }
-                destination.exists() && destination.length() > 0
-            }.getOrDefault(false)
-        }
-        if (!moved) return null
 
         val library = myLibraryDao.getById(id) ?: incoming.apply {
             this.id = id
             userId = emptyList()
             titleNormal = title?.let { StringUtils.normalizeText(it) }
         }
-        library.apply {
-            if (resourceId.isNullOrBlank()) resourceId = _id?.takeIf { it.isNotBlank() } ?: id
-            resourceLocalAddress = fileName
-            resourceOffline = true
-            downloadedRev = _rev
+        if (library.resourceId.isNullOrBlank()) library.resourceId = library._id?.takeIf { it.isNotBlank() } ?: id
+
+        val placed = withContext(dispatcherProvider.io) {
+            runCatching {
+                if (library.mediaType == "HTML") {
+                    placeHtmlFolder(receivedDir, File(externalFilesDir, "ole/${library.resourceId}"), library)
+                } else {
+                    placeSingleFile(receivedDir, externalFilesDir, id, incoming, library)
+                }
+            }.getOrDefault(false).also { receivedDir.deleteRecursively() }
         }
+        if (!placed) return null
+
+        library.resourceOffline = true
+        library.downloadedRev = library._rev
 
         val currentUserId = userRepository.getUserModel()?.id
         if (!currentUserId.isNullOrBlank() && !library.isPrivate) {
@@ -233,6 +224,43 @@ class ResourcesRepositoryImpl @Inject constructor(
             }
         }
         return library
+    }
+
+    /** Merges the received folder into [target]; succeeds only if the page HTML resources open from arrived. */
+    private fun placeHtmlFolder(receivedDir: File, target: File, library: MyLibrary): Boolean {
+        target.mkdirs()
+        receivedDir.walkTopDown().filter { it.isFile }.forEach { file ->
+            val destination = File(target, file.relativeTo(receivedDir).path)
+            destination.parentFile?.mkdirs()
+            moveFile(file, destination)
+        }
+        val entryFile = library.openWhichFile?.takeIf { it.isNotBlank() } ?: "index.html"
+        if (FileUtils.resolveHtmlEntryFile(target, entryFile)?.exists() != true) return false
+        if (library.resourceLocalAddress.isNullOrBlank()) library.resourceLocalAddress = entryFile
+        return true
+    }
+
+    /** Moves the one received file to ole/<id>/<name>, where the viewer looks for it. */
+    private fun placeSingleFile(receivedDir: File, externalFilesDir: File, id: String, incoming: MyLibrary, library: MyLibrary): Boolean {
+        val received = receivedDir.walkTopDown().firstOrNull { it.isFile && it.length() > 0 } ?: return false
+        // Only the last path segment is trusted: the name comes from another device.
+        val fileName = FileUtils.getFileNameFromLocalAddress(incoming.resourceLocalAddress)
+            .ifBlank { FileUtils.getFileNameFromLocalAddress(incoming.filename) }
+            .ifBlank { received.name }
+            .takeIf { it != "." && it != ".." }
+            ?: received.name
+        val destination = FileUtils.getLibraryFile(externalFilesDir, id, fileName)
+        destination.parentFile?.mkdirs()
+        moveFile(received, destination)
+        library.resourceLocalAddress = fileName
+        return destination.exists() && destination.length() > 0
+    }
+
+    private fun moveFile(source: File, destination: File) {
+        if (!source.renameTo(destination)) {
+            source.copyTo(destination, overwrite = true)
+            source.delete()
+        }
     }
 
     override suspend fun getLibraryItemByResourceId(resourceId: String): MyLibrary? {
