@@ -2,23 +2,20 @@ package org.ole.planet.myplanet.ui.voices
 
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TextRevealer
 import org.ole.planet.myplanet.utils.Utilities
 
 object VoicesAdapterHelper {
-    fun createOnAnimateTyping(coroutineScope: CoroutineScope): (String, (String) -> Unit, () -> Unit) -> (() -> Unit) {
+    fun createOnAnimateTyping(
+        scope: CoroutineScope,
+        dispatcherProvider: DispatcherProvider
+    ): (String, (String) -> Unit, () -> Unit) -> (() -> Unit) {
         return { response, onUpdate, onComplete ->
-            val job = coroutineScope.launch {
-                var currentIndex = 0
-                while (currentIndex < response.length) {
-                    if (!isActive) return@launch
-                    onUpdate(response.substring(0, currentIndex + 1))
-                    currentIndex++
-                    delay(10L)
-                }
+            val job = scope.launch(dispatcherProvider.main) {
+                TextRevealer.reveal(response, onUpdate)
                 onComplete()
             }
             val cancelJob: () -> Unit = { job.cancel() }

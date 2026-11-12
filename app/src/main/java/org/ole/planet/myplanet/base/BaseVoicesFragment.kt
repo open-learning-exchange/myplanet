@@ -4,9 +4,8 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
-import android.net.Uri
 import android.os.Bundle
-import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,32 +18,26 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.google.gson.JsonObject
 import java.io.File
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.ImageThumbBinding
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.ReplyActivity
 import org.ole.planet.myplanet.ui.voices.VoicesActions
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utils.FileUtils.getRealPathFromURI
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.VoiceImagePreparer
 
 abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickListener {
     lateinit var imageList: MutableList<String>
 
-    @javax.inject.Inject
-    lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
-    @JvmField
     protected var llImage: ViewGroup? = null
-    @JvmField
     protected var adapterNews: VoicesAdapter? = null
     lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
     private lateinit var replyActivityLauncher: ActivityResultLauncher<Intent>
@@ -56,14 +49,28 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
             if (result.resultCode == Activity.RESULT_OK) {
                 val data = result.data
                 val clipData = data?.clipData
-                if (clipData != null) {
-                    for (i in 0 until clipData.itemCount) {
-                        val uri = clipData.getItemAt(i).uri
-                        processImageUri(uri, result.resultCode)
-                    }
+                val uris = if (clipData != null) {
+                    (0 until clipData.itemCount).map { clipData.getItemAt(it).uri }
                 } else {
-                    val uri = data?.data
-                    processImageUri(uri, result.resultCode)
+                    listOf(data?.data)
+                }
+                if (view == null) return@registerForActivityResult
+                val appContext = requireContext().applicationContext
+                viewLifecycleOwner.lifecycleScope.launch {
+                    for (uri in uris) {
+                        if (uri == null) continue
+                        val prepared = withContext(dispatcherProvider.io) {
+                            VoiceImagePreparer.prepare(appContext, uri, timeProvider)
+                        }
+                        if (!isAdded) return@launch
+                        when (prepared) {
+                            is VoiceImagePreparer.Result.Ready -> addImagePath(prepared.path, result.resultCode)
+                            VoiceImagePreparer.Result.GifTooLarge ->
+                                Toast.makeText(requireContext(), R.string.voice_image_gif_too_large, Toast.LENGTH_SHORT).show()
+                            VoiceImagePreparer.Result.Unreadable ->
+                                Toast.makeText(requireContext(), R.string.voice_image_unreadable, Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }
             }
         }
@@ -72,13 +79,25 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
             if (result.resultCode == Activity.RESULT_OK) {
                 val newsId = result.data?.getStringExtra("newsId")
                 newsId.let { adapterNews?.updateReplyBadge(it) }
-                adapterNews?.submitList(adapterNews?.currentList?.toList())
+                val recyclerView = view?.findViewById<RecyclerView>(R.id.rv_news)
+                val layoutManager = recyclerView?.layoutManager as? LinearLayoutManager
+                val scrollPosition = layoutManager?.findFirstVisibleItemPosition() ?: 0
+                val scrollOffset = layoutManager?.findViewByPosition(scrollPosition)?.top ?: 0
+                adapterNews?.submitList(adapterNews?.currentList?.toList()) {
+                    layoutManager?.scrollToPositionWithOffset(scrollPosition, scrollOffset)
+                }
             }
         }
     }
 
     override fun onDataChanged() {
-        adapterNews?.submitList(adapterNews?.currentList?.toList())
+        val recyclerView = view?.findViewById<RecyclerView>(R.id.rv_news)
+        val layoutManager = recyclerView?.layoutManager as? LinearLayoutManager
+        val scrollPosition = layoutManager?.findFirstVisibleItemPosition() ?: 0
+        val scrollOffset = layoutManager?.findViewByPosition(scrollPosition)?.top ?: 0
+        adapterNews?.submitList(adapterNews?.currentList?.toList()) {
+            layoutManager?.scrollToPositionWithOffset(scrollPosition, scrollOffset)
+        }
     }
 
     override fun onReplyPosted(newsId: String?) {
@@ -90,7 +109,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         if (context is OnHomeItemClickListener) homeItemClickListener = context
     }
 
-    override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
+    override fun showReply(news: News?, fromLogin: Boolean, nonTeamMember: Boolean) {
         if (news != null) {
             val intent = Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)
                 .putExtra("fromLogin", fromLogin)
@@ -99,11 +118,12 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         }
     }
 
-    override fun onMemberSelected(userModel: RealmUser?) {
+    override fun onMemberSelected(userModel: UserEntity?) {
         if (!isAdded) return
 
-        lifecycleScope.launch {
-            val fragment = VoicesActions.showMemberDetails(userModel, activitiesRepository) ?: return@launch
+        viewLifecycleOwner.lifecycleScope.launch {
+            val fragment = VoicesActions.showMemberDetails(userModel) ?: return@launch
+            if (!isAdded) return@launch
             FragmentNavigator.replaceFragment(
                 requireActivity().supportFragmentManager,
                 R.id.fragment_container,
@@ -113,7 +133,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         }
     }
 
-    abstract fun setData(list: List<RealmNews?>?)
+    abstract fun setData(list: List<News?>?)
     fun showNoData(v: View?, count: Int?, source: String) {
         count?.let { BaseRecyclerFragment.showNoData(v, it, source) }
     }
@@ -139,25 +159,19 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         return if (::imageList.isInitialized) imageList else null
     }
 
-    private fun processImageUri(uri: Uri?, resultCode: Int) {
-        if (uri == null) return
+    override fun restoreImages(snapshot: List<String>) {
+        if (::imageList.isInitialized) imageList.retainAll(snapshot.toSet())
+    }
 
-        var path: String? = getRealPathFromURI(requireActivity(), uri)
-        if (TextUtils.isEmpty(path)) {
-            path = FileUtils.getPathFromURI(requireActivity(), uri)
-        }
-
+    private fun addImagePath(path: String?, resultCode: Int) {
         if (path.isNullOrEmpty()) return
 
-        if (isImageAlreadyAdded(path)) {
+        if (News.containsImagePath(imageList, path)) {
             Toast.makeText(requireContext(), R.string.image_already_added, Toast.LENGTH_SHORT).show()
             return
         }
 
-        val `object` = JsonObject()
-        `object`.addProperty("imageUrl", path)
-        `object`.addProperty("fileName", getFileNameFromUrl(path))
-        imageList.add(JsonUtils.gson.toJson(`object`))
+        imageList.add(News.createImageListEntry(path))
 
         try {
             llImage?.visibility = View.VISIBLE
@@ -168,18 +182,11 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
             llImage?.addView(imageBinding.root)
             if (resultCode == 102) adapterNews?.setImageList(imageList)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "addImagePath failed", e)
         }
     }
 
-    private fun isImageAlreadyAdded(path: String): Boolean {
-        return imageList.any { imageJson ->
-            try {
-                val imgObject = JsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
-                JsonUtils.getString("imageUrl", imgObject) == path
-            } catch (e: Exception) {
-                false
-            }
-        }
+    companion object {
+        private const val TAG = "BaseVoicesFragment"
     }
 }

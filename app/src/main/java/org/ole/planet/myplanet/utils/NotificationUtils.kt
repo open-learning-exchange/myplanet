@@ -1,18 +1,25 @@
 package org.ole.planet.myplanet.utils
 
+import android.Manifest
+import android.app.Notification
 import android.app.NotificationChannel
+import android.app.NotificationManager as SystemNotificationManager
 import android.app.NotificationManager.IMPORTANCE_DEFAULT
 import android.app.NotificationManager.IMPORTANCE_HIGH
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import dagger.hilt.android.EntryPointAccessors
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.NotificationActionReceiver
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 
@@ -33,7 +40,9 @@ data class NotificationConfig(
 )
 
 object NotificationUtils {
+    private const val TAG = "NotificationUtils"
     const val CHANNEL_GENERAL = "general_notifications"
+    const val RECORDING_NOTIFICATION_ID = 111
     const val CHANNEL_SURVEYS = "survey_notifications"
     const val CHANNEL_TASKS = "task_notifications"
     const val CHANNEL_SYSTEM = "system_notifications"
@@ -58,58 +67,40 @@ object NotificationUtils {
     const val EXTRA_NOTIFICATION_TYPE = "notification_type"
     const val EXTRA_RELATED_ID = "related_id"
 
-    @JvmStatic
     fun create(context: Context, smallIcon: Int, contentTitle: String?, contentText: String?) {
-        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as SystemNotificationManager
         val a = NotificationCompat.Builder(context, "11")
         setChannel(manager)
         val notification = a.setContentTitle(contentTitle).setContentText(contentText).setSmallIcon(smallIcon)
             .setProgress(0, 0, true).setAutoCancel(true).build()
-        manager.notify(111, notification)
+        manager.notify(RECORDING_NOTIFICATION_ID, notification)
     }
 
-    @JvmStatic
     fun cancel(context: Context, id: Int) {
         val nm = NotificationManagerCompat.from(context)
         nm.cancel(id)
     }
 
-    @JvmStatic
     fun cancelAll(context: Context) {
         val nm = NotificationManagerCompat.from(context)
         nm.cancelAll()
     }
 
-    @JvmStatic
-    fun setChannel(notificationManager: android.app.NotificationManager?) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val importance = android.app.NotificationManager.IMPORTANCE_LOW
-            val notificationChannel = NotificationChannel("11", "ole", importance)
-            notificationManager?.createNotificationChannel(notificationChannel)
-        }
+    fun setChannel(notificationManager: SystemNotificationManager?) {
+        val importance = SystemNotificationManager.IMPORTANCE_LOW
+        val notificationChannel = NotificationChannel("11", "ole", importance)
+        notificationManager?.createNotificationChannel(notificationChannel)
     }
 
-    @JvmStatic
     fun getInstance(context: Context): NotificationManager {
-        return NotificationManager(context)
+        return EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            CoreDependenciesEntryPoint::class.java
+        ).notificationManager()
     }
 
-    fun createSurveyNotification(surveyId: String, surveyTitle: String): NotificationConfig {
-        return NotificationConfig(
-            id = surveyId,
-            type = TYPE_SURVEY,
-            title = "📋 New Survey Available",
-            message = surveyTitle,
-            priority = NotificationCompat.PRIORITY_HIGH,
-            category = NotificationCompat.CATEGORY_REMINDER,
-            actionable = true,
-            extras = mapOf("surveyId" to surveyId),
-            relatedId = surveyId
-        )
-    }
-
-    fun createTaskNotification(taskId: String, taskTitle: String, deadline: String): NotificationConfig {
-        val priority = if (isTaskUrgent(deadline)) {
+    fun createTaskNotification(taskId: String, taskTitle: String, deadline: String, timeProvider: TimeProvider): NotificationConfig {
+        val priority = if (isTaskUrgent(deadline, timeProvider)) {
             NotificationCompat.PRIORITY_HIGH
         } else {
             NotificationCompat.PRIORITY_DEFAULT
@@ -128,152 +119,60 @@ object NotificationUtils {
         )
     }
 
-    fun createJoinRequestNotification(requestId: String, requesterName: String, teamName: String): NotificationConfig {
-        return NotificationConfig(
-            id = requestId,
-            type = TYPE_JOIN_REQUEST,
-            title = "👥 Team Join Request",
-            message = "$requesterName wants to join $teamName",
-            priority = NotificationCompat.PRIORITY_DEFAULT,
-            category = NotificationCompat.CATEGORY_SOCIAL,
-            actionable = true,
-            extras = mapOf("requestId" to requestId, "teamName" to teamName),
-            relatedId = requestId
-        )
-    }
-
-    fun createStorageWarningNotification(storagePercentage: Int, customId: String): NotificationConfig {
-        val priority = if (storagePercentage > 95) {
-            NotificationCompat.PRIORITY_HIGH
-        } else {
-            NotificationCompat.PRIORITY_DEFAULT
-        }
-
-        return NotificationConfig(
-            id = customId,
-            type = TYPE_STORAGE,
-            title = "⚠️ Storage Warning",
-            message = "Device storage is at $storagePercentage%. Consider freeing up space.",
-            priority = priority,
-            category = NotificationCompat.CATEGORY_STATUS,
-            actionable = true,
-            relatedId = "storage"
-        )
-    }
-
-    fun createResourceNotification(notificationId: String, resourceCount: Int): NotificationConfig {
-        return NotificationConfig(
-            id = notificationId,
-            type = TYPE_RESOURCE,
-            title = "📚 New Resources Available",
-            message = "$resourceCount new resources have been added",
-            priority = NotificationCompat.PRIORITY_DEFAULT,
-            category = NotificationCompat.CATEGORY_RECOMMENDATION,
-            actionable = true,
-            extras = mapOf("resourceCount" to resourceCount.toString()),
-            relatedId = notificationId
-        )
-    }
-
-    fun createSummaryNotification(type: String, count: Int): NotificationConfig {
-        val summaryId = "summary_${type}"
-
-        return when (type) {
-            "survey" -> NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "📋 New Surveys Available",
-                message = "$count new surveys are waiting for you",
-                priority = NotificationCompat.PRIORITY_HIGH,
-                category = NotificationCompat.CATEGORY_REMINDER
-            )
-            "task" -> NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "✅ New Tasks Assigned",
-                message = "$count new tasks have been assigned to you",
-                priority = NotificationCompat.PRIORITY_HIGH,
-                category = NotificationCompat.CATEGORY_REMINDER
-            )
-            "join_request" -> NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "👥 Team Join Requests",
-                message = "$count new team join requests to review",
-                priority = NotificationCompat.PRIORITY_DEFAULT,
-                category = NotificationCompat.CATEGORY_SOCIAL
-            )
-            "resource" -> NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "📚 New Resources Available",
-                message = "$count new resources have been added",
-                priority = NotificationCompat.PRIORITY_DEFAULT,
-                category = NotificationCompat.CATEGORY_RECOMMENDATION
-            )
-            "storage" -> NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "⚠️ Storage Warnings",
-                message = "$count storage warnings need attention",
-                priority = NotificationCompat.PRIORITY_DEFAULT,
-                category = NotificationCompat.CATEGORY_STATUS
-            )
-            else -> NotificationConfig(
-                id = summaryId,
-                type = type,
-                title = "📱 App Notifications",
-                message = "$count new notifications",
-                priority = NotificationCompat.PRIORITY_DEFAULT,
-                category = NotificationCompat.CATEGORY_MESSAGE
-            )
-        }
-    }
-
-    private fun isTaskUrgent(deadline: String): Boolean {
+    private fun isTaskUrgent(deadline: String, timeProvider: TimeProvider): Boolean {
         return try {
             val deadlineTime = TimeUtils.parseDate(deadline) ?: return false
-            val currentTime = System.currentTimeMillis()
+            val currentTime = timeProvider.now()
             val timeDiff = deadlineTime - currentTime
             val daysUntilDeadline = timeDiff / (1000 * 60 * 60 * 24)
             daysUntilDeadline <= 2
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "isTaskUrgent deadline parse failed", e)
             false
         }
     }
 
-    class NotificationManager(private val context: Context) {
+    class NotificationManager(private val context: Context, private val timeProvider: TimeProvider) {
         private val notificationManager = NotificationManagerCompat.from(context)
         private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        private val activeNotifications = mutableSetOf<String>()
-        private val sessionShownNotifications = mutableSetOf<String>()
+        private val activeNotifications = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+        private val sessionShownNotifications = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
 
         init {
             loadActiveNotifications()
             createNotificationChannels()
         }
 
+        private data class ChannelConfig(
+            val id: String,
+            val name: String,
+            val desc: String,
+            val importance: Int,
+            val vibrate: Boolean,
+            val badge: Boolean = false
+        )
+
         private fun createNotificationChannels() {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val systemNotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-                listOfNotNull(
-                    createChannel(CHANNEL_GENERAL, "General Notifications", "General app notifications", IMPORTANCE_DEFAULT, true),
-                    createChannel(CHANNEL_SURVEYS, "Survey Notifications", "New surveys and survey reminders", IMPORTANCE_HIGH, true, true),
-                    createChannel(CHANNEL_TASKS, "Task Notifications", "Task assignments and deadlines", IMPORTANCE_HIGH, true, true),
-                    createChannel(CHANNEL_SYSTEM, "System Notifications", "Storage warnings and system updates", IMPORTANCE_DEFAULT, false),
-                    createChannel(CHANNEL_TEAM, "Team Notifications", "Team join requests and team updates", IMPORTANCE_DEFAULT, true)
-                ).forEach { systemNotificationManager.createNotificationChannel(it) }
-            }
+            val systemNotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as SystemNotificationManager
+            listOfNotNull(
+                createChannel(ChannelConfig(CHANNEL_GENERAL, "General Notifications", "General app notifications", IMPORTANCE_DEFAULT, true)),
+                createChannel(ChannelConfig(CHANNEL_SURVEYS, "Survey Notifications", "New surveys and survey reminders", IMPORTANCE_HIGH,
+                    vibrate = true, badge = true
+                )),
+                createChannel(ChannelConfig(CHANNEL_TASKS, "Task Notifications", "Task assignments and deadlines", IMPORTANCE_HIGH,
+                    vibrate = true, badge = true
+                )),
+                createChannel(ChannelConfig(CHANNEL_SYSTEM, "System Notifications", "Storage warnings and system updates", IMPORTANCE_DEFAULT, false)),
+                createChannel(ChannelConfig(CHANNEL_TEAM, "Team Notifications", "Team join requests and team updates", IMPORTANCE_DEFAULT, true))
+            ).forEach { systemNotificationManager.createNotificationChannel(it) }
         }
 
-        private fun createChannel(id: String, name: String, desc: String, importance: Int, vibrate: Boolean, badge: Boolean = false): NotificationChannel? {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return null
-            return NotificationChannel(id, name, importance).apply {
-                description = desc
+        private fun createChannel(config: ChannelConfig): NotificationChannel {
+            return NotificationChannel(config.id, config.name, config.importance).apply {
+                description = config.desc
                 enableLights(true)
-                enableVibration(vibrate)
-                if (badge) setShowBadge(true)
+                enableVibration(config.vibrate)
+                if (config.badge) setShowBadge(true)
             }
         }
 
@@ -299,19 +198,27 @@ object NotificationUtils {
 
         fun showNotification(config: NotificationConfig): Boolean {
             val notificationId = getNotificationIdIfShouldShow(config) ?: return false
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            ) {
+                return false
+            }
 
             return try {
                 val notification = buildNotification(config)
                 notificationManager.notify(notificationId, notification)
                 markNotificationAsShown(config.id)
                 true
+            } catch (e: SecurityException) {
+                Log.w(TAG, "showNotification permission revoked", e)
+                false
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "showNotification failed", e)
                 false
             }
         }
 
-        private fun buildNotification(config: NotificationConfig): android.app.Notification {
+        private fun buildNotification(config: NotificationConfig): Notification {
             val channelId = getChannelForType(config.type)
             val intent = createNotificationIntent(config)
             val pendingIntent = PendingIntent.getActivity(
@@ -329,7 +236,7 @@ object NotificationUtils {
                 .setCategory(config.category)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(config.autoCancel)
-                .setWhen(System.currentTimeMillis())
+                .setWhen(timeProvider.now())
                 .setShowWhen(true)
                 .setColor(ContextCompat.getColor(context, R.color.colorPrimary))
 
@@ -404,7 +311,7 @@ object NotificationUtils {
             }
         }
 
-        private fun canShowNotification(type: String): Boolean {
+        fun canShowNotification(type: String): Boolean {
             if (!notificationManager.areNotificationsEnabled() || !preferences.getBoolean(KEY_ENABLED, true)) return false
             return when (type) {
                 TYPE_SURVEY -> preferences.getBoolean(KEY_SURVEY_ENABLED, true)

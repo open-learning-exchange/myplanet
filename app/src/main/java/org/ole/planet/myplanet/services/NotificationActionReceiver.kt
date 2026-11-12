@@ -4,12 +4,14 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
+import android.util.Log
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -18,13 +20,21 @@ import org.ole.planet.myplanet.utils.NotificationUtils
 
 @AndroidEntryPoint
 class NotificationActionReceiver : BroadcastReceiver() {
+    companion object {
+        private const val TAG = "NotificationActionReceiver"
+    }
+
     @Inject
     lateinit var notificationsRepository: NotificationsRepository
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
+    @Inject
+    @ApplicationScope
+    lateinit var applicationScope: CoroutineScope
+
     override fun onReceive(context: Context, intent: Intent) {
         val pendingResult = goAsync()
-        MainApplication.applicationScope.launch {
+        applicationScope.launch {
             try {
                 val action = intent.action
                 val notificationId = intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID)
@@ -66,6 +76,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
                         }
                     }
                 }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                Log.e(TAG, "broadcast work failed", e)
             } finally {
                 pendingResult.finish()
             }
@@ -82,11 +95,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 notificationsRepository.markNotificationsAsRead(setOf(notificationId))
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to mark notification as read", e)
         }
 
         withContext(dispatcherProvider.main) {
-            delay(200)
             val broadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
             broadcastIntent.setPackage(context.packageName)
             broadcastIntent.putExtra("notification_id", notificationId)
@@ -98,7 +110,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 val broadcastService = getBroadcastService(context)
                 broadcastService.sendBroadcast(localBroadcastIntent)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to send local broadcast for notification read", e)
             }
 
             try {
@@ -108,7 +120,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 dashboardIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
                 context.startActivity(dashboardIntent)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to start DashboardActivity to refresh notification badge", e)
             }
         }
     }

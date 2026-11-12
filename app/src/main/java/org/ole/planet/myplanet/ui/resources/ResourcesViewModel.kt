@@ -1,105 +1,227 @@
 package org.ole.planet.myplanet.ui.resources
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
-import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.model.ResourceItem
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.ResourceListModel
-import org.ole.planet.myplanet.model.SyncState
-import org.ole.planet.myplanet.model.TagItem
+import org.ole.planet.myplanet.model.TagEntity
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.repository.UserReadRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class ResourcesViewModel @Inject constructor(
-    private val syncManager: SyncManager,
-    private val sharedPrefManager: SharedPrefManager,
-    private val serverUrlMapper: ServerUrlMapper,
-    private val resourcesRepository: ResourcesRepository
+    private val resourcesRepository: ResourcesRepository,
+    private val userRepository: UserReadRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
-    private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
-    val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
-    private val _downloadComplete = MutableStateFlow(false)
-    val downloadComplete: StateFlow<Boolean> = _downloadComplete.asStateFlow()
+    private val _currentUser = MutableStateFlow<UserEntity?>(null)
+    val currentUser: StateFlow<UserEntity?> = _currentUser.asStateFlow()
+
+    private val userDeferred: Deferred<UserEntity?> = viewModelScope.async {
+        userRepository.getUserModel().also {
+            _currentUser.value = it
+        }
+    }
+
+    suspend fun getCurrentUser(): UserEntity? {
+        return userDeferred.await()
+    }
+
+    private companion object {
+        const val TAG = "ResourcesViewModel"
+    }
+
+    enum class SortMode { NONE, DATE, TITLE }
+    private var sortMode = SortMode.NONE
+    private var isAscending = true
+    private var isTitleAscending = false
+
+    val currentSortMode: SortMode get() = sortMode
+    val isDateSortAscending: Boolean get() = isAscending
+    val isTitleSortAscending: Boolean get() = isTitleAscending
+
+    private val _downloadComplete = Channel<Unit>(Channel.CONFLATED)
+    val downloadComplete: Flow<Unit> = _downloadComplete.receiveAsFlow()
+
+    private val _openedResourceIds = MutableStateFlow<Set<String>>(emptySet())
+    val openedResourceIds: StateFlow<Set<String>> = _openedResourceIds.asStateFlow()
+
+    private var observeOpenedResourcesJob: Job? = null
+    private var currentObservedUserId: String? = null
+
     fun notifyDownloadComplete() {
-        _downloadComplete.value = true
-        _downloadComplete.value = false
+        _downloadComplete.trySend(Unit)
     }
 
-    fun startResourcesSync() {
-        val isFastSync = sharedPrefManager.getFastSync()
-        if (isFastSync && !sharedPrefManager.isSynced(SharedPrefManager.SyncKey.RESOURCES)) {
-            checkServerAndStartSync()
+    fun observeOpenedResourceIds(userId: String) {
+        if (userId.isNotEmpty() && userId == currentObservedUserId && observeOpenedResourcesJob?.isActive == true) {
+            return
+        }
+        currentObservedUserId = userId
+        observeOpenedResourcesJob?.cancel()
+        observeOpenedResourcesJob = viewModelScope.launch {
+            resourcesRepository.observeOpenedResourceIds(userId).collectLatest { ids ->
+                _openedResourceIds.value = ids
+            }
         }
     }
 
-    private fun checkServerAndStartSync() {
-        val mapping = serverUrlMapper.processUrl(sharedPrefManager.getServerUrl())
+    suspend fun saveSearchActivity(userName: String, searchText: String, planetCode: String, parentCode: String, searchTags: List<TagEntity>, subjects: Set<String>, languages: Set<String>, levels: Set<String>, mediums: Set<String>) = withContext(dispatcherProvider.io) {
+        resourcesRepository.saveSearchActivity(userName, searchText, planetCode, parentCode, searchTags, subjects, languages, levels, mediums)
+    }
 
-        viewModelScope.launch {
-            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-                isServerReachable(url)
-            }
-            startSyncManager()
+    private val _resourcesState = MutableStateFlow<List<ResourceListModel>>(emptyList())
+    val resourcesState: StateFlow<List<ResourceListModel>> = _resourcesState.asStateFlow()
+    private var loadJob: Job? = null
+
+    fun getCachedResources(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>? {
+        return resourcesRepository.getCachedResourceListModels(isMyCourseLib, modelId)?.let {
+            applyCurrentSortSynchronous(it)
         }
     }
 
-    private fun startSyncManager() {
-        syncManager.start(object : OnSyncListener {
-            override fun onSyncStarted() {
-                _syncState.value = SyncState.Syncing
+    fun loadResources(isMyCourseLib: Boolean, modelId: String?) {
+        if (_resourcesState.value.isEmpty()) {
+            getCachedResources(isMyCourseLib, modelId)?.let {
+                _resourcesState.value = it
             }
-
-            override fun onSyncComplete() {
-                _syncState.value = SyncState.Success
-                sharedPrefManager.setSynced(SharedPrefManager.SyncKey.RESOURCES, true)
+        }
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            val list = withContext(dispatcherProvider.io) {
+                try {
+                    applyCurrentSort(resourcesRepository.getResourceListModels(isMyCourseLib, modelId))
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.e(TAG, "Loading resources failed", e)
+                    null
+                }
             }
-
-            override fun onSyncFailed(msg: String?) {
-                _syncState.value = SyncState.Failed(msg)
+            if (list != null) {
+                _resourcesState.value = list
             }
-        }, "full", listOf("resources"))
+        }
     }
 
-    fun resetSyncState() {
-        _syncState.value = SyncState.Idle
+    suspend fun removeResourcesFromShelf(resourceIds: List<String>, userId: String): Result<Unit> = withContext(dispatcherProvider.io) {
+        resourcesRepository.removeResourcesFromShelf(resourceIds, userId)
+    }
+
+    private fun addFacetValue(facets: MutableMap<String, String>, raw: String?) {
+        val value = raw?.trim() ?: return
+        if (value.isEmpty()) return
+        facets.putIfAbsent(value.lowercase(Locale.ROOT), value)
+    }
+
+    private fun addMediumFacetValue(facets: MutableMap<String, String>, raw: String?) {
+        val value = raw?.trim() ?: return
+        if (value.isEmpty()) return
+        val canonical = ResourcesMediaType.canonicalMedium(value)
+        facets.putIfAbsent(canonical.lowercase(Locale.ROOT), canonical)
+    }
+
+    suspend fun getFilterFacets(libraries: List<MyLibrary>): Map<String, Set<String>> =
+        withContext(dispatcherProvider.default) {
+            val languages = linkedMapOf<String, String>()
+            val subjects = linkedMapOf<String, String>()
+            val mediums = linkedMapOf<String, String>()
+            val levels = linkedMapOf<String, String>()
+
+            libraries.forEach { library ->
+                library.language?.let { addFacetValue(languages, it) }
+                library.subject?.forEach { addFacetValue(subjects, it) }
+                library.mediaType?.let { addMediumFacetValue(mediums, it) }
+                library.level?.forEach { addFacetValue(levels, it) }
+            }
+
+            mapOf(
+                "languages" to languages.values.toSet(),
+                "subjects" to subjects.values.toSet(),
+                "mediums" to mediums.values.toSet(),
+                "levels" to levels.values.toSet()
+            )
+        }
+
+    private val listFilter = ResourcesListFilter()
+
+    fun applyFilter(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): List<ResourceListModel> =
+        listFilter.apply(models, criteria, locallyOfflineIds)
+
+    fun filterIfChanged(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): List<ResourceListModel>? =
+        listFilter.filterIfChanged(models, criteria, locallyOfflineIds)
+
+    fun countMatching(models: List<ResourceListModel>, criteria: ResourcesFilterCriteria, locallyOfflineIds: Set<String>): Int =
+        listFilter.countMatching(models, criteria, locallyOfflineIds)
+
+    fun resetFilter() {
+        listFilter.reset()
     }
 
     suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit> {
         return resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
     }
 
-    suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> {
-        val enrichedLibraries = resourcesRepository.getEnrichedLibraries(isMyCourseLib, modelId)
-        return enrichedLibraries
-            .sortedByDescending { (library, _, _) -> library.isResourceOffline() }
-            .map { (library, rating, libraryTags) ->
-            val item = ResourceItem(
-                id = library.id,
-                title = library.title,
-                description = library.description,
-                createdDate = library.createdDate,
-                averageRating = library.averageRating,
-                timesRated = library.timesRated,
-                resourceId = library.resourceId,
-                isOffline = library.isResourceOffline(),
-                _rev = library._rev,
-                uploadDate = library.uploadDate,
-                filename = library.filename,
-                resourceLocalAddress = library.resourceLocalAddress
-            )
-            val tags = libraryTags.map { tag -> TagItem(tag.id, tag.name) }
-            ResourceListModel(library, item, rating, tags)
+    suspend fun toggleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> {
+        sortMode = SortMode.DATE
+        isAscending = !isAscending
+        val sorted = withContext(dispatcherProvider.default) {
+            applyCurrentSortSynchronous(list)
+        }
+        if (_resourcesState.value.isNotEmpty()) _resourcesState.value = sorted
+        return sorted
+    }
+
+    suspend fun toggleTitleSortOrder(list: List<ResourceListModel>): List<ResourceListModel> {
+        sortMode = SortMode.TITLE
+        isTitleAscending = !isTitleAscending
+        val sorted = withContext(dispatcherProvider.default) {
+            applyCurrentSortSynchronous(list)
+        }
+        if (_resourcesState.value.isNotEmpty()) _resourcesState.value = sorted
+        return sorted
+    }
+
+    suspend fun applyCurrentSort(list: List<ResourceListModel>): List<ResourceListModel> = withContext(dispatcherProvider.default) {
+        applyCurrentSortSynchronous(list)
+    }
+
+    private fun applyCurrentSortSynchronous(list: List<ResourceListModel>): List<ResourceListModel> {
+        return when (sortMode) {
+            SortMode.DATE -> {
+                if (isAscending) list.sortedBy { it.item.createdDate }
+                else list.sortedByDescending { it.item.createdDate }
+            }
+            SortMode.TITLE -> {
+                val withKeys = list.mapTo(ArrayList(list.size)) { it to (it.item.title?.lowercase(Locale.ROOT) ?: "") }
+                if (isTitleAscending) {
+                    withKeys.sortWith(compareBy { it.second })
+                } else {
+                    withKeys.sortWith(compareByDescending { it.second })
+                }
+                withKeys.map { it.first }
+            }
+            SortMode.NONE -> list
         }
     }
 }

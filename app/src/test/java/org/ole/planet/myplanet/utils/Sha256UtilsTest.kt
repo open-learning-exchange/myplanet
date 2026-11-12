@@ -1,8 +1,9 @@
 package org.ole.planet.myplanet.utils
 
 import java.io.File
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
 import org.junit.Test
@@ -17,36 +18,36 @@ class Sha256UtilsTest {
 
         val checksum = Sha256Utils().getCheckSumFromFile(file)
 
+        assertNotNull(checksum)
         assertNotEquals("", checksum)
         // Note: The class is named Sha256Utils, but the underlying implementation uses SHA-512.
         // A SHA-512 hex string length is 128 characters.
-        assertTrue(checksum.length == 128)
+        assertTrue(checksum!!.length == 128)
     }
 
     @Test
-    fun getCheckSumFromFile_fileNotFound_returnsEmptyString() {
+    fun getCheckSumFromFile_fileNotFound_returnsNull() {
         val file = File("non_existent_file.txt")
 
         val checksum = Sha256Utils().getCheckSumFromFile(file)
 
-        assertEquals("", checksum)
+        assertNull(checksum)
     }
 
     @Test
-    fun getCheckSumFromFile_invalidFilePermissions_returnsEmptyString() {
+    fun getCheckSumFromFile_invalidFilePermissions_returnsNull() {
         val file = File.createTempFile("no_read_permission", ".txt")
         file.writeText("test data")
         file.deleteOnExit()
 
         // Remove read permission
-        val success = file.setReadable(false)
 
         // Skip this test if the environment (e.g., running as root in CI) prevents us from removing read permissions.
         assumeFalse("Could not restrict read permissions on the file; skipping test.", file.canRead())
 
         val checksum = Sha256Utils().getCheckSumFromFile(file)
 
-        assertEquals("", checksum)
+        assertNull(checksum)
 
         // Restore read permission so it can be deleted
         file.setReadable(true)

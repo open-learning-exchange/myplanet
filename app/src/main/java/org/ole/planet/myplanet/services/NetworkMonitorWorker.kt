@@ -2,16 +2,17 @@ package org.ole.planet.myplanet.services
 
 import android.content.Context
 import androidx.hilt.work.HiltWorker
+import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
-import org.ole.planet.myplanet.utils.NetworkUtils
 
 @HiltWorker
 class NetworkMonitorWorker @AssistedInject constructor(
@@ -25,8 +26,13 @@ class NetworkMonitorWorker @AssistedInject constructor(
         private const val UPLOAD_DELAY_SECONDS = 30L
 
         fun start(context: Context) {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+
             val workRequest = OneTimeWorkRequestBuilder<NetworkMonitorWorker>()
                 .addTag(WORK_TAG)
+                .setConstraints(constraints)
                 .build()
 
             WorkManager.getInstance(context)
@@ -36,13 +42,7 @@ class NetworkMonitorWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         return try {
-            var wasConnected = false
-            NetworkUtils.isNetworkConnectedFlow.collect { isConnected ->
-                if (isConnected && !wasConnected) {
-                    scheduleServerReachabilityCheck()
-                }
-                wasConnected = isConnected
-            }
+            scheduleServerReachabilityCheck()
 
             Result.success()
         } catch (e: Exception) {
@@ -64,7 +64,7 @@ class NetworkMonitorWorker @AssistedInject constructor(
         WorkManager.getInstance(applicationContext)
             .enqueueUniqueWork(
                 SERVER_REACHABILITY_WORK_TAG,
-                ExistingWorkPolicy.REPLACE,
+                ExistingWorkPolicy.KEEP,
                 workRequest
             )
     }

@@ -1,9 +1,15 @@
 package org.ole.planet.myplanet.utils
 
+import android.content.Context
+import io.mockk.every
+import io.mockk.mockk
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.time.Instant
 import java.time.LocalDate
+import java.time.Period
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.TimeZone
 import org.junit.After
@@ -13,6 +19,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.R
 
 class TimeUtilsTest {
 
@@ -45,9 +52,11 @@ class TimeUtilsTest {
         // We cannot fully test getRelativeTime because it uses android.text.format.DateUtils
         // which returns null or throws an error in standard JUnit without Robolectric.
         // But we can test the fallback for future time.
+        val context = mockk<Context>()
+        every { context.getString(R.string.just_now) } returns "Justo ahora"
         val futureTime = System.currentTimeMillis() + 100000
-        val relative = TimeUtils.getRelativeTime(futureTime)
-        assertEquals("Just now", relative)
+        val relative = TimeUtils.getRelativeTime(context, futureTime)
+        assertEquals("Justo ahora", relative)
     }
 
     @Test
@@ -62,13 +71,32 @@ class TimeUtilsTest {
     }
 
     @Test
+    fun testGetFormattedDate_localMidnightInUtcPlusZoneShowsThatDay() {
+        TimeZone.setDefault(TimeZone.getTimeZone("Africa/Nairobi"))
+        val pickedMidnight = LocalDate.of(2024, 3, 11)
+            .atStartOfDay(ZoneId.of("Africa/Nairobi")).toInstant().toEpochMilli()
+
+        assertEquals("Monday, Mar 11, 2024", TimeUtils.getFormattedDate(pickedMidnight))
+    }
+
+    @Test
+    fun testGetFormattedDate_dobStringKeepsItsCalendarDayInUtcMinusZone() {
+        TimeZone.setDefault(TimeZone.getTimeZone("America/New_York"))
+
+        assertEquals(
+            "Monday, Jan 01, 1990",
+            TimeUtils.getFormattedDate("1990-01-01T00:00:00.000Z", "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        )
+    }
+
+    @Test
     fun testGetFormattedDate_epoch() {
         // 0 timestamp is Jan 01, 1970 UTC. To avoid Locale flakiness with TimeUtils object initialization,
         // we assert against the dynamically formatted expected value instead of hardcoding English locale.
-        val expected = java.time.format.DateTimeFormatter
+        val expected = DateTimeFormatter
             .ofPattern("EEEE, MMM dd, yyyy", Locale.getDefault())
-            .withZone(java.time.ZoneId.of("UTC"))
-            .format(java.time.Instant.ofEpochMilli(0L))
+            .withZone(ZoneId.of("UTC"))
+            .format(Instant.ofEpochMilli(0L))
         val formatted = TimeUtils.getFormattedDate(0L)
         assertEquals(expected, formatted)
     }
@@ -76,10 +104,10 @@ class TimeUtilsTest {
     @Test
     fun testGetFormattedDate_preEpoch() {
         val timestamp = -1000000000000L
-        val expected = java.time.format.DateTimeFormatter
+        val expected = DateTimeFormatter
             .ofPattern("EEEE, MMM dd, yyyy", Locale.getDefault())
-            .withZone(java.time.ZoneId.of("UTC"))
-            .format(java.time.Instant.ofEpochMilli(timestamp))
+            .withZone(ZoneId.of("UTC"))
+            .format(Instant.ofEpochMilli(timestamp))
         val formatted = TimeUtils.getFormattedDate(timestamp)
         assertEquals(expected, formatted)
     }
@@ -87,15 +115,15 @@ class TimeUtilsTest {
     @Test
     fun testGetFormattedDate_extremeValues() {
         // DateTimeFormatter successfully evaluates MAX/MIN Instant bounds natively without throwing.
-        val expectedMax = java.time.format.DateTimeFormatter
+        val expectedMax = DateTimeFormatter
             .ofPattern("EEEE, MMM dd, yyyy", Locale.getDefault())
-            .withZone(java.time.ZoneId.of("UTC"))
-            .format(java.time.Instant.ofEpochMilli(Long.MAX_VALUE))
+            .withZone(ZoneId.of("UTC"))
+            .format(Instant.ofEpochMilli(Long.MAX_VALUE))
 
-        val expectedMin = java.time.format.DateTimeFormatter
+        val expectedMin = DateTimeFormatter
             .ofPattern("EEEE, MMM dd, yyyy", Locale.getDefault())
-            .withZone(java.time.ZoneId.of("UTC"))
-            .format(java.time.Instant.ofEpochMilli(Long.MIN_VALUE))
+            .withZone(ZoneId.of("UTC"))
+            .format(Instant.ofEpochMilli(Long.MIN_VALUE))
 
         val maxFormatted = TimeUtils.getFormattedDate(Long.MAX_VALUE)
         val minFormatted = TimeUtils.getFormattedDate(Long.MIN_VALUE)
@@ -108,9 +136,9 @@ class TimeUtilsTest {
     fun testGetFormattedDateWithTime() {
         val timestamp = 1710115200000L
         val formatted = TimeUtils.getFormattedDateWithTime(timestamp)
-        // With UTC timezone default, it should be Mon 11, March 2024 , 12:00 AM
+        // With UTC timezone default, it should be Mon 11, March 2024, 12:00 AM
         // Note: Java 8 DateTimeFormatter with 'EEE' produces 'Mon'
-        assertEquals("Mon 11, March 2024 , 12:00 AM", formatted)
+        assertEquals("Mon 11, March 2024, 12:00 AM", formatted)
     }
 
     @Test
@@ -124,7 +152,7 @@ class TimeUtilsTest {
     fun testGetAge() {
         // Assume age from 2000-01-01 to today. It will be > 20
         val age = TimeUtils.getAge("2000-01-01")
-        val expectedAge = java.time.Period.between(LocalDate.of(2000, 1, 1), LocalDate.now()).years
+        val expectedAge = Period.between(LocalDate.of(2000, 1, 1), LocalDate.now()).years
         assertEquals(expectedAge, age)
 
         // Test with time
@@ -306,10 +334,10 @@ class TimeUtilsTest {
     @Test
     fun testFormatDateForCsv() {
         val timestamp = 1710115200000L
-        val expected = java.time.format.DateTimeFormatter
+        val expected = DateTimeFormatter
             .ofPattern("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)", Locale.US)
-            .withZone(java.time.ZoneId.systemDefault())
-            .format(java.time.Instant.ofEpochMilli(timestamp))
+            .withZone(ZoneId.systemDefault())
+            .format(Instant.ofEpochMilli(timestamp))
         val formatted = TimeUtils.formatDateForCsv(timestamp)
         assertEquals(expected, formatted)
     }

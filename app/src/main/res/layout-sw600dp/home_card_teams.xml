@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:minHeight="@dimen/dashboard_tile_min_height"
+    app:cardBackgroundColor="@color/card_bg"
+    app:cardCornerRadius="@dimen/dashboard_tile_corner_radius"
+    app:cardElevation="@dimen/dashboard_tile_elevation"
+    app:strokeColor="@color/dashboard_hairline"
+    app:strokeWidth="@dimen/dashboard_hairline_width">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <FrameLayout
+            android:id="@+id/ll_home_team"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent">
+
+            <LinearLayout
+                android:id="@+id/myTeamsImageButton"
+                android:layout_width="@dimen/dashboard_tile_color_block_width"
+                android:layout_height="match_parent"
+                android:background="@color/dashboard_tile_teams"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="@dimen/padding_small">
+
+                <ImageView
+                    android:layout_width="@dimen/dashboard_tile_icon_size"
+                    android:layout_height="@dimen/dashboard_tile_icon_size"
+                    app:srcCompat="@drawable/team"
+                    android:contentDescription="@string/txt_myTeams" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/padding_small"
+                    android:gravity="center"
+                    android:text="@string/txt_myTeams"
+                    android:textColor="@color/md_white_1000"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/count_team"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|end"
+                android:layout_margin="6dp"
+                android:background="@drawable/oval_dashboard_badge"
+                android:gravity="center"
+                android:minWidth="@dimen/dashboard_badge_size"
+                android:minHeight="@dimen/dashboard_badge_size"
+                android:paddingStart="6dp"
+                android:paddingEnd="6dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:text="12"
+                android:textColor="@color/dashboard_badge_ink"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+        </FrameLayout>
+
+        <ScrollView
+            android:layout_width="0dp"
+            android:contentDescription="@string/txt_myTeams"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@color/card_bg"
+            android:scrollbars="none">
+
+            <com.google.android.flexbox.FlexboxLayout
+                android:id="@+id/flexboxLayoutTeams"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/dashboard_chip_gap"
+                app:alignContent="flex_start"
+                app:alignItems="stretch"
+                app:flexWrap="wrap" />
+        </ScrollView>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

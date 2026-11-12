@@ -6,19 +6,16 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
-import android.provider.Settings
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
-import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -30,26 +27,28 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingBottomSheetFragment
 import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.databinding.AlertSoundRecorderBinding
 import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
-import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.services.AudioRecorder
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.hasPermission
+import org.ole.planet.myplanet.utils.showPermissionDeniedFeedback
 
 @AndroidEntryPoint
-class AddResourceFragment : BottomSheetDialogFragment() {
-    private var _binding: FragmentAddResourceBinding? = null
-    private val binding get() = _binding!!
+class AddResourceFragment : BaseBindingBottomSheetFragment<FragmentAddResourceBinding>(FragmentAddResourceBinding::inflate) {
     var tvTime: TextView? = null
     var floatingActionButton: FloatingActionButton? = null
     private var audioRecorder: AudioRecorder? = null
@@ -58,18 +57,19 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var captureImageLauncher: ActivityResultLauncher<Uri>
     private lateinit var captureVideoLauncher: ActivityResultLauncher<Uri>
     private lateinit var openFolderLauncher: ActivityResultLauncher<String>
-    private lateinit var requestCameraLauncher: ActivityResultLauncher<String>
+    private lateinit var requestCameraForPhotoLauncher: ActivityResultLauncher<String>
+    private lateinit var requestCameraForVideoLauncher: ActivityResultLauncher<String>
     private var type: Int = 0
     private var teamId: String? = null
     @Inject
-    lateinit var personalsRepository: PersonalsRepository
-    @Inject
-    lateinit var userSessionManager: UserSessionManager
+    lateinit var dispatcherProvider: DispatcherProvider
 
     private val viewModel: AddResourceViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        photoURI = savedInstanceState?.getString(KEY_PHOTO_URI)?.let(Uri::parse)
+        videoUri = savedInstanceState?.getString(KEY_VIDEO_URI)?.let(Uri::parse)
         if (arguments != null) {
             type = requireArguments().getInt("type", 0)
             teamId = requireArguments().getString("teamId")
@@ -94,60 +94,49 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                 Utilities.toast(activity, "no file selected")
             }
         }
+        requestCameraForPhotoLauncher = registerCameraPermissionLauncher { capturePhoto() }
+        requestCameraForVideoLauncher = registerCameraPermissionLauncher { captureVideo() }
         audioRecorder = AudioRecorder()
         audioRecorder?.setCaller(this, requireContext())
-        requestCameraLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestPermission()
-        ) { isGranted ->
-            if (isGranted) {
-                takePhoto()
+    }
+
+    private fun registerCameraPermissionLauncher(
+        onGranted: () -> Unit,
+    ): ActivityResultLauncher<String> =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                onGranted()
             } else {
-                if (!shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
-                    AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-                        .setTitle(R.string.permission_required)
-                        .setMessage(R.string.camera_permission_required)
-                        .setPositiveButton(R.string.settings) { dialog, _ ->
-                            dialog.dismiss()
-                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                            val uri: Uri = Uri.fromParts("package", requireContext().packageName, null)
-                            intent.data = uri
-                            startActivity(intent)
-                        }
-                        .setNegativeButton(R.string.cancel) { dialog, _ -> dialog.dismiss() }
-                        .show()
-                } else {
-                    Utilities.toast(requireContext(), "camera permission is required.")
-                }
+                requireActivity().showPermissionDeniedFeedback(
+                    Manifest.permission.CAMERA,
+                    R.string.camera_permission_required,
+                )
             }
         }
-    }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val bottomSheetDialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
-        bottomSheetDialog.setOnShowListener { d: DialogInterface ->
-            val dialog = d as BottomSheetDialog
-            val bottomSheet = dialog.findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
-            bottomSheet?.let {
-                BottomSheetBehavior.from(it).state = BottomSheetBehavior.STATE_EXPANDED
-                BottomSheetBehavior.from(it).skipCollapsed = true
-                BottomSheetBehavior.from(it).setHideable(true)
-            }
+        bottomSheetDialog.behavior.apply {
+            state = BottomSheetBehavior.STATE_EXPANDED
+            skipCollapsed = true
+            isHideable = true
         }
         return bottomSheetDialog
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        photoURI?.let { outState.putString(KEY_PHOTO_URI, it.toString()) }
+        videoUri?.let { outState.putString(KEY_VIDEO_URI, it.toString()) }
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentAddResourceBinding.inflate(inflater, container, false)
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         binding.llRecordVideo.setOnClickListener { dispatchTakeVideoIntent() }
         binding.llRecordAudio.setOnClickListener { showAudioRecordAlert() }
         binding.llCaptureImage.setOnClickListener { takePhoto() }
         binding.llDraft.setOnClickListener { openFolderLauncher.launch("*/*") }
-        return binding.root
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+        return view
     }
 
     private fun showAudioRecordAlert() {
@@ -199,16 +188,20 @@ class AddResourceFragment : BottomSheetDialogFragment() {
 
             override fun onError(error: String?) {
                 Utilities.toast(activity, error)
+                floatingActionButton?.setImageResource(R.drawable.ic_mic)
             }
         })
     }
 
     private fun dispatchTakeVideoIntent() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
-            != PackageManager.PERMISSION_GRANTED){
-            requestCameraLauncher.launch(Manifest.permission.CAMERA)
-            return
+        if (requireContext().hasPermission(Manifest.permission.CAMERA)) {
+            captureVideo()
+        } else {
+            requestCameraForVideoLauncher.launch(Manifest.permission.CAMERA)
         }
+    }
+
+    private fun captureVideo() {
         val takeVideoIntent = Intent(MediaStore.ACTION_VIDEO_CAPTURE)
         videoUri = createVideoFileUri()
         takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoUri)
@@ -227,11 +220,14 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     }
 
     private fun takePhoto() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
-            != PackageManager.PERMISSION_GRANTED){
-            requestCameraLauncher.launch(Manifest.permission.CAMERA)
-            return
+        if (requireContext().hasPermission(Manifest.permission.CAMERA)) {
+            capturePhoto()
+        } else {
+            requestCameraForPhotoLauncher.launch(Manifest.permission.CAMERA)
         }
+    }
+
+    private fun capturePhoto() {
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.TITLE, "Photo_" + UUID.randomUUID().toString())
             put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
@@ -244,13 +240,22 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     }
 
     private fun handleUri(uri: Uri?, requestCode: Int) {
-        val path = when (requestCode) {
-            REQUEST_CAPTURE_PICTURE, REQUEST_VIDEO_CAPTURE ->
-                FileUtils.getRealPathFromURI(requireContext(), uri)
-            REQUEST_FILE_SELECTION -> FileUtils.getPathFromURI(requireContext(), uri)
-            else -> null
+        val context = requireContext().applicationContext
+        viewLifecycleOwner.lifecycleScope.launch {
+            val path = when (requestCode) {
+                REQUEST_CAPTURE_PICTURE, REQUEST_VIDEO_CAPTURE, REQUEST_FILE_SELECTION ->
+                    withContext(dispatcherProvider.io) {
+                        val destinationDir = if (type == 0) {
+                            context.cacheDir
+                        } else {
+                            File(FileUtils.getOlePath(context), "personals/${UUID.randomUUID()}").apply { mkdirs() }
+                        }
+                        FileUtils.resolveUriToPath(context, uri, destinationDir)
+                    }
+                else -> null
+            }
+            processResource(path)
         }
-        processResource(path)
     }
 
     private fun processResource(path: String?) {
@@ -263,12 +268,14 @@ class AddResourceFragment : BottomSheetDialogFragment() {
 
     private fun addResource(path: String?) {
         if (type == 0) {
-            startActivity(Intent(activity, AddResourceActivity::class.java)
+            val intent = Intent(activity, AddResourceActivity::class.java)
                 .putExtra("resource_local_url", path)
-                .putExtra("teamId", teamId))
+                .putExtra("teamId", teamId)
+            (parentFragment as? ResourcesFragment)?.addResourceLauncher?.launch(intent)
+                ?: startActivity(intent)
         } else {
             viewLifecycleOwner.lifecycleScope.launch {
-                val userModel = userSessionManager.getUserModel() ?: return@launch
+                val userModel = viewModel.currentUser() ?: return@launch
                 showAlert(
                     requireContext(),
                     path,
@@ -277,6 +284,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                     viewModel,
                     viewLifecycleOwner
                 ) {
+                    parentFragmentManager.setFragmentResult("resource_added", Bundle())
                     dismiss()
                 }
             }
@@ -284,6 +292,8 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     }
 
     companion object {
+        private const val KEY_PHOTO_URI = "photo_uri"
+        private const val KEY_VIDEO_URI = "video_uri"
         const val REQUEST_VIDEO_CAPTURE = 1
         const val REQUEST_CAPTURE_PICTURE = 2
         const val REQUEST_FILE_SELECTION = 3
@@ -329,24 +339,22 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                     viewModel.saveResource(title, userId, userName, path, desc)
                 }
 
-                val job = lifecycleOwner.lifecycleScope.launch {
-                    viewModel.state.collect { state ->
-                        when (state) {
-                            is AddResourceState.TitleExists -> {
-                                etTitle.error = context.getString(R.string.resource_title_already_exists)
-                                positiveButton.isEnabled = true
-                                viewModel.resetState()
-                            }
-                            is AddResourceState.Success -> {
-                                Utilities.toast(context, context.getString(R.string.resource_saved_to_my_personal))
-                                positiveButton.isEnabled = true
-                                dialog.dismiss()
-                                onDismiss.invoke()
-                                viewModel.resetState()
-                            }
-                            is AddResourceState.Idle -> {
-                                // Do nothing
-                            }
+                val job = lifecycleOwner.collectWhenStarted(viewModel.state) { state ->
+                    when (state) {
+                        is AddResourceState.TitleExists -> {
+                            etTitle.error = context.getString(R.string.resource_title_already_exists)
+                            positiveButton.isEnabled = true
+                            viewModel.resetState()
+                        }
+                        is AddResourceState.Success -> {
+                            Utilities.toast(context, context.getString(R.string.resource_saved_to_my_personal))
+                            positiveButton.isEnabled = true
+                            dialog.dismiss()
+                            onDismiss.invoke()
+                            viewModel.resetState()
+                        }
+                        is AddResourceState.Idle -> {
+                            // Do nothing
                         }
                     }
                 }

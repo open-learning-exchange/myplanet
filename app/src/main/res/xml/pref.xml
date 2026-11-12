@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-
     <Preference
-        android:key="dark_mode"
-        android:title="@string/dark_mode" />
+        android:key="text_size"
+        android:title="@string/text_size" />
     <Preference
         android:key="reset_app"
         android:title="@string/reset_app" />
@@ -11,9 +10,6 @@
         android:key="storage_breakdown"
         android:title="@string/storage_breakdown"
         android:summary="@string/storage_breakdown_summary" />
-    <Preference
-        android:key="freeup_space"
-        android:title="@string/freeup_space" />
     <PreferenceCategory
         android:dependency="auto_sync_with_server"
         android:title="@string/auto_sync">
@@ -45,15 +41,6 @@
     <PreferenceCategory
         android:dependency="beta_function"
         android:title="@string/beta_functionality">
-        <SwitchPreference
-            android:defaultValue="false"
-            android:key="beta_fast_sync"
-            android:title="@string/beta_fast_sync" />
-        <SwitchPreference
-            android:defaultValue="false"
-            android:key="beta_improved_sync"
-            android:summary="@string/beta_improved_sync_summary"
-            android:title="@string/beta_improved_sync" />
         <SwitchPreference
             android:defaultValue="false"
             android:key="beta_auto_download"

@@ -1,0 +1,52 @@
+package org.ole.planet.myplanet.ui.exam
+
+import androidx.lifecycle.ViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.repository.SubmissionsRepository
+
+@HiltViewModel
+class ExamViewModel @Inject constructor(
+    private val submissionsRepository: SubmissionsRepository,
+    @ApplicationScope private val applicationScope: CoroutineScope
+) : ViewModel() {
+
+    suspend fun getSubmissionById(id: String): Submission? {
+        return submissionsRepository.getSubmissionById(id)
+    }
+
+    suspend fun getExamByStepId(stepId: String): StepExam? {
+        return submissionsRepository.getExamByStepId(stepId)
+    }
+
+    suspend fun getExamById(id: String): StepExam? {
+        return submissionsRepository.getExamById(id)
+    }
+
+    suspend fun updateSubmissionStatus(submissionId: String?, status: String) {
+        submissionsRepository.updateSubmissionStatus(submissionId, status)
+    }
+
+    fun addSubmissionPhoto(
+        submissionId: String?,
+        examId: String?,
+        courseId: String?,
+        memberId: String?,
+        photoPath: String?
+    ) {
+        applicationScope.launch {
+            submissionsRepository.addSubmissionPhoto(
+                submissionId,
+                examId,
+                courseId,
+                memberId,
+                photoPath
+            )
+        }
+    }
+}

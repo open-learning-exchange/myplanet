@@ -4,18 +4,24 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import dagger.hilt.android.EntryPointAccessors
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
@@ -28,6 +34,21 @@ class NetworkUtilsMockTest {
     private lateinit var mockBluetoothAdapter: BluetoothAdapter
     private lateinit var mockConnectivityManager: ConnectivityManager
 
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkObject(MainApplication.Companion)
+            mockkStatic(EntryPointAccessors::class)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkAll()
+        }
+    }
+
     @Before
     fun setUp() {
         mockContext = mockk(relaxed = true)
@@ -36,10 +57,8 @@ class NetworkUtilsMockTest {
         mockBluetoothAdapter = mockk(relaxed = true)
         mockConnectivityManager = mockk(relaxed = true)
 
-        mockkObject(MainApplication.Companion)
         every { MainApplication.context } returns mockContext
 
-        mockkStatic(EntryPointAccessors::class)
         val mockEntryPoint = mockk<CoreDependenciesEntryPoint>(relaxed = true)
         every { EntryPointAccessors.fromApplication(any(), CoreDependenciesEntryPoint::class.java) } returns mockEntryPoint
 
@@ -52,7 +71,8 @@ class NetworkUtilsMockTest {
 
     @After
     fun tearDown() {
-        unmockkAll()
+        clearAllMocks(answers = false, childMocks = false)
+        NetworkUtils.resetForTesting()
     }
 
     @Test
@@ -117,5 +137,69 @@ class NetworkUtilsMockTest {
         val result = NetworkUtils.getCustomDeviceName(mockContext)
 
         assertEquals("Test Device Name", result)
+    }
+
+    @Test
+    fun `getCurrentNetworkId returns -1 when no active network`() {
+        every { mockConnectivityManager.activeNetwork } returns null
+        every { mockConnectivityManager.getNetworkCapabilities(any()) } returns null
+
+        assertEquals(-1, NetworkUtils.getCurrentNetworkId(mockContext))
+    }
+
+    @Test
+    fun `getCurrentNetworkId returns -1 when transport is not wifi`() {
+        val mockNetwork = mockk<Network>()
+        val mockCapabilities = mockk<NetworkCapabilities>(relaxed = true)
+        every { mockConnectivityManager.activeNetwork } returns mockNetwork
+        every { mockConnectivityManager.getNetworkCapabilities(mockNetwork) } returns mockCapabilities
+        every { mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } returns false
+        every { mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) } returns true
+
+        assertEquals(-1, NetworkUtils.getCurrentNetworkId(mockContext))
+    }
+
+    @Test
+    fun `getCurrentNetworkId returns -1 when wifi transport but connectionInfo is null`() {
+        val mockNetwork = mockk<Network>()
+        val mockCapabilities = mockk<NetworkCapabilities>(relaxed = true)
+        every { mockConnectivityManager.activeNetwork } returns mockNetwork
+        every { mockConnectivityManager.getNetworkCapabilities(mockNetwork) } returns mockCapabilities
+        every { mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } returns true
+        every { mockCapabilities.transportInfo } returns null
+        every { mockWifiManager.connectionInfo } returns null
+
+        assertEquals(-1, NetworkUtils.getCurrentNetworkId(mockContext))
+    }
+
+    @Test
+    fun `getCurrentNetworkId returns -1 when ssid is null or empty`() {
+        val mockNetwork = mockk<Network>()
+        val mockCapabilities = mockk<NetworkCapabilities>(relaxed = true)
+        val mockWifiInfo = mockk<WifiInfo>()
+        every { mockConnectivityManager.activeNetwork } returns mockNetwork
+        every { mockConnectivityManager.getNetworkCapabilities(mockNetwork) } returns mockCapabilities
+        every { mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } returns true
+        every { mockCapabilities.transportInfo } returns mockWifiInfo
+        every { mockWifiManager.connectionInfo } returns mockWifiInfo
+        every { mockWifiInfo.ssid } returns null
+
+        assertEquals(-1, NetworkUtils.getCurrentNetworkId(mockContext))
+    }
+
+    @Test
+    fun `getCurrentNetworkId returns network id when wifi connected with valid ssid`() {
+        val mockNetwork = mockk<Network>()
+        val mockCapabilities = mockk<NetworkCapabilities>(relaxed = true)
+        val mockWifiInfo = mockk<WifiInfo>()
+        every { mockConnectivityManager.activeNetwork } returns mockNetwork
+        every { mockConnectivityManager.getNetworkCapabilities(mockNetwork) } returns mockCapabilities
+        every { mockCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } returns true
+        every { mockCapabilities.transportInfo } returns mockWifiInfo
+        every { mockWifiManager.connectionInfo } returns mockWifiInfo
+        every { mockWifiInfo.ssid } returns "TestSSID"
+        every { mockWifiInfo.networkId } returns 42
+
+        assertEquals(42, NetworkUtils.getCurrentNetworkId(mockContext))
     }
 }

@@ -1,0 +1,321 @@
+package org.ole.planet.myplanet.services.upload
+
+import android.content.Context
+import android.text.TextUtils
+import android.util.Log
+import com.google.gson.Gson
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import java.io.File
+import java.util.Base64
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.slot
+import io.mockk.unmockkAll
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.junit.rules.TemporaryFolder
+import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.repository.NewsUpdateData
+import org.ole.planet.myplanet.repository.NewsUploadData
+import org.ole.planet.myplanet.repository.UploadRepository
+import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.retry.RetryQueue
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import org.ole.planet.myplanet.utils.TestTimeProvider
+import org.ole.planet.myplanet.utils.UrlUtils
+import retrofit2.Response
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class VoicesUploaderTest {
+
+    private val context: Context = mockk(relaxed = true)
+    private val gson: Gson = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk(relaxed = true)
+    private val voicesRepository: VoicesRepository = mockk(relaxed = true)
+    private val uploadRepository: UploadRepository = mockk(relaxed = true)
+    private val retryQueue: RetryQueue = mockk(relaxed = true)
+
+    private val testDispatcher = StandardTestDispatcher()
+    private val testScope = TestScope(testDispatcher)
+
+    private lateinit var voicesUploader: VoicesUploader
+
+    @get:Rule
+    val tempFolder = TemporaryFolder()
+
+    @Before
+    fun setup() {
+        MainApplication.testContext = context
+        mockkStatic(Log::class)
+        every { Log.d(any(), any()) } returns 0
+        every { Log.e(any(), any()) } returns 0
+        every { Log.e(any(), any(), any()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
+        every { Log.w(any(), any<String>(), any()) } returns 0
+
+        mockkStatic(TextUtils::class)
+        every { TextUtils.isEmpty(any()) } answers { firstArg<CharSequence?>().isNullOrEmpty() }
+
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getDeviceName() } returns "deviceName"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "customDeviceName"
+
+        mockkObject(UrlUtils)
+        every { UrlUtils.header } returns "mockHeader"
+        every { UrlUtils.getUrl() } returns "http://mock.url"
+
+        mockkObject(FileUtils)
+        every { FileUtils.getMimeType(any()) } returns "image/jpeg"
+
+        voicesUploader = VoicesUploader(
+            gson = gson,
+            userRepository = userRepository,
+            voicesRepository = voicesRepository,
+            uploadRepository = uploadRepository,
+            retryQueue = retryQueue,
+            timeProvider = TestTimeProvider(),
+            dispatcherProvider = TestDispatcherProvider(testDispatcher)
+        )
+    }
+
+    @After
+    fun tearDown() {
+        MainApplication.testContext = null
+        unmockkAll()
+    }
+
+    private fun imageEntry(path: String, resourceId: String? = "res-1"): String {
+        val obj = JsonObject().apply {
+            addProperty("imageUrl", path)
+            addProperty("fileName", File(path).name)
+            resourceId?.let { addProperty("resourceId", it) }
+        }
+        every { gson.fromJson(obj.toString(), JsonObject::class.java) } returns obj
+        return obj.toString()
+    }
+
+    private fun voiceWithImage(entry: String) = NewsUploadData(
+        id = "news1",
+        _id = "news1_id",
+        message = "Hello",
+        imageUrls = listOf(entry),
+        newsJson = JsonObject().apply { addProperty("message", "Hello") }
+    )
+
+    private fun stubImagePut(code: Int) {
+        coEvery { uploadRepository.putUpload(match { it.startsWith("http://mock.url/resources/") }, any()) } returns
+            if (code in 200..299) Response.success(code, JsonObject()) else Response.error(code, "{}".toResponseBody(null))
+    }
+
+    @Test
+    fun `an image goes up as one PUT carrying its file under its fixed id`() = testScope.runTest {
+        val file = tempFolder.newFile("post1.jpg").apply { writeBytes(byteArrayOf(1, 2, 3)) }
+        coEvery { voicesRepository.getNewsForUpload() } returns listOf(voiceWithImage(imageEntry(file.path)))
+        val doc = slot<JsonObject>()
+        coEvery { uploadRepository.putUpload("http://mock.url/resources/res-1", capture(doc)) } returns Response.success(201, JsonObject())
+        stubBulkUpload(slot())
+        val updates = slot<List<NewsUpdateData>>()
+        coEvery { voicesRepository.markNewsUploaded(capture(updates)) } returns Unit
+
+        voicesUploader.uploadNews()
+        advanceUntilIdle()
+
+        val attachment = doc.captured.getAsJsonObject("_attachments").getAsJsonObject("post1.jpg")
+        assertEquals("image/jpeg", attachment["content_type"].asString)
+        assertEquals(Base64.getEncoder().encodeToString(byteArrayOf(1, 2, 3)), attachment["data"].asString)
+        assertEquals("image", doc.captured["mediaType"].asString)
+        coVerify(exactly = 0) { uploadRepository.postUpload(any(), any()) }
+        coVerify(exactly = 0) { uploadRepository.uploadResource(any(), any(), any()) }
+        assertEquals("Hello\n![](resources/res-1/post1.jpg)", updates.captured.single().message)
+    }
+
+    @Test
+    fun `a 409 on the image means an earlier attempt stored it and the voice still posts`() = testScope.runTest {
+        val file = tempFolder.newFile("post1.jpg")
+        coEvery { voicesRepository.getNewsForUpload() } returns listOf(voiceWithImage(imageEntry(file.path)))
+        stubImagePut(409)
+        stubBulkUpload(slot())
+
+        voicesUploader.uploadNews()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { voicesRepository.markNewsUploaded(any()) }
+    }
+
+    @Test
+    fun `a rejected image keeps the voice pending instead of linking a missing file`() = testScope.runTest {
+        val file = tempFolder.newFile("post1.jpg")
+        coEvery { voicesRepository.getNewsForUpload() } returns listOf(voiceWithImage(imageEntry(file.path)))
+        stubImagePut(500)
+
+        voicesUploader.uploadNews()
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { uploadRepository.postUploadArray(any(), any()) }
+        coVerify(exactly = 0) { voicesRepository.markNewsUploaded(any()) }
+        assertTrue(file.exists())
+    }
+
+    @Test
+    fun `an entry queued before ids existed gets the same safe id and name on every attempt`() = testScope.runTest {
+        val file = tempFolder.newFile("photo (1).jpg")
+        coEvery { voicesRepository.getNewsForUpload() } returns listOf(voiceWithImage(imageEntry(file.path, resourceId = null)))
+        val urls = mutableListOf<String>()
+        coEvery { uploadRepository.putUpload(capture(urls), any()) } returns Response.error(503, "{}".toResponseBody(null))
+
+        voicesUploader.uploadNews()
+        voicesUploader.uploadNews()
+        advanceUntilIdle()
+
+        assertEquals(2, urls.size)
+        assertEquals(urls[0], urls[1])
+        val docs = mutableListOf<JsonObject>()
+        coVerify { uploadRepository.putUpload(any(), capture(docs)) }
+        assertEquals(setOf("photo_1_.jpg"), docs.first().getAsJsonObject("_attachments").keySet())
+    }
+
+    @Test
+    fun `an image whose file is gone is dropped and the voice posts`() = testScope.runTest {
+        coEvery { voicesRepository.getNewsForUpload() } returns
+            listOf(voiceWithImage(imageEntry(File(tempFolder.root, "gone.jpg").path, resourceId = null)))
+        stubBulkUpload(slot())
+        val updates = slot<List<NewsUpdateData>>()
+        coEvery { voicesRepository.markNewsUploaded(capture(updates)) } returns Unit
+
+        voicesUploader.uploadNews()
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { uploadRepository.putUpload(any(), any()) }
+        assertEquals("Hello", updates.captured.single().message)
+        assertEquals(0, updates.captured.single().imagesArray.size())
+    }
+
+    private fun existingImages() = JsonArray().apply {
+        add(JsonObject().apply {
+            addProperty("resourceId", "old-res")
+            addProperty("filename", "old.png")
+            addProperty("markdown", "![](resources/old-res/old.png)")
+        })
+    }
+
+    private fun stubBulkUpload(payload: io.mockk.CapturingSlot<JsonObject>) {
+        val bulkResponse = JsonArray().apply {
+            add(JsonObject().apply {
+                addProperty("id", "news1_id")
+                addProperty("rev", "rev3")
+            })
+        }
+        coEvery { uploadRepository.postUploadArray("http://mock.url/news/_bulk_docs", capture(payload)) } returns Response.success(bulkResponse)
+    }
+
+    @Test
+    fun `re-uploading a voice keeps the images it already has`() = testScope.runTest {
+        val newsJson = JsonObject().apply {
+            addProperty("message", "Hello\n![](resources/old-res/old.png)")
+            add("images", existingImages())
+        }
+        coEvery { voicesRepository.getNewsForUpload() } returns listOf(
+            NewsUploadData(id = "news1", _id = "news1_id", message = "Hello\n![](resources/old-res/old.png)", imageUrls = emptyList(), newsJson = newsJson)
+        )
+        val payload = slot<JsonObject>()
+        stubBulkUpload(payload)
+        val updates = slot<List<NewsUpdateData>>()
+        coEvery { voicesRepository.markNewsUploaded(capture(updates)) } returns Unit
+
+        voicesUploader.uploadNews()
+        advanceUntilIdle()
+
+        val sentDoc = payload.captured.getAsJsonArray("docs")[0].asJsonObject
+        assertEquals(existingImages(), sentDoc.getAsJsonArray("images"))
+        assertEquals(existingImages(), updates.captured.single().imagesArray)
+    }
+
+    @Test
+    fun `a new image is added alongside existing ones and its markdown is kept locally`() = testScope.runTest {
+        val file = tempFolder.newFile("new.jpg")
+        val newsJson = JsonObject().apply {
+            addProperty("message", "Hello")
+            add("images", existingImages())
+        }
+        coEvery { voicesRepository.getNewsForUpload() } returns listOf(
+            NewsUploadData(id = "news1", _id = "news1_id", message = "Hello", imageUrls = listOf(imageEntry(file.path, "new-res")), newsJson = newsJson)
+        )
+        stubImagePut(201)
+        val payload = slot<JsonObject>()
+        stubBulkUpload(payload)
+        val updates = slot<List<NewsUpdateData>>()
+        coEvery { voicesRepository.markNewsUploaded(capture(updates)) } returns Unit
+
+        voicesUploader.uploadNews()
+        advanceUntilIdle()
+
+        val update = updates.captured.single()
+        assertEquals(listOf("old-res", "new-res"), update.imagesArray.map { it.asJsonObject["resourceId"].asString })
+        assertEquals("Hello\n![](resources/new-res/new.jpg)", update.message)
+    }
+
+    @Test
+    fun `uploadNews deletes voices removed on this device from the server`() = testScope.runTest {
+        coEvery { voicesRepository.getNewsForUpload() } returns emptyList()
+        coEvery { voicesRepository.getPendingNewsDeletions() } returns listOf("gone", "alreadyGone")
+        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/news/gone") } returns
+            Response.success(JsonObject().apply { addProperty("_id", "gone"); addProperty("_rev", "3-x") })
+        coEvery { uploadRepository.fetchExistingDoc("http://mock.url/news/alreadyGone") } returns
+            Response.error(404, "{}".toResponseBody(null))
+        val tombstone = slot<JsonObject>()
+        coEvery { uploadRepository.putUpload("http://mock.url/news/gone", capture(tombstone)) } returns
+            Response.success(JsonObject().apply { addProperty("ok", true) })
+
+        voicesUploader.uploadNews()
+        advanceUntilIdle()
+
+        assertEquals("3-x", tombstone.captured.get("_rev").asString)
+        assertEquals(true, tombstone.captured.get("_deleted").asBoolean)
+        coVerify { voicesRepository.markNewsDeletionsUploaded(listOf("gone", "alreadyGone")) }
+    }
+
+    @Test
+    fun `uploadNews does not queue a stale-rev retry for a conflicted doc`() = testScope.runTest {
+        val conflicted = NewsUploadData("n1", "n1_id", "Hi", emptyList(), JsonObject(), """{"u":"👍"}""")
+        val other = NewsUploadData("n2", "n2_id", "Hey", emptyList(), JsonObject())
+        coEvery { voicesRepository.getNewsForUpload() } returns listOf(conflicted, other)
+        coEvery { userRepository.getUserModel() } returns null
+        val bulkResponse = JsonArray().apply {
+            add(JsonObject().apply {
+                addProperty("id", "n1_id")
+                addProperty("error", "conflict")
+                addProperty("reason", "Document update conflict.")
+            })
+            add(JsonObject().apply {
+                addProperty("id", "n2_id")
+                addProperty("error", "forbidden")
+            })
+        }
+        coEvery { uploadRepository.postUploadArray(any(), any()) } returns Response.success(bulkResponse)
+
+        voicesUploader.uploadNews()
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { retryQueue.queueFailedOperation(any(), match { it.itemId == "n1" }, any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 1) { retryQueue.queueFailedOperation(any(), match { it.itemId == "n2" }, any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { voicesRepository.markNewsUploaded(any()) }
+    }
+}

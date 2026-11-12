@@ -18,12 +18,13 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:textColor="@color/daynight_textColor" />
-    <com.github.clans.fab.FloatingActionButton
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_add_resource"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|right"
-        android:layout_margin="@dimen/padding_normal"
-        android:src="@drawable/ic_add"
-        app:fab_label="Add Resource" />
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/padding_large"
+        android:contentDescription="@string/add_res"
+        android:src="@drawable/ic_add_white"
+        app:tint="@color/md_white_1000" />
 </FrameLayout>

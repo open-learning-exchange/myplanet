@@ -3,41 +3,62 @@ package org.ole.planet.myplanet.repository
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
+import io.mockk.Runs
+import io.mockk.clearMocks
+import io.mockk.clearStaticMockk
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
+import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.junit.After
+import kotlinx.serialization.json.JsonObject as KJsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.room.dao.UserDao
+import org.ole.planet.myplanet.model.LearnerRegistrationInfo
+import org.ole.planet.myplanet.model.User
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
+import org.ole.planet.myplanet.utils.DeviceNameProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.VersionUtils
 import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserRepositoryImplTest {
 
-    private lateinit var databaseService: DatabaseService
     private lateinit var settings: SharedPreferences
     private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var apiInterface: ApiInterface
@@ -46,22 +67,54 @@ class UserRepositoryImplTest {
     private lateinit var configurationsRepository: ConfigurationsRepository
     private lateinit var appScope: CoroutineScope
     private lateinit var dispatcherProvider: DispatcherProvider
+    private lateinit var activitiesRepository: ActivitiesRepository
+    private lateinit var activitiesRepositoryLazy: Lazy<ActivitiesRepository>
+    private lateinit var resourcesRepository: ResourcesRepository
+    private lateinit var resourcesRepositoryLazy: Lazy<ResourcesRepository>
+    private lateinit var coursesRepository: CoursesRepository
+    private lateinit var coursesRepositoryLazy: Lazy<CoursesRepository>
+    private lateinit var eventsRepository: EventsRepository
+    private lateinit var eventsRepositoryLazy: Lazy<EventsRepository>
+    private lateinit var userDao: UserDao
+    private lateinit var deviceNameProvider: DeviceNameProvider
 
     private lateinit var repository: UserRepositoryImpl
 
     private val testDispatcher = StandardTestDispatcher()
 
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkObject(UrlUtils)
+            mockkObject(NetworkUtils)
+            mockkObject(SecurePrefs)
+            mockkStatic(Log::class)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkObject(UrlUtils)
+            unmockkObject(NetworkUtils)
+            unmockkObject(SecurePrefs)
+            unmockkStatic(Log::class)
+        }
+    }
+
     @Before
     fun setup() {
-        mockkObject(UrlUtils)
+        clearMocks(UrlUtils, NetworkUtils, SecurePrefs, answers = true, recordedCalls = true)
+        clearStaticMockk(Log::class)
+
         every { UrlUtils.header } returns "Basic auth"
         every { UrlUtils.getUrl() } returns "http://test.url"
 
-        mockkStatic(Log::class)
+        every { NetworkUtils.getUniqueIdentifier() } returns "mock_unique_id"
+
         every { Log.e(any(), any()) } returns 0
         every { Log.e(any(), any(), any()) } returns 0
 
-        databaseService = mockk(relaxed = true)
         settings = mockk(relaxed = true)
         sharedPrefManager = mockk(relaxed = true)
         apiInterface = mockk(relaxed = true)
@@ -70,33 +123,114 @@ class UserRepositoryImplTest {
         configurationsRepository = mockk(relaxed = true)
         appScope = TestScope(testDispatcher)
 
+        activitiesRepository = mockk(relaxed = true)
+        activitiesRepositoryLazy = mockk(relaxed = true)
+        every { activitiesRepositoryLazy.get() } returns activitiesRepository
+
+        resourcesRepository = mockk(relaxed = true)
+        resourcesRepositoryLazy = mockk(relaxed = true)
+        every { resourcesRepositoryLazy.get() } returns resourcesRepository
+        coEvery { resourcesRepository.getMyLibIds(any()) } returns com.google.gson.JsonArray()
+
+        coursesRepository = mockk(relaxed = true)
+        coursesRepositoryLazy = mockk(relaxed = true)
+        every { coursesRepositoryLazy.get() } returns coursesRepository
+        coEvery { coursesRepository.getMyCourseIds(any()) } returns com.google.gson.JsonArray()
+
+        eventsRepository = mockk(relaxed = true)
+        eventsRepositoryLazy = mockk(relaxed = true)
+        every { eventsRepositoryLazy.get() } returns eventsRepository
+
         dispatcherProvider = mockk(relaxed = true)
         every { dispatcherProvider.io } returns testDispatcher
         every { dispatcherProvider.main } returns testDispatcher
         every { dispatcherProvider.default } returns testDispatcher
         every { dispatcherProvider.unconfined } returns testDispatcher
 
+        userDao = mockk(relaxed = true)
+        deviceNameProvider = mockk(relaxed = true)
+
         repository = UserRepositoryImpl(
-            databaseService,
-            UnconfinedTestDispatcher(),
             settings,
             sharedPrefManager,
             apiInterface,
-            mockk(relaxed = true),
-            mockk(relaxed = true),
+            resourcesRepositoryLazy,
+            coursesRepositoryLazy,
             uploadToShelfService,
             context,
             configurationsRepository,
             appScope,
             dispatcherProvider,
-            mockk(relaxed = true)
+            activitiesRepositoryLazy,
+            eventsRepositoryLazy,
+            mockk(relaxed = true),
+            userDao,
+            mockk(relaxed = true),
+            deviceNameProvider
         )
     }
 
-    @After
-    fun tearDown() {
-        unmockkObject(UrlUtils)
-        unmockkStatic(Log::class)
+    @Test
+    fun `updateSecurityData preserves existing credentials when server response omits them`() = runTest(testDispatcher) {
+        val user = UserEntity().apply {
+            id = "123"
+            name = "john"
+            derived_key = "oldDerivedKey"
+            salt = "oldSalt"
+            password_scheme = "oldScheme"
+            iterations = "10000"
+        }
+        coEvery { userDao.getByName("john") } returns user
+        coEvery { userDao.getById("123") } returns user
+
+        repository.updateSecurityData("john", "userId", "rev", null, null, null, null)
+
+        val slot = slot<UserEntity>()
+        coVerify { userDao.upsert(capture(slot)) }
+        assertEquals("oldDerivedKey", slot.captured.derived_key)
+        assertEquals("oldSalt", slot.captured.salt)
+        assertEquals("oldScheme", slot.captured.password_scheme)
+        assertEquals("10000", slot.captured.iterations)
+        assertEquals("userId", slot.captured._id)
+        assertEquals("rev", slot.captured._rev)
+    }
+
+    @Test
+    fun `getDashboardProfile uses user name if fullName is blank`() = runTest(testDispatcher) {
+        val user = UserEntity().apply { name = "john"; firstName = "  "; lastName = "  " }
+        val spiedRepo = spyk(repository)
+        coEvery { spiedRepo.getUserById("123") } returns user
+        coEvery { activitiesRepository.getOfflineLoginCount("john") } returns 5
+
+        val result = spiedRepo.getDashboardProfile("123")
+
+        assertEquals("john", result.fullName)
+        assertEquals(5, result.offlineLogins)
+    }
+
+    @Test
+    fun `getDashboardProfile handles null user`() = runTest(testDispatcher) {
+        val spiedRepo = spyk(repository)
+        coEvery { spiedRepo.getUserById("123") } returns null
+
+        val result = spiedRepo.getDashboardProfile("123")
+
+        assertEquals(null, result.fullName)
+        assertEquals(0, result.offlineLogins)
+        coVerify(exactly = 0) { activitiesRepository.getOfflineLoginCount(any()) }
+    }
+
+    @Test
+    fun `getDashboardProfile handles null user name`() = runTest(testDispatcher) {
+        val user = UserEntity().apply { name = null; firstName = "John"; lastName = "Doe" }
+        val spiedRepo = spyk(repository)
+        coEvery { spiedRepo.getUserById("123") } returns user
+
+        val result = spiedRepo.getDashboardProfile("123")
+
+        assertEquals("John Doe", result.fullName)
+        assertEquals(0, result.offlineLogins)
+        coVerify(exactly = 0) { activitiesRepository.getOfflineLoginCount(any()) }
     }
 
     @Test
@@ -110,7 +244,7 @@ class UserRepositoryImplTest {
         every { context.getString(R.string.unable_to_create_user_user_already_exists) } returns errorMessage
 
         // Mock API response to simulate user already exists
-        val existsResponseBody = JsonObject().apply { addProperty("_id", "some_id") }
+        val existsResponseBody = buildJsonObject { put("_id", "some_id") }
         val response = Response.success(existsResponseBody)
         coEvery { apiInterface.getJsonObject("Basic auth", userUrl) } returns response
 
@@ -133,26 +267,28 @@ class UserRepositoryImplTest {
         every { context.getString(R.string.user_created_successfully) } returns successMessage
 
         // 1. User doesn't exist check
-        val notExistsResponseBody = JsonObject()
+        val notExistsResponseBody = KJsonObject(emptyMap())
         val notFoundResponse = Response.success(notExistsResponseBody)
         coEvery { apiInterface.getJsonObject("Basic auth", userUrl) } returns notFoundResponse
 
         // 2. User creation mock
-        val createdResponseBody = JsonObject().apply { addProperty("id", id) }
+        val createdResponseBody = buildJsonObject { put("id", id) }
         val createdResponse = Response.success(createdResponseBody)
-        coEvery { apiInterface.putDoc(null, "application/json", userUrl, userObj) } returns createdResponse
+        coEvery {
+            apiInterface.putDoc(null, "application/json", userUrl, buildJsonObject { put("name", userName) })
+        } returns createdResponse
 
         // 3. User save to db fetch
         val userFetchUrl = "http://test.url/_users/$id"
-        val userFetchResponse = Response.success(JsonObject().apply {
-            addProperty("_id", id)
-            addProperty("name", userName)
+        val userFetchResponse = Response.success(buildJsonObject {
+            put("_id", id)
+            put("name", userName)
         })
         coEvery { apiInterface.getJsonObject("Basic auth", userFetchUrl) } returns userFetchResponse
 
-        // Stub saveUser to return a mocked RealmUser instead of attempting DB operations
+        // Stub saveUser to return a mocked UserEntity instead of attempting DB operations
         val spyRepository = spyk(repository)
-        val mockRealmUser = mockk<org.ole.planet.myplanet.model.RealmUser>(relaxed = true)
+        val mockRealmUser = mockk<UserEntity>(relaxed = true)
         coEvery { spyRepository.saveUser(any(), any(), any()) } returns mockRealmUser
 
         val result = spyRepository.becomeMember(userObj)
@@ -164,14 +300,7 @@ class UserRepositoryImplTest {
 
     @Test
     fun `hasAtLeastOneUser returns true when user exists`() = runTest {
-        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
-        val mockRealmQuery = mockk<io.realm.RealmQuery<org.ole.planet.myplanet.model.RealmUser>>()
-        coEvery { databaseService.withRealmAsync<Boolean>(any()) } answers {
-            val block = firstArg<(io.realm.Realm) -> Boolean>()
-            block(mockRealm)
-        }
-        every { mockRealm.where(org.ole.planet.myplanet.model.RealmUser::class.java) } returns mockRealmQuery
-        every { mockRealmQuery.findFirst() } returns mockk()
+        coEvery { userDao.count() } returns 1
 
         val result = repository.hasAtLeastOneUser()
         assertEquals(true, result)
@@ -179,16 +308,363 @@ class UserRepositoryImplTest {
 
     @Test
     fun `hasAtLeastOneUser returns false when no user exists`() = runTest {
-        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
-        val mockRealmQuery = mockk<io.realm.RealmQuery<org.ole.planet.myplanet.model.RealmUser>>()
-        coEvery { databaseService.withRealmAsync<Boolean>(any()) } answers {
-            val block = firstArg<(io.realm.Realm) -> Boolean>()
-            block(mockRealm)
-        }
-        every { mockRealm.where(org.ole.planet.myplanet.model.RealmUser::class.java) } returns mockRealmQuery
-        every { mockRealmQuery.findFirst() } returns null
+        coEvery { userDao.count() } returns 0
 
         val result = repository.hasAtLeastOneUser()
         assertEquals(false, result)
+    }
+
+    @Test
+    fun `upsertSavedUser adds a new guest`() = runTest {
+        every { sharedPrefManager.getSavedUsers() } returns emptyList()
+        val savedSlot = slot<List<User>>()
+        every { sharedPrefManager.setSavedUsers(capture(savedSlot)) } just Runs
+
+        repository.upsertSavedUser("guest1", "encrypted", "guest", null, null)
+
+        assertEquals(1, savedSlot.captured.size)
+        assertEquals("guest1", savedSlot.captured[0].name)
+        assertEquals("guest", savedSlot.captured[0].source)
+    }
+
+    @Test
+    fun `upsertSavedUser replaces existing guest with the same name`() = runTest {
+        val existing = User("", "guest1", "oldPwd", "", "guest")
+        every { sharedPrefManager.getSavedUsers() } returns listOf(existing)
+        val savedSlot = slot<List<User>>()
+        every { sharedPrefManager.setSavedUsers(capture(savedSlot)) } just Runs
+
+        repository.upsertSavedUser("guest1", "newPwd", "guest", null, null)
+
+        assertEquals(1, savedSlot.captured.size)
+        assertEquals("newPwd", savedSlot.captured[0].password)
+    }
+
+    @Test
+    fun `upsertSavedUser replaces existing member with the same username`() = runTest {
+        val existing = User("user1", "Full Name", "oldPwd", "old.jpg", "member")
+        every { sharedPrefManager.getSavedUsers() } returns listOf(existing)
+        val savedSlot = slot<List<User>>()
+        every { sharedPrefManager.setSavedUsers(capture(savedSlot)) } just Runs
+
+        repository.upsertSavedUser("Full Name", "newPwd", "member", "new.jpg", "user1")
+
+        assertEquals(1, savedSlot.captured.size)
+        assertEquals("newPwd", savedSlot.captured[0].password)
+        assertEquals("new.jpg", savedSlot.captured[0].image)
+    }
+
+    @Test
+    fun `resetGuestAsMember removes saved users matching the username`() = runTest {
+        val guest = User("", "guest1", "pwd", "", "guest")
+        val other = User("Full Name", "user2", "pwd", "", "member")
+        every { sharedPrefManager.getSavedUsers() } returns listOf(guest, other)
+        val savedSlot = slot<List<User>>()
+        every { sharedPrefManager.setSavedUsers(capture(savedSlot)) } just Runs
+
+        repository.resetGuestAsMember("guest1")
+
+        assertEquals(listOf(other), savedSlot.captured)
+    }
+
+    @Test
+    fun `resetGuestAsMember does nothing when the username is not saved`() = runTest {
+        every { sharedPrefManager.getSavedUsers() } returns listOf(User("Full Name", "user2", "pwd", "", "member"))
+        repository.resetGuestAsMember("guest1")
+        verify(exactly = 0) { sharedPrefManager.setSavedUsers(any()) }
+    }
+
+    @Test
+    fun `getCurrentUserId returns sharedPrefManager userId when non-blank`() = runTest {
+        every { sharedPrefManager.getUserId() } returns "pref_user_id"
+
+        val result = repository.getCurrentUserId()
+
+        assertEquals("pref_user_id", result)
+    }
+
+    @Test
+    fun `getCurrentUserId returns null when preference is blank`() = runTest {
+        every { sharedPrefManager.getUserId() } returns "   "
+
+        val result = repository.getCurrentUserId()
+
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun `upsertSavedUser ignores unknown sources`() = runTest {
+        every { sharedPrefManager.getSavedUsers() } returns emptyList()
+
+        repository.upsertSavedUser("someone", "pwd", "unknown", null, null)
+
+        verify(exactly = 0) { sharedPrefManager.setSavedUsers(any()) }
+    }
+
+    @Test
+    fun `updateProfileFields updates valid profile fields`() = runTest(testDispatcher) {
+        val user = UserEntity().apply {
+            id = "user1"
+            firstName = "OriginalFirst"
+            lastName = "OriginalLast"
+        }
+        coEvery { userDao.getById("user1") } returns user
+
+        val update = ProfileFieldsUpdate(
+            firstName = "NewFirst",
+            lastName = "NewLast",
+            email = "test@example.com"
+        )
+        repository.updateProfileFields("user1", update)
+
+        val slot = slot<UserEntity>()
+        coVerify { userDao.upsert(capture(slot)) }
+        assertEquals("NewFirst", slot.captured.firstName)
+        assertEquals("NewLast", slot.captured.lastName)
+        assertEquals("test@example.com", slot.captured.email)
+        assertEquals(true, slot.captured.isUpdated)
+    }
+
+    @Test
+    fun `searchUsers escapes LIKE wildcards before querying`() = runTest(testDispatcher) {
+        coEvery { userDao.search(any()) } returns emptyList()
+
+        repository.searchUsers("100%_a\\b", "joinDate", true)
+
+        val slot = slot<String>()
+        coVerify { userDao.search(capture(slot)) }
+        assertEquals("%100\\%\\_a\\\\b%", slot.captured)
+    }
+
+    @Test
+    fun `searchUsers leaves a plain query unchanged apart from surrounding wildcards`() = runTest(testDispatcher) {
+        coEvery { userDao.search(any()) } returns emptyList()
+
+        repository.searchUsers("john", "joinDate", true)
+
+        val slot = slot<String>()
+        coVerify { userDao.search(capture(slot)) }
+        assertEquals("%john%", slot.captured)
+    }
+
+    @Test
+    fun `createMember carries deviceNameProvider device name and injected context android id`() = runTest(testDispatcher) {
+        mockkObject(VersionUtils)
+        every { VersionUtils.getAndroidId(any()) } returns "mock_android_id"
+        every { deviceNameProvider.getCustomDeviceName() } returns "mock_device_name"
+
+        val spyRepository = spyk(repository)
+        val jsonSlot = slot<JsonObject>()
+        coEvery { spyRepository.becomeMember(capture(jsonSlot)) } returns Pair(true, "success")
+
+        val memberInfo = LearnerRegistrationInfo(
+            username = "testuser",
+            password = "password123",
+            rePassword = "password123",
+            fName = "John",
+            lName = "Doe",
+            mName = "M",
+            email = "test@example.com",
+            language = "en",
+            level = "1",
+            phoneNumber = "123456",
+            birthDate = "2000-01-01",
+            gender = "male"
+        )
+
+        spyRepository.createMember(memberInfo)
+
+        val builtJson = jsonSlot.captured
+        assertEquals("mock_android_id", builtJson.get("uniqueAndroidId").asString)
+        assertEquals("mock_device_name", builtJson.get("customDeviceName").asString)
+        verify { VersionUtils.getAndroidId(context) }
+        verify { deviceNameProvider.getCustomDeviceName() }
+
+        unmockkObject(VersionUtils)
+    }
+
+    @Test
+    fun `updateProfileFields handles empty update objects and leaves fields untouched while setting isUpdated true`() = runTest(testDispatcher) {
+        val user = UserEntity().apply {
+            id = "user1"
+            firstName = "OriginalFirst"
+            lastName = "OriginalLast"
+        }
+        coEvery { userDao.getById("user1") } returns user
+
+        val update = ProfileFieldsUpdate()
+        repository.updateProfileFields("user1", update)
+
+        val slot = slot<UserEntity>()
+        coVerify { userDao.upsert(capture(slot)) }
+        assertEquals("OriginalFirst", slot.captured.firstName)
+        assertEquals("OriginalLast", slot.captured.lastName)
+        assertEquals(true, slot.captured.isUpdated)
+    }
+
+    @Test
+    fun `getAchievementData calls resourcesRepository getLibraryItemsByIds`() = runTest(testDispatcher) {
+        val achievement = org.ole.planet.myplanet.model.Achievement().apply {
+            _id = "user1@planet1"
+            achievements = listOf("{\"resources\":[{\"_id\":\"res1\"},{\"_id\":\"res2\"}]}")
+        }
+        val achievementDao = mockk<org.ole.planet.myplanet.data.room.dao.AchievementDao>(relaxed = true)
+        coEvery { achievementDao.getById("user1@planet1") } returns achievement
+
+        val repo = UserRepositoryImpl(
+            settings, sharedPrefManager, apiInterface, resourcesRepositoryLazy,
+            mockk(relaxed = true), uploadToShelfService, context, configurationsRepository,
+            appScope, dispatcherProvider, activitiesRepositoryLazy, eventsRepositoryLazy,
+            achievementDao, userDao,
+            mockk(relaxed = true), deviceNameProvider
+        )
+
+        repo.getAchievementData("user1", "planet1")
+
+        coVerify { resourcesRepository.getLibraryItemsByIds(listOf("res1", "res2")) }
+    }
+
+    @Test
+    fun `bulkInsertAchievementsFromSync keeps achievements edited locally but not yet uploaded`() = runTest(testDispatcher) {
+        val achievementDao = mockk<org.ole.planet.myplanet.data.room.dao.AchievementDao>(relaxed = true)
+        coEvery { achievementDao.getUpdatedIds() } returns listOf("user1@planet1")
+
+        val repo = UserRepositoryImpl(
+            settings, sharedPrefManager, apiInterface, resourcesRepositoryLazy,
+            mockk(relaxed = true), uploadToShelfService, context, configurationsRepository,
+            appScope, dispatcherProvider, activitiesRepositoryLazy, eventsRepositoryLazy,
+            achievementDao, userDao,
+            mockk(relaxed = true), deviceNameProvider
+        )
+        val jsonArray = JsonArray().apply {
+            listOf("user1@planet1", "user2@planet1").forEach { achievementId ->
+                add(JsonObject().apply {
+                    add("doc", JsonObject().apply { addProperty("_id", achievementId) })
+                })
+            }
+        }
+
+        repo.bulkInsertAchievementsFromSync(jsonArray)
+
+        coVerify(exactly = 1) {
+            achievementDao.upsertAll(match { it.map { achievement -> achievement._id } == listOf("user2@planet1") })
+        }
+    }
+
+    @Test
+    fun `uploadShelfData calls eventsRepository getMeetupsForUser`() = runTest(testDispatcher) {
+        val user = UserEntity().apply {
+            id = "user1"
+            _id = "org.couchdb.user:user1"
+        }
+        val response = Response.success(buildJsonObject { put("_rev", "1-abc") })
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns response
+        coEvery { eventsRepository.getMeetupsForUser("user1") } returns emptyList()
+
+        repository.uploadShelfData(user)
+
+        coVerify { eventsRepository.getMeetupsForUser("user1") }
+    }
+
+    @Test
+    fun `checkIfUserExists properly encodes password containing special characters`() = runTest(testDispatcher) {
+        every { SecurePrefs.getPassword(context, settings) } returns "p\$a@s\\s"
+        every { UrlUtils.getUrl() } returns "http://admin:secret@localhost:5984"
+
+        val urlSlot = slot<String>()
+        coEvery { apiInterface.getJsonObject(any(), capture(urlSlot)) } returns Response.success(buildJsonObject { put("ok", true) })
+
+        val user = UserEntity().apply { name = "john" }
+        repository.checkIfUserExists("Basic auth", user)
+
+        assertTrue("URL missing %24", urlSlot.captured.contains("%24"))
+        assertTrue("URL missing %40", urlSlot.captured.contains("%40"))
+        assertTrue("URL missing %5C", urlSlot.captured.contains("%5C"))
+
+        val hostAfterAt = urlSlot.captured.substringAfterLast("@")
+        val expectedHostPath = "localhost:5984/_users/org.couchdb.user:john"
+        assertTrue("Host after last @ mismatch", hostAfterAt == expectedHostPath)
+    }
+
+    @Test
+    fun `checkIfUserExists matches expected URL output for plain alphanumeric password`() = runTest(testDispatcher) {
+        every { SecurePrefs.getPassword(context, settings) } returns "plainpass123"
+        every { UrlUtils.getUrl() } returns "http://admin:secret@localhost:5984"
+
+        val urlSlot = slot<String>()
+        coEvery { apiInterface.getJsonObject(any(), capture(urlSlot)) } returns Response.success(buildJsonObject { put("ok", true) })
+
+        val user = UserEntity().apply { name = "john" }
+        repository.checkIfUserExists("Basic auth", user)
+
+        val expectedUrl = "http://john:plainpass123@localhost:5984/_users/org.couchdb.user:john"
+        val matches = urlSlot.captured == expectedUrl
+        assertTrue("URL mismatch for plain password", matches)
+    }
+
+    @Test
+    fun `checkAndUploadUser skips a user whose credentials are not on the device`() = runTest(testDispatcher) {
+        every { SecurePrefs.getUserName(context, settings) } returns "alice"
+        every { SecurePrefs.getPassword(context, settings) } returns "alicePassword"
+        val bob = UserEntity().apply { name = "bob"; isUpdated = true }
+
+        repository.checkAndUploadUser(bob, "alicePassword") { _, _ -> }
+
+        coVerify(exactly = 0) { apiInterface.getJsonObject(any(), any()) }
+        coVerify(exactly = 0) { apiInterface.putDoc(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `checkAndUploadUser does not create the user when the existence check is unauthorized`() = runTest(testDispatcher) {
+        every { SecurePrefs.getUserName(context, settings) } returns "bob"
+        every { SecurePrefs.getPassword(context, settings) } returns "stalePassword"
+        every { UrlUtils.getUrl() } returns "http://admin:secret@localhost:5984"
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns
+            Response.error(401, "{}".toResponseBody("application/json".toMediaTypeOrNull()))
+        val bob = UserEntity().apply { name = "bob"; isUpdated = true }
+
+        repository.checkAndUploadUser(bob, "stalePassword") { _, _ -> }
+
+        coVerify(exactly = 0) { apiInterface.putDoc(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `fetchUserSecurityData rethrows CancellationException`() = runTest(testDispatcher) {
+        coEvery { apiInterface.getJsonObject(any(), any()) } throws CancellationException("Cancelled")
+
+        try {
+            repository.fetchUserSecurityData("john")
+            org.junit.Assert.fail("Expected CancellationException")
+        } catch (e: CancellationException) {
+            assertEquals("Cancelled", e.message)
+        }
+    }
+
+    @Test
+    fun `fetchUserSecurityData logs error on Exception without leaking credentials`() = runTest(testDispatcher) {
+        every { UrlUtils.getUrl() } returns "http://satellite:1234@test.host"
+        coEvery { apiInterface.getJsonObject(any(), any()) } throws java.io.IOException("Network error")
+
+        repository.fetchUserSecurityData("bob")
+
+        val tagSlot = slot<String>()
+        val msgSlot = slot<String>()
+        val errSlot = slot<Throwable>()
+        verify { Log.e(capture(tagSlot), capture(msgSlot), capture(errSlot)) }
+
+        assertEquals("UserRepositoryImpl", tagSlot.captured)
+
+        val capturedMessages = mutableListOf<String>()
+        val msgSlot2 = slot<String>()
+
+        verify { Log.e(any(), capture(msgSlot2), any()) }
+        capturedMessages.add(msgSlot2.captured)
+
+        // Assert no logged message contains credentials or sensitive URL tokens
+        capturedMessages.forEach { msg ->
+            assertFalse("Log message contains sensitive credential '1234': $msg", msg.contains("1234"))
+            assertFalse("Log message contains sensitive credential 'satellite': $msg", msg.contains("satellite"))
+            assertFalse("Log message contains host 'test.host': $msg", msg.contains("test.host"))
+        }
     }
 }

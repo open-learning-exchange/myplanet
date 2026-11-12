@@ -1,21 +1,25 @@
 package org.ole.planet.myplanet.base
 
 import android.os.Build
-import androidx.recyclerview.widget.ListAdapter
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.RealmObject
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.ui.resources.DownloadOfferTracker
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities.toast
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
@@ -31,14 +35,15 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     lateinit var tvFragmentInfo: TextView
     var tvDelete: TextView? = null
     var list: MutableList<LI>? = null
-    var resources: List<RealmMyLibrary>? = null
+    var resources: List<MyLibrary>? = null
     var courseLib: String? = null
     private var isAddInProgress = false
 
+    var adapterFactory: BaseAdapterFactory? = null
 
     abstract fun getLayout(): Int
 
-    abstract suspend fun getAdapter(): androidx.recyclerview.widget.ListAdapter<*, *>
+    abstract suspend fun getAdapter(): ListAdapter<*, *>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,10 +52,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             courseLib = it.getString("courseLib")
             @Suppress("UNCHECKED_CAST")
             resources = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                it.getSerializable("resources", ArrayList::class.java) as? ArrayList<RealmMyLibrary>
+                it.getSerializable("resources", ArrayList::class.java) as? ArrayList<MyLibrary>
             } else {
                 @Suppress("DEPRECATION")
-                it.getSerializable("resources") as? ArrayList<RealmMyLibrary>
+                it.getSerializable("resources") as? ArrayList<MyLibrary>
             }
         }
     }
@@ -74,20 +79,34 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         super.onViewCreated(view, savedInstanceState)
         postponeEnterTransition()
         viewLifecycleOwner.lifecycleScope.launch {
-            model = profileDbHandler.getUserModel()
+            model = userRepository.getUserModel()
             val adapter = getAdapter()
-            recyclerView.adapter = adapter
+            if (recyclerView.adapter != adapter) {
+                recyclerView.adapter = adapter
+            }
             if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
-                resources?.let { showDownloadDialog(it) }
-            } else if (isMyCourseLib && courseLib == null && !isSurvey) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    val userId = sharedPrefManager.getUserId().ifEmpty { "--" }
-                    val libraryList = resourcesRepository.getLibraryListForUser(userId)
-                    showDownloadDialog(libraryList)
+                if (shouldShowDownloadDialog) {
+                    resources?.let { offerDownloads(it) }
                 }
             }
             startPostponedEnterTransition()
             requireActivity().reportFullyDrawn()
+
+            if (isMyCourseLib && courseLib == null && !isSurvey) {
+                if (shouldShowDownloadDialog) {
+                    val userId = sharedPrefManager.getUserId().ifEmpty { "--" }
+                    val libraryList = resourcesRepository.getLibraryListForUser(userId)
+                    offerDownloads(libraryList)
+                }
+            }
+        }
+    }
+
+    private fun offerDownloads(libraries: List<MyLibrary?>) {
+        val userId = sharedPrefManager.getUserId().ifEmpty { "--" }
+        val ids = libraries.mapNotNull { it?.resourceId ?: it?.id }
+        if (ids.isNotEmpty() && DownloadOfferTracker.shouldOffer(userId, ids)) {
+            showDownloadDialog(libraries)
         }
     }
 
@@ -104,79 +123,99 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     override fun onRatingChanged() {
         viewLifecycleOwner.lifecycleScope.launch {
-            recyclerView.adapter = getAdapter()
+            val adapter = getAdapter()
+            if (recyclerView.adapter != adapter) {
+                recyclerView.adapter = adapter
+            }
         }
     }
 
-    open fun addToMyList() {
-        if (isAddInProgress) return
+    open fun addToMyList(onComplete: ((succeeded: Boolean) -> Unit)? = null) {
+        if (isAddInProgress) {
+            onComplete?.invoke(false)
+            return
+        }
 
         val itemsToAdd = selectedItems?.toList() ?: emptyList()
-        if (itemsToAdd.isEmpty()) return
+        if (itemsToAdd.isEmpty()) {
+            onComplete?.invoke(false)
+            return
+        }
 
         val resourceIds = mutableListOf<String>()
         val courseIds = mutableListOf<String>()
 
         itemsToAdd.forEach { item ->
-            when (val realmObject = item as? RealmObject) {
-                is RealmMyLibrary -> realmObject.resourceId?.let(resourceIds::add)
-                is RealmMyCourse -> realmObject.courseId?.let(courseIds::add)
+            when (item) {
+                is MyLibrary -> (item.resourceId.takeIf { !it.isNullOrBlank() } ?: item.id.takeIf { it.isNotBlank() } ?: item._id)?.let(resourceIds::add)
+                is MyCourse -> (item.courseId.takeIf { !it.isNullOrBlank() } ?: item.id.takeIf { it.isNotBlank() } ?: item._id)?.let(courseIds::add)
                 else -> {}
             }
         }
 
-        if (resourceIds.isEmpty() && courseIds.isEmpty()) return
+        if (resourceIds.isEmpty() && courseIds.isEmpty()) {
+            onComplete?.invoke(false)
+            return
+        }
 
         isAddInProgress = true
         setJoinInProgress(true)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val userId = profileDbHandler.getUserModel()?.id ?: return@launch
-            var libraryAdded = false
-            var courseAdded = false
-            var errorOccurred: Throwable? = null
+            var succeeded = false
+            try {
+                val userId = userRepository.getUserModel()?.id ?: return@launch
+                var libraryAdded = false
+                var courseAdded = false
+                var errorOccurred: Throwable? = null
 
-            if (resourceIds.isNotEmpty()) {
-                val libraryResult = resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
-                libraryResult.onSuccess {
-                    libraryAdded = true
-                }.onFailure {
-                    errorOccurred = it
-                }
-            }
-
-            if (courseIds.isNotEmpty()) {
-                val courseResult = coursesRepository.markCoursesAdded(courseIds, userId)
-                courseResult.onSuccess { added ->
-                    if (added) {
-                        courseAdded = true
+                if (resourceIds.isNotEmpty()) {
+                    val libraryResult = resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
+                    libraryResult.onSuccess {
+                        libraryAdded = true
+                    }.onFailure {
+                        errorOccurred = it
                     }
-                }.onFailure {
-                    errorOccurred = it
                 }
+
+                if (courseIds.isNotEmpty()) {
+                    val courseResult = coursesRepository.markCoursesAdded(courseIds, userId)
+                    courseResult.onSuccess { added ->
+                        if (added) {
+                            courseAdded = true
+                        }
+                    }.onFailure {
+                        errorOccurred = it
+                    }
+                }
+
+                if (view == null || !isAdded || requireActivity().isFinishing) return@launch
+
+                postAddRefresh()
+
+                errorOccurred?.let {
+                    if (it is CancellationException) throw it
+                    Log.w(TAG, "addToMyList failed", it)
+                    toast(activity, "An error occurred: ${it.message}")
+                    return@launch
+                }
+
+                if (libraryAdded) toast(activity, getString(R.string.added_to_my_library))
+                if (courseAdded) toast(activity, getString(R.string.added_to_my_courses))
+                succeeded = true
+            } finally {
+                isAddInProgress = false
+                setJoinInProgress(false)
+                onComplete?.invoke(succeeded)
             }
-
-            isAddInProgress = false
-            setJoinInProgress(false)
-
-            if (view == null || !isAdded || requireActivity().isFinishing) return@launch
-
-            postAddRefresh()
-
-            errorOccurred?.let {
-                it.printStackTrace()
-                toast(activity, "An error occurred: ${it.message}")
-                return@launch
-            }
-
-            if (libraryAdded) toast(activity, getString(R.string.added_to_my_library))
-            if (courseAdded) toast(activity, getString(R.string.added_to_my_courses))
         }
     }
 
     protected open suspend fun postAddRefresh() {
         val newAdapter = getAdapter()
-        recyclerView.adapter = newAdapter
+        if (recyclerView.adapter != newAdapter) {
+            recyclerView.adapter = newAdapter
+        }
         showNoData(tvMessage, newAdapter.itemCount, "")
     }
 
@@ -193,40 +232,29 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    open suspend fun deleteSelected(deleteProgress: Boolean) {
+    open fun deleteSelected(deleteProgress: Boolean) {
         val snapshot = selectedItems?.toList() ?: return
+        val courseIdsToDelete = mutableListOf<String>()
         for (item in snapshot) {
-            val `object` = item as RealmObject
-            deleteCourseProgress(deleteProgress, `object`)
-            removeFromShelf(`object`)
+            if (deleteProgress && item is MyCourse) {
+                item.courseId?.let { courseIdsToDelete.add(it) }
+            }
+            item?.let { removeFromShelf(it) }
+        }
+
+        if (courseIdsToDelete.isNotEmpty()) {
+            viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
+                coursesRepository.deleteCoursesProgress(courseIdsToDelete)
+            }
         }
         selectedItems?.clear()
     }
 
-    fun countSelected(): Int {
-        return selectedItems?.size ?: 0
-    }
-
-    private suspend fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
-        if (deleteProgress && `object` is RealmMyCourse) {
-            coursesRepository.deleteCourseProgress(`object`.courseId)
+    override fun onDestroyView() {
+        super.onDestroyView()
+        if (::recyclerView.isInitialized) {
+            recyclerView.adapter = null
         }
-    }
-
-    fun applyFilter(libraries: List<RealmMyLibrary>): List<RealmMyLibrary> {
-        val newList: MutableList<RealmMyLibrary> = ArrayList()
-        for (l in libraries) {
-            if (isValidFilter(l)) newList.add(l)
-        }
-        return newList
-    }
-
-    private fun isValidFilter(l: RealmMyLibrary): Boolean {
-        val sub = subjects.isEmpty() || subjects.let { l.subject?.containsAll(it) } == true
-        val lev = levels.isEmpty() || l.level?.containsAll(levels) == true
-        val lan = languages.isEmpty() || languages.contains(l.language)
-        val med = mediums.isEmpty() || mediums.contains(l.mediaType)
-        return sub && lev && lan && med
     }
 
     override fun onDetach() {
@@ -243,8 +271,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     companion object {
+        private const val TAG = "BaseRecyclerFragment"
         private val noDataMessages = mapOf(
             "courses" to R.string.no_courses,
+            "courses_filtered" to R.string.no_results_for_filter,
             "resources" to R.string.no_resources,
             "resources_filtered" to R.string.no_results_for_filter,
             "finances" to R.string.no_finance_record,
@@ -258,6 +288,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             "survey" to R.string.no_surveys,
             "survey_submission" to R.string.no_survey_submissions,
             "exam_submission" to R.string.no_exam_submissions,
+            "submissions_filtered" to R.string.no_results_for_filter,
             "team" to R.string.no_teams,
             "enterprise" to R.string.no_enterprise,
             "chatHistory" to R.string.no_chats,
@@ -272,13 +303,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 ?: R.string.no_data_available_please_check_and_try_again
             val textView = v as? TextView ?: v.findViewById(R.id.tv_empty_message)
             textView.setText(messageRes)
-        }
-
-        fun showNoFilter(v: View?, count: Int) {
-            v ?: return
-            v.visibility = if (count == 0) View.VISIBLE else View.GONE
-            val textView = v as? TextView ?: v.findViewById(R.id.tv_empty_message)
-            textView.setText(R.string.no_course_matched_filter)
         }
     }
 }

@@ -10,6 +10,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Qualifier
 import javax.inject.Singleton
+import kotlinx.serialization.json.Json
+import org.ole.planet.myplanet.repository.LifeCache
+import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 
 @Qualifier
@@ -46,6 +49,15 @@ object SharedPreferencesModule {
     @Singleton
     @DownloadPreferences
     fun provideDownloadSharedPreferences(@ApplicationContext context: Context): SharedPreferences {
-        return context.getSharedPreferences(org.ole.planet.myplanet.services.DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+        return context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+    }
+
+    @Provides
+    @Singleton
+    fun provideLifeCache(
+        @AppPreferences preferences: SharedPreferences,
+        json: Json
+    ): LifeCache {
+        return LifeCache(preferences, json)
     }
 }
