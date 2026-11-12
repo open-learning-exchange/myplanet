@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 
 sealed interface RatingPromptDecision {
     object Show : RatingPromptDecision
@@ -41,7 +41,7 @@ class TakeCourseViewModel @Inject constructor(
     private val coursesRepository: CoursesRepository,
     private val activitiesRepository: ActivitiesRepository,
     private val progressRepository: ProgressRepository,
-    private val userRepository: UserRepository,
+    private val userRepository: UserReadRepository,
     private val ratingsRepository: RatingsRepository
 ) : ViewModel() {
 
