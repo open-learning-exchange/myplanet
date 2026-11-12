@@ -14,13 +14,15 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.callback.OnSuccessListener
+import org.ole.planet.myplanet.repository.HealthRepository
 
 @HiltWorker
 class UserDataWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted workerParams: WorkerParameters,
     private val uploadManager: UploadManager,
-    private val uploadToShelfService: UploadToShelfService
+    private val uploadToShelfService: UploadToShelfService,
+    private val healthRepository: HealthRepository
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result = coroutineScope {
@@ -53,11 +55,12 @@ class UserDataWorker @AssistedInject constructor(
                 runCatchingRethrowCancellation {
                     awaitUploadCompletion { onComplete ->
                         uploadToShelfService.uploadUserData {
-                            uploadToShelfService.uploadHealth()
                             onComplete()
                         }
                     }
                 }
+
+                runCatchingRethrowCancellation { healthRepository.syncPendingHealthExaminations() }
 
                 runCatchingRethrowCancellation {
                     awaitUploadCompletion { onComplete ->
