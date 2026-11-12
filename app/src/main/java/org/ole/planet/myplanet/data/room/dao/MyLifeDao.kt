@@ -55,22 +55,15 @@ interface MyLifeDao {
         return ids.distinct().chunked(900).flatMap { getByIdsInternal(it) }
     }
 
-    @Query("SELECT _id FROM my_life WHERE _id = :id")
-    suspend fun getIdsByIdInternal(id: String): List<String>
-
     @Query("SELECT _id FROM my_life WHERE imageId = :id OR title = :id")
     suspend fun getIdsByAliasInternal(id: String): List<String>
 
     @Query("UPDATE my_life SET isVisible = :isVisible WHERE _id = :id")
-    suspend fun updateVisibilityByIdInternal(id: String, isVisible: Boolean)
+    suspend fun updateVisibilityByIdInternal(id: String, isVisible: Boolean): Int
 
     @Transaction
     suspend fun updateVisibility(id: String, isVisible: Boolean) {
-        val exactMatches = getIdsByIdInternal(id)
-        if (exactMatches.isNotEmpty()) {
-            updateVisibilityByIdInternal(id, isVisible)
-            return
-        }
+        if (updateVisibilityByIdInternal(id, isVisible) > 0) return
         val aliasMatches = getIdsByAliasInternal(id)
         if (aliasMatches.size == 1) {
             updateVisibilityByIdInternal(aliasMatches[0], isVisible)
