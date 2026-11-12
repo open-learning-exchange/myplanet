@@ -6,7 +6,9 @@ import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
 import android.widget.EditText
+import android.widget.Spinner
 import android.widget.TextView
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
@@ -20,11 +22,12 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.DuplicateResourceTitleException
 import org.ole.planet.myplanet.repository.LocalResourceRequest
-import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
+import org.ole.planet.myplanet.ui.courses.CoursesFilterFragment
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.Utilities.toast
@@ -34,10 +37,7 @@ import org.ole.planet.myplanet.utils.setupHintSpinner
 class AddResourceActivity : AppCompatActivity() {
     @Inject
     lateinit var userSessionManager: UserSessionManager
-    @Inject
-    lateinit var resourcesRepository: ResourcesRepository
-    @Inject
-    lateinit var teamsRepository: TeamsRepository
+    private val viewModel: ResourcesEditorViewModel by viewModels()
     private lateinit var binding: ActivityAddResourceBinding
     var userModel: UserEntity? = null
     var subjects: MutableList<String>? = null
@@ -78,6 +78,13 @@ class AddResourceActivity : AppCompatActivity() {
             userModel = userSessionManager.getUserModel()
             binding.tvAddedBy.text = userModel?.name
         }
+        lifecycleScope.launch {
+            viewModel.isTitleDuplicate.collect { isDuplicate ->
+                if (isDuplicate) {
+                    binding.tlTitle.error = getString(R.string.resource_title_already_exists)
+                }
+            }
+        }
     }
 
     private fun setupPrivateResourceCheckbox() {
@@ -91,13 +98,13 @@ class AddResourceActivity : AppCompatActivity() {
         etYear.setText(currentYear.toString())
         binding.fileUrl.text = getString(R.string.file, resourceUrl)
         binding.tvLevels.setOnClickListener { view: View ->
-            showMultiSelectList(resources.getStringArray(R.array.array_levels), levels, view,getString(R.string.levels))
+            showMultiSelectList(R.array.array_levels, levels, view,getString(R.string.levels))
         }
         binding.tvSubject.setOnClickListener { view: View ->
-            showMultiSelectList(resources.getStringArray(R.array.array_subjects), subjects, view,getString(R.string.subject))
+            showMultiSelectList(R.array.array_subjects, subjects, view,getString(R.string.subject))
         }
         binding.tvResourceFor.setOnClickListener { view: View ->
-            showMultiSelectList(resources.getStringArray(R.array.array_resource_for), resourceFor, view,getString(R.string.resource_for))
+            showMultiSelectList(R.array.array_resource_for, resourceFor, view,getString(R.string.resource_for))
         }
         binding.spnLang.setupHintSpinner(getString(R.string.language), resources.getStringArray(R.array.language))
         binding.spnOpenWith.setupHintSpinner(getString(R.string.select_open_with), resources.getStringArray(R.array.open_With))
@@ -106,15 +113,12 @@ class AddResourceActivity : AppCompatActivity() {
         binding.etTitle.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) {
                 binding.tlTitle.error = null
+                viewModel.resetTitleCheck()
             } else {
                 val title = binding.etTitle.text.toString().trim()
                 val isEditMode = intent.getBooleanExtra("is_edit_mode", false)
                 if (title.isNotEmpty() && !isEditMode) {
-                    lifecycleScope.launch {
-                        if (resourcesRepository.resourceTitleExists(title)) {
-                            binding.tlTitle.error = getString(R.string.resource_title_already_exists)
-                        }
-                    }
+                    viewModel.checkTitle(title)
                 }
             }
         }
@@ -123,7 +127,7 @@ class AddResourceActivity : AppCompatActivity() {
     }
 
     private suspend fun prefillFields(resourceId: String) {
-        val resource = resourcesRepository.getResourceById(resourceId) ?: return
+        val resource = viewModel.getResourceById(resourceId) ?: return
         binding.etTitle.setText(resource.title)
         binding.etAuthor.setText(resource.author)
         binding.etYear.setText(resource.year)
@@ -134,9 +138,9 @@ class AddResourceActivity : AppCompatActivity() {
         resource.subject?.forEach { subjects?.add(it) }
         resource.level?.forEach { levels?.add(it) }
 
-        binding.tvSubject.text = resource.subject?.joinToString(", ")
+        binding.tvSubject.text = resource.subject?.joinToString(", ") { labelFor(R.array.array_subjects, it) }
             ?.takeIf { it.isNotEmpty() } ?: getString(R.string.subject)
-        binding.tvLevels.text = resource.level?.joinToString(", ")
+        binding.tvLevels.text = resource.level?.joinToString(", ") { labelFor(R.array.array_levels, it) }
             ?.takeIf { it.isNotEmpty() } ?: getString(R.string.levels)
     }
 
@@ -149,17 +153,27 @@ class AddResourceActivity : AppCompatActivity() {
 
         if (isEditMode && resourceId != null) {
             lifecycleScope.launch {
-                val result = resourcesRepository.updateLocalResource(
-                    resourceId = resourceId,
+                val request = LocalResourceRequest(
                     title = title,
+                    addedBy = null,
                     author = binding.etAuthor.text.toString().trim(),
                     year = binding.etYear.text.toString().trim(),
                     description = binding.etDescription.text.toString().trim(),
                     publisher = binding.etPublisher.text.toString().trim(),
                     linkToLicense = binding.etLinkToLicense.text.toString().trim(),
+                    openWith = null,
+                    language = null,
+                    mediaType = null,
+                    resourceType = null,
                     subjects = subjects,
-                    levels = levels
+                    levels = levels,
+                    resourceFor = null,
+                    resourceUrl = null,
+                    userId = null,
+                    isPrivateTeamResource = false,
+                    teamId = null
                 )
+                val result = viewModel.updateResource(resourceId, request)
                 if (result.isSuccess) {
                     toast(this@AddResourceActivity, getString(R.string.resource_updated))
                     setResult(RESULT_OK)
@@ -181,10 +195,10 @@ class AddResourceActivity : AppCompatActivity() {
             description = binding.etDescription.text.toString().trim { it <= ' ' },
             publisher = binding.etPublisher.text.toString().trim { it <= ' ' },
             linkToLicense = binding.etLinkToLicense.text.toString().trim { it <= ' ' },
-            openWith = if (binding.spnOpenWith.selectedItemPosition > 0) binding.spnOpenWith.selectedItem.toString() else "",
-            language = if (binding.spnLang.selectedItemPosition > 0) binding.spnLang.selectedItem.toString() else "",
-            mediaType = if (binding.spnMedia.selectedItemPosition > 0) binding.spnMedia.selectedItem.toString() else "",
-            resourceType = if (binding.spnResourceType.selectedItemPosition > 0) binding.spnResourceType.selectedItem.toString() else "",
+            openWith = spinnerValue(binding.spnOpenWith, R.array.open_With),
+            language = spinnerValue(binding.spnLang, R.array.language),
+            mediaType = spinnerValue(binding.spnMedia, R.array.media),
+            resourceType = spinnerValue(binding.spnResourceType, R.array.resource_type),
             subjects = subjects,
             levels = levels,
             resourceFor = resourceFor,
@@ -194,7 +208,7 @@ class AddResourceActivity : AppCompatActivity() {
             teamId = teamId
         )
         lifecycleScope.launch {
-            val result = resourcesRepository.saveLocalResource(request)
+            val result = viewModel.saveResource(request)
             if (result.isSuccess) {
                 val message = if (isPrivateTeamResource) {
                     getString(R.string.resource_added_to_team)
@@ -205,7 +219,11 @@ class AddResourceActivity : AppCompatActivity() {
                 setResult(RESULT_OK)
                 finish()
             } else {
-                binding.tlTitle.error = getString(R.string.resource_title_already_exists)
+                if (result.exceptionOrNull() is DuplicateResourceTitleException) {
+                    binding.tlTitle.error = getString(R.string.resource_title_already_exists)
+                } else {
+                    toast(this@AddResourceActivity, getString(R.string.failed_to_add_please_retry))
+                }
                 binding.btnSubmit.isEnabled = true
             }
         }
@@ -231,13 +249,28 @@ class AddResourceActivity : AppCompatActivity() {
         }
         return true
     }
-    private fun showMultiSelectList(list: Array<String>, items: MutableList<String>?, view: View, title: String) {
+
+    private fun englishValues(arrayRes: Int): Array<String> = CoursesFilterFragment.englishValues(this, arrayRes)
+
+    private fun spinnerValue(spinner: Spinner, arrayRes: Int): String {
+        val position = spinner.selectedItemPosition
+        return if (position > 0) englishValues(arrayRes).getOrElse(position - 1) { "" } else ""
+    }
+    
+    private fun labelFor(arrayRes: Int, value: String): String {
+        val index = englishValues(arrayRes).indexOf(value)
+        return if (index >= 0) resources.getStringArray(arrayRes).getOrElse(index) { value } else value
+    }
+
+    private fun showMultiSelectList(arrayRes: Int, items: MutableList<String>?, view: View, title: String) {
+        val list = resources.getStringArray(arrayRes)
+        val keys = englishValues(arrayRes)
         val listView = RecyclerView(this)
         listView.layoutManager = LinearLayoutManager(this)
 
         val initialSelectedIndices = mutableListOf<Int>()
         items?.forEach { selectedItem ->
-            val index = list.indexOf(selectedItem)
+            val index = keys.indexOf(selectedItem).takeIf { it >= 0 } ?: list.indexOf(selectedItem)
             if (index >= 0) {
                 initialSelectedIndices.add(index)
             }
@@ -252,9 +285,8 @@ class AddResourceActivity : AppCompatActivity() {
             items?.clear()
             val selectionList = mutableListOf<String>()
             for (i in selected) {
-                val s = list[i]
-                selectionList.add(s)
-                items?.add(s)
+                selectionList.add(list[i])
+                items?.add(keys.getOrElse(i) { list[i] })
             }
             val selection = selectionList.joinToString(", ")
             if (selection.isEmpty()) {
@@ -285,12 +317,10 @@ class AddResourceActivity : AppCompatActivity() {
     }
 
     private fun showExitConfirmationDialog() {
-        AlertDialog.Builder(this,R.style.AlertDialogTheme)
-            .setMessage(R.string.are_you_sure_you_want_to_exit_your_data_will_be_lost)
-            .setPositiveButton(R.string.yes_i_want_to_exit) { _, _ ->
-                finish()
-            }
-            .setNegativeButton(R.string.no, null)
-            .show()
+        confirmDialog(
+            message = getString(R.string.are_you_sure_you_want_to_exit_your_data_will_be_lost),
+            positiveText = getString(R.string.yes_i_want_to_exit),
+            onPositive = ::finish
+        )
     }
 }

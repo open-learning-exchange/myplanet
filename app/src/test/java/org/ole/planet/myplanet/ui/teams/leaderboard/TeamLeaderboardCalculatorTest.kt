@@ -1,22 +1,17 @@
 package org.ole.planet.myplanet.ui.teams.leaderboard
 
-import com.google.gson.JsonObject
 import java.util.Calendar
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.ole.planet.myplanet.model.CourseProgressState
+import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.JoinedMemberData
 
 class TeamLeaderboardCalculatorTest {
 
-    private fun progress(max: Int, current: Int, completedAt: Long = 0L): JsonObject {
-        val obj = JsonObject()
-        obj.addProperty("max", max)
-        obj.addProperty("current", current)
-        obj.addProperty("completedAt", completedAt)
-        return obj
-    }
+    private fun progress(max: Int, current: Int, completedAt: Long = 0L): CourseProgressState =
+        CourseProgressState(current = current, max = max, completedAt = completedAt)
 
     private fun member(id: String, name: String): JoinedMemberData {
         val user = UserEntity().apply {
@@ -27,8 +22,6 @@ class TeamLeaderboardCalculatorTest {
             user = user,
             visitCount = 0,
             lastVisitDate = null,
-            offlineVisits = "",
-            profileLastVisit = "",
             isLeader = false
         )
     }
@@ -39,11 +32,11 @@ class TeamLeaderboardCalculatorTest {
         val bob = member("bob", "Bob")
         val courseIds = listOf("course1", "course2")
         val progressByUser = mapOf(
-            "alice" to mapOf<String?, JsonObject>(
+            "alice" to mapOf<String, CourseProgressState>(
                 "course1" to progress(max = 5, current = 5),
                 "course2" to progress(max = 5, current = 5)
             ),
-            "bob" to mapOf<String?, JsonObject>(
+            "bob" to mapOf<String, CourseProgressState>(
                 "course1" to progress(max = 5, current = 5),
                 "course2" to progress(max = 5, current = 1)
             )
@@ -62,8 +55,8 @@ class TeamLeaderboardCalculatorTest {
         val bob = member("bob", "Bob")
         val courseIds = listOf("course1")
         val progressByUser = mapOf(
-            "alice" to mapOf<String?, JsonObject>("course1" to progress(max = 5, current = 5)),
-            "bob" to mapOf<String?, JsonObject>("course1" to progress(max = 5, current = 5))
+            "alice" to mapOf<String, CourseProgressState>("course1" to progress(max = 5, current = 5)),
+            "bob" to mapOf<String, CourseProgressState>("course1" to progress(max = 5, current = 5))
         )
         val surveyTimestampsByUser = mapOf(
             "alice" to listOf(1L, 2L, 3L),
@@ -87,7 +80,7 @@ class TeamLeaderboardCalculatorTest {
         val alice = member("alice", "Alice")
         val courseIds = listOf("course1", "course2")
         val progressByUser = mapOf(
-            "alice" to mapOf<String?, JsonObject>(
+            "alice" to mapOf<String, CourseProgressState>(
                 "course1" to progress(max = 5, current = 5, completedAt = 2_000L),
                 "course2" to progress(max = 5, current = 5, completedAt = 500L)
             )

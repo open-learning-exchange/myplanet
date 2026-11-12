@@ -13,14 +13,12 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
@@ -35,12 +33,10 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
-import org.ole.planet.myplanet.ui.components.FragmentNavigator
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
@@ -55,8 +51,6 @@ class VoicesFragment : BaseVoicesFragment() {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var voicesRepository: VoicesRepository
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var etSearch: EditText
 
     private var isSpinnerUpdating = false
@@ -100,43 +94,40 @@ class VoicesFragment : BaseVoicesFragment() {
             if (user?.id?.startsWith("guest") == true) {
                 binding.btnNewVoice.visibility = View.GONE
             }
+            (binding.rvNews.adapter as? VoicesAdapter)?.setCurrentUser(user)
 
             voicesViewModel.observeCommunityNews(getUserIdentifier())
+        }
 
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    voicesViewModel.filteredNews.collectLatest { searchFiltered ->
-                        if (_binding != null) {
-                            setData(searchFiltered)
-                        }
-                    }
-                }
-                launch {
-                    combine(
-                        voicesViewModel.labels,
-                        voicesViewModel.selectedLabel
-                    ) { labels, selected -> labels to selected }
-                        .collectLatest { (labels, selected) ->
-                            if (_binding != null) {
-                                updateLabelSpinner(labels, selected)
-                            }
-                        }
-                }
-                launch {
-                    voicesViewModel.createNewsSuccess.collectLatest { n ->
-                        binding.btnSubmit.isEnabled = true
-                        if (n != null) {
-                            binding.etMessage.setText(R.string.empty_text)
-                            binding.llAddNews.visibility = View.GONE
-                            binding.btnNewVoice.text = getString(R.string.new_voice)
-                            imageList.clear()
-                            llImage?.removeAllViews()
-                            shouldScrollToTopNextUpdate = true
-                        } else {
-                            Utilities.toast(requireContext(), getString(R.string.error, "Failed to create news"))
-                        }
-                    }
-                }
+        collectLatestWhenStarted(voicesViewModel.filteredNews) { searchFiltered ->
+            if (_binding != null) {
+                setData(searchFiltered)
+            }
+        }
+
+        val combinedFlow = combine(
+            voicesViewModel.labels,
+            voicesViewModel.selectedLabel
+        ) { labels, selected -> labels to selected }
+
+        collectLatestWhenStarted(combinedFlow) { (labels, selected) ->
+            if (_binding != null) {
+                updateLabelSpinner(labels, selected)
+            }
+        }
+
+        collectLatestWhenStarted(voicesViewModel.createNewsSuccess) { n ->
+            binding.btnSubmit.isEnabled = true
+            if (n != null) {
+                binding.etMessage.setText(R.string.empty_text)
+                binding.tlMessage.error = null
+                binding.llAddNews.visibility = View.GONE
+                binding.btnNewVoice.text = getString(R.string.new_voice)
+                imageList.clear()
+                llImage?.removeAllViews()
+                shouldScrollToTopNextUpdate = true
+            } else {
+                Utilities.toast(requireContext(), getString(R.string.error, "Failed to create news"))
             }
         }
         binding.btnSubmit.setOnClickListener {
@@ -145,16 +136,21 @@ class VoicesFragment : BaseVoicesFragment() {
                 binding.tlMessage.error = getString(R.string.please_enter_message)
                 return@setOnClickListener
             }
+            val userModel = user
+            if (userModel == null) {
+                Utilities.toast(requireContext(), getString(R.string.error, "Failed to create news"))
+                return@setOnClickListener
+            }
             val map = HashMap<String?, String>()
             map["message"] = message
-            map["viewInId"] = "${user?.planetCode ?: ""}@${user?.parentCode ?: ""}"
+            map["viewInId"] = "${userModel.planetCode ?: ""}@${userModel.parentCode ?: ""}"
             map["viewInSection"] = "community"
             map["messageType"] = "sync"
-            map["messagePlanetCode"] = user?.planetCode ?: ""
+            map["messagePlanetCode"] = userModel.planetCode ?: ""
 
             binding.btnSubmit.isEnabled = false
 
-            user?.let { it1 -> voicesViewModel.createNews(map, it1, imageList.toList()) }
+            voicesViewModel.createNews(map, userModel, imageList.toList())
         }
 
         binding.addNewsImage.setOnClickListener {
@@ -180,48 +176,26 @@ class VoicesFragment : BaseVoicesFragment() {
     override fun setData(list: List<News?>?) {
         if (!isAdded || list == null) return
 
+        val sortedList = sortNews(list)
         if (binding.rvNews.adapter == null) {
             changeLayoutManager(resources.configuration.orientation, binding.rvNews)
-            downloadResourcesForNews(list)
-            val sortedList = sortNews(list)
-            setupVoicesAdapter(sortedList.filterNotNull())
+            voicesViewModel.downloadReferencedResources(sortedList)
+            setupVoicesAdapter(sortedList)
         } else {
-            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(list.filterNotNull()) {
+            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(sortedList) {
                 if (shouldScrollToTopNextUpdate) {
                     scrollToTop()
                     shouldScrollToTopNextUpdate = false
                 }
             }
         }
-        showNoData(binding.tvMessage, list.filterNotNull().size, currentEmptyStateSource)
+        showNoData(binding.tvMessage, sortedList.size, currentEmptyStateSource)
     }
 
-    private fun downloadResourcesForNews(list: List<News?>) {
-        val resourceIds = mutableSetOf<String>()
-        list.forEach { news ->
-            if ((news?.imagesArray?.size() ?: 0) > 0) {
-                val ob = news?.imagesArray?.get(0)?.asJsonObject
-                val resourceId = getString("resourceId", ob?.asJsonObject)
-                if (!resourceId.isNullOrBlank()) {
-                    resourceIds.add(resourceId)
-                }
-            }
-        }
-        viewLifecycleOwner.lifecycleScope.launch {
-            if (resourceIds.isNotEmpty()) {
-                val libraries = resourcesRepository.getLibraryItemsByIds(resourceIds)
-                resourcesRepository.downloadResources(libraries)
-            }
-        }
-    }
-
-    private fun sortNews(list: List<News?>): List<News?> {
-        val updatedListAsMutable: MutableList<News?> = list.toMutableList()
+    private fun sortNews(list: List<News?>): List<News> {
         Trace.beginSection("VoicesFragment.sort")
         return try {
-            updatedListAsMutable.sortedWith(compareByDescending { news ->
-                news?.sortDate ?: 0L
-            })
+            list.filterNotNull().sortedByDescending { it.sortDate }
         } finally {
             Trace.endSection()
         }
@@ -276,10 +250,8 @@ class VoicesFragment : BaseVoicesFragment() {
             },
             onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope, dispatcherProvider),
             labelManager = labelManager,
-            voicesRepository = voicesRepository,
-            userRepository = userRepository,
-            getCommunityLeadersFn = { sharedPrefManager.getCommunityLeaders() },
-            setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
+            voicesEditor = voicesRepository,
+            leadersList = voicesViewModel.getCommunityLeaders()
         )
         adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
         adapterNews?.setListener(this)
@@ -298,13 +270,7 @@ class VoicesFragment : BaseVoicesFragment() {
 
             val chatDetailFragment = ChatDetailFragment()
             chatDetailFragment.arguments = bundle
-
-            FragmentNavigator.replaceFragment(
-                parentFragmentManager,
-                R.id.fragment_container,
-                chatDetailFragment,
-                addToBackStack = true
-            )
+            homeItemClickListener?.openCallFragment(chatDetailFragment)
         }
     }
 
@@ -326,10 +292,6 @@ class VoicesFragment : BaseVoicesFragment() {
     }
 
     private val observer: AdapterDataObserver = object : AdapterDataObserver() {
-        override fun onChanged() {
-            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
-        }
-
         override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
             adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
         }
@@ -342,7 +304,7 @@ class VoicesFragment : BaseVoicesFragment() {
     @OptIn(FlowPreview::class)
     private fun setupSearchTextListener() {
         etSearch.textChanges()
-            .debounce(300)
+            .debounce(300.milliseconds)
             .onEach { text ->
                 val searchQuery = text.toString().trim()
                 voicesViewModel.updateSearchQuery(searchQuery)

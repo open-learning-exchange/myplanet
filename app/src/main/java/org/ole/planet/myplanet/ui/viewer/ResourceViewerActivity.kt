@@ -7,16 +7,30 @@ import android.os.Environment
 import android.util.Log
 import android.util.Rational
 import android.view.MenuItem
+import androidx.activity.OnBackPressedCallback
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.withStarted
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
+import javax.inject.Inject
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityResourceViewerBinding
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 
 @AndroidEntryPoint
 class ResourceViewerActivity : AppCompatActivity() {
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var binding: ActivityResourceViewerBinding
+    private val viewModel: ResourceViewerViewModel by viewModels()
+    private val exitCoordinator by lazy {
+        ResourcesExitCoordinator(this, viewModel)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,42 +40,19 @@ class ResourceViewerActivity : AppCompatActivity() {
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        if (savedInstanceState == null) {
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                handleBackNavigation()
+            }
+        })
+
+        if (currentViewerFragment() == null) {
             val resourceId = intent.getStringExtra("resourceId")
             val filePath = intent.getStringExtra("TOUCHED_FILE")
             val title = intent.getStringExtra("RESOURCE_TITLE")
             val isOnline = intent.getBooleanExtra("isOnline", false)
             val isFullPath = intent.getBooleanExtra("isFullPath", false)
             val auth = intent.getStringExtra("Auth") ?: ""
-
-            if (!isOnline && filePath != null) {
-                try {
-                    val file = if (isFullPath) File(filePath) else File(getExternalFilesDir(null), "ole/$filePath")
-                    val canonicalPath = file.canonicalPath
-
-                    val isAllowed = if (isFullPath) {
-                        val allowedRoots = listOfNotNull(
-                            getExternalFilesDir(null)?.canonicalPath,
-                            externalCacheDir?.canonicalPath,
-                            Environment.getExternalStorageDirectory()?.canonicalPath
-                        )
-                        allowedRoots.any { canonicalPath.startsWith(it + File.separator) || canonicalPath == it }
-                    } else {
-                        val baseDir = File(getExternalFilesDir(null), "ole").canonicalPath
-                        canonicalPath.startsWith(baseDir + File.separator) || canonicalPath == baseDir
-                    }
-
-                    if (!isAllowed) {
-                        Log.w("ResourceViewer", "Rejected path: $canonicalPath")
-                        finish()
-                        return
-                    }
-                } catch (e: Exception) {
-                    Log.e("ResourceViewer", "Error resolving path", e)
-                    finish()
-                    return
-                }
-            }
 
             val typeString = intent.getStringExtra("resourceType") ?: ResourceViewerFragment.ResourceType.UNKNOWN.name
             val type = try {
@@ -71,19 +62,64 @@ class ResourceViewerActivity : AppCompatActivity() {
                 ResourceViewerFragment.ResourceType.UNKNOWN
             }
 
-            val fragment = ResourceViewerFragment.newInstance(resourceId, filePath, title, type, isOnline, auth, isFullPath)
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, fragment)
-                .commit()
+            lifecycleScope.launch {
+                if (!isOnline && filePath != null) {
+                    val isAllowed = withContext(dispatcherProvider.io) { isPathAllowed(filePath, isFullPath) }
+                    if (!isAllowed) {
+                        finish()
+                        return@launch
+                    }
+                }
+                lifecycle.withStarted {
+                    val fragment = ResourceViewerFragment.newInstance(resourceId, filePath, title, type, isOnline, auth, isFullPath)
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.fragment_container, fragment)
+                        .commit()
+                }
+            }
         }
+    }
+
+    private fun isPathAllowed(filePath: String, isFullPath: Boolean): Boolean = try {
+        val externalFilesDir = getExternalFilesDir(null)
+        val file = if (isFullPath) File(filePath) else File(externalFilesDir, "ole/$filePath")
+        val canonicalPath = file.canonicalPath
+
+        val isAllowed = if (isFullPath) {
+            val allowedRoots = listOfNotNull(
+                externalFilesDir?.canonicalPath,
+                externalCacheDir?.canonicalPath,
+                Environment.getExternalStorageDirectory()?.canonicalPath
+            )
+            allowedRoots.any { canonicalPath.startsWith(it + File.separator) || canonicalPath == it }
+        } else {
+            val baseDir = File(externalFilesDir, "ole").canonicalPath
+            canonicalPath.startsWith(baseDir + File.separator) || canonicalPath == baseDir
+        }
+
+        if (!isAllowed) {
+            Log.w("ResourceViewer", "Rejected path: $canonicalPath")
+        }
+        isAllowed
+    } catch (e: Exception) {
+        Log.e("ResourceViewer", "Error resolving path", e)
+        false
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
-            finish()
+            handleBackNavigation()
             return true
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    private fun handleBackNavigation() {
+        exitCoordinator.handleBackNavigation(
+            resourceId = intent.getStringExtra("resourceId"),
+            title = intent.getStringExtra("RESOURCE_TITLE"),
+            isResourceFinished = currentViewerFragment()?.isResourceFinished() == true,
+        )
     }
 
     override fun onUserLeaveHint() {

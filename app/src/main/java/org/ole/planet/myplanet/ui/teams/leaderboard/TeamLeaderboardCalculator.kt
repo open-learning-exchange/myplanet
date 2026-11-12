@@ -1,16 +1,16 @@
 package org.ole.planet.myplanet.ui.teams.leaderboard
 
-import com.google.gson.JsonObject
 import java.util.Calendar
+import org.ole.planet.myplanet.model.CourseProgressState
+import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.TeamLeaderboardEntry
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.JoinedMemberData
 
 object TeamLeaderboardCalculator {
     fun build(
         members: List<JoinedMemberData>,
         courseIds: List<String>,
-        progressByUser: Map<String, Map<String?, JsonObject>>,
+        progressByUser: Map<String, Map<String, CourseProgressState>>,
         surveyCompletionTimestampsByUser: Map<String, List<Long>> = emptyMap(),
         surveysTotal: Int = 0,
         currentUserId: String? = null,
@@ -22,9 +22,9 @@ object TeamLeaderboardCalculator {
             var coursesCompleted = 0
             for (courseId in courseIds) {
                 val courseProgress = progress[courseId] ?: continue
-                val max = courseProgress.get("max")?.asInt ?: 0
-                val current = (courseProgress.get("current")?.asInt ?: 0).coerceAtMost(max)
-                val completedAt = courseProgress.get("completedAt")?.asLong ?: 0L
+                val max = courseProgress.max
+                val current = courseProgress.current.coerceAtMost(max)
+                val completedAt = courseProgress.completedAt
                 val isCompleted = max > 0 && current >= max &&
                     (periodStart == null || completedAt >= periodStart)
                 if (isCompleted) coursesCompleted++

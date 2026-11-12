@@ -13,7 +13,6 @@ import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -21,19 +20,23 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.callback.OnSyncListener
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.ChatRepository
-import org.ole.planet.myplanet.repository.CommunityRepository
+import org.ole.planet.myplanet.repository.ChatSyncWriter
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.EventsSyncWriter
+import org.ole.planet.myplanet.repository.FeedbackSyncWriter
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -41,7 +44,6 @@ import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TagsRepository
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
@@ -50,45 +52,79 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
-import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
-import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.GsonUtils.getJsonArray
+import org.ole.planet.myplanet.utils.GsonUtils.getJsonObject
+import org.ole.planet.myplanet.utils.GsonUtils.getString
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.utils.StringUtils
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @Singleton
 class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
     @param:ApplicationContext private val context: Context,
     private val voicesRepository: VoicesRepository,
-    private val chatRepository: ChatRepository,
-    private val feedbackRepository: FeedbackRepository,
+    private val chatRepository: ChatSyncWriter,
+    private val feedbackRepository: FeedbackSyncWriter,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
     private val userSyncRepository: UserSyncRepository,
     private val activitiesRepository: ActivitiesRepository,
-    private val teamsRepository: Lazy<TeamsRepository>,
     private val teamsSyncRepository: Lazy<TeamsSyncRepository>,
     private val notificationsRepository: NotificationsRepository,
     private val tagsRepository: TagsRepository,
     private val ratingsRepository: RatingsRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val coursesRepository: CoursesRepository,
-    private val communityRepository: CommunityRepository,
+    private val eventsSyncWriter: EventsSyncWriter,
     private val healthRepository: HealthRepository,
     private val progressRepository: ProgressRepository,
     private val surveysRepository: SurveysRepository,
-    @ApplicationScope private val applicationScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
-    private val userSessionManager: UserSessionManager
+    private val userSessionManager: UserSessionManager,
+    private val syncTimeLogger: SyncTimeLogger
 ) {
     // The heavy tables are fetched in parallel (see SyncManager), but SQLite has a single
     // writer, so running ~14 batch inserts concurrently just thrashes the write lock/WAL — the
     // same inserts that take ~1ms/doc uncontended balloon to >100ms/doc under contention. This
     // mutex serializes only the DB-write portion of each batch; network fetches still overlap.
     private val dbWriteMutex = Mutex()
+
+    companion object {
+        private const val MAX_CONCURRENT_ATTACHMENT_DOWNLOADS = 6
+        const val SYNC_FAILED = -1
+    }
+    
+    private val tableSyncHandlers: Map<String, suspend (JsonArray) -> Unit> = mapOf(
+        "news" to { arr -> voicesRepository.insertNewsList(extractDocs(arr)) },
+        "feedback" to { arr -> feedbackRepository.insertFeedbackList(extractDocs(arr)) },
+        "chat_history" to { arr -> chatRepository.insertChatHistoryFromSync(arr.map { it.asJsonObject }) },
+        "tablet_users" to { arr -> userSyncRepository.insertUsersFromSync(arr.map { it.asJsonObject }) },
+        "meetups" to { arr -> eventsSyncWriter.insertMeetupsFromSync(extractDocs(arr)) },
+        "login_activities" to { arr -> activitiesRepository.insertLoginActivitiesFromSync(extractDocs(arr)) },
+        "courses_progress" to { arr -> progressRepository.insertCourseProgressFromSync(extractDocs(arr)) },
+        "ratings" to { arr -> ratingsRepository.insertRatingsFromSync(extractDocs(arr)) },
+        "certifications" to { arr -> coursesRepository.insertCertificationsFromSync(arr) },
+        "tags" to { arr -> tagsRepository.insert(extractDocs(arr)) },
+        "team_activities" to { arr -> teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(arr) },
+        "tasks" to { arr -> teamsSyncRepository.get().bulkInsertTasksFromSync(arr) },
+        "notifications" to { arr -> notificationsRepository.bulkInsertFromSync(arr) },
+        "achievements" to { arr -> userSyncRepository.bulkInsertAchievementsFromSync(arr) },
+        "health" to { arr -> healthRepository.bulkInsertFromSync(arr) },
+        "courses" to { arr ->
+            val insertStartTime = SystemClock.elapsedRealtime()
+            coursesRepository.bulkInsertFromSync(arr)
+            val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
+            Log.d("SyncPerf", "    courses insertDuration: ${insertDuration}ms for ${arr.size()} items")
+        },
+        "exams" to { arr -> surveysRepository.bulkInsertExamsFromSync(arr) },
+        "submissions" to { arr -> submissionsRepository.bulkInsertFromSync(arr) },
+        "teams" to { arr -> teamsSyncRepository.get().bulkInsertFromSync(arr) }
+    )
 
     suspend fun authenticate(): Boolean {
         try {
@@ -102,41 +138,31 @@ class TransactionSyncManager @Inject constructor(
     }
 
 
-    fun syncDashboardKeyId(role: String?, listener: OnSyncListener) {
+    suspend fun syncDashboardKeyId(role: String?) {
         val settings = sharedPrefManager.rawPreferences
         if (role?.contains("health") == true) {
-            syncAllHealthData(settings, listener)
+            syncAllHealthData(settings)
         } else {
-            syncKeyIv(settings, listener, userSessionManager)
+            syncKeyIv(settings, userSessionManager)
         }
     }
 
-    fun syncAllHealthData(settings: SharedPreferences, listener: OnSyncListener) {
-        listener.onSyncStarted()
+    private suspend fun syncAllHealthData(settings: SharedPreferences) {
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = UrlUtils.basicAuthHeader(userName, password)
 
-        applicationScope.launch(dispatcherProvider.io) {
-            try {
-                val usersToSync = userRepository.getUsersForHealthSync()
-                usersToSync.forEach { userModel ->
-                    syncHealthData(userModel, header)
-                }
-                withContext(dispatcherProvider.main) {
-                    listener.onSyncComplete()
-                }
-            } catch (e: Exception) {
-                withContext(dispatcherProvider.main) {
-                    listener.onSyncFailed(e.message)
-                }
+        withContext(dispatcherProvider.io) {
+            val usersToSync = userRepository.getUsersForHealthSync()
+            usersToSync.forEach { userModel ->
+                syncHealthData(userModel, header)
             }
         }
     }
 
     private suspend fun syncHealthData(userModel: UserEntity, header: String) {
         val table =
-            "userdb-${userModel.planetCode?.let { Utilities.toHex(it) }}-${userModel.name?.let { Utilities.toHex(it) }}"
+            "userdb-${userModel.planetCode?.let { StringUtils.toHex(it) }}-${userModel.name?.let { StringUtils.toHex(it) }}"
         try {
             val response =
                 apiInterface.getDocuments(header, "${UrlUtils.getUrl()}/$table/_all_docs")
@@ -144,7 +170,7 @@ class TransactionSyncManager @Inject constructor(
             if (ob != null && ob.rows?.isNotEmpty() == true) {
                 val r = ob.rows?.firstOrNull()
                 r?.id?.let { id ->
-                    val jsonDoc = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/$table/$id").body()
+                    val jsonDoc = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/$table/$id").body()?.toGson()
                     val key = getString("key", jsonDoc)
                     val iv = getString("iv", jsonDoc)
 
@@ -155,36 +181,27 @@ class TransactionSyncManager @Inject constructor(
                     }
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    fun syncKeyIv(
+    private suspend fun syncKeyIv(
         settings: SharedPreferences,
-        listener: OnSyncListener,
         userSessionManager: UserSessionManager
     ) {
-        listener.onSyncStarted()
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = UrlUtils.basicAuthHeader(userName, password)
 
-        applicationScope.launch(dispatcherProvider.io) {
+        withContext(dispatcherProvider.io) {
             val model = userSessionManager.getUserModel()
             val id = model?.id
-            try {
-                val userModel = id?.let { userRepository.getUserById(it) }
-                if (userModel != null) {
-                    syncHealthData(userModel, header)
-                }
-                withContext(dispatcherProvider.main) {
-                    listener.onSyncComplete()
-                }
-            } catch (e: Exception) {
-                withContext(dispatcherProvider.main) {
-                    listener.onSyncFailed(e.message)
-                }
+            val userModel = id?.let { userRepository.getUserById(it) }
+            if (userModel != null) {
+                syncHealthData(userModel, header)
             }
         }
     }
@@ -208,6 +225,7 @@ class TransactionSyncManager @Inject constructor(
             var totalDocs = 0
             var batchNumber = if (useCheckpoint) skip / pageSize else 0
             var syncCompletedFully = false
+            var syncFailed = false
             val url = UrlUtils.getUrl()
             val authHeader = UrlUtils.header
 
@@ -217,7 +235,7 @@ class TransactionSyncManager @Inject constructor(
                 currentCoroutineContext().ensureActive()
                 batchNumber++
                 if (useCheckpoint) {
-                    sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).commit()
+                    sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).apply()
                 }
                 val batchStartTime = SystemClock.elapsedRealtime()
                 val batchApiStartTime = SystemClock.elapsedRealtime()
@@ -225,94 +243,31 @@ class TransactionSyncManager @Inject constructor(
                     authHeader,
                     "application/json",
                     "$url/$table/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",
-                    JsonObject() // Empty body for GET-style query
+                    JsonObject().toKotlinx().jsonObject // Empty body for GET-style query
                 )
                 val batchApiDuration = SystemClock.elapsedRealtime() - batchApiStartTime
                 if (response.body() == null || !response.isSuccessful) {
                     Log.d("SyncPerf", "  ✗ Failed $table batch $batchNumber: HTTP ${response.code()}")
+                    // Older servers may not have this table; nothing to pull is not a failure.
+                    if (response.code() == 404) syncCompletedFully = true else syncFailed = true
                     break
                 }
-                val arr = getJsonArray("rows", response.body())
-                if (arr.size() == 0) {
+                val arr = getJsonArray("rows", response.body()?.toGson())
+                if (arr.isEmpty()) {
                     syncCompletedFully = true
                     break
                 }
-                SyncTimeLogger.logApiCall(
+                syncTimeLogger.logApiCall(
                     "$url/$table/_all_docs (batch $batchNumber)",
                     batchApiDuration,
                     response.isSuccessful,
                     arr.size()
                 )
-                when (table) {
-                    "news" -> timedBatchInsert(table, arr.size()) {
-                        voicesRepository.insertNewsList(extractDocs(arr))
-                    }
-                    "feedback" -> timedBatchInsert(table, arr.size()) {
-                        feedbackRepository.insertFeedbackList(extractDocs(arr))
-                    }
-                    "chat_history" -> timedBatchInsert(table, arr.size()) {
-                        chatRepository.insertChatHistoryFromSync(arr.map { it.asJsonObject })
-                    }
-                    "tablet_users" -> timedBatchInsert(table, arr.size()) {
-                        userSyncRepository.insertUsersFromSync(arr.map { it.asJsonObject })
-                    }
-                    "meetups" -> timedBatchInsert(table, arr.size()) {
-                        communityRepository.insertMeetupsFromSync(extractDocs(arr))
-                    }
-                    "login_activities" -> timedBatchInsert(table, arr.size()) {
-                        activitiesRepository.insertLoginActivitiesFromSync(extractDocs(arr))
-                    }
-                    "courses_progress" -> timedBatchInsert(table, arr.size()) {
-                        progressRepository.insertCourseProgressFromSync(extractDocs(arr))
-                    }
-                    "ratings" -> timedBatchInsert(table, arr.size()) {
-                        ratingsRepository.insertRatingsFromSync(extractDocs(arr))
-                    }
-                    "certifications" -> timedBatchInsert(table, arr.size()) {
-                        coursesRepository.insertCertificationsFromSync(arr)
-                    }
-                    "tags" -> timedBatchInsert(table, arr.size()) {
-                        tagsRepository.insert(extractDocs(arr))
-                    }
-                    "team_activities" -> timedBatchInsert(table, arr.size()) {
-                        teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(arr)
-                    }
-                    "tasks" -> timedBatchInsert(table, arr.size()) {
-                        teamsSyncRepository.get().bulkInsertTasksFromSync(arr)
-                    }
-                    "notifications" -> timedBatchInsert(table, arr.size()) {
-                        notificationsRepository.bulkInsertFromSync(arr)
-                    }
-                    "achievements" -> timedBatchInsert(table, arr.size()) {
-                        userSyncRepository.bulkInsertAchievementsFromSync(arr)
-                    }
-                    "health" -> timedBatchInsert(table, arr.size()) {
-                        healthRepository.bulkInsertFromSync(arr)
-                    }
-                    "courses" -> timedBatchInsert(table, arr.size()) {
-                        val insertStartTime = SystemClock.elapsedRealtime()
-                        coursesRepository.bulkInsertFromSync(arr)
-                        val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
-                        Log.d("SyncPerf", "    $table insertDuration: ${insertDuration}ms for ${arr.size()} items")
-                    }
-                    else -> {
-                        val insertStartTime = SystemClock.elapsedRealtime()
-                        dbWriteMutex.withLock {
-                            when (table) {
-                                "exams" -> surveysRepository.bulkInsertExamsFromSync(arr)
-                                "submissions" -> submissionsRepository.bulkInsertFromSync(arr)
-                                "teams" -> teamsSyncRepository.get().bulkInsertFromSync(arr)
-                                else -> Log.e("SyncPerf", "Unknown table: $table")
-                            }
-                        }
-                        val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
-                        SyncTimeLogger.logRealmOperation(
-                            "insert_batch",
-                            table,
-                            insertDuration,
-                            arr.size()
-                        )
-                    }
+                val handler = tableSyncHandlers[table]
+                if (handler != null) {
+                    timedBatchInsert(table, arr.size()) { handler(arr) }
+                } else {
+                    Log.e("SyncPerf", "Unknown table: $table")
                 }
 
                 if (table == "achievements") {
@@ -332,13 +287,13 @@ class TransactionSyncManager @Inject constructor(
                 // Persist progress immediately after a batch is committed so an interruption
                 // resumes past it rather than re-processing the just-inserted page.
                 if (useCheckpoint) {
-                    sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).commit()
+                    sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).apply()
                 }
                 val batchDuration = SystemClock.elapsedRealtime() - batchStartTime
                 Log.d("SyncPerf", "    $table batch $batchNumber: ${arr.size()} docs in ${batchDuration}ms (total: $totalDocs)")
                 // Show progress for slow syncs
                 if (table in listOf("ratings", "submissions")) {
-                    SyncTimeLogger.logDetail(table, "Progress: $totalDocs documents synced so far...")
+                    syncTimeLogger.logDetail(table, "Progress: $totalDocs documents synced so far...")
                 }
                 // If we got less than pageSize, we're done
                 if (arr.size() < pageSize) {
@@ -347,9 +302,10 @@ class TransactionSyncManager @Inject constructor(
                 }
             }
             if (useCheckpoint && syncCompletedFully) {
-                sharedPrefManager.rawPreferences.edit().remove(checkpointKey).commit()
+                sharedPrefManager.rawPreferences.edit().remove(checkpointKey).apply()
             }
             val totalDuration = SystemClock.elapsedRealtime() - syncStartTime
+            if (syncFailed) return@withContext SYNC_FAILED
             Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
             totalDocs
         } catch (e: CancellationException) {
@@ -362,7 +318,7 @@ class TransactionSyncManager @Inject constructor(
             e.printStackTrace()
             val failDuration = SystemClock.elapsedRealtime() - syncStartTime
             Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
-            0
+            SYNC_FAILED
         }
     }
 
@@ -370,7 +326,7 @@ class TransactionSyncManager @Inject constructor(
         val insertStartTime = SystemClock.elapsedRealtime()
         dbWriteMutex.withLock { insert() }
         val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
-        SyncTimeLogger.logRealmOperation(
+        syncTimeLogger.logDbOperation(
             "insert_batch",
             table,
             insertDuration,
@@ -391,6 +347,7 @@ class TransactionSyncManager @Inject constructor(
 
     private suspend fun downloadCvAttachmentsFromBatch(arr: JsonArray) = coroutineScope {
         val inProgress = mutableSetOf<String>()
+        val semaphore = Semaphore(MAX_CONCURRENT_ATTACHMENT_DOWNLOADS)
         for (j in arr) {
             val jsonDoc = getJsonObject("doc", j.asJsonObject)
             val docId = getString("_id", jsonDoc)
@@ -398,17 +355,17 @@ class TransactionSyncManager @Inject constructor(
             val resumeFileName = getString("resumeFileName", jsonDoc)
             val hasAttachment = jsonDoc.getAsJsonObject("_attachments")?.has("resume.pdf") == true
             if (resumeFileName.isNotEmpty() && hasAttachment) {
-                val destFile = File(
-                    FileUtils.getOlePath(context) + "cv/$resumeFileName"
-                )
-                if (!destFile.exists() && inProgress.add(resumeFileName)) {
-                    launch { downloadCvAttachment(docId, destFile) }
+                val cvPath = Achievement.cvRelativePath(docId, resumeFileName)
+                val destFile = File(FileUtils.getOlePath(context) + cvPath)
+                if (!destFile.exists() && inProgress.add(cvPath)) {
+                    launch { semaphore.withPermit { downloadCvAttachment(docId, destFile) } }
                 }
             }
         }
     }
 
     private suspend fun downloadTeamAttachmentsFromBatch(arr: JsonArray) = coroutineScope {
+        val semaphore = Semaphore(MAX_CONCURRENT_ATTACHMENT_DOWNLOADS)
         for (j in arr) {
             val jsonDoc = getJsonObject("doc", j.asJsonObject)
             val docId = getString("_id", jsonDoc)
@@ -418,12 +375,13 @@ class TransactionSyncManager @Inject constructor(
             val destFile = MyTeam
                 .getAttachmentFile(context, docId, attachmentName) ?: continue
             if (!destFile.exists()) {
-                launch { downloadTeamAttachment(docId, attachmentName, destFile) }
+                launch { semaphore.withPermit { downloadTeamAttachment(docId, attachmentName, destFile) } }
             }
         }
     }
 
     private suspend fun downloadCourseCoversFromBatch(arr: JsonArray) = coroutineScope {
+        val semaphore = Semaphore(MAX_CONCURRENT_ATTACHMENT_DOWNLOADS)
         for (j in arr) {
             val jsonDoc = getJsonObject("doc", j.asJsonObject)
             val docId = getString("_id", jsonDoc)
@@ -434,57 +392,50 @@ class TransactionSyncManager @Inject constructor(
                 val destFile = MyCourse
                     .getCoverImageFile(context, docId, coverFileName) ?: continue
                 if (!destFile.exists()) {
-                    launch { downloadCourseCover(docId, coverFileName, destFile) }
+                    launch { semaphore.withPermit { downloadCourseCover(docId, coverFileName, destFile) } }
                 }
             }
         }
     }
 
     private suspend fun downloadCourseCover(docId: String, coverFileName: String, destFile: File) {
-        try {
-            val encodedName = android.net.Uri.encode(coverFileName)
-            val url = "${UrlUtils.getUrl()}/courses/$docId/$encodedName"
-            val response = apiInterface.downloadFile(UrlUtils.header, url)
-            if (response.isSuccessful) {
-                response.body()?.let { body ->
-                    destFile.parentFile?.mkdirs()
-                    destFile.outputStream().use { out ->
-                        body.byteStream().use { it.copyTo(out) }
-                    }
-                }
-            }
-        } catch (_: Exception) { }
+        val encodedName = Uri.encode(coverFileName)
+        downloadAttachment("${UrlUtils.getUrl()}/courses/$docId/$encodedName", destFile)
     }
 
     private suspend fun downloadTeamAttachment(docId: String, attachmentName: String, destFile: File) {
-        try {
-            val encodedName = Uri.encode(attachmentName)
-            val url = "${UrlUtils.getUrl()}/teams/$docId/$encodedName"
-            val response = apiInterface.downloadFile(UrlUtils.header, url)
-            if (response.isSuccessful) {
-                response.body()?.let { body ->
-                    destFile.parentFile?.mkdirs()
-                    destFile.outputStream().use { out ->
-                        body.byteStream().use { it.copyTo(out) }
-                    }
-                }
-            }
-        } catch (_: Exception) { }
+        val encodedName = Uri.encode(attachmentName)
+        downloadAttachment("${UrlUtils.getUrl()}/teams/$docId/$encodedName", destFile)
     }
 
     private suspend fun downloadCvAttachment(docId: String, destFile: File) {
+        downloadAttachment("${UrlUtils.getUrl()}/achievements/$docId/resume.pdf", destFile)
+    }
+
+    // Writes to a side file and moves it into place only once complete, so an interrupted download never
+    // leaves a truncated file that the destFile.exists() checks would skip on every later sync
+    internal suspend fun downloadAttachment(url: String, destFile: File) {
+        val partFile = File(destFile.parentFile, "${destFile.name}.part")
         try {
-            val url = "${UrlUtils.getUrl()}/achievements/$docId/resume.pdf"
             val response = apiInterface.downloadFile(UrlUtils.header, url)
             if (response.isSuccessful) {
                 response.body()?.let { body ->
                     destFile.parentFile?.mkdirs()
-                    destFile.outputStream().use { out ->
+                    val bytes = partFile.outputStream().use { out ->
                         body.byteStream().use { it.copyTo(out) }
+                    }
+                    if (body.contentLength() > 0 && bytes != body.contentLength()) return
+                    if (!partFile.renameTo(destFile)) {
+                        partFile.copyTo(destFile, overwrite = true)
                     }
                 }
             }
-        } catch (_: Exception) { }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+        } finally {
+            partFile.delete()
+        }
     }
 
     suspend fun syncNotificationReads() = withContext(dispatcherProvider.io) {
@@ -493,29 +444,23 @@ class TransactionSyncManager @Inject constructor(
 
         val successfulSyncs = pending.map { notification ->
             async {
-                val rev = notification.rev ?: return@async null
-                val body = JsonObject().apply {
-                    addProperty("_id", notification.id)
-                    addProperty("_rev", rev)
-                    addProperty("status", "read")
-                    addProperty("user", notification.userId)
-                    addProperty("message", notification.message)
-                    addProperty("type", notification.type)
-                    notification.link?.let { addProperty("link", it) }
-                    addProperty("priority", notification.priority)
-                    addProperty("time", notification.createdAt.time)
-                }
+                if (notification.rev == null) return@async null
+                val url = "${UrlUtils.getUrl()}/notifications/${notification.id}"
                 try {
-                    val response = apiInterface.putDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/notifications/${notification.id}",
-                        body
-                    )
+                    val current = apiInterface.getJsonObject(UrlUtils.header, url)
+                    if (current.code() == 404) return@async Pair(notification.id, null)
+                    val serverDoc = current.body()?.takeIf { current.isSuccessful } ?: return@async null
+                    val body = buildJsonObject {
+                        serverDoc.forEach { (key, value) -> put(key, value) }
+                        put("status", "read")
+                    }
+                    val response = apiInterface.putDoc(UrlUtils.header, "application/json", url, body)
                     if (response.isSuccessful) {
-                        val newRev = response.body()?.get("rev")?.asString
+                        val newRev = JsonUtils.getString("rev", response.body()).takeIf { it.isNotEmpty() }
                         Pair(notification.id, newRev)
                     } else null
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     e.printStackTrace()
                     null

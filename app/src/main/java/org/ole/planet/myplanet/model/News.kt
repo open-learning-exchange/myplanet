@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.model
 
-import android.text.TextUtils
+import android.util.Log
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
@@ -8,17 +8,22 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonSyntaxException
-import java.util.Date
 import java.util.UUID
-import org.ole.planet.myplanet.utils.JsonUtils
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.toGson
 
 /**
- * Room replacement for the former Realm `News` model (voices/discussion posts).
+ * Room replacement for the former `News` model (voices/discussion posts).
  *
  * `imageUrls` and `labels` (formerly `RealmList<String>`) are plain `List<String>` stored as JSON
  * via the shared [org.ole.planet.myplanet.data.room.Converters]. Persistence goes through
  * [org.ole.planet.myplanet.data.room.dao.NewsDao]. The class name is kept (`News`) so the
- * large voices UI surface is untouched; a later rename pass drops the `Realm` prefix.
+ * large voices UI surface is untouched.
  */
 @Entity(tableName = "news", indices = [Index("userId"), Index("replyTo"), Index("_id")])
 open class News {
@@ -58,8 +63,11 @@ open class News {
     var newsUpdatedDate: Long = 0
     var chat: Boolean = false
     var isEdited: Boolean = false
+    var reactions: String? = null
+    var pendingReactions: String? = null
     var editedTime: Long = 0
     var sharedBy: String? = null
+    var isUpdated: Boolean = false
 
     @Ignore
     var sortDate: Long = 0
@@ -75,25 +83,158 @@ open class News {
     var rawConversations: String? = null
     @Ignore
     var rawImageUrls: List<String>? = null
+    @Ignore
+    var parsedSharedTeamName: String? = null
+
+    private data class ImagesCache(val raw: String?, val parsed: JsonArray)
+    private data class ReactionsCache(
+        val raw: String?,
+        val parsed: JsonObject,
+        val map: Map<String, List<String>>
+    )
+    private data class PendingReactionsCache(
+        val raw: String?,
+        val map: Map<String, String>
+    )
+
+    @Ignore
+    @Volatile
+    private var imagesCache: ImagesCache? = null
+
+    @Ignore
+    @Volatile
+    private var reactionsCache: ReactionsCache? = null
+
+    @Ignore
+    @Volatile
+    private var pendingReactionsCache: PendingReactionsCache? = null
 
     @get:Ignore
     val imagesArray: JsonArray
-        get() = if (images == null) JsonArray() else JsonUtils.gson.fromJson(images, JsonArray::class.java)
+        get() {
+            val currentImages = images
+            val cache = imagesCache
+            if (cache != null && cache.raw == currentImages) {
+                return cache.parsed.deepCopy()
+            }
+            val parsed = if (currentImages == null) {
+                JsonArray()
+            } else {
+                try {
+                    GsonUtils.gson.fromJson(currentImages, JsonArray::class.java) ?: JsonArray()
+                } catch (_: Exception) {
+                    JsonArray()
+                }
+            }
+            imagesCache = ImagesCache(currentImages, parsed)
+            return parsed.deepCopy()
+        }
 
     @get:Ignore
     val labelsArray: JsonArray
-        get() {
-            val array = JsonArray()
+        get() = buildJsonArray {
             labels?.forEach { s ->
-                array.add(s)
+                add(s)
             }
-            return array
+        }.toGson()
+
+    private fun getOrUpdateReactionsCache(): ReactionsCache {
+        val currentReactions = reactions
+        val cache = reactionsCache
+        if (cache != null && cache.raw == currentReactions) {
+            return cache
         }
+        val parsed = if (currentReactions == null) {
+            JsonObject()
+        } else {
+            try {
+                GsonUtils.gson.fromJson(currentReactions, JsonObject::class.java) ?: JsonObject()
+            } catch (_: Exception) {
+                JsonObject()
+            }
+        }
+        val map = parsed.keySet().mapNotNull { emoji ->
+            val users = parsed.get(emoji)
+                ?.takeIf { it.isJsonArray }
+                ?.asJsonArray
+                ?.mapNotNull { if (it.isJsonPrimitive) it.asString else null }
+                .orEmpty()
+            if (users.isEmpty()) null else emoji to users
+        }.toMap()
+        val newCache = ReactionsCache(currentReactions, parsed, map)
+        reactionsCache = newCache
+        return newCache
+    }
+
+    @get:Ignore
+    val reactionsJson: JsonObject
+        get() = getOrUpdateReactionsCache().parsed.deepCopy()
+
+    @get:Ignore
+    val reactionsMap: Map<String, List<String>>
+        get() = getOrUpdateReactionsCache().map
+
+    @get:Ignore
+    val pendingReactionsMap: Map<String, String>
+        get() {
+            val currentPending = pendingReactions
+            val cache = pendingReactionsCache
+            if (cache != null && cache.raw == currentPending) {
+                return cache.map
+            }
+            val map = if (currentPending == null) {
+                emptyMap()
+            } else {
+                try {
+                    GsonUtils.gson.fromJson(currentPending, JsonObject::class.java)
+                        ?.entrySet()
+                        ?.filter { it.value.isJsonPrimitive }
+                        ?.associate { it.key to it.value.asString }
+                        .orEmpty()
+                } catch (_: Exception) {
+                    emptyMap()
+                }
+            }
+            pendingReactionsCache = PendingReactionsCache(currentPending, map)
+            return map
+        }
+
+    fun updateReaction(emoji: String, userId: String) {
+        val target = if (reactionsMap[emoji]?.contains(userId) == true) "" else emoji
+        setReaction(userId, target)
+        val pending = JsonObject()
+        pendingReactionsMap.forEach { (u, e) -> pending.addProperty(u, e) }
+        pending.addProperty(userId, target)
+        pendingReactions = GsonUtils.gson.toJson(pending)
+    }
+
+    fun applyPendingReactions() {
+        pendingReactionsMap.forEach { (userId, emoji) -> setReaction(userId, emoji) }
+    }
+
+    private fun setReaction(userId: String, emoji: String) {
+        val currentMap = linkedMapOf<String, MutableList<String>>()
+        reactionsMap.forEach { (e, users) -> currentMap[e] = users.toMutableList() }
+
+        currentMap.forEach { (e, users) -> if (e != emoji) users.remove(userId) }
+        if (emoji.isNotEmpty()) {
+            val users = currentMap.getOrPut(emoji) { mutableListOf() }
+            if (userId !in users) users.add(userId)
+        }
+
+        val obj = JsonObject()
+        currentMap.filterValues { it.isNotEmpty() }.forEach { (e, users) ->
+            val arr = JsonArray()
+            users.forEach { arr.add(it) }
+            obj.add(e, arr)
+        }
+        reactions = GsonUtils.gson.toJson(obj)
+    }
 
     fun updateMessage(newMessage: String) {
         this.message = newMessage
         this.isEdited = true
-        this.editedTime = Date().time
+        this.editedTime = System.currentTimeMillis()
     }
 
     fun setLabels(images: JsonArray) {
@@ -105,48 +246,46 @@ open class News {
     }
 
     @get:Ignore
-    val messageWithoutMarkdown: String?
-        get() {
-            var ms = message
-            for (ob in imagesArray) {
-                ms = ms?.replace(JsonUtils.getString("markdown", ob.asJsonObject), "")
-            }
-            return ms
-        }
-
-    @get:Ignore
     val isCommunityNews: Boolean
         get() {
-            val array = JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
-            var isCommunity = false
-            for (e in array) {
-                val `object` = e.asJsonObject
-                if (`object`.has("section") && `object`["section"].asString.equals("community", ignoreCase = true)) {
-                    isCommunity = true
-                    break
+            try {
+                val array = parsedViewIn ?: if (!viewIn.isNullOrEmpty()) {
+                    GsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
+                } else null
+                if (array != null) {
+                    for (e in array) {
+                        val `object` = e.asJsonObject
+                        if (`object`.has("section") && `object`["section"].asString.equals("community", ignoreCase = true)) {
+                            return true
+                        }
+                    }
                 }
+            } catch (e: Exception) {
+                Log.w(TAG, "community section check failed", e)
             }
-            return isCommunity
+            return false
         }
 
     fun calculateSortDate(): Long {
         try {
             if (!viewIn.isNullOrEmpty()) {
-                val ar = JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
+                val ar = parsedViewIn ?: GsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
                 for (elem in ar) {
                     val obj = elem.asJsonObject
-                    if (JsonUtils.getString("section", obj).equals("community", true) && obj.has("sharedDate")) {
-                        return JsonUtils.getLong("sharedDate", obj)
+                    if (GsonUtils.getString("section", obj).equals("community", true) && obj.has("sharedDate")) {
+                        return GsonUtils.getLong("sharedDate", obj)
                     }
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "calculateSortDate failed", e)
         }
         return time
     }
 
     companion object {
+        private const val TAG = "News"
+
         /**
          * Builds an unmanaged [News] from a form map. The caller persists it via the DAO.
          */
@@ -159,7 +298,7 @@ open class News {
             val news = News()
             news.id = "${UUID.randomUUID()}"
             news.message = map["message"]
-            news.time = Date().time
+            news.time = System.currentTimeMillis()
             news.createdOn = user?.planetCode
             news.avatar = ""
             news.docType = "message"
@@ -178,50 +317,49 @@ open class News {
             try {
                 news.updatedDate = map["updatedDate"]?.toLong() ?: 0
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "updatedDate parse failed", e)
             }
 
             news.userId = user?.id
             news.replyTo = map["replyTo"] ?: ""
-            news.user = JsonUtils.gson.toJson(user?.serialize())
+            news.user = GsonUtils.gson.toJson(user?.serialize())
             news.imageUrls = imageUrls?.toList() ?: emptyList()
 
-            if (map.containsKey("news")) {
-                val newsObj = map["news"]
+            map["news"]?.let { newsObj ->
                 try {
-                    val newsJsonString = newsObj?.replace("=", ":")
-                    val newsJson = JsonUtils.gson.fromJson(newsJsonString, JsonObject::class.java)
-                    news.newsId = JsonUtils.getString("_id", newsJson)
-                    news.newsRev = JsonUtils.getString("_rev", newsJson)
-                    news.newsUser = JsonUtils.getString("user", newsJson)
-                    news.aiProvider = JsonUtils.getString("aiProvider", newsJson)
-                    news.newsTitle = JsonUtils.getString("title", newsJson)
+                    val newsJsonString = newsObj.replace("=", ":")
+                    val newsJson = GsonUtils.gson.fromJson(newsJsonString, JsonObject::class.java)
+                    news.newsId = GsonUtils.getString("_id", newsJson)
+                    news.newsRev = GsonUtils.getString("_rev", newsJson)
+                    news.newsUser = GsonUtils.getString("user", newsJson)
+                    news.aiProvider = GsonUtils.getString("aiProvider", newsJson)
+                    news.newsTitle = GsonUtils.getString("title", newsJson)
                     if (newsJson.has("conversations")) {
                         val conversationsElement = newsJson.get("conversations")
                         if (conversationsElement.isJsonPrimitive && conversationsElement.asJsonPrimitive.isString) {
                             val conversationsString = conversationsElement.asString
                             try {
-                                val conversationsArray = JsonUtils.gson.fromJson(conversationsString, JsonArray::class.java)
-                                if (conversationsArray.size() > 0) {
+                                val conversationsArray = GsonUtils.gson.fromJson(conversationsString, JsonArray::class.java)
+                                if (!conversationsArray.isEmpty) {
                                     val conversationsList = ArrayList<HashMap<String, String>>()
                                     conversationsArray.forEach { conversationElement ->
                                         val conversationObj = conversationElement.asJsonObject
                                         val conversationMap = HashMap<String, String>()
-                                        conversationMap["query"] = JsonUtils.getString("query", conversationObj)
-                                        conversationMap["response"] = JsonUtils.getString("response", conversationObj)
+                                        conversationMap["query"] = GsonUtils.getString("query", conversationObj)
+                                        conversationMap["response"] = GsonUtils.getString("response", conversationObj)
                                         conversationsList.add(conversationMap)
                                     }
-                                    news.conversations = JsonUtils.gson.toJson(conversationsList)
+                                    news.conversations = GsonUtils.gson.toJson(conversationsList)
                                 }
                             } catch (e: JsonSyntaxException) {
-                                e.printStackTrace()
+                                Log.w(TAG, "conversation parse failed", e)
                             }
                         }
                     }
-                    news.newsCreatedDate = JsonUtils.getLong("createdDate", newsJson)
-                    news.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsJson)
+                    news.newsCreatedDate = GsonUtils.getLong("createdDate", newsJson)
+                    news.newsUpdatedDate = GsonUtils.getLong("updatedDate", newsJson)
                 } catch (e: JsonSyntaxException) {
-                    e.printStackTrace()
+                    Log.w(TAG, "news json parse failed", e)
                 }
             }
 
@@ -229,15 +367,35 @@ open class News {
         }
 
         fun getViewInJson(map: HashMap<String?, String>): String {
-            val viewInArray = JsonArray()
-            if (!TextUtils.isEmpty(map["viewInId"])) {
-                val `object` = JsonObject()
-                `object`.addProperty("_id", map["viewInId"])
-                `object`.addProperty("section", map["viewInSection"])
-                `object`.addProperty("name", map["name"])
-                viewInArray.add(`object`)
+            val viewInArray = buildJsonArray {
+                if (!map["viewInId"].isNullOrEmpty()) {
+                    add(buildJsonObject {
+                        put("_id", map["viewInId"])
+                        put("section", map["viewInSection"])
+                        put("name", map["name"])
+                    })
+                }
             }
-            return JsonUtils.gson.toJson(viewInArray)
+            return viewInArray.toString()
+        }
+
+        fun createImageListEntry(path: String, resourceId: String = UUID.randomUUID().toString()): String {
+            val jsonObject = JsonObject()
+            jsonObject.addProperty("imageUrl", path)
+            jsonObject.addProperty("fileName", FileUtils.getFileNameFromUrl(path))
+            jsonObject.addProperty("resourceId", resourceId)
+            return GsonUtils.gson.toJson(jsonObject)
+        }
+
+        fun containsImagePath(imageList: List<String>, path: String): Boolean {
+            return imageList.any { imageJson ->
+                try {
+                    val imgObject = GsonUtils.gson.fromJson(imageJson, JsonObject::class.java)
+                    GsonUtils.getString("imageUrl", imgObject) == path
+                } catch (_: Exception) {
+                    false
+                }
+            }
         }
     }
 }

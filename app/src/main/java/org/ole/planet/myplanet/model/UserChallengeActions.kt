@@ -1,10 +1,11 @@
 package org.ole.planet.myplanet.model
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.util.UUID
 
-@Entity(tableName = "user_challenge_actions")
+@Entity(tableName = "user_challenge_actions", indices = [Index(value = ["userId", "actionType"])])
 open class UserChallengeActions {
     @PrimaryKey
     var id: String = UUID.randomUUID().toString()

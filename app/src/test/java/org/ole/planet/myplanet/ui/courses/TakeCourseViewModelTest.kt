@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.ui.courses
 
-import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.mockk
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -17,8 +19,13 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.RatingEntry
+import org.ole.planet.myplanet.repository.RatingSummary
+import org.ole.planet.myplanet.repository.RatingsRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -30,7 +37,10 @@ class TakeCourseViewModelTest {
     val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     private val coursesRepository: CoursesRepository = mockk()
-    private val userSessionManager: UserSessionManager = mockk()
+    private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
+    private val progressRepository: ProgressRepository = mockk()
+    private val userRepository: UserRepository = mockk()
+    private val ratingsRepository: RatingsRepository = mockk()
 
     private lateinit var viewModel: TakeCourseViewModel
 
@@ -40,18 +50,21 @@ class TakeCourseViewModelTest {
         course: MyCourse? = MyCourse().apply { courseId = this@TakeCourseViewModelTest.courseId },
         steps: List<CourseStep> = emptyList(),
         currentProgress: Int = 0,
-        user: UserEntity? = UserEntity().apply { id = "user_1" }
+        user: UserEntity? = UserEntity().apply { id = "user_1" },
+        blockingStepIndex: Int = -1
     ) {
-        coEvery { userSessionManager.getUserModel() } returns user
+        coEvery { userRepository.getUserModel() } returns user
         coEvery { coursesRepository.getCourseById(courseId) } returns course
         coEvery { coursesRepository.getCourseSteps(courseId) } returns steps
-        coEvery { coursesRepository.getCourseProgress(user?.id, listOf(courseId)) } returns
-            hashMapOf<String?, JsonObject>(courseId to JsonObject().apply { addProperty("current", currentProgress) })
+        coEvery { progressRepository.getCourseProgress(listOf(courseId), user?.id) } returns
+            hashMapOf(courseId to org.ole.planet.myplanet.model.CourseProgressState(current = currentProgress, max = steps.size))
+        coEvery { progressRepository.saveEarnedExamPasses(any(), any(), any(), any(), any()) } returns Unit
+        coEvery { progressRepository.getBlockingStepIndex(any(), any(), any()) } returns blockingStepIndex
     }
 
     @Before
     fun setUp() {
-        viewModel = TakeCourseViewModel(coursesRepository, userSessionManager)
+        viewModel = TakeCourseViewModel(coursesRepository, activitiesRepository, progressRepository, userRepository, ratingsRepository)
     }
 
     @Test
@@ -69,6 +82,35 @@ class TakeCourseViewModelTest {
     }
 
     @Test
+    fun loadCourse_carriesTheBlockingStepIntoTheState() = runTest {
+        val steps = listOf(CourseStep(id = "s1"), CourseStep(id = "s2", passingRequired = true), CourseStep(id = "s3"))
+        stubCourseLoad(steps = steps, currentProgress = 3, blockingStepIndex = 1)
+
+        viewModel.loadCourse(courseId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as TakeCourseUiState.Success
+        assertEquals(1, state.blockingStepIndex)
+        // The saved resume point is still reported; the fragment clamps it to the blocking step
+        assertEquals(3, state.courseProgress)
+    }
+
+    @Test
+    fun getBlockingStepIndex_savesEarnedPassesBeforeReadingTheLock() = runTest {
+        val steps = listOf(CourseStep(id = "s1", passingRequired = true))
+        val user = UserEntity().apply { id = "user_1"; planetCode = "planet"; parentCode = "parent" }
+        coEvery { progressRepository.saveEarnedExamPasses(any(), any(), any(), any(), any()) } returns Unit
+        coEvery { progressRepository.getBlockingStepIndex(steps, "user_1", courseId) } returns -1
+
+        assertEquals(-1, viewModel.getBlockingStepIndex(steps, user, courseId))
+
+        coVerifyOrder {
+            progressRepository.saveEarnedExamPasses(steps, "user_1", "planet", "parent", courseId)
+            progressRepository.getBlockingStepIndex(steps, "user_1", courseId)
+        }
+    }
+
+    @Test
     fun loadCourse_whenCourseMissing_emitsNotFound() = runTest {
         stubCourseLoad(course = null)
 
@@ -76,6 +118,28 @@ class TakeCourseViewModelTest {
         advanceUntilIdle()
 
         assertTrue(viewModel.uiState.value is TakeCourseUiState.NotFound)
+    }
+
+    @Test
+    fun loadCourse_whenRepositoryThrows_emitsNotFound() = runTest {
+        coEvery { userRepository.getUserModel() } returns UserEntity().apply { id = "user_1" }
+        coEvery { coursesRepository.getCourseById(courseId) } throws IOException("Network error")
+
+        viewModel.loadCourse(courseId)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is TakeCourseUiState.NotFound)
+    }
+
+    @Test
+    fun loadCourse_whenCancelled_doesNotEmitNotFound() = runTest {
+        coEvery { userRepository.getUserModel() } returns UserEntity().apply { id = "user_1" }
+        coEvery { coursesRepository.getCourseById(courseId) } throws CancellationException("cancelled")
+
+        viewModel.loadCourse(courseId)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is TakeCourseUiState.Loading)
     }
 
     @Test
@@ -92,7 +156,7 @@ class TakeCourseViewModelTest {
 
         coVerify(exactly = 1) { coursesRepository.getCourseById(courseId) }
         coVerify(exactly = 1) { coursesRepository.getCourseSteps(courseId) }
-        coVerify(exactly = 1) { coursesRepository.getCourseProgress(any(), any<List<String>>()) }
+        coVerify(exactly = 1) { progressRepository.getCourseProgress(any<List<String>>(), any()) }
     }
 
     @Test
@@ -115,8 +179,8 @@ class TakeCourseViewModelTest {
         coEvery { coursesRepository.getCourseById(otherCourseId) } returns
             MyCourse().apply { courseId = otherCourseId }
         coEvery { coursesRepository.getCourseSteps(otherCourseId) } returns emptyList()
-        coEvery { coursesRepository.getCourseProgress(any(), listOf(otherCourseId)) } returns
-            hashMapOf<String?, JsonObject>()
+        coEvery { progressRepository.getCourseProgress(listOf(otherCourseId), any()) } returns
+            hashMapOf()
 
         viewModel.loadCourse(courseId)
         advanceUntilIdle()
@@ -132,5 +196,47 @@ class TakeCourseViewModelTest {
         assertFalse(viewModel.hasOfferedJoinDialog)
         viewModel.markJoinDialogOffered()
         assertTrue(viewModel.hasOfferedJoinDialog)
+    }
+
+    @Test
+    fun getRatingPromptDecision_whenParamsNullOrEmpty_returnsSkip() = runTest {
+        assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision(null, "user_1"))
+        assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision("", "user_1"))
+        assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision("course_1", null))
+        assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision("course_1", ""))
+    }
+
+    @Test
+    fun getRatingPromptDecision_whenRepositoryThrows_returnsShow() = runTest {
+        coEvery { ratingsRepository.getRatingSummary("course", "course_1", "user_1") } throws Exception("Network error")
+        assertEquals(RatingPromptDecision.Show, viewModel.getRatingPromptDecision("course_1", "user_1"))
+    }
+
+    @Test
+    fun getRatingPromptDecision_whenNoExistingRating_returnsShow() = runTest {
+        val summary = RatingSummary(existingRating = null, averageRating = 0f, totalRatings = 0, userRating = null)
+        coEvery { ratingsRepository.getRatingSummary("course", "course_1", "user_1") } returns summary
+        assertEquals(RatingPromptDecision.Show, viewModel.getRatingPromptDecision("course_1", "user_1"))
+    }
+
+    @Test
+    fun getRatingPromptDecision_whenExistingRating_returnsSkip() = runTest {
+        val summary = RatingSummary(existingRating = RatingEntry("id", "comment", 5), averageRating = 5f, totalRatings = 1, userRating = 5)
+        coEvery { ratingsRepository.getRatingSummary("course", "course_1", "user_1") } returns summary
+        assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision("course_1", "user_1"))
+    }
+
+    @Test
+    fun getRatingPromptDecision_whenUserRatingNotNull_returnsSkip() = runTest {
+        val summary = RatingSummary(existingRating = null, averageRating = 4f, totalRatings = 1, userRating = 4)
+        coEvery { ratingsRepository.getRatingSummary("course", "course_1", "user_1") } returns summary
+        assertEquals(RatingPromptDecision.Skip, viewModel.getRatingPromptDecision("course_1", "user_1"))
+    }
+
+    @Test
+    fun logCourseVisit_delegatesToActivitiesRepositoryWithUserName() = runTest {
+        viewModel.logCourseVisit("c1", "Title", "alice")
+
+        coVerify(exactly = 1) { activitiesRepository.logCourseVisit("c1", "Title", "alice") }
     }
 }

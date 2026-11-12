@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.events
 
 import android.app.Application
 import android.content.Context
-import android.os.Build
 import android.widget.LinearLayout
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
@@ -14,7 +13,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [Build.VERSION_CODES.P], application = Application::class)
+@Config(application = Application::class)
 class EventsDescriptionAdapterTest {
 
     private lateinit var context: Context
@@ -48,12 +47,12 @@ class EventsDescriptionAdapterTest {
         val holder = adapter.onCreateViewHolder(parent, 0)
 
         adapter.onBindViewHolder(holder, 0)
-        assertEquals("Date : ", holder.title.text.toString())
-        assertEquals("2023-10-27", holder.description.text.toString())
+        assertEquals("Date : ", holder.binding.title.text.toString())
+        assertEquals("2023-10-27", holder.binding.description.text.toString())
 
         adapter.onBindViewHolder(holder, 1)
-        assertEquals("Time : ", holder.title.text.toString())
-        assertEquals("10:00 AM", holder.description.text.toString())
+        assertEquals("Time : ", holder.binding.title.text.toString())
+        assertEquals("10:00 AM", holder.binding.description.text.toString())
 
         val updatedList = listOf(
             EventsDescriptionAdapter.DescriptionItem("Date", "2023-10-28"),
@@ -72,11 +71,11 @@ class EventsDescriptionAdapterTest {
         assertEquals(2, adapter.itemCount)
 
         adapter.onBindViewHolder(holder, 0)
-        assertEquals("Date : ", holder.title.text.toString())
-        assertEquals("2023-10-28", holder.description.text.toString())
+        assertEquals("Date : ", holder.binding.title.text.toString())
+        assertEquals("2023-10-28", holder.binding.description.text.toString())
 
         adapter.onBindViewHolder(holder, 1)
-        assertEquals("Location : ", holder.title.text.toString())
-        assertEquals("Online", holder.description.text.toString())
+        assertEquals("Location : ", holder.binding.title.text.toString())
+        assertEquals("Online", holder.binding.description.text.toString())
     }
 }

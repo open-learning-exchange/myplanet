@@ -7,7 +7,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -15,17 +14,20 @@ import androidx.recyclerview.widget.SimpleItemAnimator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.OptIn
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
@@ -35,12 +37,8 @@ import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
-class TeamFragment : Fragment() {
-    private var _binding: FragmentTeamBinding? = null
-    private val binding get() = _binding!!
+class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBinding::inflate) {
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
-    @Inject
-    lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
@@ -64,14 +62,16 @@ class TeamFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentTeamBinding.inflate(inflater, container, false)
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         binding.addTeam.setOnClickListener { createTeamAlert(null) }
         binding.tvFragmentInfo.text = if (TextUtils.equals(type, "enterprise")) {
             getString(R.string.enterprises)
+        } else if (fromDashboard) {
+            getString(R.string.txt_myTeams)
         } else {
             getString(R.string.team)
         }
-        return binding.root
+        return view
     }
 
     fun createTeamAlert(team: TeamDetails?) {
@@ -137,7 +137,7 @@ class TeamFragment : Fragment() {
                 if (team == null) {
                     createNewTeam(name, description, services, rules, selectedTeamType, userModel, dialog, failureMessage)
                 } else {
-                    updateExistingTeam(team, name, description, services, rules, userModel, dialog, failureMessage)
+                    updateExistingTeam(team, name, description, services, rules, dialog, failureMessage)
                 }
             }
         }
@@ -188,47 +188,41 @@ class TeamFragment : Fragment() {
 
     private suspend fun updateExistingTeam(
         team: TeamDetails, name: String, description: String, services: String, rules: String,
-        userModel: UserEntity, dialog: AlertDialog, failureMessage: String
+        dialog: AlertDialog, failureMessage: String
     ) {
-        val teamTypeForValidation = if (type == "enterprise") "enterprise" else "team"
-        val excludeTeamId = team._id ?: team.teamId
-        val nameExists = teamsRepository.isTeamNameExists(name, teamTypeForValidation, excludeTeamId)
-
-        if (nameExists) {
-            val duplicateMessage = if (type == "enterprise") {
-                getString(R.string.enterprise_name_already_exists)
-            } else {
-                getString(R.string.team_name_already_exists)
-            }
-            Utilities.toast(activity, duplicateMessage)
-            alertCreateTeamBinding.etName.error = duplicateMessage
-            return
-        }
-
         val targetTeamId = team._id ?: team.teamId
         if (targetTeamId.isNullOrBlank()) {
             Utilities.toast(activity, failureMessage)
             return
         }
-        teamsRepository.updateTeam(
+        val result = viewModel.updateExistingTeam(
             teamId = targetTeamId,
             name = name,
             description = description,
             services = services,
             rules = rules,
-            updatedBy = userModel._id,
-        ).onSuccess { updated ->
-            if (updated) {
+            category = type
+        )
+        when (result) {
+            is TeamActionResult.NameExists -> {
+                val duplicateMessage = if (type == "enterprise") {
+                    getString(R.string.enterprise_name_already_exists)
+                } else {
+                    getString(R.string.team_name_already_exists)
+                }
+                Utilities.toast(activity, duplicateMessage)
+                alertCreateTeamBinding.etName.error = duplicateMessage
+            }
+            is TeamActionResult.Success -> {
                 binding.etSearch.visibility = View.VISIBLE
                 binding.tableTitle.visibility = View.VISIBLE
                 Utilities.toast(activity, getString(R.string.team_created))
                 viewModel.loadTeams(fromDashboard, type, user?.id)
                 dialog.dismiss()
-            } else {
+            }
+            is TeamActionResult.Failure -> {
                 Utilities.toast(activity, failureMessage)
             }
-        }.onFailure {
-            Utilities.toast(activity, failureMessage)
         }
     }
 
@@ -252,50 +246,52 @@ class TeamFragment : Fragment() {
     private fun setupRecyclerView() {
         binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
         (binding.rvTeamList.itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = false
-        teamListAdapter = TeamsAdapter(
-            isGuestUser = user?.isGuest() == true,
-            onItemClick = { team ->
-                val activity = getActivity() as? AppCompatActivity ?: return@TeamsAdapter
-                val fragment = TeamDetailFragment.newInstance(
-                    teamId = team._id.orEmpty(),
-                    teamName = "${team.name}",
-                    teamType = "${team.type}",
-                    isMyTeam = team.teamStatus?.isMember == true
-                )
-                FragmentNavigator.replaceFragment(
-                    activity.supportFragmentManager,
-                    R.id.fragment_container,
-                    fragment,
-                    addToBackStack = true,
-                    tag = "TeamDetailFragment"
-                )
-                sharedPrefManager.setTeamName(team.name)
-            },
-            onFeedbackClick = { team ->
-                val feedbackFragment = FeedbackFragment()
-                feedbackFragment.show(childFragmentManager, "")
-                feedbackFragment.arguments = getBundle(team)
-            },
-            onEditTeamClick = { team ->
-                createTeamAlert(team)
-            },
-            onLeaveTeamClick = { team ->
-                AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
-                    .setMessage(R.string.confirm_exit)
-                    .setPositiveButton(R.string.yes) { _, _ ->
-                        val teamId = team._id ?: return@setPositiveButton
-                        viewModel.leaveTeam(teamId, user?.id)
+        if (!::teamListAdapter.isInitialized) {
+            teamListAdapter = TeamsAdapter(
+                isGuestUser = user?.isGuest() == true,
+                onItemClick = { team ->
+                    val activity = getActivity() as? AppCompatActivity ?: return@TeamsAdapter
+                    val fragment = TeamDetailFragment.newInstance(
+                        teamId = team._id.orEmpty(),
+                        teamName = "${team.name}",
+                        teamType = "${team.type}",
+                        isMyTeam = team.teamStatus?.isMember == true
+                    )
+                    FragmentNavigator.replaceFragment(
+                        activity.supportFragmentManager,
+                        R.id.fragment_container,
+                        fragment,
+                        addToBackStack = true,
+                        tag = "TeamDetailFragment"
+                    )
+                    sharedPrefManager.setTeamName(team.name)
+                },
+                onFeedbackClick = { team ->
+                    val feedbackFragment = FeedbackFragment()
+                    feedbackFragment.show(childFragmentManager, "")
+                    feedbackFragment.arguments = getBundle(team)
+                },
+                onEditTeamClick = { team ->
+                    createTeamAlert(team)
+                },
+                onLeaveTeamClick = { team ->
+                    AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
+                        .setMessage(R.string.confirm_exit)
+                        .setPositiveButton(R.string.yes) { _, _ ->
+                            val teamId = team._id ?: return@setPositiveButton
+                            viewModel.leaveTeam(teamId, user?.id)
+                        }
+                        .setNegativeButton(R.string.no, null)
+                        .show()
+                },
+                onRequestToJoinClick = { team ->
+                    team._id?.let { teamId ->
+                        viewModel.requestToJoin(teamId, user?.id, user?.planetCode, team.teamType)
                     }
-                    .setNegativeButton(R.string.no, null)
-                    .show()
-            },
-            onRequestToJoinClick = { team ->
-                team._id?.let { teamId ->
-                    viewModel.requestToJoin(teamId, user?.id, user?.planetCode, team.teamType)
                 }
+            ).apply {
+                setType(type)
             }
-        ).apply {
-            setType(type)
         }
         binding.rvTeamList.adapter = teamListAdapter
     }
@@ -311,7 +307,7 @@ class TeamFragment : Fragment() {
     private fun observeTeamData() {
         collectLatestWhenStarted(viewModel.teamData) { teamDataList ->
             teamListAdapter.submitList(teamDataList)
-            showNoResultsMessage(teamDataList.isEmpty())
+            showNoResultsMessage(teamDataList.isEmpty(), binding.etSearch.text?.toString().orEmpty().trim())
             listContentDescription(conditionApplied)
         }
     }
@@ -319,7 +315,9 @@ class TeamFragment : Fragment() {
     @OptIn(FlowPreview::class)
     private fun setupTextWatcher() {
         binding.etSearch.textChanges()
-            .debounce(300)
+            .drop(1)
+            .debounce(300.milliseconds)
+            .distinctUntilChanged()
             .onEach { text -> viewModel.searchTeams(text?.toString() ?: "") }
             .launchIn(viewLifecycleOwner.lifecycleScope)
     }
@@ -360,7 +358,7 @@ class TeamFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        _binding = null
+        binding.rvTeamList.adapter = null
         super.onDestroyView()
     }
 }

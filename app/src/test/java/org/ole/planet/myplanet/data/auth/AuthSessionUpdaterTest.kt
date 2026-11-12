@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.data.auth
 
+import android.util.Log
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import java.lang.reflect.Method
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -38,6 +40,8 @@ class AuthSessionUpdaterTest {
         every { mockDispatcherProvider.main } returns testDispatcher
         every { mockDispatcherProvider.default } returns testDispatcher
         every { mockDispatcherProvider.unconfined } returns testDispatcher
+        mockkStatic(Log::class)
+        every { Log.w(any<String>(), any<String>(), any<Throwable>()) } returns 0
     }
 
     @After

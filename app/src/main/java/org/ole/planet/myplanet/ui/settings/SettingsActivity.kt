@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -14,30 +13,28 @@ import android.widget.ArrayAdapter
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
 import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.PreferenceManager
 import androidx.preference.SwitchPreference
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.RetryOperation
-import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.ThemeManager
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
@@ -48,6 +45,8 @@ import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class SettingsActivity : AppCompatActivity() {
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleUtils.onAttach(base))
@@ -55,7 +54,10 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        EdgeToEdgeUtils.setupEdgeToEdge(this, window.decorView)
+        lifecycleScope.launch(dispatcherProvider.io) {
+            PreferenceManager.getDefaultSharedPreferences(this@SettingsActivity)
+        }
+        EdgeToEdgeUtils.setupEdgeToEdge(this, findViewById(android.R.id.content))
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         FragmentNavigator.replaceFragment(supportFragmentManager, android.R.id.content, SettingFragment())
         title = getString(R.string.action_settings)
@@ -83,15 +85,11 @@ class SettingsActivity : AppCompatActivity() {
     class SettingFragment : PreferenceFragmentCompat() {
         private val viewModel: SettingsViewModel by viewModels()
         @Inject
-        lateinit var profileDbHandler: UserSessionManager
-        @Inject
-        @DefaultPreferences
-        lateinit var defaultPref: SharedPreferences
-        @Inject
         lateinit var sharedPrefManager: SharedPrefManager
         @Inject
         lateinit var timeProvider: TimeProvider
-        var user: UserEntity? = null
+        @Inject
+        lateinit var dispatcherProvider: DispatcherProvider
         private var libraryList: List<MyLibrary>? = null
 
 
@@ -134,8 +132,8 @@ class SettingsActivity : AppCompatActivity() {
                             }
                             appendLine("$statusIcon ${op.uploadType}: ${op.status} (${op.attemptCount}/${op.maxAttempts})")
                         }
-                        if (pendingOps.size > 10) {
-                            appendLine("... and ${pendingOps.size - 10} more")
+                        if (detailsData.pendingDueCount > pendingOps.size) {
+                            appendLine("... and ${detailsData.pendingDueCount - pendingOps.size} more")
                         }
                     } else {
                         appendLine("No pending operations")
@@ -188,8 +186,7 @@ class SettingsActivity : AppCompatActivity() {
             requireContext().setTheme(R.style.PreferencesTheme)
             setPreferencesFromResource(R.xml.pref, rootKey)
             lifecycleScope.launch {
-                user = profileDbHandler.getUserModel()
-                blockGuestSwitches()
+                if (viewModel.isGuest()) blockGuestSwitches()
             }
 
             setBetaToggleOn()
@@ -197,12 +194,6 @@ class SettingsActivity : AppCompatActivity() {
             val lp = findPreference<Preference>("app_language")
             lp?.setOnPreferenceClickListener {
                 context?.let { it1 -> languageChanger(it1) }
-                true
-            }
-
-            val darkMode = findPreference<Preference>("dark_mode")
-            darkMode?.setOnPreferenceClickListener {
-                ThemeManager.showThemeDialog(requireActivity())
                 true
             }
 
@@ -217,10 +208,10 @@ class SettingsActivity : AppCompatActivity() {
                 val isChecked = newValue as Boolean
                 if (isChecked) {
                     preference.isEnabled = false
-                    defaultPref.edit { putBoolean("beta_auto_download", true) }
+                    sharedPrefManager.setBetaAutoDownload(true)
                     viewModel.downloadFiles(libraryList)
                 } else {
-                    defaultPref.edit { putBoolean("beta_auto_download", false) }
+                    sharedPrefManager.setBetaAutoDownload(false)
                 }
                 true
             }
@@ -231,8 +222,6 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         private fun blockGuestSwitches() {
-            if (user?.id?.startsWith("guest") != true) return
-
             fun processPreference(pref: Preference) {
                 when (pref) {
                     is SwitchPreference -> {
@@ -258,8 +247,7 @@ class SettingsActivity : AppCompatActivity() {
             refreshStorageBreakdownSummary()
             findPreference<Preference>("storage_breakdown")?.setOnPreferenceClickListener {
                 viewLifecycleOwner.lifecycleScope.launch {
-                    val userModel = profileDbHandler.getUserModel()
-                    if (userModel?.id?.startsWith("guest") == true) {
+                    if (viewModel.isGuest()) {
                         DialogUtils.guestDialog(requireActivity())
                     } else {
                         StorageBreakdownFragment().show(parentFragmentManager, "storage_breakdown")
@@ -274,8 +262,14 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         private fun refreshStorageBreakdownSummary() {
-            findPreference<Preference>("storage_breakdown")?.summary = getString(R.string.storage_breakdown_summary) +
-                " · ${getString(R.string.available_space_colon)} ${FileUtils.availableOverTotalMemoryFormattedString(requireContext())}"
+            val context = requireContext().applicationContext
+            lifecycleScope.launch {
+                val availableSpaceText = withContext(dispatcherProvider.io) {
+                    FileUtils.availableOverTotalMemoryFormattedString(context)
+                }
+                findPreference<Preference>("storage_breakdown")?.summary = getString(R.string.storage_breakdown_summary) +
+                    " · ${getString(R.string.available_space_colon)} $availableSpaceText"
+            }
         }
 
         private fun initRetryQueueDebug() {
@@ -295,8 +289,7 @@ class SettingsActivity : AppCompatActivity() {
             if (preference != null) {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
                     viewLifecycleOwner.lifecycleScope.launch {
-                        val userModel = profileDbHandler.getUserModel()
-                        if (userModel?.id?.startsWith("guest") == true) {
+                        if (viewModel.isGuest()) {
                             DialogUtils.guestDialog(requireActivity())
                             return@launch
                         }
@@ -326,26 +319,22 @@ class SettingsActivity : AppCompatActivity() {
             val autoForceWeeklySync = findPreference<SwitchPreference>("force_weekly_sync") ?: return
             val autoForceMonthlySync = findPreference<SwitchPreference>("force_monthly_sync") ?: return
             val lastSyncDate = findPreference<Preference>("lastSyncDate")
-            autoSync.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
-                if (autoSync.isChecked) {
+            autoSync.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, newValue: Any? ->
+                if (newValue == true) {
                     if (autoForceWeeklySync.isChecked) {
                         autoForceMonthlySync.isChecked = false
                     } else autoForceWeeklySync.isChecked = !autoForceMonthlySync.isChecked
                 }
                 true
             }
-            autoForceSync(autoSync, autoForceWeeklySync, autoForceMonthlySync)
-            autoForceSync(autoSync, autoForceMonthlySync, autoForceWeeklySync)
+            autoForceSync(autoForceWeeklySync, autoForceMonthlySync)
+            autoForceSync(autoForceMonthlySync, autoForceWeeklySync)
             val lastSynced = sharedPrefManager.getLastSync()
             if (lastSynced == 0L) {
                 lastSyncDate?.setTitle(R.string.last_synced_never)
             } else if (lastSyncDate != null) {
-                lastSyncDate.title = getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSynced, timeProvider)
+                lastSyncDate.title = getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(requireContext(), lastSynced, timeProvider)
             }
-        }
-
-        override fun onDestroy() {
-            super.onDestroy()
         }
 
         companion object {
@@ -434,9 +423,9 @@ class SettingsActivity : AppCompatActivity() {
 
     companion object {
         var openDashboard = true
-        private fun autoForceSync(autoSync: SwitchPreference, autoForceA: SwitchPreference, autoForceB: SwitchPreference) {
-            autoForceA.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
-                autoForceB.isChecked = !autoSync.isChecked
+        private fun autoForceSync(autoForceA: SwitchPreference, autoForceB: SwitchPreference) {
+            autoForceA.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, newValue: Any? ->
+                autoForceB.isChecked = newValue != true
                 true
             }
         }

@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.view.doOnLayout
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
@@ -33,6 +34,9 @@ class ChatAdapter(
     var onLoadMoreClick: (() -> Unit)? = null
 
     private var chatItemClickListener: OnChatItemClickListener? = null
+    private val clipboardManager by lazy {
+        context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    }
 
     fun setOnChatItemClickListener(listener: OnChatItemClickListener) {
         this.chatItemClickListener = listener
@@ -70,9 +74,18 @@ class ChatAdapter(
             if (responseSource == ChatMessage.RESPONSE_SOURCE_NETWORK) {
                 if (shouldAnimate) {
                     textAiMessageBinding.textGchatMessageOther.text = context.getString(R.string.empty_text)
+                    var lastLineCount = -1
                     cancelAnimation = onAnimateTyping(response, { text ->
                         textAiMessageBinding.textGchatMessageOther.text = text
-                        recyclerView.scrollToPosition(bindingAdapterPosition)
+                        textAiMessageBinding.textGchatMessageOther.doOnLayout { view ->
+                            val lines = (view as android.widget.TextView).lineCount
+                            if (lines != lastLineCount || text.length == response.length) {
+                                if (bindingAdapterPosition != RecyclerView.NO_POSITION) {
+                                    recyclerView.scrollToPosition(bindingAdapterPosition)
+                                }
+                                lastLineCount = lines
+                            }
+                        }
                     }, {
                         markAnimated()
                     })
@@ -94,9 +107,8 @@ class ChatAdapter(
     }
 
     private fun copyToClipboard(text: String) {
-        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         val clip = ClipData.newPlainText("copied Text", text)
-        clipboard.setPrimaryClip(clip)
+        clipboardManager.setPrimaryClip(clip)
         Utilities.toast(
             context,
             context.getString(R.string.copied_to_clipboard),
@@ -197,11 +209,5 @@ class ChatAdapter(
         if (holder is ResponseViewHolder) {
             holder.cancelAnimation?.invoke()
         }
-    }
-
-    companion object {
-        const val RESPONSE_SOURCE_SHARED_VIEW_MODEL = ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL
-        const val RESPONSE_SOURCE_NETWORK = ChatMessage.RESPONSE_SOURCE_NETWORK
-        const val RESPONSE_SOURCE_UNKNOWN = ChatMessage.RESPONSE_SOURCE_UNKNOWN
     }
 }

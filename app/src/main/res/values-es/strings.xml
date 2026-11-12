@@ -103,6 +103,7 @@
     <string name="user">Usuario</string>
     <string name="remove_selected">Eliminar\nseleccionados</string>
     <string name="stop_download">Detener descarga</string>
+    <string name="download_stopped">Descarga detenida</string>
     <string name="downloading_file">Descargando archivo…</string>
     <string name="cancel">Cancelar</string>
     <string name="added_to">agregado a</string>
@@ -159,6 +160,9 @@
     <string name="select_gallery">Seleccionar de la galería</string>
     <string name="add_resource">Agregar recurso:</string>
     <string name="reply">Responder</string>
+    <string name="react">Reaccionar</string>
+    <string name="reaction_chip_description">Reacción %1$s, total %2$d</string>
+    <string name="more_reactions">Más reacciones</string>
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">mostrando la respuesta de:</string>
@@ -276,6 +280,7 @@
     <string name="assign_task_to">Tarea asignada a</string>
     <string name="leader_selected">Líder seleccionado</string>
     <string name="remove">Eliminar</string>
+    <string name="remove_item_format">Eliminar %s</string>
     <string name="make_leader">Asignar como líder</string>
     <string name="mission"><![CDATA[Misión y Servicios]]></string>
     <string name="team">Equipos</string>
@@ -338,6 +343,7 @@
     <string name="action_disclaimer">Descargo de responsabilidad</string>
     <string name="action_about">Acerca de</string>
     <string name="english_dictionary">Diccionario inglés</string>
+    <string name="last_login_message">Este es tu último inicio de sesión antes de que tengas que hacerte miembro.</string>
 
     <string-array name="team_type">
         <item>Equipo local</item>
@@ -357,7 +363,8 @@
     <string-array name="sort_by_date">        
         <item>Ordenar por fecha - Desc</item>
         <item>Ordenar por fecha - Asc</item>
-        <item>Ordenar por título</item>
+        <item>Ordenar por título - Asc</item>
+        <item>Ordenar por título - Desc</item>
     </string-array>
 
     <string-array name="sort_member">
@@ -549,6 +556,8 @@
     <string name="subject_level">Nivel de asignatura</string>
     <string name="order_by_date">Ordenar por fecha</string>
     <string name="order_by_title">Ordenar por título</string>
+    <string name="sort">Ordenar</string>
+    <string name="show_n_results">Mostrar %1$d resultados</string>
     <string name="exams">Exámenes</string>
     <string name="survey">Encuestas</string>
     <string name="submitted_by">Enviado por</string>
@@ -577,9 +586,10 @@
     <string name="no_data_available_please_check_and_try_again">No hay datos disponibles, por favor verifica e intenta de nuevo.</string>
     <string name="no_course_matched_filter">No hay cursos que coincidan con el filtro</string>
     <string name="added_to_my_library">agregado a myLibrary</string>
+    <string name="format_added_to_mylibrary">%1$s agregado a myLibrary</string>
+    <string name="format_removed_from_mylibrary">%1$s eliminado de myLibrary</string>
     <string name="added_to_my_courses">agregado a myCourses</string>
     <string name="do_you_want_to_stay_online">¿Deseas permanecer en línea?</string>
-    <string name="device_not_connected_to_planet">Dispositivo no conectado a Planet.</string>
     <string name="all_files_downloaded_successfully">Todos los archivos se han descargado correctamente.</string>
     <string name="removed_from_mylibrary">Eliminado de miBiblioteca.</string>
     <string name="removed_from_mycourse">Eliminado de misCursos.</string>
@@ -601,6 +611,7 @@
     <string name="please_select_starting_date">"Por favor, selecciona la fecha de inicio: "</string>
     <string name="read_offline_news_from">"Leer noticias sin conexión desde: "</string>
     <string name="downloading_started_please_check_notification">Descarga iniciada, por favor revisa las notificaciones…</string>
+    <string name="dictionary_parsing_failed">Error al analizar el diccionario.</string>
     <string name="file_already_exists">El archivo ya existe…</string>
     <string name="feature_not_available">Función no disponible</string>
     <string name="sync">Sincronizar</string>
@@ -613,6 +624,10 @@
     <string name="meetup_added">Encuentro agregado</string>
     <string name="meetup_not_added">Encuentro no agregado</string>
     <string name="add_transaction">Agregar transacción</string>
+    <string name="from_date">Desde fecha</string>
+    <string name="to_date">Hasta fecha</string>
+    <string name="select_from_date">Seleccionar desde fecha</string>
+    <string name="select_to_date">Seleccionar hasta fecha</string>
     <string name="note_is_required">Se requiere una nota</string>
     <string name="amount_is_required">Se requiere una cantidad</string>
     <string name="date_is_required">Se requiere una fecha</string>
@@ -732,6 +747,8 @@
     <string name="sync_step_of">Paso %1$d de %2$d</string>
     <string name="sync_items_of">%1$d / %2$d</string>
     <string name="sync_table_progress">%1$s  ·  %2$d / %3$d tablas</string>
+    <string name="sync_tables_failed">No se pudieron descargar algunos datos: %1$s</string>
+    <string name="sync_in_progress_wait">Sincronización en curso. Por favor espera a que finalice.</string>
     <string name="sync_shelves_progress">%1$d / %2$d estantes</string>
     <string name="team_leader">Líder de equipo</string>
     <string name="select_resource">"Seleccionar recurso: "</string>
@@ -740,6 +757,7 @@
     <string name="completed_colon">\n Completado: %s</string>
     <string name="assigned_to_colon">Asignado a: %s</string>
     <string name="add_task">Agregar tarea</string>
+    <string name="edit_task">Editar tarea</string>
     <string name="task_title_is_required">Se requiere el título de la tarea</string>
     <string name="deadline_is_required">Se requiere la fecha límite</string>
     <string name="updated">actualizado</string>
@@ -778,6 +796,7 @@
     <string name="unable_to_clear_files">No se pueden eliminar los archivos</string>
     <string name="last_synced_never">nunca sincronizado</string>
     <string name="last_synced_colon">"última sincronización: "</string>
+    <string name="dashboard_sync_status">Sincronización · %1$s</string>
 
     <string name="disclaimer">
     <![CDATA[
@@ -900,11 +919,14 @@
     <string name="video_player">reproductor de video</string>
     <string name="video_unavailable">Video no disponible: archivo no encontrado y no se pudo conectar al servidor</string>
     <string name="video_playback_error">Error de reproducción de video. Inténtalo de nuevo o comprueba tu conexión</string>
+    <string name="audio_unavailable">Audio no disponible: archivo no encontrado y no se pudo conectar al servidor</string>
+    <string name="audio_playback_error">Error de reproducción de audio. Inténtalo de nuevo o comprueba tu conexión</string>
     <string name="video_loading_checking_server">Comprobando disponibilidad del servidor…</string>
     <string name="video_loading_connecting">Conectando al servidor…</string>
     <string name="video_loading_buffering">Cargando…</string>
     <string name="video_loading_local">Cargando video…</string>
     <string name="unable_to_play_video">No se puede reproducir el video</string>
+    <string name="unable_to_play_audio">No se puede reproducir el audio</string>
     <string name="go_back">Volver</string>
     <string name="progress_bar">barra de progreso</string>
     <string name="web_view">vista web</string>
@@ -943,6 +965,9 @@
     <string name="virtual_assistant_currently_not_available">asistente virtual actualmente no disponible</string>
     <string name="no_courses">no hay cursos disponibles</string>
     <string name="no_resources">no hay recursos disponibles</string>
+    <string name="no_resources_added_yet">Puedes agregar recursos</string>
+    <string name="no_courses_joined_yet">Puedes unirte a cursos</string>
+    <string name="no_teams_joined_yet">Puedes unirte a un equipo</string>
     <string name="no_finance_record">registro financiero no disponible</string>
     <string name="no_team_courses">cursos de equipo no disponibles</string>
     <string name="no_team_resources">recursos de equipo no disponibles</string>
@@ -967,6 +992,7 @@
     <string name="location_colon">ubicación:&#160;</string>
     <string name="recurring_colon">recurrente:&#160;</string>
     <string name="created_by_colon">creado por:&#160;</string>
+    <string name="team_colon">equipo:&#160;</string>
     <string name="you_want_to_connect_to_a_different_server">¿Estás seguro de que deseas cambiar la configuración? Esta acción borrará los datos de la aplicación</string>
     <string name="are_you_sure_you_want_to_clear_data">¿Estás seguro de que deseas borrar todos los datos?</string>
     <string name="feedback_list">lista de comentarios</string>
@@ -980,7 +1006,9 @@
     <string name="no_teams">equipos no disponibles</string>
     <string name="no_chats">no hay chats anteriores</string>
     <string name="no_feedback">No hay comentarios aquí</string>
+    <string name="medium_html">HTML</string>
     <string name="empty_text" />
+    <string name="filter_header_with_count">%1$s (%2$d)</string>
     <string name="message_placeholder">%s</string>
     <string name="reports">informes</string>
     <string name="number_placeholder">%d</string>
@@ -1001,10 +1029,11 @@
     <string name="user_name">%1$s (%2$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
-    <string name="member_description">%1$s (%2$d visitas)</string>
+    <string name="member_description">%1$s (%2$d visitas al equipo)</string>
     <string name="dark_mode">Modo oscuro</string>
     <string name="last_visit">Última visita: %1$s</string>
     <string name="no_visit">sin visita</string>
+    <string name="no_logout_record_found">No se encontró registro de cierre de sesión</string>
     <string name="dark_mode_off">Desactivado</string>
     <string name="dark_mode_on">Activado</string>
     <string name="dark_mode_follow_system">Seguir el sistema</string>
@@ -1107,11 +1136,17 @@
     <string name="user_verification_in_progress">Verificación de usuario en progreso. Por favor, espere mientras procesamos los datos.</string>
     <string name="go_to_mylibrary">Ir a Mi Biblioteca</string>
     <string name="choose_an_option">Elige una opción</string>
+    <string name="profile_guest_banner_message">Invitado: inicia sesión para guardar tu perfil</string>
+    <string name="profile_label_level">Nivel</string>
+    <string name="profile_activity_section">Actividad</string>
     <string name="welcome">Bienvenido %1$s</string>
     <string name="edit_plan">Editar plan</string>
     <string name="show_additional_fields">Mostrar campos adicionales</string>
     <string name="hide_additional_fields">Ocultar campos adicionales</string>
     <string name="preparing_download">Preparando la descarga…</string>
+    <string name="download_partially_downloaded">Descargado parcialmente</string>
+    <string name="download_paused_at_percent">En pausa al %1$d%%</string>
+    <string name="resume_download">Reanudar descarga</string>
     <string name="downloading_files">Descargando archivos</string>
     <string name="edit_mission_and_services">editar misión y servicios</string>
     <string name="this_team_has_no_description_defined">Este equipo no tiene descripción definida</string>
@@ -1221,6 +1256,8 @@
     <string name="team_surveys">Encuestas del equipo</string>
     <string name="enterprise_created">Empresa Creada</string>
     <string name="image_already_added">Esta imagen ya ha sido añadida</string>
+    <string name="voice_image_gif_too_large">No se pueden adjuntar GIF de más de 2 MB</string>
+    <string name="voice_image_unreadable">No se pudo leer esta imagen</string>
     <string name="debug_retry_queue">Cola de reintentos (Depuración)</string>
     <string name="debug_retry_queue_summary">Ver y gestionar reintentos de carga fallidos</string>
     <string name="retry_queue_status">Estado de la cola de reintentos</string>
@@ -1255,6 +1292,7 @@
     <string name="current_cv">CV/Currículum actual: %s</string>
     <string name="select_pdf_only">Por favor selecciona un archivo PDF</string>
     <string name="file_not_found">Archivo no encontrado: %s</string>
+    <string name="text_content_truncated">El archivo es demasiado grande para mostrarlo completo — se muestra solo la primera parte</string>
     <string name="chat_already_shared_to_destination">Este chat ya ha sido compartido a este destino</string>
     <string name="load_earlier_messages">Cargar mensajes anteriores</string>
     <string name="already_shared">Ya compartido</string>
@@ -1262,6 +1300,7 @@
     <string name="warning_icon">Icono de advertencia</string>
     <string name="close_banner">Cerrar banner de advertencia</string>
     <string name="status_not_started">No iniciado</string>
+    <string name="status_todo">Por hacer</string>
     <string name="status_in_progress">En progreso</string>
     <string name="status_completed">Completado</string>
     <string name="read_aloud">Leer en voz alta</string>
@@ -1278,6 +1317,9 @@
     <string name="storage_pdfs">PDFs</string>
     <string name="storage_images">Imágenes</string>
     <string name="storage_other">Otros archivos</string>
+    <string name="storage_partial_downloads">Descargas parciales</string>
+    <string name="storage_clear_partial_downloads">¿Borrar las descargas parciales?</string>
+    <string name="storage_clear_partial_downloads_message">Son descargas que se detuvieron antes de terminar. Borrarlas libera espacio, y esas descargas empezarán de nuevo la próxima vez.</string>
     <string name="storage_empty">No se encontró contenido descargado</string>
     <string name="storage_delete_confirm">¿Eliminar todas las descargas de %1$s?</string>
     <string name="storage_delete_selected_confirm">¿Eliminar %1$d elemento(s) seleccionado(s)?</string>
@@ -1296,7 +1338,7 @@
     <string name="download_pdf">Descargar PDF</string>
     <string name="label_answer">Respuesta:</string>
     <string name="label_link">Enlace: </string>
-    <string name="number_of_visits">Número de visitas</string>
+    <string name="number_of_visits">Visitas totales</string>
     <string name="label_name_with_colon">Nombre:</string>
     <string name="label_relationship">Relación:</string>
     <string name="label_phone_no">Teléfono:</string>
@@ -1333,6 +1375,7 @@
     <string name="yesterday">Ayer</string>
     <string name="days_ago">Hace %1$d día(s)</string>
     <string name="please_complete_test">Por favor completa la prueba para continuar</string>
+    <string name="please_pass_test">Por favor aprueba la prueba del paso %1$d para continuar</string>
     <string name="edit_meetup">Editar reunión</string>
     <string name="meetup_updated">Reunión actualizada con éxito</string>
     <string name="meetup_not_updated">" Error al actualizar la reunión"</string>
@@ -1350,11 +1393,35 @@
     <string name="failed_to_update_resource">Error al actualizar el recurso</string>
     <string name="join_team_first">Únete a un equipo para compartir este chat</string>
     <string name="join_enterprise_first">Únete a una empresa para compartir este chat</string>
-
     <string name="open_link_with">Abrir enlace con</string>
     <string name="just_once">Solo una vez</string>
     <string name="always">Siempre</string>
     <string name="survey_load_failed">No se pudo cargar la encuesta. Inténtalo de nuevo.</string>
     <string name="survey_submitted">Encuesta enviada. ¡Gracias!</string>
     <string name="survey_submit_failed">No se pudo enviar la encuesta. Inténtalo de nuevo.</string>
+    <string name="item_count_pill">%d elementos</string>
+    <string name="view_grid">Vista de cuadrícula</string>
+    <string name="view_list">Vista de lista</string>
+    <string name="steps_done_of_total">%1$d de %2$d completados</string>
+    <string name="course_steps_count">%d pasos</string>
+    <string name="subject_label_mathematics">Matemáticas</string>
+    <string name="subject_label_literacy">Alfabetización</string>
+    <string name="subject_label_health">Salud</string>
+    <string name="subject_label_social_studies">Estudios Sociales</string>
+    <string name="subject_label_technology">Tecnología</string>
+    <string name="filter_all">Todos</string>
+    <string name="filter_books">Libros</string>
+    <string name="filter_videos">Videos</string>
+    <string name="filter_audio">Audio</string>
+    <string name="filter_pdfs">PDFs</string>
+    <string name="downloaded">Descargado</string>
+    <string name="not_downloaded">No descargado</string>
+    <string-array name="download_filter">
+        <item>Todo</item>
+        <item>Descargado</item>
+        <item>No descargado</item>
+    </string-array>
+
+    <string name="playback_speed">Velocidad de reproducción</string>
+    <string name="playback_speed_format">%1$sx</string>
 </resources>

@@ -37,10 +37,13 @@ class OnboardingActivity : AppCompatActivity() {
     private val onBoardItems = ArrayList<OnboardingItem>()
     private var dotsCount = 0
     private lateinit var dots: Array<ImageView?>
+    private val selectedDot by lazy { ContextCompat.getDrawable(this, R.drawable.selected_item_dot) }
+    private val unselectedDot by lazy { ContextCompat.getDrawable(this, R.drawable.non_selected_item_dot) }
     @Inject
     lateinit var prefData: SharedPrefManager
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
+    private var pageChangeListener: ViewPager.OnPageChangeListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,7 +65,7 @@ class OnboardingActivity : AppCompatActivity() {
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
 
-        copyAssets(this)
+        lifecycleScope.launch(dispatcherProvider.io) { copyAssets(applicationContext) }
 
         val chooserUri = webLinkForAppChooser(intent)
         if (chooserUri != null) {
@@ -107,14 +110,15 @@ class OnboardingActivity : AppCompatActivity() {
         mAdapter = OnboardingAdapter(this, onBoardItems)
         binding.pagerIntroduction.adapter = mAdapter
         binding.pagerIntroduction.currentItem = 0
-        binding.pagerIntroduction.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
+
+        pageChangeListener = object : ViewPager.OnPageChangeListener {
             override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
 
             override fun onPageSelected(position: Int) {
                 for (i in dots.indices) {
-                    dots[i]?.setImageDrawable(ContextCompat.getDrawable(this@OnboardingActivity, R.drawable.non_selected_item_dot))
+                    dots[i]?.setImageDrawable(unselectedDot)
                 }
-                dots[position]?.setImageDrawable(ContextCompat.getDrawable(this@OnboardingActivity, R.drawable.selected_item_dot))
+                dots[position]?.setImageDrawable(selectedDot)
 
                 if (position == mAdapter.count - 1) {
                     binding.skip.visibility = View.GONE
@@ -128,7 +132,8 @@ class OnboardingActivity : AppCompatActivity() {
             }
 
             override fun onPageScrollStateChanged(state: Int) {}
-        })
+        }
+        pageChangeListener?.let { binding.pagerIntroduction.addOnPageChangeListener(it) }
 
         binding.skip.setOnClickListener{
             finishTutorial()
@@ -184,7 +189,7 @@ class OnboardingActivity : AppCompatActivity() {
 
         for (i in dots.indices) {
             dots[i] = ImageView(this)
-            dots[i]?.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.non_selected_item_dot))
+            dots[i]?.setImageDrawable(unselectedDot)
 
             val params = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -194,7 +199,7 @@ class OnboardingActivity : AppCompatActivity() {
             params.setMargins(6, 0, 6, 0)
             binding.viewPagerCountDots.addView(dots[i], params)
         }
-        dots[0]?.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.selected_item_dot))
+        dots[0]?.setImageDrawable(selectedDot)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -360,6 +365,11 @@ class OnboardingActivity : AppCompatActivity() {
         prefData.setFirstLaunch(true)
         startActivity(Intent(this, LoginActivity::class.java))
         finish()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        pageChangeListener?.let { binding.pagerIntroduction.removeOnPageChangeListener(it) }
     }
 
     companion object {

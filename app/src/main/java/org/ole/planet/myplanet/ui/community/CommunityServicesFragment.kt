@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -19,9 +20,11 @@ import org.ole.planet.myplanet.ui.viewer.WebViewActivity
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 class CommunityServicesFragment : BaseTeamFragment() {
     private var binding: FragmentCommunityServicesBinding? = null
+    private val viewModel: CommunityServicesViewModel by viewModels()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val b = FragmentCommunityServicesBinding.inflate(inflater, container, false)
@@ -37,29 +40,13 @@ class CommunityServicesFragment : BaseTeamFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
         super.onViewCreated(view, savedInstanceState)
-
-        val description = team?.description ?: ""
-        if (description.isEmpty()) {
-            binding?.tvDescription?.visibility = View.GONE
-            binding?.tvNoDescription?.visibility = View.VISIBLE
-        } else {
-            binding?.tvDescription?.visibility = View.VISIBLE
-            binding?.tvNoDescription?.visibility = View.GONE
+        collectWhenStarted(teamFlow) { loadedTeam ->
+            if (loadedTeam != null) showDescription(loadedTeam.description.orEmpty())
         }
-        val basePath = FileUtils.getExternalFilesDir(requireContext())?.let { externalDir ->
-            "file://${externalDir.absolutePath}/ole/"
-        }.orEmpty()
-        val markdownContentWithLocalPaths = prependBaseUrlToImages(
-            description,
-            basePath,
-            600,
-            350
-        )
-        binding?.let { setMarkdownText(it.tvDescription, markdownContentWithLocalPaths) }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            val links = teamsRepository.getTeamLinks()
-            val currentBinding = binding ?: return@launch
+        collectWhenStarted(viewModel.teamLinks) { links ->
+            if (links == null) return@collectWhenStarted
+            val currentBinding = binding ?: return@collectWhenStarted
             if (links.isEmpty()) {
                 currentBinding.llServices.visibility = View.GONE
                 currentBinding.tvNoLinks.visibility = View.VISIBLE
@@ -69,6 +56,27 @@ class CommunityServicesFragment : BaseTeamFragment() {
             }
             setRecyclerView(links)
         }
+    }
+
+    private fun showDescription(description: String) {
+        val currentBinding = binding ?: return
+        if (description.isEmpty()) {
+            currentBinding.tvDescription.visibility = View.GONE
+            currentBinding.tvNoDescription.visibility = View.VISIBLE
+            return
+        }
+        currentBinding.tvDescription.visibility = View.VISIBLE
+        currentBinding.tvNoDescription.visibility = View.GONE
+        val basePath = FileUtils.getExternalFilesDir(requireContext())?.let { externalDir ->
+            "file://${externalDir.absolutePath}/ole/"
+        }.orEmpty()
+        val markdownContentWithLocalPaths = prependBaseUrlToImages(
+            description,
+            basePath,
+            600,
+            350
+        )
+        setMarkdownText(currentBinding.tvDescription, markdownContentWithLocalPaths)
     }
 
     override fun onNewsItemClick(news: News?) {}
@@ -87,36 +95,36 @@ class CommunityServicesFragment : BaseTeamFragment() {
             b.text = team.title
             b.setOnClickListener {
                 val rawRoute = team.route ?: return@setOnClickListener
-                if (rawRoute.startsWith("http://") || rawRoute.startsWith("https://")) {
-                    startActivity(Intent(requireContext(), WebViewActivity::class.java).apply {
-                        putExtra("link", rawRoute)
-                        putExtra("title", team.title)
-                    })
-                    return@setOnClickListener
-                }
-                val segments = rawRoute.split("/")
-                val teamId = if (segments.size >= 4) segments[3] else null
-                if (teamId != null) {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        val isMyTeam = teamsRepository.isMember(user?.id, teamId)
-                        val f = TeamDetailFragment()
-                        f.arguments = Bundle().apply {
-                            putString("id", teamId)
-                            putBoolean("isMyTeam", isMyTeam)
-                        }
-                        replaceFragment(
-                            requireActivity().supportFragmentManager,
-                            R.id.fragment_container,
-                            f,
-                            addToBackStack = true,
-                            tag = ""
-                        )
+                when (val route = CommunityServicesRoute.resolve(rawRoute)) {
+                    is CommunityServicesRoute.ExternalLink -> {
+                        startActivity(Intent(requireContext(), WebViewActivity::class.java).apply {
+                            putExtra("link", route.url)
+                            putExtra("title", team.title)
+                        })
                     }
-                } else {
-                    startActivity(Intent(requireContext(), WebViewActivity::class.java).apply {
-                        putExtra("link", rawRoute)
-                        putExtra("title", team.title)
-                    })
+                    is CommunityServicesRoute.TeamLink -> {
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val isMyTeam = viewModel.isMember(user?.id, route.teamId)
+                            val f = TeamDetailFragment()
+                            f.arguments = Bundle().apply {
+                                putString("id", route.teamId)
+                                putBoolean("isMyTeam", isMyTeam)
+                            }
+                            replaceFragment(
+                                requireActivity().supportFragmentManager,
+                                R.id.fragment_container,
+                                f,
+                                addToBackStack = true,
+                                tag = ""
+                            )
+                        }
+                    }
+                    is CommunityServicesRoute.Unhandled -> {
+                        startActivity(Intent(requireContext(), WebViewActivity::class.java).apply {
+                            putExtra("link", rawRoute)
+                            putExtra("title", team.title)
+                        })
+                    }
                 }
             }
             parent.addView(b)

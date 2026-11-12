@@ -19,29 +19,46 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.addCallback
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import androidx.lifecycle.lifecycleScope
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewFeature
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.io.FileInputStream
 import java.net.URLConnection
+import javax.inject.Inject
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ServerConfigUtils
+import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.WebViewSafety
 
+@AndroidEntryPoint
 class WebViewActivity : AppCompatActivity() {
+    @Inject lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var activityWebViewBinding: ActivityWebViewBinding
     private var fromDeepLink = false
+    private val viewModel: ResourceViewerViewModel by viewModels()
+    private val exitCoordinator by lazy {
+        ResourcesExitCoordinator(this, viewModel)
+    }
     private lateinit var link: String
     private val trustedHosts by lazy {
         ServerConfigUtils.getTrustedServerHosts()
     }
+    private var resourceDirectory: File? = null
+    private var externalFilesPath: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,7 +69,6 @@ class WebViewActivity : AppCompatActivity() {
         fromDeepLink = !TextUtils.isEmpty(dataFromDeepLink)
         val title: String? = intent.getStringExtra("title")
         link = intent.getStringExtra("link") ?: ""
-        val resourceDirectory = getLocalResourceDirectory(intent.getStringExtra("RESOURCE_ID"))
         clearCookie()
         if (!TextUtils.isEmpty(title)) {
             activityWebViewBinding.contentWebView.webTitle.text = title
@@ -60,37 +76,52 @@ class WebViewActivity : AppCompatActivity() {
         activityWebViewBinding.contentWebView.pBar.max = 100
         activityWebViewBinding.contentWebView.pBar.progress = 0
 
-        setupWebView()
         setListeners()
 
-        activityWebViewBinding.contentWebView.finish.setOnClickListener { finish() }
-        setWebClient()
+        activityWebViewBinding.contentWebView.finish.setOnClickListener { handleBackNavigation() }
 
         onBackPressedDispatcher.addCallback(this) {
             val webView = activityWebViewBinding.contentWebView.wv
             if (webView.canGoBack()) {
                 webView.goBack()
             } else {
-                isEnabled = false
-                onBackPressedDispatcher.onBackPressed()
+                handleBackNavigation()
             }
         }
 
-        if (resourceDirectory != null) {
-            val indexFile = File(resourceDirectory, "index.html")
-
-            if (indexFile.exists()) {
-                activityWebViewBinding.contentWebView.wv.loadUrl("https://appassets.androidplatform.net/assets/index.html")
+        val resourceId = intent.getStringExtra("RESOURCE_ID")
+        val entryRelativePath = intent.getStringExtra("OPEN_WHICH_FILE")
+        lifecycleScope.launch {
+            val resolved = withContext(dispatcherProvider.io) { resolveLocalContent(resourceId, entryRelativePath) }
+            resourceDirectory = resolved.directory
+            externalFilesPath = resolved.externalFilesPath
+            setupWebView()
+            setWebClient()
+            when {
+                resolved.directory == null -> activityWebViewBinding.contentWebView.wv.loadUrl(link)
+                resolved.encodedEntryPath != null ->
+                    activityWebViewBinding.contentWebView.wv.loadUrl("https://appassets.androidplatform.net/assets/${resolved.encodedEntryPath}")
+                else -> {
+                    Utilities.toast(this@WebViewActivity, getString(R.string.unable_to_open_resource))
+                    finish()
+                }
             }
-        } else {
-            activityWebViewBinding.contentWebView.wv.loadUrl(link)
         }
+    }
+
+    private class LocalContent(val directory: File?, val encodedEntryPath: String?, val externalFilesPath: String)
+
+    private fun resolveLocalContent(resourceId: String?, entryRelativePath: String?): LocalContent {
+        val externalFilesPath = getExternalFilesDir(null)?.absolutePath ?: ""
+        val dir = getLocalResourceDirectory(resourceId)
+            ?: return LocalContent(null, null, externalFilesPath)
+        return LocalContent(dir, encodedEntryPath(dir, entryRelativePath), externalFilesPath)
     }
 
     private fun setupWebView() {
         activityWebViewBinding.contentWebView.wv.settings.apply {
             // Only enable JavaScript for local resources that need it
-            val isLocalResource = getLocalResourceDirectory(intent.getStringExtra("RESOURCE_ID")) != null
+            val isLocalResource = resourceDirectory != null
             javaScriptEnabled = isLocalResource
             javaScriptCanOpenWindowsAutomatically = false
             
@@ -142,6 +173,14 @@ class WebViewActivity : AppCompatActivity() {
         }
     }
 
+    private fun handleBackNavigation() {
+        exitCoordinator.handleBackNavigation(
+            resourceId = intent.getStringExtra("RESOURCE_ID"),
+            title = activityWebViewBinding.contentWebView.webTitle.text.toString().ifBlank {
+                intent.getStringExtra("title") ?: ""
+            },
+        )
+    }
 
     private fun setWebClient() {
         val assetLoader = setupAssetLoader()
@@ -149,7 +188,7 @@ class WebViewActivity : AppCompatActivity() {
     }
 
     private fun setupAssetLoader(): WebViewAssetLoader? {
-        val directory = getLocalResourceDirectory(intent.getStringExtra("RESOURCE_ID")) ?: return null
+        val directory = resourceDirectory ?: return null
         val externalPathHandler = WebViewAssetLoader.PathHandler { path ->
             try {
                 val file = File(directory, path)
@@ -264,8 +303,8 @@ class WebViewActivity : AppCompatActivity() {
     }
     
     private fun checkUrlSafety(url: String): Boolean {
-        val resourceId = getLocalResourceDirectory(intent.getStringExtra("RESOURCE_ID"))?.name
-        val appDir = getExternalFilesDir(null)?.absolutePath ?: ""
+        val resourceId = resourceDirectory?.name
+        val appDir = if (resourceId != null) externalFilesPath else ""
         return WebViewSafety.isUrlSafe(url, trustedHosts, resourceId, appDir)
     }
 
@@ -289,11 +328,18 @@ class WebViewActivity : AppCompatActivity() {
         }
     }
 
-    private fun isWithinDirectory(file: File, directory: File): Boolean {
-        val canonicalFile = file.canonicalFile
-        val canonicalDirectory = directory.canonicalFile
-        return canonicalFile.path == canonicalDirectory.path ||
-            canonicalFile.path.startsWith(canonicalDirectory.path + File.separator)
+    companion object {
+        internal fun encodedEntryPath(dir: File, entryRelativePath: String?): String? {
+            val indexFile = FileUtils.resolveHtmlEntryFile(dir, entryRelativePath)?.takeIf { it.exists() } ?: return null
+            return indexFile.relativeTo(dir.canonicalFile).invariantSeparatorsPath.split("/").joinToString("/") { Uri.encode(it) }
+        }
+
+        internal fun isWithinDirectory(file: File, directory: File): Boolean {
+            val canonicalFile = file.canonicalFile
+            val canonicalDirectory = directory.canonicalFile
+            return canonicalFile.path == canonicalDirectory.path ||
+                canonicalFile.path.startsWith(canonicalDirectory.path + File.separator)
+        }
     }
 
     private fun setListeners() {

@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.databinding.RowLeaderboardMemberBinding
 import org.ole.planet.myplanet.model.TeamLeaderboardEntry
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
+import org.ole.planet.myplanet.ui.teams.members.MembersDetailInfo
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils
@@ -72,7 +73,7 @@ class TeamLeaderboardAdapter : ListAdapter<TeamLeaderboardEntry, TeamLeaderboard
         )
         val lastVisitDate = entry.visitInfo.lastVisitDate
         binding.tvLastActive.text = if (lastVisitDate != null) {
-            TimeUtils.getRelativeTime(lastVisitDate)
+            TimeUtils.getRelativeTime(context, lastVisitDate)
         } else {
             context.getString(R.string.no_visit)
         }
@@ -90,20 +91,7 @@ class TeamLeaderboardAdapter : ListAdapter<TeamLeaderboardEntry, TeamLeaderboard
 
         binding.btnViewMember.setOnClickListener {
             val activity = it.context as? AppCompatActivity ?: return@setOnClickListener
-            val user = entry.visitInfo.user
-            val userName = "${user.firstName} ${user.lastName}".trim().ifBlank { user.name.orEmpty() }
-            val fragment = MembersDetailFragment.newInstance(
-                userName,
-                user.email.toString(),
-                user.dob.toString().substringBefore("T"),
-                user.language.toString(),
-                user.phoneNumber.toString(),
-                "${entry.visitInfo.visitCount}",
-                entry.visitInfo.profileLastVisit,
-                "${user.firstName} ${user.lastName}",
-                user.level.toString(),
-                user.userImage
-            )
+            val fragment = MembersDetailFragment.newInstance(MembersDetailInfo.fromUser(entry.visitInfo.user))
             FragmentNavigator.replaceFragment(
                 activity.supportFragmentManager,
                 R.id.fragment_container,

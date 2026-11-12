@@ -1,12 +1,12 @@
 package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
+import android.util.Log
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
-import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
@@ -16,21 +16,21 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.toGson
 
 @Singleton
 class LoginSyncManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val sharedPrefManager: SharedPrefManager,
-    private val userRepository: UserRepository,
     private val userSyncRepository: UserSyncRepository,
     private val apiInterface: ApiInterface,
+    private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider
 ) {
@@ -47,15 +47,15 @@ class LoginSyncManager @Inject constructor(
             val authHeader = try {
                 UrlUtils.basicAuthHeader(userName, password)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("LoginSyncManager", "Authentication encoding failed", e)
                 listener.onSyncFailed("Authentication encoding failed.")
                 return
             }
 
             val userUrl = try {
-                String.format("%s/_users/%s", UrlUtils.getUrl(), "org.couchdb.user:$userName")
+                "${UrlUtils.getUrl()}/_users/org.couchdb.user:$userName"
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("LoginSyncManager", "Invalid server URL", e)
                 listener.onSyncFailed("Invalid server URL.")
                 return
             }
@@ -80,7 +80,7 @@ class LoginSyncManager @Inject constructor(
                     }
                 }
 
-                val jsonDoc = response.body()
+                val jsonDoc = response.body()?.toGson()
                 if (jsonDoc?.has("derived_key") == true && jsonDoc.has("salt")) {
                     try {
                         val derivedKey = jsonDoc["derived_key"].asString
@@ -95,7 +95,7 @@ class LoginSyncManager @Inject constructor(
                             listener.onSyncFailed("Authentication failed. Invalid credentials.")
                         }
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e("LoginSyncManager", "Authentication processing failed", e)
                         listener.onSyncFailed("Authentication processing failed.")
                     }
                 } else {
@@ -103,7 +103,7 @@ class LoginSyncManager @Inject constructor(
                 }
             } catch (t: Exception) {
                 try {
-                    t.printStackTrace()
+                    Log.e("LoginSyncManager", "Network error during login", t)
                     val errorMsg = when (t) {
                         is UnknownHostException -> "Server not reachable. Check your internet connection."
                         is SocketTimeoutException -> "Connection timeout. Please try again."
@@ -112,57 +112,19 @@ class LoginSyncManager @Inject constructor(
                     }
                     listener.onSyncFailed(errorMsg)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e("LoginSyncManager", "Error handling network failure", e)
                     listener.onSyncFailed("Network error occurred.")
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("LoginSyncManager", "Login initialization failed", e)
             listener.onSyncFailed("Login initialization failed.")
         }
     }
 
     fun syncAdmin() {
         applicationScope.launch {
-            try {
-                val `object` = JsonObject()
-                val selector = JsonObject()
-                selector.addProperty("isUserAdmin", true)
-                `object`.add("selector", selector)
-
-                val header = UrlUtils.header
-                if (header.isBlank()) {
-                    return@launch
-                }
-
-                val url = try {
-                    UrlUtils.getUrl() + "/_users/_find"
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    return@launch
-                }
-
-                try {
-                    val response = apiInterface.postDoc(header, "application/json", url, `object`)
-                    if (response.isSuccessful && response.body() != null) {
-                        val responseBody = response.body()
-                        sharedPrefManager.setCommunityLeaders("$responseBody")
-
-                        val array = JsonUtils.getJsonArray("docs", responseBody)
-                        if (array.size() > 0) {
-                            try {
-                                sharedPrefManager.setRawString("user_admin", JsonUtils.gson.toJson(array[0]))
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            configurationsRepository.syncCommunityLeaders()
         }
     }
 
@@ -178,7 +140,7 @@ class LoginSyncManager @Inject constructor(
 
     private fun isManager(jsonDoc: JsonObject?): Boolean {
         val roles = jsonDoc?.get("roles")?.asJsonArray
-        val isManager = roles.toString().lowercase(Locale.getDefault()).contains("manager")
-        return jsonDoc?.get("isUserAdmin")?.asBoolean == true || isManager
+        val isUserAdmin = jsonDoc?.get("isUserAdmin")?.asBoolean == true
+        return isUserAdmin || roles?.any { it.isJsonPrimitive && it.asString.equals("manager", ignoreCase = true) } == true
     }
 }

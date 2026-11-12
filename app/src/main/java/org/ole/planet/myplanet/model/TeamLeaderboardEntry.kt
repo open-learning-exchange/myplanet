@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import org.ole.planet.myplanet.repository.JoinedMemberData
-
 data class TeamLeaderboardEntry(
     val visitInfo: JoinedMemberData,
     val displayName: String,

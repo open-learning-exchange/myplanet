@@ -7,22 +7,25 @@ import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.FragmentTeamLeaderboardBinding
+import org.ole.planet.myplanet.model.CourseProgressState
+import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TeamLeaderboardEntry
-import org.ole.planet.myplanet.repository.JoinedMemberData
 import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.SurveysRepository
 
 @AndroidEntryPoint
 class TeamLeaderboardFragment : BaseTeamFragment() {
     @Inject
     lateinit var progressRepository: ProgressRepository
+    @Inject
+    lateinit var surveysRepository: SurveysRepository
 
     private var _binding: FragmentTeamLeaderboardBinding? = null
     private val binding get() = _binding!!
@@ -33,7 +36,7 @@ class TeamLeaderboardFragment : BaseTeamFragment() {
 
     private var courseIds: List<String> = emptyList()
     private var members: List<JoinedMemberData> = emptyList()
-    private var progressByUser: Map<String, Map<String?, JsonObject>> = emptyMap()
+    private var progressByUser: Map<String, Map<String, CourseProgressState>> = emptyMap()
     private var surveyTimestampsByUser: Map<String, List<Long>> = emptyMap()
     private var surveysTotal: Int = 0
 
@@ -63,7 +66,7 @@ class TeamLeaderboardFragment : BaseTeamFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             courseIds = teamsRepository.getTeamCourseIds(teamId)
             members = teamsRepository.getJoinedMembersWithVisitInfo(teamId)
-            val progressMap = mutableMapOf<String, Map<String?, JsonObject>>()
+            val progressMap = mutableMapOf<String, Map<String, CourseProgressState>>()
             for (member in members) {
                 val userId = member.user.id ?: continue
                 progressMap[userId] = progressRepository.getCourseProgress(courseIds, userId)

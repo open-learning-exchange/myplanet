@@ -41,8 +41,9 @@ class TaskNotificationWorker @AssistedInject constructor(
                 teamsRepository.getPendingTasksForUser(userId, current, tomorrow.timeInMillis)
             }.getOrElse { emptyList() }
 
-            if (tasks.isNotEmpty()) {
-                val notificationManager = NotificationUtils.getInstance(applicationContext)
+            val notificationManager = NotificationUtils.getInstance(applicationContext)
+            if (tasks.isNotEmpty() && notificationManager.canShowNotification(NotificationUtils.TYPE_TASK)) {
+                val taskIds = mutableListOf<String>()
                 tasks.forEach { task ->
                     val config = NotificationUtils.createTaskNotification(
                         task.id,
@@ -51,9 +52,12 @@ class TaskNotificationWorker @AssistedInject constructor(
                         timeProvider
                     )
                     notificationManager.showNotification(config)
+                    val id = task.id
+                    if (id.isNotBlank()) {
+                        taskIds.add(id)
+                    }
                 }
 
-                val taskIds = tasks.mapNotNull { it.id }.filter { it.isNotBlank() }
                 if (taskIds.isNotEmpty()) {
                     runCatching { teamsRepository.markTasksNotified(taskIds) }
                 }

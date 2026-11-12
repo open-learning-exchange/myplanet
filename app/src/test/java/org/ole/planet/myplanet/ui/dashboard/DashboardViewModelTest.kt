@@ -1,15 +1,20 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import android.app.Application
+import com.google.gson.JsonArray
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -18,17 +23,20 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
-import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.repository.SyncRepository
+import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
@@ -48,6 +56,8 @@ class DashboardViewModelTest {
     private val surveysRepository = mockk<SurveysRepository>()
     private val progressRepository = mockk<ProgressRepository>()
     private val voicesRepository = mockk<VoicesRepository>()
+    private val activitiesRepository = mockk<ActivitiesRepository>()
+    private val syncRepository = mockk<SyncRepository>()
     private val dispatcherProvider = mockk<DispatcherProvider>(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
@@ -71,7 +81,9 @@ class DashboardViewModelTest {
             surveysRepository,
             progressRepository,
             voicesRepository,
-            dispatcherProvider
+            activitiesRepository,
+            dispatcherProvider,
+            syncRepository
         )
     }
 
@@ -80,6 +92,28 @@ class DashboardViewModelTest {
         Dispatchers.resetMain()
     }
 
+
+    @Test
+    fun testSyncKeyId_preventOverlappingCalls() = runTest {
+        coEvery { syncRepository.syncDashboardKeyId(any()) } coAnswers {
+            kotlinx.coroutines.delay(100.milliseconds)
+            SyncUiState.Success(null)
+        }
+
+        val events = mutableListOf<SyncUiState>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.syncKeyIdEvent.collect { events.add(it) }
+        }
+
+        viewModel.syncKeyId("role")
+        viewModel.syncKeyId("role") // Should be ignored
+
+        advanceUntilIdle()
+
+        assertEquals(2, events.size)
+        assertEquals(SyncUiState.Loading, events[0])
+        assertEquals(SyncUiState.Success(null), events[1])
+    }
     @Test
     fun `loadUserContent replaces existing collectors when called multiple times`() = runTest(testDispatcher) {
         val userId = "user1"
@@ -88,7 +122,7 @@ class DashboardViewModelTest {
         val secondCoursesFlow = MutableSharedFlow<List<MyCourse>>()
 
         coEvery { userRepository.getDashboardProfile(userId) } returns DashboardProfile("John Doe", 0)
-        coEvery { resourcesRepository.getMyLibrary(userId) } returns emptyList()
+        coEvery { resourcesRepository.getMyLibraryFlow(userId) } returns kotlinx.coroutines.flow.flowOf(emptyList())
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(emptyList())
 
         // First call
@@ -127,7 +161,7 @@ class DashboardViewModelTest {
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(emptyList())
 
         // Library throws CancellationException, simulating its job being cancelled
-        coEvery { resourcesRepository.getMyLibrary(userId) } throws CancellationException("Test cancel")
+        coEvery { resourcesRepository.getMyLibraryFlow(userId) } throws CancellationException("Test cancel")
         coEvery { coursesRepository.getMyCoursesFlow(userId) } returns coursesFlow
 
         viewModel.loadUserContent(userId)
@@ -146,7 +180,7 @@ class DashboardViewModelTest {
     fun `loadUserContent updates uiState for users, teams, courses, and offline logins`() = runTest(testDispatcher) {
         val userId = "user1"
 
-        coEvery { resourcesRepository.getMyLibrary(userId) } returns listOf(MyLibrary().apply { title = "Lib1" })
+        coEvery { resourcesRepository.getMyLibraryFlow(userId) } returns kotlinx.coroutines.flow.flowOf(listOf(MyLibrary().apply { title = "Lib1" }))
         coEvery { coursesRepository.getMyCoursesFlow(userId) } returns flowOf(listOf(MyCourse().apply { courseTitle = "Course1" }))
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(listOf(MyTeam().apply { name = "Team1" }))
         coEvery { userRepository.getDashboardProfile(userId) } returns DashboardProfile("John Doe", 2)
@@ -167,56 +201,6 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun `loadUsers updates uiState with sorted users`() = runTest(testDispatcher) {
-        val users = listOf(
-            UserEntity().apply { name = "User 1" },
-            UserEntity().apply { name = "User 2" }
-        )
-
-        coEvery { userRepository.getUsersSortedBy("joinDate", true) } returns users
-
-        viewModel.loadUsers()
-        advanceUntilIdle()
-
-        val state = viewModel.uiState.value
-        assertEquals(2, state.users.size)
-        assertEquals("User 1", (state.users[0] as UserEntity).name)
-        assertEquals("User 2", (state.users[1] as UserEntity).name)
-    }
-
-    @Test
-    fun `calculateIndividualProgress handles boundary cases properly`() {
-        assertEquals(1, viewModel.calculateIndividualProgress(0, false))
-        assertEquals(0, viewModel.calculateIndividualProgress(0, true))
-
-        assertEquals(3, viewModel.calculateIndividualProgress(1, false))
-        assertEquals(2, viewModel.calculateIndividualProgress(1, true))
-
-        assertEquals(11, viewModel.calculateIndividualProgress(5, false))
-        assertEquals(10, viewModel.calculateIndividualProgress(5, true))
-
-        // Coerced value cases
-        assertEquals(11, viewModel.calculateIndividualProgress(10, false))
-        assertEquals(10, viewModel.calculateIndividualProgress(10, true))
-    }
-
-    @Test
-    fun `calculateCommunityProgress handles boundary cases properly`() {
-        assertEquals(1, viewModel.calculateCommunityProgress(0, false))
-        assertEquals(0, viewModel.calculateCommunityProgress(0, true))
-
-        assertEquals(3, viewModel.calculateCommunityProgress(1, false))
-        assertEquals(2, viewModel.calculateCommunityProgress(1, true))
-
-        assertEquals(11, viewModel.calculateCommunityProgress(5, false))
-        assertEquals(10, viewModel.calculateCommunityProgress(5, true))
-
-        // Ensure cap at 11
-        assertEquals(11, viewModel.calculateCommunityProgress(10, false))
-        assertEquals(10, viewModel.calculateCommunityProgress(10, true))
-    }
-
-    @Test
     fun `loadUserContent with null userId exits early`() = runTest(testDispatcher) {
         viewModel.loadUserContent(null)
         advanceUntilIdle()
@@ -227,5 +211,98 @@ class DashboardViewModelTest {
         assertEquals(0, state.courses.size)
         assertEquals(0, state.teams.size)
         assertEquals(0, state.library.size)
+    }
+
+    @Test
+    fun `evaluateChallengeDialog outside window makes zero repository calls and emits no event`() = runTest(testDispatcher) {
+        val userId = "user1"
+        val validUrl = "https://example.org"
+
+        val events = mutableListOf<ChallengeDialogData>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.challengeDialogEvent.collect { events.add(it) }
+        }
+
+        viewModel.evaluateChallengeDialog(userId, isGuest = false, validUrls = listOf(validUrl), serverUrl = validUrl)
+
+        advanceUntilIdle()
+
+        assertEquals(0, events.size)
+        coVerify(exactly = 0) { progressRepository.fetchCourseData(any()) }
+        coVerify(exactly = 0) { voicesRepository.getCommunityVoiceDateCount(any(), any(), any()) }
+        coVerify(exactly = 0) { coursesRepository.getCourseTitleById(any()) }
+        coVerify(exactly = 0) { submissionsRepository.hasPendingSurvey(any(), any()) }
+    }
+
+    @Test
+    fun `isChallengeWindowOpen respects date window boundaries, guest status, and server url`() {
+        val validUrls = listOf("https://valid.planet.org")
+        val validUrl = "https://valid.planet.org"
+        val invalidUrl = "https://other.planet.org"
+
+        val insideDate = java.time.LocalDate.of(2024, 12, 15)
+        val startBoundary = java.time.LocalDate.of(2024, 11, 30)
+        val dayAfterStart = java.time.LocalDate.of(2024, 12, 1)
+        val endBoundary = java.time.LocalDate.of(2025, 1, 16)
+        val dayBeforeEnd = java.time.LocalDate.of(2025, 1, 15)
+        val afterEnd = java.time.LocalDate.of(2025, 1, 17)
+
+        // Inside window
+        assertEquals(true, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = validUrl, validUrls = validUrls, today = insideDate))
+        assertEquals(true, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = validUrl, validUrls = validUrls, today = dayAfterStart))
+        assertEquals(true, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = validUrl, validUrls = validUrls, today = dayBeforeEnd))
+
+        // Boundary days (exclusive: strictly after 2024-11-30, strictly before 2025-01-16)
+        assertEquals(false, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = validUrl, validUrls = validUrls, today = startBoundary))
+        assertEquals(false, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = validUrl, validUrls = validUrls, today = endBoundary))
+        assertEquals(false, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = validUrl, validUrls = validUrls, today = afterEnd))
+
+        // Guest user inside window
+        assertEquals(false, viewModel.isChallengeWindowOpen(isGuest = true, serverUrl = validUrl, validUrls = validUrls, today = insideDate))
+
+        // Invalid server URL inside window
+        assertEquals(false, viewModel.isChallengeWindowOpen(isGuest = false, serverUrl = invalidUrl, validUrls = validUrls, today = insideDate))
+    }
+
+    @Test
+    fun `getGuestVisitState fetches the offline visit count once and memoizes it`() = runTest(testDispatcher) {
+        val userId = "guest-123"
+        coEvery { activitiesRepository.getOfflineVisitCount(userId) } returns 3
+
+        val first = viewModel.getGuestVisitState(userId).await()
+        val second = viewModel.getGuestVisitState(userId).await()
+
+        assertEquals(3, first.offlineVisits)
+        assertEquals(true, first.isGuest)
+        assertEquals(first, second)
+        coVerify(exactly = 1) { activitiesRepository.getOfflineVisitCount(userId) }
+    }
+
+    @Test
+    fun `getGuestVisitState never queries the repository for a non-guest user`() = runTest(testDispatcher) {
+        val userId = "member-456"
+
+        val state = viewModel.getGuestVisitState(userId).await()
+
+        assertEquals(0, state.offlineVisits)
+        assertEquals(false, state.isGuest)
+        assertEquals(null, state.bannerMessageRes)
+        assertEquals(false, state.shouldShowTrialEndedDialog)
+        assertEquals(true, state.shouldAutoOpenDrawer)
+        coVerify(exactly = 0) { activitiesRepository.getOfflineVisitCount(any()) }
+    }
+
+    @Test
+    fun `GuestVisitState derives banner, dialog and auto-open decisions from visit thresholds`() {
+        assertEquals(R.string.guest_visit_limit_warning, GuestVisitState(offlineVisits = 2, isGuest = true).bannerMessageRes)
+        assertEquals(R.string.last_login_message, GuestVisitState(offlineVisits = 3, isGuest = true).bannerMessageRes)
+        assertEquals(null, GuestVisitState(offlineVisits = 1, isGuest = true).bannerMessageRes)
+
+        assertEquals(false, GuestVisitState(offlineVisits = 3, isGuest = true).shouldShowTrialEndedDialog)
+        assertEquals(true, GuestVisitState(offlineVisits = 4, isGuest = true).shouldShowTrialEndedDialog)
+
+        assertEquals(true, GuestVisitState(offlineVisits = 2, isGuest = true).shouldAutoOpenDrawer)
+        assertEquals(false, GuestVisitState(offlineVisits = 3, isGuest = true).shouldAutoOpenDrawer)
+        assertEquals(true, GuestVisitState(offlineVisits = 10, isGuest = false).shouldAutoOpenDrawer)
     }
 }

@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -158,5 +159,59 @@ class ExamQuestionTest {
         assertEquals(1, serialized.size())
         assertEquals("Title1", serialized[0].asJsonObject.get("header").asString)
         assertEquals("Body1", serialized[0].asJsonObject.get("body").asString)
+    }
+
+    @Test
+    fun testInsertExamQuestions_singleChoiceMatch() {
+        val questionsArray = JsonArray()
+
+        val question = JsonObject().apply {
+            addProperty("id", "q1")
+            addProperty("body", "Select one")
+            addProperty("type", "select")
+            addProperty("title", "Question 1")
+            addProperty("marks", "1")
+            val choicesArray = JsonArray().apply {
+                add(JsonObject().apply { addProperty("id", "c1"); addProperty("res", "Option 1") })
+                add(JsonObject().apply { addProperty("id", "c2"); addProperty("res", "Option 2") })
+                add(JsonObject().apply { addProperty("id", "c3"); addProperty("res", "Option 3") })
+            }
+            add("choices", choicesArray)
+            addProperty("correctChoice", "c2")
+        }
+        questionsArray.add(question)
+
+        val insertedQuestions = ExamQuestion.insertExamQuestions(questionsArray, "exam123")
+
+        assertEquals(1, insertedQuestions.size)
+        val insertedQuestion = insertedQuestions[0]
+        assertNotNull(insertedQuestion.getCorrectChoice())
+        assertEquals(listOf("Option 2"), insertedQuestion.getCorrectChoice())
+    }
+
+    @Test
+    fun testInsertExamQuestions_singleChoiceNoMatch() {
+        val questionsArray = JsonArray()
+
+        val question = JsonObject().apply {
+            addProperty("id", "q1")
+            addProperty("body", "Select one")
+            addProperty("type", "select")
+            addProperty("title", "Question 1")
+            addProperty("marks", "1")
+            val choicesArray = JsonArray().apply {
+                add(JsonObject().apply { addProperty("id", "c1"); addProperty("res", "Option 1") })
+                add(JsonObject().apply { addProperty("id", "c2"); addProperty("res", "Option 2") })
+            }
+            add("choices", choicesArray)
+            addProperty("correctChoice", "c999")
+        }
+        questionsArray.add(question)
+
+        val insertedQuestions = ExamQuestion.insertExamQuestions(questionsArray, "exam123")
+
+        assertEquals(1, insertedQuestions.size)
+        val insertedQuestion = insertedQuestions[0]
+        assertNull(insertedQuestion.getCorrectChoice())
     }
 }

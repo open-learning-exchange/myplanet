@@ -13,4 +13,5 @@ interface OnNewsItemClickListener {
     fun onReplyPosted(newsId: String?) { onDataChanged() }
     fun onMemberSelected(userModel: UserEntity?)
     fun getCurrentImageList(): List<String>?
+    fun restoreImages(snapshot: List<String>) {}
 }

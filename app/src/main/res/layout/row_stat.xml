@@ -2,25 +2,44 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_gravity="center"
-    android:orientation="horizontal"
-    android:padding="8dp">
+    android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/tv_title"
-        android:layout_width="0dp"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:padding="4dp"
-        android:textColor="@color/user_profile_label"
-        android:textSize="18sp" />
-    <TextView
-        android:id="@+id/tv_description"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:paddingLeft="4dp"
-        android:paddingRight="4dp"
-        android:textColor="@color/user_profile_description"
-        android:textSize="18sp" />
+        android:minHeight="@dimen/profile_row_min_height"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/profile_row_padding_horizontal"
+        android:paddingTop="@dimen/profile_row_padding_vertical"
+        android:paddingEnd="@dimen/profile_row_padding_horizontal"
+        android:paddingBottom="@dimen/profile_row_padding_vertical">
+
+        <TextView
+            android:id="@+id/tv_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/daynight_textColor"
+            android:textSize="@dimen/text_size_mid" />
+        <TextView
+            android:id="@+id/tv_description"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0"
+            android:layout_marginStart="@dimen/profile_row_gap"
+            android:ellipsize="end"
+            android:gravity="end"
+            android:maxLines="1"
+            android:maxWidth="@dimen/profile_stat_value_max_width"
+            android:textColor="@color/daynight_textColor"
+            android:textStyle="bold"
+            android:textSize="@dimen/profile_detail_text_size" />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/dashboard_hairline_width"
+        android:background="@color/card_border" />
 </LinearLayout>

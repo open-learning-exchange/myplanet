@@ -1,17 +1,22 @@
 package org.ole.planet.myplanet.model
 
-import android.text.TextUtils
-import android.util.LruCache
-import android.widget.EditText
 import androidx.room.Entity
-import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import java.io.File
+import java.util.Collections
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
-@Entity(tableName = "achievements")
+@Entity(tableName = "achievements", indices = [androidx.room.Index("isUpdated")])
 class Achievement {
     var achievements: List<String>? = null
     var references: List<String>? = null
@@ -34,9 +39,6 @@ class Achievement {
     val achievementsArray: JsonArray
         get() = parseStringListToJsonArray(achievements)
 
-    @Ignore
-    private var cachedReferencesArray: JsonArray? = null
-
     fun getReferencesArray(): JsonArray {
         return parseStringListToJsonArray(references)
     }
@@ -48,55 +50,77 @@ class Achievement {
         get() = parseStringListToJsonArray(otherInfo)
 
     fun setLinks(la: JsonArray?) {
-        links = mutableListOf()
-        if (la == null) return
-        for (el in la) {
-            val e = JsonUtils.gson.toJson(el)
-            if (links?.contains(e) != true) links = links.orEmpty() + e
+        if (la == null) {
+            links = mutableListOf()
+            return
         }
+        val uniqueItems = LinkedHashSet<String>()
+        for (el in la) {
+            uniqueItems.add(GsonUtils.gson.toJson(el))
+        }
+        links = uniqueItems.toList()
     }
 
     fun setOtherInfo(oi: JsonArray?) {
-        otherInfo = mutableListOf()
-        if (oi == null) return
-        for (el in oi) {
-            val e = JsonUtils.gson.toJson(el)
-            if (otherInfo?.contains(e) != true) otherInfo = otherInfo.orEmpty() + e
+        if (oi == null) {
+            otherInfo = mutableListOf()
+            return
         }
+        val uniqueItems = LinkedHashSet<String>()
+        for (el in oi) {
+            uniqueItems.add(GsonUtils.gson.toJson(el))
+        }
+        otherInfo = uniqueItems.toList()
     }
 
     fun setAchievements(ac: JsonArray) {
-        achievements = mutableListOf()
+        val uniqueItems = LinkedHashSet<String>()
         for (el in ac) {
-            val achievement = JsonUtils.gson.toJson(el)
-            if (achievements?.contains(achievement) != true) {
-                achievements = achievements.orEmpty() + achievement
-            }
+            uniqueItems.add(GsonUtils.gson.toJson(el))
         }
+        achievements = uniqueItems.toList()
     }
 
     fun setReferences(of: JsonArray?) {
-        cachedReferencesArray = null
-        references = mutableListOf()
-        if (of == null) return
-        for (el in of) {
-            val e = JsonUtils.gson.toJson(el)
-            if (references?.contains(e) != true) {
-                references = references.orEmpty() + e
-            }
+        if (of == null) {
+            references = mutableListOf()
+            return
         }
+        val uniqueItems = LinkedHashSet<String>()
+        for (el in of) {
+            uniqueItems.add(GsonUtils.gson.toJson(el))
+        }
+        references = uniqueItems.toList()
     }
 
     companion object {
-        private val parsedJsonCache = LruCache<String, JsonElement>(1000)
+        private val UNSAFE_PATH_CHARS = Regex("[^A-Za-z0-9._@-]")
+
+        fun cvRelativePath(achievementId: String?, fileName: String): String {
+            if (achievementId.isNullOrBlank()) return "cv/$fileName"
+            return "cv/${achievementId.replace(UNSAFE_PATH_CHARS, "_")}/$fileName"
+        }
+        
+        fun resolveCvRelativePath(olePath: String, achievementId: String?, fileName: String): String {
+            val perAchievement = cvRelativePath(achievementId, fileName)
+            val legacy = "cv/$fileName"
+            return if (!File(olePath + perAchievement).exists() && File(olePath + legacy).exists()) legacy else perAchievement
+        }
+
+        internal const val CACHE_CAPACITY = 1000
+        internal val parsedJsonCache: MutableMap<String, JsonElement> = Collections.synchronizedMap(
+            object : LinkedHashMap<String, JsonElement>(16, 0.75f, true) {
+                override fun removeEldestEntry(eldest: Map.Entry<String, JsonElement>): Boolean = size > CACHE_CAPACITY
+            }
+        )
 
         private fun parseStringListToJsonArray(list: List<String>?): JsonArray {
             val array = JsonArray()
             for (s in list ?: emptyList()) {
-                var ob = parsedJsonCache.get(s)
+                var ob = parsedJsonCache[s]
                 if (ob == null) {
-                    ob = JsonUtils.gson.fromJson(s, JsonElement::class.java)
-                    parsedJsonCache.put(s, ob)
+                    ob = GsonUtils.gson.fromJson(s, JsonElement::class.java)
+                    parsedJsonCache[s] = ob
                 }
                 array.add(ob?.deepCopy())
             }
@@ -104,54 +128,51 @@ class Achievement {
         }
 
         fun fromJson(act: JsonObject): Achievement {
+            val kAct = act.toKotlinx().jsonObject
             return Achievement().apply {
-                _id = JsonUtils.getString("_id", act)
-                _rev = JsonUtils.getString("_rev", act)
-                purpose = JsonUtils.getString("purpose", act)
-                goals = JsonUtils.getString("goals", act)
-                achievementsHeader = JsonUtils.getString("achievementsHeader", act)
-                sendToNation = act.get("sendToNation")?.asString ?: "false"
-                dateSortOrder = JsonUtils.getString("dateSortOrder", act)
-                createdOn = JsonUtils.getString("createdOn", act)
-                username = JsonUtils.getString("username", act)
-                parentCode = JsonUtils.getString("parentCode", act)
+                _id = JsonUtils.getString("_id", kAct)
+                _rev = JsonUtils.getString("_rev", kAct)
+                purpose = JsonUtils.getString("purpose", kAct)
+                goals = JsonUtils.getString("goals", kAct)
+                achievementsHeader = JsonUtils.getString("achievementsHeader", kAct)
+                sendToNation = (kAct["sendToNation"] as? JsonPrimitive)?.content ?: "false"
+                dateSortOrder = JsonUtils.getString("dateSortOrder", kAct)
+                createdOn = JsonUtils.getString("createdOn", kAct)
+                username = JsonUtils.getString("username", kAct)
+                parentCode = JsonUtils.getString("parentCode", kAct)
                 isUpdated = false
-                setReferences(JsonUtils.getJsonArray("references", act))
-                setAchievements(JsonUtils.getJsonArray("achievements", act))
-                setLinks(JsonUtils.getJsonArray("links", act))
-                setOtherInfo(JsonUtils.getJsonArray("otherInfo", act))
-                resumeFileName = JsonUtils.getString("resumeFileName", act)
+                setReferences(GsonUtils.getJsonArray("references", act))
+                setAchievements(GsonUtils.getJsonArray("achievements", act))
+                setLinks(GsonUtils.getJsonArray("links", act))
+                setOtherInfo(GsonUtils.getJsonArray("otherInfo", act))
+                resumeFileName = JsonUtils.getString("resumeFileName", kAct)
             }
         }
 
-        fun serialize(sub: Achievement): JsonObject {
-            val `object` = JsonObject()
-            `object`.addProperty("_id", sub._id)
-            if (!TextUtils.isEmpty(sub._rev)) `object`.addProperty("_rev", sub._rev)
-            `object`.addProperty("goals", sub.goals)
-            `object`.addProperty("purpose", sub.purpose)
-            `object`.addProperty("achievementsHeader", sub.achievementsHeader)
-            `object`.addProperty("sendToNation", sub.sendToNation?.toBoolean() ?: false)
-            `object`.addProperty("dateSortOrder", sub.dateSortOrder ?: "none")
-            `object`.addProperty("createdOn", sub.createdOn ?: "")
-            `object`.addProperty("username", sub.username ?: "")
-            `object`.addProperty("parentCode", sub.parentCode ?: "")
-            `object`.add("references", sub.getReferencesArray())
-            `object`.add("achievements", sub.achievementsArray)
-            `object`.add("links", sub.linksArray)
-            `object`.add("otherInfo", sub.otherInfoArray)
-            `object`.addProperty("resumeFileName", sub.resumeFileName ?: "")
-            return `object`
-        }
+        fun serialize(sub: Achievement): JsonObject = buildJsonObject {
+            put("_id", sub._id)
+            if (!sub._rev.isNullOrEmpty()) put("_rev", sub._rev)
+            put("goals", sub.goals)
+            put("purpose", sub.purpose)
+            put("achievementsHeader", sub.achievementsHeader)
+            put("sendToNation", sub.sendToNation?.toBoolean() ?: false)
+            put("dateSortOrder", sub.dateSortOrder ?: "none")
+            put("createdOn", sub.createdOn ?: "")
+            put("username", sub.username ?: "")
+            put("parentCode", sub.parentCode ?: "")
+            put("references", sub.getReferencesArray().toKotlinx())
+            put("achievements", sub.achievementsArray.toKotlinx())
+            put("links", sub.linksArray.toKotlinx())
+            put("otherInfo", sub.otherInfoArray.toKotlinx())
+            put("resumeFileName", sub.resumeFileName ?: "")
+        }.toGson()
 
-        fun createReference(name: String?, relation: EditText, phone: EditText, email: EditText): JsonObject {
-            val ob = JsonObject()
-            ob.addProperty("name", name)
-            ob.addProperty("phone", phone.text.toString())
-            ob.addProperty("relationship", relation.text.toString())
-            ob.addProperty("email", email.text.toString())
-            return ob
-        }
+        fun createReference(name: String?, relation: String, phone: String, email: String): JsonObject = buildJsonObject {
+            put("name", name)
+            put("phone", phone)
+            put("relationship", relation)
+            put("email", email)
+        }.toGson()
 
     }
 }

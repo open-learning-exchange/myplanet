@@ -1,12 +1,14 @@
 # myPlanet Testing Guide
 
-This guide explains how tests are actually written in this codebase, based on the 130+ unit tests that already exist under `app/src/test/`. When writing a new test, find the closest existing test of the same kind listed below and copy its shape — don't invent a new pattern.
+This guide explains how tests are actually written in this codebase, based on the 278 test classes (2,159 `@Test` methods) under `app/src/test/`. When writing a new test, find the closest existing test of the same kind listed below and copy its shape — don't invent a new pattern.
+
+> The app's local database is **Room** (the Realm migration is complete). Tests mock DAOs with MockK, or spin up a real in-memory Room database under Robolectric when actual SQL behavior matters.
 
 ---
 
 ## Table of Contents
 
-1. [Test Source Sets — Two Different Worlds](#test-source-sets--two-different-worlds)
+1. [Test Source Sets](#test-source-sets)
 2. [Libraries in Use](#libraries-in-use)
 3. [Shared Test Infrastructure](#shared-test-infrastructure)
 4. [How to Test Each Layer](#how-to-test-each-layer)
@@ -17,46 +19,21 @@ This guide explains how tests are actually written in this codebase, based on th
 
 ---
 
-## Test Source Sets — Two Different Worlds
+## Test Source Sets
 
-There are two test source sets and they behave completely differently. Picking the right one matters.
+### `app/src/test/` — JVM unit tests (the only source set)
 
-### `app/src/test/` — JVM unit tests (130+ files, this is where you almost always write tests)
+Everything runs on the local JVM — no emulator or device needed. **CI runs this**: `.github/workflows/test.yml` runs `./gradlew testDefaultDebugUnitTest` on every push to every branch, except pushes that touch only `docs/**` or `**/*.md` (`paths-ignore`). If a test isn't in `src/test/`, it isn't verified automatically.
 
-These run on the local JVM, no emulator or device needed. **CI only runs this source set** — `.github/workflows/test.yml` runs `./gradlew testDefaultDebugUnitTest` on every push. If a test isn't in `src/test/`, it isn't verified automatically.
+There is currently **no `app/src/androidTest/` (instrumented) source set** — the `androidTestImplementation` dependencies are still declared in `app/build.gradle`, but no instrumented sources exist and no workflow runs an emulator.
 
-Critically: **no test in `src/test/` uses a real Realm database.** Even `RealmRepositoryTest.kt`, which is the closest thing to a "Realm integration test" in this source set, mocks `Realm` itself with `mockk(relaxed = true)` — it never calls `Realm.init()` or builds a real `RealmConfiguration`. Every repository test mocks `DatabaseService` and asserts on logic that doesn't require an actual database round-trip (string normalization, filtering, mapping, what gets called and with what arguments).
+When you need to verify real database behavior (actual SQL, `Converters`, transactions), you don't need a device: use **Robolectric + `Room.inMemoryDatabaseBuilder`** inside `src/test/` — see [DAO / Room round-trip tests](#daos--room-round-trip-tests) below.
 
-This works because `RealmObject` subclasses behave like plain Kotlin objects until they're persisted — you can do `val user = RealmUser(); user.rolesList = RealmList<String?>().apply { add("manager") }` with no live Realm at all, as long as you're just reading/writing fields and not calling Realm query methods. See `model/RealmUserTest.kt`.
+Package breakdown — every `.kt` under `app/src/test/java/org/ole/planet/myplanet/`, counted recursively, so `data/` includes `data/room/` and `data/api/`: **282 files = 278 test classes + 4 shared helpers**. `ui/` 93, `utils/` 61, `repository/` 40, `services/` 35, `data/` 21, `model/` 20, `base/` 9, `di/` 2, root 1.
 
-### `app/src/androidTest/` — instrumented tests (2 files only, rarely needed)
-
-These run on a real device or emulator via `AndroidJUnit4` and **do** spin up a real, in-memory Realm:
-
-```kotlin
-@RunWith(AndroidJUnit4::class)
-class DatabaseServiceTest {
-    @Before
-    fun setUp() {
-        Realm.init(ApplicationProvider.getApplicationContext())
-        realmConfiguration = RealmConfiguration.Builder()
-            .name("test-realm")
-            .inMemory()
-            .allowWritesOnUiThread(true)
-            .allowQueriesOnUiThread(true)
-            .schemaVersion(1)
-            .build()
-        Realm.setDefaultConfiguration(realmConfiguration)
-    }
-
-    @After
-    fun tearDown() {
-        Realm.deleteRealm(realmConfiguration)
-    }
-}
-```
-
-Only write a test here if you genuinely need to verify real Realm query behavior (e.g. confirming a query actually returns the right rows, not just that a method was called). This source set is **not run in CI** — there's no emulator step in any workflow — so a bug only caught here won't block a PR. Default to `src/test/` unless you have a specific reason not to.
+> Every suite-wide count in this guide was measured at `a02f806`. They move with almost every merge, so re-derive rather than trust:
+> `find app/src/test -name '*.kt' | wc -l`, `grep -rl 'io.mockk' app/src/test --include=*.kt | wc -l`, `grep -rho '@Test' app/src/test --include=*.kt | wc -l`.
+> The structural figures — 38 entities, `version = 12`, 37 DAOs, the pinned SDK levels — are the ones that stay put.
 
 ---
 
@@ -67,52 +44,121 @@ From `app/build.gradle` (`testImplementation` block) and what's actually importe
 | Library | Purpose | Notes |
 |---------|---------|-------|
 | JUnit 4 (`org.junit.Test`, `org.junit.Assert.*`) | Test runner and assertions | Used everywhere |
-| **MockK** (`io.mockk.*`) | Mocking | **The standard.** Used in ~100 of the ~130 test files. |
-| Mockito (`org.mockito.*`) | Mocking | Legacy — only 2 files (`SubmissionViewModelTest`, `CoursesAdapterTest`). Don't introduce new Mockito usage; use MockK. |
-| Robolectric (`org.robolectric.*`) | Android framework shadow for JVM tests | Used wherever a test needs real Android classes (`Context`, `View`, resource strings) without an emulator. ~25 files use it. |
+| **MockK** (`io.mockk.*`) | Mocking | **The standard.** Used in 179 of the 282 files. |
+| Mockito (`org.mockito.*`) | Mocking | Legacy — 5 files (`CoursesAdapterTest`, `ResourcesAdapterTest`, `DashboardSurveysAdapterTest`, `SubmissionViewModelTest`, `SubmissionDetailViewModelTest`). Don't introduce new Mockito usage; use MockK. |
+| Robolectric (`org.robolectric.*`) | Android framework on the JVM | 83 files — wherever a test needs real Android classes (`Context`, `View`, resource strings, Room) without an emulator |
 | `kotlinx-coroutines-test` | `runTest`, `TestDispatcher`, `UnconfinedTestDispatcher`, `StandardTestDispatcher` | For suspend functions and Flow/StateFlow-based ViewModels |
-| `androidx.test` (`ApplicationProvider`, `AndroidJUnit4`) | Application context access | Used both in Robolectric JVM tests and real `androidTest` instrumented tests |
+| `androidx.test` (`ApplicationProvider`, `AndroidJUnit4`) | Application context access | Used inside Robolectric JVM tests |
+| `androidx.room:room-testing` | Room test helpers | Backs the in-memory Room tests |
 
 ---
 
 ## Shared Test Infrastructure
 
+All four helpers live in `app/src/test/java/org/ole/planet/myplanet/utils/` (package `org.ole.planet.myplanet.utils`).
+
 ### `MainDispatcherRule`
 
-Swaps `Dispatchers.Main` for a test dispatcher so `viewModelScope.launch { }` runs synchronously in tests. Use this in any ViewModel test.
+Swaps `Dispatchers.Main` for a test dispatcher. With the default `UnconfinedTestDispatcher`, `viewModelScope.launch { }` runs eagerly (effectively synchronously); if you pass a `StandardTestDispatcher` instead, coroutines queue until you call `runCurrent()` / `advanceUntilIdle()`. Use it in any ViewModel test. There is exactly **one** copy — import it from `utils`.
 
 ```kotlin
-@get:Rule
-val mainDispatcherRule = MainDispatcherRule()
+@OptIn(ExperimentalCoroutinesApi::class)
+class MainDispatcherRule(
+    val testDispatcher: TestDispatcher = UnconfinedTestDispatcher(),
+) : TestWatcher() {
+    override fun starting(description: Description) { Dispatchers.setMain(testDispatcher) }
+    override fun finished(description: Description) { Dispatchers.resetMain() }
+}
 ```
 
 ### `TestDispatcherProvider`
 
-A test double for the app's `DispatcherProvider` interface (`utils/DispatcherProvider.kt`) that routes every dispatcher (`main`, `io`, `default`, `unconfined`) to a single test dispatcher, so coroutine code under test runs deterministically:
+A test double for the app's `DispatcherProvider` interface (`utils/DispatcherProvider.kt`) that routes every dispatcher to a single `TestDispatcher` (required constructor parameter — no default):
 
 ```kotlin
 class TestDispatcherProvider(private val testDispatcher: TestDispatcher) : DispatcherProvider {
     override val main: CoroutineDispatcher = testDispatcher
+    override val mainImmediate: CoroutineDispatcher = testDispatcher
     override val io: CoroutineDispatcher = testDispatcher
     override val default: CoroutineDispatcher = testDispatcher
     override val unconfined: CoroutineDispatcher = testDispatcher
 }
 ```
 
-Use this (or manually mock `DispatcherProvider` and stub each property to a `TestDispatcher`) for any class that takes `DispatcherProvider` in its constructor — see `RepositoryModule` consumers and most repository implementations.
+Use it for any class that takes `DispatcherProvider` in its constructor (most repositories, sync managers, several ViewModels). Production code injects `DispatcherProvider` rather than hard-coding `Dispatchers.*` precisely so tests can do this.
+
+### `TestTimeProvider`
+
+A controllable `TimeProvider`: `TestTimeProvider(var currentTime: Long = 0L)` with `advanceBy(millis)`. `sleep(millis)` advances instead of blocking. Use it for anything time-dependent instead of `System.currentTimeMillis()`.
+
+### `FlowTestUtils`
+
+One extension, `TestScope.collectEmissions(flow)`: collects a `Flow` on an `UnconfinedTestDispatcher(testScheduler)`, runs `advanceUntilIdle()`, cancels the collector, and returns the emissions as a `List`. Use it instead of hand-rolling a `launch { flow.toList(...) }` when asserting what a repository or ViewModel flow emitted — it makes "emitted exactly once" assertable.
+
+```kotlin
+// ui/dashboard/ActivitiesViewModelTest.kt
+@Test
+fun `offlineLogins emits empty list and nothing else when user is null`() = runTest(testDispatcher) {
+    coEvery { userRepository.getUserModel() } returns null
+    val viewModel = ActivitiesViewModel(userRepository, activitiesRepository)
+
+    val emissions = collectEmissions(viewModel.offlineLogins)
+
+    assertEquals(1, emissions.size)
+    assertEquals(emptyList<OfflineActivity>(), emissions[0])
+}
+```
 
 ---
 
 ## How to Test Each Layer
 
+### The Robolectric application class
+
+`app/src/test/resources/robolectric.properties` sets `application=android.app.Application`
+for the whole `src/test/` source set. Leave it that way; ask for a different one with
+`@Config(application = ...)` only when a test needs it (`HiltTestApplication` for
+`@HiltAndroidTest`).
+
+Without that default, Robolectric boots the real `@HiltAndroidApp MainApplication` for
+every test that doesn't say otherwise, and its `onCreate()` launches fire-and-forget
+coroutines on the real `Dispatchers.IO`/`Default` that outlive the test class. A later
+class that `mockkObject(MainApplication.Companion)`s and unmocks it turns their next
+companion call into `MockKException`, which escapes to the global handler — where
+`kotlinx-coroutines-test` queues it and charges it to whichever test calls `runTest` next.
+
+So `UncaughtExceptionsBeforeTest` names the victim, not the cause: read the `Suppressed:`
+stack trace in the uploaded `test-reports-*` artifact to find the coroutine that threw.
+
+### Robolectric SDK levels
+
+**Don't pin `@Config(sdk = [...])` unless the test is actually about that API level.** Robolectric builds one sandbox per distinct (SDK level, config) per test fork and each sandbox loads a 95-215 MB `android-all-instrumented` jar, so every extra level the suite mentions is paid again — once per parallel fork, and `maxParallelForks` is `min(availableProcessors, 4)` unless `-PtestMaxParallelForks` overrides it. That cost shows up as a multi-second first test in the class: it was 16.0s for `TeamsRepositoryBulkInsertTransactionTest` (SDK 26) against a 0.43s average for the rest of its methods.
+
+Omit `sdk` and the test runs on the default, which Robolectric takes from `targetSdk` (36). Keep the rest of `@Config` (`application = ...`, `manifest = Config.NONE`) as needed — omitting `sdk` only drops the pin.
+
+One consequence worth knowing: Robolectric keys a sandbox by SDK level (plus the instrumentation config and the `LooperMode`/`GraphicsMode`/`SQLiteMode` settings), **not** by test class, so every class on the same level shares one classloader and therefore one copy of your `object` statics. Meanwhile each test *method* gets a fresh temp directory. A `File` or `Context` cached in an `object` and never reset will outlive the directory it points at, and unpinning a class changes which other classes can leave that cache dirty — see the note in [Things to Avoid](#things-to-avoid).
+
+Pin only when the assertion depends on the level, and say why in a comment so the next reader doesn't fold it away:
+
+| Level | Pinned by | Why |
+| --- | --- | --- |
+| 26 (`O`) | `utils/NotificationUtilsTest.kt`, `utils/VersionUtilsTest.kt` (one method), `repository/TeamsRepositoryBulkInsertTransactionTest.kt` | notification channels exist only from `O`; the repository test needs to sit below `S` so `processDescription` short-circuits instead of reaching for `MainApplication.context` |
+| 27 (`O_MR1`) | `utils/SecurePrefsTest.kt` | keystore-backed prefs path |
+| 28 (`P`) | `utils/VersionUtilsTest.kt` (one method) | `VersionUtils` branches on `SDK_INT >= P` |
+
+The suite therefore needs sandboxes at 26, 27, 28 and the default 36.
+
+`DownloadServiceTest` shows the cheaper shape when one class covers several levels: run on the default SDK and drive the individual branches with `ReflectionHelpers.setStaticField(Build.VERSION::class.java, "SDK_INT", …)`.
+
 ### ViewModels
 
-Mock the repository/manager dependencies with MockK, install `MainDispatcherRule`, construct the ViewModel directly (no Hilt needed in the test), and assert on the exposed `StateFlow` value.
+Mock the repository/manager dependencies with MockK, install `MainDispatcherRule`, construct the ViewModel directly (no Hilt needed), and assert on the exposed `StateFlow` value.
 
 Reference: `ui/courses/CourseProgressViewModelTest.kt`
 
 ```kotlin
 class CourseProgressViewModelTest {
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
@@ -126,23 +172,8 @@ class CourseProgressViewModelTest {
     }
 
     @Test
-    fun `loadProgress sets courseProgress value correctly`() = runTest {
-        val courseId = "id"
-        val userId = "userId"
-        val user = RealmUser().apply { _id = userId }
-        coEvery { userSessionManager.getUserModel() } returns user
-
-        val expected = mockk<CourseProgressData>()
-        coEvery { coursesRepository.getCourseProgress(courseId, userId) } returns expected
-
-        viewModel.loadProgress(courseId)
-
-        assertEquals(expected, viewModel.courseProgress.value)
-    }
-
-    @Test
     fun `calling loadProgress twice only invokes coursesRepository once`() = runTest {
-        // ... same setup ...
+        // ... coEvery setup ...
         viewModel.loadProgress(courseId)
         viewModel.loadProgress(courseId)
         coVerify(exactly = 1) { coursesRepository.getCourseProgress(courseId, userId) }
@@ -150,180 +181,225 @@ class CourseProgressViewModelTest {
 }
 ```
 
-Key things to copy from this pattern:
+Key things to copy:
 - Constructor-inject mocks directly; don't use Hilt's test runner for plain ViewModel unit tests.
 - Use `coEvery { }` for suspend functions, `every { }` for non-suspend.
-- Test idempotency/caching behavior with `coVerify(exactly = N) { }` — this codebase cares about not re-fetching data unnecessarily.
+- Test idempotency/caching with `coVerify(exactly = N) { }` — this codebase cares about not re-fetching data unnecessarily.
 - Test the *initial* state before any action, not just the state after.
 
-### Repositories
+### Repositories (mocked DAOs)
 
-Repository tests in this codebase mostly test **pure helper logic inside the repository**, not actual Realm persistence (since `src/test/` doesn't run real Realm — see above). Mock `DatabaseService` with `mockk(relaxed = true)` and the repository's other collaborator repositories the same way.
+Repositories inject Room DAOs directly, so the standard repository test mocks **every DAO and collaborator with `mockk(relaxed = true)`** and stubs DAO returns with `coEvery`.
 
 Reference: `repository/CoursesRepositoryImplTest.kt`
 
 ```kotlin
-@OptIn(ExperimentalCoroutinesApi::class)
 class CoursesRepositoryImplTest {
-    private val databaseService: DatabaseService = mockk(relaxed = true)
-    private val testDispatcher = UnconfinedTestDispatcher()
     private val progressRepository: ProgressRepository = mockk(relaxed = true)
-    // ... other collaborator repos, also mockk(relaxed = true) ...
+    private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+    private val courseDao: CourseDao = mockk(relaxed = true)
+    private val courseStepDao: CourseStepDao = mockk(relaxed = true)
+    private val examDao: ExamDao = mockk(relaxed = true)
+    // ... the impl's other DAOs, all mockk(relaxed = true) ...
+    private val userRepository: dagger.Lazy<UserRepository> = mockk(relaxed = true)
 
     private lateinit var repository: CoursesRepositoryImpl
 
     @Before
     fun setup() {
-        repository = CoursesRepositoryImpl(databaseService, testDispatcher, progressRepository, /* ... */)
+        repository = CoursesRepositoryImpl(/* mocks + a test dispatcher */)
     }
 
     @Test
-    fun testNormalizeText() {
-        assertEquals("hello world", repository.normalizeText("HELLO World"))
-        assertEquals("cafe", repository.normalizeText("Café"))
+    fun `search empty query returns all courses`() = runTest {
+        coEvery { courseDao.getAll() } returns listOf(
+            MyCourse(id = "id1", courseId = "id1", courseTitle = "Math", courseTitleNormal = "math")
+        )
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
+
+        val result = repository.search("")
+
+        assertEquals(1, result.size)
+        assertEquals("Math", result.first().courseTitle)
+    }
+
+    @Test
+    fun testMatchesAllParts() {
+        assertTrue(repository.matchesAllParts("hello world", listOf("hello", "world")))
+        assertFalse(repository.matchesAllParts("hello world", listOf("hello", "universe")))
     }
 }
 ```
 
-If you need to verify what gets written to Realm without a live database, follow `RealmRepositoryTest.kt`'s approach: mock `Realm` itself (`mockk(relaxed = true)`) and `DatabaseService.createManagedRealmInstance()` to return it, then verify the right methods were called with the right arguments — don't try to assert on actual query results, since the mock won't really filter anything.
+Two kinds of assertions dominate: pure helper logic tested directly (no stubbing needed), and DAO-interaction logic verified with `coEvery` + `coVerify`. Entities are plain Kotlin classes — construct them with named args, no database needed.
+
+### DAOs / Room round-trip tests
+
+When mocked DAOs aren't enough — you need real SQL, `Converters` serialization, or transaction semantics — use Robolectric with an in-memory Room database. 20 test classes do this today: 14 under `data/room/dao/`, 2 under `data/room/`, and 4 repository sync/transaction tests.
+
+References: `data/room/AppDatabaseRoundTripTest.kt` (insert-and-read round-trips through the real DAOs and `Converters` against Robolectric's SQLite — guards the JSON list/embedded-object converters and the LIKE-on-JSON shelf-membership query), `data/room/dao/NewsDaoTest.kt` (LIKE-escaping in queries), `repository/TeamsRepositoryBulkInsertTransactionTest.kt` (verifies `bulkInsertFromSync` commits inside a single `appDatabase.withTransaction { }`). Note: the schema is not exported (`exportSchema = false`), so these tests exercise the live schema, not JSON schema files.
 
 ```kotlin
-@Before
-fun setup() {
-    databaseService = mockk()
-    realm = mockk(relaxed = true)
-    every { databaseService.ioDispatcher } returns testDispatcher
-    every { databaseService.createManagedRealmInstance() } returns realm
+@RunWith(AndroidJUnit4::class)
+class NewsDaoTest {
+    private lateinit var db: AppDatabase
+
+    @Before
+    fun setUp() {
+        db = Room.inMemoryDatabaseBuilder(
+            ApplicationProvider.getApplicationContext(), AppDatabase::class.java
+        ).allowMainThreadQueries().build()
+    }
+
+    @After
+    fun tearDown() { db.close() }
+
+    @Test
+    fun getTopLevelByTeam_escapesLikeWildcards() = runBlocking { /* insert via DAO, query, assert rows */ }
 }
 ```
 
-For benchmark-style repository tests (see `repository/TeamsRepositoryBenchmarkTest.kt`), the same full-mock approach is used, just with more collaborators wired up — useful as a template when a repository under test has many dependencies.
+Always `db.close()` in `@After`, and keep these tests focused on behavior a mock can't express.
 
-### Realm Models
+### Entity / model classes
 
-Model tests construct the `RealmObject` subclass directly with `ClassName()` — no Realm instance needed — set fields, and assert on the model's own logic methods (`isManager()`, `isGuest()`, serialization helpers, etc).
+Room entities behave like plain Kotlin objects — construct with `UserEntity()` + property assignment, no database. If the class's methods touch global app state (`MainApplication`, `Utilities.toast`), stub it in `@Before` and restore in `@After`.
 
-Reference: `model/RealmUserTest.kt`
+Reference: `model/UserEntityTest.kt`
 
 ```kotlin
-class RealmUserTest {
-    @MockK lateinit var mockRealm: Realm
-    @MockK lateinit var mockContext: Context
+class UserEntityTest {
     private var originalContext: Context? = null
+    private var originalScope: CoroutineScope? = null
 
     @Before
     fun setup() {
-        MockKAnnotations.init(this)
+        // applicationScope is lateinit — reading it before anything initialized it throws,
+        // so the capture is guarded (same reason the context capture below is guarded)
+        originalScope = try { MainApplication.applicationScope } catch (_: UninitializedPropertyAccessException) { null }
         Dispatchers.setMain(Dispatchers.Unconfined)
         MainApplication.applicationScope = CoroutineScope(Dispatchers.Unconfined)
-        mockkStatic(Utilities::class)
+        mockkObject(Utilities)
         every { Utilities.toast(any(), any()) } returns Unit
-        originalContext = try { MainApplication.context } catch (e: Exception) { null }
-        MainApplication.context = mockContext
+        originalContext = try { MainApplication.context } catch (_: Exception) { null }
+        MainApplication.testContext = mockContext
     }
 
     @After
     fun tearDown() {
-        if (originalContext != null) MainApplication.context = originalContext!!
+        MainApplication.testContext = originalContext
+        // cancel + restore only when an original scope existed — never leave the
+        // global holding a cancelled scope (later tests would silently no-op)
+        originalScope?.let {
+            MainApplication.applicationScope.cancel()
+            MainApplication.applicationScope = it
+        }
         Dispatchers.resetMain()
         unmockkAll()
     }
 
     @Test
     fun testIsManagerWithManagerRole() {
-        val user = RealmUser()
-        val roles = RealmList<String?>()
-        roles.add("manager")
-        user.rolesList = roles
+        val user = UserEntity()
+        user.rolesList = mutableListOf("manager")
         user.userAdmin = false
         assertTrue(user.isManager())
     }
 }
 ```
 
-If the model's companion-object methods touch `MainApplication.context` or `Utilities` (a lot of `insert`/`serialize` companion methods do), mock those statics with `mockkStatic` and restore with `unmockkAll()` in `tearDown()` — copy the setup/teardown block above rather than reinventing it.
+### Workers (`CoroutineWorker` / WorkManager)
 
-### Workers (`CoroutineWorker` / `WorkManager`)
-
-Mock every constructor dependency, mock the static `WorkManager`/`WorkManagerImpl` calls, and verify scheduling/enqueue calls rather than letting WorkManager actually run.
+Mock every constructor dependency, mock the static `WorkManager`/`WorkManagerImpl` calls with `mockkStatic`, and verify scheduling/enqueue calls rather than letting WorkManager actually run.
 
 Reference: `services/retry/RetryQueueWorkerTest.kt`
 
 ```kotlin
 class RetryQueueWorkerTest {
-    @MockK(relaxed = true) lateinit var workManagerImpl: androidx.work.impl.WorkManagerImpl
-    @MockK(relaxed = true) lateinit var context: MainApplication
-    @MockK lateinit var workerParams: WorkerParameters
-    @MockK lateinit var retryQueue: RetryQueue
-    @MockK lateinit var apiInterface: ApiInterface
+
+    @MockK(relaxed = true)
+    lateinit var workManagerImpl: WorkManagerImpl
+
+    @MockK(relaxed = true)
+    lateinit var context: MainApplication
+
+    @MockK
+    lateinit var workerParams: WorkerParameters
+
+    @MockK
+    lateinit var retryRepository: RetryRepository
+
+    @MockK
+    lateinit var syncManager: SyncManager
 
     private lateinit var worker: RetryQueueWorker
+
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkStatic(Log::class)
+            mockkStatic(WorkManagerImpl::class)
+            mockkStatic(WorkManager::class)
+            mockkObject(MainApplication)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkAll()
+        }
+    }
 
     @Before
     fun setUp() {
         MockKAnnotations.init(this, relaxed = true)
-        mockkStatic(Log::class)
+
         every { Log.d(any<String>(), any<String>()) } returns 0
-        // ... stub other Log levels the same way ...
+        every { Log.i(any<String>(), any<String>()) } returns 0
+        every { Log.w(any<String>(), any<String>()) } returns 0
+        every { Log.e(any<String>(), any<String>()) } returns 0
+        every { Log.e(any<String>(), any<String>(), any<Throwable>()) } returns 0
 
         every { context.applicationContext } returns context
-        mockkStatic(androidx.work.impl.WorkManagerImpl::class)
-        every { androidx.work.impl.WorkManagerImpl.getInstance(any()) } returns workManagerImpl
-        mockkStatic(WorkManager::class)
+        every { WorkManagerImpl.getInstance(any()) } returns workManagerImpl
         every { WorkManager.getInstance(any()) } returns workManagerImpl
+        every { syncManager.isMainSyncActive() } returns false
 
-        worker = RetryQueueWorker(context, workerParams, retryQueue, apiInterface)
+        worker = RetryQueueWorker(context, workerParams, retryRepository, syncManager)
     }
 
     @After
-    fun tearDown() = unmockkAll()
-
-    @Test
-    fun schedule_enqueuesUniquePeriodicWork() {
-        every { workManagerImpl.enqueueUniquePeriodicWork(any(), any(), any<PeriodicWorkRequest>()) } returns mockk(relaxed = true)
-        RetryQueueWorker.schedule(context)
-        verify(exactly = 1) {
-            workManagerImpl.enqueueUniquePeriodicWork("retryQueueWork", any(), any<PeriodicWorkRequest>())
-        }
+    fun tearDown() {
+        clearAllMocks(answers = false, childMocks = false)
     }
 }
 ```
 
-`mockkStatic(Log::class)` and stubbing each `Log.d/i/w/e` overload is needed in any test where the class under test logs — otherwise Robolectric/the JVM has no real `android.util.Log` implementation and the test crashes. Copy that block whenever `Log.*` calls are reachable from the code under test.
+Understanding `clearAllMocks()` behavior:
+- `clearAllMocks(answers = false)` preserves stubs and only clears recorded call counts, making it safe to run in `@After` without wiping stubs.
+- Default `clearAllMocks()` clears both recorded calls and stubs. When used in `@Before`, any per-test stubs must be re-installed afterwards.
+
+Note on `Log`: `Log` mocking is not required to avoid crashes because `returnDefaultValues = true` (`app/build.gradle:22`) makes `android.util.Log` calls return default values on the JVM. Mock `Log` only when the test explicitly asserts a log call (see `services/NotificationActionReceiverTest.kt:189-204` for an example using scoped `mockkStatic(Log::class)` and `verify`).
+
+### Mock once per class
+
+Calling `mockkStatic` or `mockkObject` inside `@Before` re-instruments the target class before every test method. Prefer mocking static methods and singleton objects once per class using companion `@BeforeClass` and `@AfterClass` methods.
+
+Real codebase examples using this pattern:
+- `services/retry/RetryQueueWorkerTest.kt:63-78` (`@BeforeClass` mocks `Log`, `WorkManagerImpl`, `WorkManager`, and `MainApplication`; `@AfterClass` calls `unmockkAll()`, and `@After` uses `clearAllMocks(answers = false, childMocks = false)`)
+- `services/DownloadServiceTest.kt:60-76` (`@BeforeClass` mocks `ContextCompat`, `DownloadUtils`, and `Log`), using default `clearAllMocks()` in `@Before` at `:83` and re-installing stubs at `:86-90`
+- `services/upload/UploadConfigsTest.kt:47-61` (`@BeforeClass` mocks `VersionUtils` and `NetworkUtils`), using default `clearAllMocks()` in `@Before` at `:65` and re-installing stubs at `:67-71`
+- `services/NotificationActionReceiverTest.kt:55-69` (`@BeforeClass` mocks `NotificationUtils` and `ServiceDependenciesEntryPointKt`), using default `clearAllMocks()` in `@Before` at `:73`
+- `base/BasePermissionActivityTest.kt:26-40` (`@BeforeClass` mocks `ContextCompat` and `Process`), using default `clearAllMocks()` in `@Before` at `:44` and re-installing stubs at `:45-50`
+
+When a static mock is needed for only a single test method, scope `mockkStatic` inside a `try ... finally` block that calls `unmockkStatic` in `finally`, as shown in `utils/UrlUtilsTest.kt:53`.
 
 ### Adapters (`RecyclerView.Adapter` / `ListAdapter`)
 
-Use Robolectric (`@RunWith(RobolectricTestRunner::class)`) when the adapter touches real Android view/context behavior. Mock the `Context` and any `AdapterDataObserver` you need to verify against.
+Use Robolectric (`@RunWith(RobolectricTestRunner::class)`) when the adapter touches real Android view/context behavior. Mock the `Context` and any `AdapterDataObserver` you verify against.
 
-Reference: `ui/courses/CoursesAdapterTest.kt`
-
-```kotlin
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [32], application = android.app.Application::class)
-class CoursesAdapterTest {
-    @Mock lateinit var mockContext: Context
-    @Mock lateinit var mockObserver: RecyclerView.AdapterDataObserver
-    private lateinit var adapter: CoursesAdapter
-
-    @Before
-    fun setUp() {
-        MockitoAnnotations.initMocks(this)
-        adapter = CoursesAdapter(mockContext, HashMap(), false, false)
-        adapter.registerAdapterDataObserver(mockObserver)
-    }
-
-    @Test
-    fun `test selectAllItems sets all unowned courses and triggers notifyItemRangeChanged`() {
-        val courses = listOf(/* ... */)
-        adapter.submitList(courses)
-        adapter.selectAllItems(true)
-        assertEquals(true, adapter.areAllSelected())
-        verify(mockObserver, times(1)).onItemRangeChanged(/* ... */)
-    }
-}
-```
-
-Note this specific file uses Mockito (legacy) instead of MockK — it's one of the only 2 files that do. **For a new adapter test, use MockK's equivalents** (`mockk<Context>()`, `verify(exactly = 1) { mockObserver.onItemRangeChanged(...) }`) even though this reference file uses Mockito; match the project-wide convention, not this one outlier file.
+Reference (pattern): `ui/courses/CoursesAdapterTest.kt` — but note this specific file is one of the 5 legacy **Mockito** files. **For a new adapter test, use MockK's equivalents** (`mockk<Context>()`, `verify(exactly = 1) { mockObserver.onItemRangeChanged(...) }`); the MockK-based adapter tests (`ui/events/EventsAdapterTest.kt`, `ui/notifications/NotificationsAdapterTest.kt`, `ui/teams/TeamsSelectionAdapterTest.kt`, …) are the shapes to copy.
 
 ### Base/Abstract Classes
 
@@ -333,19 +409,17 @@ Reference: `base/BaseRecyclerFragmentTest.kt`
 
 ```kotlin
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], application = Application::class)
+@Config(application = Application::class)
 class BaseRecyclerFragmentTest {
 
     class TestBaseRecyclerFragment : BaseRecyclerFragment<Any>() {
         override fun getLayout(): Int = 0
-        override suspend fun getAdapter(): androidx.recyclerview.widget.ListAdapter<*, *> {
-            throw NotImplementedError()
-        }
+        override suspend fun getAdapter(): ListAdapter<*, *> { throw NotImplementedError() }
     }
 
     @Test
     fun showNoData_withZeroCount_makesViewVisibleAndSetsMessage() {
-        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val context = ApplicationProvider.getApplicationContext<Context>()
         val textView = TextView(context)
         BaseRecyclerFragment.showNoData(textView, 0, "courses")
         assertEquals(View.VISIBLE, textView.visibility)
@@ -354,35 +428,23 @@ class BaseRecyclerFragmentTest {
 }
 ```
 
-Real `string.xml` resources are used for assertions (`context.getString(R.string.no_courses)`) rather than hardcoded literal strings — this is the standard approach when Robolectric gives you a real `Context`, since it keeps the test correct even if the string copy changes later. Prefer this over hardcoding the expected string.
+Real `strings.xml` resources are used in assertions (`context.getString(R.string.no_courses)`) rather than hardcoded literals — the standard approach whenever Robolectric gives you a real `Context`, so the test doesn't drift from the actual string resource.
 
 ### Plain Utility Functions
 
-If the utility is pure Kotlin with no Android dependency, a plain JUnit test with no `@RunWith` annotation is enough. If it touches `Context`, `SharedPreferences`, or other Android framework classes, add `@RunWith(RobolectricTestRunner::class)` and `@Config(sdk = [...], application = ...)`.
+If the utility is pure Kotlin with no Android dependency, a plain JUnit test with no `@RunWith` annotation is enough (`utils/TimeUtilsTest.kt`, `utils/GsonUtilsTest.kt`). If it touches `Context`, `SharedPreferences`, or other framework classes, add `@RunWith(RobolectricTestRunner::class)` and get the context from `ApplicationProvider` (`utils/ConstantsTest.kt`). Leave the SDK level alone — see [Robolectric SDK levels](#robolectric-sdk-levels) below.
 
-Reference: `utils/ConstantsTest.kt`
+### DI Modules and the API/auth layer
 
-```kotlin
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], application = android.app.Application::class)
-class ConstantsTest {
-    private lateinit var context: Context
-    private lateinit var sharedPreferences: SharedPreferences
-
-    @Before
-    fun setUp() {
-        context = ApplicationProvider.getApplicationContext()
-        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-    }
-    // ...
-}
-```
+- `di/NetworkModuleTest.kt` calls `NetworkModule.provideGson()` directly (no mocks) and asserts serialization behavior.
+- `utils/DispatcherProviderGuardTest.kt` reflectively asserts `DispatcherModule` carries `@Module`/`@Provides`/`@Singleton`.
+- `data/auth/AuthSessionUpdaterTest.kt`, `data/api/ApiClientTest.kt`, `data/api/RetryInterceptorTest.kt` cover the network/auth layer with MockK + coroutine test dispatchers.
 
 ---
 
 ## Naming Conventions
 
-Both styles below appear throughout the suite (roughly 56 backtick-style files vs 111 camelCase-style files, including mixed files) — neither is enforced, pick whichever reads more clearly for the case you're testing. When adding tests to an existing file, match that file's existing style rather than mixing both within one file.
+The suite is genuinely mixed — of 2,159 `@Test` methods, 1,281 use the backtick style and 878 camelCase (roughly 59/41), sometimes within one file. Neither is enforced — pick whichever reads more clearly, but when adding tests to an existing file, match that file's style.
 
 ```kotlin
 // Backtick descriptive style — common for ViewModel/behavior tests
@@ -398,7 +460,7 @@ fun testIsManagerWithManagerRole() { ... }
 fun showNoData_withZeroCount_makesViewVisibleAndSetsMessage() { ... }
 ```
 
-Test class names always match `{ClassUnderTest}Test.kt` (e.g. `CoursesRepositoryImplTest.kt` for `CoursesRepositoryImpl`). Don't append `UnitTest`, `Tests` (plural), or `Spec`.
+Test class names always match `{ClassUnderTest}Test.kt` (e.g. `CoursesRepositoryImplTest.kt`). Don't append `UnitTest`, `Tests` (plural), or `Spec`.
 
 ---
 
@@ -414,48 +476,62 @@ Test class names always match `{ClassUnderTest}Test.kt` (e.g. `CoursesRepository
 # Run a single test method
 ./gradlew testDefaultDebugUnitTest --tests "org.ole.planet.myplanet.ui.courses.CourseProgressViewModelTest.loadProgress sets courseProgress value correctly"
 
-# Run instrumented tests (needs a connected device/emulator — not used in CI)
-./gradlew connectedDefaultDebugAndroidTest
+# Lite flavor (NOT covered by CI — run locally when touching flavor-specific code)
+./gradlew testLiteDebugUnitTest
 ```
 
-CI runs unit tests via `.github/workflows/test.yml` on every push to every branch. There is no separate lint-only or coverage-gate step — passing `testDefaultDebugUnitTest` is the bar.
+CI (`.github/workflows/test.yml`, "myPlanet test") runs on every push to every branch (no `pull_request` trigger — the push itself triggers it; doc-only pushes are skipped via `paths-ignore`) plus manual dispatch: `./gradlew test${FLAVOR^}DebugUnitTest -PtestShardTotal=2 -PtestShardIndex=<0|1> -ProbolectricOffline=true --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4` (matrix is `default` only) on `ubuntu-24.04`, split across two shards that each run half the test classes (`app/build.gradle` `testOptions` hashes each top-level class into a shard). On failure each shard uploads `app/build/test-results/` as `test-reports-default-shard-<n>` (7-day retention); a timing summary always runs. There is no separate lint or coverage gate — passing `testDefaultDebugUnitTest` is the bar.
+
+### The Robolectric `android-all` runtime
+
+Robolectric doesn't ship the Android framework it runs your test against — it downloads an `android-all-instrumented` jar (95–215 MB, one per API level) the first time a test fork needs that level. Left to itself it does that *from inside the test fork*, and because tests run in four parallel forks two of them can fetch the same jar at once; the loser reads a half-written file and every Robolectric test that follows in that JVM fails (`AndroidVersions.CURRENT` is null, then `NoSuchFieldError` on framework fields) while the other forks stay green. A rerun passes, which is what makes it costly.
+
+So CI passes `-ProbolectricOffline=true`: Gradle resolves the jars into `build/robolectric-sdks` before the test task starts and Robolectric is told to look there and fetch nothing (`robolectric.offline`, `robolectric.dependency.dir`). The list of levels lives in `robolectricSdkJars` in `app/build.gradle`.
+
+The workflow also fails the job if a jar turns up in Robolectric's own runtime cache (`~/.m2/repository/org/robolectric`), which can only happen if `-ProbolectricOffline=true` stopped reaching the test forks — the one regression whose other symptom is just the flake coming back.
+
+**If you add `@Config(sdk = [N])` for a level nothing else uses**, add the matching jar version to that map, or the CI run fails with `Path is not a file: build/robolectric-sdks/android-all-instrumented-<version>.jar`. The version strings come from Robolectric's `DefaultSdkProvider` and all of them change when Robolectric is bumped. Prefer reusing a level the suite already pins — every extra level is another jar to download, and one more Robolectric sandbox to build per fork.
 
 ---
 
 ## Patterns Worth Copying, by Example File
 
-Use this table to find the closest existing test to copy from when you're about to write a new one.
-
 | You're testing a... | Copy the shape of | Key technique |
 |---|---|---|
 | ViewModel with `StateFlow` | `ui/courses/CourseProgressViewModelTest.kt` | `MainDispatcherRule` + `mockk()` + `coEvery`/`coVerify` |
-| Repository helper logic | `repository/CoursesRepositoryImplTest.kt` | `mockk(relaxed = true)` for every collaborator, test pure functions |
-| Repository's Realm-facing calls | `repository/RealmRepositoryTest.kt` | Mock `Realm` itself + `DatabaseService.createManagedRealmInstance()` |
-| Repository with many dependencies | `repository/TeamsRepositoryBenchmarkTest.kt` | Same full-mock pattern, more wiring |
-| Realm model with role/permission logic | `model/RealmUserTest.kt` | Plain `RealmObject` construction, `mockkStatic` for companion-object side effects |
-| `CoroutineWorker` / WorkManager scheduling | `services/retry/RetryQueueWorkerTest.kt` | `mockkStatic(WorkManager::class)`, mock `Log.*` |
-| `RecyclerView`/`ListAdapter` | `ui/courses/CoursesAdapterTest.kt` | `RobolectricTestRunner`, mock `Context` (use MockK, not Mockito) |
+| Repository (DAO-backed) | `repository/CoursesRepositoryImplTest.kt` | `mockk(relaxed = true)` for every DAO/collaborator |
+| Real SQL / Converters / transactions | `data/room/AppDatabaseRoundTripTest.kt`, `data/room/dao/NewsDaoTest.kt` | Robolectric + `Room.inMemoryDatabaseBuilder` |
+| Transaction atomicity in a repository | `repository/TeamsRepositoryBulkInsertTransactionTest.kt` | In-memory Room + `withTransaction` verification |
+| Entity with role/permission logic | `model/UserEntityTest.kt` | Plain construction; `mockkObject(Utilities)` + `MainApplication.testContext` for side effects |
+| `CoroutineWorker` / WorkManager scheduling | `services/retry/RetryQueueWorkerTest.kt` | `mockkStatic(WorkManager::class)` in `@BeforeClass`, `clearAllMocks()` per test |
+| `RecyclerView`/`ListAdapter` | `ui/events/EventsAdapterTest.kt` | `RobolectricTestRunner` + MockK (avoid the Mockito legacy files) |
 | Abstract base class | `base/BaseRecyclerFragmentTest.kt` | Minimal private test subclass implementing only the abstract members |
-| Pure Kotlin utility, no Android deps | `utils/TimeUtilsTest.kt`, `utils/JsonUtilsTest.kt` | Plain JUnit, no `@RunWith` |
+| Pure Kotlin utility | `utils/TimeUtilsTest.kt`, `utils/GsonUtilsTest.kt` | Plain JUnit, no `@RunWith` |
 | Utility touching `Context`/`SharedPreferences` | `utils/ConstantsTest.kt` | `RobolectricTestRunner` + `ApplicationProvider.getApplicationContext()` |
-| Real Realm query behavior (rare) | `androidTest/.../DatabaseServiceTest.kt` | `Realm.init()` + in-memory `RealmConfiguration`, only when you genuinely need it |
+| Sync managers | `services/sync/SyncManagerTest.kt`, `services/sync/LoginSyncManagerTest.kt` | MockK + `TestDispatcherProvider` |
 
 ---
 
 ## Things to Avoid
 
-**Don't put a new test in `androidTest/` by default.** It won't run in CI. Use `src/test/` unless you specifically need a real, queryable Realm instance.
+**Don't let a production `object` cache leak across tests.** `FileUtils.cachedExternalFilesDir`, `LocaleUtils.cachedLanguage`, `UrlUtils`' state — these live for the whole sandbox, which is shared by every test class on the same SDK level. Reset them in `@Before` (reflection on the private field, as `FileUtilsTest` and `LocaleUtilsTest` do, or a purpose-built `internal fun resetForTesting()` like `UrlUtils` has), otherwise the test passes only as long as nothing else happens to run first.
 
-**Don't introduce new Mockito usage.** Two legacy files use it; the rest of the suite (~100 files) uses MockK. Use MockK for anything new, including adapter tests, even though the one existing adapter test reference uses Mockito.
+**Don't pin `@Config(sdk = [...])` out of habit.** A pin the assertions don't need still costs a per-fork sandbox build and an `android-all` jar download; see [Robolectric SDK levels](#robolectric-sdk-levels).
 
-**Don't forget `mockkStatic(Log::class)` (and stub each level) when the code under test logs.** Otherwise the test will crash trying to call into the real Android `Log` class, which doesn't exist on the JVM.
+**Don't introduce new Mockito usage.** Five legacy files use it (listed under [Libraries in Use](#libraries-in-use)); the other 179 mocking files use MockK. Use MockK for anything new.
 
-**Don't forget to call `unmockkAll()` in `tearDown()`** after any `mockkStatic`/`mockkObject` call, or static mocks will leak into other tests run in the same JVM process.
+**Don't mock `Log` unless asserting log calls.** `returnDefaultValues = true` in `app/build.gradle` allows `android.util.Log` calls to return default values without throwing. Mock `Log` only when verifying specific log invocations.
 
-**Don't try to assert real query results against a mocked `Realm`.** A `mockk(relaxed = true)` Realm doesn't filter anything — if you need to confirm a query actually returns the right rows, that belongs in `androidTest/` with a real in-memory Realm, not in `src/test/`.
+**Don't forget `unmockkAll()`/`unmockkStatic()`** for statics mocked per test; class-level statics are undone once in `@AfterClass`.
 
-**Don't hardcode expected UI strings when Robolectric gives you a real `Context`.** Use `context.getString(R.string.my_string)` in the assertion, the same as `BaseRecyclerFragmentTest` does, so the test doesn't silently drift from the actual string resource.
+**Don't assert query results against a mocked DAO.** A `mockk(relaxed = true)` DAO returns whatever you stub — it doesn't run SQL. If you need to confirm a query actually filters/escapes correctly, use an in-memory Room database (see `NewsDaoTest.kt`), still inside `src/test/`.
 
-**Don't skip `MainDispatcherRule` on a ViewModel test that calls `viewModelScope.launch`.** Without it, the coroutine won't run synchronously and your assertion will check the state before the launch block has executed.
+**Don't forget `db.close()` in `@After`** when using `Room.inMemoryDatabaseBuilder`.
 
-**Don't create a third `MainDispatcherRule`.** Two already exist (`org.ole.planet.myplanet.MainDispatcherRule` and `org.ole.planet.myplanet.utils.MainDispatcherRule`); import the `utils` one for new tests.
+**Don't hardcode expected UI strings when Robolectric gives you a real `Context`.** Use `context.getString(R.string.my_string)` in the assertion, like `BaseRecyclerFragmentTest` does.
+
+**Don't skip `MainDispatcherRule` on a ViewModel test that calls `viewModelScope.launch`.** Without it, the coroutine won't run synchronously and your assertion checks state before the launch block executed.
+
+**Don't hard-code `Dispatchers.IO` in production code you want to test.** Inject `DispatcherProvider` and pass `TestDispatcherProvider(testDispatcher)` in tests — that's why the abstraction exists.
+
+**Don't create an `androidTest/` source set for something an in-memory Room test can cover.** Instrumented tests don't run in CI; a bug caught only there won't block a PR.
