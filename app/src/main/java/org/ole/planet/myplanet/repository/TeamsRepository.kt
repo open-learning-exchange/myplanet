@@ -51,7 +51,6 @@ interface TeamsRepository : TeamsFinancesRepository, TeamsMembersRepository, Tea
     suspend fun addCoursesToTeam(teamId: String, courseIds: List<String>): Result<Unit>
     suspend fun removeCourseFromTeam(teamId: String, courseId: String): Result<Unit>
     suspend fun getTeamByIdOrTeamId(id: String): MyTeam?
-    suspend fun getTeamLinks(): List<MyTeam>
     suspend fun getTeamById(teamId: String): MyTeam?
     suspend fun getTaskTeamInfo(taskId: String): Triple<String, String, String>?
     suspend fun getJoinRequestTeamId(requestId: String): String?
