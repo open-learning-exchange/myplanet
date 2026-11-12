@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import android.os.Environment
+import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.FileOutputStream
@@ -34,6 +35,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
 ) {
 
     companion object {
+        private const val TAG = "SubmissionsRepositoryExporter"
         private val dateFormatter: DateTimeFormatter =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm", Locale.getDefault())
                 .withZone(ZoneId.systemDefault())
@@ -128,8 +130,9 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                 document.close()
             }
         } catch (e: Exception) {
-                null
-            }
+            Log.w(TAG, "Failed to export submission PDF", e)
+            null
+        }
     }
 
     suspend fun generateMultipleSubmissionsPdf(
@@ -240,8 +243,9 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                 document.close()
             }
         } catch (e: Exception) {
-                null
-            }
+            Log.w(TAG, "Failed to export multiple submissions PDF", e)
+            null
+        }
     }
 
     private fun drawMultilineText(canvas: Canvas, text: String, x: Float, y: Float, paint: Paint, maxWidth: Float): Float {
