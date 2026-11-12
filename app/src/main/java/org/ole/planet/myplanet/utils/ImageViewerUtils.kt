@@ -8,17 +8,23 @@ import androidx.core.graphics.drawable.toDrawable
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import java.io.File
+import java.lang.ref.WeakReference
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogZoomableImageBinding
 
 object ImageViewerUtils {
-    private var activeDialog: Dialog? = null
+    private var activeDialog: WeakReference<Dialog>? = null
+
+    private fun dismissActive() {
+        runCatching { activeDialog?.get()?.takeIf { it.isShowing }?.dismiss() }
+        activeDialog = null
+    }
 
     fun showZoomableImage(context: Context, imagePath: String) {
-        activeDialog?.dismiss()
+        dismissActive()
 
         val dialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
-        activeDialog = dialog
+        activeDialog = WeakReference(dialog)
 
         val binding = DialogZoomableImageBinding.inflate(LayoutInflater.from(context))
 
@@ -47,11 +53,10 @@ object ImageViewerUtils {
 
         binding.closeButton.setOnClickListener {
             dialog.dismiss()
-            activeDialog = null
         }
 
         dialog.setOnDismissListener {
-            activeDialog = null
+            if (activeDialog?.get() === dialog) activeDialog = null
         }
 
         dialog.show()
