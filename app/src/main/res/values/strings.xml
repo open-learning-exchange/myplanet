@@ -1258,6 +1258,10 @@
     <string name="team_surveys">Team surveys</string>
     <string name="enterprise_created">Enterprise created</string>
     <string name="image_already_added">This image has already been added</string>
+    <string name="add_media">Add Media</string>
+    <string name="video_already_added">Video already added</string>
+    <string name="please_select_video">Please select a video file</string>
+    <string name="please_select_image_or_video">Please select an image or video file</string>
     <string name="voice_image_gif_too_large">GIFs larger than 2 MB can\'t be attached</string>
     <string name="voice_image_unreadable">This image couldn\'t be read</string>
     <string name="debug_retry_queue">Retry Queue (Debug)</string>

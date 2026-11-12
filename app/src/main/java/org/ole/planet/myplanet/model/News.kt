@@ -51,6 +51,8 @@ open class News {
     var parentCode: String? = null
     var imageUrls: List<String>? = null
     var images: String? = null
+    var videoUrls: List<String>? = null
+    var videos: String? = null
     var labels: List<String>? = null
     var viewIn: String? = null
     var newsId: String? = null
@@ -129,6 +131,16 @@ open class News {
             imagesCache = ImagesCache(currentImages, parsed)
             return parsed.deepCopy()
         }
+
+    @get:Ignore
+    val videosArray: JsonArray
+        get() = videos?.let {
+            try {
+                GsonUtils.gson.fromJson(it, JsonArray::class.java)
+            } catch (_: Exception) {
+                null
+            }
+        } ?: JsonArray()
 
     @get:Ignore
     val labelsArray: JsonArray
@@ -293,6 +305,7 @@ open class News {
             map: HashMap<String?, String>,
             user: UserEntity?,
             imageUrls: List<String>?,
+            videoUrls: List<String>? = null,
             isReply: Boolean = false
         ): News {
             val news = News()
@@ -324,6 +337,7 @@ open class News {
             news.replyTo = map["replyTo"] ?: ""
             news.user = GsonUtils.gson.toJson(user?.serialize())
             news.imageUrls = imageUrls?.toList() ?: emptyList()
+            news.videoUrls = videoUrls?.toList() ?: emptyList()
 
             map["news"]?.let { newsObj ->
                 try {

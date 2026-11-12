@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.ui.voices
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
+import android.graphics.Color
 import android.os.Build
 import android.text.Spanned
 import android.text.TextUtils
@@ -36,6 +38,8 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.VoicesEditor
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
+import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
+import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -123,6 +127,7 @@ class VoicesAdapter(
 ) {
     companion object {
         private const val TAG = "VoicesAdapter"
+        private const val VIDEO_THUMB_FRAME_US = 1_000_000L
         const val PAYLOAD_TEAM_LEADER_CHANGED = "PAYLOAD_TEAM_LEADER_CHANGED"
         const val PAYLOAD_CURRENT_USER_CHANGED = "PAYLOAD_CURRENT_USER_CHANGED"
         const val PAYLOAD_NON_TEAM_MEMBER_CHANGED = "PAYLOAD_NON_TEAM_MEMBER_CHANGED"
@@ -193,6 +198,7 @@ class VoicesAdapter(
     private val thumbnailMarginPx by lazy { (4 * context.resources.displayMetrics.density).toInt() }
     private var listener: OnNewsItemClickListener? = null
     private var imageList: List<String>? = null
+    private var videoList: List<String>? = null
     private var fromLogin = false
     private var nonTeamMember = false
     private var recyclerView: RecyclerView? = null
@@ -250,6 +256,10 @@ class VoicesAdapter(
 
     fun setImageList(imageList: List<String>?) {
         this.imageList = imageList
+    }
+
+    fun setVideoList(videoList: List<String>?) {
+        this.videoList = videoList
     }
 
     fun setFromLogin(fromLogin: Boolean) {
@@ -358,6 +368,7 @@ class VoicesAdapter(
                 setMessageAndDate(holder, news, sharedTeamName)
                 configureEditDeleteButtons(holder, news)
                 loadImage(holder.binding, news)
+                loadVideo(holder.binding, news)
                 showReplyButton(holder, news, position)
                 updateLabels(holder, news)
                 handleChat(holder, news)
@@ -428,6 +439,9 @@ class VoicesAdapter(
             imgNews.visibility = View.GONE
             llNewsImages.visibility = View.GONE
             llNewsImages.removeAllViews()
+            flSingleVideo.visibility = View.GONE
+            llNewsVideos.visibility = View.GONE
+            llNewsVideos.removeAllViews()
             recyclerGchat.visibility = View.GONE
             sharedChat.visibility = View.GONE
             flReactions.removeAllViews()
@@ -1163,6 +1177,107 @@ class VoicesAdapter(
                 binding.llNewsImages.addView(imageView)
             }
         }
+    }
+
+    private fun loadVideo(binding: RowNewsBinding, news: News?) {
+        binding.flSingleVideo.visibility = View.GONE
+        binding.llNewsVideos.visibility = View.GONE
+        binding.llNewsVideos.removeAllViews()
+
+        val videoBindToken = Any()
+        binding.llNewsVideos.tag = videoBindToken
+
+        val localPaths = news?.videoUrls?.mapNotNull { entry ->
+            try {
+                GsonUtils.getString("videoUrl", GsonUtils.gson.fromJson(entry, JsonObject::class.java)).takeIf { it.isNotEmpty() }
+            } catch (_: Exception) {
+                null
+            }
+        }
+        if (!localPaths.isNullOrEmpty()) {
+            if (localPaths.size == 1) {
+                showSingleVideo(binding, File(localPaths[0]))
+            } else {
+                binding.llNewsVideos.visibility = View.VISIBLE
+                localPaths.forEach { addVideoTile(binding, File(it)) }
+            }
+            return
+        }
+
+        val videosArray = news?.videosArray ?: return
+        val resourceIds = (0 until videosArray.size()).mapNotNull { i ->
+            GsonUtils.getString("resourceId", videosArray[i]?.asJsonObject).takeIf { it.isNotEmpty() }
+        }
+        if (resourceIds.size > 1) binding.llNewsVideos.visibility = View.VISIBLE
+        resourceIds.forEach { resourceId ->
+            getLibraryResourceFn(resourceId) { library ->
+                if (binding.llNewsVideos.tag !== videoBindToken) return@getLibraryResourceFn
+                val basePath = externalFilesDir
+                if (library != null && basePath != null) {
+                    val videoFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+                    if (resourceIds.size == 1) showSingleVideo(binding, videoFile) else addVideoTile(binding, videoFile)
+                }
+            }
+        }
+    }
+
+    private fun loadVideoThumbnail(file: File, target: ImageView, size: Int) {
+        Glide.with(target.context)
+            .asBitmap()
+            .load(file)
+            .frame(VIDEO_THUMB_FRAME_US)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .override(size, size)
+            .placeholder(R.drawable.ic_loading)
+            .error(R.drawable.ic_loading)
+            .into(target)
+    }
+
+    private fun showSingleVideo(binding: RowNewsBinding, file: File) {
+        loadVideoThumbnail(file, binding.imgVideoThumb, thumbnailSize120)
+        binding.flSingleVideo.visibility = View.VISIBLE
+        binding.flSingleVideo.setOnClickListener { playVideo(it.context, file.absolutePath) }
+    }
+
+    private fun addVideoTile(binding: RowNewsBinding, file: File) {
+        val density = context.resources.displayMetrics.density
+        val size = thumbnailSize100
+        val frameLayout = android.widget.FrameLayout(context).apply {
+            layoutParams = ViewGroup.MarginLayoutParams(size, size).apply {
+                setMargins(thumbnailMarginPx, thumbnailMarginPx, thumbnailMarginPx, thumbnailMarginPx)
+            }
+        }
+
+        val thumbnailView = ImageView(context).apply {
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            scaleType = ImageView.ScaleType.CENTER_CROP
+        }
+        loadVideoThumbnail(file, thumbnailView, size)
+
+        val iconSize = (32 * density).toInt()
+        val padding = (8 * density).toInt()
+        val playIcon = ImageView(context).apply {
+            layoutParams = android.widget.FrameLayout.LayoutParams(iconSize, iconSize).apply {
+                gravity = android.view.Gravity.CENTER
+            }
+            setImageResource(R.drawable.ic_play)
+            setBackgroundResource(R.drawable.circle_background)
+            setPadding(padding, padding, padding, padding)
+            setColorFilter(Color.WHITE)
+        }
+
+        frameLayout.addView(thumbnailView)
+        frameLayout.addView(playIcon)
+        frameLayout.setOnClickListener { playVideo(context, file.absolutePath) }
+        binding.llNewsVideos.addView(frameLayout)
+    }
+
+    private fun playVideo(context: Context, videoPath: String) {
+        val intent = Intent(context, ResourceViewerActivity::class.java)
+        intent.putExtra("TOUCHED_FILE", videoPath)
+        intent.putExtra("isFullPath", true)
+        intent.putExtra("resourceType", ResourceViewerFragment.ResourceType.VIDEO.name)
+        context.startActivity(intent)
     }
 
     internal inner class VoicesViewHolder(val binding: RowNewsBinding) : RecyclerView.ViewHolder(binding.root) {

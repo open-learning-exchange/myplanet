@@ -1269,6 +1269,10 @@
     <string name="team_surveys">استطلاعات الفريق</string>
     <string name="enterprise_created">تم إنشاء المؤسسة</string>
     <string name="image_already_added">تمت إضافة هذه الصورة بالفعل</string>
+    <string name="add_media">إضافة وسائط</string>
+    <string name="video_already_added">تمت إضافة الفيديو بالفعل</string>
+    <string name="please_select_video">يرجى تحديد ملف فيديو</string>
+    <string name="please_select_image_or_video">يرجى تحديد ملف صورة أو فيديو</string>
     <string name="voice_image_gif_too_large">لا يمكن إرفاق صور GIF أكبر من 2 ميغابايت</string>
     <string name="voice_image_unreadable">تعذرت قراءة هذه الصورة</string>
     <string name="debug_retry_queue">قائمة إعادة المحاولة (تصحيح)</string>

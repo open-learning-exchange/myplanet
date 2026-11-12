@@ -56,6 +56,7 @@ class VoicesRepositoryImpl @Inject constructor(
                     _id = news._id,
                     message = news.message,
                     imageUrls = news.imageUrls?.toList() ?: emptyList(),
+                    videoUrls = news.videoUrls?.toList() ?: emptyList(),
                     newsJson = newsJson,
                     pendingReactions = news.pendingReactions
                 )
@@ -71,9 +72,11 @@ class VoicesRepositoryImpl @Inject constructor(
             update.id?.let { id ->
                 newsById[id]?.let { news ->
                     news.imageUrls = emptyList()
+                    news.videoUrls = emptyList()
                     news._id = update._id
                     news._rev = update._rev
                     news.images = gson.toJson(update.imagesArray)
+                    news.videos = gson.toJson(update.videosArray)
                     update.message?.let { news.message = it }
                     if (news.pendingReactions == update.pendingReactions) news.pendingReactions = null
                     news.isUpdated = false
@@ -101,15 +104,15 @@ class VoicesRepositoryImpl @Inject constructor(
         return newsDao.isSharedWith(chatId, pattern)
     }
 
-    override suspend fun createNews(map: HashMap<String?, String>, user: UserEntity?, imageList: List<String>?): News {
-        val news = News.createNews(map, user, imageList)
+    override suspend fun createNews(map: HashMap<String?, String>, user: UserEntity?, imageList: List<String>?, videoList: List<String>?): News {
+        val news = News.createNews(map, user, imageList, videoList)
         newsDao.upsert(news)
         return news
     }
 
-    override suspend fun createTeamNews(newsData: HashMap<String?, String>, user: UserEntity, imageList: List<String>?): Boolean {
+    override suspend fun createTeamNews(newsData: HashMap<String?, String>, user: UserEntity, imageList: List<String>?, videoList: List<String>?): Boolean {
         return try {
-            val news = News.createNews(newsData, user, imageList)
+            val news = News.createNews(newsData, user, imageList, videoList)
             newsDao.upsert(news)
             true
         } catch (e: CancellationException) {
