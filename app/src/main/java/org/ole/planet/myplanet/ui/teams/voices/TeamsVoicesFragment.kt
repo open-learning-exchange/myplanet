@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.teams.voices
 
 import android.content.res.Configuration
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,37 +13,36 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.repository.VoicePostingPolicy
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.repository.toVoicePostingPolicy
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
-import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.ui.voices.VoicesAdapterHelper
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class TeamsVoicesFragment : BaseTeamFragment() {
     private var _binding: FragmentDiscussionListBinding? = null
+    private var shouldScrollToTopNextUpdate = false
     private val binding get() = _binding!!
 
     private val viewModel: TeamsVoicesViewModel by viewModels()
 
     @Inject
     lateinit var voicesRepository: VoicesRepository
-    @Inject
-    lateinit var userSessionManager: UserSessionManager
-    @Inject
-    override lateinit var dispatcherProvider: DispatcherProvider
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentDiscussionListBinding.inflate(inflater, container, false)
@@ -74,7 +74,11 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                 binding.tlMessage.error = getString(R.string.please_enter_message)
                 return@setOnClickListener
             }
-            binding.etMessage.setText(R.string.empty_text)
+            val userModel = user
+            if (userModel == null) {
+                Utilities.toast(requireContext(), getString(R.string.error, "Failed to create news"))
+                return@setOnClickListener
+            }
             val map = HashMap<String?, String>()
             map["viewInId"] = getEffectiveTeamId()
             map["viewInSection"] = "teams"
@@ -83,29 +87,33 @@ class TeamsVoicesFragment : BaseTeamFragment() {
             map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
             map["name"] = getEffectiveTeamName()
 
-            user?.let { userModel ->
-                viewModel.createTeamNews(map, userModel, imageList)
-            }
+            binding.btnSubmit.isEnabled = false
+            viewModel.createTeamNews(map, userModel, imageList.toList())
         }
 
-        if (shouldQueryTeamFromRealm()) {
-            viewLifecycleOwner.lifecycleScope.launch {
-                team = teamsRepository.getTeamByIdOrTeamId(teamId)
-                updateCanPostMessage(team, isMemberFlow.value)
+        if (shouldQueryTeamLocally()) {
+            viewModel.loadTeam(teamId)
+            collectWhenStarted(viewModel.teamPolicy) { result ->
+                result?.let { (teamResult, policy) ->
+                    team = teamResult
+                    updateCanPostMessage(policy, isMemberFlow.value)
+                }
             }
         } else {
-            updateCanPostMessage(team, isMemberFlow.value)
+            updateCanPostMessage(team?.toVoicePostingPolicy(), isMemberFlow.value)
         }
         binding.addMessage.isVisible = false
         return binding.root
     }
 
-    private fun updateCanPostMessage(team: RealmMyTeam?, isMember: Boolean) {
+    private fun updateCanPostMessage(policy: VoicePostingPolicy?, isMember: Boolean) {
         val isGuest = user?.id?.startsWith("guest") == true
-        val isPublicTeam = team?.isPublic == true
-        val canPost = !isGuest && (isMember || isPublicTeam)
+        val canPost = policy?.canPost(isGuest, isMember) ?: (!isGuest && isMember)
         binding.addMessage.isVisible = canPost
-        (binding.rvDiscussion.adapter as? VoicesAdapter)?.setNonTeamMember(!isMember)
+        (binding.rvDiscussion.adapter as? VoicesAdapter)?.let { adapter ->
+            adapter.setCurrentUser(user)
+            adapter.setNonTeamMember(!isMember)
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -113,11 +121,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         changeLayoutManager(resources.configuration.orientation, binding.rvDiscussion)
 
         viewModel.observeDiscussions(getEffectiveTeamId())
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            val realmNewsList = viewModel.getFilteredNews(getEffectiveTeamId())
-            showRecyclerView(realmNewsList)
-        }
+        viewModel.markDiscussionsSeen(getEffectiveTeamId())
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -128,6 +132,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                 }
                 launch {
                     viewModel.createNewsSuccess.collect { success ->
+                        binding.btnSubmit.isEnabled = true
                         if (success) {
                             binding.rvDiscussion.post {
                                 binding.rvDiscussion.smoothScrollToPosition(0)
@@ -135,24 +140,27 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                             binding.etMessage.text?.clear()
                             imageList.clear()
                             llImage?.removeAllViews()
+                            shouldScrollToTopNextUpdate = true
                             binding.llAddNews.visibility = View.GONE
                             binding.tlMessage.error = null
                             binding.addMessage.text = getString(R.string.add_message)
+                        } else {
+                            Utilities.toast(requireContext(), getString(R.string.error, "Failed to create news"))
                         }
                     }
                 }
                 launch {
                     combine(isMemberFlow, teamFlow) { isMember, teamData ->
-                        Pair(isMember, teamData)
-                    }.collectLatest { (isMember, teamData) ->
-                        updateCanPostMessage(teamData, isMember)
+                        Pair(isMember, teamData?.toVoicePostingPolicy())
+                    }.collectLatest { (isMember, policy) ->
+                        updateCanPostMessage(policy, isMember)
                     }
                 }
             }
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {
+    override fun onNewsItemClick(news: News?) {
         val bundle = Bundle()
         bundle.putString("newsId", news?.newsId)
         bundle.putString("newsRev", news?.newsRev)
@@ -160,13 +168,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
 
         val chatDetailFragment = ChatDetailFragment()
         chatDetailFragment.arguments = bundle
-
-        FragmentNavigator.replaceFragment(
-            parentFragmentManager,
-            R.id.fragment_container,
-            chatDetailFragment,
-            addToBackStack = true
-        )
+        homeItemClickListener?.openCallFragment(chatDetailFragment)
     }
 
     override fun clearImages() {
@@ -179,7 +181,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         changeLayoutManager(newConfig.orientation, binding.rvDiscussion)
     }
 
-    private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
+    private fun showRecyclerView(realmNewsList: List<News?>?) {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val labelManager = VoicesLabelManager(
@@ -190,24 +192,23 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                 removeLabelFn = { newsId, label -> viewModel.removeLabel(newsId, label) }
             )
             val effectiveTeamName = getEffectiveTeamName()
-            val adapterNews = activity?.let {
+            adapterNews = activity?.let {
                 VoicesAdapter(
                     context = it,
                     currentUser = user,
                     parentNews = null,
                     teamName = effectiveTeamName,
                     teamId = teamId,
-                    userSessionManager = userSessionManager,
                     isTeamLeaderFn = { onResult ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
-                            val result = kotlinx.coroutines.withTimeoutOrNull(2000) {
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val result = kotlinx.coroutines.withTimeoutOrNull(2000.milliseconds) {
                                 viewModel.isTeamLeader(teamId, user?._id)
                             }
-                            kotlinx.coroutines.withContext(dispatcherProvider.main) { onResult(result ?: false) }
+                            onResult(result ?: false)
                         }
                     },
                     getUserFn = { userId, onResult ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch {
+                        viewLifecycleOwner.lifecycleScope.launch {
                             val result = viewModel.getUserById(userId)
                             onResult(result)
                         }
@@ -217,8 +218,10 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                             try {
                                 val result = viewModel.getReplyCount(newsId)
                                 onResult(result)
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
-                                e.printStackTrace()
+                                Log.w(TAG, "getReplyCount failed", e)
                             }
                         }
                         return@VoicesAdapter { job.cancel() }
@@ -236,7 +239,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                         }
                     },
                     getLibraryResourceFn = { resourceId, onResult ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch {
+                        viewLifecycleOwner.lifecycleScope.launch {
                             val result = viewModel.getLibraryResource(resourceId)
                             onResult(result)
                         }
@@ -244,30 +247,35 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     onEditAction = { action ->
                         viewLifecycleOwner.lifecycleScope.launch { action() }
                     },
-                    onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope),
+                    onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope, dispatcherProvider),
                     labelManager = labelManager,
-                    voicesRepository = voicesRepository,
-                    userRepository = userRepository,
-                    getCommunityLeadersFn = { sharedPrefManager.getCommunityLeaders() },
-                    setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
+                    voicesEditor = voicesRepository,
+                    leadersList = viewModel.getCommunityLeaders()
                 )
             }
             adapterNews?.setListener(this)
             if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
             realmNewsList?.let { adapterNews?.submitList(it.filterNotNull()) }
             binding.rvDiscussion.adapter = adapterNews
-            showNoData(binding.tvNodata, realmNewsList?.filterNotNull()?.size ?: 0, "discussions")
+            shouldScrollToTopNextUpdate = false
+            showNoData(binding.tvNodata, realmNewsList?.count { it != null } ?: 0, "discussions")
         } else {
             (existingAdapter as? VoicesAdapter)?.let { adapter ->
+                adapter.setCurrentUser(user)
                 realmNewsList?.let {
-                    adapter.submitList(it.filterNotNull())
-                    showNoData(binding.tvNodata, it.filterNotNull().size, "discussions")
+                    adapter.submitList(it.filterNotNull()){
+                        if (shouldScrollToTopNextUpdate) {
+                            binding.rvDiscussion.scrollToPosition(0)
+                            shouldScrollToTopNextUpdate = false
+                        }
+                    }
+                    showNoData(binding.tvNodata, it.count { news -> news != null }, "discussions")
                 }
             }
         }
     }
 
-    override fun setData(list: List<RealmNews?>?) {
+    override fun setData(list: List<News?>?) {
         showRecyclerView(list)
     }
 
@@ -276,10 +284,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         super.onDestroyView()
     }
 
-    private fun shouldQueryTeamFromRealm(): Boolean {
-        val hasDirectData = requireArguments().containsKey("teamName") &&
-                requireArguments().containsKey("teamType") &&
-                requireArguments().containsKey("teamId")
-        return !hasDirectData
+    companion object {
+        private const val TAG = "TeamsVoicesFragment"
     }
 }

@@ -9,5 +9,5 @@ interface OnLibraryItemSelectedListener {
     @JvmSuppressWildcards
     fun onTagClicked(tag: TagItem)
     fun onResourceClicked(item: ResourceItem)
-    fun onShareClicked(item: ResourceItem)
+    fun onShareClicked(item: ResourceItem) {}
 }

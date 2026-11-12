@@ -1,22 +1,20 @@
 package org.ole.planet.myplanet.ui.courses
 
-import com.google.gson.JsonArray
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.CoursesProgressRow
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ProgressRepository
-import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -28,35 +26,38 @@ class ProgressViewModelTest {
 
     private lateinit var viewModel: ProgressViewModel
     private val progressRepository: ProgressRepository = mockk()
-    private val userSessionManager: UserSessionManager = mockk()
-    private val dispatcherProvider = object : DispatcherProvider {
-        override val main: CoroutineDispatcher = testDispatcher
-        override val io: CoroutineDispatcher = testDispatcher
-        override val default: CoroutineDispatcher = testDispatcher
-        override val unconfined: CoroutineDispatcher = testDispatcher
-    }
+    private val userRepository: UserRepository = mockk()
 
     @Before
     fun setUp() {
-        viewModel = ProgressViewModel(progressRepository, userSessionManager, dispatcherProvider)
+        viewModel = ProgressViewModel(progressRepository, userRepository)
     }
 
     @Test
     fun loadCourseData_updatesCourseData() = runTest {
-        val user = RealmUser().apply { id = "user_123" }
-        coEvery { userSessionManager.getUserModel() } returns user
+        val user = UserEntity().apply { id = "user_123" }
+        coEvery { userRepository.getUserModel() } returns user
 
-        val expectedJsonArray = JsonArray().apply { add("course1") }
-        coEvery { progressRepository.fetchCourseData(user.id) } returns expectedJsonArray
+        val expectedList = listOf(
+            CoursesProgressRow(
+                courseId = "course1",
+                courseName = "Course Name 1",
+                progressCurrent = null,
+                progressMax = null,
+                mistakes = null,
+                stepMistake = null
+            )
+        )
+        coEvery { progressRepository.getCourseProgressRows(user.id) } returns expectedList
 
-        assertNull(viewModel.courseData.value)
+        assertTrue(viewModel.courseData.value.isEmpty())
 
         viewModel.loadCourseData()
 
         advanceUntilIdle()
 
-        io.mockk.coVerify { progressRepository.fetchCourseData("user_123") }
+        io.mockk.coVerify { progressRepository.getCourseProgressRows("user_123") }
 
-        assertEquals(expectedJsonArray, viewModel.courseData.value)
+        assertEquals(expectedList, viewModel.courseData.value)
     }
 }

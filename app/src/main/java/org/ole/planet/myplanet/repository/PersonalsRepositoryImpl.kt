@@ -1,25 +1,31 @@
 package org.ole.planet.myplanet.repository
 
-import java.util.Date
+import android.util.Log
+import com.google.gson.JsonObject
+import java.io.File
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
-import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.data.room.dao.PersonalDao
+import org.ole.planet.myplanet.model.Personal
+import org.ole.planet.myplanet.utils.DeviceNameProvider
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.GsonUtils.getString
+import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.distinctByContent
 
 class PersonalsRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
-) : RealmRepository(databaseService, realmDispatcher), PersonalsRepository {
+    private val personalDao: PersonalDao,
+    private val uploadRepository: UploadRepository,
+    private val deviceNameProvider: DeviceNameProvider,
+    private val timeProvider: TimeProvider
+) : PersonalsRepository {
 
     override suspend fun personalTitleExists(title: String, userId: String?): Boolean {
-        return count(RealmMyPersonal::class.java) {
-            equalTo("title", title, io.realm.Case.INSENSITIVE)
-            if (!userId.isNullOrBlank()) equalTo("userId", userId)
-        } > 0
+        return personalDao.countByTitle(title, userId) > 0
     }
 
     override suspend fun savePersonalResource(
@@ -29,51 +35,129 @@ class PersonalsRepositoryImpl @Inject constructor(
         path: String?,
         description: String?
     ) {
-        val personal = RealmMyPersonal().apply {
+        val personal = Personal().apply {
             id = UUID.randomUUID().toString()
             _id = id
             this.title = title
             this.userId = userId
             this.userName = userName
             this.path = path
-            this.date = Date().time
+            this.date = timeProvider.now()
             this.description = description
         }
-        save(personal)
+        personalDao.insert(personal)
     }
 
-    override suspend fun getPersonalResources(userId: String?): Flow<List<RealmMyPersonal>> {
+    override fun getPersonalResources(userId: String?): Flow<List<Personal>> {
         if (userId.isNullOrBlank()) {
             return flowOf(emptyList())
         }
-
-        return queryListFlow(RealmMyPersonal::class.java) {
-            equalTo("userId", userId)
+        return personalDao.getByUserIdFlow(userId).distinctByContent { a, b ->
+            // Compare CouchDB sync markers alongside fields editable locally via updatePersonalResource
+            a.id == b.id && a._rev == b._rev && a.isUploaded == b.isUploaded &&
+                a.title == b.title && a.description == b.description && a.path == b.path
         }
     }
 
     override suspend fun deletePersonalResource(id: String) {
-        delete(RealmMyPersonal::class.java, "_id", id)
-        delete(RealmMyPersonal::class.java, "id", id)
+        personalDao.deleteByIdOrDocId(id)
     }
 
-    override suspend fun updatePersonalResource(id: String, updater: (RealmMyPersonal) -> Unit) {
-        update(RealmMyPersonal::class.java, "_id", id, updater)
-        update(RealmMyPersonal::class.java, "id", id, updater)
+    override suspend fun updatePersonalResource(id: String, update: PersonalUpdate) {
+        personalDao.updateFields(id, update.title, update.description)
     }
 
-    override suspend fun getPendingPersonalUploads(userId: String): List<RealmMyPersonal> {
-        return queryList(RealmMyPersonal::class.java) {
-            equalTo("userId", userId)
-            equalTo("isUploaded", false)
+    private suspend fun updatePersonalAfterSync(id: String, newId: String, rev: String) {
+        personalDao.updateUploadedStatus(id, newId, rev)
+    }
+
+    internal suspend fun uploadPersonalDocument(personal: Personal): Pair<String, String>? {
+        val response = uploadRepository.postUpload(
+            "${UrlUtils.getUrl()}/resources",
+            serialize(personal)
+        )
+
+        val `object` = response.body()
+        if (`object` != null) {
+            val rev = getString("rev", `object`)
+            val id = getString("id", `object`)
+            personalDao.updateRemoteDocRef(personal.id, id, rev)
+            return Pair(id, rev)
+        }
+        return null
+    }
+
+    private fun serialize(personal: Personal): JsonObject {
+        val `object` = JsonObject()
+        `object`.addProperty("title", personal.title)
+        `object`.addProperty("uploadDate", timeProvider.now())
+        `object`.addProperty("createdDate", personal.date)
+        `object`.addProperty("filename", FileUtils.getFileNameFromUrl(personal.path))
+        `object`.addProperty("author", personal.userName)
+        `object`.addProperty("addedBy", personal.userName)
+        `object`.addProperty("description", personal.description)
+        `object`.addProperty("resourceType", "Activities")
+        `object`.addProperty("private", true)
+        val object1 = JsonObject()
+        `object`.addDocumentOrigin()
+        `object`.addProperty("deviceName", deviceNameProvider.getDeviceName())
+        `object`.addProperty("customDeviceName", deviceNameProvider.getCustomDeviceName())
+        object1.addProperty("users", personal.userId)
+        `object`.add("privateFor", object1)
+        return `object`
+    }
+
+    override suspend fun uploadPersonal(personal: Personal): PersonalUploadResult {
+        if (personal.isUploaded) {
+            return PersonalUploadResult.AlreadyUploaded("Resource already uploaded")
+        }
+
+        try {
+            val existingId = personal._id
+            val existingRev = personal._rev
+            val (id, rev) = if (!existingId.isNullOrBlank() && !existingRev.isNullOrBlank()) {
+                existingId to existingRev
+            } else {
+                val result = uploadPersonalDocument(personal)
+                    ?: return PersonalUploadResult.DocumentFailed("Failed to upload personal resource: No response")
+                result
+            }
+
+            var finalRev = rev
+            val path = personal.path
+            if (path != null) {
+                val file = File(path)
+                val name = FileUtils.getFileNameFromUrl(path)
+
+                val response = try {
+                    uploadRepository.uploadAttachment(
+                        file = file,
+                        destinationFormat = "%s/resources/%s/%s",
+                        id = id,
+                        rev = rev,
+                        name = name
+                    )
+                } catch (e: Exception) {
+                    Log.w(TAG, "Attachment upload failed for ${personal.id}", e)
+                    return PersonalUploadResult.AttachmentFailed("Uploaded document but failed to upload attachment: ${e.message}", e)
+                }
+                
+                if (!response.isSuccessful) {
+                    Log.w(TAG, "Attachment upload failed for ${personal.id}: HTTP ${response.code()}")
+                    return PersonalUploadResult.AttachmentFailed("Uploaded document but failed to upload attachment: HTTP ${response.code()}")
+                }
+                finalRev = getString("rev", response.body()).ifBlank { rev }
+            }
+
+            updatePersonalAfterSync(personal.id, id, finalRev)
+            return PersonalUploadResult.Success("Personal resource uploaded successfully")
+        } catch (e: Exception) {
+            Log.w(TAG, "Unable to upload personal resource ${personal.id}", e)
+            return PersonalUploadResult.DocumentFailed("Unable to upload resource: ${e.message}", e)
         }
     }
 
-    override suspend fun updatePersonalAfterSync(id: String, newId: String, rev: String) {
-        update(RealmMyPersonal::class.java, "id", id) { personal ->
-            personal.isUploaded = true
-            personal._id = newId
-            personal._rev = rev
-        }
+    companion object {
+        private const val TAG = "PersonalsRepository"
     }
 }

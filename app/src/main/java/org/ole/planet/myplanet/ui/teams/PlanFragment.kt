@@ -13,11 +13,11 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
-import org.ole.planet.myplanet.callback.OnTeamUpdateListener
+import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -26,9 +26,9 @@ class PlanFragment : BaseTeamFragment() {
     private var _binding: FragmentPlanBinding? = null
     private val binding get() = _binding!!
     private var isEnterprise: Boolean = false
-    private var teamUpdateListener: OnTeamUpdateListener? = null
+    private var teamUpdateListener: OnChangedListener? = null
 
-    fun setTeamUpdateListener(listener: OnTeamUpdateListener) {
+    fun setTeamUpdateListener(listener: OnChangedListener) {
         teamUpdateListener = listener
     }
 
@@ -54,7 +54,7 @@ class PlanFragment : BaseTeamFragment() {
         }
     }
 
-    private fun updateButtonVisibility(currentTeam: RealmMyTeam) {
+    private fun updateButtonVisibility(currentTeam: MyTeam) {
         isEnterprise = currentTeam.type?.equals("enterprise", ignoreCase = true) == true
 
         binding.btnAddPlan.text = if (isEnterprise) {
@@ -64,7 +64,7 @@ class PlanFragment : BaseTeamFragment() {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val currentUser = profileDbHandler.getUserModel()
+            val currentUser = userRepository.getUserModel()
             val isMyTeam = teamsRepository.isTeamLeader(currentTeam._id ?: "", currentUser?.id)
             binding.btnAddPlan.isVisible = isMyTeam
             binding.btnAddPlan.isEnabled = isMyTeam
@@ -86,7 +86,7 @@ class PlanFragment : BaseTeamFragment() {
         }
     }
 
-    private fun showCreateTeamDialog(context: Context, activity: FragmentActivity, team: RealmMyTeam) {
+    private fun showCreateTeamDialog(context: Context, activity: FragmentActivity, team: MyTeam) {
         val alertCreateTeamBinding = AlertCreateTeamBinding.inflate(LayoutInflater.from(context))
         setupDialogFields(alertCreateTeamBinding, team)
 
@@ -105,7 +105,7 @@ class PlanFragment : BaseTeamFragment() {
         dialog.show()
     }
 
-    private fun setupDialogFields(binding: AlertCreateTeamBinding, team: RealmMyTeam) {
+    private fun setupDialogFields(binding: AlertCreateTeamBinding, team: MyTeam) {
         binding.spnTeamType.visibility = if (isEnterprise) View.GONE else View.VISIBLE
         binding.etServices.visibility = if (isEnterprise) View.VISIBLE else View.GONE
         binding.etRules.visibility = if (isEnterprise) View.VISIBLE else View.GONE
@@ -134,7 +134,7 @@ class PlanFragment : BaseTeamFragment() {
         binding: AlertCreateTeamBinding,
         activity: FragmentActivity,
         context: Context,
-        team: RealmMyTeam,
+        team: MyTeam,
         dialog: AlertDialog,
     ) {
         val name = binding.etName.text.toString().trim()
@@ -145,9 +145,8 @@ class PlanFragment : BaseTeamFragment() {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val currentUser = profileDbHandler.getUserModel()
+            val currentUser = userRepository.getUserModel()
             val userId = currentUser?.id ?: return@launch
-            val createdBy = userId
             val teamIdentifier = team._id?.takeIf { it.isNotBlank() }
                 ?: team.teamId?.takeIf { it.isNotBlank() }
             if (teamIdentifier == null) {
@@ -165,7 +164,6 @@ class PlanFragment : BaseTeamFragment() {
             val isPublic = binding.switchPublic.isChecked
 
             try {
-                val teamTypeForValidation = team.type ?: "team"
                 val wasUpdated = teamsRepository.updateTeamDetails(
                     teamId = teamIdentifier,
                     name = name,
@@ -174,11 +172,11 @@ class PlanFragment : BaseTeamFragment() {
                     rules = rulesToSave,
                     teamType = teamType,
                     isPublic = isPublic,
-                    createdBy = createdBy,
+                    createdBy = userId,
                 )
 
                 if (wasUpdated) {
-                    val refreshedTeam = teamsRepository.getTeamByDocumentIdOrTeamId(teamIdentifier)
+                    val refreshedTeam = teamsRepository.getTeamByIdOrTeamId(teamIdentifier)
                         ?: (this@PlanFragment.team ?: team)
 
                     refreshedTeam.apply {
@@ -188,13 +186,13 @@ class PlanFragment : BaseTeamFragment() {
                         this.description = descriptionToSave
                         this.teamType = teamType
                         this.isPublic = isPublic
-                        this.createdBy = createdBy.takeIf { it.isNotBlank() } ?: this.createdBy
+                        this.createdBy = userId.takeIf { it.isNotBlank() } ?: this.createdBy
                         this.updated = true
                     }
 
                     this@PlanFragment.team = refreshedTeam
                     updateUIWithTeamDetails(refreshedTeam)
-                    teamUpdateListener?.onTeamDetailsUpdated()
+                    teamUpdateListener?.onChanged()
                     Utilities.toast(requireContext(), context.getString(R.string.added_successfully))
                     dialog.dismiss()
                 } else {
@@ -206,7 +204,7 @@ class PlanFragment : BaseTeamFragment() {
         }
     }
 
-    private fun updateUIWithTeamDetails(updatedTeam: RealmMyTeam?) {
+    private fun updateUIWithTeamDetails(updatedTeam: MyTeam?) {
         if (updatedTeam == null) return
         isEnterprise = updatedTeam.type?.equals("enterprise", ignoreCase = true) == true
 
@@ -239,7 +237,7 @@ class PlanFragment : BaseTeamFragment() {
         val formattedDetail = detail.replace("\n", "<br/>")
         return "<b>$title</b><br/>$formattedDetail<br/><br/>"    }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: News?) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()

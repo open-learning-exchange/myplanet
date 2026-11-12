@@ -1,120 +1,294 @@
 package org.ole.planet.myplanet.ui.chat
 
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.model.AiProvider
+import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatMessage
-import org.ole.planet.myplanet.model.RealmConversation
+import org.ole.planet.myplanet.model.ChatShareTargets
+import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.TeamSummary
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.ChatResult
+import org.ole.planet.myplanet.repository.ChatSearchMode
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
+import org.ole.planet.myplanet.repository.TeamsShareRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
+import org.ole.planet.myplanet.repository.VoicesShareRepository
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import org.ole.planet.myplanet.utils.ChatSearch
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.RetryUtils
 
+data class ChatUiState(
+    val selectedChatHistory: List<Conversation>? = null,
+    val selectedAiProvider: String? = null,
+    val selectedId: String = "",
+    val selectedRev: String = "",
+    val aiProviders: Map<String, Boolean>? = null,
+    val aiProvidersLoading: Boolean = false,
+    val aiProvidersError: Boolean = false
+)
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val userRepository: UserReadRepository,
+    private val teamsRepository: TeamsShareRepository,
+    private val voicesRepository: VoicesShareRepository,
+    private val dispatcherProvider: DispatcherProvider,
+    private val realtimeSyncManager: RealtimeSyncManager,
+    private val configurationsRepository: ConfigurationsRepository
 ) : ViewModel() {
-    private val _selectedChatHistory = MutableStateFlow<List<RealmConversation>?>(null)
-    val selectedChatHistory: StateFlow<List<RealmConversation>?> = _selectedChatHistory.asStateFlow()
-
+    private val paginator = ChatConversationPaginator(dispatcherProvider)
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val allConversations: List<Conversation> get() = paginator.allConversations
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val loadedCount: Int get() = paginator.loadedCount
+    private var allChats: List<ChatHistory> = emptyList()
+    private var searchIndex: ChatSearch.Index? = null
+    private val _refreshChatSignal = MutableSharedFlow<Unit>(replay = 1)
+    val refreshChatSignal: SharedFlow<Unit> = _refreshChatSignal.asSharedFlow()
+    init {
+        _refreshChatSignal.tryEmit(Unit)
+        viewModelScope.launch {
+            realtimeSyncManager.updatesFor("chats")
+                .collect { update ->
+                    if (update.shouldRefreshUI) {
+                        _refreshChatSignal.emit(Unit)
+                    }
+                }
+        }
+    }
+    private var loadDataJob: kotlinx.coroutines.Job? = null
+    private var searchJob: kotlinx.coroutines.Job? = null
+    private var lastQuery = ""
+    private var lastFullSearch = false
+    private var lastQuestion = false
+    sealed class ShareChatResult {
+        object AlreadyShared : ShareChatResult()
+        data class Shared(val news: News, val chatId: String) : ShareChatResult()
+    }
+    private val _shareResult = Channel<ShareChatResult>(Channel.BUFFERED)
+    val shareResult: Flow<ShareChatResult> = _shareResult.receiveAsFlow()
+    private val _screenData = MutableStateFlow<ChatHistoryScreenData?>(null)
+    val screenData: StateFlow<ChatHistoryScreenData?> = _screenData.asStateFlow()
+    private val _filteredChats = MutableStateFlow<List<ChatHistory>>(emptyList())
+    val filteredChats: StateFlow<List<ChatHistory>> = _filteredChats.asStateFlow()
+    private var cachedUser: UserEntity? = null
+    private var cachedShareTargets: ChatShareTargets? = null
+    private val _selectedChatHistory = MutableStateFlow<List<Conversation>?>(null)
+    val selectedChatHistory: StateFlow<List<Conversation>?> = _selectedChatHistory.asStateFlow()
     private val _selectedId = MutableStateFlow("")
     val selectedId: StateFlow<String> = _selectedId.asStateFlow()
-
     private val _selectedRev = MutableStateFlow("")
     val selectedRev: StateFlow<String> = _selectedRev.asStateFlow()
-
     private val _selectedAiProvider = MutableStateFlow<String?>(null)
     val selectedAiProvider: StateFlow<String?> = _selectedAiProvider.asStateFlow()
-
     private val _aiProviders = MutableStateFlow<Map<String, Boolean>?>(null)
     val aiProviders: StateFlow<Map<String, Boolean>?> = _aiProviders.asStateFlow()
-
     private val _aiProvidersLoading = MutableStateFlow(false)
     val aiProvidersLoading: StateFlow<Boolean> = _aiProvidersLoading.asStateFlow()
-
     private val _aiProvidersError = MutableStateFlow(false)
     val aiProvidersError: StateFlow<Boolean> = _aiProvidersError.asStateFlow()
-
-    private val _conversationSaveSuccess = MutableSharedFlow<Boolean>()
-    val conversationSaveSuccess: SharedFlow<Boolean> = _conversationSaveSuccess.asSharedFlow()
-
-    fun continueConversation(id: String, query: String, response: String, rev: String) {
-        if (query.isBlank() && response.isBlank()) return
-
-        viewModelScope.launch {
-            try {
-                chatRepository.continueConversation(id, query, response, rev)
-                _conversationSaveSuccess.emit(true)
-            } catch (e: Exception) {
-                _conversationSaveSuccess.emit(false)
-            }
-        }
+    private val aiProvidersFlow = combine(_aiProviders, _aiProvidersLoading, _aiProvidersError) { providers, loading, error ->
+        Triple(providers, loading, error)
     }
-
-    suspend fun parseNewsConversations(newsConversations: String?): List<ChatMessage> {
-        return withContext(dispatcherProvider.io) {
-            if (newsConversations.isNullOrBlank()) return@withContext emptyList()
-            try {
-                val conversations = JsonUtils.gson.fromJson(newsConversations, Array<RealmConversation>::class.java).toList()
-                val list = mutableListOf<ChatMessage>()
-                val limit = 20
-                val limitedConversations = if (conversations.size > limit) conversations.takeLast(limit) else conversations
-                for (conversation in limitedConversations) {
-                    conversation.query?.let { list.add(ChatMessage(it, ChatMessage.QUERY)) }
-                    conversation.response?.let { list.add(ChatMessage(it, ChatMessage.RESPONSE, ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL)) }
+    val chatUiState: StateFlow<ChatUiState> = combine(
+        _selectedChatHistory,
+        _selectedAiProvider,
+        _selectedId,
+        _selectedRev,
+        aiProvidersFlow
+    ) { history, aiProvider, id, rev, aiState ->
+        ChatUiState(
+            selectedChatHistory = history,
+            selectedAiProvider = aiProvider,
+            selectedId = id,
+            selectedRev = rev,
+            aiProviders = aiState.first,
+            aiProvidersLoading = aiState.second,
+            aiProvidersError = aiState.third
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ChatUiState())
+    fun loadChatHistoryScreenData() {
+        val config = configurationsRepository.getCommunityConfiguration()
+        loadDataJob?.cancel()
+        loadDataJob = viewModelScope.launch {
+            val result = RetryUtils.retry(maxAttempts = 3, delayMs = 2000L) {
+                val currentUser = cachedUser ?: userRepository.getUserModel().also { cachedUser = it }
+                val (newsMessages, chatHistory) = coroutineScope {
+                    val newsDeferred = async { voicesRepository.getPlanetNewsMessages(currentUser?.planetCode) }
+                    val historyDeferred = async { chatRepository.getChatHistoryForUser(currentUser?.name) }
+                    Pair(newsDeferred.await(), historyDeferred.await())
                 }
-                list
-            } catch (e: Exception) {
-                emptyList()
+                val targets = cachedShareTargets ?: loadShareTargets(config.parentCode, config.communityName, currentUser?._id).also { cachedShareTargets = it }
+                allChats = chatHistory
+                searchIndex = null
+                val sharedViewInIds = withContext(dispatcherProvider.default) {
+                    chatRepository.extractSharedViewInIds(newsMessages)
+                }
+                ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets, sharedViewInIds)
+            }
+            result?.let { data ->
+                _screenData.value = data
+                applySearch()
             }
         }
     }
+    fun searchChats(query: String, isFullSearch: Boolean, isQuestion: Boolean) {
+        lastQuery = query
+        lastFullSearch = isFullSearch
+        lastQuestion = isQuestion
+        applySearch()
+    }
 
-    fun setSelectedChatHistory(conversations: List<RealmConversation>) {
+    private fun applySearch() {
+        searchJob?.cancel()
+        if (lastQuery.isBlank()) {
+            _filteredChats.value = allChats
+            return
+        }
+        val query = lastQuery
+        val mode = if (!lastFullSearch) {
+            ChatSearchMode.TITLE
+        } else if (lastQuestion) {
+            ChatSearchMode.QUESTION
+        } else {
+            ChatSearchMode.RESPONSE
+        }
+        searchJob = viewModelScope.launch {
+            val index = searchIndex ?: ChatSearch.Index(allChats).also { searchIndex = it }
+            _filteredChats.value = ChatSearch.search(query, mode, index, dispatcherProvider.default)
+        }
+    }
+    private suspend fun loadShareTargets(parentCode: String?, communityName: String?, userId: String?): ChatShareTargets {
+        val teams = teamsRepository.getTeamSummaries(userId)
+        val enterprises = teamsRepository.getShareableEnterpriseSummaries(userId)
+        val communityId = if (!communityName.isNullOrBlank() && !parentCode.isNullOrBlank()) {
+            "$communityName@$parentCode"
+        } else {
+            null
+        }
+        val community = communityId?.let { id ->
+            teamsRepository.getTeamSummaryById(id) ?: TeamSummary(
+                _id = id,
+                name = communityName ?: "",
+                teamType = null,
+                teamPlanetCode = null,
+                createdDate = null,
+                type = null,
+                status = null,
+                teamId = null,
+                description = null,
+                services = null,
+                rules = null
+            )
+        }
+        return ChatShareTargets(community, teams, enterprises)
+    }
+    suspend fun parseAndBuildInitialPage(newsConversations: String?): List<ChatMessage> = paginator.parseAndBuildInitialPage(newsConversations)
+    fun processChatHistory(conversations: List<Conversation>): List<ChatMessage> = paginator.processChatHistory(conversations)
+    fun loadMoreConversations(): Pair<List<ChatMessage>, Boolean> = paginator.loadMoreConversations()
+    fun clearPaginationState() = paginator.clearPaginationState()
+    fun setSelectedChatHistory(conversations: List<Conversation>) {
         _selectedChatHistory.value = conversations
     }
-
     fun setSelectedId(id: String) {
         _selectedId.value = id
     }
-
     fun setSelectedRev(rev: String) {
         _selectedRev.value = rev
     }
-
     fun setSelectedAiProvider(aiProvider: String?) {
         _selectedAiProvider.value = aiProvider
     }
-
     fun setAiProviders(providers: Map<String, Boolean>?) {
         _aiProviders.value = providers
     }
-
     fun setAiProvidersLoading(isLoading: Boolean) {
         _aiProvidersLoading.value = isLoading
     }
-
     fun setAiProvidersError(hasError: Boolean) {
         _aiProvidersError.value = hasError
     }
-
     fun clearChatState() {
         _selectedChatHistory.value = null
         _selectedId.value = ""
         _selectedRev.value = ""
         _selectedAiProvider.value = null
     }
-
     fun shouldFetchAiProviders(): Boolean {
         return _aiProviders.value == null && !_aiProvidersLoading.value
+    }
+    fun shareChatToVoices(chatId: String, viewInId: String, payload: HashMap<String?, String>) {
+        viewModelScope.launch {
+            if (voicesRepository.isAlreadyShared(chatId, viewInId)) {
+                _shareResult.send(ShareChatResult.AlreadyShared)
+            } else {
+                val news = voicesRepository.createNews(payload, cachedUser, null)
+                _shareResult.send(ShareChatResult.Shared(news, chatId))
+            }
+        }
+    }
+    fun fetchAiProviders(serverUrl: String, cachedProviders: Map<String, Boolean>? = null) {
+        if (!shouldFetchAiProviders()) {
+            return
+        }
+
+        setAiProvidersLoading(true)
+        setAiProvidersError(false)
+
+        viewModelScope.launch {
+            val providers = chatRepository.fetchAiProviders(serverUrl)
+            setAiProvidersLoading(false)
+            if (providers == null || providers.values.all { !it }) {
+                if (cachedProviders != null) {
+                    setAiProvidersError(false)
+                    setAiProviders(cachedProviders)
+                } else {
+                    setAiProvidersError(true)
+                    setAiProviders(null)
+                }
+            } else {
+                setAiProvidersError(false)
+                setAiProviders(providers)
+            }
+        }
+    }
+    suspend fun getLatestRev(id: String): String? {
+        return chatRepository.getLatestRev(id)
+    }
+    suspend fun sendNewChatRequest(query: String, userName: String?, aiProvider: AiProvider): ChatResult {
+        return chatRepository.sendNewChatRequest(query, userName, aiProvider)
+    }
+    suspend fun sendContinueChatRequest(query: String, userName: String?, aiProvider: AiProvider, id: String, rev: String): ChatResult {
+        return chatRepository.sendContinueChatRequest(query, userName, aiProvider, id, rev)
+    }
+    suspend fun getUserById(userId: String): UserEntity? {
+        return userRepository.getUserById(userId)
+    }
+    fun extractSharedViewInIds(sharedNewsMessages: List<News>): Map<String, Set<String>> {
+        return chatRepository.extractSharedViewInIds(sharedNewsMessages)
     }
 }

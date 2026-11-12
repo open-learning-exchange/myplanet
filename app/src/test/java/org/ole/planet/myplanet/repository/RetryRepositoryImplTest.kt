@@ -1,265 +1,367 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
+import io.mockk.MockKAnnotations
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
-import io.mockk.invoke
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.slot
-import io.mockk.verify
-import io.realm.Realm
-import io.realm.RealmQuery
-import io.realm.RealmResults
+import io.mockk.unmockkAll
+import java.io.IOException
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
-import java.util.function.Consumer
 import org.junit.Test
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.model.RealmRetryOperation
-import org.ole.planet.myplanet.services.upload.UploadError
+import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.room.dao.RetryDao
+import org.ole.planet.myplanet.model.RetryFailure
+import org.ole.planet.myplanet.model.RetryOperation
+import org.ole.planet.myplanet.utils.TestTimeProvider
+import org.ole.planet.myplanet.utils.UrlUtils
+import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@Suppress("UNCHECKED_CAST")
 class RetryRepositoryImplTest {
-
-
-
-
-
-    private lateinit var databaseService: DatabaseService
+    private lateinit var retryDao: RetryDao
+    private lateinit var apiInterface: ApiInterface
     private lateinit var repository: RetryRepositoryImpl
-    private val testDispatcher = UnconfinedTestDispatcher()
+    private val timeProvider = TestTimeProvider(currentTime = 1_700_000_000_000L)
 
-    @org.junit.After
+    @After
     fun tearDown() {
-        io.mockk.unmockkAll()
+        unmockkAll()
     }
 
     @Before
     fun setUp() {
-        databaseService = mockk(relaxed = true)
-        repository = RetryRepositoryImpl(databaseService, testDispatcher)
+        MockKAnnotations.init(this, relaxed = true)
+        mockkStatic(Log::class)
+        every { Log.w(any<String>(), any<String>(), any<Throwable>()) } returns 0
+        every { Log.e(any<String>(), any<String>(), any<Throwable>()) } returns 0
+
+        retryDao = mockk(relaxed = true)
+        apiInterface = mockk(relaxed = true)
+        mockkObject(UrlUtils)
+        every { UrlUtils.getUrl() } returns "http://mock.url"
+        every { UrlUtils.header } returns "mockHeader"
+        repository = RetryRepositoryImpl(retryDao, apiInterface, timeProvider)
     }
 
     @Test
-    fun `enqueue invokes transaction and creates operation`() = runTest {
-        val realm = mockk<Realm>(relaxed = true)
-        val transactionSlot = slot<(Realm) -> Unit>()
-        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
-            transactionSlot.captured.invoke(realm)
-        }
+    fun `recordFailure inserts when none exists`() = runTest {
+        coEvery { retryDao.findExistingId("itemId", "testUploadType") } returns null
+        val insertedSlot = slot<RetryOperation>()
+        coEvery { retryDao.insert(capture(insertedSlot)) } returns Unit
 
-        val uploadError = UploadError("itemId", Exception("test error"), retryable = true, httpCode = 500)
-
-        val op = mockk<RealmRetryOperation>(relaxed = true)
-        every { realm.createObject(RealmRetryOperation::class.java, any()) } returns op
-
-
-
-        repository.enqueue(
-            "testUploadType", uploadError, "testPayload", "testEndpoint",
+        val retryFailure = RetryFailure("itemId", "test error", 500)
+        repository.recordFailure(
+            "testUploadType", retryFailure, "testPayload", "testEndpoint",
             "POST", "testDbId", "TestClass", "testUserId"
         )
 
-        verify { realm.createObject(RealmRetryOperation::class.java, any()) }
-        verify {
-            op.uploadType = "testUploadType"
-            op.serializedPayload = "testPayload"
-            op.endpoint = "testEndpoint"
-            op.httpMethod = "POST"
-            op.dbId = "testDbId"
-            op.modelClassName = "TestClass"
-            op.userId = "testUserId"
-            op.status = RealmRetryOperation.STATUS_PENDING
-            op.attemptCount = 1
-            op.httpCode = 500
-        }
+        val op = insertedSlot.captured
+        assertEquals("testUploadType", op.uploadType)
+        assertEquals("itemId", op.itemId)
+        assertEquals("testPayload", op.serializedPayload)
+        assertEquals("testEndpoint", op.endpoint)
+        assertEquals("POST", op.httpMethod)
+        assertEquals("testDbId", op.dbId)
+        assertEquals("TestClass", op.modelClassName)
+        assertEquals("testUserId", op.userId)
+        assertEquals(RetryOperation.STATUS_PENDING, op.status)
+        assertEquals(1, op.attemptCount)
+        assertEquals(500, op.httpCode)
+        coVerify(exactly = 0) { retryDao.recordFailedAttempt(any(), any(), any(), any()) }
     }
 
     @Test
-    fun `updateAttempt updates operation fields`() = runTest {
-        val realm = mockk<Realm>(relaxed = true)
-        val query = mockk<RealmQuery<RealmRetryOperation>>()
-        val operation = RealmRetryOperation().apply {
-            attemptCount = 1
-            maxAttempts = 5
-        }
+    fun `recordFailure marks failed when one exists`() = runTest {
+        coEvery { retryDao.findExistingId("itemId", "testUploadType") } returns "existingOpId"
+        coEvery { retryDao.recordFailedAttempt("existingOpId", "test error", 500, timeProvider.now()) } returns 1
 
-        coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = invocation.args[0] as ((Realm) -> Unit)
-            block.invoke(realm)
-        }
+        val retryFailure = RetryFailure("itemId", "test error", 500)
+        repository.recordFailure(
+            "testUploadType", retryFailure, "testPayload", "testEndpoint",
+            "POST", "testDbId", "TestClass", "testUserId"
+        )
 
-        every { realm.where(RealmRetryOperation::class.java) } returns query
-        every { query.equalTo("id", "opId") } returns query
-        every { query.findFirst() } returns operation
-
-        val uploadError = UploadError("itemId", Exception("Test Error"), retryable = true, httpCode = 503)
-
-        repository.updateAttempt("opId", uploadError)
-
-        assertEquals(2, operation.attemptCount)
-        assertEquals("Test Error", operation.errorMessage)
-        assertEquals(503, operation.httpCode)
-        // Check nextRetryTime was calculated properly (we assume calculateNextRetryTime sets a future time)
-        assert(operation.nextRetryTime > 0)
+        coVerify { retryDao.recordFailedAttempt("existingOpId", "test error", 500, timeProvider.now()) }
+        coVerify(exactly = 0) { retryDao.insert(any()) }
     }
 
     @Test
-    fun `updateAttempt changes status to abandoned when max attempts reached`() = runTest {
-        val realm = mockk<Realm>(relaxed = true)
-        val query = mockk<RealmQuery<RealmRetryOperation>>()
-        val operation = RealmRetryOperation().apply {
-            attemptCount = 4
-            maxAttempts = 5
-            status = RealmRetryOperation.STATUS_PENDING
+    fun `recordFailure concurrent calls for same item inserts only once`() = runTest {
+        var existingOpId: String? = null
+        coEvery { retryDao.findExistingId("item1", "type1") } coAnswers {
+            val result = existingOpId
+            delay(10.milliseconds)
+            result
+        }
+        coEvery { retryDao.insert(any()) } answers {
+            val op = firstArg<RetryOperation>()
+            existingOpId = op.id
         }
 
-        coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = invocation.args[0] as ((Realm) -> Unit)
-            block.invoke(realm)
+        val failure = RetryFailure("item1", "error msg", 500)
+        val job1 = launch {
+            repository.recordFailure("type1", failure, "{}", "endpoint", "POST", null, "Model", null)
         }
+        val job2 = launch {
+            repository.recordFailure("type1", failure, "{}", "endpoint", "POST", null, "Model", null)
+        }
+        job1.join()
+        job2.join()
 
-        every { realm.where(RealmRetryOperation::class.java) } returns query
-        every { query.equalTo("id", "opId") } returns query
-        every { query.findFirst() } returns operation
-
-        val uploadError = UploadError("itemId", Exception(), retryable = false)
-
-        repository.updateAttempt("opId", uploadError)
-
-        assertEquals(5, operation.attemptCount)
-        assertEquals(RealmRetryOperation.STATUS_ABANDONED, operation.status)
+        coVerify(exactly = 1) { retryDao.insert(any()) }
     }
 
     @Test
     fun `markInProgress updates status`() = runTest {
-        val realm = mockk<Realm>(relaxed = true)
-        val query = mockk<RealmQuery<RealmRetryOperation>>()
-        val operation = RealmRetryOperation().apply {
-            status = RealmRetryOperation.STATUS_PENDING
-        }
-
-        coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = invocation.args[0] as ((Realm) -> Unit)
-            block.invoke(realm)
-        }
-
-        every { realm.where(RealmRetryOperation::class.java) } returns query
-        every { query.equalTo("id", "opId") } returns query
-        every { query.findFirst() } returns operation
+        coEvery { retryDao.markInProgress("opId") } returns 1
 
         repository.markInProgress("opId")
 
-        assertEquals(RealmRetryOperation.STATUS_IN_PROGRESS, operation.status)
+        coVerify { retryDao.markInProgress("opId") }
+    }
+
+    @Test
+    fun `markInProgress does nothing when operation not found`() = runTest {
+        coEvery { retryDao.markInProgress("missingId") } returns 0
+
+        repository.markInProgress("missingId")
+
+        coVerify { retryDao.markInProgress("missingId") }
     }
 
     @Test
     fun `markCompleted updates status and timestamp`() = runTest {
-        val realm = mockk<Realm>(relaxed = true)
-        val query = mockk<RealmQuery<RealmRetryOperation>>()
-        val operation = RealmRetryOperation().apply {
-            status = RealmRetryOperation.STATUS_PENDING
-            lastAttemptTime = 0
-        }
-
-        coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = invocation.args[0] as ((Realm) -> Unit)
-            block.invoke(realm)
-        }
-
-        every { realm.where(RealmRetryOperation::class.java) } returns query
-        every { query.equalTo("id", "opId") } returns query
-        every { query.findFirst() } returns operation
+        coEvery { retryDao.markCompleted("opId", any()) } returns 1
 
         repository.markCompleted("opId")
 
-        assertEquals(RealmRetryOperation.STATUS_COMPLETED, operation.status)
-        assert(operation.lastAttemptTime > 0)
+        coVerify { retryDao.markCompleted("opId", timeProvider.now()) }
     }
 
     @Test
-    fun `markFailed updates status to pending when attempts remain`() = runTest {
-        val realm = mockk<Realm>(relaxed = true)
-        val query = mockk<RealmQuery<RealmRetryOperation>>()
-        val operation = RealmRetryOperation().apply {
-            attemptCount = 1
-            maxAttempts = 5
-            status = RealmRetryOperation.STATUS_IN_PROGRESS
-        }
+    fun `markCompleted does nothing when operation not found`() = runTest {
+        coEvery { retryDao.markCompleted("missingId", any()) } returns 0
 
-        coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = invocation.args[0] as ((Realm) -> Unit)
-            block.invoke(realm)
-        }
+        repository.markCompleted("missingId")
 
-        every { realm.where(RealmRetryOperation::class.java) } returns query
-        every { query.equalTo("id", "opId") } returns query
-        every { query.findFirst() } returns operation
+        coVerify { retryDao.markCompleted("missingId", timeProvider.now()) }
+    }
+
+    @Test
+    fun `markFailed delegates to recordFailedAttempt`() = runTest {
+        coEvery { retryDao.recordFailedAttempt("opId", "Fail reason", 404, timeProvider.now()) } returns 1
 
         repository.markFailed("opId", "Fail reason", 404)
 
-        assertEquals(2, operation.attemptCount)
-        assertEquals("Fail reason", operation.errorMessage)
-        assertEquals(404, operation.httpCode)
-        assertEquals(RealmRetryOperation.STATUS_PENDING, operation.status)
-        assert(operation.nextRetryTime > 0)
+        coVerify { retryDao.recordFailedAttempt("opId", "Fail reason", 404, timeProvider.now()) }
     }
 
     @Test
-    fun `markFailed updates status to abandoned when max attempts reached`() = runTest {
-        val realm = mockk<Realm>(relaxed = true)
-        val query = mockk<RealmQuery<RealmRetryOperation>>()
-        val operation = RealmRetryOperation().apply {
-            attemptCount = 4
-            maxAttempts = 5
-            status = RealmRetryOperation.STATUS_IN_PROGRESS
+    fun `executeOperation 2xx returns Success and marks completed`() = runTest {
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = "{}"
+            endpoint = "test"
+            httpMethod = "PUT"
+            dbId = "doc1"
         }
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } returns Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
 
-        coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = invocation.args[0] as ((Realm) -> Unit)
-            block.invoke(realm)
-        }
+        val result = repository.executeOperation(op)
 
-        every { realm.where(RealmRetryOperation::class.java) } returns query
-        every { query.equalTo("id", "opId") } returns query
-        every { query.findFirst() } returns operation
-
-        repository.markFailed("opId", "Fail reason", 500)
-
-        assertEquals(5, operation.attemptCount)
-        assertEquals(RealmRetryOperation.STATUS_ABANDONED, operation.status)
+        assertTrue(result is RetryOperationResult.Success)
+        coVerify { retryDao.markInProgress("op1") }
+        coVerify { retryDao.markCompleted("op1", timeProvider.now()) }
+        coVerify(exactly = 0) { retryDao.recordFailedAttempt(any(), any(), any(), any()) }
     }
 
     @Test
-    fun `getPending returns filtered operations`() = runTest {
-        val realm = mockk<Realm>(relaxed = true)
-        val query = mockk<RealmQuery<RealmRetryOperation>>()
-        val results = mockk<RealmResults<RealmRetryOperation>>()
+    fun `executeOperation 409 conflict returns Success and marks completed`() = runTest {
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = "{}"
+            endpoint = "test"
+            httpMethod = "PUT"
+            dbId = "doc1"
+        }
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } returns Response.error(409, "Conflict".toResponseBody(null))
 
-        val operation1 = RealmRetryOperation().apply { attemptCount = 1; maxAttempts = 5 }
-        val operation2 = RealmRetryOperation().apply { attemptCount = 5; maxAttempts = 5 } // should be filtered out
+        val result = repository.executeOperation(op)
 
-        val list = listOf(operation1, operation2)
+        assertTrue(result is RetryOperationResult.Success)
+        coVerify { retryDao.markInProgress("op1") }
+        coVerify { retryDao.markCompleted("op1", timeProvider.now()) }
+    }
 
-        val transactionSlot = slot<(Realm) -> Any>()
-        coEvery { databaseService.withRealmAsync<Any>(capture(transactionSlot)) } answers {
-            transactionSlot.captured.invoke(realm)
+    @Test
+    fun `executeOperation 5xx error returns RetryableFailure and records failure`() = runTest {
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = "{}"
+            endpoint = "test"
+            httpMethod = "PUT"
+            dbId = "doc1"
+        }
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } returns Response.error(500, "Server Error".toResponseBody(null))
+
+        val result = repository.executeOperation(op)
+
+        assertTrue(result is RetryOperationResult.RetryableFailure)
+        assertEquals(500, (result as RetryOperationResult.RetryableFailure).httpCode)
+        coVerify { retryDao.recordFailedAttempt("op1", "HTTP 500", 500, timeProvider.now()) }
+    }
+
+    @Test
+    fun `executeOperation IOException returns RetryableFailure and records failure`() = runTest {
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = "{}"
+            endpoint = "test"
+            httpMethod = "PUT"
+            dbId = "doc1"
+        }
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } throws IOException("Connection failed")
+
+        val result = repository.executeOperation(op)
+
+        assertTrue(result is RetryOperationResult.RetryableFailure)
+        assertEquals("Connection failed", (result as RetryOperationResult.RetryableFailure).message)
+        coVerify { retryDao.recordFailedAttempt("op1", "Connection failed", null, timeProvider.now()) }
+    }
+
+    @Test
+    fun `executeOperation 4xx client error returns TerminalFailure and records failure`() = runTest {
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = "{}"
+            endpoint = "test"
+            httpMethod = "PUT"
+            dbId = "doc1"
+        }
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } returns Response.error(400, "Bad Request".toResponseBody(null))
+
+        val result = repository.executeOperation(op)
+
+        assertTrue(result is RetryOperationResult.TerminalFailure)
+        assertEquals(400, (result as RetryOperationResult.TerminalFailure).httpCode)
+        coVerify { retryDao.recordFailedAttempt("op1", "Non-retryable HTTP 400", 400, timeProvider.now()) }
+    }
+
+    @Test
+    fun `executeOperation invalid payload returns TerminalFailure and records failure`() = runTest {
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = "invalid-json"
+            endpoint = "test"
+            httpMethod = "PUT"
+            dbId = "doc1"
         }
 
-        every { realm.where(RealmRetryOperation::class.java) } returns query
-        every { query.equalTo("status", RealmRetryOperation.STATUS_PENDING) } returns query
-        every { query.lessThanOrEqualTo("nextRetryTime", any<Long>()) } returns query
-        every { query.findAll() } returns results
-        every { results.iterator() } returns list.toMutableList().iterator()
-        every { realm.copyFromRealm(any<Iterable<RealmRetryOperation>>()) } answers {
-            arg<Iterable<RealmRetryOperation>>(0).toList()
+        val result = repository.executeOperation(op)
+
+        assertTrue(result is RetryOperationResult.TerminalFailure)
+        assertEquals("Invalid payload", (result as RetryOperationResult.TerminalFailure).message)
+        coVerify { retryDao.recordFailedAttempt("op1", "Invalid payload", null, timeProvider.now()) }
+    }
+
+    @Test
+    fun `executeOperation array payload returns TerminalFailure and records failure`() = runTest {
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = "[1,2]"
+            endpoint = "test"
+            httpMethod = "PUT"
+            dbId = "doc1"
         }
+
+        val result = repository.executeOperation(op)
+
+        assertTrue(result is RetryOperationResult.TerminalFailure)
+        assertEquals("Invalid payload", (result as RetryOperationResult.TerminalFailure).message)
+        coVerify { retryDao.recordFailedAttempt("op1", "Invalid payload", null, timeProvider.now()) }
+    }
+
+    @Test
+    fun `executeOperation valid object payload reaches apiInterface with equal kotlinx JsonObject`() = runTest {
+        val payloadJson = """{"key":"value","num":123}"""
+        val expectedJsonObject = Json.parseToJsonElement(payloadJson).jsonObject
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = payloadJson
+            endpoint = "test"
+            httpMethod = "PUT"
+            dbId = "doc1"
+        }
+        val payloadSlot = slot<kotlinx.serialization.json.JsonObject>()
+        coEvery { apiInterface.putDoc(any(), any(), any(), capture(payloadSlot)) } returns Response.success(kotlinx.serialization.json.JsonObject(emptyMap()))
+
+        val result = repository.executeOperation(op)
+
+        assertTrue(result is RetryOperationResult.Success)
+        assertEquals(expectedJsonObject, payloadSlot.captured)
+    }
+
+    @Test
+    fun `executeOperation CancellationException is rethrown without recording failure`() = runTest {
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = "{}"
+            endpoint = "test"
+            httpMethod = "PUT"
+            dbId = "doc1"
+        }
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } throws CancellationException("Job cancelled")
+
+        try {
+            repository.executeOperation(op)
+            fail("Should have thrown CancellationException")
+        } catch (e: CancellationException) {
+            assertEquals("Job cancelled", e.message)
+        }
+
+        coVerify(exactly = 0) { retryDao.recordFailedAttempt(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { retryDao.markCompleted(any(), any()) }
+    }
+
+    @Test
+    fun `executeOperation create is completed without being sent`() = runTest {
+        val op = RetryOperation().apply {
+            id = "op1"
+            serializedPayload = "{}"
+            endpoint = "test"
+            httpMethod = "POST"
+        }
+
+        val result = repository.executeOperation(op)
+
+        assertTrue(result is RetryOperationResult.Success)
+        coVerify { retryDao.markCompleted("op1", timeProvider.now()) }
+        coVerify(exactly = 0) { apiInterface.postDoc(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { retryDao.markInProgress(any()) }
+    }
+
+    @Test
+    fun `getPending returns dao result for current time`() = runTest {
+        val operation1 = RetryOperation().apply { attemptCount = 1; maxAttempts = 5 }
+        coEvery { retryDao.getPending(timeProvider.now()) } returns listOf(operation1)
 
         val pending = repository.getPending()
 
@@ -268,140 +370,64 @@ class RetryRepositoryImplTest {
     }
 
     @Test
-    fun `getPendingCount returns correct total count`() = runTest {
-        val realm = mockk<Realm>(relaxed = true)
-        val query = mockk<RealmQuery<RealmRetryOperation>>()
+    fun `getRetryQueueSnapshot returns snapshot with active count and pending ops`() = runTest {
+        val op1 = RetryOperation().apply { id = "op1"; attemptCount = 1; maxAttempts = 5 }
+        coEvery { retryDao.getActiveCount() } returns 10L
+        coEvery { retryDao.getPendingPreview(timeProvider.now(), 10) } returns listOf(op1)
+        coEvery { retryDao.getPendingDueCount(timeProvider.now()) } returns 15L
 
-        val transactionSlot = slot<(Realm) -> Any>()
-        coEvery { databaseService.withRealmAsync<Any>(capture(transactionSlot)) } answers {
-            transactionSlot.captured.invoke(realm)
-        }
+        val snapshot = repository.getRetryQueueSnapshot()
 
-        every { realm.where(RealmRetryOperation::class.java) } returns query
-        every { query.equalTo("status", RealmRetryOperation.STATUS_PENDING) } returns query
-        every { query.or() } returns query
-        every { query.equalTo("status", RealmRetryOperation.STATUS_IN_PROGRESS) } returns query
-        every { query.count() } returns 10L
+        assertEquals(10L, snapshot.pendingCount)
+        assertEquals(1, snapshot.pendingOps.size)
+        assertEquals(op1, snapshot.pendingOps[0])
+        assertEquals(false, snapshot.isProcessing)
+        assertEquals(15L, snapshot.pendingDueCount)
 
-        val count = repository.getPendingCount()
-
-        assertEquals(10L, count)
-    }
-
-    @Test
-    fun `getExistingOperation finds operation not completed or abandoned`() = runTest {
-        val realm = mockk<Realm>(relaxed = true)
-        val query = mockk<RealmQuery<RealmRetryOperation>>()
-        val operation = RealmRetryOperation()
-
-        val transactionSlot = slot<(Realm) -> Any>()
-        coEvery { databaseService.withRealmAsync<Any>(capture(transactionSlot)) } answers {
-            transactionSlot.captured.invoke(realm)
-        }
-
-        every { realm.where(RealmRetryOperation::class.java) } returns query
-        every { query.equalTo("itemId", "item123") } returns query
-        every { query.equalTo("uploadType", "typeA") } returns query
-        every { query.notEqualTo("status", RealmRetryOperation.STATUS_COMPLETED) } returns query
-        every { query.notEqualTo("status", RealmRetryOperation.STATUS_ABANDONED) } returns query
-        every { query.findFirst() } returns operation
-        every { realm.copyFromRealm(operation) } returns operation
-
-        val result = repository.getExistingOperation("item123", "typeA")
-
-        assertEquals(operation, result)
+        coVerify(exactly = 0) { retryDao.getPending(any()) }
     }
 
     @Test
     fun `cleanup deletes old completed operations`() = runTest {
-        val realm = mockk<Realm>(relaxed = true)
-        val query = mockk<RealmQuery<RealmRetryOperation>>()
-        val results = mockk<RealmResults<RealmRetryOperation>>()
-
-        coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = invocation.args[0] as ((Realm) -> Unit)
-            block.invoke(realm)
-        }
-
-        every { realm.where(RealmRetryOperation::class.java) } returns query
-        every { query.equalTo("status", RealmRetryOperation.STATUS_COMPLETED) } returns query
-        every { query.lessThan("lastAttemptTime", any<Long>()) } returns query
-        every { query.findAll() } returns results
-        every { results.deleteAllFromRealm() } returns true
         repository.cleanup()
 
-        verify { results.deleteAllFromRealm() }
+        val expectedCutoff = timeProvider.now() - 24 * 60 * 60 * 1000L
+        coVerify { retryDao.deleteOldCompleted(expectedCutoff) }
     }
 
     @Test
-    fun `resetAllPending updates nextRetryTime`() = runTest {
-        val realm = mockk<Realm>(relaxed = true)
-        val query = mockk<RealmQuery<RealmRetryOperation>>()
-        val results = mockk<RealmResults<RealmRetryOperation>>()
-
-        val operation1 = RealmRetryOperation().apply { nextRetryTime = 0 }
-        val operation2 = RealmRetryOperation().apply { nextRetryTime = 0 }
-
-        coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = invocation.args[0] as ((Realm) -> Unit)
-            block.invoke(realm)
-        }
-
-        every { realm.where(RealmRetryOperation::class.java) } returns query
-        every { query.equalTo("status", RealmRetryOperation.STATUS_PENDING) } returns query
-        every { query.findAll() } returns results
-        every { results.iterator() } answers { mutableListOf(operation1, operation2).iterator() }
-
-        repository.resetAllPending()
-
-        assert(operation1.nextRetryTime > 0)
-        assert(operation2.nextRetryTime > 0)
-    }
-
-    @Test
-    fun `deletePendingAndAbandonedOperations deletes matching records`() = runTest {
-        val realm = mockk<Realm>(relaxed = true)
-        val query = mockk<RealmQuery<RealmRetryOperation>>()
-        val results = mockk<RealmResults<RealmRetryOperation>>()
-
-        coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = invocation.args[0] as ((Realm) -> Unit)
-            block.invoke(realm)
-        }
-
-        every { realm.where(RealmRetryOperation::class.java) } returns query
-        every { query.equalTo("status", RealmRetryOperation.STATUS_PENDING) } returns query
-        every { query.or() } returns query
-        every { query.equalTo("status", RealmRetryOperation.STATUS_ABANDONED) } returns query
-        every { query.findAll() } returns results
-        every { results.deleteAllFromRealm() } returns true
-        repository.deletePendingAndAbandonedOperations()
-
-        verify { results.deleteAllFromRealm() }
-    }
-
-    @Test
-    fun `recoverStuckOperations changes status to pending`() = runTest {
-        val realm = mockk<Realm>(relaxed = true)
-        val query = mockk<RealmQuery<RealmRetryOperation>>()
-        val results = mockk<RealmResults<RealmRetryOperation>>()
-
-        val operation1 = RealmRetryOperation().apply { status = RealmRetryOperation.STATUS_IN_PROGRESS; nextRetryTime = 0 }
-
-        coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = invocation.args[0] as ((Realm) -> Unit)
-            block.invoke(realm)
-        }
-
-        every { realm.where(RealmRetryOperation::class.java) } returns query
-        every { query.equalTo("status", RealmRetryOperation.STATUS_IN_PROGRESS) } returns query
-        every { query.findAll() } returns results
-        every { results.iterator() } answers { mutableListOf(operation1).iterator() }
-
+    fun `recoverStuckOperations schedules a near-term retry`() = runTest {
         repository.recoverStuckOperations()
 
-        assertEquals(RealmRetryOperation.STATUS_PENDING, operation1.status)
-        assert(operation1.nextRetryTime > 0)
+        coVerify { retryDao.recoverStuck(timeProvider.now() + 60_000) }
     }
 
+    @Test
+    fun `tryStartProcessing returns true then false until finishProcessing`() {
+        assertEquals(true, repository.tryStartProcessing())
+        assertEquals(false, repository.tryStartProcessing())
+        repository.finishProcessing()
+        assertEquals(true, repository.tryStartProcessing())
+    }
+
+    @Test
+    fun `safeClearQueue returns false and skips deletion while processing`() = runTest {
+        assertTrue(repository.tryStartProcessing())
+
+        val result = repository.safeClearQueue()
+
+        assertEquals(false, result)
+        coVerify(exactly = 0) { retryDao.deletePendingAndAbandoned() }
+    }
+
+    @Test
+    fun `safeClearQueue returns true and deletes pending and abandoned after finishProcessing`() = runTest {
+        assertTrue(repository.tryStartProcessing())
+        repository.finishProcessing()
+
+        val result = repository.safeClearQueue()
+
+        assertEquals(true, result)
+        coVerify(exactly = 1) { retryDao.deletePendingAndAbandoned() }
+    }
 }

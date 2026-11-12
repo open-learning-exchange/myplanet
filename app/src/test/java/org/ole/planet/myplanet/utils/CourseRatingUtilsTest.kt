@@ -7,34 +7,123 @@ import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import java.util.Locale
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.repository.RatingSummary
 
 class CourseRatingUtilsTest {
 
-    private val context: Context = mockk(relaxed = true)
-    private val average: TextView = mockk(relaxed = true)
-    private val ratingCount: TextView = mockk(relaxed = true)
-    private val ratingBar: AppCompatRatingBar = mockk(relaxed = true)
+    private lateinit var originalLocale: Locale
 
-    @Test
-    fun showRating_withNullObject_setsDefaultValues() {
-        every { context.getString(R.string.rating_count_format, 0) } returns "0 ratings"
+    @Before
+    fun setUp() {
+        originalLocale = Locale.getDefault()
+        Locale.setDefault(Locale.US)
+    }
 
-        CourseRatingUtils.showRating(context, null, average, ratingCount, ratingBar)
-
-        verify { average.text = "0.00" }
-        verify { ratingCount.text = "0 ratings" }
-        verify { ratingBar.rating = 0f }
+    @After
+    fun tearDown() {
+        Locale.setDefault(originalLocale)
     }
 
     @Test
-    fun showRating_withValidObject_setsAverageAndTotal() {
+    fun computeRatingDisplay_withNullValues_returnsDefaultDisplay() {
+        val display = CourseRatingUtils.computeRatingDisplay(null, null, null)
+        assertEquals("0.00", display.averageText)
+        assertEquals(0, display.totalRatings)
+        assertEquals(0f, display.barRating)
+    }
+
+    @Test
+    fun computeRatingDisplay_withValidAverageAndTotal_returnsFormattedDisplay() {
+        val display = CourseRatingUtils.computeRatingDisplay(4.5f, 100, null)
+        assertEquals("4.50", display.averageText)
+        assertEquals(100, display.totalRatings)
+        assertEquals(4.5f, display.barRating)
+    }
+
+    @Test
+    fun computeRatingDisplay_withUserRating_userRatingBeatsAverageForBarNotText() {
+        val display = CourseRatingUtils.computeRatingDisplay(4.5f, 100, 3.0f)
+        assertEquals("4.50", display.averageText)
+        assertEquals(100, display.totalRatings)
+        assertEquals(3.0f, display.barRating)
+    }
+
+    @Test
+    fun parseRating_withNullObject_returnsNulls() {
+        val (avg, total, user) = CourseRatingUtils.parseRating(null)
+        assertNull(avg)
+        assertNull(total)
+        assertNull(user)
+    }
+
+    @Test
+    fun parseRating_withInvalidNumberTypes_returnsNullsForAverageAndTotal() {
+        val obj = JsonObject().apply {
+            addProperty("averageRating", "four")
+            addProperty("total", "hundred")
+        }
+        val (avg, total, user) = CourseRatingUtils.parseRating(obj)
+        assertNull(avg)
+        assertNull(total)
+        assertNull(user)
+    }
+
+    @Test
+    fun parseRating_ratingByUser_takesPrecedenceOverUserRating() {
+        val obj = JsonObject().apply {
+            addProperty("ratingByUser", 2.0f)
+            addProperty("userRating", 3.0f)
+        }
+        val (_, _, user) = CourseRatingUtils.parseRating(obj)
+        assertEquals(2.0f, user)
+    }
+
+    @Test
+    fun parseRating_withUserRatingOnly_returnsUserRating() {
+        val obj = JsonObject().apply {
+            addProperty("userRating", 3.0f)
+        }
+        val (_, _, user) = CourseRatingUtils.parseRating(obj)
+        assertEquals(3.0f, user)
+    }
+
+    @Test
+    fun ratingSummary_withUserRating_computesCorrectBarRating() {
+        val ratingSummary = RatingSummary(
+            existingRating = null,
+            averageRating = 4.2f,
+            totalRatings = 50,
+            userRating = 5
+        )
+        val display = CourseRatingUtils.computeRatingDisplay(
+            ratingSummary.averageRating,
+            ratingSummary.totalRatings,
+            ratingSummary.userRating?.toFloat()
+        )
+        assertEquals("4.20", display.averageText)
+        assertEquals(50, display.totalRatings)
+        assertEquals(5.0f, display.barRating)
+    }
+
+    @Test
+    fun showRating_jsonObjectOverload_smokeTest() {
+        val context: Context = mockk(relaxed = true)
+        val average: TextView = mockk(relaxed = true)
+        val ratingCount: TextView = mockk(relaxed = true)
+        val ratingBar: AppCompatRatingBar = mockk(relaxed = true)
+        every { context.getString(R.string.rating_count_format, 100) } returns "100 ratings"
+
         val obj = JsonObject().apply {
             addProperty("averageRating", 4.5f)
             addProperty("total", 100)
         }
-        every { context.getString(R.string.rating_count_format, 100) } returns "100 ratings"
 
         CourseRatingUtils.showRating(context, obj, average, ratingCount, ratingBar)
 
@@ -44,49 +133,24 @@ class CourseRatingUtilsTest {
     }
 
     @Test
-    fun showRating_withUserRating_takesPrecedenceOverAverage() {
-        val obj = JsonObject().apply {
-            addProperty("averageRating", 4.5f)
-            addProperty("total", 100)
-            addProperty("userRating", 3.0f)
-        }
-        every { context.getString(R.string.rating_count_format, 100) } returns "100 ratings"
+    fun showRating_ratingSummaryOverload_smokeTest() {
+        val context: Context = mockk(relaxed = true)
+        val average: TextView = mockk(relaxed = true)
+        val ratingCount: TextView = mockk(relaxed = true)
+        val ratingBar: AppCompatRatingBar = mockk(relaxed = true)
+        every { context.getString(R.string.rating_count_format, 50) } returns "50 ratings"
 
-        CourseRatingUtils.showRating(context, obj, average, ratingCount, ratingBar)
+        val ratingSummary = RatingSummary(
+            existingRating = null,
+            averageRating = 4.2f,
+            totalRatings = 50,
+            userRating = 5
+        )
 
-        verify { average.text = "4.50" }
-        verify { ratingCount.text = "100 ratings" }
-        verify { ratingBar.rating = 3.0f }
-    }
+        CourseRatingUtils.showRating(context, ratingSummary, average, ratingCount, ratingBar)
 
-    @Test
-    fun showRating_withRatingByUser_takesPrecedenceOverAverage() {
-        val obj = JsonObject().apply {
-            addProperty("averageRating", 4.5f)
-            addProperty("total", 100)
-            addProperty("ratingByUser", 2.0f)
-        }
-        every { context.getString(R.string.rating_count_format, 100) } returns "100 ratings"
-
-        CourseRatingUtils.showRating(context, obj, average, ratingCount, ratingBar)
-
-        verify { average.text = "4.50" }
-        verify { ratingCount.text = "100 ratings" }
-        verify { ratingBar.rating = 2.0f }
-    }
-
-    @Test
-    fun showRating_withInvalidNumberTypes_setsDefaultValues() {
-        val obj = JsonObject().apply {
-            addProperty("averageRating", "four")
-            addProperty("total", "hundred")
-        }
-        every { context.getString(R.string.rating_count_format, 0) } returns "0 ratings"
-
-        CourseRatingUtils.showRating(context, obj, average, ratingCount, ratingBar)
-
-        verify { average.text = "0.00" }
-        verify { ratingCount.text = "0 ratings" }
-        verify { ratingBar.rating = 0f }
+        verify { average.text = "4.20" }
+        verify { ratingCount.text = "50 ratings" }
+        verify { ratingBar.rating = 5.0f }
     }
 }

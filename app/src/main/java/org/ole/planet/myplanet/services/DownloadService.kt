@@ -9,8 +9,10 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.IBinder
+import android.os.SystemClock
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.annotation.VisibleForTesting
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -23,35 +25,41 @@ import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
+import javax.inject.Provider
 import kotlin.math.roundToInt
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.di.DownloadPreferences
 import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.repository.DownloadRepository
-import org.ole.planet.myplanet.services.DownloadWorker
-import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.availableExternalMemorySize
 import org.ole.planet.myplanet.utils.FileUtils.externalMemoryAvailable
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utils.UrlUtils.header
+import org.ole.planet.myplanet.utils.UrlUtils
+import androidx.core.net.toUri
 
 @AndroidEntryPoint
 class DownloadService : Service() {
     @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
+    lateinit var downloadRepository: DownloadRepository
 
     @Inject
-    lateinit var downloadRepository: DownloadRepository
+    lateinit var resourcesRepository: ResourcesRepository
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
@@ -59,31 +67,51 @@ class DownloadService : Service() {
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
 
-    private var data = ByteArray(1024 * 4)
+    private var data = ByteArray(BUFFER_SIZE)
     private var outputFile: File? = null
     private var notificationBuilder: NotificationCompat.Builder? = null
     private var notificationManager: NotificationManager? = null
     private var totalFileSize = 0
-    private lateinit var preferences: SharedPreferences
+
+    @Inject
+    @DownloadPreferences
+    lateinit var preferencesProvider: Provider<SharedPreferences>
+    private val preferences: SharedPreferences by lazy { preferencesProvider.get() }
+
+    @Inject
+    @ApplicationScope
+    lateinit var appScope: CoroutineScope
+
     private var currentDownloadUrl: String = ""
     private var originalDownloadUrl: String = ""
     private var fromSync = false
     private var lastNotificationUpdateTime = 0L
     private var currentFileProgress = 0
-    private val processedUrls = mutableSetOf<String>()
+    private val processedUrls: MutableSet<String> = ConcurrentHashMap.newKeySet()
+    private val completedUrls: MutableSet<String> = ConcurrentHashMap.newKeySet()
     private var sessionTotalCount = 0
     private var sessionCompletedCount = 0
     private var isCurrentDownloadPriority = false
     private var isQueueRunning = false
+    private var processedSinceLastPersist = 0
 
-    private val downloadJob = SupervisorJob()
-    private lateinit var downloadScope: CoroutineScope
+    @Volatile
+    private var cachedRemainingCount = 0
+    private var areNotificationsEnabled = true
+    private var currentJob: Job? = null
+
+    @Volatile
+    private var stopped = false
+
+    @Volatile
+    private var activeBody: ResponseBody? = null
+    private lateinit var broadcastService: BroadcastService
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
-        downloadScope = CoroutineScope(downloadJob + dispatcherProvider.io)
+        broadcastService = getBroadcastService(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -97,18 +125,18 @@ class DownloadService : Service() {
         fromSync = intent?.getBooleanExtra("fromSync", false) == true
         Log.d(TAG, "onStartCommand: fromSync=$fromSync queueRunning=$isQueueRunning")
 
-        downloadScope.launch {
-            preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            if (!isQueueRunning) {
-                isQueueRunning = true
+        if (!isQueueRunning) {
+            isQueueRunning = true
+            currentJob?.cancel()
+            currentJob = appScope.launch {
                 try {
                     processDownloadQueue()
                 } finally {
                     isQueueRunning = false
                 }
-            } else {
-                Log.d(TAG, "Queue already running, new URLs will be picked up by current loop")
             }
+        } else {
+            Log.d(TAG, "Queue already running, new URLs will be picked up by current loop")
         }
 
         return START_STICKY
@@ -116,22 +144,23 @@ class DownloadService : Service() {
 
     private suspend fun processDownloadQueue() {
         Log.d(TAG, "processDownloadQueue: started")
+        DownloadUtils.createChannels(this)
+        areNotificationsEnabled = NotificationManagerCompat.from(this).areNotificationsEnabled()
         while (true) {
             val nextUrl = getNextPriorityUrl() ?: getNextPendingUrl()
 
             if (nextUrl == null) {
                 Log.d(TAG, "processDownloadQueue: queue empty — completed=$sessionCompletedCount total=$sessionTotalCount")
-                if (sessionCompletedCount > 0) {
-                    showCompletionNotification(false)
-                }
+                completionHadErrors(sessionCompletedCount, sessionTotalCount)?.let { showCompletionNotification(it) }
+                persistProcessedUrls()
                 stopSelf()
                 return
             }
 
             processedUrls.add(nextUrl.url)
             sessionTotalCount++
-            val remaining = getRemainingCount()
-            Log.d(TAG, "processDownloadQueue: [${sessionTotalCount}] ${nextUrl.url.substringAfterLast('/')} priority=${nextUrl.isPriority} remaining=$remaining")
+            cachedRemainingCount = getRemainingCount()
+            Log.d(TAG, "processDownloadQueue: [${sessionTotalCount}] ${nextUrl.url.substringAfterLast('/')} priority=${nextUrl.isPriority} remaining=$cachedRemainingCount")
 
             isCurrentDownloadPriority = nextUrl.isPriority
             updateNotificationForBatchDownload()
@@ -140,51 +169,69 @@ class DownloadService : Service() {
 
             if (succeeded) sessionCompletedCount++
 
-            cleanupProcessedUrls()
+            cleanupProcessedUrls(nextUrl.url)
         }
     }
 
     internal data class QueuedUrl(val url: String, val isPriority: Boolean, val priority: Int = 0)
 
     internal fun getNextPriorityUrl(): QueuedUrl? {
-        return Companion.getNextUrl(preferences, PRIORITY_DOWNLOADS_KEY, processedUrls, true)
+        return getNextUrl(preferences, PRIORITY_DOWNLOADS_KEY, processedUrls, true)
     }
 
     internal fun getNextPendingUrl(): QueuedUrl? {
-        return Companion.getNextUrl(preferences, PENDING_DOWNLOADS_KEY, processedUrls, false)
+        return getNextUrl(preferences, PENDING_DOWNLOADS_KEY, processedUrls, false)
     }
 
-    private fun getRemainingCount(): Int {
-        val priorityUrls = preferences.getStringSet(PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+    private fun getRemainingCount(priorityUrls: Set<String>? = null): Int {
+        val priority = priorityUrls ?: preferences.getStringSet(PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
         val pendingUrls = preferences.getStringSet(PENDING_DOWNLOADS_KEY, emptySet()) ?: emptySet()
-        val allUrls = priorityUrls + pendingUrls
-        return allUrls.count { it !in processedUrls }
+        return countRemaining(priority, pendingUrls, processedUrls)
     }
 
-    private fun cleanupProcessedUrls() {
+    private fun persistProcessedUrls() {
+        val completed = completedUrls.toSet()
         val remainingPriority = preferences.getStringSet(PRIORITY_DOWNLOADS_KEY, emptySet())?.toMutableSet() ?: mutableSetOf()
-        remainingPriority.removeAll(processedUrls)
+        remainingPriority.removeAll(completed)
         val remainingPending = preferences.getStringSet(PENDING_DOWNLOADS_KEY, emptySet())?.toMutableSet() ?: mutableSetOf()
-        remainingPending.removeAll(processedUrls)
+        remainingPending.removeAll(completed)
+        val remainingSyncOwned = preferences.getStringSet(SYNC_DOWNLOADS_KEY, emptySet())?.toMutableSet() ?: mutableSetOf()
+        remainingSyncOwned.removeAll(completed)
         preferences.edit {
             putStringSet(PRIORITY_DOWNLOADS_KEY, remainingPriority)
             putStringSet(PENDING_DOWNLOADS_KEY, remainingPending)
+            putStringSet(SYNC_DOWNLOADS_KEY, remainingSyncOwned)
+        }
+        processedSinceLastPersist = 0
+    }
+
+    private fun cleanupProcessedUrls(url: String = "") {
+        if (url.isNotEmpty()) {
+            completedUrls.add(url)
+        }
+        processedSinceLastPersist++
+        cachedRemainingCount = getRemainingCount()
+        if (processedSinceLastPersist >= QUEUE_PERSIST_INTERVAL) {
+            persistProcessedUrls()
         }
     }
 
     private fun updateNotificationForBatchDownload() {
-        DownloadUtils.createChannels(this)
-        notificationBuilder = NotificationCompat.Builder(this, "DownloadChannel")
+        if (stopped) return
+        val builder = notificationBuilder ?: NotificationCompat.Builder(this, "DownloadChannel")
             .setContentTitle(getString(R.string.downloading_files))
-            .setContentText("Starting downloads (0/${getRemainingCount() + 1})")
             .setSmallIcon(R.drawable.ic_download)
-            .setProgress(100, 0, true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .setSilent(true)
             .setOnlyAlertOnce(true)
+            .addAction(DownloadStopReceiver.stopAction(this))
+            .also { notificationBuilder = it }
 
-        notificationManager?.notify(ONGOING_NOTIFICATION_ID, notificationBuilder?.build())
+        builder.setContentText("Starting downloads (0/${cachedRemainingCount + 1})")
+            .setProgress(100, 0, true)
+
+        notificationManager?.notify(ONGOING_NOTIFICATION_ID, builder.build())
     }
 
     private suspend fun initDownload(url: String, fromSync: Boolean): Boolean {
@@ -201,60 +248,52 @@ class DownloadService : Service() {
 
             if (FileUtils.checkFileExist(this, url)) {
                 Log.d(TAG, "initDownload: $fileName already on disk, marking offline and skipping download")
-                DownloadUtils.updateResourceOfflineStatus(url)
+                try {
+                    resourcesRepository.markResourceOfflineByUrl(url)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.w(TAG, "initDownload failed", e)
+                }
                 onDownloadComplete(url)
                 return true
             }
 
-            val authHeader = header
+            val authHeader = UrlUtils.header
             if (authHeader.isBlank()) {
                 Log.e(TAG, "initDownload: auth header is blank — user may not be logged in")
                 downloadFailed("Authentication header not available", fromSync)
                 return false
             }
 
-            Log.d(TAG, "initDownload: fetching $fileName from primary URL")
-            val primaryResult = downloadRepository.downloadFileResponse(url, authHeader)
+            var resumeOffset = resumeOffsetFor(url)
+            val ifRange = if (resumeOffset > 0) resumeValidatorFor(url) else null
+            Log.d(TAG, "initDownload: fetching $fileName from primary URL${if (resumeOffset > 0) " (resuming from ${resumeOffset}B)" else ""}")
+            var primaryResult = downloadRepository.downloadFileResponse(url, authHeader, resumeOffset, ifRange)
+
+            if (primaryResult is DownloadResult.Error && primaryResult.code == 416 && resumeOffset > 0) {
+                Log.w(TAG, "initDownload: resume offset ${resumeOffset}B rejected (416) for $fileName, restarting from scratch")
+                deleteTempFile(url)
+                deleteValidatorFile(url)
+                resumeOffset = 0L
+                primaryResult = downloadRepository.downloadFileResponse(url, authHeader, 0L, null)
+            }
 
             if (primaryResult is DownloadResult.Error && primaryResult.code == null) {
                 Log.w(TAG, "initDownload: primary failed with network error (${primaryResult.message}), checking for alternative URL")
-                val mapping = serverUrlMapper.processUrl(url)
-                val altBase = mapping.alternativeUrl
-                val primaryBase = mapping.extractedBaseUrl
-
-                val resolvedAltBase: String?
-                val resolvedPrimaryBase: String?
-                if (altBase != null && primaryBase != null) {
-                    resolvedAltBase = altBase
-                    resolvedPrimaryBase = primaryBase
-                    Log.d(TAG, "initDownload: found hardcoded mapping $primaryBase → $altBase")
-                } else {
-                    val storedAlt = sharedPrefManager.getProcessedAlternativeUrl()
-                    if (storedAlt.isNotEmpty() && primaryBase != null) {
-                        resolvedAltBase = storedAlt.trimEnd('/')
-                        resolvedPrimaryBase = primaryBase
-                        Log.d(TAG, "initDownload: no hardcoded mapping for $primaryBase — using stored alternative $resolvedAltBase")
-                    } else {
-                        resolvedAltBase = null
-                        resolvedPrimaryBase = null
-                        Log.w(TAG, "initDownload: no alternative URL available for primary base '$primaryBase', giving up")
-                    }
-                }
-
-                if (resolvedAltBase != null && resolvedPrimaryBase != null) {
-                    val parsed = android.net.Uri.parse(url)
-                    val path = parsed.path.orEmpty()
-                    val query = if (parsed.query != null) "?${parsed.query}" else ""
-                    val altUrl = resolvedAltBase + path + query
-                    Log.d(TAG, "initDownload: switching $fileName — primary=$resolvedPrimaryBase → alternative=$resolvedAltBase")
-                    Log.d(TAG, "initDownload: retrying with $altUrl")
+                val altUrl = resolveAlternativeUrl(url, fileName)
+                if (altUrl != null) {
+                    Log.d(TAG, "initDownload: retrying with ${UrlUtils.redactForLog(altUrl)}")
                     currentDownloadUrl = altUrl
-                    val altResult = downloadRepository.downloadFileResponse(altUrl, authHeader)
-                    return tryDownloadFromResult(altResult, altUrl, fromSync, fileName, isAlternative = true)
+                    val altResult = downloadRepository.downloadFileResponse(altUrl, authHeader, resumeOffset, ifRange.takeIf { resumeOffset > 0 })
+                    return tryDownloadFromResult(altResult, altUrl, fromSync, fileName, isAlternative = true, resumeOffset)
                 }
             }
 
-            return tryDownloadFromResult(primaryResult, url, fromSync, fileName, isAlternative = false)
+            return tryDownloadFromResult(primaryResult, url, fromSync, fileName, isAlternative = false, resumeOffset)
+        } catch (e: CancellationException) {
+            Log.d(TAG, "initDownload: cancelled for $fileName")
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "initDownload: unexpected error for $fileName", e)
             downloadFailed("Download initialization failed: ${e.localizedMessage ?: "Unknown error"}", fromSync)
@@ -262,52 +301,98 @@ class DownloadService : Service() {
         }
     }
 
-    private fun tryDownloadFromResult(
+    private fun resolveAlternativeUrl(url: String, fileName: String): String? {
+        val mapping = serverUrlMapper.processUrl(url)
+        val altBase = mapping.alternativeUrl
+        val primaryBase = mapping.extractedBaseUrl
+
+        val resolvedAltBase: String?
+        val resolvedPrimaryBase: String?
+        if (altBase != null && primaryBase != null) {
+            resolvedAltBase = altBase
+            resolvedPrimaryBase = primaryBase
+            Log.d(TAG, "initDownload: found hardcoded mapping $primaryBase → $altBase")
+        } else {
+            val storedAlt = sharedPrefManager.getProcessedAlternativeUrl()
+            if (storedAlt.isNotEmpty() && primaryBase != null) {
+                resolvedAltBase = storedAlt.trimEnd('/')
+                resolvedPrimaryBase = primaryBase
+                Log.d(TAG, "initDownload: no hardcoded mapping for $primaryBase — using stored alternative ${UrlUtils.redactForLog(resolvedAltBase)}")
+            } else {
+                resolvedAltBase = null
+                resolvedPrimaryBase = null
+                Log.w(TAG, "initDownload: no alternative URL available for primary base '$primaryBase', giving up")
+            }
+        }
+
+        if (resolvedAltBase != null && resolvedPrimaryBase != null) {
+            val parsed = url.toUri()
+            val path = parsed.path.orEmpty()
+            val query = if (parsed.query != null) "?${parsed.query}" else ""
+            val altUrl = resolvedAltBase + path + query
+            Log.d(TAG, "initDownload: switching $fileName — primary=$resolvedPrimaryBase → alternative=${UrlUtils.redactForLog(resolvedAltBase)}")
+            return altUrl
+        }
+        return null
+    }
+
+    private suspend fun tryDownloadFromResult(
         result: DownloadResult,
         url: String,
         fromSync: Boolean,
         fileName: String,
-        isAlternative: Boolean
+        isAlternative: Boolean,
+        resumeOffset: Long
     ): Boolean {
         val source = if (isAlternative) "alternative" else "primary"
-        return when (result) {
-            is DownloadResult.Success -> {
-                val contentLength = result.body.contentLength()
-                Log.d(TAG, "tryDownload [$source]: $fileName responded contentLength=${if (contentLength == -1L) "unknown" else "${contentLength}B"}")
-                val storageError = getStorageError(contentLength)
-                when {
-                    storageError != null -> {
-                        Log.e(TAG, "tryDownload [$source]: storage check failed — $storageError")
-                        downloadFailed(storageError, fromSync)
-                        false
-                    }
-                    contentLength == 0L -> {
-                        Log.e(TAG, "tryDownload [$source]: server returned empty body for $fileName")
-                        downloadFailed("Empty file from server", fromSync)
-                        false
-                    }
-                    else -> {
-                        try {
-                            downloadFile(result.body, url)
-                            true
-                        } catch (e: Exception) {
-                            Log.e(TAG, "tryDownload [$source]: write failed for $fileName", e)
-                            downloadFailed(e.localizedMessage ?: "Write failed", fromSync)
-                            false
-                        }
-                    }
-                }
+
+        if (result is DownloadResult.Error) {
+            if (result.code == 416 && resumeOffset > 0) {
+                Log.w(TAG, "tryDownload [$source]: $fileName — resume offset ${resumeOffset}B rejected by server (416), discarding partial file")
+                deleteTempFile(url)
+                deleteValidatorFile(url)
             }
-            is DownloadResult.Error -> {
-                Log.e(TAG, "tryDownload [$source]: $fileName — ${result.message} (code=${result.code})")
-                downloadFailed(result.message, fromSync)
-                false
-            }
+            Log.e(TAG, "tryDownload [$source]: $fileName — ${result.message} (code=${result.code})")
+            downloadFailed(result.message, fromSync)
+            return false
+        }
+
+        result as DownloadResult.Success
+        val isPartial = result.code == 206
+        val contentLength = result.body.contentLength()
+        Log.d(TAG, "tryDownload [$source]: $fileName responded contentLength=${if (contentLength == -1L) "unknown" else "${contentLength}B"} partial=$isPartial")
+
+        val storageError = getStorageError(contentLength)
+        if (storageError != null) {
+            Log.e(TAG, "tryDownload [$source]: storage check failed — $storageError")
+            result.body.close()
+            downloadFailed(storageError, fromSync)
+            return false
+        }
+
+        if (contentLength == 0L && !isPartial) {
+            Log.e(TAG, "tryDownload [$source]: server returned empty body for $fileName")
+            result.body.close()
+            downloadFailed("Empty file from server", fromSync)
+            return false
+        }
+
+        return try {
+            downloadFile(result.body, url, isPartial, result.validator)
+            true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            currentCoroutineContext().ensureActive()
+            Log.e(TAG, "tryDownload [$source]: write failed for $fileName", e)
+            downloadFailed(e.localizedMessage ?: "Write failed", fromSync)
+            false
         }
     }
 
     private fun downloadFailed(message: String, fromSync: Boolean) {
-        val remaining = getRemainingCount()
+        if (stopped) return
+        val remaining = cachedRemainingCount
         notificationBuilder?.apply {
             setContentText("Error: $message")
             setSubText("$sessionCompletedCount completed, $remaining remaining")
@@ -323,61 +408,95 @@ class DownloadService : Service() {
         if (!fromSync) {
             if (message == "File Not Found") {
                 val intent = Intent(RESOURCE_NOT_FOUND_ACTION)
-                downloadScope.launch {
-                    val broadcastService = getBroadcastService(this@DownloadService)
+                appScope.launch {
                     broadcastService.sendBroadcast(intent)
                 }
             }
         }
     }
 
-    @Throws(IOException::class)
-    private fun downloadFile(body: ResponseBody, url: String) {
-        val fileSize = body.contentLength()
+    private fun tempFileForUrl(url: String): File {
         val finalFile = FileUtils.getSDPathFromUrl(this@DownloadService, url)
-        val tempFile = File(finalFile.parentFile, "${finalFile.name}.tmp")
+        return File(finalFile.parentFile, "${finalFile.name}.tmp")
+    }
+
+    private fun validatorFileForUrl(url: String): File {
+        val finalFile = FileUtils.getSDPathFromUrl(this@DownloadService, url)
+        return File(finalFile.parentFile, "${finalFile.name}.tmp.etag")
+    }
+
+    private fun resumeOffsetFor(url: String): Long {
+        val tempFile = tempFileForUrl(url)
+        return if (tempFile.exists()) tempFile.length() else 0L
+    }
+
+    private fun resumeValidatorFor(url: String): String? {
+        val validatorFile = validatorFileForUrl(url)
+        return if (validatorFile.exists()) validatorFile.readText().takeIf { it.isNotBlank() } else null
+    }
+
+    private fun writeValidator(url: String, validator: String?) {
+        val validatorFile = validatorFileForUrl(url)
+        if (validator.isNullOrBlank()) {
+            validatorFile.delete()
+        } else {
+            validatorFile.writeText(validator)
+        }
+    }
+
+    private fun deleteTempFile(url: String) {
+        val tempFile = tempFileForUrl(url)
         tempFile.delete()
+        File(tempFile.parentFile, "${tempFile.name}$EXPECTED_SIZE_SUFFIX").delete()
+    }
+
+    private fun deleteValidatorFile(url: String) {
+        validatorFileForUrl(url).delete()
+    }
+
+    @Throws(IOException::class)
+    private suspend fun downloadFile(body: ResponseBody, url: String, isPartial: Boolean, validator: String? = null) {
+        val finalFile = FileUtils.getSDPathFromUrl(this@DownloadService, url)
+        finalFile.parentFile?.mkdirs()
+        val tempFile = File(finalFile.parentFile, "${finalFile.name}.tmp")
         outputFile = finalFile
-        var total: Long = 0
         val fileName = url.substringAfterLast('/')
-        Log.d(TAG, "downloadFile: writing $fileName to ${tempFile.absolutePath} size=${if (fileSize == -1L) "unknown" else "${fileSize}B"}")
 
+        val resumeOffset = if (isPartial) tempFile.length() else 0L
+        if (!isPartial) {
+            tempFile.delete()
+        }
+        writeValidator(url, validator)
+
+        val remoteRemaining = body.contentLength()
+        val fileSize = if (remoteRemaining > 0) resumeOffset + remoteRemaining else -1L
+        var total = resumeOffset
+        val expectedSizeFile = File(tempFile.parentFile, "${tempFile.name}$EXPECTED_SIZE_SUFFIX")
+        if (fileSize > 0) expectedSizeFile.writeText(fileSize.toString()) else expectedSizeFile.delete()
+        Log.d(
+            TAG,
+            "downloadFile: writing $fileName to ${tempFile.absolutePath} size=${if (fileSize <= 0) "unknown" else "${fileSize}B"}" +
+                if (resumeOffset > 0) " resuming from ${resumeOffset}B" else ""
+        )
+
+        activeBody = body
         try {
-            BufferedInputStream(body.byteStream(), 1024 * 8).use { bis ->
-                FileOutputStream(tempFile).use { output ->
-                    while (true) {
-                        val readCount = bis.read(data)
-                        if (readCount == -1) break
-
-                        if (readCount > 0) {
-                            total += readCount
-                            val current = (total / 1024.0).roundToInt().toDouble()
-
-                            val download = Download().apply {
-                                this.fileName = getFileNameFromUrl(url)
-                            }
-
-                            if (fileSize > 0) {
-                                totalFileSize = (fileSize / 1024.0).toInt()
-                                val progress = (total * 100 / fileSize).toInt()
-                                download.totalFileSize = totalFileSize
-                                download.progress = progress
-                                currentFileProgress = progress
-                            } else {
-                                download.totalFileSize = 0
-                                download.progress = -1
-                                currentFileProgress = -1
-                            }
-
-                            val now = System.currentTimeMillis()
-                            if (now - lastNotificationUpdateTime >= NOTIFICATION_UPDATE_INTERVAL_MS) {
-                                download.currentFileSize = current.toInt()
-                                sendNotification(download)
-                                lastNotificationUpdateTime = now
-                            }
-                            output.write(data, 0, readCount)
-                        }
+            BufferedInputStream(body.byteStream(), BUFFER_SIZE).use { bis ->
+                FileOutputStream(tempFile, isPartial).use { output ->
+                    val download = Download().apply {
+                        this.fileName = getFileNameFromUrl(url)
                     }
+
+                    if (fileSize > 0) {
+                        totalFileSize = (fileSize / 1024.0).toInt()
+                        download.totalFileSize = totalFileSize
+                    } else {
+                        download.totalFileSize = 0
+                        download.progress = -1
+                        currentFileProgress = -1
+                    }
+
+                    total = copyStreamWithProgress(bis, output, download, fileSize, total)
                 }
             }
             if (!tempFile.renameTo(finalFile)) {
@@ -385,37 +504,80 @@ class DownloadService : Service() {
                 tempFile.copyTo(finalFile, overwrite = true)
                 tempFile.delete()
             }
+            deleteValidatorFile(url)
+            expectedSizeFile.delete()
             Log.d(TAG, "downloadFile: complete — $fileName written ${total}B to ${finalFile.absolutePath}")
-        } catch (e: Exception) {
-            Log.e(TAG, "downloadFile: failed for $fileName after ${total}B, temp file deleted", e)
-            tempFile.delete()
+        } catch (e: CancellationException) {
+            Log.d(TAG, "downloadFile: stopped $fileName after ${total}B, keeping partial file for resume")
             throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "downloadFile: failed for $fileName after ${total}B, keeping partial file for resume", e)
+            throw e
+        } finally {
+            activeBody = null
         }
         onDownloadComplete(url)
     }
 
+    private suspend fun copyStreamWithProgress(
+        bis: BufferedInputStream,
+        output: FileOutputStream,
+        download: Download,
+        fileSize: Long,
+        initialTotal: Long
+    ): Long {
+        var total = initialTotal
+        val context = currentCoroutineContext()
+        while (true) {
+            context.ensureActive()
+            val readCount = bis.read(data)
+            if (readCount == -1) break
+
+            if (readCount > 0) {
+                total += readCount
+
+                if (fileSize > 0) {
+                    val progress = (total * 100 / fileSize).toInt()
+                    download.progress = progress
+                    currentFileProgress = progress
+                }
+
+                val now = SystemClock.elapsedRealtime()
+                if (now - lastNotificationUpdateTime >= NOTIFICATION_UPDATE_INTERVAL_MS) {
+                    val current = (total / 1024.0).roundToInt()
+                    download.currentFileSize = current
+                    sendNotification(download)
+                    lastNotificationUpdateTime = now
+                }
+                output.write(data, 0, readCount)
+            }
+        }
+        return total
+    }
+
     private fun getStorageError(fileSize: Long): String? {
-        if (fileSize <= 0) return null
         if (!externalMemoryAvailable()) return "Download failed: storage not available"
-        if (fileSize > availableExternalMemorySize) {
-            Log.e(TAG, "getStorageError: need ${fileSize}B but only ${availableExternalMemorySize}B available")
+        val required = if (fileSize > 0) fileSize + STORAGE_HEADROOM_BYTES else STORAGE_HEADROOM_BYTES
+        if (required > availableExternalMemorySize) {
+            Log.e(TAG, "getStorageError: need ${required}B (file=${fileSize}B + headroom) but only ${availableExternalMemorySize}B available")
             return "Download failed: not enough storage"
         }
         return null
     }
 
     private fun sendNotification(download: Download) {
+        if (stopped) return
         val url = currentDownloadUrl
         if (url.isBlank()) return
 
-        download.fileName = "Downloading: ${getFileNameFromUrl(url)}"
+        val fileName = getFileNameFromUrl(url)
+        download.fileName = "Downloading: $fileName"
         download.fileUrl = originalDownloadUrl.ifEmpty { url }
         sendIntent(download, fromSync)
 
-        if (NotificationManagerCompat.from(this).areNotificationsEnabled()) {
+        if (areNotificationsEnabled) {
             notificationBuilder?.apply {
-                val fileName = getFileNameFromUrl(url)
-                val remaining = getRemainingCount()
+                val remaining = cachedRemainingCount
                 val progressText = if (currentFileProgress in 0..100) {
                     "$fileName ($currentFileProgress%)"
                 } else {
@@ -440,31 +602,39 @@ class DownloadService : Service() {
             putExtra("download", download)
             putExtra("fromSync", fromSync)
         }
-        downloadScope.launch {
-            val broadcastService = getBroadcastService(this@DownloadService)
+        appScope.launch {
             broadcastService.sendBroadcast(intent)
         }
     }
 
-    private fun onDownloadComplete(url: String) {
+    private suspend fun onDownloadComplete(url: String) {
         if ((outputFile?.length() ?: 0) > 0) {
-            DownloadUtils.updateResourceOfflineStatus(url)
+            try {
+                resourcesRepository.markResourceOfflineByUrl(url)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "onDownloadComplete failed", e)
+            }
         }
 
-        val remainingPriority = preferences.getStringSet(PRIORITY_DOWNLOADS_KEY, emptySet())?.count { it !in processedUrls } ?: 0
-        val remaining = getRemainingCount()
+        val priorityUrls = preferences.getStringSet(PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+        val remainingPriority = priorityUrls.count { it !in processedUrls }
+        val remaining = getRemainingCount(priorityUrls)
 
+        val fileName = getFileNameFromUrl(url)
         val download = Download().apply {
-            fileName = getFileNameFromUrl(url)
+            this.fileName = fileName
             fileUrl = originalDownloadUrl.ifEmpty { url }
             progress = 100
             completeAll = (remaining == 0) || (isCurrentDownloadPriority && remainingPriority == 0)
         }
 
         sendIntent(download, fromSync)
+        if (stopped) return
         notificationBuilder?.apply {
             setProgress(sessionCompletedCount + remaining, sessionCompletedCount, false)
-            setContentText("Downloaded ${getFileNameFromUrl(url)}")
+            setContentText("Downloaded $fileName")
             setSubText("$sessionCompletedCount completed, $remaining remaining")
             notificationManager?.notify(ONGOING_NOTIFICATION_ID, build())
         }
@@ -483,33 +653,56 @@ class DownloadService : Service() {
     }
 
     override fun onDestroy() {
+        stopped = true
+        currentJob?.cancel()
+        activeBody?.let { body ->
+            appScope.launch { runCatching { body.close() } }
+        }
         try {
-            stopForeground(Service.STOP_FOREGROUND_REMOVE)
+            persistProcessedUrls()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error persisting processed URLs", e)
+        }
+        try {
+            stopForeground(STOP_FOREGROUND_REMOVE)
         } catch (e: Exception) {
             Log.e(TAG, "Error stopping foreground service", e)
         }
-        downloadJob.cancel()
         notificationManager?.cancel(ONGOING_NOTIFICATION_ID)
         super.onDestroy()
     }
 
     companion object {
         private const val TAG = "DownloadService"
+        private const val QUEUE_PERSIST_INTERVAL = 10
+        private const val STORAGE_HEADROOM_BYTES = 100L * 1024 * 1024
+        private const val BUFFER_SIZE = 1024 * 16
         const val PREFS_NAME = "MyPrefsFile"
         const val MESSAGE_PROGRESS = "message_progress"
         const val RESOURCE_NOT_FOUND_ACTION = "resource_not_found_action"
         const val ONGOING_NOTIFICATION_ID = 1
         const val COMPLETION_NOTIFICATION_ID = 2
         private const val NOTIFICATION_UPDATE_INTERVAL_MS = 500L
+        const val SYNC_DOWNLOADS_KEY = "sync_downloads_queue"
         const val PENDING_DOWNLOADS_KEY = "pending_downloads_queue"
         const val PRIORITY_DOWNLOADS_KEY = "priority_downloads_queue"
+        const val EXPECTED_SIZE_SUFFIX = ".size"
+
+        @VisibleForTesting
+        internal fun countRemaining(priority: Set<String>, pending: Set<String>, processed: Set<String>): Int =
+            priority.count { it !in processed } + pending.count { it !in processed && it !in priority }
 
         internal fun getNextPriorityUrl(downloadQueue: List<QueuedUrl>): QueuedUrl? {
             if (downloadQueue.isEmpty()) return null
             return downloadQueue.maxByOrNull { it.priority } ?: downloadQueue.first()
         }
 
-        @androidx.annotation.VisibleForTesting
+        /** Whether the session's summary should mention errors, or null when nothing was attempted. */
+        @VisibleForTesting
+        internal fun completionHadErrors(completed: Int, total: Int): Boolean? =
+            if (total > 0) completed < total else null
+
+        @VisibleForTesting
         internal fun getNextUrl(
             preferences: SharedPreferences,
             key: String,
@@ -517,10 +710,11 @@ class DownloadService : Service() {
             isPriority: Boolean
         ): QueuedUrl? {
             val urls = preferences.getStringSet(key, emptySet()) ?: emptySet()
-            val queue = urls.sorted()
+            return urls
+                .asSequence()
                 .filter { it !in processedUrls && it.isNotBlank() }
-                .map { QueuedUrl(it, isPriority) }
-            return getNextPriorityUrl(queue)
+                .minOrNull()
+                ?.let { QueuedUrl(it, isPriority) }
         }
 
         fun startService(context: Context, urlsKey: String, fromSync: Boolean) {
@@ -529,32 +723,21 @@ class DownloadService : Service() {
                 putExtra("fromSync", fromSync)
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val canStart = when {
-                    context is Activity -> true
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> {
-                        hasValidForegroundServiceContext(context)
-                    }
-                    else -> true
-                }
-
-                if (canStart) {
-                    try {
-                        ContextCompat.startForegroundService(context, intent)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to start foreground service", e)
-                        handleForegroundServiceError(context, urlsKey, fromSync)
-                    }
-                } else {
-                    startDownloadWork(context, urlsKey, fromSync)
-                }
+            val canStart = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                context is Activity || hasValidForegroundServiceContext(context)
             } else {
+                true
+            }
+
+            if (canStart) {
                 try {
                     ContextCompat.startForegroundService(context, intent)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to start foreground service", e)
                     handleForegroundServiceError(context, urlsKey, fromSync)
                 }
+            } else {
+                startDownloadWork(context, urlsKey, fromSync)
             }
         }
 
@@ -583,6 +766,7 @@ class DownloadService : Service() {
                     "urls_key" to urlsKey,
                     "fromSync" to fromSync
                 ))
+                .addTag(DownloadWorker.WORK_TAG)
                 .build()
 
             WorkManager.getInstance(context).enqueue(workRequest)

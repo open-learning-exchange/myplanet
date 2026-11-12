@@ -1,0 +1,258 @@
+package org.ole.planet.myplanet.model
+
+import android.content.Context
+import androidx.room.ColumnInfo
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import java.io.File
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
+import org.ole.planet.myplanet.utils.FileUtils.getOlePath
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
+
+@Entity(tableName = "teams", indices = [Index("_id"), Index("teamId"), Index("userId"), Index("type"), Index("docType")])
+open class MyTeam(
+    @PrimaryKey @JvmField var _id: String = "",
+    @JvmField var _rev: String? = null,
+    var courses: List<String>? = null,
+    var teamId: String? = null,
+    var name: String? = null,
+    var userId: String? = null,
+    var description: String? = null,
+    var requests: String? = null,
+    var sourcePlanet: String? = null,
+    var limit: Int = 0,
+    var createdDate: Long = 0,
+    var resourceId: String? = null,
+    var status: String? = null,
+    var teamType: String? = null,
+    var teamPlanetCode: String? = null,
+    var userPlanetCode: String? = null,
+    var parentCode: String? = null,
+    var docType: String? = null,
+    var title: String? = null,
+    var route: String? = null,
+    var services: String? = null,
+    var createdBy: String? = null,
+    var rules: String? = null,
+    var isLeader: Boolean = false,
+    var type: String? = null,
+    var amount: Double = 0.0,
+    var date: Long = 0,
+    var isPublic: Boolean = false,
+    @ColumnInfo(name = "isUpdated") var updated: Boolean = false,
+    var isDeletePending: Boolean = false,
+    var beginningBalance: Double = 0.0,
+    var sales: Double = 0.0,
+    var otherIncome: Double = 0.0,
+    var wages: Double = 0.0,
+    var otherExpenses: Double = 0.0,
+    var startDate: Long = 0,
+    var endDate: Long = 0,
+    var updatedDate: Long = 0,
+    var imageName: String? = null
+) {
+    @get:androidx.room.Ignore
+    var id: String
+        get() = _id
+        set(value) { _id = value }
+
+    companion object {
+        const val DEFAULT_MEMBER_LIMIT = 12
+        fun getFirstAttachmentName(doc: JsonObject): String? {
+            val attachments = doc.getAsJsonObject("_attachments") ?: return null
+            return attachments.keySet().firstOrNull()
+        }
+
+        fun getAttachmentFile(context: Context, teamId: String?, imageName: String?): File? {
+            if (teamId.isNullOrBlank() || imageName.isNullOrBlank()) return null
+            return File(
+                "${getOlePath(context)}team_attachments/$teamId/$imageName"
+            )
+        }
+
+        fun populateTeamFields(doc: JsonObject, team: MyTeam, includeCourses: Boolean = false) {
+            val kDoc = doc.toKotlinx().jsonObject
+            val hadLocalChanges = team.updated
+
+            team.userId = JsonUtils.getString("userId", kDoc)
+            team.teamId = JsonUtils.getString("teamId", kDoc)
+            team._rev = JsonUtils.getString("_rev", kDoc)
+            team.name = JsonUtils.getString("name", kDoc)
+            team.sourcePlanet = JsonUtils.getString("sourcePlanet", kDoc)
+            team.title = JsonUtils.getString("title", kDoc)
+            team.description = JsonUtils.getString("description", kDoc)
+            team.limit = JsonUtils.getInt("limit", kDoc)
+            team.status = JsonUtils.getString("status", kDoc)
+            team.teamPlanetCode = JsonUtils.getString("teamPlanetCode", kDoc)
+            team.createdDate = JsonUtils.getLong("createdDate", kDoc)
+            team.resourceId = JsonUtils.getString("resourceId", kDoc)
+            team.teamType = JsonUtils.getString("teamType", kDoc)
+            team.route = JsonUtils.getString("route", kDoc)
+            team.type = JsonUtils.getString("type", kDoc)
+            team.services = JsonUtils.getString("services", kDoc)
+            team.rules = JsonUtils.getString("rules", kDoc)
+            team.parentCode = JsonUtils.getString("parentCode", kDoc)
+            team.createdBy = JsonUtils.getString("createdBy", kDoc)
+            team.userPlanetCode = JsonUtils.getString("userPlanetCode", kDoc)
+            team.isLeader = JsonUtils.getBoolean("isLeader", kDoc)
+            team.amount = JsonUtils.getDouble("amount", kDoc)
+            team.date = JsonUtils.getLong("date", kDoc)
+            if (!hadLocalChanges) {
+                team.docType = JsonUtils.getString("docType", kDoc)
+            }
+            team.isPublic = JsonUtils.getBoolean("public", kDoc)
+            team.beginningBalance = JsonUtils.getDouble("beginningBalance", kDoc)
+            team.sales = JsonUtils.getDouble("sales", kDoc)
+            team.otherIncome = JsonUtils.getDouble("otherIncome", kDoc)
+            team.wages = JsonUtils.getDouble("wages", kDoc)
+            team.otherExpenses = JsonUtils.getDouble("otherExpenses", kDoc)
+            team.startDate = JsonUtils.getLong("startDate", kDoc)
+            team.endDate = JsonUtils.getLong("endDate", kDoc)
+            team.updatedDate = JsonUtils.getLong("updatedDate", kDoc)
+            getFirstAttachmentName(doc)?.let { team.imageName = it }
+
+            val localCourses = team.courses?.toList() ?: emptyList()
+
+            if (!hadLocalChanges) {
+                team.updated = JsonUtils.getBoolean("updated", kDoc)
+            }
+
+            val coursesArray = JsonUtils.getJsonArray("courses", kDoc)
+            val serverCourseIds = mutableListOf<String>()
+            for (e in coursesArray) {
+                try {
+                    val id = (e.jsonObject["_id"] as JsonPrimitive).content
+                    serverCourseIds.add(id)
+                } catch (ex: Exception) {
+                    if (e is JsonPrimitive) {
+                        serverCourseIds.add(e.content)
+                    }
+                }
+            }
+
+            if (hadLocalChanges) {
+                val mergedCourses = serverCourseIds.toMutableSet()
+                mergedCourses.addAll(localCourses)
+                team.courses = mergedCourses.toList()
+            } else {
+                team.courses = serverCourseIds.toList()
+            }
+        }
+
+        fun serialize(team: MyTeam): JsonObject {
+            if (team.isDeletePending) {
+                val `object` = buildJsonObject {
+                    if (!team._id.isNullOrEmpty()) put("_id", team._id)
+                    if (!team._rev.isNullOrEmpty()) put("_rev", team._rev)
+                    put("_deleted", true)
+                    if (!team.teamId.isNullOrEmpty()) put("teamId", team.teamId)
+                    put("userId", team.userId)
+                    put("userPlanetCode", team.userPlanetCode)
+                    put("teamPlanetCode", team.teamPlanetCode)
+                    put("teamType", team.teamType)
+                    put("docType", team.docType)
+                }.toGson()
+
+                val keysToRemove = `object`.keySet().filter { `object`.get(it).isJsonNull }
+                keysToRemove.forEach { `object`.remove(it) }
+                return `object`
+            }
+
+            if (team.docType == "resourceLink") {
+                val `object` = buildJsonObject {
+                    if (!team._id.isNullOrEmpty()) put("_id", team._id)
+                    if (!team._rev.isNullOrEmpty()) put("_rev", team._rev)
+                    put("resourceId", team.resourceId)
+                    put("title", team.title)
+                    if (!team.teamId.isNullOrEmpty()) put("teamId", team.teamId)
+                    put("teamPlanetCode", team.teamPlanetCode)
+                    put("teamType", team.teamType)
+                    put("sourcePlanet", team.sourcePlanet)
+                    put("docType", team.docType)
+                }.toGson()
+
+                val keysToRemove = `object`.keySet().filter { `object`.get(it).isJsonNull }
+                keysToRemove.forEach { `object`.remove(it) }
+                return `object`
+            }
+
+            val `object` = buildJsonObject {
+                if (!team._id.isNullOrEmpty()) put("_id", team._id)
+                if (!team._rev.isNullOrEmpty()) put("_rev", team._rev)
+                put("name", team.name)
+                put("userId", team.userId)
+                if (team.docType != "report" && team.docType != "request") {
+                    if (team.limit > 0) put("limit", team.limit)
+                    put("amount", team.amount)
+                    put("date", team.date)
+                    put("public", team.isPublic)
+                    put("isLeader", team.isLeader)
+                }
+                if (team.docType != "request" || team.createdDate > 0) put("createdDate", team.createdDate)
+                if (team.docType != "request") {
+                    put("description", team.description)
+                    put("beginningBalance", team.beginningBalance)
+                    put("sales", team.sales)
+                    put("otherIncome", team.otherIncome)
+                    put("wages", team.wages)
+                    put("otherExpenses", team.otherExpenses)
+                    put("startDate", team.startDate)
+                    put("endDate", team.endDate)
+                    put("updatedDate", team.updatedDate)
+                }
+                if (!team.teamId.isNullOrEmpty()) put("teamId", team.teamId)
+                put("teamType", team.teamType)
+                put("teamPlanetCode", team.teamPlanetCode)
+                put("docType", team.docType)
+                put("status", team.status)
+                put("userPlanetCode", team.userPlanetCode)
+                put("parentCode", team.parentCode)
+                put("type", team.type)
+                put("route", team.route)
+                put("sourcePlanet", team.sourcePlanet)
+                put("services", team.services)
+                put("createdBy", team.createdBy)
+                put("resourceId", team.resourceId)
+                put("title", team.title)
+                put("rules", team.rules)
+
+                if (team.teamType == "debit" || team.teamType == "credit") {
+                    put("type", team.teamType)
+                }
+            }.toGson()
+
+            val keysToRemove = `object`.keySet().filter { `object`.get(it).isJsonNull }
+            keysToRemove.forEach { `object`.remove(it) }
+            return `object`
+        }
+
+        fun serialize(team: MyTeam, courses: List<MyCourse>, coursesResourcesMap: Map<String, Map<String?, List<MyLibrary>>>): JsonObject {
+            val `object` = serialize(team)
+
+            if (!team.courses.isNullOrEmpty()) {
+                val coursesArray = JsonArray()
+
+                val courseMap = courses.associateBy { it.courseId }
+
+                team.courses?.forEach { courseId ->
+                    val course = courseMap[courseId]
+                    if (course != null) {
+                        val courseResources = coursesResourcesMap[courseId] ?: emptyMap()
+                        val courseJson = MyCourse.serialize(course, courseResources)
+                        coursesArray.add(courseJson)
+                    }
+                }
+                `object`.add("courses", coursesArray)
+            }
+            return `object`
+        }
+    }
+}

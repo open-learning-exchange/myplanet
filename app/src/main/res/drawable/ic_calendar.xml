@@ -1,0 +1,24 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="@color/daynight_textColor">
+    <path
+        android:fillColor="#FF000000"
+        android:fillType="evenOdd"
+        android:pathData="
+            M4,5 H20 V20 H4 Z
+            M5.5,9 H18.5 V18.5 H5.5 Z
+            M7,2 H9 V5 H7 Z
+            M15,2 H17 V5 H15 Z
+            M7,10.5 H9 V12.5 H7 Z
+            M10.5,10.5 H12.5 V12.5 H10.5 Z
+            M14,10.5 H16 V12.5 H14 Z
+            M7,13.3 H9 V15.3 H7 Z
+            M10.5,13.3 H12.5 V15.3 H10.5 Z
+            M14,13.3 H16 V15.3 H14 Z
+            M7,16.1 H9 V18.1 H7 Z
+            M10.5,16.1 H12.5 V18.1 H10.5 Z
+            M14,16.1 H16 V18.1 H14 Z" />
+</vector>

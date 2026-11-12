@@ -2,7 +2,9 @@ package org.ole.planet.myplanet.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
 import android.util.Base64
+import android.util.Log
 import androidx.core.content.edit
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
@@ -11,7 +13,9 @@ import com.google.crypto.tink.KeyTemplate
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.aead.PredefinedAeadParameters
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
+import java.io.File
 import java.security.GeneralSecurityException
+import java.security.KeyStore
 
 object SecurePrefs {
     private const val ENCRYPTED_PREFS_FILE_NAME = "secure_store_v2"
@@ -23,12 +27,15 @@ object SecurePrefs {
 
     @Volatile private var cachedAead: Aead? = null
     @Volatile private var cachedSecureStore: SharedPreferences? = null
+    @Volatile private var cachedLegacyPrefs: SharedPreferences? = null
+
+    private const val TAG = "SecurePrefs"
 
     init {
         try {
             AeadConfig.register()
         } catch (e: GeneralSecurityException) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to register Tink AeadConfig", e)
         }
     }
 
@@ -51,8 +58,12 @@ object SecurePrefs {
     }
     
     fun warmUp(context: Context) {
-        if (cachedAead == null) getAead(context)
-        if (cachedSecureStore == null) getSecureStore(context)
+        try {
+            if (cachedAead == null) getAead(context)
+            if (cachedSecureStore == null) getSecureStore(context)
+        } catch (e: Exception) {
+            Log.w("SecurePrefs", "Secure storage warm-up failed, deferring to lazy initialization", e)
+        }
     }
 
     @Suppress("DEPRECATION")
@@ -69,40 +80,28 @@ object SecurePrefs {
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
 
-            val plainPrefs = context.getSharedPreferences(PLAIN_PREFS_FILE_NAME, Context.MODE_PRIVATE)
-            if (plainPrefs.all.isNotEmpty()) {
-                encryptedPrefs.edit(commit = true) {
-                    plainPrefs.all.forEach { (key, value) ->
-                        when (value) {
-                            is String -> putString(key, value)
-                            is Boolean -> putBoolean(key, value)
-                            is Int -> putInt(key, value)
-                            is Long -> putLong(key, value)
-                            is Float -> putFloat(key, value)
-                            is Set<*> -> {
-                                @Suppress("UNCHECKED_CAST")
-                                putStringSet(key, value as Set<String>)
-                            }
-                        }
-                    }
-                }
+            val plainPrefsFile = File(context.applicationInfo.dataDir, "shared_prefs/$PLAIN_PREFS_FILE_NAME.xml")
+            if (plainPrefsFile.exists()) {
+                val plainPrefs = context.getSharedPreferences(PLAIN_PREFS_FILE_NAME, Context.MODE_PRIVATE)
+                performMigration(plainPrefs, encryptedPrefs)
+
                 plainPrefs.edit(commit = true) { clear() }
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     context.deleteSharedPreferences(PLAIN_PREFS_FILE_NAME)
                 }
             }
             encryptedPrefs
         } catch (e: Exception) {
-            android.util.Log.w("SecurePrefs", "Failed to create EncryptedSharedPreferences, clearing and retrying", e)
+            Log.w(TAG, "Failed to create EncryptedSharedPreferences, clearing and retrying", e)
             try {
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     context.deleteSharedPreferences(ENCRYPTED_PREFS_FILE_NAME)
                 }
-                val keyStore = java.security.KeyStore.getInstance("AndroidKeyStore")
+                val keyStore = KeyStore.getInstance("AndroidKeyStore")
                 keyStore.load(null)
                 keyStore.deleteEntry(MasterKey.DEFAULT_MASTER_KEY_ALIAS)
             } catch (cleanupEx: Exception) {
-                android.util.Log.w("SecurePrefs", "Cleanup failed", cleanupEx)
+                Log.w(TAG, "Cleanup failed", cleanupEx)
             }
 
             try {
@@ -122,6 +121,28 @@ object SecurePrefs {
         }
     }
 
+    @androidx.annotation.VisibleForTesting
+    internal fun performMigration(plainPrefs: SharedPreferences, encryptedPrefs: SharedPreferences) {
+        val sensitiveKeys = listOf("loginUserName", "loginUserPassword")
+        encryptedPrefs.edit(commit = true) {
+            sensitiveKeys.forEach { key ->
+                if (plainPrefs.contains(key)) {
+                    when (val value = plainPrefs.all[key]) {
+                        is String -> putString(key, value)
+                        is Boolean -> putBoolean(key, value)
+                        is Int -> putInt(key, value)
+                        is Long -> putLong(key, value)
+                        is Float -> putFloat(key, value)
+                        is Set<*> -> {
+                            @Suppress("UNCHECKED_CAST")
+                            putStringSet(key, value as Set<String>)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private fun getSecureStore(context: Context): SharedPreferences {
         return cachedSecureStore ?: synchronized(this) {
             cachedSecureStore ?: buildSecureStore(context.applicationContext).also { cachedSecureStore = it }
@@ -130,20 +151,35 @@ object SecurePrefs {
 
     @Suppress("DEPRECATION")
     private fun getLegacyEncryptedPrefs(context: Context): SharedPreferences? {
-        return try {
-            val masterKey = MasterKey.Builder(context, MasterKey.DEFAULT_MASTER_KEY_ALIAS)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
-            EncryptedSharedPreferences.create(
-                context,
-                LEGACY_FILE_NAME,
-                masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            )
-        } catch (e: Exception) {
-            // If creation fails, maybe file is corrupted or key is lost.
-            null
+        cachedLegacyPrefs?.let { return it }
+
+        val appContext = context.applicationContext
+        val legacyPrefsFile = File(appContext.applicationInfo.dataDir, "shared_prefs/$LEGACY_FILE_NAME.xml")
+        if (!legacyPrefsFile.exists()) {
+            return null
+        }
+
+        return synchronized(this) {
+            cachedLegacyPrefs ?: try {
+                if (!legacyPrefsFile.exists()) {
+                    null
+                } else {
+                    val masterKey = MasterKey.Builder(appContext, MasterKey.DEFAULT_MASTER_KEY_ALIAS)
+                        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                        .build()
+                    EncryptedSharedPreferences.create(
+                        appContext,
+                        LEGACY_FILE_NAME,
+                        masterKey,
+                        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+                    ).also {
+                        cachedLegacyPrefs = it
+                    }
+                }
+            } catch (e: Exception) {
+                null
+            }
         }
     }
 
@@ -168,7 +204,7 @@ object SecurePrefs {
             val decrypted = aead.decrypt(bytes, null)
             String(decrypted, Charsets.UTF_8)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to decrypt credential value", e)
             null
         }
     }
@@ -189,13 +225,12 @@ object SecurePrefs {
                 if (password != null) putString("loginUserPassword", encrypt(aead, password))
                 else remove("loginUserPassword")
             }
-            // Clear legacy if it exists
              getLegacyEncryptedPrefs(context)?.edit {
                 remove("loginUserName")
                 remove("loginUserPassword")
              }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to save credentials", e)
         }
 
         plainPrefs.edit {
@@ -224,7 +259,7 @@ object SecurePrefs {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to read user name", e)
         }
 
         if (name.isNullOrEmpty()) {
@@ -236,7 +271,7 @@ object SecurePrefs {
                      store.edit { putString("loginUserName", encrypt(aead, name)) }
                      plainPrefs.edit { remove("loginUserName") }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Failed to migrate user name to secure store", e)
                 }
             }
         }
@@ -263,7 +298,7 @@ object SecurePrefs {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to read password", e)
         }
 
         if (pwd.isNullOrEmpty()) {
@@ -275,7 +310,7 @@ object SecurePrefs {
                      store.edit { putString("loginUserPassword", encrypt(aead, pwd)) }
                      plainPrefs.edit { remove("loginUserPassword") }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Failed to migrate password to secure store", e)
                 }
             }
         }
@@ -294,7 +329,7 @@ object SecurePrefs {
                 remove("loginUserPassword")
             }
         } catch (e: Exception) {
-             e.printStackTrace()
+            Log.e(TAG, "Failed to clear credentials", e)
         }
     }
 }

@@ -24,19 +24,21 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityP2pTransferBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.P2pTransferManager
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class P2pTransferActivity : AppCompatActivity() {
+    @Inject
+    lateinit var resourcesRepository: ResourcesRepository
     private lateinit var binding: ActivityP2pTransferBinding
     private lateinit var p2pManager: P2pTransferManager
     private var peers = mutableListOf<WifiP2pDevice>()
@@ -151,31 +153,24 @@ class P2pTransferActivity : AppCompatActivity() {
         val host = hostAddress ?: return
         
         lifecycleScope.launch {
-            val realm = Realm.getDefaultInstance()
-            val library = realm.where(RealmMyLibrary::class.java).equalTo("id", rId).findFirst()
-            if (library == null) {
-                realm.close()
-                return@launch
-            }
+            val library = resourcesRepository.getLibraryItemById(rId) ?: return@launch
 
             val metadata = library.serializeResource().toString()
             val file = FileUtils.getSDPathFromUrl(this@P2pTransferActivity, library.resourceLocalAddress ?: library.resourceRemoteAddress)
-            
+
             if (!file.exists()) {
                 Toast.makeText(this@P2pTransferActivity, getString(R.string.file_not_found_locally), Toast.LENGTH_SHORT).show()
-                realm.close()
                 return@launch
             }
 
             binding.tvStatus.text = getString(R.string.status_sending, library.title)
             binding.pbTransfer.visibility = View.VISIBLE
-            
+
             val success = p2pManager.sendFile(host, file, metadata) { progress ->
                 runOnUiThread { binding.pbTransfer.progress = progress }
             }
 
             binding.tvStatus.text = if (success) getString(R.string.status_sent_success) else getString(R.string.status_send_failed)
-            realm.close()
         }
     }
 
@@ -184,38 +179,44 @@ class P2pTransferActivity : AppCompatActivity() {
         binding.pbTransfer.visibility = View.VISIBLE
         
         lifecycleScope.launch {
+            var received: Pair<String, File>? = null
             val success = p2pManager.receiveFile({ metadata, tempFile ->
-                importResource(metadata, tempFile)
+                received = metadata to tempFile
             }) { progress ->
                 runOnUiThread { binding.pbTransfer.progress = progress }
             }
-            binding.tvStatus.text = if (success) getString(R.string.status_received_imported) else getString(R.string.status_receive_failed)
+            val imported = received?.let { (metadata, tempFile) -> importResource(metadata, tempFile) } ?: false
+            binding.tvStatus.text = if (success && imported) getString(R.string.status_received_imported) else getString(R.string.status_receive_failed)
         }
     }
 
-    private fun importResource(metadataJson: String, tempFile: File) {
-        val realm = Realm.getDefaultInstance()
-        realm.executeTransaction { r ->
-            try {
-                val json = Gson().fromJson(metadataJson, com.google.gson.JsonObject::class.java)
-                val library = r.createObject(RealmMyLibrary::class.java, java.util.UUID.randomUUID().toString())
-                library._id = json.get("_id")?.asString
-                library.title = json.get("title")?.asString
-                library.description = json.get("description")?.asString
-                library.resourceOffline = true
-                
-                val filename = json.get("filename")?.asString ?: tempFile.name
-                val finalFile = File(FileUtils.getOlePath(this), "${library._id}/$filename")
-                finalFile.parentFile?.mkdirs()
-                tempFile.renameTo(finalFile)
-                
-                library.resourceLocalAddress = finalFile.absolutePath
-                Toast.makeText(this, getString(R.string.imported_resource, library.title), Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                e.printStackTrace()
+    private suspend fun importResource(metadataJson: String, tempFile: File): Boolean {
+        return try {
+            val json = Gson().fromJson(metadataJson, com.google.gson.JsonObject::class.java)
+            val library = MyLibrary().apply {
+                id = java.util.UUID.randomUUID().toString()
+                _id = json.get("_id")?.takeUnless { it.isJsonNull }?.asString
+                title = json.get("title")?.takeUnless { it.isJsonNull }?.asString
+                description = json.get("description")?.takeUnless { it.isJsonNull }?.asString
+                resourceOffline = true
             }
+
+            val filename = json.get("filename")?.takeUnless { it.isJsonNull }?.asString ?: tempFile.name
+            val finalFile = File(FileUtils.getOlePath(this), "${library._id ?: library.id}/$filename")
+            finalFile.parentFile?.mkdirs()
+            if (!tempFile.renameTo(finalFile)) {
+                tempFile.copyTo(finalFile, overwrite = true)
+                tempFile.delete()
+            }
+            library.resourceLocalAddress = finalFile.absolutePath
+
+            resourcesRepository.saveImportedResource(library)
+            Toast.makeText(this, getString(R.string.imported_resource, library.title), Toast.LENGTH_SHORT).show()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
-        realm.close()
     }
 
     override fun onResume() {

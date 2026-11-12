@@ -10,38 +10,35 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.RadioButton
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.applandeo.materialcalendarview.CalendarDay
 import com.applandeo.materialcalendarview.CalendarView
 import com.applandeo.materialcalendarview.listeners.OnCalendarDayClickListener
-import com.google.gson.Gson
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.net.MalformedURLException
 import java.net.URL
-import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
-import java.util.UUID
-import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
-import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.repository.EventsRepository
+import org.ole.planet.myplanet.model.Meetup
+import org.ole.planet.myplanet.model.MeetupCreationParams
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.ui.events.EventsAdapter
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class TeamCalendarFragment : BaseTeamFragment() {
@@ -53,14 +50,15 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var start: Calendar
     private lateinit var end: Calendar
     private lateinit var clickedCalendar: Calendar
-    private lateinit var calendarEventsMap: MutableMap<CalendarDay, RealmMeetup>
-    private var meetupList: List<RealmMeetup> = emptyList()
+    private lateinit var calendarEventsMap: MutableMap<CalendarDay, Meetup>
     private val eventDates: MutableList<Calendar> = mutableListOf()
     private var addMeetupDialog: AlertDialog? = null
     private var meetupDialog: AlertDialog? = null
     private var meetupAdapter: EventsAdapter? = null
-    @Inject
-    lateinit var eventsRepository: EventsRepository
+    private var pendingSaveButton: Button? = null
+    private val viewModel: TeamCalendarViewModel by viewModels()
+    private var cachedCardHeight: Int? = null
+    private var lastWidthPixels: Int? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)
@@ -77,7 +75,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         return try {
             val url = URL(toCheck)
             url.host.contains(".")
-        } catch (e: MalformedURLException) {
+        } catch (_: MalformedURLException) {
             false
         }
     }
@@ -115,10 +113,11 @@ class TeamCalendarFragment : BaseTeamFragment() {
         }
 
         addMeetupDialog?.setOnDismissListener {
+            pendingSaveButton = null
             if (selectedDates.contains(clickedCalendar)) {
                 selectedDates.remove(clickedCalendar)
-                refreshMeetups()
             }
+            binding.calendarView.selectedDates = eventDates.toList()
         }
     }
 
@@ -146,62 +145,46 @@ class TeamCalendarFragment : BaseTeamFragment() {
         description: String,
         location: String
     ) {
-        val defaultPlaceholder = getString(R.string.click_here_to_pick_time)
         val startTimeText = "${addMeetupBinding.tvStartTime.text}"
         val endTimeText = "${addMeetupBinding.tvEndTime.text}"
-        val recurringId = addMeetupBinding.rgRecuring.checkedRadioButtonId
-        val rb = addMeetupBinding.rgRecuring.findViewById<RadioButton>(recurringId)
-        val recurringText = rb?.text?.toString()
+
+        val recurringText = when (addMeetupBinding.rgRecuring.checkedRadioButtonId) {
+            R.id.rb_daily -> "daily"
+            R.id.rb_weekly -> "weekly"
+            R.id.rb_none -> "none"
+            else -> null
+        }
         val teamPlanetCode = team?.teamPlanetCode
         val userName = user?.name
         val startMillis = start.timeInMillis
         val endMillis = end.timeInMillis
         val currentTeamId = teamId
 
-        lifecycleScope.launch {
-            val meetup = RealmMeetup().apply {
-                id = "${UUID.randomUUID()}"
-                this.title = title
-                meetupLink = link
-                this.description = description
-                meetupLocation = location
-                creator = userName
-                startDate = startMillis
-                endDate = endMillis
-                if (startTimeText == defaultPlaceholder) {
-                    startTime = ""
-                } else {
-                    startTime = startTimeText
-                }
-                if (endTimeText == defaultPlaceholder) {
-                    endTime = ""
-                } else {
-                    endTime = endTimeText
-                }
-                createdDate = System.currentTimeMillis()
-                sourcePlanet = teamPlanetCode
-                val jo = JsonObject()
-                jo.addProperty("type", "local")
-                jo.addProperty("planetCode", teamPlanetCode)
-                sync = Gson().toJson(jo)
-                if (recurringText != null) {
-                    recurring = recurringText
-                }
-                val ob = JsonObject()
-                ob.addProperty("teams", currentTeamId)
-                this.link = Gson().toJson(ob)
-                this.teamId = currentTeamId
-            }
-            val success = eventsRepository.createMeetup(meetup)
-            if (success) {
-                Utilities.toast(activity, getString(R.string.meetup_added))
-                addMeetupDialog?.dismiss()
-                refreshMeetups()
+        val startTime = pickedTimeOrEmpty(startTimeText)
+        val endTime = pickedTimeOrEmpty(endTimeText)
 
-            } else {
-                Utilities.toast(activity, getString(R.string.meetup_not_added))
-            }
-        }
+        val params = MeetupCreationParams(
+            title = title,
+            meetupLink = link,
+            description = description,
+            location = location,
+            startTime = startTime,
+            endTime = endTime,
+            recurringText = recurringText,
+            teamPlanetCode = teamPlanetCode,
+            userName = userName,
+            startMillis = startMillis,
+            endMillis = endMillis,
+            teamId = currentTeamId
+        )
+        addMeetupBinding.btnSave.isEnabled = false
+        pendingSaveButton = addMeetupBinding.btnSave
+        viewModel.createMeetup(params)
+    }
+
+    private fun pickedTimeOrEmpty(text: CharSequence?): String {
+        val value = text?.toString().orEmpty()
+        return if (value == getString(R.string.click_here_to_pick_time)) "" else value
     }
 
     private fun setDatePickerListener(view: TextView, date: Calendar?, endDate: Calendar?) {
@@ -226,7 +209,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         time.setOnClickListener {
             val timePickerDialog = TimePickerDialog(
                 activity, { _, hourOfDay, minute ->
-                    time.text = String.format(Locale.getDefault(), "%02d:%02d", hourOfDay, minute) },
+                    time.text = String.format(Locale.US, "%02d:%02d", hourOfDay, minute) },
                 c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), true)
             timePickerDialog.show()
         }
@@ -237,138 +220,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
         list = mutableListOf()
         calendar = binding.calendarView
         calendarEventsMap = mutableMapOf()
-        setupCalendarClickListener()
-    }
 
-    override fun onResume() {
-        super.onResume()
-        setupCalendarClickListener()
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-    }
-
-    private fun setupCalendarClickListener(){
-        binding.calendarView.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
-            override fun onClick(calendarDay: CalendarDay) {
-                lifecycleScope.launch {
-                    val meetups = fetchMeetupSnapshot()
-                    clickedCalendar = calendarDay.calendar
-                    val clickedDateInMillis = clickedCalendar.timeInMillis
-                    val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDate()
-
-                    val markedDates = meetups.filter { meetup ->
-                        val meetupDate = Instant.ofEpochMilli(meetup.startDate)
-                            .atZone(ZoneId.systemDefault())
-                            .toLocalDate()
-                        meetupDate == clickedDate
-                    }
-
-                    if (markedDates.isNotEmpty()) {
-                        showMeetupDialog(markedDates)
-                    } else {
-                        if(arguments?.getBoolean("fromLogin", false) != false || user?.id?.startsWith("guest") == true){
-                            binding.calendarView.selectedDates = eventDates
-                        } else{
-                            start = clickedCalendar.clone() as Calendar
-                            end = clickedCalendar.clone() as Calendar
-                            showMeetupAlert()
-                        }
-                    }
-                    if (!selectedDates.contains(clickedCalendar)) {
-                        selectedDates.add(clickedCalendar)
-                    } else {
-                        selectedDates.remove(clickedCalendar)
-                    }
-                }
-            }
-        })
-        refreshMeetups()
-    }
-
-    override fun onNewsItemClick(news: RealmNews?) {}
-    override fun clearImages() {
-        imageList.clear()
-        llImage?.removeAllViews()
-    }
-
-    private fun getCardViewHeight(context: Context): Int {
-        val view = LayoutInflater.from(context).inflate(R.layout.item_meetup, null)
-        view.measure(
-            View.MeasureSpec.makeMeasureSpec(Resources.getSystem().displayMetrics.widthPixels, View.MeasureSpec.AT_MOST),
-            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-        )
-        return view.measuredHeight
-    }
-
-    private fun showMeetupDialog(meetupList: List<RealmMeetup>) {
-        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.meetup_dialog, null)
-        val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMeetups)
-        val dialogTitle = dialogView.findViewById< TextView>(R.id.tvTitle)
-        val dateFormat = SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault())
-        dialogTitle.text = dateFormat.format(clickedCalendar.time)
-        val extraHeight = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP, 12f, resources.displayMetrics
-        ).toInt()
-        val cardHeight = getCardViewHeight(requireContext())
-        recyclerView.layoutParams.height = cardHeight + extraHeight
-        recyclerView.requestLayout()
-        recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        meetupAdapter = EventsAdapter()
-        recyclerView.adapter = meetupAdapter
-        meetupAdapter?.submitList(meetupList)
-
-        meetupDialog = AlertDialog.Builder(requireContext())
-            .setView(dialogView)
-            .create()
-        val btnAdd = dialogView.findViewById<Button>(R.id.btnadd)
-        if (arguments?.getBoolean("fromLogin", false) != true) {
-            btnAdd.visibility = View.VISIBLE
-        } else {
-            btnAdd.visibility = View.GONE
-        }
-        dialogView.findViewById<Button>(R.id.btnClose).setOnClickListener {
-            meetupDialog?.dismiss()
-        }
-        btnAdd.setOnClickListener {
-            if(arguments?.getBoolean("fromLogin", false) != true){
-                start = clickedCalendar
-                end = clickedCalendar
-                showMeetupAlert()
-            }
-        }
-
-        meetupDialog?.setOnDismissListener {
-            eventDates.add(clickedCalendar)
-            lifecycleScope.launch {
-                val calendarDays = eventDates.map { CalendarDay(it).apply {
-                    imageResource = R.drawable.ic_calendar
-                } }
-                binding.calendarView.setCalendarDays(calendarDays)
-                binding.calendarView.selectedDates = emptyList()
-                binding.calendarView.selectedDates = eventDates.toList()
-            }
-            binding.calendarView.selectedDates = eventDates
-        }
-
-        meetupDialog?.show()
-    }
-
-    private suspend fun fetchMeetupSnapshot(): List<RealmMeetup> {
-        if (teamId.isNotEmpty()) {
-            meetupList = eventsRepository.getMeetupsForTeam(teamId)
-        }
-        return meetupList
-    }
-
-    private fun refreshMeetups() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val meetups = fetchMeetupSnapshot()
-
+        collectWhenStarted(viewModel.meetups) { meetups ->
             val newDates = meetups.mapTo(mutableListOf()) { meetup ->
                 val calendarInstance = Calendar.getInstance()
                 calendarInstance.timeInMillis = meetup.startDate
@@ -401,7 +254,246 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 meetupAdapter?.submitList(filteredMeetups)
             }
         }
+        collectWhenStarted(viewModel.createMeetupResult) { success ->
+            pendingSaveButton?.isEnabled = true
+            pendingSaveButton = null
+            if (success) {
+                Utilities.toast(activity, getString(R.string.meetup_added))
+                addMeetupDialog?.dismiss()
+            } else {
+                Utilities.toast(activity, getString(R.string.meetup_not_added))
+            }
+        }
+
+        viewModel.fetchMeetups(teamId)
+        setupCalendarClickListener()
     }
 
+    override fun onResume() {
+        super.onResume()
+        setupCalendarClickListener()
+    }
+
+    private fun showEditMeetupDialog(meetup: Meetup) {
+        val dialogBinding = AddMeetupBinding.inflate(layoutInflater)
+        dialogBinding.tvTitle.text = getString(R.string.edit_meetup)
+        dialogBinding.etTitle.setText(meetup.title)
+        dialogBinding.etDescription.setText(meetup.description)
+        dialogBinding.etLocation.setText(meetup.meetupLocation)
+        dialogBinding.etLink.setText(meetup.meetupLink)
+
+        val editStart = Calendar.getInstance().apply { timeInMillis = meetup.startDate }
+        val editEnd = Calendar.getInstance().apply { timeInMillis = meetup.endDate }
+
+        dialogBinding.tvStartDate.text = TimeUtils.formatDate(meetup.startDate, "yyyy-MM-dd")
+        dialogBinding.tvEndDate.text = TimeUtils.formatDate(meetup.endDate, "yyyy-MM-dd")
+        dialogBinding.tvStartTime.text = meetup.startTime?.ifEmpty { getString(R.string.click_here_to_pick_time) } ?: getString(R.string.click_here_to_pick_time)
+        dialogBinding.tvEndTime.text = meetup.endTime?.ifEmpty { getString(R.string.click_here_to_pick_time) } ?: getString(R.string.click_here_to_pick_time)
+
+        when (meetup.recurring?.lowercase(Locale.ROOT)) {
+            "daily" -> dialogBinding.rgRecuring.check(R.id.rb_daily)
+            "weekly" -> dialogBinding.rgRecuring.check(R.id.rb_weekly)
+            else -> dialogBinding.rgRecuring.check(R.id.rb_none)
+        }
+
+        dialogBinding.tvStartDate.setOnClickListener {
+            DatePickerDialog(requireActivity(), { _, year, month, day ->
+                editStart.set(year, month, day)
+                dialogBinding.tvStartDate.text = TimeUtils.formatDate(editStart.timeInMillis, "yyyy-MM-dd")
+            }, editStart.get(Calendar.YEAR), editStart.get(Calendar.MONTH), editStart.get(Calendar.DAY_OF_MONTH)).show()
+        }
+        dialogBinding.tvEndDate.setOnClickListener {
+            DatePickerDialog(requireActivity(), { _, year, month, day ->
+                editEnd.set(year, month, day)
+                dialogBinding.tvEndDate.text = TimeUtils.formatDate(editEnd.timeInMillis, "yyyy-MM-dd")
+            }, editEnd.get(Calendar.YEAR), editEnd.get(Calendar.MONTH), editEnd.get(Calendar.DAY_OF_MONTH)).show()
+        }
+        setTimePicker(dialogBinding.tvStartTime)
+        setTimePicker(dialogBinding.tvEndTime)
+
+        val dialog = AlertDialog.Builder(requireActivity())
+            .setView(dialogBinding.root)
+            .create()
+
+        dialogBinding.btnCancel.setOnClickListener { dialog.dismiss() }
+        dialogBinding.btnSave.setOnClickListener {
+            val newTitle = dialogBinding.etTitle.text.toString().trim()
+            if (newTitle.isEmpty()) {
+                Utilities.toast(activity, getString(R.string.title_is_required))
+                return@setOnClickListener
+            }
+
+            val recurring = when (dialogBinding.rgRecuring.checkedRadioButtonId) {
+                R.id.rb_daily -> "daily"
+                R.id.rb_weekly -> "weekly"
+                else -> "none"
+            }
+
+            val meetupId = meetup.id
+
+            dialogBinding.btnSave.isEnabled = false
+            viewLifecycleOwner.lifecycleScope.launch {
+                val success = viewModel.updateMeetup(
+                    meetupId = meetupId,
+                    title = newTitle,
+                    description = dialogBinding.etDescription.text.toString().trim(),
+                    startDate = editStart.timeInMillis,
+                    endDate = editEnd.timeInMillis,
+                    startTime = pickedTimeOrEmpty(dialogBinding.tvStartTime.text),
+                    endTime = pickedTimeOrEmpty(dialogBinding.tvEndTime.text),
+                    meetupLocation = dialogBinding.etLocation.text.toString().trim(),
+                    meetupLink = dialogBinding.etLink.text.toString().trim(),
+                    recurring = recurring
+                )
+                if (success) {
+                    Utilities.toast(activity, getString(R.string.meetup_updated))
+                    dialog.dismiss()
+                    meetupDialog?.dismiss()
+                    viewModel.fetchMeetups(teamId)
+                } else {
+                    dialogBinding.btnSave.isEnabled = true
+                    Utilities.toast(activity, getString(R.string.meetup_not_updated))
+                }
+            }
+        }
+        dialog.show()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
+    private fun setupCalendarClickListener(){
+        binding.calendarView.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
+            override fun onClick(calendarDay: CalendarDay) {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val meetups = viewModel.meetups.value
+                    clickedCalendar = calendarDay.calendar
+                    val clickedDateInMillis = clickedCalendar.timeInMillis
+                    val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate()
+
+                    val markedDates = meetups.filter { meetup ->
+                        val meetupDate = Instant.ofEpochMilli(meetup.startDate)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                        meetupDate == clickedDate
+                    }
+
+                    if (markedDates.isNotEmpty()) {
+                        showMeetupDialog(markedDates)
+                    } else {
+                        if(arguments?.getBoolean("fromLogin", false) != false || user?.id?.startsWith("guest") == true){
+                            binding.calendarView.selectedDates = eventDates
+                        } else{
+                            start = clickedCalendar.clone() as Calendar
+                            end = clickedCalendar.clone() as Calendar
+                            showMeetupAlert()
+                        }
+                    }
+                    if (!selectedDates.contains(clickedCalendar)) {
+                        selectedDates.add(clickedCalendar)
+                    } else {
+                        selectedDates.remove(clickedCalendar)
+                    }
+                }
+            }
+        })
+    }
+
+    override fun onNewsItemClick(news: News?) {}
+    override fun clearImages() {
+        imageList.clear()
+        llImage?.removeAllViews()
+    }
+
+    private var dateFormatter: DateTimeFormatter? = null
+    private var lastLocale: Locale? = null
+
+    private fun getDateFormatter(): DateTimeFormatter {
+        val currentLocale = Locale.getDefault()
+        val cached = dateFormatter
+        if (cached != null && lastLocale == currentLocale) {
+            return cached
+        }
+        return DateTimeFormatter.ofPattern("EEE, MMM d, yyyy", currentLocale).withZone(ZoneId.systemDefault()).also {
+            dateFormatter = it
+            lastLocale = currentLocale
+        }
+    }
+
+    private fun getCardViewHeight(context: Context): Int {
+        val currentWidth = Resources.getSystem().displayMetrics.widthPixels
+        val cachedHeight = cachedCardHeight
+        if (cachedHeight != null && lastWidthPixels == currentWidth) {
+            return cachedHeight
+        }
+        val view = LayoutInflater.from(context).inflate(R.layout.item_meetup, null)
+        view.measure(
+            View.MeasureSpec.makeMeasureSpec(currentWidth, View.MeasureSpec.AT_MOST),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
+        return view.measuredHeight.also {
+            cachedCardHeight = it
+            lastWidthPixels = currentWidth
+        }
+    }
+
+    private fun showMeetupDialog(meetupList: List<Meetup>) {
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.meetup_dialog, null)
+        val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMeetups)
+        recyclerView.setHasFixedSize(true)
+        val dialogTitle = dialogView.findViewById< TextView>(R.id.tvTitle)
+        dialogTitle.text = getDateFormatter().format(clickedCalendar.toInstant())
+        val extraHeight = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP, 12f, resources.displayMetrics
+        ).toInt()
+        val cardHeight = getCardViewHeight(requireContext())
+        recyclerView.layoutParams.height = cardHeight + extraHeight
+        recyclerView.requestLayout()
+        recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        meetupAdapter = EventsAdapter(onMeetupClick = { meetup ->
+            showEditMeetupDialog(meetup)
+        })
+        recyclerView.adapter = meetupAdapter
+        meetupAdapter?.submitList(meetupList)
+
+        meetupDialog = AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .create()
+        val btnAdd = dialogView.findViewById<Button>(R.id.btnadd)
+        if (arguments?.getBoolean("fromLogin", false) != true) {
+            btnAdd.visibility = View.VISIBLE
+        } else {
+            btnAdd.visibility = View.GONE
+        }
+        dialogView.findViewById<Button>(R.id.btnClose).setOnClickListener {
+            meetupDialog?.dismiss()
+        }
+        btnAdd.setOnClickListener {
+            if(arguments?.getBoolean("fromLogin", false) != true){
+                start = clickedCalendar.clone() as Calendar
+                end = clickedCalendar.clone() as Calendar
+                showMeetupAlert()
+            }
+        }
+
+        meetupDialog?.setOnDismissListener {
+            eventDates.add(clickedCalendar)
+            viewLifecycleOwner.lifecycleScope.launch {
+                val calendarDays = eventDates.map { CalendarDay(it).apply {
+                    imageResource = R.drawable.ic_calendar
+                } }
+                binding.calendarView.setCalendarDays(calendarDays)
+                binding.calendarView.selectedDates = emptyList()
+                binding.calendarView.selectedDates = eventDates.toList()
+            }
+            binding.calendarView.selectedDates = eventDates
+        }
+
+        meetupDialog?.show()
+    }
 
 }

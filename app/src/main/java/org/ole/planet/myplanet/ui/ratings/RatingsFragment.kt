@@ -1,56 +1,59 @@
 package org.ole.planet.myplanet.ui.ratings
 
+import android.content.DialogInterface
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.RatingBar
 import android.widget.RatingBar.OnRatingBarChangeListener
 import androidx.core.view.isVisible
-import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingDialogFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentRatingBinding
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class RatingsFragment : DialogFragment() {
-    private var _binding: FragmentRatingBinding? = null
-    private val binding get() = _binding!!
-    @Inject
-    lateinit var sharedPrefManager: SharedPrefManager
+class RatingsFragment : BaseBindingDialogFragment<FragmentRatingBinding>(FragmentRatingBinding::inflate) {
     private val viewModel: RatingsViewModel by viewModels()
     var id: String? = ""
     var type: String? = ""
     var title: String? = ""
     private var ratingListener: OnRatingChangeListener? = null
+    private var dismissListener: (() -> Unit)? = null
     private var isUserReady = false
+    
+    private var hasPrefilledRating = false
     private var currentSubmitState: RatingsViewModel.SubmitState = RatingsViewModel.SubmitState.Idle
     fun setListener(listener: OnRatingChangeListener?) {
         this.ratingListener = listener
     }
 
+    fun setOnDismissListener(listener: (() -> Unit)?) {
+        this.dismissListener = listener
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_PREFILLED, hasPrefilledRating)
+    }
+
+    override fun onDismiss(dialog: DialogInterface) {
+        super.onDismiss(dialog)
+        dismissListener?.invoke()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        hasPrefilledRating = savedInstanceState?.getBoolean(KEY_PREFILLED) ?: false
         setStyle(STYLE_NO_TITLE, R.style.AppTheme_Dialog_NoActionBar_MinWidth)
         if (arguments != null) {
             id = requireArguments().getString("id")
             type = requireArguments().getString("type")
             title = requireArguments().getString("title")
         }
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentRatingBinding.inflate(inflater, container, false)
-        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -82,89 +85,74 @@ class RatingsFragment : DialogFragment() {
     }
     
     private fun observeViewModel() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.ratingState.collect { state ->
-                    when (state) {
-                        is RatingsViewModel.RatingUiState.Loading -> {}
-                        is RatingsViewModel.RatingUiState.Success -> {
-                            state.existingRating?.let { rating ->
-                                binding.ratingBar.rating = rating.rate.toFloat()
-                                binding.etComment.setText(rating.comment)
-                            }
+        collectWhenStarted(viewModel.ratingState) { state ->
+            when (state) {
+                is RatingsViewModel.RatingUiState.Loading -> {}
+                is RatingsViewModel.RatingUiState.Success -> {
+                    if (!hasPrefilledRating) {
+                        state.existingRating?.let { rating ->
+                            binding.ratingBar.rating = rating.rate.toFloat()
+                            binding.etComment.setText(rating.comment)
                         }
-                        is RatingsViewModel.RatingUiState.Error -> {
-                            Utilities.toast(activity, state.message)
-                        }
+                        hasPrefilledRating = true
                     }
+                }
+                is RatingsViewModel.RatingUiState.Error -> {
+                    Utilities.toast(activity, state.message)
                 }
             }
         }
 
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.userState.collect { user ->
-                    isUserReady = user != null
-                    binding.userStatusContainer.isVisible = !isUserReady
-                    updateSubmitButtonState()
-                }
-            }
+        collectWhenStarted(viewModel.userState) { user ->
+            isUserReady = user != null
+            binding.userStatusContainer.isVisible = !isUserReady
+            updateSubmitButtonState()
         }
 
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.submitState.collect { state ->
-                    currentSubmitState = state
-                    when (state) {
-                        is RatingsViewModel.SubmitState.Success -> {
-                            Utilities.toast(activity, "Thank you, your rating is submitted.")
-                            ratingListener?.onRatingChanged()
-                            dismiss()
-                        }
-                        is RatingsViewModel.SubmitState.Error -> {
-                            Utilities.toast(activity, state.message)
-                        }
-                        RatingsViewModel.SubmitState.Submitting,
-                        RatingsViewModel.SubmitState.Idle -> Unit
+        collectWhenStarted(viewModel.submitState) { state ->
+            currentSubmitState = state
+            when (state) {
+                is RatingsViewModel.SubmitState.Success -> {
+                    Utilities.toast(activity, "Thank you, your rating is submitted.")
+                    val t = type
+                    val i = id
+                    if (t != null && i != null) {
+                        ratingListener?.onRatingChanged(t, i)
+                    } else {
+                        ratingListener?.onRatingChanged()
                     }
-                    updateSubmitButtonState()
+                    dismiss()
                 }
+                is RatingsViewModel.SubmitState.Error -> {
+                    Utilities.toast(activity, state.message)
+                }
+                RatingsViewModel.SubmitState.Submitting,
+                RatingsViewModel.SubmitState.Idle -> Unit
             }
+            updateSubmitButtonState()
         }
     }
     
     private fun loadRatingData() {
-        val userId = sharedPrefManager.getUserId()
         val t = type ?: return
         val i = id ?: return
-        if (userId.isNotEmpty()) {
-            viewModel.loadRatingData(t, i, userId)
-        }
-    }
-
-    override fun onDestroyView() {
-        _binding = null
-        super.onDestroyView()
+        viewModel.loadRatingData(t, i)
     }
 
     private fun submitRating() {
         val comment = binding.etComment.text.toString()
         val rating = binding.ratingBar.rating
-        val userId = sharedPrefManager.getUserId()
 
         val t = type ?: return
         val i = id ?: return
         val ttl = title ?: return
-        if (userId.isNotEmpty()) {
-            viewModel.submitRating(
-                type = t,
-                itemId = i,
-                title = ttl,
-                userId = userId,
-                rating = rating,
-                comment = comment
-            )
-        }
+        viewModel.submitRating(
+            type = t,
+            itemId = i,
+            title = ttl,
+            rating = rating,
+            comment = comment
+        )
     }
 
     private fun updateSubmitButtonState() {
@@ -174,7 +162,9 @@ class RatingsFragment : DialogFragment() {
     }
 
     companion object {
-        @JvmStatic
+        private const val KEY_PREFILLED = "rating_prefilled"
+        const val TAG = "RatingsFragment"
+
         fun newInstance(type: String?, id: String?, title: String?): RatingsFragment {
             val fragment = RatingsFragment()
             val b = Bundle()
