@@ -30,7 +30,6 @@ import org.ole.planet.myplanet.databinding.AlertTaskBinding
 import org.ole.planet.myplanet.databinding.AlertUsersSpinnerBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamsTasksBinding
 import org.ole.planet.myplanet.model.News
-import org.ole.planet.myplanet.model.TaskStatus
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.effectiveStatus
@@ -175,8 +174,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     }
 
     private suspend fun loadAssignableMembers(): List<UserEntity>? {
-        val userList = teamsTasksViewModel.getJoinedMembers(teamId)
-        val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() || !user.name.isNullOrBlank() }
+        val filteredUserList = teamsTasksViewModel.getAssignableMembers(teamId)
         if (filteredUserList.isEmpty()) {
             Toast.makeText(context, R.string.no_members_task, Toast.LENGTH_SHORT).show()
             return null
@@ -281,12 +279,6 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
     }
 
-    private fun allTasks(tasks: List<TeamTask>): List<TeamTask> = filterAllTasks(tasks)
-    private fun todoTasks(tasks: List<TeamTask>): List<TeamTask> = filterTodoTasks(tasks)
-    private fun inProgressTasks(tasks: List<TeamTask>): List<TeamTask> = filterInProgressTasks(tasks)
-    private fun completedTasks(tasks: List<TeamTask>): List<TeamTask> = filterCompletedTasks(tasks)
-    private fun myTasks(tasks: List<TeamTask>): List<TeamTask> = filterMyTasks(tasks, user?.id)
-
     override fun onNewsItemClick(news: News?) {}
     override fun clearImages() {
         imageList.clear()
@@ -302,13 +294,14 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
             val tasksSnapshot = teamViewModel.taskList.value
 
             val (taskList, fetchedNames, currentSnapshot) = withContext(dispatcherProvider.io) {
-                val list = when (currentTab) {
-                    R.id.btn_todo -> todoTasks(tasksSnapshot)
-                    R.id.btn_in_progress -> inProgressTasks(tasksSnapshot)
-                    R.id.btn_completed -> completedTasks(tasksSnapshot)
-                    R.id.btn_my -> myTasks(tasksSnapshot)
-                    else -> allTasks(tasksSnapshot)
+                val tab = when (currentTab) {
+                    R.id.btn_todo -> TaskTab.TODO
+                    R.id.btn_in_progress -> TaskTab.IN_PROGRESS
+                    R.id.btn_completed -> TaskTab.COMPLETED
+                    R.id.btn_my -> TaskTab.MINE
+                    else -> TaskTab.ALL
                 }
+                val list = TeamsTasksViewModel.filterTasks(tasksSnapshot, tab, user?.id)
 
                 val currentSnapshot = list.map {
                     TaskSnapshot(it.id, it.title, it.description, it.deadline, it.completed, it.effectiveStatus(), it.assignee)
@@ -399,27 +392,5 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         super.onDestroyView()
         binding.rvTask.adapter = null
         _binding = null
-    }
-
-    companion object {
-        fun filterAllTasks(tasks: List<TeamTask>): List<TeamTask> {
-            return tasks.sortedWith(compareBy<TeamTask> { it.effectiveStatus() == TaskStatus.COMPLETED.value }.thenByDescending { it.deadline })
-        }
-
-        fun filterTodoTasks(tasks: List<TeamTask>): List<TeamTask> {
-            return tasks.filter { it.effectiveStatus() == TaskStatus.TODO.value }.sortedByDescending { it.deadline }
-        }
-
-        fun filterInProgressTasks(tasks: List<TeamTask>): List<TeamTask> {
-            return tasks.filter { it.effectiveStatus() == TaskStatus.IN_PROGRESS.value }.sortedByDescending { it.deadline }
-        }
-
-        fun filterCompletedTasks(tasks: List<TeamTask>): List<TeamTask> {
-            return tasks.filter { it.effectiveStatus() == TaskStatus.COMPLETED.value }.sortedByDescending { it.deadline }
-        }
-
-        fun filterMyTasks(tasks: List<TeamTask>, userId: String?): List<TeamTask> {
-            return tasks.filter { it.effectiveStatus() != TaskStatus.COMPLETED.value && it.assignee == userId }.sortedByDescending { it.deadline }
-        }
     }
 }

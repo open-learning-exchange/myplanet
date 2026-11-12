@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.services.FreeSpaceWorker
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.PartialDownloadCleaner
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -152,7 +153,7 @@ class StorageBreakdownFragment : BaseBindingBottomSheetFragment<FragmentStorageB
 
         binding.progressBar.visibility = View.GONE
 
-        if (state.totalBytes == 0L) {
+        if (state.totalBytes == 0L && state.partialDownloads.count == 0) {
             binding.emptyText.visibility = View.VISIBLE
             binding.contentLayout.visibility = View.GONE
             return
@@ -163,6 +164,30 @@ class StorageBreakdownFragment : BaseBindingBottomSheetFragment<FragmentStorageB
             FileUtils.formatSize(requireContext(), state.totalBytes)
         binding.contentLayout.visibility = View.VISIBLE
         populateCategoryRows(state.categories)
+        addPartialDownloadsRow(state.partialDownloads)
+    }
+
+    private fun addPartialDownloadsRow(partial: PartialDownloadCleaner.Summary) {
+        if (partial.count == 0) return
+        val itemBinding = ItemStorageCategoryBinding.inflate(layoutInflater, binding.categoryContainer, false)
+        itemBinding.categoryName.text = getString(R.string.storage_partial_downloads)
+        val fileLabel = if (partial.count == 1) {
+            getString(R.string.file_count_one)
+        } else {
+            getString(R.string.file_count_many, partial.count)
+        }
+        itemBinding.categorySize.text = "${FileUtils.formatSize(requireContext(), partial.bytes)} · $fileLabel"
+        itemBinding.root.setOnClickListener {
+            requireContext().confirmDialog(
+                title = getString(R.string.storage_clear_partial_downloads),
+                message = getString(R.string.storage_clear_partial_downloads_message),
+                onPositive = {
+                    viewModel.clearPartialDownloads()
+                    parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
+                }
+            )
+        }
+        binding.categoryContainer.addView(itemBinding.root)
     }
 
     private fun populateCategoryRows(categories: List<StorageBreakdownViewModel.CategoryData>) {

@@ -12,12 +12,12 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.repository.LifeRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 
 @HiltViewModel
 class LifeViewModel @Inject constructor(
     private val lifeRepository: LifeRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserReadRepository
 ) : ViewModel() {
 
     private val _myLifeList = MutableStateFlow<List<MyLife>>(emptyList())
