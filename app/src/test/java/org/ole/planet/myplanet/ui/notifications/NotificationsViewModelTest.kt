@@ -488,14 +488,12 @@ class NotificationsViewModelTest {
         customViewModel.loadNotifications(USER_ID, FILTER_ALL)
         advanceUntilIdle()
 
-        // Verify loaded state: task has 1 unread -> expanded by default; resource has 0 unread -> collapsed by default
         assertEquals(4, customViewModel.groupedItems.value.size)
         val initialHeaderTask = customViewModel.groupedItems.value[0] as NotificationListItem.Header
         assertEquals("task", initialHeaderTask.type)
         assertEquals(1, initialHeaderTask.unreadCount)
         assertTrue(initialHeaderTask.isExpanded)
 
-        // Select task1
         customViewModel.toggleSelection("t1")
         advanceUntilIdle()
 
@@ -503,7 +501,6 @@ class NotificationsViewModelTest {
         assertTrue(selectedItem.isSelected)
         assertTrue(selectedItem.isSelectionMode)
 
-        // Expand resource group
         customViewModel.toggleGroupExpansion("resource")
         advanceUntilIdle()
 
@@ -513,20 +510,18 @@ class NotificationsViewModelTest {
         assertFalse(resourceItem.isSelected)
         assertTrue(resourceItem.isSelectionMode)
 
-        // Mark t1 as read
         coEvery { repository.markNotificationsAsRead(setOf("t1")) } returns setOf("t1")
         customViewModel.markSelectedAsRead()
         advanceUntilIdle()
 
-        // Verify final headers and rows
         val finalHeaders = customViewModel.groupedItems.value.filterIsInstance<NotificationListItem.Header>()
         assertEquals(2, finalHeaders.size)
         assertEquals("task", finalHeaders[0].type)
         assertEquals(0, finalHeaders[0].unreadCount)
-        assertFalse(finalHeaders[0].isExpanded) // task has 0 unread and no override -> collapsed
+        assertFalse(finalHeaders[0].isExpanded)
         assertEquals("resource", finalHeaders[1].type)
         assertEquals(0, finalHeaders[1].unreadCount)
-        assertTrue(finalHeaders[1].isExpanded) // resource was expanded by toggle
+        assertTrue(finalHeaders[1].isExpanded)
 
         val finalItems = customViewModel.groupedItems.value.filterIsInstance<NotificationListItem.Item>()
         assertEquals(1, finalItems.size)
