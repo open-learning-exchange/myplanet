@@ -55,6 +55,18 @@
                     android:importantForAccessibility="no" />
             </FrameLayout>
 
+            <ImageView
+                android:id="@+id/iv_share"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="6dp"
+                android:background="@drawable/bg_badge_circle"
+                android:contentDescription="@string/share"
+                android:padding="5dp"
+                android:src="@drawable/baseline_share_24"
+                android:visibility="gone" />
+
             <CheckBox
                 android:id="@+id/checkbox"
                 android:layout_width="wrap_content"

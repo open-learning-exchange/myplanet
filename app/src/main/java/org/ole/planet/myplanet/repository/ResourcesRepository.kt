@@ -67,6 +67,7 @@ data class LocalResourceRequest(
 interface ResourcesRepository : ResourcesSyncWriter {
     suspend fun getLibraryTitles(): List<LibraryTitle>
     suspend fun getLibraryItemById(id: String): MyLibrary?
+    suspend fun importReceivedResource(incoming: MyLibrary, receivedDir: File): MyLibrary?
     suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<MyLibrary>
     suspend fun getLibraryItemByResourceId(resourceId: String): MyLibrary?
     suspend fun getLibraryItemsByIds(ids: Collection<String>): List<MyLibrary>

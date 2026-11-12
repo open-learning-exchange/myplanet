@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.resources
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.view.ContextThemeWrapper
@@ -603,6 +604,13 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         if (model != null) {
             homeItemClickListener?.openLibraryDetailFragment(model.library)
         }
+    }
+
+    override fun onShareClicked(item: ResourceItem) {
+        val intent = Intent(requireContext(), P2pTransferActivity::class.java).apply {
+            putExtra("resourceId", item.id)
+        }
+        startActivity(intent)
     }
 
     override fun onTagClicked(tag: TagEntity) {
