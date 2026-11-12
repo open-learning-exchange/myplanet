@@ -34,6 +34,7 @@ import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -48,6 +49,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.CommunityRepository
@@ -143,6 +145,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     @Inject
     lateinit var transactionSyncManager: TransactionSyncManager
+
+    @Inject
+    @ApplicationScope
+    lateinit var applicationScope: CoroutineScope
 
     @Inject
     open lateinit var broadcastService: BroadcastService
@@ -343,8 +349,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         syncFailed = true
         val protocol = extractProtocol("$processedUrl")
         val errorMessage = when (protocol) {
-            context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
-            context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
+            getString(R.string.http_protocol) -> getString(R.string.device_couldn_t_reach_local_server)
+            getString(R.string.https_protocol) -> getString(R.string.device_couldn_t_reach_nation_server)
             else -> ""
         }
         customProgressDialog.dismiss()
@@ -642,11 +648,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         val syncRepository = syncRepository
         val transactionSyncManager = transactionSyncManager
         val timeProvider = timeProvider
+        val applicationScope = applicationScope
         loginNetworkJob = isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
                 val serverUrl = prefData.getServerUrl()
                 if (serverUrl.isNotEmpty()) {
-                    MainApplication.applicationScope.launch {
+                    applicationScope.launch {
                         val canReachServer = MainApplication.isServerReachable(serverUrl)
                         if (canReachServer) {
                             val state = syncRepository.uploadLoginData()
@@ -659,7 +666,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     }
                 }
             }
-        }.launchIn(MainApplication.applicationScope)
+        }.launchIn(applicationScope)
     }
 
     fun settingDialog() {

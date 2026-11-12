@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services
 
+import android.util.Log
 import com.google.gson.JsonObject
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -60,7 +61,7 @@ open class FileUploader(
                 )
                 onDataReceived(response.body(), params.listener)
             } catch (t: Exception) {
-                t.printStackTrace()
+                Log.e(TAG, "Attachment upload failed: ${params.name}", t)
                 params.listener.onSuccess("Unable to upload resource")
             }
         }
@@ -77,6 +78,8 @@ open class FileUploader(
     }
 
     companion object {
+        private const val TAG = "FileUploader"
+
         fun getHeaderMap(mimeType: String, rev: String): Map<String, String> {
             val hashMap: MutableMap<String, String> = HashMap()
             hashMap["Authorization"] = UrlUtils.header
