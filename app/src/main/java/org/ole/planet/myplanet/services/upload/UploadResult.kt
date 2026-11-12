@@ -18,7 +18,7 @@ sealed class UploadResult<out T> {
     ) : UploadResult<Nothing>()
 
     object Empty : UploadResult<Nothing>()
-    
+
     val hasRetryableFailure: Boolean
         get() = when (this) {
             is PartialSuccess -> failed.any { it.retryable }

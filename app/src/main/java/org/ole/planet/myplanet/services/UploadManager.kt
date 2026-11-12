@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.services
 
+import android.content.Context
 import android.os.SystemClock
 import android.util.Log
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
@@ -24,9 +26,11 @@ import org.ole.planet.myplanet.services.upload.UploadResult
 import org.ole.planet.myplanet.services.upload.UploadedItem
 import org.ole.planet.myplanet.services.upload.VoicesUploader
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.FileUtils
 
 @Singleton
 class UploadManager @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val uploadCoordinator: UploadCoordinator,
     uploadRepository: UploadRepository,
     private val userRepository: UserRepository,
@@ -114,13 +118,14 @@ class UploadManager @Inject constructor(
     private suspend fun uploadAttachments(items: List<UploadedItem>, listener: OnSuccessListener?) {
         if (items.isEmpty()) return
         val attachmentListener = listener ?: OnSuccessListener { }
-        
+        val externalFilesDir = FileUtils.getExternalFilesDir(context) ?: return
+
         val libraryIds = items.flatMap { listOf(it.localId, it.remoteId) }
         val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds)
         val libMap = libraries.associateBy { it.id }
         items.forEach { item ->
             (libMap[item.localId] ?: libMap[item.remoteId])?.let { library ->
-                uploadAttachment(item.remoteId, item.remoteRev, library, attachmentListener)
+                uploadAttachment(item.remoteId, item.remoteRev, library, externalFilesDir, attachmentListener)
             }
         }
     }

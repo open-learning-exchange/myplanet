@@ -19,6 +19,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.callback.OnSuccessListener
+import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.services.upload.UploadResult
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -28,6 +29,7 @@ class UserDataWorkerTest {
     private lateinit var workerParams: WorkerParameters
     private lateinit var uploadManager: UploadManager
     private lateinit var uploadToShelfService: UploadToShelfService
+    private lateinit var healthRepository: HealthRepository
     private lateinit var worker: UserDataWorker
 
     @Before
@@ -36,12 +38,14 @@ class UserDataWorkerTest {
         workerParams = mockk(relaxed = true)
         uploadManager = mockk(relaxed = true)
         uploadToShelfService = mockk(relaxed = true)
+        healthRepository = mockk(relaxed = true)
 
         worker = UserDataWorker(
             appContext = context,
             workerParams = workerParams,
             uploadManager = uploadManager,
-            uploadToShelfService = uploadToShelfService
+            uploadToShelfService = uploadToShelfService,
+            healthRepository = healthRepository
         )
     }
 
@@ -133,6 +137,49 @@ class UserDataWorkerTest {
             uploadManager.uploadSubmitPhotos(any())
             uploadManager.uploadActivities(any())
         }
+    }
+
+    @Test
+    fun `doWork for UPLOAD_TYPE_BULK syncs pending health examinations once after the user data callback`() = runTest {
+        val inputData = Data.Builder()
+            .putString(UserDataWorker.KEY_UPLOAD_TYPE, UserDataWorker.UPLOAD_TYPE_BULK)
+            .build()
+        every { workerParams.inputData } returns inputData
+
+        val events = mutableListOf<String>()
+        coEvery { uploadToShelfService.uploadUserData(any()) } answers {
+            val listener = firstArg<OnSuccessListener>()
+            listener.onSuccess("Shelf sync ok")
+            events.add("uploadUserDataCallback")
+        }
+        coEvery { healthRepository.syncPendingHealthExaminations() } answers {
+            events.add("healthSync")
+        }
+
+        val result = worker.doWork()
+
+        assertEquals(Result.success(), result)
+        coVerify(exactly = 1) { healthRepository.syncPendingHealthExaminations() }
+        assertEquals(listOf("uploadUserDataCallback", "healthSync"), events)
+    }
+
+    @Test
+    fun `doWork for UPLOAD_TYPE_BULK does not fail when the health sync throws`() = runTest {
+        val inputData = Data.Builder()
+            .putString(UserDataWorker.KEY_UPLOAD_TYPE, UserDataWorker.UPLOAD_TYPE_BULK)
+            .build()
+        every { workerParams.inputData } returns inputData
+
+        coEvery { uploadToShelfService.uploadUserData(any()) } answers {
+            val listener = firstArg<OnSuccessListener>()
+            listener.onSuccess("Shelf sync ok")
+        }
+        coEvery { healthRepository.syncPendingHealthExaminations() } throws RuntimeException("health upload failed")
+
+        val result = worker.doWork()
+
+        assertEquals(Result.success(), result)
+        coVerify(exactly = 1) { healthRepository.syncPendingHealthExaminations() }
     }
 
     @Test
