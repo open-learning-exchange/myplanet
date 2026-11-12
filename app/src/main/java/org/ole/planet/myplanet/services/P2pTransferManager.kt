@@ -5,15 +5,25 @@ import android.net.wifi.p2p.WifiP2pConfig
 import android.net.wifi.p2p.WifiP2pDevice
 import android.net.wifi.p2p.WifiP2pManager
 import android.os.Looper
+import android.util.Log
+import java.io.Closeable
+import java.io.DataInputStream
+import java.io.DataOutputStream
 import java.io.File
-import java.io.InputStream
-import java.io.OutputStream
+import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
+import java.net.SocketTimeoutException
+import java.util.concurrent.atomic.AtomicReference
+import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.utils.Utilities
 
 class P2pTransferManager(private val context: Context) {
     private val manager: WifiP2pManager? = context.getSystemService(Context.WIFI_P2P_SERVICE) as? WifiP2pManager
@@ -21,6 +31,12 @@ class P2pTransferManager(private val context: Context) {
 
     companion object {
         const val PORT = 8888
+        private const val TAG = "P2pTransferManager"
+        private const val CONNECT_TIMEOUT_MS = 5_000
+        const val ACCEPT_TIMEOUT_MS = 120_000
+        private const val READ_TIMEOUT_MS = 30_000
+        private const val BUFFER_SIZE = 8 * 1024
+        private const val MAX_METADATA_BYTES = 1024 * 1024
     }
 
     fun discoverPeers(listener: WifiP2pManager.ActionListener) {
@@ -61,91 +77,125 @@ class P2pTransferManager(private val context: Context) {
     }
 
     suspend fun sendFile(host: String, file: File, metadata: String, onProgress: (Int) -> Unit): Boolean = withContext(Dispatchers.IO) {
-        var socket: Socket? = null
+        val socket = Socket()
+        // Closing the socket unblocks a connect or write stuck on a peer that stopped responding.
+        val closeOnCancel = closeOnCancel { socket.closeQuietly() }
         try {
-            socket = Socket()
-            socket.bind(null)
-            socket.connect(InetSocketAddress(host, PORT), 5000)
+            socket.soTimeout = READ_TIMEOUT_MS
+            socket.connect(InetSocketAddress(host, PORT), CONNECT_TIMEOUT_MS)
 
-            val outputStream = socket.getOutputStream()
-            
-            // Send metadata length then metadata
+            val dataOutputStream = DataOutputStream(socket.getOutputStream().buffered())
             val metadataBytes = metadata.toByteArray(Charsets.UTF_8)
-            val dataOutputStream = java.io.DataOutputStream(outputStream)
             dataOutputStream.writeInt(metadataBytes.size)
             dataOutputStream.write(metadataBytes)
 
-            // Send file length then file
-            dataOutputStream.writeLong(file.length())
-            val inputStream = file.inputStream()
-            val buffer = ByteArray(4096)
-            var len: Int
-            var totalSent: Long = 0
             val fileSize = file.length()
-
-            while (inputStream.read(buffer).also { len = it } != -1) {
-                dataOutputStream.write(buffer, 0, len)
-                totalSent += len
-                if (fileSize > 0) onProgress(((totalSent * 100) / fileSize).toInt())
+            dataOutputStream.writeLong(fileSize)
+            file.inputStream().use { inputStream ->
+                val buffer = ByteArray(BUFFER_SIZE)
+                var totalSent = 0L
+                var len: Int
+                while (inputStream.read(buffer).also { len = it } != -1) {
+                    coroutineContext.ensureActive()
+                    dataOutputStream.write(buffer, 0, len)
+                    totalSent += len
+                    if (fileSize > 0) onProgress(((totalSent * 100) / fileSize).toInt())
+                }
             }
-            
-            inputStream.close()
             dataOutputStream.flush()
             true
         } catch (e: Exception) {
-            e.printStackTrace()
+            if (e is CancellationException) throw e
+            Log.w(TAG, "P2P send failed", e)
             false
         } finally {
-            socket?.close()
+            closeOnCancel.cancel()
+            socket.closeQuietly()
         }
     }
 
-    suspend fun receiveFile(onReceived: (String, File) -> Unit, onProgress: (Int) -> Unit): Boolean = withContext(Dispatchers.IO) {
-        var serverSocket: ServerSocket? = null
-        var client: Socket? = null
+    /**
+     * Waits up to [acceptTimeoutMs] for a sender to connect, then receives one file. Returns false
+     * if nobody connects in time, the sender stalls for [READ_TIMEOUT_MS], or the transfer is
+     * incomplete. Cancelling the calling coroutine (e.g. leaving the screen) stops the wait at once.
+     */
+    suspend fun receiveFile(
+        onReceived: (String, File) -> Unit,
+        acceptTimeoutMs: Int = ACCEPT_TIMEOUT_MS,
+        onProgress: (Int) -> Unit
+    ): Boolean = withContext(Dispatchers.IO) {
+        val serverSocket = ServerSocket()
+        val client = AtomicReference<Socket?>(null)
+        // accept() and read() ignore coroutine cancellation; closing the sockets is what unblocks them.
+        val closeOnCancel = closeOnCancel {
+            client.get()?.closeQuietly()
+            serverSocket.closeQuietly()
+        }
+        var tempFile: File? = null
         try {
-            serverSocket = ServerSocket(PORT)
-            client = serverSocket.accept()
+            serverSocket.reuseAddress = true
+            serverSocket.soTimeout = acceptTimeoutMs
+            serverSocket.bind(InetSocketAddress(PORT))
+            val socket = serverSocket.accept().also { client.set(it) }
+            socket.soTimeout = READ_TIMEOUT_MS
 
-            val inputStream = client.getInputStream()
-            val dataInputStream = java.io.DataInputStream(inputStream)
+            val dataInputStream = DataInputStream(socket.getInputStream().buffered())
 
-            // Read metadata
             val metadataSize = dataInputStream.readInt()
+            if (metadataSize !in 0..MAX_METADATA_BYTES) return@withContext false
             val metadataBytes = ByteArray(metadataSize)
             dataInputStream.readFully(metadataBytes)
             val metadata = String(metadataBytes, Charsets.UTF_8)
 
-            // Read file
             val fileSize = dataInputStream.readLong()
-            val tempFile = File(context.cacheDir, "p2p_received_${System.currentTimeMillis()}")
-            val outputStream = tempFile.outputStream()
-            
-            val buffer = ByteArray(4096)
-            var len: Int
-            var totalReceived: Long = 0
+            if (fileSize < 0) return@withContext false
+            val file = File(context.cacheDir, "p2p_received_${System.currentTimeMillis()}").also { tempFile = it }
 
-            while (totalReceived < fileSize) {
-                len = dataInputStream.read(buffer, 0, Math.min(buffer.size.toLong(), fileSize - totalReceived).toInt())
-                if (len == -1) break
-                outputStream.write(buffer, 0, len)
-                totalReceived += len
-                if (fileSize > 0) onProgress(((totalReceived * 100) / fileSize).toInt())
+            var totalReceived = 0L
+            file.outputStream().use { outputStream ->
+                val buffer = ByteArray(BUFFER_SIZE)
+                while (totalReceived < fileSize) {
+                    coroutineContext.ensureActive()
+                    val len = dataInputStream.read(buffer, 0, minOf(buffer.size.toLong(), fileSize - totalReceived).toInt())
+                    if (len == -1) break
+                    outputStream.write(buffer, 0, len)
+                    totalReceived += len
+                    if (fileSize > 0) onProgress(((totalReceived * 100) / fileSize).toInt())
+                }
             }
 
-            outputStream.close()
-            if (totalReceived < fileSize) {
-                tempFile.delete()
-                return@withContext false
-            }
-            onReceived(metadata, tempFile)
+            if (totalReceived < fileSize) return@withContext false
+            tempFile = null
+            onReceived(metadata, file)
             true
         } catch (e: Exception) {
-            e.printStackTrace()
+            if (e is CancellationException) throw e
+            if (e is SocketTimeoutException) Log.i(TAG, "P2P receive timed out") else Log.w(TAG, "P2P receive failed", e)
             false
         } finally {
-            client?.close()
-            serverSocket?.close()
+            closeOnCancel.cancel()
+            client.get()?.closeQuietly()
+            serverSocket.closeQuietly()
+            tempFile?.delete()
+        }
+    }
+
+    /**
+     * Starts a child that runs [onCancel] on another IO thread as soon as the caller is cancelled,
+     * while the caller's thread is still blocked in socket I/O. Cancel the returned job when done.
+     */
+    private fun CoroutineScope.closeOnCancel(onCancel: () -> Unit): Job = launch {
+        try {
+            awaitCancellation()
+        } finally {
+            onCancel()
+        }
+    }
+
+    private fun Closeable.closeQuietly() {
+        try {
+            close()
+        } catch (_: IOException) {
         }
     }
 }
