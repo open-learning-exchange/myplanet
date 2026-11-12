@@ -5,6 +5,7 @@ import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotSame
@@ -157,5 +158,83 @@ class JsonUtilsTest {
         }
         val hit = JsonUtils.getJsonArray("items", doc)
         assertNotSame(miss1, hit)
+    }
+
+    @Test
+    fun `getDouble table-driven cases`() {
+        val testDoc = buildJsonObject {
+            put("literalNum", kotlinx.serialization.json.JsonPrimitive(3.14))
+            put("quotedNum", kotlinx.serialization.json.JsonPrimitive("42.5"))
+            put("malformedStr", kotlinx.serialization.json.JsonPrimitive("abc"))
+            put("nullVal", kotlinx.serialization.json.JsonNull)
+            putJsonObject("objVal") { put("a", kotlinx.serialization.json.JsonPrimitive("b")) }
+            putJsonArray("arrVal") { add("c") }
+            put("exponentVal", kotlinx.serialization.json.JsonPrimitive("1e3"))
+            put("nanVal", kotlinx.serialization.json.JsonPrimitive("NaN"))
+            put("infinityVal", kotlinx.serialization.json.JsonPrimitive("Infinity"))
+            put("overflowVal", kotlinx.serialization.json.JsonPrimitive("1e999"))
+        }
+
+        val cases = listOf(
+            "literalNum" to 3.14,
+            "quotedNum" to 42.5,
+            "malformedStr" to 0.0,
+            "missingField" to 0.0,
+            "nullVal" to 0.0,
+            "objVal" to 0.0,
+            "arrVal" to 0.0,
+            "exponentVal" to 1000.0,
+            "nanVal" to Double.NaN,
+            "infinityVal" to Double.POSITIVE_INFINITY,
+            "overflowVal" to Double.POSITIVE_INFINITY
+        )
+
+        for ((field, expected) in cases) {
+            val actual = JsonUtils.getDouble(field, testDoc)
+            if (expected.isNaN()) {
+                assertEquals("Field $field should be NaN", true, actual.isNaN())
+            } else {
+                assertEquals("Field $field mismatch", expected, actual, 0.0)
+            }
+        }
+    }
+
+    @Test
+    fun `getFloat table-driven cases`() {
+        val testDoc = buildJsonObject {
+            put("literalNum", kotlinx.serialization.json.JsonPrimitive(3.14f))
+            put("quotedNum", kotlinx.serialization.json.JsonPrimitive("42.5"))
+            put("malformedStr", kotlinx.serialization.json.JsonPrimitive("abc"))
+            put("nullVal", kotlinx.serialization.json.JsonNull)
+            putJsonObject("objVal") { put("a", kotlinx.serialization.json.JsonPrimitive("b")) }
+            putJsonArray("arrVal") { add(kotlinx.serialization.json.JsonPrimitive("c")) }
+            put("exponentVal", kotlinx.serialization.json.JsonPrimitive("1e3"))
+            put("nanVal", kotlinx.serialization.json.JsonPrimitive("NaN"))
+            put("infinityVal", kotlinx.serialization.json.JsonPrimitive("Infinity"))
+            put("overflowVal", kotlinx.serialization.json.JsonPrimitive("1e40"))
+        }
+
+        val cases = listOf(
+            "literalNum" to 3.14f,
+            "quotedNum" to 42.5f,
+            "malformedStr" to 0f,
+            "missingField" to 0f,
+            "nullVal" to 0f,
+            "objVal" to 0f,
+            "arrVal" to 0f,
+            "exponentVal" to 1000f,
+            "nanVal" to Float.NaN,
+            "infinityVal" to Float.POSITIVE_INFINITY,
+            "overflowVal" to Float.POSITIVE_INFINITY
+        )
+
+        for ((field, expected) in cases) {
+            val actual = JsonUtils.getFloat(field, testDoc)
+            if (expected.isNaN()) {
+                assertEquals("Field $field should be NaN", true, actual.isNaN())
+            } else {
+                assertEquals("Field $field mismatch", expected, actual, 0.0f)
+            }
+        }
     }
 }
