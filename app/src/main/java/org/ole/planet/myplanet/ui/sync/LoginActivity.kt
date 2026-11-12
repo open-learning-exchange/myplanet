@@ -65,6 +65,19 @@ import org.ole.planet.myplanet.utils.textChanges
 @OptIn(FlowPreview::class)
 @AndroidEntryPoint
 class LoginActivity : SyncActivity(), OnUserProfileClickListener {
+    private val loginViewModel: LoginViewModel by viewModels()
+
+    suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): Boolean {
+        return when (loginViewModel.authenticate(username, password, isManagerMode)) {
+            LoginViewModel.AuthOutcome.NoUsers -> {
+                alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
+                false
+            }
+            LoginViewModel.AuthOutcome.Success -> true
+            LoginViewModel.AuthOutcome.Failed -> false
+        }
+    }
+
     @Inject
     override lateinit var dispatcherProvider: DispatcherProvider
     @Inject
@@ -83,7 +96,6 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     private var teamAdapter: ArrayAdapter<String?>? = null
     private var isUserInteracting = false
     private var cachedTeams: List<MyTeam>? = null
-    private val loginViewModel: LoginViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
@@ -594,11 +606,10 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         } else {
             if (user.source == "guest"){
                 lifecycleScope.launch {
-                    val model = loginViewModel.createGuestUser(user.name ?: "")
+                    val model = loginViewModel.loginAsGuest(user.name ?: "")
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                     } else {
-                        profileDbHandler.saveUserInfoPref("", model)
                         onLogin()
                     }
                 }
@@ -636,12 +647,11 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             positiveButton.setOnClickListener {
                 positiveButton.isEnabled = false
                 lifecycleScope.launch {
-                    val model = loginViewModel.createGuestUser(username)
+                    val model = loginViewModel.loginAsGuest(username)
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                         positiveButton.isEnabled = true
                     } else {
-                        profileDbHandler.saveUserInfoPref("", model)
                         onLogin()
                         dialog.dismiss()
                     }

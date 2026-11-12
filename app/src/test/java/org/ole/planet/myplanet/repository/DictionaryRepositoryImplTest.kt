@@ -4,6 +4,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -42,11 +43,25 @@ class DictionaryRepositoryImplTest {
 
     @Test
     fun `insertDictionaryData returns FileMissing if file does not exist`() = runTest(testDispatcher) {
+        coEvery { dictionaryDao.count() } returns 0L
         every { dictionaryFileReader.exists() } returns false
 
         val result = dictionaryRepository.insertDictionaryData()
 
         assertTrue(result is DictionaryLoad.FileMissing)
+        coVerify(exactly = 0) { dictionaryDao.insertAll(any()) }
+    }
+
+    @Test
+    fun `insertDictionaryData returns AlreadyPopulated without reading file when data is already populated`() = runTest(testDispatcher) {
+        coEvery { dictionaryDao.count() } returns 100L
+        every { dictionaryFileReader.exists() } returns false
+
+        val result = dictionaryRepository.insertDictionaryData()
+
+        assertTrue(result is DictionaryLoad.AlreadyPopulated)
+        verify(exactly = 0) { dictionaryFileReader.exists() }
+        verify(exactly = 0) { dictionaryFileReader.readText() }
         coVerify(exactly = 0) { dictionaryDao.insertAll(any()) }
     }
 

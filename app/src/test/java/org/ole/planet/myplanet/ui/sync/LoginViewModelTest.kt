@@ -5,8 +5,10 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.just
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -16,6 +18,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
@@ -27,12 +30,14 @@ class LoginViewModelTest {
     private val teamsRepository: TeamsRepository = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val communityRepository: CommunityRepository = mockk(relaxed = true)
+    private val userSessionManager: UserSessionManager = mockk(relaxed = true)
 
     private fun createViewModel(): LoginViewModel {
         return LoginViewModel(
             teamsRepository,
             userRepository,
             communityRepository,
+            userSessionManager,
             TestDispatcherProvider(mainDispatcherRule.testDispatcher)
         )
     }
@@ -186,18 +191,6 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun `createGuestUser forwards argument and returns value from repository`() = runTest {
-        val expected = UserEntity().apply { id = "guest_123"; name = "guest1" }
-        coEvery { userRepository.createGuestUser("guest1") } returns expected
-
-        val viewModel = createViewModel()
-        val result = viewModel.createGuestUser("guest1")
-
-        assertEquals(expected, result)
-        coVerify(exactly = 1) { userRepository.createGuestUser("guest1") }
-    }
-
-    @Test
     fun `syncCommunityDocs forwards call and returns value from repository`() = runTest {
         coEvery { communityRepository.syncCommunityDocs() } returns true
 
@@ -232,5 +225,85 @@ class LoginViewModelTest {
         org.junit.Assert.assertFalse(result1)
         assertTrue(result2)
         coVerify(exactly = 2) { communityRepository.syncCommunityDocs() }
+    }
+
+    @Test
+    fun `loginAsGuest saves session and returns model when user created`() = runTest {
+        val user = UserEntity().apply { id = "guest_1"; name = "guest_user" }
+        coEvery { userRepository.createGuestUser("guest_user") } returns user
+
+        val viewModel = createViewModel()
+        val result = viewModel.loginAsGuest("guest_user")
+
+        assertEquals(user, result)
+        coVerify(exactly = 1) { userRepository.createGuestUser("guest_user") }
+        coVerify(exactly = 1) { userSessionManager.saveUserInfoPref("", user) }
+    }
+
+    @Test
+    fun `loginAsGuest returns null and does not save session when user creation fails`() = runTest {
+        coEvery { userRepository.createGuestUser("guest_user") } returns null
+
+        val viewModel = createViewModel()
+        val result = viewModel.loginAsGuest("guest_user")
+
+        assertNull(result)
+        coVerify(exactly = 1) { userRepository.createGuestUser("guest_user") }
+        coVerify(exactly = 0) { userSessionManager.saveUserInfoPref(any(), any()) }
+    }
+
+    @Test
+    fun `authenticate returns NoUsers when repository has no users`() = runTest {
+        coEvery { userRepository.hasAtLeastOneUser() } returns false
+
+        val viewModel = createViewModel()
+        val result = viewModel.authenticate("admin", "pwd", false)
+
+        assertEquals(LoginViewModel.AuthOutcome.NoUsers, result)
+        coVerify(exactly = 0) { userRepository.authenticateUser(any(), any(), any()) }
+        coVerify(exactly = 0) { userSessionManager.saveUserInfoPref(any(), any()) }
+    }
+
+    @Test
+    fun `authenticate returns Success and saves session when user authenticated`() = runTest {
+        val user = UserEntity().apply { id = "user_1"; name = "john" }
+        coEvery { userRepository.hasAtLeastOneUser() } returns true
+        coEvery { userRepository.authenticateUser("john", "pwd", false) } returns user
+
+        val viewModel = createViewModel()
+        val result = viewModel.authenticate("john", "pwd", false)
+
+        assertEquals(LoginViewModel.AuthOutcome.Success, result)
+        coVerify(exactly = 1) { userSessionManager.saveUserInfoPref("pwd", user) }
+    }
+
+    @Test
+    fun `authenticate returns Failed when authentication returns null`() = runTest {
+        coEvery { userRepository.hasAtLeastOneUser() } returns true
+        coEvery { userRepository.authenticateUser("john", "wrong", false) } returns null
+
+        val viewModel = createViewModel()
+        val result = viewModel.authenticate("john", "wrong", false)
+
+        assertEquals(LoginViewModel.AuthOutcome.Failed, result)
+        coVerify(exactly = 0) { userSessionManager.saveUserInfoPref(any(), any()) }
+    }
+
+    @Test
+    fun `authenticate returns Failed when repository throws exception`() = runTest {
+        coEvery { userRepository.hasAtLeastOneUser() } throws RuntimeException("DB error")
+
+        val viewModel = createViewModel()
+        val result = viewModel.authenticate("john", "pwd", false)
+
+        assertEquals(LoginViewModel.AuthOutcome.Failed, result)
+    }
+
+    @Test(expected = CancellationException::class)
+    fun `authenticate rethrows CancellationException`() = runTest {
+        coEvery { userRepository.hasAtLeastOneUser() } throws CancellationException("Cancelled")
+
+        val viewModel = createViewModel()
+        viewModel.authenticate("john", "pwd", false)
     }
 }
