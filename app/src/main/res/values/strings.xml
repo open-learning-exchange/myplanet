@@ -103,6 +103,7 @@
     <string name="user">User</string>
     <string name="remove_selected">Remove Selected</string>
     <string name="stop_download">Stop Download</string>
+    <string name="download_stopped">Download stopped</string>
     <string name="downloading_file">Downloading file…</string>
     <string name="cancel">cancel</string>
     <string name="added_to">added to</string>
@@ -1148,6 +1149,9 @@
     <string name="show_additional_fields">show additional fields</string>
     <string name="hide_additional_fields">hide additional fields</string>
     <string name="preparing_download">Preparing download…</string>
+    <string name="download_partially_downloaded">Partially downloaded</string>
+    <string name="download_paused_at_percent">Paused at %1$d%%</string>
+    <string name="resume_download">Resume download</string>
     <string name="downloading_files">Downloading files</string>
     <string name="edit_mission_and_services">edit mission and services</string>
     <string name="this_team_has_no_description_defined">this team has no description defined</string>
@@ -1319,6 +1323,9 @@
     <string name="storage_pdfs">PDFs</string>
     <string name="storage_images">Images</string>
     <string name="storage_other">Other Files</string>
+    <string name="storage_partial_downloads">Partial downloads</string>
+    <string name="storage_clear_partial_downloads">Clear partial downloads?</string>
+    <string name="storage_clear_partial_downloads_message">These are downloads that were stopped before they finished. Clearing them frees the space, and those downloads will start over next time.</string>
     <string name="storage_empty">No downloaded content found</string>
     <string name="storage_delete_confirm">Delete all %1$s downloads?</string>
     <string name="storage_delete_selected_confirm">Delete %1$d selected item(s)?</string>

@@ -13,8 +13,11 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.ExamDao
@@ -203,5 +206,39 @@ class SubmissionsPayloadBuilderTest {
 
         val nullResult = payloadBuilder.getTeamByIdOrNull("error_team")
         assertNull(nullResult)
+    }
+
+    @Test
+    fun `submissionPayload rethrows CancellationException from exam lookup`() = runTest {
+        val expectedCancellation = CancellationException("exam fetch cancelled")
+        coEvery { examDao.getById("exam1") } throws expectedCancellation
+
+        val submission = Submission().apply {
+            id = "s1"
+            parentId = "exam1@course1"
+        }
+
+        try {
+            payloadBuilder.submissionPayload(submission, "src", "pCode", null)
+            fail("Expected CancellationException to be thrown")
+        } catch (e: CancellationException) {
+            assertSame(expectedCancellation, e)
+        }
+    }
+
+    @Test
+    fun `submissionPayload swallows generic RuntimeException and yields partial payload`() = runTest {
+        coEvery { examDao.getById("exam1") } throws RuntimeException("database crashed")
+
+        val submission = Submission().apply {
+            _id = "doc123"
+            id = "s1"
+            parentId = "exam1@course1"
+            type = "exam"
+        }
+
+        val result = payloadBuilder.submissionPayload(submission, "src", "pCode", null)
+        assertNotNull(result)
+        assertTrue(result.isJsonObject)
     }
 }
