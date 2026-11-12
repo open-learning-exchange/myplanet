@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.text.TextUtils
 import com.google.gson.Gson
+import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -32,6 +33,7 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @ExperimentalCoroutinesApi
 class VoicesRepositoryImplTest {
@@ -46,13 +48,13 @@ class VoicesRepositoryImplTest {
     private val newsLogDao: org.ole.planet.myplanet.data.room.dao.NewsLogDao = mockk(relaxed = true)
     private val removedLogDao: org.ole.planet.myplanet.data.room.dao.RemovedLogDao = mockk(relaxed = true)
 
-    private fun newRepository(gsonInstance: Gson): VoicesRepositoryImpl {
+    private fun newRepository(gsonInstance: Gson, spm: SharedPrefManager = sharedPrefManager): VoicesRepositoryImpl {
         return spyk(
             VoicesRepositoryImpl(
                 dispatcherProvider,
                 gsonInstance,
                 Gson(),
-                sharedPrefManager,
+                spm,
                 newsDao,
                 newsLogDao,
                 removedLogDao
@@ -67,11 +69,14 @@ class VoicesRepositoryImplTest {
         repository = newRepository(gson)
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
+        mockkObject(UrlUtils)
+        every { UrlUtils.getUrl() } returns "http://test.local"
     }
 
     @After
     fun tearDown() {
         unmockkObject(NetworkUtils)
+        unmockkObject(UrlUtils)
     }
 
     @Test
@@ -394,5 +399,77 @@ class VoicesRepositoryImplTest {
 
         assertTrue(result.isFailure)
         assertEquals("Database error", result.exceptionOrNull()?.message)
+    }
+
+    private fun messageDoc(id: String, message: String): JsonObject = JsonObject().apply {
+        addProperty("_id", id)
+        addProperty("_rev", "1-$id")
+        addProperty("docType", "message")
+        addProperty("message", message)
+        addProperty("time", 1000L)
+        add("user", JsonObject().apply {
+            addProperty("_id", "org.couchdb.user:Alice")
+            addProperty("name", "Alice")
+        })
+    }
+
+    @Test
+    fun `voices save drains the buffer so a second save with no new links writes once`() = testScope.runTest {
+        val spm = mockk<SharedPrefManager>(relaxed = true)
+        val writtenJson = slot<String>()
+        every { spm.getConcatenatedLinks() } returns null
+        every { spm.setConcatenatedLinks(capture(writtenJson)) } returns Unit
+        val repo = newRepository(Gson(), spm)
+
+        repo.insertNewsList(listOf(messageDoc("n1", "see ![](resources/abc/file.png)")))
+        // No new links arrived, so this second save must not touch prefs at all.
+        repo.insertNewsList(listOf(messageDoc("n2", "plain text")))
+
+        io.mockk.verify(exactly = 1) { spm.setConcatenatedLinks(any()) }
+        assertEquals(
+            listOf("http://test.local/resources/abc/file.png"),
+            Gson().fromJson(writtenJson.captured, Array<String>::class.java).toList()
+        )
+    }
+
+    @Test
+    fun `voices save that throws keeps the buffer so the retry persists the link`() = testScope.runTest {
+        val spm = mockk<SharedPrefManager>(relaxed = true)
+        val writtenJson = slot<String>()
+        every { spm.getConcatenatedLinks() } returns null
+        every { spm.setConcatenatedLinks(any()) } throws RuntimeException("prefs write failed")
+        val repo = newRepository(Gson(), spm)
+
+        try {
+            repo.insertNewsList(listOf(messageDoc("n1", "see ![](resources/abc/file.png)")))
+        } catch (_: RuntimeException) {
+        }
+
+        // The first write failed, so the link must still be buffered for this retry.
+        every { spm.setConcatenatedLinks(capture(writtenJson)) } returns Unit
+        repo.insertNewsList(listOf(messageDoc("n2", "plain text")))
+
+        assertEquals(
+            listOf("http://test.local/resources/abc/file.png"),
+            Gson().fromJson(writtenJson.captured, Array<String>::class.java).toList()
+        )
+    }
+
+    @Test
+    fun `repeated identical links in one voices page are stored once`() = testScope.runTest {
+        val spm = mockk<SharedPrefManager>(relaxed = true)
+        val writtenJson = slot<String>()
+        every { spm.getConcatenatedLinks() } returns null
+        every { spm.setConcatenatedLinks(capture(writtenJson)) } returns Unit
+        val repo = newRepository(Gson(), spm)
+
+        repo.insertNewsList(
+            listOf(messageDoc("n1", "a ![](resources/abc/file.png) and again ![](resources/abc/file.png)"))
+        )
+
+        assertEquals(
+            listOf("http://test.local/resources/abc/file.png"),
+            Gson().fromJson(writtenJson.captured, Array<String>::class.java).toList()
+        )
     }
 }
