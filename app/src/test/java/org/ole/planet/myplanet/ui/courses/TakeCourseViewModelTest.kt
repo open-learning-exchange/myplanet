@@ -4,6 +4,8 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.mockk
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -116,6 +118,28 @@ class TakeCourseViewModelTest {
         advanceUntilIdle()
 
         assertTrue(viewModel.uiState.value is TakeCourseUiState.NotFound)
+    }
+
+    @Test
+    fun loadCourse_whenRepositoryThrows_emitsNotFound() = runTest {
+        coEvery { userRepository.getUserModel() } returns UserEntity().apply { id = "user_1" }
+        coEvery { coursesRepository.getCourseById(courseId) } throws IOException("Network error")
+
+        viewModel.loadCourse(courseId)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is TakeCourseUiState.NotFound)
+    }
+
+    @Test
+    fun loadCourse_whenCancelled_doesNotEmitNotFound() = runTest {
+        coEvery { userRepository.getUserModel() } returns UserEntity().apply { id = "user_1" }
+        coEvery { coursesRepository.getCourseById(courseId) } throws CancellationException("cancelled")
+
+        viewModel.loadCourse(courseId)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is TakeCourseUiState.Loading)
     }
 
     @Test

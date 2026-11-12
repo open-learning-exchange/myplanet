@@ -29,13 +29,10 @@ interface UserRepository : UserAchievementsRepository, UserReadRepository {
     suspend fun getUserByAnyId(id: String): UserEntity?
     suspend fun getUserByName(name: String): UserEntity?
     suspend fun findUserByName(name: String): UserEntity?
-    suspend fun getSyncedUsers(): List<UserEntity>
     suspend fun getUsersForHealthSync(): List<UserEntity>
-    suspend fun getSyncedUserByName(name: String): UserEntity?
     suspend fun createGuestUser(username: String): UserEntity?
     suspend fun getAllUsers(): List<UserEntity>
     suspend fun getUsersSortedBy(fieldName: String, descending: Boolean): List<UserEntity>
-    suspend fun getPendingSyncUsers(limit: Int): List<UserEntity>
     suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<UserEntity>
     suspend fun saveUser(user: UserEntity)
     suspend fun ensureUserSecurityKeys(userId: String): UserEntity?
@@ -77,7 +74,6 @@ interface UserRepository : UserAchievementsRepository, UserReadRepository {
 
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
 
-    suspend fun getCurrentUserId(): String?
     suspend fun getConnectedCommunityCode(): String
     suspend fun getUserProfile(): UserEntity?
     suspend fun getUserImageUrl(): String?

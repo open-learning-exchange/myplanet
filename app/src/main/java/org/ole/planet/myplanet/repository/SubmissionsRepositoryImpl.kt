@@ -674,6 +674,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
+    override suspend fun recordPhotoRemoteDoc(photoId: String, rev: String, remoteId: String) {
+        submitPhotosDao.recordRemoteDoc(photoId, rev, remoteId)
+    }
+
     override suspend fun getPendingSubmitPhotosUploads(): List<SubmitPhotos> {
         return submitPhotosDao.getUnuploaded()
     }
@@ -808,7 +812,9 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             answerDao.deleteBySubmissionIds(duplicateIds)
             duplicateIds.chunked(900).forEach { submissionDao.deleteByIds(it) }
         }
-        revUpdates.forEach { (id, rev) -> submissionDao.updateRev(id, rev) }
+        if (revUpdates.isNotEmpty()) {
+            submissionDao.updateRevs(revUpdates.toMap())
+        }
         if (submissions.isEmpty() && answers.isEmpty()) return
 
         if (submissions.isNotEmpty()) submissionDao.upsertAllBlocking(submissions)
@@ -847,7 +853,13 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun markSubmissionsUploaded(results: List<UploadedItemResult>): List<UploadedItemResult> =
-        results.filter { submissionDao.markUploaded(it.localId, it.remoteId, it.remoteRev) == 0 }
+        if (results.isEmpty()) {
+            emptyList()
+        } else {
+            val daoItems = results.map { SubmissionDao.UploadedSubmission(it.localId, it.remoteId, it.remoteRev) }
+            val failedSet = submissionDao.markUploadedBatch(daoItems).toSet()
+            results.filter { SubmissionDao.UploadedSubmission(it.localId, it.remoteId, it.remoteRev) in failedSet }
+        }
 
     override suspend fun getExamSubmissionsByUser(userId: String?): List<Submission> {
         return submissionDao.getExamSubmissionsByUser(userId)
