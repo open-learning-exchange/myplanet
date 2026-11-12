@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import android.os.Build
 import io.mockk.Runs
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -35,8 +36,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.model.DownloadResult
+import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.util.ReflectionHelpers
@@ -292,6 +295,46 @@ class DownloadServiceResumeTest {
 
         assertFalse("a 416 must discard the mismatched partial file so the next attempt starts clean", tempFile.exists())
         assertFalse("a 416 must discard the stale validator alongside the partial file", validatorFile.exists())
+    }
+
+    @Test
+    fun `initDownload restarts from the first byte when the server rejects the resume offset with 416`() {
+        tempFile.parentFile?.mkdirs()
+        tempFile.writeBytes("stale-or-mismatched-partial".toByteArray())
+        validatorFile.writeText("\"mismatched-etag\"")
+        val partialLength = tempFile.length()
+
+        mockkObject(UrlUtils)
+        every { UrlUtils.header } returns "Basic dGVzdDp0ZXN0"
+        every { FileUtils.externalMemoryAvailable() } returns true
+        every { FileUtils.availableExternalMemorySize } returns Long.MAX_VALUE
+
+        val service = newService()
+        val downloadRepository = mockk<DownloadRepository>()
+        coEvery { downloadRepository.downloadFileResponse(url, any(), partialLength, any()) } returns
+            DownloadResult.Error("Requested range not satisfiable", 416)
+        coEvery { downloadRepository.downloadFileResponse(url, any(), 0L, null) } returns
+            DownloadResult.Success("fresh-full-file".toByteArray().toResponseBody(null), 200)
+        setDeclaredField("downloadRepository", service, downloadRepository)
+
+        val method = DownloadService::class.java.getDeclaredMethod(
+            "initDownload",
+            String::class.java,
+            Boolean::class.javaPrimitiveType,
+            Continuation::class.java
+        )
+        method.isAccessible = true
+        val completion = object : Continuation<Any?> {
+            override val context = EmptyCoroutineContext
+            override fun resumeWith(result: Result<Any?>) {}
+        }
+        val succeeded = method.invoke(service, url, false, completion)
+
+        assertEquals("a 416 on resume should fall back to a full download, not a failure", true, succeeded)
+        coVerify(exactly = 1) { downloadRepository.downloadFileResponse(url, any(), 0L, null) }
+        assertEquals("fresh-full-file", finalFile.readText())
+        assertFalse(tempFile.exists())
+        assertFalse(validatorFile.exists())
     }
 
     @Test

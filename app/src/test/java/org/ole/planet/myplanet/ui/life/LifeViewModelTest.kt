@@ -19,13 +19,13 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.LifeRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LifeViewModelTest {
 
     private lateinit var lifeRepository: LifeRepository
-    private lateinit var userRepository: UserRepository
+    private lateinit var userRepository: UserReadRepository
     private lateinit var viewModel: LifeViewModel
     private val testDispatcher = StandardTestDispatcher()
     private val labelResolver: (Int) -> String = { "mock_string_$it" }

@@ -41,7 +41,6 @@ import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.getProgressDialog
-import org.ole.planet.myplanet.utils.DialogUtils.showError
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -134,7 +133,7 @@ abstract class BaseResourceFragment : Fragment() {
                     }
                 } else {
                     pendingDownloadUrls.clear()
-                    download?.message?.let { showError(prgDialog, it) } ?: prgDialog.dismiss()
+                    if (prgDialog.isShowing()) showDownloadError(download?.message ?: getString(R.string.download_failed))
                     onDownloadFailed()
                 }
             }
@@ -230,6 +229,15 @@ abstract class BaseResourceFragment : Fragment() {
             }
 
             resourceNotFoundDialog?.show()
+        }
+    }
+
+    private fun showDownloadError(message: String) {
+        prgDialog.setTitle(message)
+        prgDialog.setIndeterminateMode(false)
+        prgDialog.setNegativeButton(getString(R.string.close)) {
+            prgDialog.dismiss()
+            activity?.let { prgDialog = getProgressDialog(it) }
         }
     }
 
