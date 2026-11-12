@@ -4,7 +4,10 @@ import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.work.impl.WorkManagerImpl
 import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.mockk.verify
@@ -14,6 +17,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.services.DownloadService
+import org.ole.planet.myplanet.services.DownloadWorker
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
@@ -38,6 +42,17 @@ class DownloadUtilsEnqueueTest {
     @After
     fun tearDown() {
         unmockkAll()
+    }
+
+    @Test
+    fun cancelDownloadWork_cancelsEveryDownloadWorkerByTag() {
+        val workManager = mockk<WorkManagerImpl>(relaxed = true)
+        mockkStatic(WorkManagerImpl::class)
+        every { WorkManagerImpl.getInstance(any()) } returns workManager
+
+        DownloadUtils.cancelDownloadWork(context)
+
+        verify(exactly = 1) { workManager.cancelAllWorkByTag(DownloadWorker.WORK_TAG) }
     }
 
     @Test
@@ -100,5 +115,31 @@ class DownloadUtilsEnqueueTest {
         DownloadUtils.openDownloadService(null, arrayListOf("a"), false)
 
         verify(exactly = 0) { DownloadService.startService(any(), any(), any()) }
+    }
+
+    @Test
+    fun openDownloadService_fromSync_marksUrlsAsSyncOwned() {
+        val prefs = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+
+        DownloadUtils.openDownloadService(context, arrayListOf("sync-a"), true)
+        DownloadUtils.openDownloadService(context, arrayListOf("user-b"), false)
+
+        assertEquals(setOf("sync-a"), prefs.getStringSet(DownloadService.SYNC_DOWNLOADS_KEY, emptySet()))
+    }
+
+    @Test
+    fun dropUserQueuedDownloads_removesUserUrls_andKeepsSyncUrls() {
+        val prefs = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, setOf("user-priority"))
+            .putStringSet(DownloadService.PENDING_DOWNLOADS_KEY, setOf("user-pending", "sync-pending"))
+            .putStringSet(DownloadService.SYNC_DOWNLOADS_KEY, setOf("sync-pending"))
+            .commit()
+
+        DownloadUtils.dropUserQueuedDownloads(context)
+
+        assertEquals(emptySet<String>(), prefs.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, null))
+        assertEquals(setOf("sync-pending"), prefs.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, null))
+        assertEquals(setOf("sync-pending"), prefs.getStringSet(DownloadService.SYNC_DOWNLOADS_KEY, null))
     }
 }

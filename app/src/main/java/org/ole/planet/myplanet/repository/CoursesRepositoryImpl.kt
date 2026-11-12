@@ -441,7 +441,7 @@ class CoursesRepositoryImpl @Inject constructor(
     override suspend fun getCourseProgress(courseId: String, userId: String?): CourseProgressData {
         val stepsList = getCourseSteps(courseId)
         val current = progressRepository.getCurrentProgress(stepsList, userId, courseId)
-        val courseTitle = getCourseById(courseId)?.courseTitle
+        val courseTitle = courseDao.getByCourseId(courseId)?.courseTitle
         val stepIds = stepsList.map { it.id }
         val allExams = if (stepIds.isEmpty()) emptyList() else examDao.getByStepIds(stepIds)
         val max = stepsList.size
@@ -523,7 +523,8 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCourseTitleById(courseId: String): String? {
-        return getCourseById(courseId)?.courseTitle
+        if (courseId.isBlank()) return null
+        return courseDao.getByCourseId(courseId)?.courseTitle
     }
 
     override suspend fun isCourseCertified(courseId: String): Boolean {
@@ -567,7 +568,7 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun getMyCourseIds(userId: String): JsonArray {
         val ids = JsonArray()
-        getMyCourses(userId).mapNotNull { it.courseId }.forEach { ids.add(it) }
+        courseDao.getForUserPattern(userIdPattern(userId)).mapNotNull { it.courseId }.forEach { ids.add(it) }
         return ids
     }
 
