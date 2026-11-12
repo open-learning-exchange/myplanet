@@ -49,6 +49,9 @@ class CommunityTabViewModelTest {
         assertEquals("parent_code_123", state?.parentCode)
         assertEquals("community_abc", state?.communityName)
         assertEquals("planet_xyz", state?.planetType)
+        assertEquals("planet_code_999@parent_code_123", state?.planetViewInId)
+        assertEquals("community_abc@parent_code_123", state?.communityViewInId)
+        assertEquals("planet_code_999", state?.title)
 
         verify { configurationsRepository.getCommunityConfiguration() }
         coVerify { userRepository.getUserModel() }
@@ -71,6 +74,9 @@ class CommunityTabViewModelTest {
         assertEquals("parent_code_123", state?.parentCode)
         assertEquals("community_abc", state?.communityName)
         assertEquals(null, state?.planetType)
+        assertEquals("@parent_code_123", state?.planetViewInId)
+        assertEquals("community_abc@parent_code_123", state?.communityViewInId)
+        assertEquals("community_abc", state?.title)
 
         verify { configurationsRepository.getCommunityConfiguration() }
         coVerify { userRepository.getUserModel() }
