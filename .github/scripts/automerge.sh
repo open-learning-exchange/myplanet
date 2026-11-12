@@ -491,9 +491,10 @@ while :; do
     log "picked$TIER #$NUMBER ($HEAD @ ${SHA:0:7}): $TITLE"
 
     if [ "$OWNER" != "${REPO%%/*}" ]; then
-        log "  #$NUMBER comes from fork $OWNER -- cannot push a version bump to it"
-        summary "| #$NUMBER | | **stopped**: fork, cannot bump |"
-        exit 1
+        log "  #$NUMBER comes from fork $OWNER -- cannot push a version bump to it, skipping"
+        summary "| #$NUMBER | | skipped: fork \`$OWNER\`, cannot bump |"
+        skip_numbers="$skip_numbers $NUMBER"
+        continue
     fi
 
     state=$(pr_state "$NUMBER")
