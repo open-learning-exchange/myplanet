@@ -88,7 +88,7 @@ pick_pr() {
         --base "$BASE" \
         --label "$LABEL" \
         --limit 1000 \
-        --json number,title,isDraft,headRefName,headRefOid,headRepositoryOwner,labels \
+        --json number,title,isDraft,headRefName,headRefOid,headRepositoryOwner,headRepository,maintainerCanModify,labels \
       | jq -c --arg skip "$skip_numbers" --arg prio "$PRIORITY_LABEL" '
             [ $skip | split(" ")[] | select(length > 0) | tonumber ] as $done
             | ($done | map({ key: tostring, value: true }) | from_entries) as $doneSet
@@ -429,15 +429,38 @@ merge_with_retry() {
     return 1
 }
 
+# push_with_retry REMOTE REFSPEC [git push flags...]
 push_with_retry() {
-    local ref=$1
+    local remote=$1 ref=$2 delay
+    shift 2
     for delay in 0 2 4 8 16; do
         [ "$delay" -eq 0 ] || sleep "$delay"
-        if git push origin "$ref"; then
+        if git push "$@" "$remote" "$ref"; then
             return 0
         fi
     done
-    log "  push of $ref failed after retries"
+    log "  push of $ref to $remote failed after retries"
+    return 1
+}
+
+# A fork's pushes run their workflows in the fork, where this script cannot see them, so a fork PR's
+# prepared commit is built from a throwaway branch here and only reaches the fork once it is green.
+ci_branch=""
+drop_ci_branch() {
+    [ -n "$ci_branch" ] || return 0
+    git push --quiet origin --delete "$ci_branch" >/dev/null 2>&1 || true
+    ci_branch=""
+}
+trap drop_ci_branch EXIT
+
+wait_pr_head() {
+    local pr=$1 want=$2 live="" deadline=$(( SECONDS + PR_SETTLE_TIMEOUT_SEC ))
+    while [ "$SECONDS" -lt "$deadline" ]; do
+        live=$(gh pr view "$pr" --repo "$REPO" --json headRefOid --jq '.headRefOid' 2>/dev/null || echo '')
+        [ "$live" != "$want" ] || return 0
+        sleep 5
+    done
+    log "  #$pr still reads ${live:0:7}, not ${want:0:7}, after ${PR_SETTLE_TIMEOUT_SEC}s"
     return 1
 }
 
@@ -451,6 +474,8 @@ git config user.name  'github-actions[bot]'
 git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
 
 while :; do
+    drop_ci_branch
+
     if [ "$MAX_MERGES" -gt 0 ] && [ "$merged_count" -ge "$MAX_MERGES" ]; then
         log "reached max_merges=$MAX_MERGES, stopping"
         summary "| | | stopped at max_merges=$MAX_MERGES |"
@@ -486,6 +511,8 @@ while :; do
     HEAD=$(jq   -r '.headRefName'               <<<"$pr_json")
     SHA=$(jq    -r '.headRefOid'                <<<"$pr_json")
     OWNER=$(jq  -r '.headRepositoryOwner.login' <<<"$pr_json")
+    FORK_NAME=$(jq -r '.headRepository.name // empty' <<<"$pr_json")
+    CAN_MODIFY=$(jq -r '.maintainerCanModify' <<<"$pr_json")
     PRIORITY=$(jq -r '.priority'                <<<"$pr_json")
 
     TIER=""
@@ -493,11 +520,20 @@ while :; do
 
     log "picked$TIER #$NUMBER ($HEAD @ ${SHA:0:7}): $TITLE"
 
+    PUSH_REMOTE=origin
+    CI_BRANCH=$HEAD
     if [ "$OWNER" != "${REPO%%/*}" ]; then
-        log "  #$NUMBER comes from fork $OWNER -- cannot push a version bump to it, skipping"
-        summary "| #$NUMBER | | skipped: fork \`$OWNER\`, cannot bump |"
-        skip_numbers="$skip_numbers $NUMBER"
-        continue
+        if [ "$CAN_MODIFY" != 'true' ] || [ -z "$FORK_NAME" ]; then
+            log "  #$NUMBER comes from fork $OWNER without 'allow edits from maintainers' -- cannot push a version bump to it, skipping"
+            summary "| #$NUMBER | | skipped: fork \`$OWNER\`, maintainer edits off |"
+            skip_numbers="$skip_numbers $NUMBER"
+            continue
+        fi
+        PUSH_REMOTE=fork
+        CI_BRANCH="automerge/pr-$NUMBER"
+        git remote remove fork 2>/dev/null || true
+        git remote add fork "https://github.com/$OWNER/$FORK_NAME.git"
+        log "  #$NUMBER comes from fork $OWNER/$FORK_NAME -- building on $CI_BRANCH, pushing to the fork once green"
     fi
 
     state=$(pr_state "$NUMBER")
@@ -526,10 +562,15 @@ while :; do
     eval "$("$VERSION_SH" next /tmp/base-build.gradle | sed 's/^/new_/')"
     log "  version -> $new_name ($new_code)"
 
-    git fetch --quiet origin "$HEAD"
+    if ! git fetch --quiet "$PUSH_REMOTE" "$HEAD"; then
+        log "  #$NUMBER: could not fetch $HEAD from $PUSH_REMOTE -- skipping"
+        summary "| #$NUMBER | | skipped: head branch not fetchable |"
+        skip_numbers="$skip_numbers $NUMBER"
+        continue
+    fi
 
     if [ "$DRY_RUN" = 'true' ]; then
-        git checkout --quiet --detach "origin/$HEAD"
+        git checkout --quiet --detach "$PUSH_REMOTE/$HEAD"
         if git merge --quiet --no-edit "origin/$BASE"; then
             log "  dry run: merges cleanly with $BASE, would bump to $new_name,"
             log "           wait for ${REQUIRED_WORKFLOWS:-the triggered workflows}, then squash merge #$NUMBER"
@@ -544,7 +585,7 @@ while :; do
         break
     fi
 
-    git checkout --quiet -B "$HEAD" "origin/$HEAD"
+    git checkout --quiet -B "$HEAD" "$PUSH_REMOTE/$HEAD"
 
     if ! git merge --quiet --no-edit "origin/$BASE"; then
         git merge --abort 2>/dev/null || git reset --quiet --hard HEAD
@@ -568,8 +609,12 @@ while :; do
             || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: bump was not version-only |"; exit 1; }
     fi
 
-    if [ "$merge_sha" != "$SHA" ]; then
-        push_with_retry "$HEAD" \
+    if [ "$PUSH_REMOTE" = fork ]; then
+        ci_branch=$CI_BRANCH
+        push_with_retry origin "HEAD:refs/heads/$CI_BRANCH" --force \
+            || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: push to \`$CI_BRANCH\` failed |"; exit 1; }
+    elif [ "$merge_sha" != "$SHA" ]; then
+        push_with_retry origin "$HEAD" \
             || { summary "| #$NUMBER | → \`$new_name\` | **stopped**: push failed |"; exit 1; }
     else
         log "  branch already merged and bumped, head unchanged at ${SHA:0:7}"
@@ -579,11 +624,11 @@ while :; do
         checks_rc=0
         while :; do
             checks_rc=0
-            wait_for_runs "$merge_sha" "$REQUIRED_WORKFLOWS" fail "$HEAD" || checks_rc=$?
+            wait_for_runs "$merge_sha" "$REQUIRED_WORKFLOWS" fail "$CI_BRANCH" || checks_rc=$?
             [ "$checks_rc" -eq 2 ] || break
             [ "$HEAD_RERUN_ATTEMPTS" -gt 0 ] \
                 && log "  re-running the red workflow(s) before taking this as #$NUMBER's"
-            rerun_failed_runs "$merge_sha" "$HEAD" "$HEAD_RERUN_ATTEMPTS" || break
+            rerun_failed_runs "$merge_sha" "$CI_BRANCH" "$HEAD_RERUN_ATTEMPTS" || break
         done
         # 2 is a verdict on this PR alone; 1 is no verdict at all, which still stops.
         if [ "$checks_rc" -eq 2 ]; then
@@ -628,6 +673,15 @@ while :; do
         fi
     fi
 
+    if [ "$PUSH_REMOTE" = fork ] && [ "$merge_sha" != "$SHA" ]; then
+        if ! push_with_retry fork "HEAD:refs/heads/$HEAD" || ! wait_pr_head "$NUMBER" "$merge_sha"; then
+            log "  #$NUMBER: the fork would not take the green commit -- skipping"
+            summary "| #$NUMBER | → \`$new_name\` | skipped: could not push to fork \`$OWNER\` |"
+            skip_numbers="$skip_numbers $NUMBER"
+            continue
+        fi
+    fi
+
     commit_body=$(REPO="$REPO" PR="$NUMBER" "$COAUTHORS_SH")
     if [ -n "$commit_body" ]; then
         log "  co-authors:"
@@ -638,7 +692,7 @@ while :; do
 
     ARGS=(--repo "$REPO" --squash --match-head-commit "$merge_sha"
           --subject "$TITLE (#$NUMBER)" --body "$commit_body")
-    if [ "$DELETE_BRANCH" = 'true' ]; then
+    if [ "$DELETE_BRANCH" = 'true' ] && [ "$PUSH_REMOTE" = origin ]; then
         ARGS+=(--delete-branch)
     fi
     if ! merge_with_retry "$NUMBER" "$merge_sha" "${ARGS[@]}"; then
