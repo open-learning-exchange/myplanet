@@ -5,6 +5,9 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.StateListDrawable
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -24,6 +27,7 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.Locale
 import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlinx.coroutines.NonCancellable
@@ -62,6 +66,15 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     private var isSavingAnswer = false
     private var examTakingTextWatcher: TextWatcher? = null
     private val answerCache = mutableMapOf<String, AnswerData>()
+    private var startElapsedRealtime = 0L
+    private var isTimerRunning = false
+    private val timerHandler = Handler(Looper.getMainLooper())
+    private val elapsedTimeRunnable = object : Runnable {
+        override fun run() {
+            updateElapsedTimeText()
+            timerHandler.postDelayed(this, 1000L)
+        }
+    }
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
@@ -87,16 +100,55 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        val resumedElapsedSeconds = savedInstanceState?.getInt(KEY_ELAPSED_SECONDS) ?: 0
+        startElapsedRealtime = SystemClock.elapsedRealtime() - resumedElapsedSeconds * 1000L
+        updateElapsedTimeText()
         savedInstanceState?.let { currentIndex = it.getInt(KEY_CURRENT_INDEX, currentIndex) }
         val resumeSubmissionId = savedInstanceState?.getString(KEY_SUBMISSION_ID) ?: sub?.id
         initializeExamData(resumeSubmissionId)
         setupListeners()
+        startTimer()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        timerHandler.removeCallbacks(elapsedTimeRunnable)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (isTimerRunning) {
+            updateElapsedTimeText()
+            timerHandler.postDelayed(elapsedTimeRunnable, 1000L)
+        }
+    }
+
+    private fun startTimer() {
+        if (isTimerRunning) return
+        isTimerRunning = true
+        timerHandler.postDelayed(elapsedTimeRunnable, 1000L)
+    }
+
+    private fun stopTimer() {
+        isTimerRunning = false
+        timerHandler.removeCallbacks(elapsedTimeRunnable)
+    }
+
+    private fun currentElapsedSeconds(): Int =
+        ((SystemClock.elapsedRealtime() - startElapsedRealtime) / 1000L).toInt()
+
+    private fun updateElapsedTimeText() {
+        val totalSeconds = currentElapsedSeconds()
+        val minutes = totalSeconds / 60
+        val seconds = totalSeconds % 60
+        binding.tvElapsedTime.text = String.format(Locale.US, "%02d:%02d", minutes, seconds)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putString(KEY_SUBMISSION_ID, sub?.id)
         outState.putInt(KEY_CURRENT_INDEX, currentIndex)
+        outState.putInt(KEY_ELAPSED_SECONDS, currentElapsedSeconds())
     }
 
     private fun computeParentId(): String? {
@@ -111,8 +163,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         viewLifecycleOwner.lifecycleScope.launch {
             user = userSessionManager.getUserModel()
             initExam()
+            binding.tvExamTitle.text = exam?.name.orEmpty()
             questions = surveysRepository.getExamQuestions(exam?.id ?: "")
-            binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
+            binding.tvQuestionCount.text = getString(R.string.exam_question_of, currentIndex + 1, questions?.size ?: 0)
             val parentId = computeParentId()
             if (type != "exam" && sub == null) {
                 val submissions = submissionsRepository.getSubmissionsByParentId(
@@ -356,7 +409,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     }
 
     override fun startExam(question: ExamQuestion?) {
-        binding.tvQuestionCount.text = getString(R.string.Q, currentIndex + 1, questions?.size)
+        binding.tvQuestionCount.text = getString(R.string.exam_question_of, currentIndex + 1, questions?.size ?: 0)
         binding.progressBar.max = questions?.size ?: 1
         binding.progressBar.progress = currentIndex + 1
         setButtonText()
@@ -562,9 +615,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     private fun setButtonText() {
         if (currentIndex == (questions?.size?.minus(1) ?: 0)) {
-            binding.btnSubmit.setText(R.string.finish)
+            binding.btnSubmit.setText(R.string.finish_and_submit)
         } else {
-            binding.btnSubmit.setText(R.string.submit)
+            binding.btnSubmit.setText(R.string.submit_answer)
         }
     }
 
@@ -629,7 +682,10 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 ) as RadioButton
         } else {
             LayoutInflater.from(activity)
-                .inflate(R.layout.item_checkbox, null) as CompoundButton
+                .inflate(
+                    R.layout.item_checkbox,
+                    binding.llCheckbox, false
+                ) as CompoundButton
         }
         val choiceText = getString("text", choice)
         val choiceId = getString("id", choice)
@@ -680,6 +736,10 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                         if (this@ExamTakingFragment.type == "exam" && !cont) {
                             Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
                             return@launch
+                        }
+
+                        if (isLastQuestion) {
+                            stopTimer()
                         }
 
                         capturePhoto()
@@ -872,6 +932,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     override fun onDestroyView() {
         super.onDestroyView()
+        stopTimer()
         saveCurrentAnswer()
         val hasAnswer = ans.isNotEmpty() || !listAns.isNullOrEmpty() || binding.etAnswer.text.isNotBlank()
         if (hasAnswer) {
@@ -898,5 +959,6 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         const val TAG = "ExamTakingFragment"
         const val KEY_SUBMISSION_ID = "exam_submission_id"
         const val KEY_CURRENT_INDEX = "exam_current_index"
+        const val KEY_ELAPSED_SECONDS = "key_elapsed_seconds"
     }
 }

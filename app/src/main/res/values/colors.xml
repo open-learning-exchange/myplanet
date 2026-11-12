@@ -56,6 +56,9 @@
     <color name="md_blue_100">#BBDEFB</color>
     <color name="md_blue_200">#90CAF9</color>
     <color name="pending_request_indicator">#9fa0a4</color>
+    <color name="exam_chip_bg">#24FFFFFF</color>
+    <color name="exam_chip_stroke">#4DFFFFFF</color>
+    <color name="choice_border_unselected">#33000000</color>
 
     <color name="dashboard_page_bg">#FAF7F2</color>
     <color name="dashboard_ink_1">#1A1814</color>
