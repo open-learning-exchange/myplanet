@@ -11,7 +11,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 class CourseProgressViewModelTest {
@@ -20,8 +20,8 @@ class CourseProgressViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val coursesRepository = mockk<CoursesRepository>()
-    private val userSessionManager = mockk<UserSessionManager>()
-    private val viewModel = CourseProgressViewModel(coursesRepository, userSessionManager)
+    private val userRepository = mockk<UserRepository>()
+    private val viewModel = CourseProgressViewModel(coursesRepository, userRepository)
 
     @Test
     fun `courseProgress value is null before any call`() {
@@ -33,8 +33,9 @@ class CourseProgressViewModelTest {
         val courseId = "id"
         val userId = "userId"
         val user = UserEntity()
-        user._id = userId
-        coEvery { userSessionManager.getUserModel() } returns user
+        user.id = userId
+        user._id = "org.couchdb.user:learner"
+        coEvery { userRepository.getUserModel() } returns user
 
         val expectedProgressData = mockk<CourseProgressData>()
         coEvery { coursesRepository.getCourseProgress(courseId, userId) } returns expectedProgressData
@@ -49,8 +50,9 @@ class CourseProgressViewModelTest {
         val courseId = "id"
         val userId = "userId"
         val user = UserEntity()
-        user._id = userId
-        coEvery { userSessionManager.getUserModel() } returns user
+        user.id = userId
+        user._id = "org.couchdb.user:learner"
+        coEvery { userRepository.getUserModel() } returns user
 
         val expectedProgressData = mockk<CourseProgressData>()
         coEvery { coursesRepository.getCourseProgress(courseId, userId) } returns expectedProgressData

@@ -8,6 +8,7 @@ import org.ole.planet.myplanet.R
 object ImageUtils {
     fun loadProfileImage(image: String?, imageView: ImageView, sizePx: Int) {
         if (image.isNullOrEmpty()) {
+            Glide.with(imageView.context).clear(imageView)
             imageView.setImageResource(R.drawable.profile)
             return
         }
@@ -21,23 +22,35 @@ object ImageUtils {
             .into(imageView)
     }
 
-    fun loadImage(userImage: String?, imageView: ImageView) {
+    fun loadImage(userImage: String?, imageView: ImageView, sizePx: Int? = null) {
         if (!userImage.isNullOrEmpty()) {
             Glide.with(imageView.context)
                 .load(userImage)
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .apply {
+                    if (sizePx != null) {
+                        override(sizePx, sizePx)
+                    }
+                }
                 .circleCrop()
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile)
                 .into(imageView)
         } else {
+            Glide.with(imageView.context).clear(imageView)
             imageView.setImageResource(R.drawable.ole_logo)
         }
     }
 
-    fun loadPlaceholderImage(image: String?, imageView: ImageView) {
+    fun loadPlaceholderImage(image: String?, imageView: ImageView, sizePx: Int? = null) {
         Glide.with(imageView.context)
             .load(image)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .apply {
+                if (sizePx != null) {
+                    override(sizePx, sizePx)
+                }
+            }
             .placeholder(R.drawable.profile)
             .error(R.drawable.profile)
             .into(imageView)

@@ -1,27 +1,45 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.provider.Settings
+import com.google.gson.JsonObject
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.slot
+import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject as KJsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
+import org.ole.planet.myplanet.data.room.dao.ResourceOpenCount
 import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.OfflineActivity
@@ -31,7 +49,12 @@ import org.ole.planet.myplanet.model.UserChallengeActions
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DeviceNameProvider
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ActivitiesRepositoryImplTest {
@@ -46,13 +69,27 @@ class ActivitiesRepositoryImplTest {
     private lateinit var resourceActivityDao: ResourceActivityDao
     private lateinit var offlineActivityDao: OfflineActivityDao
     private lateinit var removedLogDao: RemovedLogDao
+    private lateinit var searchActivityDao: org.ole.planet.myplanet.data.room.dao.SearchActivityDao
+    private lateinit var deviceNameProvider: DeviceNameProvider
+    private lateinit var dispatcherProvider: DispatcherProvider
+    private val testDispatcher = StandardTestDispatcher()
+    private val testScope = TestScope(testDispatcher)
 
     private lateinit var repository: ActivitiesRepositoryImpl
 
     @Before
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
+        mockkStatic(Settings.Secure::class)
+        every { Settings.Secure.getString(any(), Settings.Secure.ANDROID_ID) } returns "mock_android_id"
+
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "mock_unique_id"
+        every { NetworkUtils.getDeviceName() } returns "mock_device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "mock_custom_device"
+
         context = mockk(relaxed = true)
+        MainApplication.testContext = context
         userRepository = mockk(relaxed = true)
         val lazyUserRepository = Lazy { userRepository }
         apiInterface = mockk(relaxed = true)
@@ -63,9 +100,16 @@ class ActivitiesRepositoryImplTest {
         resourceActivityDao = mockk(relaxed = true)
         offlineActivityDao = mockk(relaxed = true)
         removedLogDao = mockk(relaxed = true)
+        searchActivityDao = mockk(relaxed = true)
+        deviceNameProvider = mockk(relaxed = true)
+        every { deviceNameProvider.getCustomDeviceName() } returns "mock_custom_device_provider"
+        dispatcherProvider = TestDispatcherProvider(testDispatcher)
+
+        UrlUtils.init(sharedPrefManager)
 
         repository = ActivitiesRepositoryImpl(
             context,
+            dispatcherProvider,
             lazyUserRepository,
             apiInterface,
             sharedPrefManager,
@@ -74,8 +118,16 @@ class ActivitiesRepositoryImplTest {
             courseActivityDao,
             resourceActivityDao,
             offlineActivityDao,
-            removedLogDao
+            removedLogDao,
+            searchActivityDao,
+            deviceNameProvider
         )
+    }
+
+    @After
+    fun tearDown() {
+        unmockkObject(NetworkUtils)
+        unmockkStatic(Settings.Secure::class)
     }
 
     @Test
@@ -83,6 +135,28 @@ class ActivitiesRepositoryImplTest {
         coEvery { offlineActivityDao.countByUserIdAndType("user1", UserSessionManager.KEY_LOGIN) } returns 5
         val result = repository.getOfflineVisitCount("user1")
         assertEquals(5, result)
+    }
+
+    @Test
+    fun `getMemberVisitStats returns correct count and last visit`() = runTest {
+        coEvery { offlineActivityDao.countByUserIdAndType("user1", UserSessionManager.KEY_LOGIN) } returns 5
+        coEvery { offlineActivityDao.getLastVisit("john") } returns 2000L
+
+        val result = repository.getMemberVisitStats("user1", "john")
+
+        assertEquals(5, result.offlineVisitCount)
+        assertEquals(2000L, result.lastVisit)
+    }
+
+    @Test
+    fun `getMemberVisitStats handles null or empty inputs`() = runTest {
+        val resultNull = repository.getMemberVisitStats(null, null)
+        assertEquals(0, resultNull.offlineVisitCount)
+        assertNull(resultNull.lastVisit)
+
+        val resultEmpty = repository.getMemberVisitStats("", "")
+        assertEquals(0, resultEmpty.offlineVisitCount)
+        assertNull(resultEmpty.lastVisit)
     }
 
     @Test
@@ -95,11 +169,27 @@ class ActivitiesRepositoryImplTest {
     @Test
     fun `getOfflineLogins returns flow of activities`() = runTest {
         val mockActivities = listOf(OfflineActivity().apply { userName = "john" })
-        coEvery { offlineActivityDao.observeByUserNameAndType("john", UserSessionManager.KEY_LOGIN) } returns flowOf(mockActivities)
+        every { offlineActivityDao.observeByUserNameAndType("john", UserSessionManager.KEY_LOGIN) } returns flowOf(mockActivities)
 
         repository.getOfflineLogins("john").collect {
             assertEquals(mockActivities, it)
         }
+    }
+
+    @Test
+    fun `getOfflineLogins drops consecutive emissions with identical logins`() = runTest {
+        val first = listOf(OfflineActivity().apply { id = "1"; userName = "john"; loginTime = 100L })
+        val identical = listOf(OfflineActivity().apply { id = "1"; userName = "john"; loginTime = 100L })
+        val changed = listOf(OfflineActivity().apply { id = "1"; userName = "john"; loginTime = 200L })
+        every {
+            offlineActivityDao.observeByUserNameAndType("john", UserSessionManager.KEY_LOGIN)
+        } returns flowOf(first, identical, changed)
+
+        val emissions = repository.getOfflineLogins("john").toList()
+
+        assertEquals(2, emissions.size)
+        assertEquals(listOf(100L), emissions[0].map { it.loginTime })
+        assertEquals(listOf(200L), emissions[1].map { it.loginTime })
     }
 
     @Test
@@ -120,6 +210,7 @@ class ActivitiesRepositoryImplTest {
 
     @Test
     fun `logCourseVisit inserts course activity`() = runTest {
+        every { timeProvider.now() } returns 123456789L
         val mockUser = UserEntity().apply {
             parentCode = "parent"
             planetCode = "planet"
@@ -136,10 +227,12 @@ class ActivitiesRepositoryImplTest {
         assertEquals("visit", slot.captured.type)
         assertEquals("parent", slot.captured.parentCode)
         assertEquals("planet", slot.captured.createdOn)
+        assertEquals(123456789L, slot.captured.time)
     }
 
     @Test
     fun `logLogin inserts offline activity`() = runTest {
+        every { timeProvider.now() } returns 123456789L
         val slot = slot<OfflineActivity>()
         repository.logLogin("user1", "john", "parent", "planet")
 
@@ -150,16 +243,40 @@ class ActivitiesRepositoryImplTest {
         assertEquals("planet", slot.captured.createdOn)
         assertEquals(UserSessionManager.KEY_LOGIN, slot.captured.type)
         assertEquals("Member login on offline application", slot.captured.description)
+        assertEquals(123456789L, slot.captured.loginTime)
+    }
+
+    @Test
+    fun `insertLoginActivitiesFromSync keeps a logout that has not uploaded yet`() = runTest {
+        val local = OfflineActivity().apply {
+            id = "act1"; _id = "remote1"; _rev = "1-a"; type = "login"; userName = "john"; loginTime = 100L; logoutTime = 500L; isUpdated = true
+        }
+        coEvery { offlineActivityDao.getByRemoteIds(listOf("remote1")) } returns listOf(local)
+        val saved = slot<List<OfflineActivity>>()
+        coEvery { offlineActivityDao.upsertAll(capture(saved)) } returns Unit
+        val serverDoc = JsonObject().apply {
+            addProperty("_id", "remote1"); addProperty("_rev", "2-b"); addProperty("type", "login")
+            addProperty("user", "john"); addProperty("loginTime", 100L); addProperty("logoutTime", 0L)
+        }
+
+        repository.insertLoginActivitiesFromSync(listOf(serverDoc))
+
+        val activity = saved.captured.single()
+        assertEquals(500L, activity.logoutTime)
+        assertEquals("2-b", activity._rev)
+        assertTrue(activity.isUpdated)
     }
 
     @Test
     fun `logLogout updates logout time`() = runTest {
+        every { timeProvider.now() } returns 987654321L
         val mockActivity = OfflineActivity().apply { id = "act1" }
-        coEvery { offlineActivityDao.getLatestByType(UserSessionManager.KEY_LOGIN) } returns mockActivity
+        coEvery { offlineActivityDao.getLatestByTypeAndUserName(UserSessionManager.KEY_LOGIN, "john") } returns mockActivity
 
         repository.logLogout("john")
 
-        coVerify { offlineActivityDao.updateLogoutTime(eq("act1"), any()) }
+        coVerify { offlineActivityDao.updateLogoutTime("act1", 987654321L) }
+        coVerify(exactly = 0) { offlineActivityDao.getLatestByType(any()) }
     }
 
     @Test
@@ -177,7 +294,40 @@ class ActivitiesRepositoryImplTest {
     }
 
     @Test
+    fun `getLastVisits returns map of last visits`() = runTest {
+        val userNames = listOf("john", "alice")
+        coEvery { offlineActivityDao.getLastVisits(userNames) } returns listOf(
+            org.ole.planet.myplanet.data.room.dao.UserLastVisit("john", 1000L),
+            org.ole.planet.myplanet.data.room.dao.UserLastVisit("alice", 2000L)
+        )
+
+        val result = repository.getLastVisits(userNames)
+
+        assertEquals(2, result.size)
+        assertEquals(1000L, result["john"])
+        assertEquals(2000L, result["alice"])
+    }
+
+    @Test
+    fun `getOfflineVisitCounts returns map of visit counts`() = runTest {
+        val userIds = listOf("u1", "u2")
+        coEvery {
+            offlineActivityDao.countByUserIdsAndType(userIds, UserSessionManager.KEY_LOGIN)
+        } returns listOf(
+            org.ole.planet.myplanet.data.room.dao.UserCount("u1", 5),
+            org.ole.planet.myplanet.data.room.dao.UserCount("u2", 3)
+        )
+
+        val result = repository.getOfflineVisitCounts(userIds)
+
+        assertEquals(2, result.size)
+        assertEquals(5, result["u1"])
+        assertEquals(3, result["u2"])
+    }
+
+    @Test
     fun `logResourceOpen inserts resource activity`() = runTest {
+        every { timeProvider.now() } returns 123456789L
         val slot = slot<ResourceActivity>()
         repository.logResourceOpen("john", "parent", "planet", "Res Title", "res1", "pdf")
 
@@ -188,6 +338,7 @@ class ActivitiesRepositoryImplTest {
         assertEquals("Res Title", slot.captured.title)
         assertEquals("res1", slot.captured.resourceId)
         assertEquals("pdf", slot.captured.type)
+        assertEquals(123456789L, slot.captured.time)
     }
 
     @Test
@@ -198,25 +349,56 @@ class ActivitiesRepositoryImplTest {
     }
 
     @Test
-    fun `getMostOpenedResource returns null when no activities`() = runTest {
-        coEvery { resourceActivityDao.getByUserAndType("john", "pdf") } returns emptyList()
+    fun `getResourceOpenCount without type defaults to visit`() = runTest {
+        coEvery { resourceActivityDao.countByUserAndType("john", UserSessionManager.KEY_RESOURCE_OPEN) } returns 7L
+        val result = repository.getResourceOpenCount("john")
+        assertEquals(7L, result)
+    }
+
+    @Test
+    fun `getMostOpenedResource returns null when no activities`() = testScope.runTest {
+        coEvery { resourceActivityDao.getMostOpenedResource("john", "pdf") } returns null
         val result = repository.getMostOpenedResource("john", "pdf")
         assertNull(result)
     }
 
     @Test
-    fun `getMostOpenedResource returns correct pair`() = runTest {
-        val activities = listOf(
-            ResourceActivity().apply { resourceId = "res1"; title = "Res 1" },
-            ResourceActivity().apply { resourceId = "res1"; title = "Res 1" },
-            ResourceActivity().apply { resourceId = "res2"; title = "Res 2" }
-        )
-        coEvery { resourceActivityDao.getByUserAndType("john", "pdf") } returns activities
+    fun `getMostOpenedResource returns correct pair`() = testScope.runTest {
+        val countObj = ResourceOpenCount("Res 1", 2)
+        coEvery { resourceActivityDao.getMostOpenedResource("john", "pdf") } returns countObj
 
         val result = repository.getMostOpenedResource("john", "pdf")
 
         assertEquals("Res 1", result?.first)
         assertEquals(2, result?.second)
+    }
+
+    @Test
+    fun `getMostOpenedResource without type defaults to visit`() = testScope.runTest {
+        coEvery {
+            resourceActivityDao.getMostOpenedResource("john", UserSessionManager.KEY_RESOURCE_OPEN)
+        } returns ResourceOpenCount("Res 1", 1)
+
+        val result = repository.getMostOpenedResource("john")
+
+        assertEquals("Res 1", result?.first)
+        assertEquals(1, result?.second)
+    }
+
+    @Test
+    fun `getProfileActivityStats aggregates mostOpened lastVisit and openCount`() = testScope.runTest {
+        coEvery {
+            resourceActivityDao.getMostOpenedResource("john", UserSessionManager.KEY_RESOURCE_OPEN)
+        } returns ResourceOpenCount("Res 1", 1)
+        coEvery { offlineActivityDao.getGlobalLastVisit() } returns 123456L
+        coEvery { resourceActivityDao.countByUserAndType("john", UserSessionManager.KEY_RESOURCE_OPEN) } returns 3L
+
+        val stats = repository.getProfileActivityStats("john")
+
+        assertEquals("Res 1", stats.mostOpenedResource?.first)
+        assertEquals(1, stats.mostOpenedResource?.second)
+        assertEquals(123456L, stats.lastVisit)
+        assertEquals(3L, stats.resourceOpenCount)
     }
 
     @Test
@@ -235,6 +417,7 @@ class ActivitiesRepositoryImplTest {
 
     @Test
     fun `recordSyncActivity inserts resource activity`() = runTest {
+        every { timeProvider.now() } returns 123456789L
         val mockUser = UserEntity().apply {
             id = "user1"
             name = "john"
@@ -251,6 +434,7 @@ class ActivitiesRepositoryImplTest {
         assertEquals("parent", slot.captured.parentCode)
         assertEquals("planet", slot.captured.createdOn)
         assertEquals("sync", slot.captured.type)
+        assertEquals(123456789L, slot.captured.time)
     }
 
     @Test
@@ -303,5 +487,191 @@ class ActivitiesRepositoryImplTest {
         coEvery { courseActivityDao.markUploaded("local1", "remote1", "rev1") } returns 0
         val result = repository.markCourseActivityUploaded("local1", "remote1", "rev1")
         assertFalse(result)
+    }
+
+    private fun loginDoc(
+        id: String,
+        loginTime: Long,
+        userName: String,
+        rev: String = "rev-$id"
+    ): JsonObject = JsonObject().apply {
+        addProperty("_id", id)
+        addProperty("_rev", rev)
+        addProperty("loginTime", loginTime)
+        addProperty("user", userName)
+        addProperty("type", "login")
+    }
+
+    @Test
+    fun `insertLoginActivitiesFromSync collects lookup keys in a single pass`() = runTest {
+        val docs = listOf(
+            loginDoc("a1", 100L, "alice"),
+            loginDoc("a2", 200L, "bob"),
+            loginDoc("a1", 100L, "alice")
+        )
+        coEvery { offlineActivityDao.getByRemoteIds(listOf("a1", "a2")) } returns emptyList()
+        coEvery {
+            offlineActivityDao.getByLoginTimesAndUserNames(listOf(100L, 200L), listOf("alice", "bob"))
+        } returns emptyList()
+
+        repository.insertLoginActivitiesFromSync(docs)
+
+        coVerify(exactly = 1) { offlineActivityDao.getByRemoteIds(listOf("a1", "a2")) }
+        coVerify(exactly = 1) {
+            offlineActivityDao.getByLoginTimesAndUserNames(listOf(100L, 200L), listOf("alice", "bob"))
+        }
+        val slot = slot<List<OfflineActivity>>()
+        coVerify(exactly = 1) { offlineActivityDao.upsertAll(capture(slot)) }
+        assertEquals(3, slot.captured.size)
+    }
+
+    @Test
+    fun `insertLoginActivitiesFromSync dedupes ids loginTimes and userNames`() = runTest {
+        val docs = listOf(
+            loginDoc("a1", 100L, "alice"),
+            loginDoc("a1", 100L, "alice")
+        )
+        coEvery { offlineActivityDao.getByRemoteIds(listOf("a1")) } returns emptyList()
+        coEvery {
+            offlineActivityDao.getByLoginTimesAndUserNames(listOf(100L), listOf("alice"))
+        } returns emptyList()
+
+        repository.insertLoginActivitiesFromSync(docs)
+
+        coVerify(exactly = 1) { offlineActivityDao.getByRemoteIds(listOf("a1")) }
+        coVerify(exactly = 1) {
+            offlineActivityDao.getByLoginTimesAndUserNames(listOf(100L), listOf("alice"))
+        }
+        val slot = slot<List<OfflineActivity>>()
+        coVerify(exactly = 1) { offlineActivityDao.upsertAll(capture(slot)) }
+        assertEquals(2, slot.captured.size)
+    }
+
+    @Test
+    fun `insertLoginActivitiesFromSync skips design docs and empty keys`() = runTest {
+        val docs = listOf(
+            JsonObject().apply { addProperty("_id", "_design/someview") },
+            JsonObject().apply { addProperty("_id", "") },
+            loginDoc("a1", 100L, "alice")
+        )
+        coEvery { offlineActivityDao.getByRemoteIds(listOf("a1")) } returns emptyList()
+        coEvery {
+            offlineActivityDao.getByLoginTimesAndUserNames(listOf(100L), listOf("alice"))
+        } returns emptyList()
+
+        repository.insertLoginActivitiesFromSync(docs)
+
+        coVerify(exactly = 1) { offlineActivityDao.getByRemoteIds(listOf("a1")) }
+        val slot = slot<List<OfflineActivity>>()
+        coVerify(exactly = 1) { offlineActivityDao.upsertAll(capture(slot)) }
+        assertEquals(2, slot.captured.size)
+    }
+
+    @Test
+    fun `insertLoginActivitiesFromSync returns early when only design docs`() = runTest {
+        val docs = listOf(JsonObject().apply { addProperty("_id", "_design/someview") })
+
+        repository.insertLoginActivitiesFromSync(docs)
+
+        coVerify(exactly = 0) { offlineActivityDao.getByRemoteIds(any()) }
+        coVerify(exactly = 0) { offlineActivityDao.getByLoginTimesAndUserNames(any(), any()) }
+        coVerify(exactly = 0) { offlineActivityDao.upsertAll(any()) }
+    }
+
+    @Test
+    fun `uploadActivities serializes customDeviceName using deviceNameProvider`() = testScope.runTest {
+        val mockActivity = OfflineActivity().apply {
+            id = "act1"
+            userId = "user1"
+            userName = "john"
+            type = "login"
+            loginTime = 1000L
+        }
+        coEvery { offlineActivityDao.getPendingLoginUploads() } returns listOf(mockActivity)
+
+        val postedBodySlot = slot<KJsonObject>()
+        val mockResponse = mockk<retrofit2.Response<KJsonObject>>()
+        every { mockResponse.body() } returns buildJsonObject { put("ok", true) }
+        coEvery {
+            apiInterface.postDoc(
+                any(),
+                eq("application/json"),
+                any(),
+                capture(postedBodySlot)
+            )
+        } returns mockResponse
+        coEvery { offlineActivityDao.getByIds(listOf("act1")) } returns listOf(mockActivity)
+
+        repository.uploadActivities()
+
+        assertEquals(
+            "mock_custom_device_provider",
+            (postedBodySlot.captured["customDeviceName"] as? JsonPrimitive)?.content
+        )
+    }
+
+    @Test
+    fun `uploadMyPlanetActivities posts activities and usage stats when existing doc found`() = testScope.runTest {
+        val usageStatsManager = mockk<android.app.usage.UsageStatsManager>(relaxed = true)
+        every { context.getSystemService(Context.USAGE_STATS_SERVICE) } returns usageStatsManager
+        every { usageStatsManager.queryUsageStats(any(), any(), any()) } returns emptyList()
+
+        val mockResponseBody = buildJsonObject {
+            putJsonArray("usages") { }
+        }
+        val mockResponse = mockk<retrofit2.Response<KJsonObject>>()
+        every { mockResponse.body() } returns mockResponseBody
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns mockResponse
+
+        val userModel = UserEntity().apply {
+            parentCode = "parent"
+            planetCode = "planet"
+        }
+
+        repository.uploadMyPlanetActivities(userModel)
+
+        coVerify(exactly = 2) { apiInterface.postDoc(any(), eq("application/json"), any(), any()) }
+        coVerify(exactly = 1) { apiInterface.getJsonObject(any(), any()) }
+    }
+
+    @Test
+    fun `uploadMyPlanetActivities posts fallback activities when no existing doc found`() = testScope.runTest {
+        val usageStatsManager = mockk<android.app.usage.UsageStatsManager>(relaxed = true)
+        every { context.getSystemService(Context.USAGE_STATS_SERVICE) } returns usageStatsManager
+        every { usageStatsManager.queryUsageStats(any(), any(), any()) } returns emptyList()
+
+        val mockResponse = mockk<retrofit2.Response<KJsonObject>>()
+        every { mockResponse.body() } returns null
+        coEvery { apiInterface.getJsonObject(any(), any()) } returns mockResponse
+
+        val userModel = UserEntity().apply {
+            parentCode = "parent"
+            planetCode = "planet"
+        }
+
+        repository.uploadMyPlanetActivities(userModel)
+
+        coVerify(exactly = 2) { apiInterface.postDoc(any(), eq("application/json"), any(), any()) }
+        coVerify(exactly = 1) { apiInterface.getJsonObject(any(), any()) }
+    }
+
+    @Test
+    fun `insertLoginActivitiesFromSync skips fallback lookup when keys missing`() = runTest {
+        val docs = listOf(
+            JsonObject().apply {
+                addProperty("_id", "a1")
+                addProperty("_rev", "rev-a1")
+            }
+        )
+        coEvery { offlineActivityDao.getByRemoteIds(listOf("a1")) } returns emptyList()
+
+        repository.insertLoginActivitiesFromSync(docs)
+
+        coVerify(exactly = 0) {
+            offlineActivityDao.getByLoginTimesAndUserNames(any(), any())
+        }
+        val slot = slot<List<OfflineActivity>>()
+        coVerify(exactly = 1) { offlineActivityDao.upsertAll(capture(slot)) }
+        assertEquals(1, slot.captured.size)
     }
 }

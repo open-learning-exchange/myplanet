@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utils
 
 import android.app.Activity
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -8,30 +9,38 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 
 object KeyboardUtils {
+    private const val TAG = "KeyboardUtils"
+
     fun hideSoftKeyboard(activity: Activity) {
         try {
             val inputMethodManager = activity.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
             inputMethodManager.hideSoftInputFromWindow(activity.currentFocus?.windowToken, 0)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "hideSoftKeyboard failed", e)
         }
     }
 
     fun setupUI(v: View, activity: Activity) {
         // Set up touch listener for non-text box views to hide keyboard.
-        val onTouchListener = View.OnTouchListener { _: View?, _: MotionEvent? ->
-            hideSoftKeyboard(activity)
+        val onTouchListener = View.OnTouchListener { _: View?, event: MotionEvent? ->
+            if (event?.actionMasked == MotionEvent.ACTION_DOWN) {
+                hideSoftKeyboard(activity)
+            }
             false
         }
+        setupUIInternal(v, onTouchListener)
+    }
+
+    private fun setupUIInternal(v: View, onTouchListener: View.OnTouchListener) {
         if (v !is EditText) {
             v.setOnTouchListener(onTouchListener)
         }
 
-        //If a layout container, iterate over children and seed recursion.
+        // If a layout container, iterate over children and seed recursion.
         if (v is ViewGroup) {
             for (i in 0 until v.childCount) {
                 val innerView = v.getChildAt(i)
-                setupUI(innerView, activity)
+                setupUIInternal(innerView, onTouchListener)
             }
         }
     }

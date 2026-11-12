@@ -64,7 +64,6 @@ class CollapsedEntitiesRoundTripTest {
         assertEquals(listOf("s1"), db.submissionDao().getByTeamId("t1").map { it.id })
         assertEquals(listOf("s1"), db.submissionDao().getByUserIdAndTeamId("u1", "t1").map { it.id })
         assertEquals(listOf("s3"), db.submissionDao().getByUserIdWithoutTeam("u1").map { it.id })
-        assertEquals(3, db.submissionDao().getByUserId("u1").size)
     }
 
     @Test

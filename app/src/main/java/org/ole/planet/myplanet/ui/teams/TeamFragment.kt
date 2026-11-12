@@ -7,7 +7,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -15,12 +14,16 @@ import androidx.recyclerview.widget.SimpleItemAnimator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.OptIn
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
 import org.ole.planet.myplanet.model.TeamDetails
@@ -34,9 +37,7 @@ import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
-class TeamFragment : Fragment() {
-    private var _binding: FragmentTeamBinding? = null
-    private val binding get() = _binding!!
+class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBinding::inflate) {
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
     @Inject
     lateinit var userSessionManager: UserSessionManager
@@ -61,14 +62,16 @@ class TeamFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentTeamBinding.inflate(inflater, container, false)
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         binding.addTeam.setOnClickListener { createTeamAlert(null) }
         binding.tvFragmentInfo.text = if (TextUtils.equals(type, "enterprise")) {
             getString(R.string.enterprises)
+        } else if (fromDashboard) {
+            getString(R.string.txt_myTeams)
         } else {
             getString(R.string.team)
         }
-        return binding.root
+        return view
     }
 
     fun createTeamAlert(team: TeamDetails?) {
@@ -134,7 +137,7 @@ class TeamFragment : Fragment() {
                 if (team == null) {
                     createNewTeam(name, description, services, rules, selectedTeamType, userModel, dialog, failureMessage)
                 } else {
-                    updateExistingTeam(team, name, description, services, rules, userModel, dialog, failureMessage)
+                    updateExistingTeam(team, name, description, services, rules, dialog, failureMessage)
                 }
             }
         }
@@ -185,7 +188,7 @@ class TeamFragment : Fragment() {
 
     private suspend fun updateExistingTeam(
         team: TeamDetails, name: String, description: String, services: String, rules: String,
-        userModel: UserEntity, dialog: AlertDialog, failureMessage: String
+        dialog: AlertDialog, failureMessage: String
     ) {
         val targetTeamId = team._id ?: team.teamId
         if (targetTeamId.isNullOrBlank()) {
@@ -198,8 +201,7 @@ class TeamFragment : Fragment() {
             description = description,
             services = services,
             rules = rules,
-            category = type,
-            updatedBy = userModel._id
+            category = type
         )
         when (result) {
             is TeamActionResult.NameExists -> {
@@ -305,7 +307,7 @@ class TeamFragment : Fragment() {
     private fun observeTeamData() {
         collectLatestWhenStarted(viewModel.teamData) { teamDataList ->
             teamListAdapter.submitList(teamDataList)
-            showNoResultsMessage(teamDataList.isEmpty())
+            showNoResultsMessage(teamDataList.isEmpty(), binding.etSearch.text?.toString().orEmpty().trim())
             listContentDescription(conditionApplied)
         }
     }
@@ -313,7 +315,9 @@ class TeamFragment : Fragment() {
     @OptIn(FlowPreview::class)
     private fun setupTextWatcher() {
         binding.etSearch.textChanges()
-            .debounce(300)
+            .drop(1)
+            .debounce(300.milliseconds)
+            .distinctUntilChanged()
             .onEach { text -> viewModel.searchTeams(text?.toString() ?: "") }
             .launchIn(viewLifecycleOwner.lifecycleScope)
     }
@@ -355,7 +359,6 @@ class TeamFragment : Fragment() {
 
     override fun onDestroyView() {
         binding.rvTeamList.adapter = null
-        _binding = null
         super.onDestroyView()
     }
 }

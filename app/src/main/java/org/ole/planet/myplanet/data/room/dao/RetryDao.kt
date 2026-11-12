@@ -4,7 +4,6 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Update
 import org.ole.planet.myplanet.model.RetryOperation
 
 /**
@@ -16,17 +15,28 @@ interface RetryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(operation: RetryOperation)
 
-    @Update
-    suspend fun update(operation: RetryOperation)
-
     @Query("SELECT * FROM retry_operation WHERE id = :id LIMIT 1")
     suspend fun findById(id: String): RetryOperation?
 
     @Query(
         "SELECT * FROM retry_operation WHERE status = 'pending' " +
-            "AND nextRetryTime <= :now AND attemptCount < maxAttempts"
+            "AND nextRetryTime <= :now AND attemptCount < maxAttempts " +
+            "ORDER BY nextRetryTime ASC, id ASC"
     )
     suspend fun getPending(now: Long): List<RetryOperation>
+
+    @Query(
+        "SELECT * FROM retry_operation WHERE status = 'pending' " +
+            "AND nextRetryTime <= :now AND attemptCount < maxAttempts " +
+            "ORDER BY nextRetryTime ASC, id ASC LIMIT :limit"
+    )
+    suspend fun getPendingPreview(now: Long, limit: Int): List<RetryOperation>
+
+    @Query(
+        "SELECT COUNT(*) FROM retry_operation WHERE status = 'pending' " +
+            "AND nextRetryTime <= :now AND attemptCount < maxAttempts"
+    )
+    suspend fun getPendingDueCount(now: Long): Long
 
     @Query("SELECT COUNT(*) FROM retry_operation WHERE status = 'pending' OR status = 'in_progress'")
     suspend fun getActiveCount(): Long
@@ -34,18 +44,38 @@ interface RetryDao {
     @Query("DELETE FROM retry_operation WHERE status = 'completed' AND lastAttemptTime < :cutoff")
     suspend fun deleteOldCompleted(cutoff: Long)
 
-    @Query("UPDATE retry_operation SET nextRetryTime = :now WHERE status = 'pending'")
-    suspend fun resetPendingRetryTime(now: Long)
-
     @Query(
-        "SELECT * FROM retry_operation WHERE itemId = :itemId AND uploadType = :uploadType " +
+        "SELECT id FROM retry_operation WHERE itemId = :itemId AND uploadType = :uploadType " +
             "AND status != 'completed' AND status != 'abandoned' LIMIT 1"
     )
-    suspend fun findExisting(itemId: String, uploadType: String): RetryOperation?
+    suspend fun findExistingId(itemId: String, uploadType: String): String?
 
     @Query("DELETE FROM retry_operation WHERE status = 'pending' OR status = 'abandoned'")
     suspend fun deletePendingAndAbandoned()
 
     @Query("UPDATE retry_operation SET status = 'pending', nextRetryTime = :retryTime WHERE status = 'in_progress'")
     suspend fun recoverStuck(retryTime: Long)
+
+    @Query("UPDATE retry_operation SET status = 'in_progress' WHERE id = :id")
+    suspend fun markInProgress(id: String): Int
+
+    @Query("UPDATE retry_operation SET status = 'completed', lastAttemptTime = :timestamp WHERE id = :id")
+    suspend fun markCompleted(id: String, timestamp: Long): Int
+
+    @Query(
+        "UPDATE retry_operation SET " +
+            "attemptCount = attemptCount + 1, " +
+            "lastAttemptTime = :timestamp, " +
+            "nextRetryTime = CASE WHEN attemptCount + 1 >= maxAttempts THEN nextRetryTime ELSE :timestamp + MIN(30000 * (1 << MIN(attemptCount + 1, 30)), 1800000) END, " +
+            "errorMessage = :errorMessage, " +
+            "httpCode = :httpCode, " +
+            "status = CASE WHEN attemptCount + 1 >= maxAttempts THEN 'abandoned' ELSE 'pending' END " +
+            "WHERE id = :id"
+    )
+    suspend fun recordFailedAttempt(
+        id: String,
+        errorMessage: String?,
+        httpCode: Int?,
+        timestamp: Long
+    ): Int
 }

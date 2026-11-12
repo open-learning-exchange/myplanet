@@ -16,6 +16,9 @@ class CoursesStepsAdapter(
     private val onStepClicked: (String) -> Unit
 ) : ListAdapter<StepItem, CoursesStepsAdapter.ViewHolder>(STEP_ITEM_COMPARATOR) {
 
+    private val testSizeTemplate by lazy { context.getString(R.string.test_size) }
+    private val formatLocale by lazy { context.resources.configuration.locales[0] }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CoursesStepsAdapter.ViewHolder {
         val rowStepsBinding = RowStepsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(rowStepsBinding)
@@ -50,7 +53,7 @@ class CoursesStepsAdapter(
 
         fun bind(step: StepItem) {
             rowStepsBinding.tvTitle.text = step.stepTitle
-            rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, step.questionCount)
+            rowStepsBinding.tvDescription.text = String.format(formatLocale, testSizeTemplate, step.questionCount)
             updateDescriptionVisibility(step.isDescriptionVisible)
         }
 

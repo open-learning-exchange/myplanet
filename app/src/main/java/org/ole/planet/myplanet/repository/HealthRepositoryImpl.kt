@@ -1,40 +1,43 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dagger.Lazy
 import java.util.Date
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.jsonObject
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
+import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.HealthExamination.Companion.serialize
+import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
+import org.ole.planet.myplanet.utils.toSyncDocuments
 
 class HealthRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     private val dispatcherProvider: DispatcherProvider,
     private val healthExaminationDao: HealthExaminationDao,
-    private val userDao: UserDao
+    private val userRepository: Lazy<UserRepository>,
+    @PlainGson private val gson: Gson
 ) : HealthRepository {
-    override suspend fun getHealthEntry(userId: String): Pair<UserEntity?, HealthExamination?> {
-        val userCopy = userDao.getById(userId)
-        val pojoCopy = healthExaminationDao.getByIdOrUserId(userId)
-
-        return Pair(userCopy, pojoCopy)
-    }
-
     override suspend fun getExaminationById(id: String): HealthExamination? {
         return healthExaminationDao.getById(id)
     }
@@ -50,20 +53,32 @@ class HealthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getUpdatedHealthExaminations(): List<HealthExamination> {
+    suspend fun getUpdatedHealthExaminations(): List<HealthExamination> {
         return healthExaminationDao.getUpdated()
     }
 
-    override suspend fun getUpdatedHealthForUser(userId: String): List<HealthExamination> {
+    suspend fun getUpdatedHealthForUser(userId: String): List<HealthExamination> {
         return healthExaminationDao.getUpdatedForUser(userId)
     }
 
-    override suspend fun markHealthExaminationsUploaded(idToRevMap: Map<String, String?>) {
+    suspend fun markHealthExaminationsUploaded(idToRevMap: Map<String, String?>) {
         healthExaminationDao.markUploaded(idToRevMap)
     }
 
+    override suspend fun syncPendingHealthExaminations() {
+        val myHealths = getUpdatedHealthExaminations()
+        val uploadedHealths = uploadHealthData(myHealths)
+        markHealthExaminationsUploaded(uploadedHealths)
+    }
+
+    override suspend fun syncPendingHealthExaminationsForUser(userId: String) {
+        val myHealths = getUpdatedHealthForUser(userId)
+        val uploadedHealths = uploadHealthData(myHealths)
+        markHealthExaminationsUploaded(uploadedHealths)
+    }
+
     override suspend fun saveExamination(examination: HealthExamination?, pojo: HealthExamination?, user: UserEntity?) {
-        user?.let { userDao.upsert(it) }
+        user?.let { userRepository.get().saveUser(it) }
         pojo?.let { healthExaminationDao.upsert(it) }
         examination?.let { healthExaminationDao.upsert(it) }
     }
@@ -73,15 +88,10 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
-        val examinations = ArrayList<HealthExamination>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                examinations.add(HealthExamination.fromJson(jsonDoc))
-            }
-        }
+        val locallyUpdatedIds = healthExaminationDao.getUpdatedIds().toHashSet()
+        val examinations = jsonArray.toSyncDocuments()
+            .map { (_, doc) -> HealthExamination.fromJson(doc) }
+            .filterNot { it._id in locallyUpdatedIds }
         healthExaminationDao.upsertAll(examinations)
     }
 
@@ -90,12 +100,12 @@ class HealthRepositoryImpl @Inject constructor(
             val result = mutableMapOf<String, Boolean>()
             if (examination != null && !examination.conditions.isNullOrEmpty()) {
                 try {
-                    val conditions = JsonUtils.gson.fromJson(examination.conditions, JsonObject::class.java)
-                    for (key in conditions.keySet()) {
-                        result[key] = JsonUtils.getBoolean(key, conditions)
+                    val conditions = gson.fromJson(examination.conditions, JsonObject::class.java)
+                    for ((key, value) in conditions.entrySet()) {
+                        result[key] = value != null && !value.isJsonNull && value.isJsonPrimitive && value.asBoolean
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e("HealthRepository", "Failed to parse examination conditions", e)
                 }
             }
             result
@@ -114,15 +124,18 @@ class HealthRepositoryImpl @Inject constructor(
                                 UrlUtils.header,
                                 "application/json",
                                 "${UrlUtils.getUrl()}/health",
-                                serialize(pojo)
+                                serialize(pojo).toKotlinx().jsonObject
                             )
+                            val resBody = res.body()?.toGson()
 
-                            if (res.body() != null && res.body()?.has("id") == true) {
-                                val rev = res.body()?.get("rev")?.asString
+                            if (resBody != null && resBody.has("id") == true) {
+                                val rev = resBody.get("rev")?.asString
                                 return@async pojo._id to rev
                             }
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Throwable) {
-                            e.printStackTrace()
+                            Log.e("HealthRepository", "Failed to upload health data", e)
                         }
                         null
                     }
@@ -144,5 +157,120 @@ class HealthRepositoryImpl @Inject constructor(
 
     override suspend fun upsert(examination: HealthExamination) {
         healthExaminationDao.upsert(examination)
+    }
+
+
+    private fun decodeHealth(healthPojo: HealthExamination?, userModel: UserEntity?): MyHealth? {
+        val data = healthPojo?.data
+        if (data.isNullOrEmpty()) return null
+        return try {
+            val decrypted = AndroidDecrypter.decrypt(data, userModel?.key, userModel?.iv)
+            gson.fromJson(decrypted, MyHealth::class.java)
+        } catch (e: Exception) {
+            Log.e("HealthRepository", "Failed to decode health data", e)
+            null
+        }
+    }
+
+    override suspend fun getHealthProfile(userId: String): MyHealth? {
+        val userModel = userRepository.get().getUserById(userId)
+        return decodeHealth(healthExaminationDao.getByIdOrUserId(userId), userModel)
+    }
+
+    override suspend fun getDecryptedHealth(pojo: HealthExamination?, user: UserEntity?): MyHealth? {
+        return decodeHealth(pojo, user)
+    }
+
+    private fun applyUserDetails(userModel: UserEntity, userData: Map<String, Any?>) {
+        userModel.apply {
+            firstName = (userData["firstName"] as? String)?.trim()
+            middleName = (userData["middleName"] as? String)?.trim()
+            lastName = (userData["lastName"] as? String)?.trim()
+            email = (userData["email"] as? String)?.trim()
+            phoneNumber = (userData["phoneNumber"] as? String)?.trim()
+            birthPlace = (userData["birthPlace"] as? String)?.trim()
+            userData["dob"]?.let { dobVal ->
+                val dobInput = (dobVal as String).trim()
+                dob = TimeUtils.convertDDMMYYYYToISO(dobInput)
+            }
+            isUpdated = true
+        }
+    }
+
+    private fun applyProfileFields(profile: MyHealth.MyHealthProfile, userData: Map<String, Any?>) {
+        fun trimmed(key: String) = (userData[key] as? String)?.trim() ?: ""
+
+        profile.emergencyContactName = trimmed("emergencyContactName")
+        profile.emergencyContact = trimmed("emergencyContact").ifEmpty { profile.emergencyContact }
+        profile.emergencyContactType = trimmed("emergencyContactType").ifEmpty { profile.emergencyContactType }
+        profile.specialNeeds = trimmed("specialNeeds")
+        profile.notes = trimmed("notes")
+    }
+
+    override suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>) {
+        val userModel = userRepository.get().getUserById(userId)
+        val healthPojo = healthExaminationDao.getByIdOrUserId(userId) ?: HealthExamination().apply { _id = userId }
+
+        userModel?.let {
+            applyUserDetails(it, userData)
+            userRepository.get().saveUser(it)
+        }
+
+        val myHealth = decodeHealth(healthPojo, userModel) ?: MyHealth()
+        if (myHealth.userKey.isNullOrEmpty()) {
+            myHealth.userKey = AndroidDecrypter.generateKey()
+        }
+
+        val profile = myHealth.profile ?: MyHealth.MyHealthProfile().also { myHealth.profile = it }
+        applyProfileFields(profile, userData)
+
+        healthPojo.userId = userModel?._id
+        healthPojo.isUpdated = true
+
+        try {
+            val key = userModel?.key ?: AndroidDecrypter.generateKey().also { newKey -> userModel?.key = newKey }
+            val iv = userModel?.iv ?: AndroidDecrypter.generateIv().also { newIv -> userModel?.iv = newIv }
+            healthPojo.data = AndroidDecrypter.encrypt(gson.toJson(myHealth), key, iv)
+            userModel?.let { userRepository.get().saveUser(it) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e("HealthRepository", "Failed to encrypt or save user health profile", e)
+        }
+        healthExaminationDao.upsert(healthPojo)
+    }
+
+    override suspend fun getPatientHealthRecords(userId: String, currentUser: UserEntity): HealthRecord? {
+        val mh = getByIdOrUserId(userId) ?: return null
+        val json = AndroidDecrypter.decrypt(mh.data, currentUser.key, currentUser.iv)
+        val mm = if (json.isNullOrEmpty()) {
+            null
+        } else {
+            try {
+                gson.fromJson(json, MyHealth::class.java)
+            } catch (e: Exception) {
+                Log.e("HealthRepository", "Failed to parse health record JSON", e)
+                null
+            }
+        } ?: return null
+
+        val list = getByProfileId(mm.userKey ?: "")
+        if (list.isEmpty()) {
+            return HealthRecord(mh, mm, emptyList(), emptyMap())
+        }
+
+        val userIds = list.mapNotNull {
+            it.getEncryptedDataAsJson(currentUser).let { jsonData ->
+                jsonData.get("createdBy")?.asString
+            }
+        }.distinct()
+
+        val userMap = if (userIds.isEmpty()) {
+            emptyMap()
+        } else {
+            userRepository.get().getUsersByIds(userIds)
+                .associateBy { it.id ?: "" }
+        }
+        return HealthRecord(mh, mm, list, userMap)
     }
 }

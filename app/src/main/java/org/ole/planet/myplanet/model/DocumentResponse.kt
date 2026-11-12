@@ -1,5 +1,8 @@
 package org.ole.planet.myplanet.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 class DocumentResponse {
     private var totalRows: String? = null
     private var offset: String? = null

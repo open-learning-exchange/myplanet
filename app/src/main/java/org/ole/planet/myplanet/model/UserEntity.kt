@@ -1,21 +1,27 @@
 package org.ole.planet.myplanet.model
 
-import android.util.Base64
 import androidx.core.net.toUri
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import java.io.File
 import java.io.InputStream
-import java.util.Locale
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.apache.commons.lang3.StringUtils
+import org.json.JSONException
+import org.json.JSONObject
 import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.utils.DOCUMENT_ORIGIN
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @Entity(tableName = "users", indices = [Index("_id"), Index("name"), Index("planetCode")])
 open class UserEntity(
@@ -52,75 +58,80 @@ open class UserEntity(
     var isArchived: Boolean = false
 ) {
     fun serialize(): JsonObject {
-        val jsonObject = JsonObject()
-        if (_id?.isNotEmpty() == true) {
-            jsonObject.addProperty("_id", _id)
-            jsonObject.addProperty("_rev", _rev)
-        }
-        jsonObject.addProperty("name", name)
-        jsonObject.add("roles", getRoles())
-        if (_id?.isEmpty() == true) {
-            jsonObject.addProperty("password", password)
-            jsonObject.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-            jsonObject.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context))
-            jsonObject.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
-        } else {
-            jsonObject.addProperty("derived_key", derived_key)
-            jsonObject.addProperty("salt", salt)
-            jsonObject.addProperty("password_scheme", password_scheme)
-        }
-        jsonObject.addProperty("isUserAdmin", userAdmin)
-        jsonObject.addProperty("joinDate", joinDate)
-        jsonObject.addProperty("firstName", firstName)
-        jsonObject.addProperty("lastName", lastName)
-        jsonObject.addProperty("middleName", middleName)
-        jsonObject.addProperty("email", email)
-        jsonObject.addProperty("language", language)
-        jsonObject.addProperty("level", level)
-        jsonObject.addProperty("type", "user")
-        jsonObject.addProperty("gender", gender)
-        jsonObject.addProperty("phoneNumber", phoneNumber)
-        jsonObject.addProperty("birthDate", dob)
-        jsonObject.addProperty("age", age)
-        try {
-            jsonObject.addProperty("iterations", iterations?.takeIf { it.isNotBlank() }?.toInt() ?: 10)
+        val iterationsValue = try {
+            iterations?.takeIf { it.isNotBlank() }?.toInt() ?: 10
         } catch (e: NumberFormatException) {
             e.printStackTrace()
-            jsonObject.addProperty("iterations", 10)
+            10
         }
-        jsonObject.addProperty("parentCode", parentCode)
-        jsonObject.addProperty("planetCode", planetCode)
-        jsonObject.addProperty("birthPlace", birthPlace)
-        jsonObject.addProperty("isArchived", isArchived)
-
         val base64Image = encodeImageToBase64(userImage)
 
-        if (!base64Image.isNullOrEmpty()) {
-            val attachmentObject = JsonObject()
-            val imageData = JsonObject()
-            imageData.addProperty("content_type", "image/jpeg")
-            imageData.addProperty("data", base64Image)
+        return buildJsonObject {
+            if (_id?.isNotEmpty() == true) {
+                put("_id", _id)
+                put("_rev", _rev)
+            }
+            put("name", name)
+            put("roles", getRoles().toKotlinx())
+            if (_id?.isEmpty() == true) {
+                put("password", password)
+                put("androidId", NetworkUtils.getUniqueIdentifier())
+                put("app", DOCUMENT_ORIGIN)
+                put("uniqueAndroidId", VersionUtils.getAndroidId(context))
+                put("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+            } else {
+                put("derived_key", derived_key)
+                put("salt", salt)
+                put("password_scheme", password_scheme)
+            }
+            put("isUserAdmin", userAdmin)
+            put("joinDate", joinDate)
+            put("firstName", firstName)
+            put("lastName", lastName)
+            put("middleName", middleName)
+            put("email", email)
+            put("language", language)
+            put("level", level)
+            put("type", "user")
+            put("gender", gender)
+            put("phoneNumber", phoneNumber)
+            put("birthDate", dob)
+            put("age", age)
+            put("iterations", iterationsValue)
+            put("parentCode", parentCode)
+            put("planetCode", planetCode)
+            put("birthPlace", birthPlace)
+            put("isArchived", isArchived)
 
-            attachmentObject.add("img", imageData)
-            jsonObject.add("_attachments", attachmentObject)
-        }
-
-        return jsonObject
+            if (!base64Image.isNullOrEmpty()) {
+                put("_attachments", buildJsonObject {
+                    put("img", buildJsonObject {
+                        put("content_type", "image/jpeg")
+                        put("data", base64Image)
+                    })
+                })
+            }
+        }.toGson()
     }
 
     fun encodeImageToBase64(imagePath: String?): String? {
         if (imagePath.isNullOrEmpty()) return null
+        if (imagePath.startsWith("http://", ignoreCase = true) || imagePath.startsWith("https://", ignoreCase = true)) {
+            return null
+        }
         return try {
             val inputStream: InputStream? = if (imagePath.startsWith("content://")) {
                 val uri = imagePath.toUri()
                 context.contentResolver.openInputStream(uri)
             } else {
-                File(imagePath).inputStream()
+                val file = File(imagePath)
+                if (!file.isFile) return null
+                file.inputStream()
             }
 
             inputStream?.use {
                 val bytes = it.readBytes()
-                Base64.encodeToString(bytes, Base64.NO_WRAP)
+                java.util.Base64.getEncoder().encodeToString(bytes)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -128,13 +139,11 @@ open class UserEntity(
         }
     }
 
-    private fun getRoles(): JsonArray {
-        val ar = JsonArray()
-        for (s in rolesList ?: emptyList())    {
-            ar.add(s)
+    private fun getRoles(): JsonArray = buildJsonArray {
+        for (s in rolesList ?: emptyList()) {
+            add(s)
         }
-        return ar
-    }
+    }.toGson()
 
     fun setRoles(roles: List<String>?) {
         rolesList = roles
@@ -158,29 +167,27 @@ open class UserEntity(
 
     fun addImageUrl(jsonDoc: JsonObject?) {
         if (jsonDoc?.has("_attachments") == true) {
-            val element = JsonParser.parseString(jsonDoc["_attachments"].asJsonObject.toString())
-            val obj = element.asJsonObject
-            val entries = obj.entrySet()
-            for ((key1) in entries) {
+            val obj = jsonDoc["_attachments"].asJsonObject
+            val key1 = obj.entrySet().firstOrNull()?.key
+            if (key1 != null) {
                 userImage = UrlUtils.getUserImageUrl(id, key1)
-                break
             }
         }
     }
 
     fun isManager(): Boolean {
-        val hasManagerRole = rolesList?.any { it.contains("manager", ignoreCase = true) } == true
+        val hasManagerRole = rolesList?.any { it.equals("manager", ignoreCase = true) } == true
         return hasManagerRole || userAdmin ?: false
     }
 
     fun isLeader(): Boolean {
-        return rolesList?.any { it.contains("leader", ignoreCase = true) } == true
+        return rolesList?.any { it.equals("leader", ignoreCase = true) } == true
     }
 
     fun isGuest(): Boolean {
         val hasGuestId = _id?.startsWith("guest_") == true
-        val hasGuestRole = rolesList?.any { it?.lowercase() == "guest" } == true
-        return hasGuestId || (hasGuestRole && rolesList?.any { it?.lowercase() == "learner" } != true)
+        val hasGuestRole = rolesList?.any { it.equals("guest", ignoreCase = true) } == true
+        return hasGuestId || (hasGuestRole && rolesList?.any { it.equals("learner", ignoreCase = true) } != true)
     }
 
     override fun toString(): String {
@@ -188,5 +195,38 @@ open class UserEntity(
     }
 
     companion object {
+        fun parseLeadersJson(jsonString: String): List<UserEntity> {
+            val leadersList = mutableListOf<UserEntity>()
+            try {
+                val jsonObject = JSONObject(jsonString)
+                val docsArray = jsonObject.getJSONArray("docs")
+                for (i in 0 until docsArray.length()) {
+                    val docObject = docsArray.getJSONObject(i)
+                    val user = UserEntity()
+                    user.name = docObject.getString("name")
+                    user.id = if (!docObject.isNull("_id")) {
+                        docObject.getString("_id")
+                    } else {
+                        "org.couchdb.user:${user.name}"
+                    }
+                    user.rolesList = mutableListOf()
+                    if (!docObject.isNull("firstName")) {
+                        user.firstName = docObject.getString("firstName")
+                    }
+                    if (!docObject.isNull("lastName")) {
+                        user.lastName = docObject.getString("lastName")
+                    }
+                    if (!docObject.isNull("email")) {
+                        user.email = docObject.getString("email")
+                    }
+                    leadersList.add(user)
+                }
+            } catch (e: JSONException) {
+                e.printStackTrace()
+            }
+            return leadersList
+        }
     }
 }
+
+val UserEntity.effectiveId: String get() = _id?.takeIf { it.isNotEmpty() } ?: id

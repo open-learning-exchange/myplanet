@@ -5,31 +5,23 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseMemberFragment
-import org.ole.planet.myplanet.callback.OnMemberChangeListener
+import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class RequestsFragment : BaseMemberFragment() {
 
-    @Inject
-    lateinit var userSessionManager: UserSessionManager
-
     private val viewModel: RequestsViewModel by viewModels()
     private lateinit var currentUser: UserEntity
-    private var onMemberChangeListener: OnMemberChangeListener? = null
-    fun setOnMemberChangeListener(listener: OnMemberChangeListener) {
+    private var onMemberChangeListener: OnChangedListener? = null
+    fun setOnMemberChangeListener(listener: OnChangedListener) {
         this.onMemberChangeListener = listener
     }
 
@@ -41,26 +33,18 @@ class RequestsFragment : BaseMemberFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewModel.fetchMembers(teamId)
-        viewLifecycleOwner.lifecycleScope.launch {
-            currentUser = userSessionManager.getUserModel() ?: UserEntity()
-            (adapter as? RequestsAdapter)?.setUser(currentUser)
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    viewModel.uiState.collect { uiState ->
-                        (adapter as? RequestsAdapter)?.setData(
-                            uiState.members,
-                            uiState.isLeader,
-                            uiState.memberCount
-                        )
-                        showNoData(binding.tvNodata, uiState.members.size, "members")
-                    }
-                }
-                launch {
-                    viewModel.successAction.collect {
-                        onMemberChangeListener?.onMemberChanged()
-                    }
-                }
-            }
+        collectWhenStarted(viewModel.uiState) { uiState ->
+            (adapter as? RequestsAdapter)?.setUser(uiState.currentUser)
+            (adapter as? RequestsAdapter)?.setData(
+                uiState.members,
+                uiState.isLeader,
+                uiState.memberCount,
+                uiState.memberLimit
+            )
+            showNoData(binding.tvNodata, uiState.members.size, "members")
+        }
+        collectWhenStarted(viewModel.successAction) {
+            onMemberChangeListener?.onChanged()
         }
     }
 
@@ -75,7 +59,6 @@ class RequestsFragment : BaseMemberFragment() {
 
     override val adapter: ListAdapter<*, *> by lazy {
         RequestsAdapter(
-            requireActivity(),
             currentUser,
         ) { user, isAccepted ->
             viewModel.respondToRequest(teamId, user, isAccepted)

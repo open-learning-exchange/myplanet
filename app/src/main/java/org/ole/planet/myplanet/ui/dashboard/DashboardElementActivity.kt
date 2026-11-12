@@ -5,18 +5,17 @@ import android.os.Bundle
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.MenuItem
+import androidx.activity.viewModels
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.afollestad.materialdialogs.MaterialDialog
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import javax.inject.Inject
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
-import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
@@ -31,11 +30,8 @@ import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 
 abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBackStackChangedListener {
-    @Inject
-    lateinit var activitiesRepository: ActivitiesRepository
+    private val dashboardElementViewModel: DashboardElementViewModel by viewModels()
     lateinit var navigationView: BottomNavigationView
-    private lateinit var goOnline: MenuItem
-    var c = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,8 +43,8 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             0 -> openCallFragment(BellDashboardFragment(), "dashboard")
             1 -> openCallFragment(ResourcesFragment(), "library")
             2 -> openCallFragment(CoursesFragment(), "course")
+            3 -> openCallFragment(TeamFragment(), "teams")
             4 -> openEnterpriseFragment()
-            3 -> openCallFragment(TeamFragment(), "survey")
             5 -> {
                 openCallFragment(CommunityTabFragment(), "community")
             }
@@ -57,46 +53,17 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
 
     fun openCallFragment(newFragment: Fragment, tag: String?) {
         val fragmentManager = supportFragmentManager
-        if(c<2){
-            c=0
-        }
-        val existingFragment = fragmentManager.findFragmentByTag(tag)
-        if (tag == "") {
-            c++
-            if(c>2){
-                c--
-                FragmentNavigator.popBackStack(fragmentManager, tag, 0)
-            }else{
-                FragmentNavigator.replaceFragment(
-                    fragmentManager,
-                    R.id.fragment_container,
-                    newFragment,
-                    addToBackStack = true,
-                    tag = tag
-                )
-            }
-        } else {
-            if (existingFragment != null && existingFragment.isVisible) {
-                return
-            } else if (existingFragment != null) {
-                if(c>0 && c>2){
-                    c=0
-                }
-                FragmentNavigator.popBackStack(fragmentManager, tag, 0)
-            } else {
-                if(c>0 && c>2){
-                    c=0
-                }
-                if(tag!="") {
-                    FragmentNavigator.replaceFragment(
-                        fragmentManager,
-                        R.id.fragment_container,
-                        newFragment,
-                        addToBackStack = true,
-                        tag = tag
-                    )
-                }
-            }
+        val existing = tag?.takeIf { it.isNotEmpty() }?.let { fragmentManager.findFragmentByTag(it) }
+        when {
+            existing?.isVisible == true -> return
+            existing != null -> FragmentNavigator.popBackStack(fragmentManager, tag, 0)
+            else -> FragmentNavigator.replaceFragment(
+                fragmentManager,
+                R.id.fragment_container,
+                newFragment,
+                addToBackStack = true,
+                tag = tag
+            )
         }
     }
 
@@ -135,19 +102,19 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         val dialog = builder.build()
         currentDialog = dialog
         lifecycleScope.launch {
-            val userModel = profileDbHandler.getUserModel()
+            val userModel = dashboardElementViewModel.currentUser()
             if (userModel?.id?.startsWith("guest") == true) {
                 DialogUtils.guestDialog(this@DashboardElementActivity)
                 return@launch
             }
             checkMinApk(url, serverPin, "DashboardActivity")
-            activitiesRepository.recordSyncUserChallengeAction("${userModel?.id}")
+            dashboardElementViewModel.recordUserChallengeAction("${userModel?.id}")
         }
     }
 
     fun logout() {
         lifecycleScope.launch {
-            profileDbHandler.logoutAsync()
+            dashboardElementViewModel.logout()
             withContext(dispatcherProvider.io) { SecurePrefs.clearCredentials(this@DashboardElementActivity) }
             prefData.setLoggedIn(false)
             prefData.setNotificationShown(false)
@@ -172,15 +139,15 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         val fragmentTag = f?.tag
         if (f is CoursesFragment) {
             if ("MyCoursesFragment" == fragmentTag) {
-                navigationView.menu.findItem(R.id.menu_mycourses).isChecked = true
+                navigationView.menu.findItem(R.id.menu_mycourses)?.isChecked = true
             } else {
-                navigationView.menu.findItem(R.id.menu_courses).isChecked = true
+                navigationView.menu.findItem(R.id.menu_courses)?.isChecked = true
             }
         } else if (f is ResourcesFragment) {
             if ("MyResourcesFragment" == fragmentTag) {
-                navigationView.menu.findItem(R.id.menu_mylibrary).isChecked = true
+                navigationView.menu.findItem(R.id.menu_mylibrary)?.isChecked = true
             } else {
-                navigationView.menu.findItem(R.id.menu_library).isChecked = true
+                navigationView.menu.findItem(R.id.menu_library)?.isChecked = true
             }
         }
     }

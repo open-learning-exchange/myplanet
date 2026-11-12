@@ -8,8 +8,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,31 +19,31 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.coroutineScope
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamNotificationInfo
-import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.repository.SyncRepository
+import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.repository.SyncUiState
-import org.ole.planet.myplanet.repository.SyncRepository
-
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NotificationConfig
 import org.ole.planet.myplanet.utils.RetryUtils
 
@@ -51,7 +53,6 @@ data class DashboardUiState(
     val library: List<MyLibrary> = emptyList(),
     val courses: List<MyCourse> = emptyList(),
     val teams: List<MyTeam> = emptyList(),
-    val users: List<UserEntity> = emptyList(),
     val offlineLogins: Int = 0,
     val fullName: String? = null,
 )
@@ -63,6 +64,23 @@ data class ChallengeDialogData(
     val hasUnfinishedSurvey: Boolean,
     val hasValidSync: Boolean
 )
+
+data class GuestVisitState(
+    val offlineVisits: Int,
+    val isGuest: Boolean
+) {
+    val bannerMessageRes: Int?
+        get() = when {
+            !isGuest -> null
+            offlineVisits == 2 -> R.string.guest_visit_limit_warning
+            offlineVisits == 3 -> R.string.last_login_message
+            else -> null
+        }
+    val shouldShowTrialEndedDialog: Boolean
+        get() = isGuest && offlineVisits >= 4
+    val shouldAutoOpenDrawer: Boolean
+        get() = !(isGuest && offlineVisits >= 3)
+}
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
@@ -76,11 +94,26 @@ class DashboardViewModel @Inject constructor(
     private val surveysRepository: SurveysRepository,
     private val progressRepository: ProgressRepository,
     private val voicesRepository: VoicesRepository,
+    private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider,
     private val syncRepository: SyncRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+
+    private var guestVisitStateDeferred: Deferred<GuestVisitState>? = null
+
+    fun getGuestVisitState(userId: String?): Deferred<GuestVisitState> {
+        return guestVisitStateDeferred ?: viewModelScope.async {
+            val isGuest = userId?.startsWith("guest") == true
+            val offlineVisits = if (isGuest && userId != null) {
+                activitiesRepository.getOfflineVisitCount(userId)
+            } else {
+                0
+            }
+            GuestVisitState(offlineVisits, isGuest)
+        }.also { guestVisitStateDeferred = it }
+    }
 
     private val _surveyNavigationEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val surveyNavigationEvent: SharedFlow<String> = _surveyNavigationEvent.asSharedFlow()
@@ -117,20 +150,6 @@ class DashboardViewModel @Inject constructor(
         _uiState.update { it.copy(unreadNotifications = count) }
     }
 
-    fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
-        val earnedDollarsVoice = minOf(voiceCount, 5) * 2
-        val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
-        val total = earnedDollarsVoice + earnedDollarsSurvey
-        return total.coerceAtMost(500)
-    }
-
-    fun calculateCommunityProgress(allVoiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
-        val earnedDollarsVoice = minOf(allVoiceCount, 5) * 2
-        val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
-        val total = earnedDollarsVoice + earnedDollarsSurvey
-        return total.coerceAtMost(11)
-    }
-
     suspend fun updateResourceNotification(userId: String?) {
         val resourceCount = resourcesRepository.countLibrariesNeedingUpdate(userId)
         notificationsRepository.updateResourceNotification(userId, resourceCount)
@@ -149,8 +168,18 @@ class DashboardViewModel @Inject constructor(
 
         libraryJob?.cancel()
         libraryJob = viewModelScope.launch {
-            val myLibrary = resourcesRepository.getMyLibrary(userId)
-            _uiState.update { it.copy(library = myLibrary) }
+            resourcesRepository.getMyLibraryFlow(userId)
+                .flowOn(dispatcherProvider.io)
+                .distinctUntilChanged { old, new ->
+                    if (old.size != new.size) return@distinctUntilChanged false
+                    for (i in old.indices) {
+                        if (old[i]._id != new[i]._id || old[i]._rev != new[i]._rev) return@distinctUntilChanged false
+                    }
+                    true
+                }
+                .collect { myLibrary ->
+                    _uiState.update { it.copy(library = myLibrary) }
+                }
         }
 
         coursesJob?.cancel()
@@ -181,17 +210,6 @@ class DashboardViewModel @Inject constructor(
 
     suspend fun getTeamType(teamId: String): String? {
         return teamsRepository.getTeamType(teamId)
-    }
-
-    suspend fun getLibraryListForUser(userId: String?): List<MyLibrary> {
-        return resourcesRepository.getLibraryListForUser(userId)
-    }
-
-    fun loadUsers() {
-        viewModelScope.launch {
-            val users = userRepository.getUsersSortedBy("joinDate", true)
-            _uiState.update { it.copy(users = users) }
-        }
     }
 
     fun dashboardDataFlow(userId: String?): Flow<Unit> {
@@ -265,12 +283,27 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
+    internal fun isChallengeWindowOpen(
+        isGuest: Boolean,
+        serverUrl: String,
+        validUrls: List<String>,
+        today: LocalDate = LocalDate.now()
+    ): Boolean {
+        val endDate = LocalDate.of(2025, 1, 16)
+        val shouldPrompt = today.isAfter(LocalDate.of(2024, 11, 30)) &&
+                today.isBefore(endDate) &&
+                serverUrl in validUrls
+        return !isGuest && shouldPrompt
+    }
+
     fun evaluateChallengeDialog(
         userId: String?,
         isGuest: Boolean,
         validUrls: List<String>,
         serverUrl: String
     ) {
+        if (!isChallengeWindowOpen(isGuest, serverUrl, validUrls)) return
+
         val startTime = 1730419200000
         val endTime = 1734307200000
         val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
@@ -279,28 +312,22 @@ class DashboardViewModel @Inject constructor(
             try {
                 val dialogData = coroutineScope {
                     val courseDataDeferred = async { progressRepository.fetchCourseData(userId) }
-                    val uniqueDatesDeferred = async { voicesRepository.getCommunityVoiceDates(startTime, endTime, userId) }
-                    val allUniqueDatesDeferred = async { voicesRepository.getCommunityVoiceDates(startTime, endTime, null) }
+                    val voiceCountDeferred = async { voicesRepository.getCommunityVoiceDateCount(startTime, endTime, userId) }
+                    val allVoiceCountDeferred = async { voicesRepository.getCommunityVoiceDateCount(startTime, endTime, null) }
                     val courseNameDeferred = async { coursesRepository.getCourseTitleById(courseId) }
                     val hasUnfinishedSurveyDeferred = async { submissionsRepository.hasPendingSurvey(courseId, userId) }
 
                     val courseData = courseDataDeferred.await()
-                    val uniqueDates = uniqueDatesDeferred.await()
-                    val allUniqueDates = allUniqueDatesDeferred.await()
+                    val voiceCount = voiceCountDeferred.await()
+                    val allVoiceCount = allVoiceCountDeferred.await()
                     val courseName = courseNameDeferred.await()
                     val hasUnfinishedSurvey = hasUnfinishedSurveyDeferred.await()
 
                     val progress = progressRepository.findProgressForCourse(courseData, courseId)
 
                     val today = LocalDate.now()
-                    val endDate = LocalDate.of(2025, 1, 16)
-                    val shouldPrompt = today.isAfter(LocalDate.of(2024, 11, 30)) &&
-                            today.isBefore(endDate) &&
-                            serverUrl in validUrls
-
-                    if (!isGuest && shouldPrompt) {
+                    if (isChallengeWindowOpen(isGuest, serverUrl, validUrls, today)) {
                         val courseStatus = getCourseStatusString(progress, courseName)
-                        val voiceCount = uniqueDates.size
                         val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
                         var hasValidSync = false
                         if (prereqsMet) {
@@ -308,9 +335,9 @@ class DashboardViewModel @Inject constructor(
                         }
 
                         ChallengeDialogData(
-                            voiceCount = uniqueDates.size,
+                            voiceCount = voiceCount,
                             courseStatus = courseStatus,
-                            allVoiceCount = allUniqueDates.size,
+                            allVoiceCount = allVoiceCount,
                             hasUnfinishedSurvey = hasUnfinishedSurvey,
                             hasValidSync = hasValidSync
                         )
@@ -330,15 +357,15 @@ class DashboardViewModel @Inject constructor(
 
     private fun getCourseStatusString(progress: JsonObject?, courseName: String?): String {
         return if (progress != null) {
-            val max = JsonUtils.getInt("max", progress)
-            val current = JsonUtils.getInt("current", progress)
+            val max = GsonUtils.getInt("max", progress)
+            val current = GsonUtils.getInt("current", progress)
             if (current == max) {
-                application.getString(org.ole.planet.myplanet.R.string.course_completed, courseName)
+                application.getString(R.string.course_completed, courseName)
             } else {
-                application.getString(org.ole.planet.myplanet.R.string.course_in_progress, courseName, current, max)
+                application.getString(R.string.course_in_progress, courseName, current, max)
             }
         } else {
-            application.getString(org.ole.planet.myplanet.R.string.course_not_started, courseName)
+            application.getString(R.string.course_not_started, courseName)
         }
     }
 

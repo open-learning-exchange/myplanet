@@ -3,21 +3,17 @@ package org.ole.planet.myplanet.utils
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
 import android.util.Patterns
 import android.webkit.MimeTypeMap
 import android.widget.Toast
-import androidx.core.graphics.toColorInt
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
-import fisk.chipcloud.ChipCloudConfig
-import java.math.BigInteger
-import java.text.Normalizer
-import java.util.Locale
 
 object Utilities {
+    private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
+
     fun isValidEmail(target: CharSequence): Boolean {
         return target.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(target).matches()
     }
@@ -42,7 +38,7 @@ object Utilities {
         if (Looper.myLooper() == Looper.getMainLooper()) {
             showToastIfValid(context, message, duration)
         } else {
-            Handler(Looper.getMainLooper()).post {
+            mainHandler.post {
                 showToastIfValid(context, message, duration)
             }
         }
@@ -56,42 +52,16 @@ object Utilities {
         val visualContext = getActivityFromContext(context)
 
         if (visualContext != null && !visualContext.isFinishing && !visualContext.isDestroyed) {
-            try {
-                Toast.makeText(visualContext, message, duration).show()
-            } catch (e: IllegalAccessException) {
-                e.printStackTrace()
-            }
+            Toast.makeText(visualContext, message, duration).show()
         }
-    }
-
-    fun getCloudConfig(): ChipCloudConfig {
-        return ChipCloudConfig()
-            .useInsetPadding(true)
-            .checkedChipColor("#e0e0e0".toColorInt())
-            .checkedTextColor("#000000".toColorInt())
-            .uncheckedChipColor("#e0e0e0".toColorInt())
-            .uncheckedTextColor("#000000".toColorInt())
-    }
-
-    fun checkNA(s: String?): String {
-        return if (s.isNullOrEmpty()) "N/A" else s
-    }
-
-    fun getUserName(settings: SharedPreferences): String {
-        return settings.getString("name", "") ?: ""
-    }
-
-    fun toHex(arg: String?): String {
-        return arg?.toByteArray()?.let { String.format("%x", BigInteger(1, it)) } ?: ""
-    }
-
-    fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
-            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
 
     fun getMimeType(url: String?): String? {
         val extension = FileUtils.getFileExtension(url)
         return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+    }
+
+    fun warmUp() {
+        MimeTypeMap.getSingleton().getMimeTypeFromExtension("txt")
     }
 }

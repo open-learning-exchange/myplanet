@@ -4,32 +4,26 @@ import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
-import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.callback.OnMemberChangeListener
-import org.ole.planet.myplanet.callback.OnTeamUpdateListener
+import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ApplicantsPage
-import org.ole.planet.myplanet.ui.teams.TeamPageConfig.CoursesPage
-import org.ole.planet.myplanet.ui.teams.TeamPageConfig.DocumentsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.MembersPage
-import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ResourcesPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.SurveyPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TeamPage
-import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
 import org.ole.planet.myplanet.ui.teams.members.MembersFragment
 import org.ole.planet.myplanet.ui.teams.members.RequestsFragment
-import org.ole.planet.myplanet.ui.teams.resources.TeamResourcesFragment
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class TeamPagerAdapter(
     private val parentFragment: Fragment,
     private var pages: List<TeamPageConfig>,
     private val teamId: String?,
-    private val onMemberChangeListener: OnMemberChangeListener,
-    private val teamUpdateListener: OnTeamUpdateListener
+    private val onMemberChangeListener: OnChangedListener,
+    private val teamUpdateListener: OnChangedListener
 ) : FragmentStateAdapter(parentFragment) {
     private val itemIds = mutableMapOf<String, Long>()
     private var nextId = 1L
+    private var currentIds: Set<Long> = emptySet()
 
     init {
         pages.forEach { page ->
@@ -37,6 +31,7 @@ class TeamPagerAdapter(
                 itemIds[page.id] = nextId++
             }
         }
+        rebuildIds()
     }
 
     fun updatePages(newPages: List<TeamPageConfig>) {
@@ -51,8 +46,13 @@ class TeamPagerAdapter(
             areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )
-        pages = newPages.toList()
+        pages = newPages
+        rebuildIds()
         diffResult.dispatchUpdatesTo(this)
+    }
+
+    private fun rebuildIds() {
+        currentIds = pages.mapNotNullTo(HashSet()) { itemIds[it.id] }
     }
 
     override fun getItemCount(): Int = pages.size
@@ -67,7 +67,7 @@ class TeamPagerAdapter(
     }
 
     override fun containsItem(itemId: Long): Boolean {
-        return pages.any { itemIds[it.id] == itemId }
+        return itemId in currentIds
     }
 
     override fun createFragment(position: Int): Fragment {
@@ -80,12 +80,6 @@ class TeamPagerAdapter(
             }
             ApplicantsPage, JoinRequestsPage -> if (fragment is RequestsFragment) {
                 fragment.setOnMemberChangeListener(onMemberChangeListener)
-            }
-            CoursesPage -> if (fragment is TeamCoursesFragment) {
-                MainApplication.listener = fragment
-            }
-            DocumentsPage, ResourcesPage -> if (fragment is TeamResourcesFragment) {
-                MainApplication.listener = fragment
             }
             SurveyPage -> {
                 fragment.arguments = (fragment.arguments ?: Bundle()).apply {
@@ -105,7 +99,7 @@ class TeamPagerAdapter(
             args.putString("id", teamId)
         }
 
-        args.putString("fragmentType", page.id)
+        args.putString(FRAGMENT_TYPE_KEY, page.id)
         args.putInt("fragmentPosition", position)
 
         return fragment

@@ -20,26 +20,32 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 
 @HiltViewModel
 class VoicesViewModel @Inject constructor(
     private val voicesRepository: VoicesRepository,
     private val teamsRepository: TeamsRepository,
-    private val dispatcherProvider: DispatcherProvider
-) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository, dispatcherProvider) {
+    private val dispatcherProvider: DispatcherProvider,
+    private val userRepository: UserRepository,
+    private val resourcesRepository: ResourcesRepository,
+    private val configurationsRepository: ConfigurationsRepository
+) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository) {
 
     private val _searchQuery = MutableStateFlow("")
 
     private val _selectedLabel = MutableStateFlow("All")
     val selectedLabel: StateFlow<String> = _selectedLabel.asStateFlow()
 
-    private val _baseNewsList = MutableStateFlow<List<News?>>(emptyList())
+    private val _baseNewsList = MutableStateFlow<List<News?>?>(null)
 
     private val _labels = MutableStateFlow<List<String>>(emptyList())
     val labels: StateFlow<List<String>> = _labels.asStateFlow()
@@ -49,21 +55,23 @@ class VoicesViewModel @Inject constructor(
 
     private var observeJob: Job? = null
 
-    val filteredNews: StateFlow<List<News?>> = combine(
+    private val labelDisplayToValue: Map<String, String> = Constants.LABELS
+
+    val filteredNews: StateFlow<List<News?>?> = combine(
         _baseNewsList,
         _searchQuery,
         _selectedLabel
     ) { news, query, label ->
-        filterNews(news, query, label)
+        news?.let { filterNews(it, query, label) }
     }
     .flowOn(dispatcherProvider.default)
-    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     fun observeCommunityNews(userIdentifier: String) {
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
             voicesRepository.getCommunityNews(userIdentifier).collect { newsList ->
-                val filtered = newsList.map { it as News? }
+                val filtered: List<News?> = newsList
                 _baseNewsList.value = filtered
                 _labels.value = collectLabels(filtered)
             }
@@ -89,6 +97,20 @@ class VoicesViewModel @Inject constructor(
         }
     }
 
+    private fun buildDynamicLabelMap(list: List<News?>): Map<String, String> {
+        val dynamicLabelDisplayToValue = mutableMapOf<String, String>()
+        list.forEach { news ->
+            news?.labels?.forEach { label ->
+                if (!labelDisplayToValue.containsValue(label)) {
+                    val labelName = Constants.LABEL_VALUE_TO_NAME[label]
+                        ?: VoicesLabelManager.formatLabelValue(label)
+                    dynamicLabelDisplayToValue.putIfAbsent(labelName, label)
+                }
+            }
+        }
+        return dynamicLabelDisplayToValue
+    }
+
     private fun filterNews(
         list: List<News?>,
         query: String,
@@ -97,29 +119,19 @@ class VoicesViewModel @Inject constructor(
         val labelFiltered = if (selectedLabel == "All") {
             list
         } else {
-            val labelDisplayToValue = mutableMapOf<String, String>()
-            Constants.LABELS.forEach { (labelName, labelValue) ->
-                labelDisplayToValue[labelName] = labelValue
-            }
-            list.forEach { news ->
-                news?.labels?.forEach { label ->
-                    val labelName = Constants.LABELS.entries.find { it.value == label }?.key
-                        ?: VoicesLabelManager.formatLabelValue(label)
-                    labelDisplayToValue.putIfAbsent(labelName, label)
-                }
-            }
+            val staticLabelValue = labelDisplayToValue[selectedLabel]
+            val resolvedLabelValue = staticLabelValue ?: buildDynamicLabelMap(list)[selectedLabel]
 
             list.filter { news ->
                 when {
                     selectedLabel == "Shared Chat" -> {
                         news?.chat == true || news?.viewableBy.equals("community", ignoreCase = true)
                     }
-                    labelDisplayToValue.containsKey(selectedLabel) -> {
-                        val labelValue = labelDisplayToValue[selectedLabel]
-                        news?.labels?.contains(labelValue) == true
+                    resolvedLabelValue != null -> {
+                        news?.labels?.contains(resolvedLabelValue) == true
                     }
                     else -> {
-                        JsonUtils.extractSharedTeamName(news) == selectedLabel
+                        (news?.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)) == selectedLabel
                     }
                 }
             }
@@ -159,7 +171,7 @@ class VoicesViewModel @Inject constructor(
     // Note: The following are read-only suspend functions designed to be called directly from
     // the UI's lifecycleScope, avoiding intermediate MutableStateFlow caching for point-in-time reads.
     suspend fun getUserById(userId: String): UserEntity? {
-        return voicesRepository.getUserById(userId)
+        return userRepository.getUserById(userId)
     }
 
     suspend fun getReplyCount(newsId: String): Int {
@@ -171,7 +183,7 @@ class VoicesViewModel @Inject constructor(
     }
 
     suspend fun getLibraryResource(resourceId: String): MyLibrary? {
-        return voicesRepository.getLibraryResource(resourceId)
+        return resourcesRepository.getLibraryItemByResourceId(resourceId)
     }
 
     suspend fun isTeamLeader(teamId: String?, userId: String?): Boolean {
@@ -193,13 +205,13 @@ class VoicesViewModel @Inject constructor(
         allLabels.add("Shared Chat")
 
         newsList.forEach { news ->
-            val sharedTeamName = JsonUtils.extractSharedTeamName(news)
+            val sharedTeamName = news?.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)
             if (sharedTeamName.isNotEmpty()) {
                 allLabels.add(sharedTeamName)
             }
 
             news?.labels?.forEach { label ->
-                val labelName = Constants.LABELS.entries.find { it.value == label }?.key
+                val labelName = Constants.LABEL_VALUE_TO_NAME[label]
                     ?: VoicesLabelManager.formatLabelValue(label)
                 allLabels.add(labelName)
             }
@@ -207,5 +219,27 @@ class VoicesViewModel @Inject constructor(
 
         allLabels.sorted()
     }
+
+    fun downloadReferencedResources(list: List<News?>) {
+        val resourceIds = mutableSetOf<String>()
+        list.forEach { news ->
+            val images = news?.imagesArray
+            if (images?.isEmpty() == false) {
+                val ob = images[0]?.asJsonObject
+                val resourceId = GsonUtils.getString("resourceId", ob?.asJsonObject)
+                if (!resourceId.isNullOrBlank()) {
+                    resourceIds.add(resourceId)
+                }
+            }
+        }
+        viewModelScope.launch {
+            if (resourceIds.isNotEmpty()) {
+                val libraries = resourcesRepository.getLibraryItemsByResourceIds(resourceIds)
+                resourcesRepository.downloadResources(libraries)
+            }
+        }
+    }
+
+    fun getCommunityLeaders(): List<UserEntity> = configurationsRepository.getCommunityLeaders()
 
 }

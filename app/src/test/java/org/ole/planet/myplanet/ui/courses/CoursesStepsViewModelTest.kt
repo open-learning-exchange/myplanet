@@ -1,0 +1,605 @@
+package org.ole.planet.myplanet.ui.courses
+
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
+import java.io.File
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.CourseStepData
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
+import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
+import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.MainDispatcherRule
+import org.ole.planet.myplanet.utils.StoragePathResolver
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import org.ole.planet.myplanet.utils.UrlUtils
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class CoursesStepsViewModelTest {
+
+    private val testDispatcher = StandardTestDispatcher()
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+
+    private val storagePathResolver: StoragePathResolver = mockk()
+    private val coursesRepository: CoursesRepository = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk(relaxed = true)
+    private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
+    private val configurationsRepository: ConfigurationsRepository = mockk(relaxed = true)
+    private val progressRepository: ProgressRepository = mockk(relaxed = true)
+    private val resourceDownloadCoordinator: ResourceDownloadCoordinator = mockk(relaxed = true)
+    private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+    private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
+
+    private lateinit var viewModel: CoursesStepsViewModel
+
+    @Before
+    fun setUp() {
+        every { storagePathResolver.resolveExternalFilesDir() } returns null
+        every { sharedPrefManager.getCouchdbUrl() } returns "http://localhost:5984"
+        UrlUtils.init(sharedPrefManager)
+
+        viewModel = CoursesStepsViewModel(
+            storagePathResolver,
+            coursesRepository,
+            userRepository,
+            resourcesRepository,
+            configurationsRepository,
+            progressRepository,
+            resourceDownloadCoordinator,
+            dispatcherProvider
+        )
+    }
+
+    @After
+    fun tearDown() {
+        UrlUtils.resetForTesting()
+    }
+
+    @Test
+    fun loadStep_whenResolverReturnsFile_buildsMarkdownDescriptionWithLocalOlePath() = runTest {
+        every { storagePathResolver.resolveExternalFilesDir() } returns File("/x")
+        val stepId = "step_1"
+        val stepData = CourseStepData(
+            step = CourseStep().apply { id = stepId; description = "![image](img.png)" },
+            resources = emptyList(),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = false,
+            hasExam = false,
+            hasSurvey = false
+        )
+
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { coursesRepository.getCourseStepData(stepId, null) } returns stepData
+
+        viewModel.loadStep(stepId, null)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.markdownDescription.contains("file:///x/ole/"))
+    }
+
+    @Test
+    fun loadStep_whenResolverReturnsNull_keepsFileNullOlePathInMarkdownDescription() = runTest {
+        every { storagePathResolver.resolveExternalFilesDir() } returns null
+        val stepId = "step_1"
+        val stepData = CourseStepData(
+            step = CourseStep().apply { id = stepId; description = "![image](img.png)" },
+            resources = emptyList(),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = false,
+            hasExam = false,
+            hasSurvey = false
+        )
+
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { coursesRepository.getCourseStepData(stepId, null) } returns stepData
+
+        viewModel.loadStep(stepId, null)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.markdownDescription.contains("file://null/ole/"))
+    }
+
+    @Test
+    fun loadStep_whenStepDataExists_populatesUiStateCorrectly() = runTest {
+        val stepId = "step_1"
+        val courseId = "course_1"
+        val step = CourseStep().apply {
+            id = stepId
+            this.courseId = courseId
+            stepTitle = "Step 1 Title"
+            description = "Step Description"
+        }
+        val user = UserEntity().apply {
+            id = "user_1"
+            planetCode = "planet_1"
+            parentCode = "parent_1"
+        }
+        val exam = StepExam().apply { id = "exam_1" }
+        val survey = StepExam().apply { id = "survey_1" }
+        val libraryItem = MyLibrary().apply { id = "lib_1" }
+
+        val stepData = CourseStepData(
+            step = step,
+            resources = listOf(libraryItem),
+            stepExams = listOf(exam),
+            stepSurvey = listOf(survey),
+            userHasCourse = true,
+            hasExam = true,
+            hasSurvey = true
+        )
+
+        coEvery { userRepository.getUserModel() } returns user
+        coEvery { coursesRepository.getCourseStepData(stepId, user.id) } returns stepData
+        coEvery { coursesRepository.getCourseTitleById(courseId) } returns "Course Title"
+        coEvery { configurationsRepository.checkServerAvailability() } returns false
+
+        viewModel.loadStep(stepId, null)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(step, state.step)
+        assertEquals(1, state.resources.size)
+        assertEquals(1, state.stepExams.size)
+        assertEquals(1, state.stepSurvey.size)
+        assertEquals("Course Title", state.courseTitle)
+        assertTrue(state.userHasCourse)
+        assertTrue(state.hasExam)
+        assertTrue(state.hasSurvey)
+        assertEquals(user, state.user)
+        assertFalse(state.isLoading)
+        assertFalse(state.isDownloadingResources)
+    }
+
+    @Test
+    fun loadStep_whenResourcesNotDownloadedAndServerAvailable_triggersAutoDownload() = runTest {
+        val stepId = "step_1"
+        val libraryItem = MyLibrary().apply {
+            id = "lib_1"
+            resourceId = "res_1"
+            resourceLocalAddress = "file.pdf"
+            resourceRemoteAddress = "http://server/resources/res_1/file.pdf"
+        }
+        val stepData = CourseStepData(
+            step = CourseStep().apply { id = stepId },
+            resources = listOf(libraryItem),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = true,
+            hasExam = false,
+            hasSurvey = false
+        )
+
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { coursesRepository.getCourseStepData(stepId, null) } returns stepData
+        coEvery { configurationsRepository.checkServerAvailability() } returns true
+        coEvery { resourcesRepository.downloadResourcesPriority(any()) } returns true
+
+        viewModel.loadStep(stepId, null)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.isDownloadingResources)
+        assertEquals(listOf("http://server/resources/res_1/file.pdf"), state.downloadingUrls)
+        coVerify { resourcesRepository.downloadResourcesPriority(listOf(libraryItem)) }
+    }
+
+    @Test
+    fun loadStep_whenNextStepIdProvided_prefetchesNextStepResources() = runTest {
+        val stepId = "step_1"
+        val nextStepId = "step_2"
+        val nextLibraryItem = MyLibrary().apply {
+            id = "lib_2"
+            resourceId = "res_2"
+            resourceLocalAddress = "file2.pdf"
+        }
+
+        val stepData = CourseStepData(
+            step = CourseStep().apply { id = stepId },
+            resources = emptyList(),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = false,
+            hasExam = false,
+            hasSurvey = false
+        )
+
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { coursesRepository.getCourseStepData(stepId, null) } returns stepData
+        coEvery { resourcesRepository.getAllStepResources(nextStepId) } returns listOf(nextLibraryItem)
+
+        viewModel.loadStep(stepId, nextStepId)
+        advanceUntilIdle()
+
+        coVerify { resourceDownloadCoordinator.startBackgroundDownload(arrayListOf("http://localhost:5984/db/resources/res_2/file2.pdf")) }
+    }
+
+    @Test
+    fun saveCourseProgress_whenUserHasCourse_callsProgressRepository() = runTest {
+        val stepId = "step_1"
+        val courseId = "course_1"
+        val step = CourseStep().apply {
+            id = stepId
+            this.courseId = courseId
+        }
+        val user = UserEntity().apply {
+            id = "user_1"
+            planetCode = "planet_1"
+            parentCode = "parent_1"
+        }
+        val stepData = CourseStepData(
+            step = step,
+            resources = emptyList(),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = true,
+            hasExam = false,
+            hasSurvey = false
+        )
+
+        coEvery { userRepository.getUserModel() } returns user
+        coEvery { coursesRepository.getCourseStepData(stepId, user.id) } returns stepData
+
+        viewModel.loadStep(stepId, null)
+        advanceUntilIdle()
+
+        viewModel.saveCourseProgress(2)
+        advanceUntilIdle()
+
+        coVerify {
+            progressRepository.saveCourseProgress(
+                "user_1",
+                "planet_1",
+                "parent_1",
+                courseId,
+                2,
+                true
+            )
+        }
+    }
+
+    @Test
+    fun saveCourseProgress_whenUserDoesNotHaveCourse_skipsSavingProgress() = runTest {
+        val stepId = "step_1"
+        val step = CourseStep().apply { id = stepId; courseId = "course_1" }
+        val stepData = CourseStepData(
+            step = step,
+            resources = emptyList(),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = false,
+            hasExam = false,
+            hasSurvey = false
+        )
+
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { coursesRepository.getCourseStepData(stepId, null) } returns stepData
+
+        viewModel.loadStep(stepId, null)
+        advanceUntilIdle()
+
+        viewModel.saveCourseProgress(1)
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { progressRepository.saveCourseProgress(any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun refreshInlineResources_updatesResourcesInUiState() = runTest {
+        val stepId = "step_1"
+        val newResource = MyLibrary().apply { id = "lib_2"; title = "Resource 2" }
+        coEvery { resourcesRepository.getAllStepResources(stepId) } returns listOf(newResource)
+
+        viewModel.refreshInlineResources(stepId)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(1, state.resources.size)
+        assertEquals("lib_2", state.resources[0].id)
+        assertFalse(state.isDownloadingResources)
+    }
+
+    @Test
+    fun loadStep_emptyStepPath_handlesNullAndEmptyDataGracefully() = runTest {
+        val emptyStepData = CourseStepData(
+            step = CourseStep(),
+            resources = emptyList(),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = false,
+            hasExam = false,
+            hasSurvey = false
+        )
+
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { coursesRepository.getCourseStepData("", null) } returns emptyStepData
+
+        viewModel.loadStep(null, null)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals("", state.step?.id)
+        assertTrue(state.resources.isEmpty())
+        assertTrue(state.stepExams.isEmpty())
+        assertTrue(state.stepSurvey.isEmpty())
+        assertNull(state.courseTitle)
+        assertFalse(state.userHasCourse)
+    }
+
+    @Test
+    fun loadStep_whenDownloadFailsToStart_clearsDownloadingState() = runTest {
+        val stepId = "step_1"
+        val libraryItem = MyLibrary().apply {
+            id = "lib_1"
+            resourceId = "res_1"
+            resourceRemoteAddress = "http://server/resources/res_1/file.pdf"
+        }
+        val stepData = CourseStepData(
+            step = CourseStep().apply { id = stepId },
+            resources = listOf(libraryItem),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = true,
+            hasExam = false,
+            hasSurvey = false
+        )
+
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { coursesRepository.getCourseStepData(stepId, null) } returns stepData
+        coEvery { configurationsRepository.checkServerAvailability() } returns true
+        coEvery { resourcesRepository.downloadResourcesPriority(any()) } returns false
+
+        viewModel.loadStep(stepId, null)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isDownloadingResources)
+        assertTrue(state.downloadingUrls.isEmpty())
+    }
+
+    @Test
+    fun loadStep_whenServerCheckPending_publishesStateImmediatelyThenTriggersDownloadWhenAvailable() = runTest {
+        val stepId = "step_1"
+        val libraryItem = MyLibrary().apply {
+            id = "lib_1"
+            resourceId = "res_1"
+            resourceLocalAddress = "file.pdf"
+            resourceRemoteAddress = "http://server/resources/res_1/file.pdf"
+        }
+        val stepData = CourseStepData(
+            step = CourseStep().apply { id = stepId; description = "Step 1 Content" },
+            resources = listOf(libraryItem),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = true,
+            hasExam = false,
+            hasSurvey = false
+        )
+
+        val probeDeferred = CompletableDeferred<Boolean>()
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { coursesRepository.getCourseStepData(stepId, null) } returns stepData
+        coEvery { configurationsRepository.checkServerAvailability() } coAnswers { probeDeferred.await() }
+        coEvery { resourcesRepository.downloadResourcesPriority(any()) } returns true
+
+        viewModel.loadStep(stepId, null)
+        runCurrent()
+
+        val stateBeforeProbe = viewModel.uiState.value
+        assertEquals(stepData.step, stateBeforeProbe.step)
+        assertFalse(stateBeforeProbe.isLoading)
+        assertTrue(stateBeforeProbe.markdownDescription.contains("Step 1 Content"))
+        assertFalse(stateBeforeProbe.isDownloadingResources)
+
+        probeDeferred.complete(true)
+        advanceUntilIdle()
+
+        val stateAfterProbe = viewModel.uiState.value
+        assertTrue(stateAfterProbe.isDownloadingResources)
+        coVerify(exactly = 1) { resourcesRepository.downloadResourcesPriority(listOf(libraryItem)) }
+    }
+
+    @Test
+    fun loadStep_whenStepChangedWhileProbePending_doesNotUpdateStateOrDownloadForCancelledStep() = runTest {
+        val step1Id = "step_1"
+        val libraryItem1 = MyLibrary().apply {
+            id = "lib_1"
+            resourceId = "res_1"
+            resourceLocalAddress = "file1.pdf"
+        }
+        val step1Data = CourseStepData(
+            step = CourseStep().apply { id = step1Id; description = "Step 1 Content" },
+            resources = listOf(libraryItem1),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = true,
+            hasExam = false,
+            hasSurvey = false
+        )
+
+        val step2Id = "step_2"
+        val libraryItem2 = MyLibrary().apply {
+            id = "lib_2"
+            resourceId = "res_2"
+            resourceLocalAddress = "file2.pdf"
+        }
+        val step2Data = CourseStepData(
+            step = CourseStep().apply { id = step2Id; description = "Step 2 Content" },
+            resources = listOf(libraryItem2),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = true,
+            hasExam = false,
+            hasSurvey = false
+        )
+
+        val step1ProbeDeferred = CompletableDeferred<Boolean>()
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { coursesRepository.getCourseStepData(step1Id, null) } returns step1Data
+        coEvery { coursesRepository.getCourseStepData(step2Id, null) } returns step2Data
+        coEvery { configurationsRepository.checkServerAvailability() } coAnswers { step1ProbeDeferred.await() } andThen false
+
+        viewModel.loadStep(step1Id, null)
+        runCurrent()
+
+        viewModel.loadStep(step2Id, null)
+        advanceUntilIdle()
+
+        val state2BeforeComplete = viewModel.uiState.value
+        assertEquals(step2Data.step, state2BeforeComplete.step)
+        assertFalse(state2BeforeComplete.isDownloadingResources)
+
+        step1ProbeDeferred.complete(true)
+        advanceUntilIdle()
+
+        val state2AfterComplete = viewModel.uiState.value
+        assertEquals(step2Data.step, state2AfterComplete.step)
+        assertFalse(state2AfterComplete.isDownloadingResources)
+        coVerify(exactly = 0) { resourcesRepository.downloadResourcesPriority(listOf(libraryItem1)) }
+    }
+
+    @Test
+    fun loadStep_whenNextStepPrefetchPendingForSupersededStep_doesNotStartBackgroundDownloadForCancelledStep() = runTest {
+        val stepAId = "step_a"
+        val nextStepAId = "step_a_next"
+        val stepAData = CourseStepData(
+            step = CourseStep().apply { id = stepAId },
+            resources = emptyList(),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = false,
+            hasExam = false,
+            hasSurvey = false
+        )
+        val nextStepAResource = MyLibrary().apply {
+            id = "lib_a_next"
+            resourceId = "res_a_next"
+            resourceLocalAddress = "file_a_next.pdf"
+        }
+
+        val stepBId = "step_b"
+        val stepBData = CourseStepData(
+            step = CourseStep().apply { id = stepBId },
+            resources = emptyList(),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = false,
+            hasExam = false,
+            hasSurvey = false
+        )
+
+        val prefetchDeferred = CompletableDeferred<List<MyLibrary>>()
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { coursesRepository.getCourseStepData(stepAId, null) } returns stepAData
+        coEvery { coursesRepository.getCourseStepData(stepBId, null) } returns stepBData
+        coEvery { resourcesRepository.getAllStepResources(nextStepAId) } coAnswers { prefetchDeferred.await() }
+
+        viewModel.loadStep(stepAId, nextStepAId)
+        runCurrent()
+
+        viewModel.loadStep(stepBId, null)
+        advanceUntilIdle()
+
+        prefetchDeferred.complete(listOf(nextStepAResource))
+        advanceUntilIdle()
+
+        assertEquals(stepBData.step, viewModel.uiState.value.step)
+        coVerify(exactly = 0) { resourceDownloadCoordinator.startBackgroundDownload(any()) }
+    }
+
+    @Test
+    fun loadStep_whenPriorityDownloadPendingForSupersededStep_cancelsPreparationAndKeepsNewState() = runTest {
+        val stepAId = "step_a"
+        val libraryA = MyLibrary().apply {
+            id = "lib_a"
+            resourceId = "res_a"
+            resourceLocalAddress = "file_a.pdf"
+            resourceRemoteAddress = "http://server/resources/res_a/file_a.pdf"
+        }
+        val stepAData = CourseStepData(
+            step = CourseStep().apply { id = stepAId },
+            resources = listOf(libraryA),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = true,
+            hasExam = false,
+            hasSurvey = false
+        )
+
+        val stepBId = "step_b"
+        val libraryB = MyLibrary().apply {
+            id = "lib_b"
+            resourceId = "res_b"
+            resourceLocalAddress = "file_b.pdf"
+            resourceRemoteAddress = "http://server/resources/res_b/file_b.pdf"
+        }
+        val stepBData = CourseStepData(
+            step = CourseStep().apply { id = stepBId },
+            resources = listOf(libraryB),
+            stepExams = emptyList(),
+            stepSurvey = emptyList(),
+            userHasCourse = true,
+            hasExam = false,
+            hasSurvey = false
+        )
+
+        val downloadDeferred = CompletableDeferred<Boolean>()
+        var preparationACancelled = false
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { coursesRepository.getCourseStepData(stepAId, null) } returns stepAData
+        coEvery { coursesRepository.getCourseStepData(stepBId, null) } returns stepBData
+        coEvery { configurationsRepository.checkServerAvailability() } returns true
+        coEvery { resourcesRepository.downloadResourcesPriority(listOf(libraryA)) } coAnswers {
+            try {
+                downloadDeferred.await()
+            } catch (e: CancellationException) {
+                preparationACancelled = true
+                throw e
+            }
+        }
+        coEvery { resourcesRepository.downloadResourcesPriority(listOf(libraryB)) } returns true
+
+        viewModel.loadStep(stepAId, null)
+        runCurrent()
+
+        viewModel.loadStep(stepBId, null)
+        advanceUntilIdle()
+
+        downloadDeferred.complete(true)
+        advanceUntilIdle()
+
+        assertTrue(preparationACancelled)
+        val state = viewModel.uiState.value
+        assertEquals(stepBData.step, state.step)
+        assertTrue(state.isDownloadingResources)
+        coVerify(exactly = 1) { resourcesRepository.downloadResourcesPriority(listOf(libraryB)) }
+    }
+}

@@ -9,22 +9,20 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.repository.RetryQueueDetails
 import org.ole.planet.myplanet.repository.RetryRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
-
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository,
-    private val sharedPrefManager: SharedPrefManager,
     private val retryRepository: RetryRepository,
     private val resourcesRepository: ResourcesRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val userRepository: UserReadRepository
 ) : ViewModel() {
 
     private val _clearDataEvent = Channel<Unit>(Channel.BUFFERED)
@@ -40,13 +38,14 @@ class SettingsViewModel @Inject constructor(
     val downloadCompleteEvent: Flow<List<MyLibrary>> = _downloadCompleteEvent.receiveAsFlow()
 
 
+    suspend fun isGuest(): Boolean = userRepository.getUserModel()?.id?.startsWith("guest") == true
+
     fun isCurrentlyProcessing(): Boolean {
         return retryRepository.isCurrentlyProcessing()
     }
     fun clearAllData() {
         viewModelScope.launch(dispatcherProvider.io) {
-            configurationsRepository.clearAllData()
-            sharedPrefManager.clearPreferences()
+            configurationsRepository.clearLocalAppData()
             _clearDataEvent.send(Unit)
         }
     }

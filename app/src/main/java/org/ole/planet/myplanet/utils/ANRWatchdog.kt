@@ -4,9 +4,9 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -15,14 +15,16 @@ class ANRWatchdog(
     private val scope: CoroutineScope,
     private val timeout: Long = DEFAULT_ANR_TIMEOUT,
     private val listener: ANRListener? = null,
-    private val dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider()
+    private val dispatcherProvider: DispatcherProvider
 ) {
     private var job: Job? = null
     companion object {
         private const val DEFAULT_ANR_TIMEOUT = 5000L
     }
 
+    @Volatile
     private var isWatching = false
+    @Volatile
     private var tick = 0L
     private val mainHandler = Handler(Looper.getMainLooper())
     private val tickUpdater = Runnable { updateTick() }
@@ -48,13 +50,12 @@ class ANRWatchdog(
         job = scope.launch(dispatcherProvider.default) {
             while (isWatching && isActive) {
                 val lastTick = tick
-                val currentTime = SystemClock.elapsedRealtime()
                 mainHandler.post(tickUpdater)
 
-                delay(timeout / 2)
+                delay((timeout / 2).milliseconds)
 
                 if (isWatching && lastTick == tick) {
-                    val duration = currentTime - lastTick
+                    val duration = SystemClock.elapsedRealtime() - lastTick
                     val mainThread = Looper.getMainLooper().thread
 
                     val threadId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -75,7 +76,7 @@ class ANRWatchdog(
                     }
 
                     listener?.onAppNotResponding(message.toString(), mainThread, duration)
-                    delay(timeout)
+                    delay(timeout.milliseconds)
                 }
             }
         }

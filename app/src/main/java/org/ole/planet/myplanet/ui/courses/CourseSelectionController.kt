@@ -1,13 +1,11 @@
 package org.ole.planet.myplanet.ui.courses
 
-import android.app.AlertDialog
-import android.content.DialogInterface
 import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.TextView
-import androidx.appcompat.view.ContextThemeWrapper
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 
 class CourseSelectionController(
     private val rootView: View,
@@ -128,10 +126,10 @@ class CourseSelectionController(
     }
 
     private fun showConfirmDialog(messageRes: Int, onConfirmed: () -> Unit) {
-        AlertDialog.Builder(ContextThemeWrapper(rootView.context, R.style.CustomAlertDialog))
-            .setMessage(messageRes)
-            .setPositiveButton(R.string.yes) { _: DialogInterface, _: Int -> onConfirmed() }
-            .setNegativeButton(R.string.no, null)
-            .show()
+        rootView.context.confirmDialog(
+            message = rootView.context.getString(messageRes),
+            styleRes = R.style.CustomAlertDialog,
+            onPositive = onConfirmed
+        )
     }
 }

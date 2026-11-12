@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.services.sync
 
 import android.content.SharedPreferences
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.every
@@ -10,9 +8,12 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.JsonObject as KJsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -23,10 +24,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.ChatRepository
-import org.ole.planet.myplanet.repository.CommunityRepository
+import org.ole.planet.myplanet.repository.ChatSyncWriter
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.EventsSyncWriter
+import org.ole.planet.myplanet.repository.FeedbackSyncWriter
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -34,7 +35,6 @@ import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TagsRepository
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
@@ -67,20 +67,28 @@ class TransactionSyncManagerCheckpointTest {
     // flagging the CancellationException/RuntimeException these tests deliberately drive.
     private val dispatcherProvider: DispatcherProvider = mockk()
 
-    private fun rowsResponse(count: Int): Response<JsonObject> {
-        val body = JsonObject().apply {
-            add("rows", JsonArray().apply {
+    private fun rowsResponse(count: Int): Response<KJsonObject> {
+        val body = buildJsonObject {
+            putJsonArray("rows") {
                 repeat(count) { i ->
-                    add(JsonObject().apply {
-                        add("doc", JsonObject().apply { addProperty("_id", "rating_$i") })
+                    add(buildJsonObject {
+                        put("doc", buildJsonObject { put("_id", "rating_$i") })
                     })
                 }
-            })
+            }
         }
-        val response = mockk<Response<JsonObject>>()
+        val response = mockk<Response<KJsonObject>>()
         every { response.isSuccessful } returns true
         every { response.body() } returns body
         every { response.code() } returns 200
+        return response
+    }
+
+    private fun errorResponse(code: Int): Response<KJsonObject> {
+        val response = mockk<Response<KJsonObject>>()
+        every { response.isSuccessful } returns false
+        every { response.body() } returns null
+        every { response.code() } returns code
         return response
     }
 
@@ -90,10 +98,10 @@ class TransactionSyncManagerCheckpointTest {
         every { UrlUtils.getUrl() } returns "http://mockurl"
         every { UrlUtils.header } returns "Basic mockHeader"
 
-        mockkObject(SyncTimeLogger)
-        every { SyncTimeLogger.logApiCall(any(), any(), any(), any()) } returns Unit
-        every { SyncTimeLogger.logRealmOperation(any(), any(), any(), any()) } returns Unit
-        every { SyncTimeLogger.logDetail(any(), any()) } returns Unit
+        val mockSyncTimeLogger = mockk<SyncTimeLogger>(relaxed = true)
+        every { mockSyncTimeLogger.logApiCall(any(), any(), any(), any()) } returns Unit
+        every { mockSyncTimeLogger.logDbOperation(any(), any(), any(), any()) } returns Unit
+        every { mockSyncTimeLogger.logDetail(any(), any()) } returns Unit
 
         every { dispatcherProvider.io } returns Dispatchers.Unconfined
         every { dispatcherProvider.main } returns Dispatchers.Unconfined
@@ -103,41 +111,37 @@ class TransactionSyncManagerCheckpointTest {
         every { prefs.edit() } returns editor
         every { editor.putInt(any(), capture(putValues)) } returns editor
         every { editor.remove(any()) } returns editor
-        every { editor.commit() } returns true
+        every { editor.apply() } returns Unit
 
         transactionSyncManager = TransactionSyncManager(
             apiInterface,
             mockk(relaxed = true),
             mockk<VoicesRepository>(relaxed = true),
-            mockk<ChatRepository>(relaxed = true),
-            mockk<FeedbackRepository>(relaxed = true),
+            mockk<ChatSyncWriter>(relaxed = true),
+            mockk<FeedbackSyncWriter>(relaxed = true),
             sharedPrefManager,
             mockk<UserRepository>(relaxed = true),
             mockk<UserSyncRepository>(relaxed = true),
             mockk<ActivitiesRepository>(relaxed = true),
-            mockk<Lazy<TeamsRepository>>(relaxed = true),
             mockk<Lazy<TeamsSyncRepository>>(relaxed = true),
             mockk<NotificationsRepository>(relaxed = true),
             mockk<TagsRepository>(relaxed = true),
             ratingsRepository,
             mockk<SubmissionsRepository>(relaxed = true),
             mockk<CoursesRepository>(relaxed = true),
-            mockk<CommunityRepository>(relaxed = true),
+            mockk<EventsSyncWriter>(relaxed = true),
             mockk<HealthRepository>(relaxed = true),
             mockk<ProgressRepository>(relaxed = true),
             mockk<SurveysRepository>(relaxed = true),
-            // syncDb confines its work to dispatcherProvider.io, not this scope; a throwaway
-            // scope is enough and keeps each test isolated (no shared leaked-exception state).
-            CoroutineScope(Dispatchers.Unconfined),
             dispatcherProvider,
-            mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true)
+            mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true),
+            mockSyncTimeLogger
         )
     }
 
     @After
     fun tearDown() {
         unmockkObject(UrlUtils)
-        unmockkObject(SyncTimeLogger)
     }
 
     @Test
@@ -163,11 +167,29 @@ class TransactionSyncManagerCheckpointTest {
 
         val total = transactionSyncManager.syncDb("ratings", useCheckpoint = true)
 
-        assertEquals(0, total)
+        assertEquals(TransactionSyncManager.SYNC_FAILED, total)
         // Only the pre-batch skip=0 should have been written; the fetched-but-uncommitted
         // page must not move the checkpoint to 20.
         assertTrue(putValues.contains(0))
         assertFalse("checkpoint must not advance for an uncommitted batch", putValues.contains(20))
+    }
+
+    @Test
+    fun `server error is reported as a failure rather than an empty table`() = runBlocking {
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns errorResponse(500)
+
+        val total = transactionSyncManager.syncDb("ratings", useCheckpoint = true)
+
+        assertEquals(TransactionSyncManager.SYNC_FAILED, total)
+    }
+
+    @Test
+    fun `missing table on the server is treated as empty`() = runBlocking {
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns errorResponse(404)
+
+        val total = transactionSyncManager.syncDb("ratings", useCheckpoint = true)
+
+        assertEquals(0, total)
     }
 
     // runBlocking (not runTest) so throwing/rethrowing a CancellationException across the

@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
-import com.google.gson.Gson
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -9,45 +8,43 @@ import io.mockk.mockk
 import io.mockk.slot
 import java.util.logging.Level
 import java.util.logging.Logger
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.model.MyLife
-import org.ole.planet.myplanet.services.SharedPrefManager
 
 class LifeRepositoryImplTest {
 
     private lateinit var myLifeDao: MyLifeDao
-    private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var mockSharedPreferences: SharedPreferences
     private lateinit var mockEditor: SharedPreferences.Editor
-    private lateinit var gson: Gson
+    private lateinit var json: Json
+    private lateinit var lifeCache: LifeCache
     private lateinit var repository: LifeRepositoryImpl
-    private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setUp() {
         Logger.getLogger("io.mockk").level = Level.OFF
         myLifeDao = mockk(relaxed = true)
-        sharedPrefManager = mockk(relaxed = true)
         mockSharedPreferences = mockk(relaxed = true)
         mockEditor = mockk(relaxed = true)
-        every { sharedPrefManager.rawPreferences } returns mockSharedPreferences
         every { mockSharedPreferences.edit() } returns mockEditor
         every { mockEditor.putString(any(), any()) } returns mockEditor
         every { mockEditor.apply() } returns Unit
 
-        gson = Gson()
+        json = Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            coerceInputValues = true
+        }
+        lifeCache = LifeCache(mockSharedPreferences, json)
         repository = LifeRepositoryImpl(
             myLifeDao,
-            sharedPrefManager,
-            gson,
-            CoroutineScope(testDispatcher)
+            lifeCache
         )
     }
 
@@ -78,12 +75,113 @@ class LifeRepositoryImplTest {
     }
 
     @Test
+    fun getMyLifeByUserId_withDefaultItems_seedsWhenEmpty() = runTest {
+        val userId = "user123"
+        val defaultItems = listOf(
+            MyLife().apply { title = "Default1"; this.userId = userId }
+        )
+
+        coEvery { myLifeDao.getByUserId(userId) } returns emptyList()
+        coEvery { myLifeDao.countByUserId(userId) } returns 0
+
+        val result = repository.getMyLifeByUserId(userId, defaultItems)
+
+        assertEquals(1, result.size)
+        assertEquals("Default1", result[0].title)
+        coVerify(exactly = 1) { myLifeDao.insertAll(any()) }
+        coVerify(exactly = 1) { myLifeDao.getByUserId(userId) }
+    }
+
+    @Test
+    fun getMyLifeByUserId_withDefaultItems_doesNotSeedWhenNotEmpty() = runTest {
+        val userId = "user123"
+        val existingItem = MyLife().apply { title = "Existing"; this.userId = userId }
+        val defaultItems = listOf(
+            MyLife().apply { title = "Default1"; this.userId = userId }
+        )
+
+        coEvery { myLifeDao.getByUserId(userId) } returns listOf(existingItem)
+
+        val result = repository.getMyLifeByUserId(userId, defaultItems)
+
+        assertEquals(1, result.size)
+        assertEquals("Existing", result[0].title)
+        coVerify(exactly = 0) { myLifeDao.insertAll(any()) }
+    }
+
+    @Test
+    fun getMyLifeByUserId_dedupsEquivalentBlankRowsAcrossLoads() = runTest {
+        val userId = "user123"
+        // Two equivalent blank legacy rows (no imageId, title, or _id) with identical
+        // userId/isVisible/weight content — these must dedup to a single row deterministically,
+        // regardless of object identity, on every load.
+        fun blankRow() = MyLife().apply {
+            this.userId = userId
+            isVisible = true
+            weight = 1
+        }
+        coEvery { myLifeDao.getByUserId(userId) } returns listOf(blankRow(), blankRow())
+
+        val firstLoad = repository.getMyLifeByUserId(userId)
+        val secondLoad = repository.getMyLifeByUserId(userId)
+
+        assertEquals(1, firstLoad.size)
+        assertEquals(1, secondLoad.size)
+    }
+
+    @Test
+    fun getMyLifeByUserId_preservesOrderAndFirstOccurrenceForDuplicatesInDaoOrderedInput() = runTest {
+        val userId = "user123"
+        // Input is already ordered by weight as returned by DAO (ORDER BY weight ASC)
+        // Item 1 and Item 3 share the same imageId ("duplicate_img"), so Item 1 must survive.
+        val item1 = MyLife().apply { _id = "1"; imageId = "duplicate_img"; weight = 1; this.userId = userId }
+        val item2 = MyLife().apply { _id = "2"; imageId = "unique_img"; weight = 2; this.userId = userId }
+        val item3 = MyLife().apply { _id = "3"; imageId = "duplicate_img"; weight = 3; this.userId = userId }
+
+        coEvery { myLifeDao.getByUserId(userId) } returns listOf(item1, item2, item3)
+
+        val result = repository.getMyLifeByUserId(userId)
+
+        assertEquals(2, result.size)
+        assertEquals("1", result[0]._id)
+        assertEquals(1, result[0].weight)
+        assertEquals("2", result[1]._id)
+        assertEquals(2, result[1].weight)
+    }
+
+    @Test
+    fun getMyLifeByUserId_earlyReturnQueriesDaoOnlyOnce() = runTest {
+        val userId = "user123"
+        val existingItem = MyLife().apply { title = "Existing"; this.userId = userId; weight = 1 }
+        coEvery { myLifeDao.getByUserId(userId) } returns listOf(existingItem)
+
+        val result = repository.getMyLifeByUserId(userId)
+
+        assertEquals(1, result.size)
+        coVerify(exactly = 1) { myLifeDao.getByUserId(userId) }
+    }
+
+    @Test
     fun updateVisibility_delegatesToDao() = runTest {
         val myLifeId = "life123"
 
-        repository.updateVisibility(false, myLifeId)
+        repository.updateVisibility(false, myLifeId, "user123")
 
         coVerify(exactly = 1) { myLifeDao.updateVisibility(myLifeId, false) }
+    }
+
+    @Test
+    fun updateVisibility_whenRowHasNoUserId_usesCallerUserIdForReloadAndCacheWrite() = runTest {
+        val myLifeId = "life123"
+        val callerUserId = "callerUser123"
+        val managedLife = MyLife().apply { _id = myLifeId; userId = null }
+        coEvery { myLifeDao.getByIds(listOf(myLifeId)) } returns listOf(managedLife)
+        coEvery { myLifeDao.getByUserId(callerUserId) } returns listOf(managedLife)
+
+        repository.updateVisibility(false, myLifeId, callerUserId)
+
+        coVerify(exactly = 1) { myLifeDao.getByUserId(callerUserId) }
+        coVerify(exactly = 1) { mockEditor.putString("myLifeCache_$callerUserId", any()) }
     }
 
     @Test
@@ -101,7 +199,7 @@ class LifeRepositoryImplTest {
         val updatedSlot = slot<List<MyLife>>()
         coEvery { myLifeDao.update(capture(updatedSlot)) } returns Unit
 
-        repository.updateMyLifeListOrder(list)
+        repository.updateMyLifeListOrder(list, "u")
 
         assertEquals(0, managedItem1.weight)
         assertEquals(1, managedItem2.weight)
@@ -111,10 +209,93 @@ class LifeRepositoryImplTest {
 
     @Test
     fun updateMyLifeListOrder_emptyList_doesNothing() = runTest {
-        repository.updateMyLifeListOrder(emptyList())
+        repository.updateMyLifeListOrder(emptyList(), "user123")
 
         coVerify(exactly = 0) { myLifeDao.getByIds(any()) }
         coVerify(exactly = 0) { myLifeDao.update(any()) }
+    }
+
+    @Test
+    fun updateMyLifeListOrder_whenRowHasNoUserId_usesCallerUserIdForReloadAndCacheWrite() = runTest {
+        val item1 = MyLife().apply { _id = "1"; weight = 0; userId = null }
+        val callerUserId = "callerUser123"
+        val list = listOf(item1)
+
+        val managedItem1 = MyLife().apply { _id = "1"; weight = 5; userId = null }
+        coEvery { myLifeDao.getByIds(listOf("1")) } returns listOf(managedItem1)
+        coEvery { myLifeDao.getByUserId(callerUserId) } returns listOf(managedItem1)
+
+        repository.updateMyLifeListOrder(list, callerUserId)
+
+        coVerify(exactly = 1) { myLifeDao.getByUserId(callerUserId) }
+        coVerify(exactly = 1) { mockEditor.putString("myLifeCache_$callerUserId", any()) }
+    }
+
+    @Test
+    fun updateMyLifeListOrder_validReorder_updatesWeightsAndWritesOwnerCache() = runTest {
+        val userId = "u"
+        val item1 = MyLife().apply { _id = "1"; weight = 0; this.userId = userId }
+        val item2 = MyLife().apply { _id = "2"; weight = 0; this.userId = userId }
+
+        val managedItem1 = MyLife().apply { _id = "1"; weight = 5; this.userId = userId }
+        val managedItem2 = MyLife().apply { _id = "2"; weight = 5; this.userId = userId }
+        coEvery { myLifeDao.getByIds(any()) } returns listOf(managedItem1, managedItem2)
+        coEvery { myLifeDao.getByUserId(userId) } returns listOf(managedItem1, managedItem2)
+
+        repository.updateMyLifeListOrder(listOf(item1, item2), userId)
+
+        assertEquals(0, managedItem1.weight)
+        assertEquals(1, managedItem2.weight)
+        coVerify(exactly = 1) { myLifeDao.update(any()) }
+        coVerify(exactly = 1) { myLifeDao.getByUserId(userId) }
+        coVerify(exactly = 1) { mockEditor.putString("myLifeCache_$userId", any()) }
+    }
+
+    @Test
+    fun updateMyLifeListOrder_submittedItemWithForeignOwner_isNoOp() = runTest {
+        val foreignItem = MyLife().apply { _id = "1"; weight = 0; this.userId = "someoneElse" }
+
+        repository.updateMyLifeListOrder(listOf(foreignItem), "u")
+
+        coVerify(exactly = 0) { myLifeDao.getByIds(any()) }
+        coVerify(exactly = 0) { myLifeDao.update(any()) }
+        coVerify(exactly = 0) { myLifeDao.getByUserId(any()) }
+        coVerify(exactly = 0) { mockEditor.putString(any(), any()) }
+    }
+
+    @Test
+    fun updateMyLifeListOrder_storedRowOfAnotherOwner_isNoOpLeavingForeignWeights() = runTest {
+        val userId = "u"
+        val item1 = MyLife().apply { _id = "1"; weight = 0; this.userId = userId }
+        val item2 = MyLife().apply { _id = "2"; weight = 0; this.userId = userId }
+
+        val ownRow = MyLife().apply { _id = "1"; weight = 5; this.userId = userId }
+        val foreignRow = MyLife().apply { _id = "2"; weight = 7; this.userId = "someoneElse" }
+        coEvery { myLifeDao.getByIds(any()) } returns listOf(ownRow, foreignRow)
+
+        repository.updateMyLifeListOrder(listOf(item1, item2), userId)
+
+        assertEquals(5, ownRow.weight)
+        assertEquals(7, foreignRow.weight)
+        coVerify(exactly = 0) { myLifeDao.update(any()) }
+        coVerify(exactly = 0) { myLifeDao.getByUserId(any()) }
+        coVerify(exactly = 0) { mockEditor.putString(any(), any()) }
+    }
+
+    @Test
+    fun updateMyLifeListOrder_nullBlankAndDashOwners_treatedAsCaller() = runTest {
+        val userId = "u"
+        val submitted = MyLife().apply { _id = "1"; weight = 0; this.userId = "--" }
+        val stored = MyLife().apply { _id = "1"; weight = 5; this.userId = "" }
+        coEvery { myLifeDao.getByIds(any()) } returns listOf(stored)
+        coEvery { myLifeDao.getByUserId(userId) } returns listOf(stored)
+
+        repository.updateMyLifeListOrder(listOf(submitted), userId)
+
+        assertEquals(0, stored.weight)
+        coVerify(exactly = 1) { myLifeDao.update(any()) }
+        coVerify(exactly = 1) { myLifeDao.getByUserId(userId) }
+        coVerify(exactly = 1) { mockEditor.putString("myLifeCache_$userId", any()) }
     }
 
     @Test
@@ -129,7 +310,7 @@ class LifeRepositoryImplTest {
         val insertedItemsSlot = slot<List<MyLife>>()
         coEvery { myLifeDao.insertAll(capture(insertedItemsSlot)) } returns Unit
 
-        repository.seedMyLifeIfEmpty(userId, items)
+        val seededResult = repository.seedMyLifeIfEmpty(userId, items)
 
         coVerify(exactly = 1) { myLifeDao.insertAll(any()) }
         val insertedItems = insertedItemsSlot.captured
@@ -142,6 +323,10 @@ class LifeRepositoryImplTest {
         assertTrue(insertedItems[0]._id.isNotEmpty())
         assertEquals("Title2", insertedItems[1].title)
         assertEquals(2, insertedItems[1].weight)
+
+        assertEquals(2, seededResult.size)
+        assertEquals("Title1", seededResult[0].title)
+        assertEquals("Title2", seededResult[1].title)
     }
 
     @Test
@@ -150,9 +335,48 @@ class LifeRepositoryImplTest {
         val items = listOf(MyLife().apply { title = "Title1"; this.userId = userId })
         coEvery { myLifeDao.countByUserId(userId) } returns 3
 
-        repository.seedMyLifeIfEmpty(userId, items)
+        val seededResult = repository.seedMyLifeIfEmpty(userId, items)
 
+        assertTrue(seededResult.isEmpty())
         coVerify(exactly = 0) { myLifeDao.insertAll(any()) }
+    }
+
+    @Test
+    fun getMyLifeForDashboard_returnsVisibleItemsFromDao() = runTest {
+        val userId = "123"
+        val item1 = MyLife().apply { weight = 1; this.userId = userId; isVisible = true }
+        coEvery { myLifeDao.getVisibleByUserId(userId) } returns listOf(item1)
+
+        val result = repository.getMyLifeForDashboard(userId, emptyList())
+
+        assertEquals(1, result.size)
+        assertEquals(1, result[0].weight)
+        coVerify(exactly = 1) { myLifeDao.getVisibleByUserId(userId) }
+    }
+
+    @Test
+    fun getMyLifeForDashboard_rowsExistButAllHidden_doesNotConsultCache() = runTest {
+        val userId = "123"
+        coEvery { myLifeDao.getVisibleByUserId(userId) } returns emptyList()
+        coEvery { myLifeDao.countByUserId(userId) } returns 3
+
+        val result = repository.getMyLifeForDashboard(userId, emptyList())
+
+        assertTrue(result.isEmpty())
+        coVerify(exactly = 0) { mockSharedPreferences.getString(any(), any()) }
+    }
+
+    @Test
+    fun getMyLifeForDashboard_visibleAndHiddenShareDedupKey_keepsVisible() = runTest {
+        val userId = "123"
+        val visibleItem = MyLife().apply { _id = "1"; imageId = "same_img"; this.userId = userId; isVisible = true; weight = 2 }
+        coEvery { myLifeDao.getVisibleByUserId(userId) } returns listOf(visibleItem)
+
+        val result = repository.getMyLifeForDashboard(userId, emptyList())
+
+        assertEquals(1, result.size)
+        assertEquals("1", result[0]._id)
+        assertEquals("same_img", result[0].imageId)
     }
 
     @Test
@@ -162,9 +386,9 @@ class LifeRepositoryImplTest {
             CachedMyLifeItem("img1", "Title 1", true, 1),
             CachedMyLifeItem("img2", "Title 2", false, 2)
         )
-        val json = Gson().toJson(expectedItems)
-        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns json
-        coEvery { myLifeDao.getByUserId(userId) } returns emptyList()
+        val jsonString = json.encodeToString(expectedItems)
+        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns jsonString
+        coEvery { myLifeDao.getVisibleByUserId(userId) } returns emptyList()
 
         val result = repository.getMyLifeForDashboard(userId, emptyList())
 
@@ -182,6 +406,7 @@ class LifeRepositoryImplTest {
 
         val item1 = MyLife().apply { weight = 1; this.userId = userId; this.isVisible = true }
         val item2 = MyLife().apply { weight = 2; this.userId = userId; this.isVisible = true }
+        coEvery { myLifeDao.getVisibleByUserId(userId) } returns emptyList()
         coEvery { myLifeDao.getByUserId(userId) } returns listOf(item1, item2)
 
         val result = repository.getMyLifeForDashboard(userId, emptyList())

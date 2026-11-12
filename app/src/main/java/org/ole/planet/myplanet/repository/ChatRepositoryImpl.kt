@@ -1,18 +1,23 @@
 package org.ole.planet.myplanet.repository
 
 import androidx.annotation.VisibleForTesting
+import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import java.util.Date
 import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.data.room.dao.ChatDao
+import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatRequest
+import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Conversation
@@ -20,18 +25,23 @@ import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.ServerReachabilityProvider
+import retrofit2.Response
 
+@Singleton
 class ChatRepositoryImpl @Inject constructor(
     private val chatDao: ChatDao,
     private val chatApiService: ChatApiService,
     private val serverUrlMapper: ServerUrlMapper,
-    private val sharedPrefManager: SharedPrefManager
-) : ChatRepository {
+    private val sharedPrefManager: SharedPrefManager,
+    private val serverReachabilityProvider: ServerReachabilityProvider,
+    @PlainGson private val gson: Gson
+) : ChatRepository, ChatSyncWriter {
 
     @VisibleForTesting
     internal var reachabilityCheck: suspend (String) -> Boolean = { url ->
-        org.ole.planet.myplanet.MainApplication.isServerReachable(url)
+        serverReachabilityProvider.isServerReachable(url)
     }
 
     override suspend fun sendNewChatRequest(
@@ -41,7 +51,7 @@ class ChatRepositoryImpl @Inject constructor(
     ): ChatResult {
         return try {
             val chatData = ChatRequest(data = ContentData(user ?: "", query, aiProvider), save = true)
-            val jsonContent = JsonUtils.gson.toJson(chatData)
+            val jsonContent = gson.toJson(chatData)
             val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
             val response = chatApiService.sendChatRequest(requestBody)
             val responseBody = response.body()
@@ -68,10 +78,12 @@ class ChatRepositoryImpl @Inject constructor(
                 saveNewChat(jsonObject)
                 ChatResult.Success(chatResponse, id, rev)
             } else {
-                ChatResult.Error(responseBody?.message ?: response.message() ?: "Request failed")
+                ChatResult.Error(errorMessageOf(response))
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            ChatResult.Error(e.message ?: "Request failed")
+            ChatResult.Error(e.message?.takeIf { it.isNotBlank() } ?: REQUEST_FAILED)
         }
     }
 
@@ -84,7 +96,7 @@ class ChatRepositoryImpl @Inject constructor(
     ): ChatResult {
         return try {
             val continueChatData = ContinueChatRequest(data = Data(user ?: "", message, aiProvider, id, rev), save = true)
-            val jsonContent = JsonUtils.gson.toJson(continueChatData)
+            val jsonContent = gson.toJson(continueChatData)
             val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
             val response = chatApiService.sendChatRequest(requestBody)
             val responseBody = response.body()
@@ -94,13 +106,23 @@ class ChatRepositoryImpl @Inject constructor(
                 continueConversation(id, message, chatResponse, newRev)
                 ChatResult.Success(chatResponse, id, newRev)
             } else {
-                continueConversation(id, message, "", rev)
-                ChatResult.Error(responseBody?.message ?: response.message() ?: "Request failed")
+                ChatResult.Error(errorMessageOf(response))
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            continueConversation(id, message, "", rev)
-            ChatResult.Error(e.message ?: "Request failed")
+            ChatResult.Error(e.message?.takeIf { it.isNotBlank() } ?: REQUEST_FAILED)
         }
+    }
+
+    private fun errorMessageOf(response: Response<ChatResponse>): String {
+        val body = response.body() ?: try {
+            response.errorBody()?.string()?.let { gson.fromJson(it, ChatResponse::class.java) }
+        } catch (_: Exception) {
+            null
+        }
+        return listOf(body?.message, body?.error, response.message())
+            .firstOrNull { !it.isNullOrBlank() } ?: REQUEST_FAILED
     }
 
     override suspend fun fetchAiProviders(serverUrl: String): Map<String, Boolean>? {
@@ -115,13 +137,22 @@ class ChatRepositoryImpl @Inject constructor(
         if (userName.isNullOrEmpty()) {
             return emptyList()
         }
-        return chatDao.getByUser(userName)
+        val chats = chatDao.getByUser(userName)
+        return sortChats(chats)
+    }
+
+    private fun sortChats(chats: List<ChatHistory>): List<ChatHistory> {
+        return chats
+            .map { chat ->
+                maxOf(chat.createdDate?.toLongOrNull() ?: 0L, chat.updatedDate?.toLongOrNull() ?: 0L) to chat
+            }
+            .sortedByDescending { it.first }
+            .map { it.second }
     }
 
     override suspend fun getLatestRev(id: String): String? {
-        return chatDao.getByDocId(id)
-            .maxByOrNull { rev -> rev._rev?.split("-")?.get(0)?.toIntOrNull() ?: 0 }
-            ?._rev
+        return chatDao.getRevsByDocId(id)
+            .maxByOrNull { rev -> rev?.split("-")?.get(0)?.toIntOrNull() ?: 0 }
     }
 
     private suspend fun saveNewChat(chat: JsonObject) {
@@ -139,8 +170,8 @@ class ChatRepositoryImpl @Inject constructor(
     override suspend fun insertChatHistoryFromSync(docs: List<JsonObject>) {
         val unwrappedDocs = mutableListOf<JsonObject>()
         for (j in docs) {
-            val jsonDoc = JsonUtils.getJsonObject("doc", j)
-            val id = JsonUtils.getString("_id", jsonDoc)
+            val jsonDoc = GsonUtils.getJsonObject("doc", j)
+            val id = GsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 unwrappedDocs.add(jsonDoc)
             }
@@ -153,19 +184,19 @@ class ChatRepositoryImpl @Inject constructor(
         // @Insert(REPLACE) upserts by primary key, replacing the whole row (including the embedded
         // conversations JSON), which subsumes the old "delete orphaned conversations" step.
         val entities = chats.map { json ->
-            val chatHistoryId = JsonUtils.getString("_id", json)
+            val chatHistoryId = GsonUtils.getString("_id", json)
             ChatHistory().apply {
                 id = chatHistoryId
                 _id = chatHistoryId
-                _rev = JsonUtils.getString("_rev", json)
-                title = JsonUtils.getString("title", json)
-                createdDate = "${JsonUtils.getLong("createdDate", json)}"
-                updatedDate = "${JsonUtils.getLong("updatedDate", json)}"
-                user = JsonUtils.getString("user", json)
-                aiProvider = JsonUtils.getString("aiProvider", json)
-                val conversationsArray = JsonUtils.getJsonArray("conversations", json)
+                _rev = GsonUtils.getString("_rev", json)
+                title = GsonUtils.getString("title", json)
+                createdDate = "${GsonUtils.getLong("createdDate", json)}"
+                updatedDate = "${GsonUtils.getLong("updatedDate", json)}"
+                user = GsonUtils.getString("user", json)
+                aiProvider = GsonUtils.getString("aiProvider", json)
+                val conversationsArray = GsonUtils.getJsonArray("conversations", json)
                 conversations = conversationsArray.map {
-                    JsonUtils.gson.fromJson(it, Conversation::class.java)
+                    gson.fromJson(it, Conversation::class.java)
                 }
                 lastUsed = Date().time
             }
@@ -198,7 +229,7 @@ class ChatRepositoryImpl @Inject constructor(
                 else {
                     val ids = newsEntries.flatMap { news ->
                         try {
-                            val array = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
+                            val array = gson.fromJson(news.viewIn, JsonArray::class.java)
                             val list = mutableListOf<String>()
                             for (i in 0 until array.size()) {
                                 val elem = array.get(i) as JsonElement
@@ -209,12 +240,16 @@ class ChatRepositoryImpl @Inject constructor(
                             }
                             list
                         } catch (_: Exception) {
-                            emptyList<String>()
+                            emptyList()
                         }
                     }.toSet()
                     newsId to ids
                 }
             }
             .toMap()
+    }
+
+    private companion object {
+        const val REQUEST_FAILED = "Request failed"
     }
 }

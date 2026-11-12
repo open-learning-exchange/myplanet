@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.user
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,6 +16,7 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.time.Instant
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -22,15 +24,16 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentAchievementBinding
 import org.ole.planet.myplanet.databinding.LayoutButtonPrimaryBinding
 import org.ole.planet.myplanet.databinding.RowAchievementBinding
+import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.ImageUtils
-import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -74,8 +77,10 @@ class AchievementFragment : BaseContainerFragment() {
             try {
                 achievementData = loadAchievementDataAsync()
                 updateAchievementUI()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "refreshAchievementData failed", e)
             }
         }
     }
@@ -83,7 +88,7 @@ class AchievementFragment : BaseContainerFragment() {
     private suspend fun loadAchievementDataAsync(): AchievementData {
         val uId = user?.id ?: return AchievementData()
         val pCode = user?.planetCode ?: return AchievementData()
-        return userRepository.getAchievementData(uId, pCode)
+        return viewModel.getAchievementData(uId, pCode)
     }
 
     private fun updateAchievementUI() {
@@ -99,7 +104,7 @@ class AchievementFragment : BaseContainerFragment() {
         super.onViewCreated(view, savedInstanceState)
         setupRealtimeSync()
         viewLifecycleOwner.lifecycleScope.launch {
-            user = userRepository.getUserModel()
+            user = viewModel.getUserModel()
             setupUserData()
             achievementData = loadAchievementDataAsync()
             updateAchievementUI()
@@ -134,7 +139,7 @@ class AchievementFragment : BaseContainerFragment() {
             resource.id?.let { id -> id to resource }
         }.toMap()
         data.achievements.forEach { json ->
-            val element = JsonUtils.gson.fromJson(json, JsonElement::class.java)
+            val element = GsonUtils.gson.fromJson(json, JsonElement::class.java)
             val view = if (element is JsonObject) createAchievementView(element, resourcesMap) else null
             view?.let {
                 if (it.parent != null) {
@@ -168,7 +173,7 @@ class AchievementFragment : BaseContainerFragment() {
 
         val libraries = resourceIds.mapNotNull { resourcesMap[it] }
 
-        if (desc.isNotEmpty() && libraries.isNotEmpty()) {
+        if (desc.isNotEmpty() || link.isNotEmpty() || libraries.isNotEmpty()) {
             binding.llRow.setOnClickListener { toggleDescription(binding) }
             binding.flexboxResources.removeAllViews()
             libraries.forEach { binding.flexboxResources.addView(createResourceButton(it)) }
@@ -197,8 +202,8 @@ class AchievementFragment : BaseContainerFragment() {
             if (lib.isResourceOffline()) {
                 openResource(lib)
             } else {
-                lifecycleScope.launch {
-                    resourcesRepository.downloadResources(listOf(lib))
+                viewLifecycleOwner.lifecycleScope.launch {
+                    viewModel.downloadResources(listOf(lib))
                 }
             }
         }
@@ -211,7 +216,9 @@ class AchievementFragment : BaseContainerFragment() {
             binding.cvCard.visibility = View.GONE
             return
         }
-        val cvFile = File(FileUtils.getOlePath(requireContext()) + "cv/$cvFilename")
+        val olePath = FileUtils.getOlePath(requireContext())
+        val cvPath = Achievement.resolveCvRelativePath(olePath, data.achievementId, cvFilename)
+        val cvFile = File(olePath + cvPath)
         if (!cvFile.exists()) {
             binding.cvCard.visibility = View.GONE
             return
@@ -219,7 +226,7 @@ class AchievementFragment : BaseContainerFragment() {
         binding.cvCard.visibility = View.VISIBLE
         binding.btnViewCv.setOnClickListener {
             val intent = Intent(requireContext(), ResourceViewerActivity::class.java)
-            intent.putExtra("TOUCHED_FILE", "cv/$cvFilename")
+            intent.putExtra("TOUCHED_FILE", cvPath)
             intent.putExtra("resourceType", ResourceViewerFragment.ResourceType.PDF.name)
             startActivity(intent)
         }
@@ -238,5 +245,7 @@ class AchievementFragment : BaseContainerFragment() {
         }
     }
 
-
+    companion object {
+        private const val TAG = "AchievementFragment"
+    }
 }

@@ -18,7 +18,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], application = Application::class)
+@Config(application = Application::class)
 class TextViewExtensionsTest {
 
     private lateinit var context: Context
@@ -69,13 +69,13 @@ class TextViewExtensionsTest {
                                     textView.text = visiblePortion
                                     textView.maxLines = 1
                                 }
-                            }, s, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                            }, s, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                         }
                         textView.text = expanded
                         textView.maxLines = Int.MAX_VALUE
                         textView.ellipsize = null
                     }
-                }, start, sb.length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }, start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
             textView.text = visiblePortion
             textView.maxLines = 1

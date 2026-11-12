@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services.retry
 
-import android.content.Context
 import android.util.Log
 import com.google.gson.JsonObject
 import io.mockk.MockKAnnotations
@@ -10,17 +9,13 @@ import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.After
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.RetryFailure
-import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.repository.RetryRepository
 import org.ole.planet.myplanet.services.upload.UploadError
 
@@ -29,9 +24,6 @@ class RetryQueueTest {
 
     @MockK
     lateinit var retryRepository: RetryRepository
-
-    @MockK
-    lateinit var context: Context
 
     private lateinit var retryQueue: RetryQueue
 
@@ -45,7 +37,7 @@ class RetryQueueTest {
         every { Log.e(any<String>(), any<String>()) } returns 0
         every { Log.e(any<String>(), any<String>(), any<Throwable>()) } returns 0
 
-        retryQueue = RetryQueue(retryRepository, context)
+        retryQueue = RetryQueue(retryRepository)
     }
 
     @After
@@ -61,15 +53,6 @@ class RetryQueueTest {
         retryQueue.recoverStuckOperations()
 
         coVerify(exactly = 1) { retryRepository.recoverStuckOperations() }
-    }
-
-    @Test
-    fun getPendingOperations_delegatesToRepository() = runTest {
-        coEvery { retryRepository.getPending() } returns listOf()
-
-        retryQueue.getPendingOperations()
-
-        coVerify(exactly = 1) { retryRepository.getPending() }
     }
 
     @Test
@@ -97,33 +80,39 @@ class RetryQueueTest {
 
         retryQueue.queueFailedOperation("type", error, JsonObject(), "endpoint", modelClassName = "Model")
 
-        coVerify(exactly = 0) { retryRepository.getExistingOperation(any<String>(), any<String>()) }
-        coVerify(exactly = 0) { retryRepository.enqueue(any<String>(), any<RetryFailure>(), any<String>(), any<String>(), any<String>(), any<String>(), any<String>(), any<String>()) }
+        coVerify(exactly = 0) { retryRepository.recordFailure(any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
-    fun queueFailedOperation_retryableError_noExistingOp_enqueues() = runTest {
+    fun queueFailedOperation_retryableError_recordsFailure() = runTest {
         val error = UploadError("item1", Exception("fail"), retryable = true)
         val payload = JsonObject()
-        coEvery { retryRepository.getExistingOperation("item1", "type") } returns null
-        coEvery { retryRepository.enqueue(any(), any(), any(), any(), any(), any(), any(), any()) } returns Unit
+        coEvery { retryRepository.recordFailure(any(), any(), any(), any(), any(), any(), any(), any()) } returns Unit
 
-        retryQueue.queueFailedOperation("type", error, payload, "endpoint", modelClassName = "Model")
+        retryQueue.queueFailedOperation("type", error, payload, "endpoint", "PUT", "doc1", modelClassName = "Model")
 
-        coVerify(exactly = 1) { retryRepository.enqueue("type", RetryFailure(error.itemId, error.message, error.httpCode), payload.toString(), "endpoint", "POST", null, "Model", null) }
+        coVerify(exactly = 1) {
+            retryRepository.recordFailure(
+                "type",
+                RetryFailure(error.itemId, error.message, error.httpCode),
+                payload.toString(),
+                "endpoint",
+                "PUT",
+                "doc1",
+                "Model",
+                null
+            )
+        }
     }
 
     @Test
-    fun queueFailedOperation_retryableError_existingOp_updates() = runTest {
+    fun queueFailedOperation_create_isNotRecorded() = runTest {
         val error = UploadError("item1", Exception("fail"), retryable = true)
-        val existingOp = RetryOperation().apply { id = "op1" }
-        coEvery { retryRepository.getExistingOperation("item1", "type") } returns existingOp
-        coEvery { retryRepository.updateAttempt("op1", any()) } returns Unit
 
         retryQueue.queueFailedOperation("type", error, JsonObject(), "endpoint", modelClassName = "Model")
+        retryQueue.queueFailedOperation("type", error, JsonObject(), "endpoint", "PUT", null, modelClassName = "Model")
 
-        coVerify(exactly = 1) { retryRepository.updateAttempt("op1", RetryFailure(error.itemId, error.message, error.httpCode)) }
-        coVerify(exactly = 0) { retryRepository.enqueue(any(), any(), any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { retryRepository.recordFailure(any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
 

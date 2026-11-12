@@ -64,6 +64,7 @@ import org.ole.planet.myplanet.model.NewsLog
 import org.ole.planet.myplanet.model.OfflineActivity
 import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.model.Rating
+import org.ole.planet.myplanet.model.RatingPromptLog
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.RetryOperation
@@ -78,13 +79,6 @@ import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserChallengeActions
 import org.ole.planet.myplanet.model.UserEntity
 
-/**
- * Room database that is progressively replacing the legacy Realm store.
- *
- * Entities and DAOs are added here as each domain is migrated off Realm. Because the migration
- * uses a drop-and-resync strategy (data is re-pulled from the Planet/CouchDB server on first
- * launch), destructive schema migrations are acceptable and configured in the Hilt module.
- */
 @Database(
     entities = [
         DictionaryEntity::class,
@@ -99,6 +93,7 @@ import org.ole.planet.myplanet.model.UserEntity
         ChatHistory::class,
         Feedback::class,
         Rating::class,
+        RatingPromptLog::class,
         TagEntity::class,
         Meetup::class,
         SearchActivity::class,
@@ -125,7 +120,7 @@ import org.ole.planet.myplanet.model.UserEntity
         Answer::class,
         MyTeam::class,
     ],
-    version = 6,
+    version = 18,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)

@@ -2,26 +2,50 @@ package org.ole.planet.myplanet.data.room.dao
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
+import org.ole.planet.myplanet.model.EnterpriseReportCsvProjection
+import org.ole.planet.myplanet.model.FinanceReport
 import org.ole.planet.myplanet.model.MyTeam
 
 @Dao
 interface TeamDao {
+    @Query("SELECT * FROM teams WHERE _id IN (:ids)") suspend fun getByIdsInternal(ids: List<String>): List<MyTeam>
+
+    suspend fun getByIds(ids: List<String>): List<MyTeam> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.distinct().chunked(900).flatMap { getByIdsInternal(it) }
+    }
+    @Query("SELECT resourceId FROM teams WHERE teamId = :teamId AND resourceId IS NOT NULL AND TRIM(resourceId) != '' AND (docType IS NULL OR TRIM(docType) = '' OR docType = 'resourceLink' OR docType = 'link')") suspend fun getResourceIdsByTeamId(teamId: String): List<String>
     @Query("SELECT * FROM teams WHERE _id = :teamId OR teamId = :teamId LIMIT 1") suspend fun getByTeamId(teamId: String): MyTeam?
     @Query("SELECT * FROM teams WHERE _id = :id LIMIT 1") suspend fun getById(id: String): MyTeam?
     @Query("SELECT * FROM teams WHERE userId = :userId") suspend fun getByUserId(userId: String): List<MyTeam>
-    @Query("SELECT * FROM teams") suspend fun getAll(): List<MyTeam>
     @Query("SELECT * FROM teams WHERE teamId = :teamId") suspend fun getAllByTeamId(teamId: String): List<MyTeam>
-    @Query("SELECT * FROM teams") fun observeAll(): Flow<List<MyTeam>>
+    @Query("SELECT * FROM teams WHERE (teamId IS NULL OR teamId NOT GLOB '*[0-9A-Za-z]*') AND _id IN (SELECT teamId FROM teams WHERE userId = :userId AND docType = 'membership' AND isDeletePending = 0)")
+    fun observeMemberTeams(userId: String): Flow<List<MyTeam>>
     @Query("SELECT * FROM teams WHERE docType = :docType") suspend fun getByDocType(docType: String): List<MyTeam>
-    @Query("SELECT * FROM teams WHERE docType = :docType") fun observeByDocType(docType: String): Flow<List<MyTeam>>
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND docType = :docType") suspend fun getByTeamIdAndDocType(teamId: String, docType: String): List<MyTeam>
+    @Query("SELECT * FROM teams WHERE teamId = :teamId AND docType = 'membership' AND isLeader = 0 AND isDeletePending = 0 AND (status IS NULL OR status != 'archived') AND (:excludeUserId IS NULL OR userId != :excludeUserId)") suspend fun getEligibleNextLeaderCandidates(teamId: String, excludeUserId: String?): List<MyTeam>
+    @Query("SELECT * FROM teams WHERE teamId = :teamId AND docType = :docType") fun observeByTeamIdAndDocType(teamId: String, docType: String): Flow<List<MyTeam>>
+    @Query("SELECT _id, _rev, status, description, beginningBalance, sales, otherIncome, wages, otherExpenses, startDate, endDate, createdDate, updatedDate, isUpdated AS updated, imageName FROM teams WHERE teamId = :teamId AND docType = 'report' AND IFNULL(status, '') != 'archived' ORDER BY createdDate DESC") fun observeNonArchivedFinanceReportsByTeamId(teamId: String): Flow<List<FinanceReport>>
+    @Query("SELECT startDate, endDate, createdDate, updatedDate, beginningBalance, sales, otherIncome, wages, otherExpenses FROM teams WHERE teamId = :teamId AND docType = 'report' AND IFNULL(status, '') != 'archived' ORDER BY createdDate DESC") suspend fun getNonArchivedReportCsvProjectionsByTeamId(teamId: String): List<EnterpriseReportCsvProjection>
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType LIMIT 1") suspend fun getByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): MyTeam?
     @Query("SELECT COUNT(*) FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType") suspend fun countByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): Int
-    @Query("SELECT COUNT(*) FROM teams WHERE teamId = :teamId AND docType = :docType") suspend fun countByTeamIdAndDocType(teamId: String, docType: String): Int
+    @Query("SELECT COUNT(DISTINCT userId) FROM teams WHERE teamId = :teamId AND docType = :docType AND isDeletePending = 0 AND userId IS NOT NULL AND EXISTS (SELECT 1 FROM users u WHERE u.id = teams.userId OR u._id = teams.userId)") suspend fun countByTeamIdAndDocType(teamId: String, docType: String): Int
+    @Query("SELECT COUNT(DISTINCT userId) FROM teams WHERE teamId = :teamId AND docType = 'membership' AND isDeletePending = 0 AND userId IS NOT NULL") suspend fun countActiveMembershipsByTeamId(teamId: String): Int
+    @Query("SELECT r.* FROM teams r INNER JOIN teams t ON t._id = r.teamId WHERE r.docType = 'request' AND IFNULL(t.teamPlanetCode, '') != '' AND r.teamPlanetCode IS NOT t.teamPlanetCode") suspend fun getMisfiledRequests(): List<MyTeam>
+    @Query("UPDATE teams SET description = :description, beginningBalance = :beginningBalance, sales = :sales, otherIncome = :otherIncome, wages = :wages, otherExpenses = :otherExpenses, startDate = :startDate, endDate = :endDate, updatedDate = :updatedDate, isUpdated = 1 WHERE _id = :id") suspend fun updateReportFields(id: String, description: String, beginningBalance: Double, sales: Double, otherIncome: Double, wages: Double, otherExpenses: Double, startDate: Long, endDate: Long, updatedDate: Long): Int
+    @Query("UPDATE teams SET status = 'archived', isUpdated = 1 WHERE _id = :id") suspend fun archiveById(id: String): Int
+    @Query("UPDATE teams SET imageName = :imageName, isUpdated = 1 WHERE _id = :id") suspend fun setImageNameById(id: String, imageName: String): Int
     @Query("DELETE FROM teams WHERE _id = :id") suspend fun deleteById(id: String): Int
-    @Query("DELETE FROM teams WHERE _id IN (:ids)") suspend fun deleteByIds(ids: List<String>): Int
+    @Query("DELETE FROM teams WHERE _id IN (:ids)") suspend fun deleteByIdsInternal(ids: List<String>): Int
+
+    @Transaction
+    suspend fun deleteByIds(ids: List<String>): Int {
+        if (ids.isEmpty()) return 0
+        return ids.distinct().chunked(900).sumOf { deleteByIdsInternal(it) }
+    }
     @Query("DELETE FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType") suspend fun deleteByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): Int
     @Upsert suspend fun upsertAll(items: List<MyTeam>)
     @Upsert suspend fun upsert(item: MyTeam)
@@ -36,7 +60,12 @@ interface TeamDao {
     suspend fun getRootTeamsByType(type: String): List<MyTeam>
 
     @Query("SELECT * FROM teams WHERE (teamId IS NULL OR TRIM(teamId) = '') AND IFNULL(status, '') != 'archived' AND type = :type AND _id IN (:teamIds)")
-    suspend fun getRootTeamsByTypeAndIds(type: String, teamIds: Set<String>): List<MyTeam>
+    suspend fun getRootTeamsByTypeAndIdsInternal(type: String, teamIds: List<String>): List<MyTeam>
+
+    suspend fun getRootTeamsByTypeAndIds(type: String, teamIds: Set<String>): List<MyTeam> {
+        if (teamIds.isEmpty()) return emptyList()
+        return teamIds.toList().distinct().chunked(900).flatMap { getRootTeamsByTypeAndIdsInternal(type, it) }
+    }
 
     @Query("SELECT * FROM teams WHERE teamId = :teamId AND resourceId = :resourceId AND docType = 'resourceLink' LIMIT 1")
     suspend fun getResourceLink(teamId: String, resourceId: String): MyTeam?

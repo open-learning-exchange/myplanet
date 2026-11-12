@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
@@ -11,12 +12,11 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.Utilities.toast
 import org.ole.planet.myplanet.utils.textChanges
 
 @OptIn(FlowPreview::class)
-fun LoginActivity.showGuestLoginDialog(userRepository: UserRepository) {
+fun LoginActivity.showGuestLoginDialog(viewModel: LoginViewModel) {
     val binding = AlertGuestLoginBinding.inflate(LayoutInflater.from(this))
     val view: View = binding.root
 
@@ -29,14 +29,14 @@ fun LoginActivity.showGuestLoginDialog(userRepository: UserRepository) {
                 binding.etUserName.setSelection(lowercaseText.length)
             }
         }
-        .debounce(300)
+        .debounce(300.milliseconds)
         .onEach { s ->
             val input = s?.toString() ?: ""
             lifecycleScope.launch {
                 if (input.isEmpty()) {
                     binding.etUserName.error = null
                 } else {
-                    val error = userRepository.validateUsername(input)
+                    val error = viewModel.validateUsername(input)
                     binding.etUserName.error = error
                 }
             }
@@ -55,9 +55,9 @@ fun LoginActivity.showGuestLoginDialog(userRepository: UserRepository) {
     login.setOnClickListener {
         val username = binding.etUserName.text.toString().trim { it <= ' ' }
         lifecycleScope.launch {
-            val error = userRepository.validateUsername(username)
+            val error = viewModel.validateUsername(username)
             if (error == null) {
-                val existingUser = userRepository.findUserByName(username)
+                val existingUser = viewModel.findUserByName(username)
                 dialog.dismiss()
                 if (existingUser != null) {
                     when {
@@ -65,12 +65,11 @@ fun LoginActivity.showGuestLoginDialog(userRepository: UserRepository) {
                         existingUser._id?.contains("org.couchdb.user:") == true -> showUserAlreadyMemberDialog(username)
                     }
                 } else {
-                    val model = userRepository.createGuestUser(username)
+                    val model = viewModel.loginAsGuest(username)
                     if (model == null) {
                         toast(this@showGuestLoginDialog, getString(R.string.unable_to_login))
                     } else {
                         saveUsers(username, "", "guest")
-                        profileDbHandler.saveUserInfoPref("", model)
                         onLogin()
                     }
                 }

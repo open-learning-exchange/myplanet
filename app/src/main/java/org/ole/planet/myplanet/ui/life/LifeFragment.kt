@@ -41,34 +41,34 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
         return view
     }
 
-    override suspend fun getAdapter(): ListAdapter<*, *> {
-        lifeAdapter = LifeAdapter(requireContext(), this,
-            visibilityCallback = { myLife, isVisible ->
-                val id = myLife._id.takeIf { it.isNotBlank() }
-                    ?: myLife.imageId?.takeIf { it.isNotBlank() }
-                    ?: myLife.title
-                if (!id.isNullOrEmpty()) {
-                    viewModel.updateVisibility(isVisible, id)
-                    if (!isVisible) {
-                        Utilities.toast(requireContext(), myLife.title + context?.getString(R.string.is_now_hidden))
-                    } else {
-                        Utilities.toast(requireContext(), myLife.title + " " + context?.getString(R.string.is_now_shown))
+    override suspend fun getAdapter(): ListAdapter<*, *> = initAdapter()
+
+    private fun initAdapter(): LifeAdapter {
+        if (!::lifeAdapter.isInitialized) {
+            lifeAdapter = LifeAdapter(
+                requireContext(),
+                this,
+                visibilityCallback = { myLife, isVisible ->
+                    val id = myLife._id.takeIf { it.isNotBlank() }
+                        ?: myLife.imageId?.takeIf { it.isNotBlank() }
+                        ?: myLife.title
+                    if (!id.isNullOrEmpty()) {
+                        viewModel.updateVisibility(isVisible, id)
+                        if (!isVisible) {
+                            Utilities.toast(requireContext(), myLife.title + context?.getString(R.string.is_now_hidden))
+                        } else {
+                            Utilities.toast(requireContext(), myLife.title + " " + context?.getString(R.string.is_now_shown))
+                        }
                     }
+                },
+                reorderCallback = { list ->
+                    viewModel.updateMyLifeListOrder(list)
                 }
-            },
-            reorderCallback = { list ->
-                viewModel.updateMyLifeListOrder(list)
-            }
-        )
-        val callback: ItemTouchHelper.Callback = ItemReorderHelper(lifeAdapter)
-        itemTouchHelper = ItemTouchHelper(callback)
-        itemTouchHelper?.attachToRecyclerView(recyclerView)
-
-        collectWhenStarted(viewModel.myLifeList) { list ->
-            lifeAdapter.submitList(list)
+            )
+            val callback: ItemTouchHelper.Callback = ItemReorderHelper(lifeAdapter)
+            itemTouchHelper = ItemTouchHelper(callback)
         }
-        viewModel.loadMyLifeList()
-
+        itemTouchHelper?.attachToRecyclerView(recyclerView)
         return lifeAdapter
     }
 
@@ -78,9 +78,16 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
         setupUI(binding.myLifeParentLayout, requireActivity())
         val dividerItemDecoration = DividerItemDecoration(recyclerView.context, RecyclerView.VERTICAL)
         recyclerView.addItemDecoration(dividerItemDecoration)
+
+        initAdapter()
+        collectWhenStarted(viewModel.myLifeList) { list ->
+            lifeAdapter.submitList(list)
+        }
+        viewModel.loadMyLifeList(requireContext()::getString)
     }
 
     override fun onDestroyView() {
+        itemTouchHelper?.attachToRecyclerView(null)
         _binding = null
         super.onDestroyView()
     }

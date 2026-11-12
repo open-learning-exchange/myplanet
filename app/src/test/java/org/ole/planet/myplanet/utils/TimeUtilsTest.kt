@@ -1,5 +1,8 @@
 package org.ole.planet.myplanet.utils
 
+import android.content.Context
+import io.mockk.every
+import io.mockk.mockk
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.time.Instant
@@ -16,6 +19,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.R
 
 class TimeUtilsTest {
 
@@ -48,9 +52,11 @@ class TimeUtilsTest {
         // We cannot fully test getRelativeTime because it uses android.text.format.DateUtils
         // which returns null or throws an error in standard JUnit without Robolectric.
         // But we can test the fallback for future time.
+        val context = mockk<Context>()
+        every { context.getString(R.string.just_now) } returns "Justo ahora"
         val futureTime = System.currentTimeMillis() + 100000
-        val relative = TimeUtils.getRelativeTime(futureTime)
-        assertEquals("Just now", relative)
+        val relative = TimeUtils.getRelativeTime(context, futureTime)
+        assertEquals("Justo ahora", relative)
     }
 
     @Test
@@ -62,6 +68,25 @@ class TimeUtilsTest {
 
         val formattedNull = TimeUtils.getFormattedDate(null)
         assertNotEquals("N/A", formattedNull) // should return current date, not N/A
+    }
+
+    @Test
+    fun testGetFormattedDate_localMidnightInUtcPlusZoneShowsThatDay() {
+        TimeZone.setDefault(TimeZone.getTimeZone("Africa/Nairobi"))
+        val pickedMidnight = LocalDate.of(2024, 3, 11)
+            .atStartOfDay(ZoneId.of("Africa/Nairobi")).toInstant().toEpochMilli()
+
+        assertEquals("Monday, Mar 11, 2024", TimeUtils.getFormattedDate(pickedMidnight))
+    }
+
+    @Test
+    fun testGetFormattedDate_dobStringKeepsItsCalendarDayInUtcMinusZone() {
+        TimeZone.setDefault(TimeZone.getTimeZone("America/New_York"))
+
+        assertEquals(
+            "Monday, Jan 01, 1990",
+            TimeUtils.getFormattedDate("1990-01-01T00:00:00.000Z", "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        )
     }
 
     @Test
@@ -111,9 +136,9 @@ class TimeUtilsTest {
     fun testGetFormattedDateWithTime() {
         val timestamp = 1710115200000L
         val formatted = TimeUtils.getFormattedDateWithTime(timestamp)
-        // With UTC timezone default, it should be Mon 11, March 2024 , 12:00 AM
+        // With UTC timezone default, it should be Mon 11, March 2024, 12:00 AM
         // Note: Java 8 DateTimeFormatter with 'EEE' produces 'Mon'
-        assertEquals("Mon 11, March 2024 , 12:00 AM", formatted)
+        assertEquals("Mon 11, March 2024, 12:00 AM", formatted)
     }
 
     @Test

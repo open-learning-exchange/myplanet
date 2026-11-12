@@ -1,28 +1,36 @@
 package org.ole.planet.myplanet.repository
 
-import javax.inject.Inject
 import android.util.Log
+import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.RetryDao
 import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.UrlUtils
 
 class RetryRepositoryImpl @Inject constructor(
     private val retryDao: RetryDao,
+    private val apiInterface: ApiInterface,
     private val timeProvider: TimeProvider
 ) : RetryRepository {
 
     companion object {
-        private const val TAG = "RetryRepositoryImpl"
+        private const val TAG = "RetryRepository"
+        private const val PREVIEW_LIMIT = 10
     }
 
     private val isProcessing = AtomicBoolean(false)
     private val mutex = Mutex()
 
-    override suspend fun enqueue(
+    override suspend fun recordFailure(
         uploadType: String,
         failure: RetryFailure,
         payload: String,
@@ -32,60 +40,100 @@ class RetryRepositoryImpl @Inject constructor(
         modelClassName: String,
         userId: String?
     ) {
-        val operation = RetryOperation.createFromRetryFailure(
-            uploadType, failure, payload, endpoint,
-            httpMethod, dbId, modelClassName, userId
-        )
-        retryDao.insert(operation)
-    }
-
-    override suspend fun updateAttempt(
-        operationId: String,
-        failure: RetryFailure
-    ) {
-        retryDao.findById(operationId)?.let { op ->
-            op.attemptCount += 1
-            op.lastAttemptTime = timeProvider.now()
-            op.nextRetryTime = RetryOperation.calculateNextRetryTime(op.attemptCount)
-            op.errorMessage = failure.message
-            op.httpCode = failure.httpCode
-
-            if (op.attemptCount >= op.maxAttempts) {
-                op.status = RetryOperation.STATUS_ABANDONED
+        mutex.withLock {
+            val existingId = retryDao.findExistingId(failure.itemId, uploadType)
+            if (existingId != null) {
+                markFailed(existingId, failure.message, failure.httpCode)
+            } else {
+                val operation = RetryOperation.createFromRetryFailure(
+                    uploadType, failure, payload, endpoint,
+                    httpMethod, dbId, modelClassName, userId
+                )
+                retryDao.insert(operation)
             }
-            retryDao.update(op)
         }
     }
 
     override suspend fun markInProgress(operationId: String) {
-        retryDao.findById(operationId)?.let { op ->
-            op.status = RetryOperation.STATUS_IN_PROGRESS
-            retryDao.update(op)
-        }
+        retryDao.markInProgress(operationId)
     }
 
     override suspend fun markCompleted(operationId: String) {
-        retryDao.findById(operationId)?.let { op ->
-            op.status = RetryOperation.STATUS_COMPLETED
-            op.lastAttemptTime = timeProvider.now()
-            retryDao.update(op)
-        }
+        retryDao.markCompleted(operationId, timeProvider.now())
     }
 
     override suspend fun markFailed(operationId: String, errorMessage: String?, httpCode: Int?) {
-        retryDao.findById(operationId)?.let { op ->
-            op.attemptCount += 1
-            op.lastAttemptTime = timeProvider.now()
-            op.errorMessage = errorMessage
-            op.httpCode = httpCode
+        retryDao.recordFailedAttempt(operationId, errorMessage, httpCode, timeProvider.now())
+    }
 
-            if (op.attemptCount >= op.maxAttempts) {
-                op.status = RetryOperation.STATUS_ABANDONED
-            } else {
-                op.status = RetryOperation.STATUS_PENDING
-                op.nextRetryTime = RetryOperation.calculateNextRetryTime(op.attemptCount)
+    override suspend fun executeOperation(operation: RetryOperation): RetryOperationResult {
+        if (RetryOperation.createsDocument(operation.httpMethod, operation.dbId)) {
+            markCompleted(operation.id)
+            return RetryOperationResult.Success
+        }
+        markInProgress(operation.id)
+
+        return try {
+            val payload = try {
+                Json.parseToJsonElement(operation.serializedPayload).jsonObject
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                markFailed(operation.id, "Invalid payload", null)
+                return RetryOperationResult.TerminalFailure("Invalid payload", null)
             }
-            retryDao.update(op)
+
+            val baseUrl = UrlUtils.getUrl()
+            val authHeader = UrlUtils.header
+            val requestUrl = if (operation.dbId.isNullOrEmpty()) {
+                "$baseUrl/${operation.endpoint}"
+            } else {
+                "$baseUrl/${operation.endpoint}/${operation.dbId}"
+            }
+
+            val response = if (operation.httpMethod == "PUT" && !operation.dbId.isNullOrEmpty()) {
+                apiInterface.putDoc(
+                    authHeader,
+                    "application/json",
+                    requestUrl,
+                    payload
+                )
+            } else {
+                apiInterface.postDoc(
+                    authHeader,
+                    "application/json",
+                    requestUrl,
+                    payload
+                )
+            }
+
+            if (response.isSuccessful) {
+                markCompleted(operation.id)
+                RetryOperationResult.Success
+            } else if (response.code() == 409) {
+                // 409 Conflict means document already exists - data is already synced
+                markCompleted(operation.id)
+                RetryOperationResult.Success
+            } else {
+                val code = response.code()
+                val isRetryable = code >= 500
+                if (isRetryable) {
+                    markFailed(operation.id, "HTTP $code", code)
+                    RetryOperationResult.RetryableFailure("HTTP $code", code)
+                } else {
+                    markFailed(operation.id, "Non-retryable HTTP $code", code)
+                    RetryOperationResult.TerminalFailure("Non-retryable HTTP $code", code)
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            markFailed(operation.id, e.message, null)
+            Log.w(TAG, "Network error during retry for ${operation.id}", e)
+            RetryOperationResult.RetryableFailure(e.message, null)
+        } catch (e: Exception) {
+            markFailed(operation.id, e.message, null)
+            Log.e(TAG, "Unexpected error during retry for ${operation.id}", e)
+            RetryOperationResult.RetryableFailure(e.message, null)
         }
     }
 
@@ -93,7 +141,7 @@ class RetryRepositoryImpl @Inject constructor(
         return retryDao.getPending(timeProvider.now())
     }
 
-    override suspend fun getPendingCount(): Long {
+    private suspend fun getPendingCount(): Long {
         return retryDao.getActiveCount()
     }
 
@@ -102,15 +150,7 @@ class RetryRepositoryImpl @Inject constructor(
         retryDao.deleteOldCompleted(cutoffTime)
     }
 
-    override suspend fun resetAllPending() {
-        retryDao.resetPendingRetryTime(timeProvider.now())
-    }
-
-    override suspend fun getExistingOperation(itemId: String, uploadType: String): RetryOperation? {
-        return retryDao.findExisting(itemId, uploadType)
-    }
-
-    override suspend fun deletePendingAndAbandonedOperations() {
+    private suspend fun deletePendingAndAbandonedOperations() {
         retryDao.deletePendingAndAbandoned()
     }
 
@@ -120,32 +160,33 @@ class RetryRepositoryImpl @Inject constructor(
 
     override fun isCurrentlyProcessing(): Boolean = isProcessing.get()
 
-    override fun setProcessing(processing: Boolean) {
-        isProcessing.set(processing)
+    override fun tryStartProcessing(): Boolean = isProcessing.compareAndSet(false, true)
+
+    override fun finishProcessing() {
+        isProcessing.set(false)
     }
 
     override suspend fun safeClearQueue(): Boolean {
-        if (isProcessing.get()) {
-            Log.w(TAG, "Cannot clear queue while processing is active")
+        if (!isProcessing.compareAndSet(false, true)) {
             return false
         }
 
-        return mutex.withLock {
-            if (isProcessing.get()) {
-                Log.w(TAG, "Cannot clear queue while processing is active")
-                return@withLock false
+        return try {
+            mutex.withLock {
+                deletePendingAndAbandonedOperations()
+                true
             }
-
-            deletePendingAndAbandonedOperations()
-            Log.i(TAG, "Queue cleared successfully")
-            true
+        } finally {
+            isProcessing.set(false)
         }
     }
 
     override suspend fun getRetryQueueSnapshot(): RetryQueueDetails {
+        val now = timeProvider.now()
         val pendingCount = getPendingCount()
-        val pendingOps = getPending()
+        val pendingOps = retryDao.getPendingPreview(now, PREVIEW_LIMIT)
+        val pendingDueCount = retryDao.getPendingDueCount(now)
         val isProcessing = isCurrentlyProcessing()
-        return RetryQueueDetails(pendingCount, pendingOps, isProcessing)
+        return RetryQueueDetails(pendingCount, pendingOps, isProcessing, pendingDueCount)
     }
 }

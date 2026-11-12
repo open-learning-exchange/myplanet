@@ -4,8 +4,15 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.News
+
+data class TeamNewsMembership(
+    val viewableBy: String?,
+    val viewableId: String?,
+    val viewIn: String?
+)
 
 @Dao
 interface NewsDao {
@@ -16,21 +23,26 @@ interface NewsDao {
     suspend fun getByUnderscoreId(underscoreId: String): News?
 
     @Query("SELECT * FROM news WHERE _id IN (:underscoreIds)")
-    suspend fun getByUnderscoreIds(underscoreIds: List<String>): List<News>
+    suspend fun getByUnderscoreIdsInternal(underscoreIds: List<String>): List<News>
+
+    suspend fun getByUnderscoreIds(underscoreIds: List<String>): List<News> {
+        if (underscoreIds.isEmpty()) return emptyList()
+        return underscoreIds.distinct().chunked(900).flatMap { chunk -> getByUnderscoreIdsInternal(chunk) }
+    }
 
     @Query("SELECT * FROM news")
     suspend fun getAll(): List<News>
 
+    @Query("SELECT * FROM news WHERE _id IS NULL OR _id = '' OR isUpdated = 1 OR pendingReactions IS NOT NULL OR (imageUrls IS NOT NULL AND imageUrls != '[]')")
+    suspend fun getPendingUploads(): List<News>
+
     @Query("SELECT * FROM news WHERE id IN (:ids)")
-    suspend fun getByIds(ids: List<String>): List<News>
+    suspend fun getByIdsInternal(ids: List<String>): List<News>
 
-    // Top-level posts (no reply parent), newest first. Team/community visibility is filtered
-    // in-memory by the repository (mirrors the isVisibleToUser approach).
-    @Query("SELECT * FROM news WHERE replyTo IS NULL OR replyTo = '' ORDER BY time DESC")
-    suspend fun getTopLevel(): List<News>
-
-    @Query("SELECT * FROM news WHERE replyTo IS NULL OR replyTo = '' ORDER BY time DESC")
-    fun getTopLevelFlow(): Flow<List<News>>
+    suspend fun getByIds(ids: List<String>): List<News> {
+        if (ids.isEmpty()) return emptyList()
+        return ids.distinct().chunked(900).flatMap { getByIdsInternal(it) }
+    }
 
     @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND ((viewableBy = 'teams' COLLATE NOCASE AND viewableId = :teamId COLLATE NOCASE) OR viewIn LIKE :teamPattern ESCAPE '\\') ORDER BY time DESC")
     suspend fun getTopLevelByTeam(teamId: String, teamPattern: String): List<News>
@@ -38,55 +50,78 @@ interface NewsDao {
     @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND ((viewableBy = 'teams' COLLATE NOCASE AND viewableId = :teamId COLLATE NOCASE) OR viewIn LIKE :teamPattern ESCAPE '\\') ORDER BY time DESC")
     fun getTopLevelByTeamFlow(teamId: String, teamPattern: String): Flow<List<News>>
 
-    // Top-level "message" posts (community feed source).
-    @Query(
-        "SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') " +
-            "AND docType = 'message' COLLATE NOCASE ORDER BY time DESC"
-    )
-    suspend fun getTopLevelMessages(): List<News>
-
-    @Query(
-        "SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') " +
-            "AND docType = 'message' COLLATE NOCASE ORDER BY time DESC"
-    )
+    @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND docType = 'message' COLLATE NOCASE ORDER BY time DESC")
     fun getTopLevelMessagesFlow(): Flow<List<News>>
 
-    @Query("SELECT * FROM news WHERE replyTo = :newsId COLLATE NOCASE ORDER BY time DESC")
+    @Query("SELECT * FROM news WHERE (replyTo IS NULL OR replyTo = '') AND docType = 'message' COLLATE NOCASE AND (viewableBy = 'community' COLLATE NOCASE OR viewIn LIKE '%community%') ORDER BY time DESC")
+    fun getTopLevelCommunityCandidatesFlow(): Flow<List<News>>
+
+    @Query("SELECT * FROM news WHERE replyTo = :newsId ORDER BY time DESC")
     suspend fun getReplies(newsId: String): List<News>
 
-    @Query("SELECT * FROM news WHERE replyTo = :newsId")
-    suspend fun getDirectReplies(newsId: String): List<News>
-
-    @Query("SELECT COUNT(*) FROM news WHERE replyTo = :newsId COLLATE NOCASE")
+    @Query("SELECT COUNT(*) FROM news WHERE replyTo = :newsId")
     suspend fun getReplyCount(newsId: String): Int
 
-    @Query(
-        "SELECT * FROM news WHERE docType = 'message' COLLATE NOCASE " +
-            "AND createdOn = :planetCode COLLATE NOCASE"
-    )
+    @Query("WITH RECURSIVE thread(id) AS (SELECT :newsId UNION SELECT news.id FROM news JOIN thread ON news.replyTo = thread.id) SELECT id FROM thread")
+    suspend fun getNewsAndRepliesIds(newsId: String): List<String>
+
+    @Query("SELECT * FROM news WHERE docType = 'message' COLLATE NOCASE AND createdOn = :planetCode COLLATE NOCASE")
     suspend fun getPlanetMessages(planetCode: String): List<News>
 
-    @Query("SELECT * FROM news WHERE time >= :startTime AND time <= :endTime")
-    suspend fun getInTimeRange(startTime: Long, endTime: Long): List<News>
+    @Query(
+        "SELECT COUNT(*) FROM (SELECT DISTINCT strftime('%Y-%m-%d', time / 1000, 'unixepoch', 'localtime') " +
+            "FROM news WHERE time >= :startTime AND time <= :endTime " +
+            "AND viewIn LIKE '%\"section\":\"community\"%')"
+    )
+    suspend fun countDistinctCommunityVoiceDates(startTime: Long, endTime: Long): Int
 
-    @Query("SELECT * FROM news WHERE time >= :startTime AND time <= :endTime AND userId = :userId")
-    suspend fun getInTimeRangeForUser(startTime: Long, endTime: Long, userId: String): List<News>
+    @Query(
+        "SELECT COUNT(*) FROM (SELECT DISTINCT strftime('%Y-%m-%d', time / 1000, 'unixepoch', 'localtime') " +
+            "FROM news WHERE time >= :startTime AND time <= :endTime AND userId = :userId " +
+            "AND viewIn LIKE '%\"section\":\"community\"%')"
+    )
+    suspend fun countDistinctCommunityVoiceDatesForUser(startTime: Long, endTime: Long, userId: String): Int
 
-    @Query("SELECT * FROM news WHERE newsId = :chatId")
-    suspend fun getByNewsId(chatId: String): List<News>
+    @Query("SELECT EXISTS(SELECT 1 FROM news WHERE newsId = :chatId AND viewIn LIKE :viewInPattern ESCAPE '\\')")
+    suspend fun isSharedWith(chatId: String, viewInPattern: String): Boolean
 
     @Query("SELECT COUNT(*) FROM news WHERE viewableBy = 'teams' AND viewableId = :teamId")
     suspend fun countTeamChats(teamId: String): Long
 
-    @Query("SELECT viewableId FROM news WHERE viewableBy = 'teams' AND viewableId IN (:teamIds)")
-    suspend fun getTeamChatViewableIds(teamIds: List<String>): List<String>
+    @Query("SELECT COUNT(*) FROM news WHERE (replyTo IS NULL OR replyTo = '') AND ((viewableBy = 'teams' COLLATE NOCASE AND viewableId = :teamId COLLATE NOCASE) OR viewIn LIKE :teamPattern ESCAPE '\\')")
+    suspend fun countTopLevelByTeam(teamId: String, teamPattern: String): Long
+
+    @Query(
+        "SELECT viewableBy, viewableId, viewIn FROM news " +
+            "WHERE (replyTo IS NULL OR replyTo = '') " +
+            "AND ((viewableBy = 'teams' COLLATE NOCASE AND viewableId COLLATE NOCASE IN (:teamIds)) " +
+            "OR viewIn LIKE '%\"_id\":\"%')"
+    )
+    suspend fun getTopLevelTeamMembership(teamIds: List<String>): List<TeamNewsMembership>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(news: News)
+
+    @Query("UPDATE news SET reactions = :reactions, pendingReactions = :pendingReactions WHERE id = :id")
+    suspend fun updateReactions(id: String, reactions: String?, pendingReactions: String?)
+
+    @Transaction
+    suspend fun toggleReaction(id: String, emoji: String, userId: String): News? {
+        val news = getById(id) ?: return null
+        news.updateReaction(emoji, userId)
+        updateReactions(id, news.reactions, news.pendingReactions)
+        return news
+    }
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(news: List<News>)
 
     @Query("DELETE FROM news WHERE id IN (:ids)")
-    suspend fun deleteByIds(ids: List<String>)
+    suspend fun deleteByIdsInternal(ids: List<String>)
+
+    @Transaction
+    suspend fun deleteByIds(ids: List<String>) {
+        if (ids.isEmpty()) return
+        ids.distinct().chunked(900).forEach { deleteByIdsInternal(it) }
+    }
 }

@@ -3,27 +3,31 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.model.Feedback
-import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.distinctByContent
 
+@Singleton
 class FeedbackRepositoryImpl @Inject constructor(
-    private val feedbackDao: FeedbackDao,
-    private val gson: Gson
-) : FeedbackRepository {
+    private val feedbackDao: FeedbackDao, private val gson: Gson, private val timeProvider: TimeProvider
+) : FeedbackRepository, FeedbackSyncWriter {
 
-    override fun createFeedback(
-        user: String?,
-        urgent: String,
-        type: String,
-        message: String,
-        item: String?,
-        state: String?,
+    override suspend fun createAndSaveFeedback(
+        user: String?, urgent: String, type: String, message: String, item: String?,
+        state: String?
+    ) {
+        val feedback = createFeedback(user, urgent, type, message, item, state)
+        saveFeedback(feedback)
+    }
+
+    fun createFeedback(
+        user: String?, urgent: String, type: String, message: String, item: String?, state: String?
     ): Feedback {
         val feedback = Feedback()
         feedback.id = UUID.randomUUID().toString()
@@ -36,7 +40,7 @@ class FeedbackRepositoryImpl @Inject constructor(
             feedback.title = "Question regarding /"
             feedback.url = "/"
         }
-        val timestamp = Date().time
+        val timestamp = timeProvider.now()
         feedback.openTime = timestamp
         feedback.owner = user
         feedback.source = user
@@ -54,11 +58,16 @@ class FeedbackRepositoryImpl @Inject constructor(
         return feedback
     }
 
-    override suspend fun getFeedback(userModel: UserEntity?): Flow<List<Feedback>> {
-        return if (userModel?.isManager() == true) {
+    override fun getFeedback(ownerName: String?, isManager: Boolean): Flow<List<Feedback>> {
+        val flow = if (isManager) {
             feedbackDao.getAllSortedFlow()
         } else {
-            feedbackDao.getByOwnerFlow(userModel?.name)
+            feedbackDao.getByOwnerFlow(ownerName)
+        }
+        return flow.distinctByContent { a, b ->
+            // Compare CouchDB sync markers alongside local status changes and reply messages
+            a.id == b.id && a._rev == b._rev && a.status == b.status &&
+                a.isUploaded == b.isUploaded && a.messages == b.messages
         }
     }
 
@@ -79,10 +88,11 @@ class FeedbackRepositoryImpl @Inject constructor(
             val feedback = feedbackDao.findById(it) ?: return
             val obj = JsonObject().apply {
                 addProperty("message", message)
-                addProperty("time", Date().time.toString())
+                addProperty("time", timeProvider.now().toString())
                 addProperty("user", user ?: "")
             }
-            val msgArray = gson.fromJson(feedback.messages, JsonArray::class.java)
+            val messages = feedback.messages
+            val msgArray = if (messages.isNullOrEmpty()) JsonArray() else gson.fromJson(messages, JsonArray::class.java)
             msgArray.add(obj)
             feedback.setMessages(msgArray)
             feedback.isUploaded = false
@@ -90,50 +100,49 @@ class FeedbackRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun saveFeedback(feedback: Feedback) {
+    private suspend fun saveFeedback(feedback: Feedback) {
         feedbackDao.upsert(feedback)
     }
 
-    suspend fun insertFromJson(jsonObject: JsonObject) {
-        val id = JsonUtils.getString("_id", jsonObject)
-        val existing = feedbackDao.findById(id)
-        feedbackDao.upsert(mapToFeedback(jsonObject, existing))
-    }
-
     override suspend fun insertFeedbackList(jsonObjects: List<JsonObject>) {
-        val ids = jsonObjects.map { JsonUtils.getString("_id", it) }
-        val existingById = feedbackDao.getByIds(ids).associateBy { it.id }
+        val ids = jsonObjects.map { GsonUtils.getString("_id", it) }
+        val rows = (feedbackDao.getByIds(ids) + feedbackDao.getByRemoteIds(ids)).distinctBy { it.id }
+        val existingByRemoteId = rows.groupBy { it._id ?: it.id }.mapValues { (remoteId, matches) ->
+            matches.firstOrNull { !it.isUploaded } ?: matches.firstOrNull { it.id != remoteId } ?: matches.first()
+        }
+        val duplicateIds = rows.filter { it.id != existingByRemoteId[it._id ?: it.id]?.id }.map { it.id }
+        if (duplicateIds.isNotEmpty()) feedbackDao.deleteByIds(duplicateIds)
         feedbackDao.upsertAll(
-            jsonObjects.map { mapToFeedback(it, existingById[JsonUtils.getString("_id", it)]) }
+            jsonObjects.zip(ids) { json, id -> mapToFeedback(json, existingByRemoteId[id], id) }
         )
     }
 
-    override suspend fun markFeedbackUploaded(id: String): Boolean {
-        return feedbackDao.markUploaded(id) > 0
+    override suspend fun markFeedbackUploaded(id: String, remoteId: String, remoteRev: String): Boolean {
+        return feedbackDao.markUploaded(id, remoteId, remoteRev) > 0
     }
 
-    private fun mapToFeedback(act: JsonObject, existing: Feedback?): Feedback {
-        val hasPendingLocalReply = existing?.isUploaded == false
+    private fun mapToFeedback(act: JsonObject, existing: Feedback?, idStr: String): Feedback {
+        val hasPendingLocalChange = existing?.isUploaded == false
         return Feedback().apply {
-            id = JsonUtils.getString("_id", act)
-            _id = JsonUtils.getString("_id", act)
-            title = JsonUtils.getString("title", act)
-            source = JsonUtils.getString("source", act)
-            status = JsonUtils.getString("status", act)
-            priority = JsonUtils.getString("priority", act)
-            owner = JsonUtils.getString("owner", act)
-            openTime = JsonUtils.getLong("openTime", act)
-            type = JsonUtils.getString("type", act)
-            url = JsonUtils.getString("url", act)
-            parentCode = JsonUtils.getString("parentCode", act)
-            item = JsonUtils.getString("item", act)
-            state = JsonUtils.getString("state", act)
-            _rev = JsonUtils.getString("_rev", act)
-            if (hasPendingLocalReply) {
+            id = existing?.id ?: idStr
+            _id = idStr
+            title = GsonUtils.getString("title", act)
+            source = GsonUtils.getString("source", act)
+            status = if (hasPendingLocalChange && existing.status == "Closed") existing.status else GsonUtils.getString("status", act)
+            priority = GsonUtils.getString("priority", act)
+            owner = GsonUtils.getString("owner", act)
+            openTime = GsonUtils.getLong("openTime", act)
+            type = GsonUtils.getString("type", act)
+            url = GsonUtils.getString("url", act)
+            parentCode = GsonUtils.getString("parentCode", act)
+            item = GsonUtils.getString("item", act)
+            state = GsonUtils.getString("state", act)
+            _rev = GsonUtils.getString("_rev", act)
+            if (hasPendingLocalChange) {
                 messages = existing.messages
                 isUploaded = false
             } else {
-                messages = JsonUtils.gson.toJson(JsonUtils.getJsonArray("messages", act))
+                messages = GsonUtils.gson.toJson(GsonUtils.getJsonArray("messages", act))
                 isUploaded = true
             }
         }

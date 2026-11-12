@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.utils
 
 import android.app.Activity
-import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
@@ -21,8 +20,6 @@ import org.junit.Test
 
 class UtilitiesTest {
 
-    private val mockContext = mockk<Context>(relaxed = true)
-
     @Before
     fun setup() {
         mockkStatic(Looper::class)
@@ -39,6 +36,30 @@ class UtilitiesTest {
     @After
     fun tearDown() {
         unmockkAll()
+    }
+
+    @Test
+    fun `toast on main thread propagates a RuntimeException from show()`() {
+        every { Looper.myLooper() } returns Looper.getMainLooper()
+
+        io.mockk.mockkObject(ProcessLifecycleOwner.Companion)
+        val mockLifecycleOwner = mockk<LifecycleOwner>()
+        val mockLifecycleRegistry = LifecycleRegistry(mockLifecycleOwner)
+        mockLifecycleRegistry.currentState = Lifecycle.State.RESUMED
+        every { ProcessLifecycleOwner.get() } returns mockLifecycleOwner
+        every { mockLifecycleOwner.lifecycle } returns mockLifecycleRegistry
+
+        val mockActivity = mockk<Activity>(relaxed = true)
+        every { mockActivity.isFinishing } returns false
+        every { mockActivity.isDestroyed } returns false
+
+        val mockToast = mockk<Toast>(relaxed = true)
+        every { Toast.makeText(any(), any<CharSequence>(), any()) } returns mockToast
+        every { mockToast.show() } throws IllegalStateException("x")
+
+        org.junit.Assert.assertThrows(IllegalStateException::class.java) {
+            Utilities.toast(mockActivity, "test message", Toast.LENGTH_SHORT)
+        }
     }
 
     @Test
