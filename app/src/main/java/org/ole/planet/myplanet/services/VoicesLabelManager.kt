@@ -88,7 +88,7 @@ class VoicesLabelManager(
         }
 
         renderedStateCache[binding] = renderedState
-        updateAddLabelVisibility(binding, voice, canManageLabels)
+        updateAddLabelVisibility(binding, labels, canManageLabels)
     }
 
     private fun launchLabelWrite(operation: String, write: suspend () -> Unit) {
@@ -107,7 +107,7 @@ class VoicesLabelManager(
 
     private fun updateAddLabelVisibility(
         binding: RowNewsBinding,
-        voice: News?,
+        labels: List<String>,
         canManageLabels: Boolean,
     ) {
         if (!canManageLabels) {
@@ -115,10 +115,8 @@ class VoicesLabelManager(
             return
         }
 
-        val usedLabels = voice?.labels?.toSet() ?: emptySet()
-        val labels = Constants.LABELS.values.toSet()
-        binding.btnAddLabel.visibility =
-            if (usedLabels.containsAll(labels)) View.GONE else View.VISIBLE
+        val allUsed = labels.size >= allLabelValues.size && labels.toSet().containsAll(allLabelValues)
+        binding.btnAddLabel.visibility = if (allUsed) View.GONE else View.VISIBLE
     }
 
     private fun getLabel(s: String): String {
@@ -127,6 +125,7 @@ class VoicesLabelManager(
 
     companion object {
         private const val TAG = "VoicesLabelManager"
+        private val allLabelValues: Set<String> = Constants.LABELS.values.toSet()
         private val separatorRegex by lazy { Regex("[_-]") }
         private val whitespaceRegex by lazy { Regex("\\s+") }
 
