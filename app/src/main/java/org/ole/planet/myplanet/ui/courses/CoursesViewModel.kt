@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.ui.courses
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -138,8 +140,10 @@ class CoursesViewModel @Inject constructor(
                     } else {
                         processCourses(isMyCourseLib, userId, validCourses, myCourses, progressMap, tagsMap)
                     }
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Failed to load courses", e)
                     null
                 }
             }
@@ -231,5 +235,9 @@ class CoursesViewModel @Inject constructor(
             }
             onComplete()
         }
+    }
+
+    companion object {
+        private const val TAG = "CoursesViewModel"
     }
 }
