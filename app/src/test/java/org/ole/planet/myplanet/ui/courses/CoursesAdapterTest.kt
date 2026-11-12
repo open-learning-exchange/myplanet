@@ -9,16 +9,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ApplicationProvider
+import io.mockk.mockk
+import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.ArgumentMatchers.any
-import org.mockito.ArgumentMatchers.eq
-import org.mockito.Mock
-import org.mockito.Mockito.times
-import org.mockito.Mockito.verify
-import org.mockito.MockitoAnnotations
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.utils.ListViewMode
@@ -30,17 +26,15 @@ import org.robolectric.annotation.Config
 @Config(application = Application::class)
 class CoursesAdapterTest {
 
-    @Mock
-    lateinit var mockContext: Context
-
-    @Mock
-    lateinit var mockObserver: RecyclerView.AdapterDataObserver
+    private lateinit var mockContext: Context
+    private lateinit var mockObserver: RecyclerView.AdapterDataObserver
 
     private lateinit var adapter: CoursesAdapter
 
     @Before
     fun setUp() {
-        MockitoAnnotations.initMocks(this)
+        mockContext = mockk(relaxed = true)
+        mockObserver = mockk(relaxed = true)
         val testContext = ApplicationProvider.getApplicationContext<Context>()
         testContext.setTheme(com.google.android.material.R.style.Theme_MaterialComponents)
         adapter = CoursesAdapter(testContext, false, false)
@@ -59,9 +53,9 @@ class CoursesAdapterTest {
         adapter.selectAllItems(true)
 
         assertEquals(true, adapter.areAllSelected())
-        verify(mockObserver, times(1)).onItemRangeChanged(eq(0), eq(1), any())
-        verify(mockObserver, times(0)).onItemRangeChanged(eq(1), eq(1), any())
-        verify(mockObserver, times(1)).onItemRangeChanged(eq(2), eq(1), any())
+        verify(exactly = 1) { mockObserver.onItemRangeChanged(0, 1, any()) }
+        verify(exactly = 0) { mockObserver.onItemRangeChanged(1, 1, any()) }
+        verify(exactly = 1) { mockObserver.onItemRangeChanged(2, 1, any()) }
     }
 
     @Test
@@ -76,7 +70,7 @@ class CoursesAdapterTest {
         adapter.selectAllItems(false)
 
         assertEquals(false, adapter.areAllSelected())
-        verify(mockObserver, times(2)).onItemRangeChanged(eq(0), eq(1), any())
+        verify(exactly = 2) { mockObserver.onItemRangeChanged(0, 1, any()) }
     }
 
     @Test
@@ -97,7 +91,7 @@ class CoursesAdapterTest {
 
         adapter.setViewMode(ListViewMode.LIST)
 
-        verify(mockObserver, times(1)).onItemRangeChanged(0, 1, CoursesAdapter.PAYLOAD_VIEW_MODE)
+        verify(exactly = 1) { mockObserver.onItemRangeChanged(0, 1, CoursesAdapter.PAYLOAD_VIEW_MODE) }
     }
 
     @Test
@@ -109,7 +103,7 @@ class CoursesAdapterTest {
 
         adapter.updateIdentity(true)
 
-        verify(mockObserver, times(1)).onItemRangeChanged(0, 1, CoursesAdapter.PAYLOAD_IDENTITY)
+        verify(exactly = 1) { mockObserver.onItemRangeChanged(0, 1, CoursesAdapter.PAYLOAD_IDENTITY) }
     }
 
     @Test
