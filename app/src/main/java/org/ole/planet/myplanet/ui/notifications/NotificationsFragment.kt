@@ -44,6 +44,21 @@ class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(
     private var currentFilter: String = "all"
     private var isAdmin: Boolean = false
 
+    private fun buildNotificationStrings(): NotificationStrings {
+        val locale = resources.configuration.locales[0]
+        val resourceTemplate = getString(R.string.resource_notification)
+        val taskTemplate = getString(R.string.task_notification)
+        val joinTemplate = getString(R.string.user_requested_to_join_team)
+        return NotificationStrings(
+            storageRunningLow = getString(R.string.storage_running_low),
+            storageAvailable = getString(R.string.storage_available),
+            joinRequestPrefix = getString(R.string.join_request_prefix),
+            resourceCount = { count -> String.format(locale, resourceTemplate, count) },
+            taskDue = { title, date -> String.format(locale, taskTemplate, title, date) },
+            userRequestedToJoin = { user, team -> String.format(locale, joinTemplate, user, team) }
+        )
+    }
+
     fun setNotificationUpdateListener(listener: OnNotificationsListener) {
         this.notificationUpdateListener = listener
     }
@@ -76,7 +91,7 @@ class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(
                 if (filter == currentFilter) return
                 currentFilter = filter
                 updateMarkAllAsReadButton(viewModel.unreadCount.value)
-                viewModel.loadNotifications(userId, currentFilter, isAdmin)
+                viewModel.loadNotifications(userId, currentFilter, isAdmin, buildNotificationStrings())
             }
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
@@ -86,7 +101,7 @@ class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(
         binding.btnBulkDelete.setOnClickListener { viewModel.deleteSelected() }
         binding.btnCancelSelection.setOnClickListener { viewModel.clearSelection() }
 
-        viewModel.loadNotifications(userId, currentFilter, isAdmin)
+        viewModel.loadNotifications(userId, currentFilter, isAdmin, buildNotificationStrings())
 
         collectWhenStarted(viewModel.groupedItems) { items ->
             adapter.submitList(items)
@@ -176,7 +191,7 @@ class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(
     fun refreshNotificationsList() {
         if (::adapter.isInitialized && _binding != null) {
             currentFilter = filterAt(binding.status.selectedItemPosition)
-            viewModel.loadNotifications(userId, currentFilter, isAdmin)
+            viewModel.loadNotifications(userId, currentFilter, isAdmin, buildNotificationStrings())
         }
     }
     

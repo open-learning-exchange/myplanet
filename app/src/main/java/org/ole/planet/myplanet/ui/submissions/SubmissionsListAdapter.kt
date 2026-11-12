@@ -18,6 +18,7 @@ class SubmissionsListAdapter(
     private val listener: OnHomeItemClickListener?,
     private val onGeneratePdf: (String?) -> Unit
 ) : ListAdapter<SubmissionItem, SubmissionsListAdapter.ViewHolder>(USER_COMPARATOR) {
+    private val dateCache = HashMap<Long, String>()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemSubmissionBinding.inflate(LayoutInflater.from(context), parent, false)
@@ -46,7 +47,7 @@ class SubmissionsListAdapter(
 
         fun bind(submission: SubmissionItem, number: Int) {
             binding.tvSubmissionNumber.text = "#$number"
-            binding.tvSubmissionDate.text = TimeUtils.getFormattedDateWithTime(submission.lastUpdateTime)
+            binding.tvSubmissionDate.text = dateCache.getOrPut(submission.lastUpdateTime) { TimeUtils.getFormattedDateWithTime(submission.lastUpdateTime) }
             binding.tvSubmissionStatus.text = submission.status
 
             binding.tvSyncStatus.text = if (submission.uploaded) "✅" else "❌"
