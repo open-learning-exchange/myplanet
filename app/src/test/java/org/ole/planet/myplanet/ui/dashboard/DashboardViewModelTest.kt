@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import android.app.Application
-import com.google.gson.JsonArray
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
