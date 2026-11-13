@@ -3,11 +3,19 @@ package org.ole.planet.myplanet.ui.resources
 import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import java.io.File
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.services.DownloadService
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -16,6 +24,9 @@ import org.robolectric.annotation.Config
 class ResourcesCardBinderTest {
 
     private lateinit var context: Context
+
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
 
     @Before
     fun setUp() {
@@ -53,5 +64,32 @@ class ResourcesCardBinderTest {
 
         val metaLineNoLang = ResourcesCardBinder.buildMetaLine(context, ResourcesMediaType.BOOK, null)
         assertEquals(context.getString(R.string.filter_books), metaLineNoLang)
+    }
+
+    @Test
+    fun `partialPercent is capped below 100 and unknown without a size`() {
+        assertEquals(40, ResourcesCardBinder.partialPercent(40, 100))
+        assertEquals(99, ResourcesCardBinder.partialPercent(100, 100))
+        assertNull(ResourcesCardBinder.partialPercent(40, null))
+        assertNull(ResourcesCardBinder.partialPercent(40, 0))
+    }
+
+    @Test
+    fun `partialDownloadPercent reads the partial file against the recorded size`() = runTest {
+        val dispatcherProvider = TestDispatcherProvider(StandardTestDispatcher(testScheduler))
+        val finalFile = File(temporaryFolder.newFolder("res"), "video.mp4")
+        assertNull(ResourcesCardBinder.partialDownloadPercent(finalFile, dispatcherProvider))
+
+        val tempFile = File(finalFile.parentFile, "video.mp4.tmp").apply { writeBytes(ByteArray(250)) }
+        assertEquals(PartialDownload(null), ResourcesCardBinder.partialDownloadPercent(finalFile, dispatcherProvider))
+
+        File(tempFile.parentFile, "video.mp4.tmp${DownloadService.EXPECTED_SIZE_SUFFIX}").writeText("1000")
+        assertEquals(PartialDownload(25), ResourcesCardBinder.partialDownloadPercent(finalFile, dispatcherProvider))
+    }
+
+    @Test
+    fun `partialLabel shows the percent when known`() {
+        assertEquals(context.getString(R.string.download_paused_at_percent, 25), ResourcesCardBinder.partialLabel(context, PartialDownload(25)))
+        assertEquals(context.getString(R.string.download_partially_downloaded), ResourcesCardBinder.partialLabel(context, PartialDownload(null)))
     }
 }

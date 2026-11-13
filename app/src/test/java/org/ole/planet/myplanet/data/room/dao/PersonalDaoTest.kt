@@ -159,4 +159,31 @@ class PersonalDaoTest {
         assertEquals(listOf("p2", "p3", "p1", "p4"), result.map { it.id })
         assertEquals(listOf("Apple", "banana", "charlie", "DELTA"), result.map { it.title })
     }
+
+    @Test
+    fun countByTitle_nullAndEmptyUserIdCountAcrossUsers() = runBlocking {
+        personalDao.insert(createPersonal(id = "p1", userId = "user1", title = "Common Document", date = 1000L))
+        personalDao.insert(createPersonal(id = "p2", userId = "user2", title = "Common Document", date = 2000L))
+
+        assertEquals(2, personalDao.countByTitle("Common Document", null))
+        assertEquals(2, personalDao.countByTitle("Common Document", ""))
+    }
+
+    @Test
+    fun countByTitle_nonEmptyUserIdDoesNotCountAnotherUserTitle() = runBlocking {
+        personalDao.insert(createPersonal(id = "p1", userId = "user1", title = "User1 Note", date = 1000L))
+        personalDao.insert(createPersonal(id = "p2", userId = "user2", title = "User1 Note", date = 2000L))
+
+        assertEquals(1, personalDao.countByTitle("User1 Note", "user1"))
+        assertEquals(1, personalDao.countByTitle("User1 Note", "user2"))
+        assertEquals(0, personalDao.countByTitle("User1 Note", "user3"))
+    }
+
+    @Test
+    fun countByTitle_caseInsensitive() = runBlocking {
+        personalDao.insert(createPersonal(id = "p1", userId = "user1", title = "CaseSensitive Note", date = 1000L))
+
+        assertEquals(1, personalDao.countByTitle("casesensitive note", "user1"))
+        assertEquals(1, personalDao.countByTitle("CASESENSITIVE NOTE", null))
+    }
 }

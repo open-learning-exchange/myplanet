@@ -6,4 +6,5 @@ interface UserReadRepository {
     suspend fun getUserById(userId: String): UserEntity?
     suspend fun getUsersByIds(userIds: List<String>): List<UserEntity>
     suspend fun getUserModel(): UserEntity?
+    suspend fun getCurrentUserId(): String?
 }
