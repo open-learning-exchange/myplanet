@@ -152,6 +152,39 @@ class SyncManagerTest {
     }
 
     @Test
+    fun `a failed resource page fails the sync and does not stamp last sync`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+        coEvery { transactionSyncManager.syncDb(any(), any()) } returns 0
+        coEvery { syncRepository.fetchResourceTotalRows() } returns 10
+        coEvery { syncRepository.fetchResourceRows(any(), any()) } returns null
+        mockkObject(HeavyTableSyncWorker.Companion)
+        every { HeavyTableSyncWorker.schedule(any(), any()) } just Runs
+        val expectedMessage = context.getString(org.ole.planet.myplanet.R.string.sync_tables_failed, "resources")
+
+        syncManager.start(listener, "sync", listOf())
+
+        verify { listener.onSyncFailed(expectedMessage) }
+        verify(exactly = 0) { listener.onSyncComplete() }
+        verify(exactly = 0) { sharedPrefManager.setLastSync(any()) }
+    }
+
+    @Test
+    fun `a failed library pull fails the sync and does not stamp last sync`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+        coEvery { transactionSyncManager.syncDb(any(), any()) } returns 0
+        coEvery { syncRepository.getShelvesWithData() } throws IllegalStateException("shelf index unreadable")
+        mockkObject(HeavyTableSyncWorker.Companion)
+        every { HeavyTableSyncWorker.schedule(any(), any()) } just Runs
+        val expectedMessage = context.getString(org.ole.planet.myplanet.R.string.sync_tables_failed, "library")
+
+        syncManager.start(listener, "sync", listOf())
+
+        verify { listener.onSyncFailed(expectedMessage) }
+        verify(exactly = 0) { listener.onSyncComplete() }
+        verify(exactly = 0) { sharedPrefManager.setLastSync(any()) }
+    }
+
+    @Test
     fun `start without a listener publishes Error when authentication fails`() = runTest {
         coEvery { transactionSyncManager.authenticate() } returns false
         val expectedMessage = context.getString(org.ole.planet.myplanet.R.string.invalid_configuration)
