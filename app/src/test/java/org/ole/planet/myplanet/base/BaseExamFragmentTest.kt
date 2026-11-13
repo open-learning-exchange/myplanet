@@ -5,7 +5,9 @@ import android.text.TextWatcher
 import android.view.View
 import android.widget.EditText
 import androidx.fragment.app.FragmentActivity
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
@@ -178,5 +180,19 @@ class BaseExamFragmentTest {
         verify(exactly = 0) { editText.addTextChangedListener(any<TextWatcher>()) }
         verify { editText.setText("test text answer") }
         assertNull(answerTextWatcher())
+    }
+
+    @Test
+    fun `answering the last question marks the exam finished and shows the finish dialog`() {
+        every { fragment.showFinishDialog() } just Runs
+        fragment.questions = listOf(ExamQuestion(), ExamQuestion())
+        fragment.currentIndex = 0
+
+        fragment.checkAnsAndContinue(true)
+        assertFalse(fragment.isFinished)
+
+        fragment.checkAnsAndContinue(true)
+        assertTrue(fragment.isFinished)
+        verify(exactly = 1) { fragment.showFinishDialog() }
     }
 }
