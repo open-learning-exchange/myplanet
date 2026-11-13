@@ -194,7 +194,7 @@ class RetryRepositoryImplTest {
     }
 
     @Test
-    fun `executeOperation 409 conflict returns Success and marks completed`() = runTest {
+    fun `executeOperation 409 conflict is a terminal failure and is not marked completed`() = runTest {
         val op = RetryOperation().apply {
             id = "op1"
             serializedPayload = "{}"
@@ -206,9 +206,11 @@ class RetryRepositoryImplTest {
 
         val result = repository.executeOperation(op)
 
-        assertTrue(result is RetryOperationResult.Success)
+        assertTrue(result is RetryOperationResult.TerminalFailure)
+        assertEquals(409, (result as RetryOperationResult.TerminalFailure).httpCode)
         coVerify { retryDao.markInProgress("op1") }
-        coVerify { retryDao.markCompleted("op1", timeProvider.now()) }
+        coVerify { retryDao.recordFailedAttempt("op1", "Conflict (409)", 409, timeProvider.now()) }
+        coVerify(exactly = 0) { retryDao.markCompleted(any(), any()) }
     }
 
     @Test

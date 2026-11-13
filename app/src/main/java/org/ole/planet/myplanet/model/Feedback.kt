@@ -122,5 +122,17 @@ open class Feedback {
             `object`.addDocumentOrigin()
             return `object`
         }
+
+        fun mergeConflict(local: JsonObject, server: JsonObject): JsonObject {
+            val merged = server.deepCopy()
+            val serverMessages = server.get("messages")?.takeIf { it.isJsonArray }?.asJsonArray ?: JsonArray()
+            val mergedMessages = serverMessages.deepCopy()
+            local.get("messages")?.takeIf { it.isJsonArray }?.asJsonArray
+                ?.filterNot { it in serverMessages }
+                ?.forEach { mergedMessages.add(it) }
+            merged.add("messages", mergedMessages)
+            if (GsonUtils.getString("status", local) == "Closed") merged.addProperty("status", "Closed")
+            return merged
+        }
     }
 }
