@@ -60,20 +60,28 @@ class AddResourceActivity : AppCompatActivity() {
         supportActionBar?.setHomeButtonEnabled(true)
         resourceUrl = intent.getStringExtra("resource_local_url")
         teamId = intent.getStringExtra("teamId")
-        levels = mutableListOf()
-        subjects = mutableListOf()
-        resourceFor = mutableListOf()
+        levels = savedInstanceState?.getStringArrayList(KEY_LEVELS) ?: mutableListOf()
+        subjects = savedInstanceState?.getStringArrayList(KEY_SUBJECTS) ?: mutableListOf()
+        resourceFor = savedInstanceState?.getStringArrayList(KEY_RESOURCE_FOR) ?: mutableListOf()
         val resourceId = intent.getStringExtra("resource_id")
         val isEditMode = intent.getBooleanExtra("is_edit_mode", false)
-        initializeViews()
+        initializeViews(isRestoring = savedInstanceState != null)
         if (isEditMode && resourceId != null) {
             supportActionBar?.title = getString(R.string.edit_resource)
             binding.btnSubmit.text = getString(R.string.save_changes)
-            lifecycleScope.launch {
-                prefillFields(resourceId)
+            
+            if (savedInstanceState == null) {
+                lifecycleScope.launch {
+                    prefillFields(resourceId)
+                }
             }
         }
-        setupPrivateResourceCheckbox()
+        if (savedInstanceState != null) {
+            showSelection(binding.tvLevels, R.array.array_levels, levels, getString(R.string.levels))
+            showSelection(binding.tvSubject, R.array.array_subjects, subjects, getString(R.string.subject))
+            showSelection(binding.tvResourceFor, R.array.array_resource_for, resourceFor, getString(R.string.resource_for))
+        }
+        setupPrivateResourceCheckbox(isRestoring = savedInstanceState != null)
         lifecycleScope.launch {
             userModel = userSessionManager.getUserModel()
             binding.tvAddedBy.text = userModel?.name
@@ -87,15 +95,30 @@ class AddResourceActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupPrivateResourceCheckbox() {
-        binding.cbPrivateResource.isVisible = teamId != null
-        binding.cbPrivateResource.isChecked = teamId != null
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putStringArrayList(KEY_LEVELS, ArrayList(levels.orEmpty()))
+        outState.putStringArrayList(KEY_SUBJECTS, ArrayList(subjects.orEmpty()))
+        outState.putStringArrayList(KEY_RESOURCE_FOR, ArrayList(resourceFor.orEmpty()))
     }
 
-    private fun initializeViews() {
-        val etYear = findViewById<EditText>(R.id.et_year)
-        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
-        etYear.setText(currentYear.toString())
+    private fun showSelection(view: TextView, arrayRes: Int, items: List<String>?, title: String) {
+        view.text = items?.joinToString(", ") { labelFor(arrayRes, it) }?.takeIf { it.isNotEmpty() } ?: title
+    }
+
+    private fun setupPrivateResourceCheckbox(isRestoring: Boolean) {
+        binding.cbPrivateResource.isVisible = teamId != null
+        if (!isRestoring) {
+            binding.cbPrivateResource.isChecked = teamId != null
+        }
+    }
+
+    private fun initializeViews(isRestoring: Boolean) {
+        if (!isRestoring) {
+            val etYear = findViewById<EditText>(R.id.et_year)
+            val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+            etYear.setText(currentYear.toString())
+        }
         binding.fileUrl.text = getString(R.string.file, resourceUrl)
         binding.tvLevels.setOnClickListener { view: View ->
             showMultiSelectList(R.array.array_levels, levels, view,getString(R.string.levels))
@@ -138,10 +161,8 @@ class AddResourceActivity : AppCompatActivity() {
         resource.subject?.forEach { subjects?.add(it) }
         resource.level?.forEach { levels?.add(it) }
 
-        binding.tvSubject.text = resource.subject?.joinToString(", ") { labelFor(R.array.array_subjects, it) }
-            ?.takeIf { it.isNotEmpty() } ?: getString(R.string.subject)
-        binding.tvLevels.text = resource.level?.joinToString(", ") { labelFor(R.array.array_levels, it) }
-            ?.takeIf { it.isNotEmpty() } ?: getString(R.string.levels)
+        showSelection(binding.tvSubject, R.array.array_subjects, resource.subject, getString(R.string.subject))
+        showSelection(binding.tvLevels, R.array.array_levels, resource.level, getString(R.string.levels))
     }
 
     private fun saveResource() {
@@ -314,6 +335,12 @@ class AddResourceActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+    }
+
+    private companion object {
+        const val KEY_LEVELS = "add_resource_levels"
+        const val KEY_SUBJECTS = "add_resource_subjects"
+        const val KEY_RESOURCE_FOR = "add_resource_for"
     }
 
     private fun showExitConfirmationDialog() {
