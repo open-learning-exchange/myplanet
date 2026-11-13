@@ -512,7 +512,7 @@ class NotificationsViewModelTest {
         coEvery { repository.getEnrichedNotifications(USER_ID, FILTER_ALL, false) } returns enrichment
         every { repository.resolveType(any(), any(), any()) } answers { firstArg<String>().lowercase() }
 
-        customViewModel.loadNotifications(USER_ID, FILTER_ALL)
+        customViewModel.loadNotifications(USER_ID, FILTER_ALL, strings = fakeStrings)
         advanceUntilIdle()
 
         assertEquals(4, customViewModel.groupedItems.value.size)
