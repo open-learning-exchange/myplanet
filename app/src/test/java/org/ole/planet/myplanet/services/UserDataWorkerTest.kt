@@ -20,6 +20,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.repository.HealthRepository
+import org.ole.planet.myplanet.services.upload.UploadResult
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserDataWorkerTest {
@@ -101,7 +102,7 @@ class UserDataWorkerTest {
         }
 
         // 4. uploadFeedback returns true
-        coEvery { uploadManager.uploadFeedback() } returns true
+        coEvery { uploadManager.uploadFeedback() } returns UploadResult.Empty
 
         // 5. uploadResource completes
         coEvery { uploadManager.uploadResource(any()) } answers {
