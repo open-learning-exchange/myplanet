@@ -493,7 +493,6 @@ class NotificationsViewModelTest {
         }
         val customViewModel = NotificationsViewModel(
             notificationsRepository = repository,
-            context = mockk<Context>(relaxed = true),
             dispatcherProvider = customDispatcherProvider
         )
 
