@@ -38,7 +38,6 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.showAlert
-import org.ole.planet.myplanet.utils.DialogUtils.showError
 import org.ole.planet.myplanet.utils.FileUtils.installApk
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -83,16 +82,24 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
     fun checkDownloadResult(download: Download?) {
         lifecycleScope.launch {
-            if (!isFinishing && !isDestroyed) {
-                customProgressDialog.show()
-                customProgressDialog.setText("${getString(R.string.downloading)} ${download?.progress}% ${getString(R.string.complete)}")
-                customProgressDialog.setProgress(download?.progress ?: 0)
-                if (download?.completeAll == true) {
+            if (isFinishing || isDestroyed || download == null) return@launch
+            when {
+                download.failed -> {
+                    safelyDismissDialog()
+                    AlertDialog.Builder(this@ProcessUserDataActivity, R.style.AlertDialogTheme)
+                        .setTitle(R.string.download_failed)
+                        .setMessage(download.message)
+                        .setPositiveButton(R.string.ok, null)
+                        .show()
+                }
+                download.completeAll -> {
                     safelyDismissDialog()
                     installApk(this@ProcessUserDataActivity, download.fileUrl)
-                } else {
-                    safelyDismissDialog()
-                    showError(customProgressDialog, download?.message)
+                }
+                else -> {
+                    customProgressDialog.show()
+                    customProgressDialog.setText("${getString(R.string.downloading)} ${download.progress}% ${getString(R.string.complete)}")
+                    customProgressDialog.setProgress(download.progress)
                 }
             }
         }
