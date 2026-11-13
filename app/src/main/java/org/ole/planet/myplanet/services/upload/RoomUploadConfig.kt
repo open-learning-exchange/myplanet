@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services.upload
 
+import com.google.gson.JsonObject
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UploadedItemResult
 
@@ -27,6 +28,8 @@ data class RoomUploadConfig<T : Any>(
 
     override val beforeUpload: (suspend (T) -> Unit)? = null,
     override val afterUpload: (suspend (T, UploadedItem) -> Unit)? = null,
+
+    override val mergeConflict: ((local: JsonObject, server: JsonObject) -> JsonObject?)? = null,
 
     /**
      * Persists the results of successful uploads (typically setting `_id`/`_rev` via a DAO) and
