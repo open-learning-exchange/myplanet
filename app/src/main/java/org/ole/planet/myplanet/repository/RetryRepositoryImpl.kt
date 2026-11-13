@@ -110,9 +110,8 @@ class RetryRepositoryImpl @Inject constructor(
                 markCompleted(operation.id)
                 RetryOperationResult.Success
             } else if (response.code() == 409) {
-                // 409 Conflict means document already exists - data is already synced
-                markCompleted(operation.id)
-                RetryOperationResult.Success
+                markFailed(operation.id, "Conflict (409)", 409)
+                RetryOperationResult.TerminalFailure("Conflict (409)", 409)
             } else {
                 val code = response.code()
                 val isRetryable = code >= 500
