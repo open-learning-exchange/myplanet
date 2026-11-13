@@ -7,14 +7,14 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
-import androidx.exifinterface.media.ExifInterface
 import android.net.Uri
 import android.util.Log
+import androidx.core.graphics.createBitmap
+import androidx.exifinterface.media.ExifInterface
 import java.io.File
 import java.io.InputStream
 import kotlin.math.max
 import kotlin.math.roundToInt
-import androidx.core.graphics.createBitmap
 
 object VoiceImagePreparer {
     private const val TAG = "VoiceImagePreparer"

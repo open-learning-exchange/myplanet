@@ -6,10 +6,10 @@ import androidx.work.Data
 import androidx.work.ListenableWorker.Result
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.clearMocks
 import io.mockk.clearStaticMockk
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
