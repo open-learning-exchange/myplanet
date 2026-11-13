@@ -5,6 +5,8 @@ import androidx.room.Query
 import androidx.room.Upsert
 import org.ole.planet.myplanet.model.ExamQuestion
 
+data class ExamQuestionCount(val examId: String?, val count: Int)
+
 @Dao
 interface QuestionDao {
     @Query("SELECT * FROM exam_questions WHERE id IN (:ids)") suspend fun getByIdsInternal(ids: List<String>): List<ExamQuestion>
@@ -22,6 +24,19 @@ interface QuestionDao {
         if (examIds.isEmpty()) return emptyList()
         return examIds.distinct().chunked(900).flatMap { getByExamIdsInternal(it) }
     }
+
+    @Query("SELECT examId, COUNT(*) AS count FROM exam_questions WHERE examId IN (:examIds) GROUP BY examId")
+    suspend fun countByExamIdsInternal(examIds: List<String>): List<ExamQuestionCount>
+
+    suspend fun countByExamIds(examIds: List<String>): Map<String, Int> {
+        if (examIds.isEmpty()) return emptyMap()
+        return examIds.distinct().chunked(900).flatMap { countByExamIdsInternal(it) }
+            .mapNotNull { projection ->
+                val examId = projection.examId ?: return@mapNotNull null
+                examId to projection.count
+            }.toMap()
+    }
+
     @Query("SELECT COUNT(*) FROM exam_questions WHERE examId = :examId") suspend fun countByExamId(examId: String): Int
     @Upsert suspend fun upsertAll(items: List<ExamQuestion>)
     @Query("SELECT id FROM exam_questions WHERE examId = :examId") suspend fun getIdsByExamId(examId: String): List<String>
