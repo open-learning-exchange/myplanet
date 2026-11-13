@@ -1,10 +1,8 @@
 package org.ole.planet.myplanet.ui.notifications
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Job
@@ -18,7 +16,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Notification
 import org.ole.planet.myplanet.model.NotificationListItem
 import org.ole.planet.myplanet.model.NotificationPayload
@@ -27,10 +24,18 @@ import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TaskNotificationUtils
 
+data class NotificationStrings(
+    val storageRunningLow: String,
+    val storageAvailable: String,
+    val joinRequestPrefix: String,
+    val resourceCount: (Int) -> String,
+    val taskDue: (title: String, date: String) -> String,
+    val userRequestedToJoin: (user: String, team: String) -> String
+)
+
 @HiltViewModel
 class NotificationsViewModel @Inject constructor(
     private val notificationsRepository: NotificationsRepository,
-    @ApplicationContext private val context: Context,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
@@ -71,14 +76,14 @@ class NotificationsViewModel @Inject constructor(
     private var currentFilter: String = "all"
     private var loadJob: Job? = null
 
-    fun loadNotifications(userId: String, filter: String, isAdmin: Boolean = false) {
+    fun loadNotifications(userId: String, filter: String, isAdmin: Boolean = false, strings: NotificationStrings) {
         currentFilter = filter
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             val enrichment = notificationsRepository.getEnrichedNotifications(userId, filter, isAdmin)
             val formatted = withContext(dispatcherProvider.default) {
                 enrichment.payloads.map {
-                    formatNotification(it, enrichment.taskTeamNames, enrichment.joinRequestDetails, enrichment.parsedTaskDates)
+                    formatNotification(it, enrichment.taskTeamNames, enrichment.joinRequestDetails, enrichment.parsedTaskDates, strings)
                 }
             }
             _notifications.value = formatted
@@ -279,7 +284,8 @@ class NotificationsViewModel @Inject constructor(
         notification: NotificationPayload,
         taskTeamNames: Map<String, String> = emptyMap(),
         joinRequestDetails: Map<String, Pair<String, String>> = emptyMap(),
-        parsedTaskDates: Map<String, Pair<String, String>?> = emptyMap()
+        parsedTaskDates: Map<String, Pair<String, String>?> = emptyMap(),
+        strings: NotificationStrings
     ): Notification {
         val resolvedType = notificationsRepository.resolveType(notification.type, notification.message, notification.subType)
         val formattedText = when (resolvedType) {
@@ -290,21 +296,21 @@ class NotificationsViewModel @Inject constructor(
                     TaskNotificationUtils.splitTitleAndDate(notification.message)
                 }
                 if (parsedDate != null) {
-                    formatTaskNotification(parsedDate.first, parsedDate.second, notification.relatedId, taskTeamNames)
+                    formatTaskNotification(parsedDate.first, parsedDate.second, notification.relatedId, taskTeamNames, strings)
                 } else {
                     notification.message
                 }
             }
             "resource" -> {
                 notification.message.toIntOrNull()?.let { count ->
-                    context.getString(R.string.resource_notification, count)
+                    strings.resourceCount(count)
                 } ?: notification.message
             }
             "storage" -> {
                 formatStorageNotification(
                     notification.message,
-                    context.getString(R.string.storage_running_low),
-                    context.getString(R.string.storage_available)
+                    strings.storageRunningLow,
+                    strings.storageAvailable
                 )
             }
             "join_request" -> {
@@ -319,9 +325,9 @@ class NotificationsViewModel @Inject constructor(
                     }
                     val requesterName = details.first
                     val teamName = details.second
-                    val userRequestedStr = context.getString(R.string.user_requested_to_join_team, requesterName, teamName)
+                    val userRequestedStr = strings.userRequestedToJoin(requesterName, teamName)
                     formatJoinRequestNotification(
-                        context.getString(R.string.join_request_prefix),
+                        strings.joinRequestPrefix,
                         userRequestedStr
                     )
                 }
@@ -339,16 +345,22 @@ class NotificationsViewModel @Inject constructor(
         )
     }
 
-    private fun formatTaskNotification(taskTitle: String, dateValue: String, relatedId: String?, taskTeamNames: Map<String, String> = emptyMap()): String {
+    private fun formatTaskNotification(
+        taskTitle: String,
+        dateValue: String,
+        relatedId: String?,
+        taskTeamNames: Map<String, String> = emptyMap(),
+        strings: NotificationStrings
+    ): String {
         val teamName = if (!relatedId.isNullOrEmpty()) {
             taskTeamNames[relatedId] ?: taskTeamNames[taskTitle]
         } else {
             taskTeamNames[taskTitle]
         }
         return if (teamName != null) {
-            "<b>$teamName</b>: ${context.getString(R.string.task_notification, taskTitle, dateValue)}"
+            "<b>$teamName</b>: ${strings.taskDue(taskTitle, dateValue)}"
         } else {
-            context.getString(R.string.task_notification, taskTitle, dateValue)
+            strings.taskDue(taskTitle, dateValue)
         }
     }
 

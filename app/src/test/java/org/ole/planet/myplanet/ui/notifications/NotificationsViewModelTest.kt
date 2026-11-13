@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.notifications
 
-import android.content.Context
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -43,10 +42,19 @@ class NotificationsViewModelTest {
     private lateinit var repository: NotificationsRepository
     private lateinit var viewModel: NotificationsViewModel
 
+    private val fakeStrings = NotificationStrings(
+        storageRunningLow = "Storage running low:",
+        storageAvailable = "Storage available:",
+        joinRequestPrefix = "Join Request",
+        resourceCount = { "res:$it" },
+        taskDue = { title, date -> "$title is due in $date" },
+        userRequestedToJoin = { user, team -> "$user requested to join $team" }
+    )
+
     @Before
     fun setup() {
         repository = mockk(relaxed = true)
-        viewModel = NotificationsViewModel(repository, mockk<Context>(relaxed = true), TestDispatcherProvider(testDispatcher))
+        viewModel = NotificationsViewModel(repository, TestDispatcherProvider(testDispatcher))
     }
 
     @Test
@@ -185,7 +193,7 @@ class NotificationsViewModelTest {
         every { repository.resolveType("team", "whatever", "join_request") } returns "join_request"
         backgroundScope.launch { viewModel.groupedItems.collect {} }
 
-        viewModel.loadNotifications(USER_ID, FILTER_ALL)
+        viewModel.loadNotifications(USER_ID, FILTER_ALL, strings = fakeStrings)
         advanceUntilIdle()
 
         assertEquals("join_request", item("1").notification.type)
@@ -251,7 +259,7 @@ class NotificationsViewModelTest {
         coEvery { repository.getEnrichedNotifications(USER_ID, FILTER_ALL, false) } returns enrichment
 
         backgroundScope.launch { viewModel.groupedItems.collect {} }
-        viewModel.loadNotifications(USER_ID, FILTER_ALL)
+        viewModel.loadNotifications(USER_ID, FILTER_ALL, strings = fakeStrings)
         advanceUntilIdle()
 
         assertEquals(3, viewModel.unreadCount.value)
@@ -397,14 +405,22 @@ class NotificationsViewModelTest {
         coEvery { repository.getEnrichedNotifications(USER_ID, "filterB", false) } returns resultB
         every { repository.resolveType(any(), any(), any()) } answers { firstArg<String>().lowercase() }
 
-        viewModel.loadNotifications(USER_ID, "filterA")
-        viewModel.loadNotifications(USER_ID, "filterB")
+        viewModel.loadNotifications(USER_ID, "filterA", strings = fakeStrings)
+        viewModel.loadNotifications(USER_ID, "filterB", strings = fakeStrings)
 
         advanceUntilIdle()
 
         val currentNotifications = viewModel.notifications.value
         assertEquals(1, currentNotifications.size)
         assertEquals("2", currentNotifications[0].id)
+    }
+
+    @Test
+    fun testResourceRowWithMessageCountRendersWithResourceCountTemplate() = runTest(testDispatcher) {
+        val resourcePayload = notification(id = "res1", type = "resource", isRead = false, message = "3")
+        loadNotifications(resourcePayload)
+
+        assertEquals("res:3", item("res1").notification.formattedText)
     }
 
     private fun item(id: String): NotificationListItem.Item =
@@ -431,7 +447,7 @@ class NotificationsViewModelTest {
             firstArg<String>().lowercase()
         }
         backgroundScope.launch { viewModel.groupedItems.collect {} }
-        viewModel.loadNotifications(USER_ID, filter)
+        viewModel.loadNotifications(USER_ID, filter, strings = fakeStrings)
         advanceUntilIdle()
     }
 

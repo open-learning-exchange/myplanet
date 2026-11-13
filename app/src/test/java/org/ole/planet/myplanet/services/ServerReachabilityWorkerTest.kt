@@ -8,21 +8,25 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.clearMocks
+import io.mockk.clearStaticMockk
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
-import io.mockk.unmockkAll
+import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.After
+import org.junit.AfterClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.fail
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -46,13 +50,11 @@ class ServerReachabilityWorkerTest {
 
     @Before
     fun setUp() {
-        mockkStatic(Log::class)
+        clearStaticMockk(Log::class)
+        clearMocks(NetworkUtils, MainApplication.Companion, answers = true, recordedCalls = true)
+
         every { Log.w(any<String>(), any<String>(), any<Throwable>()) } returns 0
-
-        mockkObject(NetworkUtils)
         every { NetworkUtils.isNetworkConnected } returns true
-
-        mockkObject(MainApplication.Companion)
 
         every { context.applicationContext } returns context
         every { workerParams.inputData } returns Data.EMPTY
@@ -60,11 +62,6 @@ class ServerReachabilityWorkerTest {
         every { syncManager.isMainSyncActive() } returns false
         // Hold the notification cooldown shut so no test wanders into the notification builder.
         every { sharedPrefManager.getRawLong(any(), any()) } returns NOW
-    }
-
-    @After
-    fun tearDown() {
-        unmockkAll()
     }
 
     private fun createWorker(dispatcher: TestDispatcher) = ServerReachabilityWorker(
@@ -142,5 +139,21 @@ class ServerReachabilityWorkerTest {
         private const val STOPPED = "worker stopped"
         private const val NOW = 1_700_000_000_000L
         private const val NETWORK_RECONNECTION_KEY = "network_reconnection_trigger"
+
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkStatic(Log::class)
+            mockkObject(NetworkUtils)
+            mockkObject(MainApplication.Companion)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkStatic(Log::class)
+            unmockkObject(NetworkUtils)
+            unmockkObject(MainApplication.Companion)
+        }
     }
 }
