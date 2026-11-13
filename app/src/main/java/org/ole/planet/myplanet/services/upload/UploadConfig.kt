@@ -27,6 +27,8 @@ data class UploadConfig<T : Any>(
     override val beforeUpload: (suspend (T) -> Unit)? = null,
     override val afterUpload: (suspend (T, UploadedItem) -> Unit)? = null,
 
+    override val mergeConflict: ((local: JsonObject, server: JsonObject) -> JsonObject?)? = null,
+
     val markUploaded: suspend (List<UploadedItemResult>) -> List<UploadedItemResult>
 ) : UploadPipelineConfig<T> {
 
