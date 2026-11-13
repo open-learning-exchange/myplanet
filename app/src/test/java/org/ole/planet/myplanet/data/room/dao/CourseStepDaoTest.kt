@@ -79,6 +79,28 @@ class CourseStepDaoTest {
     }
 
     @Test
+    fun countByCourseIds_handlesMoreThan900Ids() = runBlocking {
+        val steps = (1..1200).flatMap { i ->
+            listOf(createStep("step_${i}_a", "course_$i"), createStep("step_${i}_b", "course_$i"))
+        }
+        courseStepDao.upsertAll(steps)
+
+        val courseIds = (1..1200).map { "course_$it" }
+        val counts = courseStepDao.countByCourseIds(courseIds)
+
+        assertEquals(1200, counts.size)
+        assertEquals(2, counts["course_1"])
+        assertEquals(2, counts["course_1200"])
+    }
+
+    @Test
+    fun countByCourseIds_emptyInput_returnsEmptyMap() = runBlocking {
+        courseStepDao.upsertAll(listOf(createStep("step_1", "course_1")))
+
+        assertTrue(courseStepDao.countByCourseIds(emptyList()).isEmpty())
+    }
+
+    @Test
     fun deleteStaleSteps_removesOnlyThatCoursesOldSteps() = runBlocking {
         courseStepDao.upsertAll(listOf(
             createStep("old", "c1"), createStep("kept", "c1"), createStep("other", "c2")
@@ -97,5 +119,52 @@ class CourseStepDaoTest {
         courseStepDao.deleteStaleSteps("c1", emptyList())
 
         assertEquals(emptyList<String>(), courseStepDao.getByCourseId("c1").map { it.id })
+    }
+
+    @Test
+    fun deleteStaleSteps_handlesOver33000KeepIds_retainsBoundaryStepsAndLeavesOtherCourseUntouched() = runBlocking {
+        courseStepDao.upsertAll(listOf(
+            createStep("step_first", "c1"),
+            createStep("step_stale", "c1"),
+            createStep("step_last", "c1"),
+            createStep("step_c2", "c2")
+        ))
+
+        val dummyKeepIds = (1..33000).map { "dummy_$it" }
+        val keepIds = listOf("step_first") + dummyKeepIds + listOf("step_last")
+
+        courseStepDao.deleteStaleSteps("c1", keepIds)
+
+        val c1Steps = courseStepDao.getByCourseId("c1").map { it.id }.toSet()
+        assertEquals(setOf("step_first", "step_last"), c1Steps)
+        assertEquals(listOf("step_c2"), courseStepDao.getByCourseId("c2").map { it.id })
+    }
+
+    @Test
+    fun deleteStaleSteps_removesOver900StaleSteps_leavesOtherCourseUntouched() = runBlocking {
+        val staleSteps = (1..950).map { createStep("stale_$it", "c1") }
+        courseStepDao.upsertAll(staleSteps + listOf(
+            createStep("kept_step", "c1"),
+            createStep("other_course_step", "c2")
+        ))
+
+        courseStepDao.deleteStaleSteps("c1", listOf("kept_step"))
+
+        assertEquals(listOf("kept_step"), courseStepDao.getByCourseId("c1").map { it.id })
+        assertEquals(listOf("other_course_step"), courseStepDao.getByCourseId("c2").map { it.id })
+    }
+
+    @Test
+    fun deleteStaleSteps_emptyKeepList_leavesOtherCourseUntouched() = runBlocking {
+        courseStepDao.upsertAll(listOf(
+            createStep("a", "c1"),
+            createStep("b", "c1"),
+            createStep("c2_step", "c2")
+        ))
+
+        courseStepDao.deleteStaleSteps("c1", emptyList())
+
+        assertTrue(courseStepDao.getByCourseId("c1").isEmpty())
+        assertEquals(listOf("c2_step"), courseStepDao.getByCourseId("c2").map { it.id })
     }
 }

@@ -232,6 +232,73 @@ class LifeRepositoryImplTest {
     }
 
     @Test
+    fun updateMyLifeListOrder_validReorder_updatesWeightsAndWritesOwnerCache() = runTest {
+        val userId = "u"
+        val item1 = MyLife().apply { _id = "1"; weight = 0; this.userId = userId }
+        val item2 = MyLife().apply { _id = "2"; weight = 0; this.userId = userId }
+
+        val managedItem1 = MyLife().apply { _id = "1"; weight = 5; this.userId = userId }
+        val managedItem2 = MyLife().apply { _id = "2"; weight = 5; this.userId = userId }
+        coEvery { myLifeDao.getByIds(any()) } returns listOf(managedItem1, managedItem2)
+        coEvery { myLifeDao.getByUserId(userId) } returns listOf(managedItem1, managedItem2)
+
+        repository.updateMyLifeListOrder(listOf(item1, item2), userId)
+
+        assertEquals(0, managedItem1.weight)
+        assertEquals(1, managedItem2.weight)
+        coVerify(exactly = 1) { myLifeDao.update(any()) }
+        coVerify(exactly = 1) { myLifeDao.getByUserId(userId) }
+        coVerify(exactly = 1) { mockEditor.putString("myLifeCache_$userId", any()) }
+    }
+
+    @Test
+    fun updateMyLifeListOrder_submittedItemWithForeignOwner_isNoOp() = runTest {
+        val foreignItem = MyLife().apply { _id = "1"; weight = 0; this.userId = "someoneElse" }
+
+        repository.updateMyLifeListOrder(listOf(foreignItem), "u")
+
+        coVerify(exactly = 0) { myLifeDao.getByIds(any()) }
+        coVerify(exactly = 0) { myLifeDao.update(any()) }
+        coVerify(exactly = 0) { myLifeDao.getByUserId(any()) }
+        coVerify(exactly = 0) { mockEditor.putString(any(), any()) }
+    }
+
+    @Test
+    fun updateMyLifeListOrder_storedRowOfAnotherOwner_isNoOpLeavingForeignWeights() = runTest {
+        val userId = "u"
+        val item1 = MyLife().apply { _id = "1"; weight = 0; this.userId = userId }
+        val item2 = MyLife().apply { _id = "2"; weight = 0; this.userId = userId }
+
+        val ownRow = MyLife().apply { _id = "1"; weight = 5; this.userId = userId }
+        val foreignRow = MyLife().apply { _id = "2"; weight = 7; this.userId = "someoneElse" }
+        coEvery { myLifeDao.getByIds(any()) } returns listOf(ownRow, foreignRow)
+
+        repository.updateMyLifeListOrder(listOf(item1, item2), userId)
+
+        assertEquals(5, ownRow.weight)
+        assertEquals(7, foreignRow.weight)
+        coVerify(exactly = 0) { myLifeDao.update(any()) }
+        coVerify(exactly = 0) { myLifeDao.getByUserId(any()) }
+        coVerify(exactly = 0) { mockEditor.putString(any(), any()) }
+    }
+
+    @Test
+    fun updateMyLifeListOrder_nullBlankAndDashOwners_treatedAsCaller() = runTest {
+        val userId = "u"
+        val submitted = MyLife().apply { _id = "1"; weight = 0; this.userId = "--" }
+        val stored = MyLife().apply { _id = "1"; weight = 5; this.userId = "" }
+        coEvery { myLifeDao.getByIds(any()) } returns listOf(stored)
+        coEvery { myLifeDao.getByUserId(userId) } returns listOf(stored)
+
+        repository.updateMyLifeListOrder(listOf(submitted), userId)
+
+        assertEquals(0, stored.weight)
+        coVerify(exactly = 1) { myLifeDao.update(any()) }
+        coVerify(exactly = 1) { myLifeDao.getByUserId(userId) }
+        coVerify(exactly = 1) { mockEditor.putString("myLifeCache_$userId", any()) }
+    }
+
+    @Test
     fun seedMyLifeIfEmpty_insertsItemsWhenNoExistingData() = runTest {
         val userId = "user123"
         val items = listOf(
