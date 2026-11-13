@@ -71,6 +71,16 @@ class ResourcesSearchUtilsTest {
     }
 
     @Test
+    fun testSearchGenericListOrdersPrefixBeforeContainsWithoutMutatingInput() {
+        val input = mutableListOf("zebra apple", "apple pie", "banana", "apple juice")
+
+        val result = ResourcesSearchUtils.searchList(input, "apple") { it }
+
+        assertEquals(listOf("apple pie", "apple juice", "zebra apple"), result)
+        assertEquals(listOf("zebra apple", "apple pie", "banana", "apple juice"), input)
+    }
+
+    @Test
     fun testSearchDiacriticsNormalized() {
         val models = listOf(
             model("1", "Café Menu"),

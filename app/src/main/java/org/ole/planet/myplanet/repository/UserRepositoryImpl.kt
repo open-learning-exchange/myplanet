@@ -339,21 +339,27 @@ class UserRepositoryImpl @Inject constructor(
     private fun sortUsers(users: List<UserEntity>, fieldName: String, descending: Boolean): List<UserEntity> {
         fun value(value: String?) = value.orEmpty().lowercase()
 
+        fun sortByValue(selector: (UserEntity) -> String?): List<UserEntity> {
+            val decorated = users.map { value(selector(it)) to it }
+            val sorted = if (descending) decorated.sortedByDescending { it.first } else decorated.sortedBy { it.first }
+            return sorted.map { it.second }
+        }
+
         return when (fieldName) {
             "joinDate" -> if (descending) users.sortedByDescending { it.joinDate } else users.sortedBy { it.joinDate }
-            "name" -> if (descending) users.sortedByDescending { value(it.name) } else users.sortedBy { value(it.name) }
-            "firstName" -> if (descending) users.sortedByDescending { value(it.firstName) } else users.sortedBy { value(it.firstName) }
-            "lastName" -> if (descending) users.sortedByDescending { value(it.lastName) } else users.sortedBy { value(it.lastName) }
-            "middleName" -> if (descending) users.sortedByDescending { value(it.middleName) } else users.sortedBy { value(it.middleName) }
-            "email" -> if (descending) users.sortedByDescending { value(it.email) } else users.sortedBy { value(it.email) }
-            "planetCode" -> if (descending) users.sortedByDescending { value(it.planetCode) } else users.sortedBy { value(it.planetCode) }
-            "parentCode" -> if (descending) users.sortedByDescending { value(it.parentCode) } else users.sortedBy { value(it.parentCode) }
-            "level" -> if (descending) users.sortedByDescending { value(it.level) } else users.sortedBy { value(it.level) }
-            "language" -> if (descending) users.sortedByDescending { value(it.language) } else users.sortedBy { value(it.language) }
-            "gender" -> if (descending) users.sortedByDescending { value(it.gender) } else users.sortedBy { value(it.gender) }
-            "dob" -> if (descending) users.sortedByDescending { value(it.dob) } else users.sortedBy { value(it.dob) }
-            "age" -> if (descending) users.sortedByDescending { value(it.age) } else users.sortedBy { value(it.age) }
-            "birthPlace" -> if (descending) users.sortedByDescending { value(it.birthPlace) } else users.sortedBy { value(it.birthPlace) }
+            "name" -> sortByValue { it.name }
+            "firstName" -> sortByValue { it.firstName }
+            "lastName" -> sortByValue { it.lastName }
+            "middleName" -> sortByValue { it.middleName }
+            "email" -> sortByValue { it.email }
+            "planetCode" -> sortByValue { it.planetCode }
+            "parentCode" -> sortByValue { it.parentCode }
+            "level" -> sortByValue { it.level }
+            "language" -> sortByValue { it.language }
+            "gender" -> sortByValue { it.gender }
+            "dob" -> sortByValue { it.dob }
+            "age" -> sortByValue { it.age }
+            "birthPlace" -> sortByValue { it.birthPlace }
             "isUpdated" -> if (descending) users.sortedByDescending { it.isUpdated } else users.sortedBy { it.isUpdated }
             "isArchived" -> if (descending) users.sortedByDescending { it.isArchived } else users.sortedBy { it.isArchived }
             else -> users
@@ -1072,10 +1078,15 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun bulkInsertAchievementsFromSync(jsonArray: JsonArray) {
         val locallyUpdatedIds = achievementDao.getUpdatedIds().toHashSet()
-        val achievements = jsonArray.toSyncDocuments()
+        val (pending, fresh) = jsonArray.toSyncDocuments()
             .map { (_, doc) -> Achievement.fromJson(doc) }
-            .filterNot { it._id in locallyUpdatedIds }
-        achievementDao.upsertAll(achievements)
+            .partition { it._id in locallyUpdatedIds }
+        achievementDao.upsertAll(fresh)
+        pending.forEach { server ->
+            val id = server._id
+            val rev = server._rev
+            if (id.isNotEmpty() && !rev.isNullOrEmpty()) achievementDao.rebasePendingRev(id, rev)
+        }
     }
 
     override suspend fun insertUsersFromSync(docs: List<JsonObject>) {
