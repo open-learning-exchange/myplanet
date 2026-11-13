@@ -648,4 +648,57 @@ class ChatViewModelTest {
         assertEquals(4, attemptCount)
         org.junit.Assert.assertNotNull(viewModel.screenData.value)
     }
+
+    @Test
+    fun `sendChat keeps the request alive and reports the result through chatRequest`() = runTest(testDispatcher) {
+        val aiProvider = AiProvider("model1", "provider1")
+        val reply = CompletableDeferred<ChatResult>()
+        coEvery { chatRepository.sendNewChatRequest("[ctx] hi", "User", aiProvider) } coAnswers { reply.await() }
+
+        assertTrue(viewModel.sendChat("[ctx] hi", "hi", "User", aiProvider, "", "", refreshRev = false))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val sending = viewModel.chatRequest.value as ChatRequestState.Sending
+        assertEquals("hi", sending.query)
+        assertFalse(viewModel.sendChat("again", "again", "User", aiProvider, "", "", refreshRev = false))
+
+        val success = ChatResult.Success("hello", "chat1", "1-a")
+        reply.complete(success)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val done = viewModel.chatRequest.value as ChatRequestState.Done
+        assertEquals(sending.requestId, done.requestId)
+        assertEquals("hi", done.query)
+        assertEquals(success, done.result)
+
+        viewModel.consumeChatResult(done.requestId)
+        assertEquals(ChatRequestState.Idle, viewModel.chatRequest.value)
+        coVerify(exactly = 1) { chatRepository.sendNewChatRequest(any(), any(), any()) }
+    }
+
+    @Test
+    fun `sendChat continues with the latest rev and falls back to the known rev`() = runTest(testDispatcher) {
+        val aiProvider = AiProvider("model1", "provider1")
+        coEvery { chatRepository.getLatestRev("chat1") } throws RuntimeException("offline")
+        coEvery { chatRepository.sendContinueChatRequest(any(), any(), any(), any(), any()) } returns ChatResult.Success("r", "chat1", "3-c")
+
+        viewModel.sendChat("q", "q", "User", aiProvider, "chat1", "2-b", refreshRev = true)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { chatRepository.sendContinueChatRequest("q", "User", aiProvider, "chat1", "2-b") }
+        assertTrue(viewModel.chatRequest.value is ChatRequestState.Done)
+    }
+
+    @Test
+    fun `sendChat turns an exception into an error result`() = runTest(testDispatcher) {
+        val aiProvider = AiProvider("model1", "provider1")
+
+        viewModel.sendChat("q", "q", "User", aiProvider, "", "", refreshRev = false) {
+            throw IllegalStateException("no server")
+        }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val done = viewModel.chatRequest.value as ChatRequestState.Done
+        assertEquals(ChatResult.Error("no server"), done.result)
+    }
 }
