@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.community
 
 import android.content.Intent
+import android.graphics.Typeface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -12,6 +13,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.FragmentCommunityServicesBinding
+import org.ole.planet.myplanet.databinding.RowCommunityLinkBinding
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.ui.components.FragmentNavigator.replaceFragment
@@ -89,45 +91,65 @@ class CommunityServicesFragment : BaseTeamFragment() {
     private fun setRecyclerView(links: List<MyTeam>) {
         val parent = binding?.llServices ?: return
         parent.removeAllViews()
+        if (links.isEmpty()) return
+        val inflater = LayoutInflater.from(parent.context)
+        addHeader(inflater, parent, getString(R.string.community_links)).setTypeface(null, Typeface.BOLD)
+        val sections = links.toLinkSections()
+        addSection(inflater, parent, getString(R.string.local), sections.local)
+        addSection(inflater, parent, getString(R.string.social_and_web), sections.social)
+    }
+
+    private fun addHeader(inflater: LayoutInflater, parent: ViewGroup, title: String): TextView {
+        val header = inflater.inflate(R.layout.row_community_link_header, parent, false) as TextView
+        header.text = title
+        parent.addView(header)
+        return header
+    }
+
+    private fun addSection(inflater: LayoutInflater, parent: ViewGroup, title: String, links: List<MyTeam>) {
+        if (links.isEmpty()) return
+        addHeader(inflater, parent, title)
         links.forEach { team ->
-            val b: TextView = LayoutInflater.from(activity).inflate(R.layout.button_single, parent, false) as TextView
-            b.setPadding(8, 8, 8, 8)
-            b.text = team.title
-            b.setOnClickListener {
-                val rawRoute = team.route ?: return@setOnClickListener
-                when (val route = CommunityServicesRoute.resolve(rawRoute)) {
-                    is CommunityServicesRoute.ExternalLink -> {
-                        startActivity(Intent(requireContext(), WebViewActivity::class.java).apply {
-                            putExtra("link", route.url)
-                            putExtra("title", team.title)
-                        })
+            val row = RowCommunityLinkBinding.inflate(inflater, parent, false)
+            row.ivLinkIcon.setImageResource(team.linkIconRes())
+            row.tvLinkTitle.text = team.title
+            row.root.setOnClickListener { openLink(team) }
+            parent.addView(row.root)
+        }
+    }
+
+    private fun openLink(team: MyTeam) {
+        val rawRoute = team.route ?: return
+        when (val route = CommunityServicesRoute.resolve(rawRoute)) {
+            is CommunityServicesRoute.ExternalLink -> {
+                startActivity(Intent(requireContext(), WebViewActivity::class.java).apply {
+                    putExtra("link", route.url)
+                    putExtra("title", team.title)
+                })
+            }
+            is CommunityServicesRoute.TeamLink -> {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val isMyTeam = viewModel.isMember(user?.id, route.teamId)
+                    val f = TeamDetailFragment()
+                    f.arguments = Bundle().apply {
+                        putString("id", route.teamId)
+                        putBoolean("isMyTeam", isMyTeam)
                     }
-                    is CommunityServicesRoute.TeamLink -> {
-                        viewLifecycleOwner.lifecycleScope.launch {
-                            val isMyTeam = viewModel.isMember(user?.id, route.teamId)
-                            val f = TeamDetailFragment()
-                            f.arguments = Bundle().apply {
-                                putString("id", route.teamId)
-                                putBoolean("isMyTeam", isMyTeam)
-                            }
-                            replaceFragment(
-                                requireActivity().supportFragmentManager,
-                                R.id.fragment_container,
-                                f,
-                                addToBackStack = true,
-                                tag = ""
-                            )
-                        }
-                    }
-                    is CommunityServicesRoute.Unhandled -> {
-                        startActivity(Intent(requireContext(), WebViewActivity::class.java).apply {
-                            putExtra("link", rawRoute)
-                            putExtra("title", team.title)
-                        })
-                    }
+                    replaceFragment(
+                        requireActivity().supportFragmentManager,
+                        R.id.fragment_container,
+                        f,
+                        addToBackStack = true,
+                        tag = ""
+                    )
                 }
             }
-            parent.addView(b)
+            is CommunityServicesRoute.Unhandled -> {
+                startActivity(Intent(requireContext(), WebViewActivity::class.java).apply {
+                    putExtra("link", rawRoute)
+                    putExtra("title", team.title)
+                })
+            }
         }
     }
 }
