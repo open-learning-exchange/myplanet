@@ -116,7 +116,7 @@ class VoicesAdapter(
             // Every field checked in areContentsTheSame is covered by the buckets above.
             // If payloads is empty here, it means a future field was added to areContentsTheSame
             // without a corresponding bucket. We MUST return null to trigger a full rebind to prevent stale UI.
-            if (payloads.isNotEmpty()) payloads else null
+            payloads.ifEmpty { null }
         }
     )
 ) {
@@ -405,7 +405,6 @@ class VoicesAdapter(
         listener?.onDataChanged()
     }
 
-    // A row bound before its image finished downloading keeps Glide's failed load until rebound.
     fun onResourceDownloaded(resourceId: String) {
         if (resourceId.isEmpty()) return
         currentList.forEachIndexed { index, news ->
@@ -978,8 +977,6 @@ class VoicesAdapter(
         fetchingUserIds.clear()
     }
 
-    // Markwon cancels a message's pending image loads when its row detaches and never restarts
-    // them, so a row RecyclerView reattaches without rebinding keeps the "OBJ" placeholder.
     override fun onViewAttachedToWindow(holder: RecyclerView.ViewHolder) {
         super.onViewAttachedToWindow(holder)
         if (holder is VoicesViewHolder) AsyncDrawableScheduler.schedule(holder.binding.tvMessage)
@@ -1027,7 +1024,7 @@ class VoicesAdapter(
         val imagesToLoad = news?.imagesArray
         imagesToLoad?.let { imagesArray ->
             val size = imagesArray.size()
-            if (!imagesArray.isEmpty()) {
+            if (!imagesArray.isEmpty) {
                 if (size == 1) {
                     val ob = imagesArray[0]?.asJsonObject
                     val resourceId = GsonUtils.getString("resourceId", ob)

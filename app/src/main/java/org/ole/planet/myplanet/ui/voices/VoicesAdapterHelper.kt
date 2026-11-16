@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.utils.TextRevealer
 import org.ole.planet.myplanet.utils.Utilities
 
 object VoicesAdapterHelper {
-    private val inlineResourceImage = Regex("!\\[[^\\]]*]\\(\\s*resources/([^)\\s]*)\\s*\\)")
+    private val inlineResourceImage = Regex("!\\[[^]]*]\\(\\s*resources/([^)\\s]*)\\s*\\)")
     fun createOnAnimateTyping(
         scope: CoroutineScope,
         dispatcherProvider: DispatcherProvider
@@ -51,31 +51,23 @@ object VoicesAdapterHelper {
         }.toSet()
     }
 
-    // Attachments are already shown as thumbnails beside the message, so drop their inline
-    // copies; an inline image whose file isn't on disk yet renders as an "OBJ" glyph.
     fun stripAttachedImages(message: String?, resourceIds: Set<String>): String {
         val text = message.orEmpty()
         if (resourceIds.isEmpty() || !text.contains("![")) return text
         var result = text
         for (id in resourceIds) {
-            val pattern = Regex("!\\[[^\\]]*]\\(\\s*resources/${Regex.escape(id)}/[^)]*\\)")
+            val pattern = Regex("!\\[[^]]*]\\(\\s*resources/${Regex.escape(id)}/[^)]*\\)")
             result = result.replace(pattern, "")
         }
         return if (result == text) text else result.trimEnd()
     }
 
-    /** Resource paths (`<resourceId>/<file>`) of the images written inline in a message. */
     fun inlineResourcePaths(message: String?): List<String> {
         val text = message ?: return emptyList()
         if (!text.contains("![")) return emptyList()
         return inlineResourceImage.findAll(text).map { it.groupValues[1] }.toList()
     }
 
-    /**
-     * Every resource a voice shows as an image: its attachments plus images written inline in
-     * its message. Many voices carry inline images with an empty `images` array, so the
-     * attachments alone miss them.
-     */
     fun referencedResourceIds(list: List<News?>): Set<String> {
         val ids = mutableSetOf<String>()
         list.forEach { news ->
@@ -88,8 +80,6 @@ object VoicesAdapterHelper {
         return ids
     }
 
-    // An inline image whose file isn't on disk yet renders as Markwon's "OBJ" placeholder; leave
-    // it out until the download lands, when the row is rebound with the image.
     fun stripUnavailableImages(message: String, isAvailable: (String) -> Boolean): String {
         if (!message.contains("![")) return message
         val result = inlineResourceImage.replace(message) { match ->
@@ -97,9 +87,7 @@ object VoicesAdapterHelper {
         }
         return if (result == message) message else result.trim()
     }
-
-    // Collect for the owner's whole lifetime, not just while started: a download that lands while
-    // the user is elsewhere must still refresh its row, since nothing else rebinds it.
+    
     fun refreshOnImageDownloads(owner: LifecycleOwner, events: Flow<Intent>, adapter: () -> VoicesAdapter?): Job =
         owner.lifecycleScope.launch {
             events.collect { intent ->

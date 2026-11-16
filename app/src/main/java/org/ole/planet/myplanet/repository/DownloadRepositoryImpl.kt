@@ -21,9 +21,6 @@ class DownloadRepositoryImpl @Inject constructor(
     private val diagnosticsRepository: DiagnosticsRepository,
     private val timeProvider: TimeProvider
 ) : DownloadRepository {
-
-    // A misrouted resource URL makes Planet's web server answer 200 with its HTML index; saving
-    // that under the resource's name leaves a "downloaded" file nothing can open.
     private fun isHtmlStandIn(subtype: String?, url: String): Boolean =
         subtype.equals("html", ignoreCase = true) && !FileUtils.isHtmlFileName(url.substringBefore('?'))
 
@@ -47,7 +44,6 @@ class DownloadRepositoryImpl @Inject constructor(
                     return@withContext DownloadResult.Error("Empty response body")
                 } else if (isHtmlStandIn(responseBody.contentType()?.subtype, url)) {
                     responseBody.close()
-                    // No code: like a network error, this lets the caller try the alternative server.
                     return@withContext DownloadResult.Error("Server returned a web page instead of the file")
                 } else {
                     val validator = response.headers()["ETag"] ?: response.headers()["Last-Modified"]

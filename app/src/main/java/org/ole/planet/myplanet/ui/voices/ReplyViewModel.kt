@@ -21,7 +21,6 @@ class ReplyViewModel @Inject constructor(
         return voicesRepository.getNewsWithReplies(newsId)
     }
 
-    // showData runs on every resume, so only queue ids this screen hasn't asked for yet.
     fun downloadReferencedResources(list: List<News?>) {
         val resourceIds = VoicesAdapterHelper.referencedResourceIds(list) - requestedResourceIds
         if (resourceIds.isEmpty()) return

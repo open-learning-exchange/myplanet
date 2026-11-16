@@ -510,8 +510,6 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    // A resource marked offline whose file is really an HTML page (saved by an earlier misrouted
-    // download) would otherwise never be fetched again; drop it so the download service refetches.
     private fun discardHtmlStandIn(url: String): Boolean = try {
         val file = FileUtils.getSDPathFromUrl(context, url)
         FileUtils.isHtmlStandIn(file) && file.delete().also {

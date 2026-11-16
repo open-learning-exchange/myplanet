@@ -163,10 +163,6 @@ object FileUtils {
 
     fun isHtmlFileName(address: String?): Boolean = getFileExtension(address) in htmlExtensions
 
-    /**
-     * True when a file that should not be HTML holds an HTML page — what an earlier download
-     * saved when the server answered a misrouted resource URL with Planet's web app index.
-     */
     fun isHtmlStandIn(file: File): Boolean {
         if (isHtmlFileName(file.name) || !file.isFile) return false
         return try {

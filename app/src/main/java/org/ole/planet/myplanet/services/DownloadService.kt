@@ -678,12 +678,6 @@ class DownloadService : Service() {
             return downloadQueue.maxByOrNull { it.priority } ?: downloadQueue.first()
         }
 
-        /**
-         * Maps a primary download path onto the alternative server's CouchDB, which lives under
-         * `/db` (see [UrlUtils.dbUrl]). Primary resource URLs are often rooted at the CouchDB
-         * itself (`host:80/resources/...`); replayed bare against a cloud clone, that path hits
-         * the Planet web app, which answers 200 with its HTML index instead of the file.
-         */
         @VisibleForTesting
         internal fun alternativeDownloadUrl(alternativeBase: String, path: String, query: String): String {
             val relative = path.removePrefix("/db").let { if (it.startsWith("/")) it else "/$it" }
