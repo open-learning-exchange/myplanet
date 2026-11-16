@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.voices
 
+import com.google.gson.JsonParser
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -7,6 +8,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -75,5 +77,54 @@ class VoicesAdapterHelperTest {
 
         assertEquals(updatesBeforeCancel, updates.size)
         assertFalse("onComplete should never fire after cancellation", completed)
+    }
+
+    @Test
+    fun stripAttachedImagesRemovesInlineCopyOfAttachment() {
+        val message = "testing community labels   ![](resources/abc-123/post1.jpg)"
+        assertEquals(
+            "testing community labels",
+            VoicesAdapterHelper.stripAttachedImages(message, setOf("abc-123"))
+        )
+    }
+
+    @Test
+    fun stripAttachedImagesKeepsImagesThatAreNotAttachments() {
+        val message = "hi ![](resources/other/pic.jpg) ![alt](resources/abc-123/post1.jpg) there"
+        assertEquals(
+            "hi ![](resources/other/pic.jpg)  there",
+            VoicesAdapterHelper.stripAttachedImages(message, setOf("abc-123"))
+        )
+    }
+
+    @Test
+    fun stripAttachedImagesLeavesMessageUntouchedWithoutAttachments() {
+        val message = "plain text  "
+        assertEquals(message, VoicesAdapterHelper.stripAttachedImages(message, emptySet()))
+        assertEquals("", VoicesAdapterHelper.stripAttachedImages(null, setOf("abc")))
+    }
+
+    @Test
+    fun attachedResourceIdsReadsResourceIdsFromImagesArray() {
+        val images = JsonParser.parseString(
+            """[{"resourceId":"a","filename":"x.jpg"},{"filename":"y.jpg"},{"resourceId":"b"}]"""
+        ).asJsonArray
+        assertEquals(setOf("a", "b"), VoicesAdapterHelper.attachedResourceIds(images))
+        assertEquals(emptySet<String>(), VoicesAdapterHelper.attachedResourceIds(null))
+    }
+
+    @Test
+    fun resourceIdFromDownloadUrlExtractsSegmentAfterResources() {
+        assertEquals(
+            "4136d1c6",
+            VoicesAdapterHelper.resourceIdFromDownloadUrl("https://planet.example/resources/4136d1c6/post.jpg")
+        )
+        assertEquals(
+            "abc",
+            VoicesAdapterHelper.resourceIdFromDownloadUrl("http://10.0.0.1/db/resources/abc/file.pdf?rev=1")
+        )
+        assertNull(VoicesAdapterHelper.resourceIdFromDownloadUrl("https://planet.example/other/abc/file.pdf"))
+        assertNull(VoicesAdapterHelper.resourceIdFromDownloadUrl("https://planet.example/resources/"))
+        assertNull(VoicesAdapterHelper.resourceIdFromDownloadUrl(null))
     }
 }

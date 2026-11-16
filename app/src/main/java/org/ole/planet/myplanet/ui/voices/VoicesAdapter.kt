@@ -130,6 +130,7 @@ class VoicesAdapter(
         const val PAYLOAD_IMAGES_CHANGED = "PAYLOAD_IMAGES_CHANGED"
         const val PAYLOAD_VIEW_IN_CHANGED = "PAYLOAD_VIEW_IN_CHANGED"
         const val PAYLOAD_REACTIONS_CHANGED = "PAYLOAD_REACTIONS_CHANGED"
+        const val PAYLOAD_RESOURCE_DOWNLOADED = "PAYLOAD_RESOURCE_DOWNLOADED"
     }
 
     private data class RowState(
@@ -334,6 +335,11 @@ class VoicesAdapter(
                         setMessageAndDate(holder, news, sharedTeamName)
                     }
                     PAYLOAD_REACTIONS_CHANGED -> showReactions(holder, news)
+                    PAYLOAD_RESOURCE_DOWNLOADED -> {
+                        loadImage(holder.binding, news)
+                        val sharedTeamName = news.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)
+                        setMessageAndDate(holder, news, sharedTeamName)
+                    }
                 }
             }
         }
@@ -395,6 +401,16 @@ class VoicesAdapter(
             notifyItemChanged(0, PAYLOAD_REPLY_COUNT)
         }
         listener?.onDataChanged()
+    }
+
+    // A row bound before its image finished downloading keeps Glide's failed load until rebound.
+    fun onResourceDownloaded(resourceId: String) {
+        if (resourceId.isEmpty()) return
+        currentList.forEachIndexed { index, news ->
+            val referenced = news.images?.contains(resourceId) == true ||
+                news.message?.contains("resources/$resourceId/") == true
+            if (referenced) safeNotifyItemChanged(index, PAYLOAD_RESOURCE_DOWNLOADED)
+        }
     }
 
     fun updateReplyBadge(newsId: String?) {
@@ -470,8 +486,12 @@ class VoicesAdapter(
     }
 
     private fun setMessageAndDate(holder: VoicesViewHolder, news: News, sharedTeamName: String) {
-        val markdownContentWithLocalPaths = prependBaseUrlToImages(
+        val message = VoicesAdapterHelper.stripAttachedImages(
             news.message,
+            VoicesAdapterHelper.attachedResourceIds(news.imagesArray)
+        )
+        val markdownContentWithLocalPaths = prependBaseUrlToImages(
+            message,
             "file://$externalFilesDir/ole/",
             600,
             350

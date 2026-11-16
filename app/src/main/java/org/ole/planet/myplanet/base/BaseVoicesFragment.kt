@@ -13,6 +13,7 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.IntentCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -25,12 +26,15 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.ImageThumbBinding
+import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.ReplyActivity
 import org.ole.planet.myplanet.ui.voices.VoicesActions
+import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
+import org.ole.planet.myplanet.ui.voices.VoicesAdapterHelper
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.VoiceImagePreparer
 
@@ -86,6 +90,25 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
                 adapterNews?.submitList(adapterNews?.currentList?.toList()) {
                     layoutManager?.scrollToPositionWithOffset(scrollPosition, scrollOffset)
                 }
+            }
+        }
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        observeImageDownloads()
+    }
+
+    // Collect for the whole view lifetime, not just while started: a download that lands while
+    // the user is elsewhere must still refresh its row, since nothing else rebinds it.
+    private fun observeImageDownloads() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            broadcastService.events.collect { intent ->
+                if (intent.action != DownloadService.MESSAGE_PROGRESS) return@collect
+                val download = IntentCompat.getParcelableExtra(intent, "download", Download::class.java)
+                if (download == null || download.failed || download.progress != 100) return@collect
+                val resourceId = VoicesAdapterHelper.resourceIdFromDownloadUrl(download.fileUrl) ?: return@collect
+                adapterNews?.onResourceDownloaded(resourceId)
             }
         }
     }
