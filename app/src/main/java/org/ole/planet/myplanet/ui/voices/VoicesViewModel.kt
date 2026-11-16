@@ -244,19 +244,10 @@ class VoicesViewModel @Inject constructor(
     }
 
     fun downloadReferencedResources(list: List<News?>) {
-        val resourceIds = mutableSetOf<String>()
-        list.forEach { news ->
-            news?.imagesArray?.forEach { element ->
-                if (element?.isJsonObject != true) return@forEach
-                val resourceId = GsonUtils.getString("resourceId", element.asJsonObject)
-                if (resourceId.isNotBlank()) resourceIds.add(resourceId)
-            }
-        }
+        val resourceIds = VoicesAdapterHelper.referencedResourceIds(list)
+        if (resourceIds.isEmpty()) return
         viewModelScope.launch {
-            if (resourceIds.isNotEmpty()) {
-                val libraries = resourcesRepository.getLibraryItemsByResourceIds(resourceIds)
-                resourcesRepository.downloadResources(libraries)
-            }
+            resourcesRepository.downloadResources(resourcesRepository.getLibraryItemsByResourceIds(resourceIds))
         }
     }
 

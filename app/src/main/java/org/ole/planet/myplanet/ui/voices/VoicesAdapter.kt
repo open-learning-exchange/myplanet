@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.voices
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.net.Uri
 import android.os.Build
 import android.text.Spanned
 import android.util.Log
@@ -21,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.gson.JsonObject
+import io.noties.markwon.image.AsyncDrawableScheduler
 import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatItemClickListener
@@ -486,10 +488,11 @@ class VoicesAdapter(
     }
 
     private fun setMessageAndDate(holder: VoicesViewHolder, news: News, sharedTeamName: String) {
-        val message = VoicesAdapterHelper.stripAttachedImages(
+        val withoutAttachments = VoicesAdapterHelper.stripAttachedImages(
             news.message,
             VoicesAdapterHelper.attachedResourceIds(news.imagesArray)
         )
+        val message = VoicesAdapterHelper.stripUnavailableImages(withoutAttachments, ::isImageOnDisk)
         val markdownContentWithLocalPaths = prependBaseUrlToImages(
             message,
             "file://$externalFilesDir/ole/",
@@ -509,6 +512,11 @@ class VoicesAdapter(
                 "${formatDate(news.time)} | Shared from $sharedTeamName"
             }
         holder.binding.tvEdited.visibility = if (news.isEdited) View.VISIBLE else View.GONE
+    }
+
+    private fun isImageOnDisk(resourcePath: String): Boolean {
+        val base = externalFilesDir ?: return false
+        return File(base, "ole/$resourcePath").isFile || File(base, "ole/${Uri.decode(resourcePath)}").isFile
     }
 
     private fun setMessageMarkdown(textView: TextView, news: News, markdown: String) {
@@ -968,6 +976,13 @@ class VoicesAdapter(
         this.recyclerView = null
         userCache.clear()
         fetchingUserIds.clear()
+    }
+
+    // Markwon cancels a message's pending image loads when its row detaches and never restarts
+    // them, so a row RecyclerView reattaches without rebinding keeps the "OBJ" placeholder.
+    override fun onViewAttachedToWindow(holder: RecyclerView.ViewHolder) {
+        super.onViewAttachedToWindow(holder)
+        if (holder is VoicesViewHolder) AsyncDrawableScheduler.schedule(holder.binding.tvMessage)
     }
 
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {

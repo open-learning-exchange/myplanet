@@ -1,16 +1,26 @@
 package org.ole.planet.myplanet.ui.voices
 
 import android.content.Context
+import android.content.Intent
+import androidx.core.content.IntentCompat
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonArray
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.model.Download
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.TextRevealer
 import org.ole.planet.myplanet.utils.Utilities
 
 object VoicesAdapterHelper {
+    private val inlineResourceImage = Regex("!\\[[^\\]]*]\\(\\s*resources/([^)\\s]*)\\s*\\)")
     fun createOnAnimateTyping(
         scope: CoroutineScope,
         dispatcherProvider: DispatcherProvider
@@ -52,6 +62,57 @@ object VoicesAdapterHelper {
             result = result.replace(pattern, "")
         }
         return if (result == text) text else result.trimEnd()
+    }
+
+    /** Resource paths (`<resourceId>/<file>`) of the images written inline in a message. */
+    fun inlineResourcePaths(message: String?): List<String> {
+        val text = message ?: return emptyList()
+        if (!text.contains("![")) return emptyList()
+        return inlineResourceImage.findAll(text).map { it.groupValues[1] }.toList()
+    }
+
+    /**
+     * Every resource a voice shows as an image: its attachments plus images written inline in
+     * its message. Many voices carry inline images with an empty `images` array, so the
+     * attachments alone miss them.
+     */
+    fun referencedResourceIds(list: List<News?>): Set<String> {
+        val ids = mutableSetOf<String>()
+        list.forEach { news ->
+            news ?: return@forEach
+            ids += attachedResourceIds(news.imagesArray)
+            inlineResourcePaths(news.message).mapNotNullTo(ids) { path ->
+                path.substringBefore('/').takeIf { it.isNotEmpty() }
+            }
+        }
+        return ids
+    }
+
+    // An inline image whose file isn't on disk yet renders as Markwon's "OBJ" placeholder; leave
+    // it out until the download lands, when the row is rebound with the image.
+    fun stripUnavailableImages(message: String, isAvailable: (String) -> Boolean): String {
+        if (!message.contains("![")) return message
+        val result = inlineResourceImage.replace(message) { match ->
+            if (isAvailable(match.groupValues[1])) match.value else ""
+        }
+        return if (result == message) message else result.trim()
+    }
+
+    // Collect for the owner's whole lifetime, not just while started: a download that lands while
+    // the user is elsewhere must still refresh its row, since nothing else rebinds it.
+    fun refreshOnImageDownloads(owner: LifecycleOwner, events: Flow<Intent>, adapter: () -> VoicesAdapter?): Job =
+        owner.lifecycleScope.launch {
+            events.collect { intent ->
+                val resourceId = downloadedResourceId(intent) ?: return@collect
+                adapter()?.onResourceDownloaded(resourceId)
+            }
+        }
+
+    private fun downloadedResourceId(intent: Intent): String? {
+        if (intent.action != DownloadService.MESSAGE_PROGRESS) return null
+        val download = IntentCompat.getParcelableExtra(intent, "download", Download::class.java)
+        if (download == null || download.failed || download.progress != 100) return null
+        return resourceIdFromDownloadUrl(download.fileUrl)
     }
 
     fun resourceIdFromDownloadUrl(url: String?): String? {

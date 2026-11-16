@@ -127,4 +127,31 @@ class VoicesAdapterHelperTest {
         assertNull(VoicesAdapterHelper.resourceIdFromDownloadUrl("https://planet.example/resources/"))
         assertNull(VoicesAdapterHelper.resourceIdFromDownloadUrl(null))
     }
+
+    @Test
+    fun referencedResourceIdsIncludesInlineImagesWithoutAttachments() {
+        val inlineOnly = org.ole.planet.myplanet.model.News().apply {
+            message = "new voice\n![](resources/r1/Sector_V.gif)\n![](resources/r2/a.jpg)"
+            images = "[]"
+        }
+        val attached = org.ole.planet.myplanet.model.News().apply {
+            message = "hi"
+            images = """[{"resourceId":"r3"},{"resourceId":"r4"}]"""
+        }
+        val brokenInline = org.ole.planet.myplanet.model.News().apply { message = "hh ![](resources/r5/)" }
+        assertEquals(
+            setOf("r1", "r2", "r3", "r4", "r5"),
+            VoicesAdapterHelper.referencedResourceIds(listOf(inlineOnly, null, attached, brokenInline))
+        )
+    }
+
+    @Test
+    fun stripUnavailableImagesDropsOnlyImagesNotOnDisk() {
+        val message = "Test\n\n![](resources/a/on.jpg)\n![](resources/b/off.jpg)\n![](resources/c/)"
+        assertEquals(
+            "Test\n\n![](resources/a/on.jpg)",
+            VoicesAdapterHelper.stripUnavailableImages(message) { it == "a/on.jpg" }
+        )
+        assertEquals("plain", VoicesAdapterHelper.stripUnavailableImages("plain") { false })
+    }
 }
