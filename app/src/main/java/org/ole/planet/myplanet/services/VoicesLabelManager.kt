@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.View
 import android.widget.PopupMenu
 import androidx.appcompat.view.ContextThemeWrapper
+import androidx.core.content.ContextCompat
 import com.google.android.material.chip.Chip
 import java.util.Locale
 import java.util.WeakHashMap
@@ -14,6 +15,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
+import org.ole.planet.myplanet.model.CustomVoiceLabel
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -28,6 +30,8 @@ class VoicesLabelManager(
 ) {
     private val renderedStateCache = WeakHashMap<RowNewsBinding, RenderedState>()
 
+    var customLabels: List<CustomVoiceLabel> = emptyList()
+
     fun setupAddLabelMenu(binding: RowNewsBinding, voice: News?, canManageLabels: Boolean) {
         binding.btnAddLabel.setOnClickListener(null)
         binding.btnAddLabel.isEnabled = canManageLabels
@@ -36,8 +40,10 @@ class VoicesLabelManager(
         }
 
         binding.btnAddLabel.setOnClickListener {
-            val usedLabels = voice?.labels?.toSet() ?: emptySet()
-            val availableLabels = Constants.LABELS.filterValues { it !in usedLabels }
+            val usedLabels = voice?.labels.orEmpty()
+            val availableLabels = allLabelOptions().filterValues { value ->
+                usedLabels.none { it.equals(value, ignoreCase = true) }
+            }
 
             val wrapper = ContextThemeWrapper(context, R.style.CustomPopupMenu)
             val menu = PopupMenu(wrapper, binding.btnAddLabel)
@@ -45,7 +51,7 @@ class VoicesLabelManager(
                 menu.menu.add(labelName)
             }
             menu.setOnMenuItemClickListener { menuItem ->
-                val selectedLabel = Constants.LABELS[menuItem.title]
+                val selectedLabel = availableLabels[menuItem.title.toString()]
                 val voiceId = voice?.id
                 if (selectedLabel != null && voiceId != null && voice.labels?.contains(selectedLabel) != true) {
                     launchLabelWrite("addLabel") {
@@ -64,7 +70,7 @@ class VoicesLabelManager(
     fun showChips(binding: RowNewsBinding, voice: News, canManageLabels: Boolean) {
         val labels = voice.labels ?: emptyList()
 
-        val renderedState = RenderedState(voice.id, labels, canManageLabels)
+        val renderedState = RenderedState(voice.id, labels, canManageLabels, customLabels)
         if (renderedStateCache[binding] == renderedState) {
             return
         }
@@ -76,6 +82,12 @@ class VoicesLabelManager(
             for (label in labels) {
                 val chip = Chip(chipContext).apply {
                     text = getLabel(label)
+                    customLabels.firstOrNull { it.matches(label) }?.colorRes?.let { fill ->
+                        chipBackgroundColor = ContextCompat.getColorStateList(context, fill)
+                        val ink = ContextCompat.getColorStateList(context, R.color.voice_label_text)
+                        setTextColor(ink)
+                        closeIconTint = ink
+                    }
                     isCloseIconVisible = canManageLabels
                     if (canManageLabels) {
                         setOnCloseIconClickListener {
@@ -103,7 +115,21 @@ class VoicesLabelManager(
         }
     }
 
-    private data class RenderedState(val voiceId: String?, val labels: List<String>, val canManageLabels: Boolean)
+    private data class RenderedState(
+        val voiceId: String?,
+        val labels: List<String>,
+        val canManageLabels: Boolean,
+        val customLabels: List<CustomVoiceLabel>,
+    )
+
+    private fun allLabelOptions(): Map<String, String> {
+        val options = LinkedHashMap(Constants.LABELS)
+        customLabels.forEach { custom ->
+            val taken = options.values.any { it.equals(custom.name, ignoreCase = true) }
+            if (!taken) options.putIfAbsent(getLabel(custom.name), custom.name)
+        }
+        return options
+    }
 
     private fun updateAddLabelVisibility(
         binding: RowNewsBinding,
@@ -115,7 +141,7 @@ class VoicesLabelManager(
             return
         }
 
-        val allUsed = labels.size >= allLabelValues.size && labels.toSet().containsAll(allLabelValues)
+        val allUsed = allLabelOptions().values.all { value -> labels.any { it.equals(value, ignoreCase = true) } }
         binding.btnAddLabel.visibility = if (allUsed) View.GONE else View.VISIBLE
     }
 
@@ -125,7 +151,6 @@ class VoicesLabelManager(
 
     companion object {
         private const val TAG = "VoicesLabelManager"
-        private val allLabelValues: Set<String> = Constants.LABELS.values.toSet()
         private val separatorRegex by lazy { Regex("[_-]") }
         private val whitespaceRegex by lazy { Regex("\\s+") }
 
