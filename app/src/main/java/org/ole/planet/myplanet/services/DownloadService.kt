@@ -17,7 +17,6 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
-import androidx.core.net.toUri
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
@@ -45,7 +44,6 @@ import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.availableExternalMemorySize
@@ -62,10 +60,7 @@ class DownloadService : Service() {
     lateinit var resourcesRepository: ResourcesRepository
 
     @Inject
-    lateinit var serverUrlMapper: ServerUrlMapper
-
-    @Inject
-    lateinit var sharedPrefManager: SharedPrefManager
+    lateinit var alternativeDownloadUrls: AlternativeDownloadUrls
 
     private var data = ByteArray(BUFFER_SIZE)
     private var outputFile: File? = null
@@ -102,6 +97,9 @@ class DownloadService : Service() {
 
     @Volatile
     private var stopped = false
+
+    @VisibleForTesting
+    internal var unreachablePrimaryBase: String? = null
 
     @Volatile
     private var activeBody: ResponseBody? = null
@@ -146,6 +144,7 @@ class DownloadService : Service() {
         Log.d(TAG, "processDownloadQueue: started")
         DownloadUtils.createChannels(this)
         areNotificationsEnabled = NotificationManagerCompat.from(this).areNotificationsEnabled()
+        unreachablePrimaryBase = null
         while (true) {
             val nextUrl = getNextPriorityUrl() ?: getNextPendingUrl()
 
@@ -268,26 +267,43 @@ class DownloadService : Service() {
 
             var resumeOffset = resumeOffsetFor(url)
             val ifRange = if (resumeOffset > 0) resumeValidatorFor(url) else null
+            val fallback = alternativeDownloadUrls.resolve(url)
+            var altUrl = fallback?.alternativeUrl
+            val primaryBase = fallback?.primaryBase
+
+            if (altUrl != null && primaryBase == unreachablePrimaryBase) {
+                Log.d(TAG, "initDownload: primary unreachable earlier this run, fetching $fileName from alternative")
+                currentDownloadUrl = altUrl
+                val altResult = downloadRepository.downloadFileResponse(altUrl, authHeader, resumeOffset, ifRange)
+                if (!altResult.isNetworkError()) {
+                    return tryDownloadFromResult(altResult, altUrl, fromSync, fileName, isAlternative = true, resumeOffset)
+                }
+                Log.w(TAG, "initDownload: alternative failed with network error too, trying primary again")
+                unreachablePrimaryBase = null
+                currentDownloadUrl = url
+                altUrl = null
+            }
+
+            val retryPrimary = altUrl == null
             Log.d(TAG, "initDownload: fetching $fileName from primary URL${if (resumeOffset > 0) " (resuming from ${resumeOffset}B)" else ""}")
-            var primaryResult = downloadRepository.downloadFileResponse(url, authHeader, resumeOffset, ifRange)
+            var primaryResult = downloadRepository.downloadFileResponse(url, authHeader, resumeOffset, ifRange, retryPrimary)
 
             if (primaryResult is DownloadResult.Error && primaryResult.code == 416 && resumeOffset > 0) {
                 Log.w(TAG, "initDownload: resume offset ${resumeOffset}B rejected (416) for $fileName, restarting from scratch")
                 deleteTempFile(url)
                 deleteValidatorFile(url)
                 resumeOffset = 0L
-                primaryResult = downloadRepository.downloadFileResponse(url, authHeader, 0L, null)
+                primaryResult = downloadRepository.downloadFileResponse(url, authHeader, 0L, null, retryPrimary)
             }
 
-            if (primaryResult is DownloadResult.Error && primaryResult.code == null) {
-                Log.w(TAG, "initDownload: primary failed with network error (${primaryResult.message}), checking for alternative URL")
-                val altUrl = resolveAlternativeUrl(url, fileName)
-                if (altUrl != null) {
-                    Log.d(TAG, "initDownload: retrying with ${UrlUtils.redactForLog(altUrl)}")
-                    currentDownloadUrl = altUrl
-                    val altResult = downloadRepository.downloadFileResponse(altUrl, authHeader, resumeOffset, ifRange.takeIf { resumeOffset > 0 })
-                    return tryDownloadFromResult(altResult, altUrl, fromSync, fileName, isAlternative = true, resumeOffset)
+            if (primaryResult.isNetworkError() && altUrl != null) {
+                Log.w(TAG, "initDownload: primary failed with network error, retrying with ${UrlUtils.redactForLog(altUrl)}")
+                currentDownloadUrl = altUrl
+                val altResult = downloadRepository.downloadFileResponse(altUrl, authHeader, resumeOffset, ifRange.takeIf { resumeOffset > 0 })
+                if (!altResult.isNetworkError()) {
+                    unreachablePrimaryBase = primaryBase
                 }
+                return tryDownloadFromResult(altResult, altUrl, fromSync, fileName, isAlternative = true, resumeOffset)
             }
 
             return tryDownloadFromResult(primaryResult, url, fromSync, fileName, isAlternative = false, resumeOffset)
@@ -299,41 +315,6 @@ class DownloadService : Service() {
             downloadFailed("Download initialization failed: ${e.localizedMessage ?: "Unknown error"}", fromSync)
             return false
         }
-    }
-
-    private fun resolveAlternativeUrl(url: String, fileName: String): String? {
-        val mapping = serverUrlMapper.processUrl(url)
-        val altBase = mapping.alternativeUrl
-        val primaryBase = mapping.extractedBaseUrl
-
-        val resolvedAltBase: String?
-        val resolvedPrimaryBase: String?
-        if (altBase != null && primaryBase != null) {
-            resolvedAltBase = altBase
-            resolvedPrimaryBase = primaryBase
-            Log.d(TAG, "initDownload: found hardcoded mapping $primaryBase → $altBase")
-        } else {
-            val storedAlt = sharedPrefManager.getProcessedAlternativeUrl()
-            if (storedAlt.isNotEmpty() && primaryBase != null) {
-                resolvedAltBase = storedAlt.trimEnd('/')
-                resolvedPrimaryBase = primaryBase
-                Log.d(TAG, "initDownload: no hardcoded mapping for $primaryBase — using stored alternative ${UrlUtils.redactForLog(resolvedAltBase)}")
-            } else {
-                resolvedAltBase = null
-                resolvedPrimaryBase = null
-                Log.w(TAG, "initDownload: no alternative URL available for primary base '$primaryBase', giving up")
-            }
-        }
-
-        if (resolvedAltBase != null && resolvedPrimaryBase != null) {
-            val parsed = url.toUri()
-            val path = parsed.path.orEmpty()
-            val query = if (parsed.query != null) "?${parsed.query}" else ""
-            val altUrl = resolvedAltBase + path + query
-            Log.d(TAG, "initDownload: switching $fileName — primary=$resolvedPrimaryBase → alternative=${UrlUtils.redactForLog(resolvedAltBase)}")
-            return altUrl
-        }
-        return null
     }
 
     private suspend fun tryDownloadFromResult(
