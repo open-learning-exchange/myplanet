@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.api.NoNetworkRetry
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 
 class DownloadRepositoryImpl @Inject constructor(
@@ -20,6 +21,11 @@ class DownloadRepositoryImpl @Inject constructor(
     private val diagnosticsRepository: DiagnosticsRepository,
     private val timeProvider: TimeProvider
 ) : DownloadRepository {
+
+    // A misrouted resource URL makes Planet's web server answer 200 with its HTML index; saving
+    // that under the resource's name leaves a "downloaded" file nothing can open.
+    private fun isHtmlStandIn(subtype: String?, url: String): Boolean =
+        subtype.equals("html", ignoreCase = true) && !FileUtils.isHtmlFileName(url.substringBefore('?'))
 
     private fun diagnosticUrl(u: HttpUrl): String = u.newBuilder().username("").password("").query(null).fragment(null).build().toString()
 
@@ -39,6 +45,10 @@ class DownloadRepositoryImpl @Inject constructor(
                 val responseBody = response.body()
                 if (responseBody == null) {
                     return@withContext DownloadResult.Error("Empty response body")
+                } else if (isHtmlStandIn(responseBody.contentType()?.subtype, url)) {
+                    responseBody.close()
+                    // No code: like a network error, this lets the caller try the alternative server.
+                    return@withContext DownloadResult.Error("Server returned a web page instead of the file")
                 } else {
                     val validator = response.headers()["ETag"] ?: response.headers()["Last-Modified"]
                     return@withContext DownloadResult.Success(responseBody, response.code(), validator)

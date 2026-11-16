@@ -246,13 +246,10 @@ class VoicesViewModel @Inject constructor(
     fun downloadReferencedResources(list: List<News?>) {
         val resourceIds = mutableSetOf<String>()
         list.forEach { news ->
-            val images = news?.imagesArray
-            if (images?.isEmpty() == false) {
-                val ob = images[0]?.asJsonObject
-                val resourceId = GsonUtils.getString("resourceId", ob?.asJsonObject)
-                if (!resourceId.isNullOrBlank()) {
-                    resourceIds.add(resourceId)
-                }
+            news?.imagesArray?.forEach { element ->
+                if (element?.isJsonObject != true) return@forEach
+                val resourceId = GsonUtils.getString("resourceId", element.asJsonObject)
+                if (resourceId.isNotBlank()) resourceIds.add(resourceId)
             }
         }
         viewModelScope.launch {
