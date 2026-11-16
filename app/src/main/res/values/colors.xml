@@ -75,6 +75,8 @@
     <color name="dashboard_star_empty">#90A4AE</color>
     <color name="dashboard_chip_icon_library">@color/dashboard_tile_library</color>
     <color name="dashboard_chip_icon_courses">@color/dashboard_tile_courses</color>
+    <color name="dashboard_chip_cover_strip">#B3000000</color>
+    <color name="dashboard_chip_cover_title">#FFFFFF</color>
     <color name="dashboard_chip_icon_teams">@color/dashboard_tile_teams</color>
     <color name="dashboard_chip_icon_life">@color/dashboard_tile_life</color>
 
