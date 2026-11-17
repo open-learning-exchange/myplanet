@@ -94,6 +94,7 @@ jobs:
           sleep "$wait"
 
       - name: download the signed bundle from its GitHub release
+        id: download
         if: steps.pending.outputs.pending == 'true' && env.DRY_RUN != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -102,6 +103,15 @@ jobs:
             --repo "$REPO" \
             --pattern "${{ steps.pending.outputs.asset }}" \
             --dir output
+          # releases from before R8 carry no mapping file -- upload without one
+          mapping="${{ steps.pending.outputs.asset }}"
+          mapping="${mapping%.aab}.mapping.txt"
+          if gh release download "${{ steps.pending.outputs.tag }}" \
+              --repo "$REPO" \
+              --pattern "$mapping" \
+              --dir output; then
+            echo "mapping=output/$mapping" >> "$GITHUB_OUTPUT"
+          fi
           ls -al output
 
       - name: publish AAB to playstore
@@ -113,6 +123,7 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: ${{ env.PLAYSTORE_PACKAGE_NAME }}
           releaseFiles: output/${{ steps.pending.outputs.asset }}
+          mappingFile: ${{ steps.download.outputs.mapping }}
           track: ${{ env.PLAYSTORE_TRACK }}
           releaseName: ${{ steps.pending.outputs.release_name }}
           status: completed
@@ -166,6 +177,7 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
           packageName: ${{ env.PLAYSTORE_PACKAGE_NAME }}
           releaseFiles: output/${{ steps.pending.outputs.asset }}
+          mappingFile: ${{ steps.download.outputs.mapping }}
           track: ${{ env.PLAYSTORE_TRACK }}
           releaseName: ${{ steps.pending.outputs.release_name }}
           status: completed
