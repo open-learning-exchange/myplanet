@@ -134,7 +134,7 @@ object ResourcesCardBinder {
             return
         }
         Glide.with(params.context).clear(params.ivPreview)
-        val bitmap = PdfThumbnailLoader.firstPageBitmap(file, params.dispatcherProvider, targetWidthPx)
+        val bitmap = PdfThumbnailLoader.firstPageBitmap(file, params.dispatcherProvider, targetWidthPx, params.context.cacheDir)
 
         if (bitmap != null) {
             params.ivTypeIcon.visibility = View.GONE
