@@ -6,6 +6,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
@@ -19,6 +20,7 @@ import java.util.regex.Pattern
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.DownloadService
+import org.ole.planet.myplanet.services.DownloadStopReceiver
 import org.ole.planet.myplanet.services.DownloadWorker
 
 object DownloadUtils {
@@ -80,6 +82,7 @@ object DownloadUtils {
             .setOngoing(true)
             .setSilent(true)
             .setOnlyAlertOnce(true)
+            .addAction(DownloadStopReceiver.stopAction(context))
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
     }
@@ -102,6 +105,7 @@ object DownloadUtils {
             .setOngoing(!forWorker)
             .setSilent(true)
             .setOnlyAlertOnce(true)
+            .addAction(DownloadStopReceiver.stopAction(context))
 
         if (fileProgress in 0..100) {
             builder.setProgress(100, fileProgress, false)
@@ -165,10 +169,39 @@ object DownloadUtils {
         val preferences = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
         val existing = preferences.getStringSet(key, emptySet()) ?: emptySet()
         val merged = existing.toMutableSet().apply { addAll(urls) }
+        val syncOwned = if (fromSync) {
+            (preferences.getStringSet(DownloadService.SYNC_DOWNLOADS_KEY, emptySet()) ?: emptySet()) + urls
+        } else {
+            null
+        }
         preferences.edit {
             putStringSet(key, merged)
+            syncOwned?.let { putStringSet(DownloadService.SYNC_DOWNLOADS_KEY, it) }
         }
         startDownloadServiceSafely(context, key, fromSync)
+    }
+
+    /**
+     * The one Stop path, shared by the progress dialog and the notification action so the two can't drift.
+     * Drops user-queued URLs (sync-owned ones stay queued), then halts whatever is in flight — the service
+     * and every download worker, sync-owned included — the same way the service's own onDestroy stops
+     * mid-file whatever it was fetching. Sync's queued URLs survive, so the next sync picks them back up.
+     */
+    fun stopDownloads(context: Context) {
+        dropUserQueuedDownloads(context)
+        context.stopService(Intent(context, DownloadService::class.java))
+        cancelDownloadWork(context)
+    }
+
+    fun dropUserQueuedDownloads(context: Context) {
+        val preferences = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+        val syncOwned = preferences.getStringSet(DownloadService.SYNC_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+        val priority = preferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+        val pending = preferences.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, emptySet()) ?: emptySet()
+        preferences.edit(commit = true) {
+            putStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, priority.intersect(syncOwned))
+            putStringSet(DownloadService.PENDING_DOWNLOADS_KEY, pending.intersect(syncOwned))
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
@@ -200,10 +233,14 @@ object DownloadUtils {
                     "fromSync" to fromSync
                 )
             )
-            .addTag("download_work")
+            .addTag(DownloadWorker.WORK_TAG)
             .build()
 
         WorkManager.getInstance(context).enqueue(workRequest)
+    }
+
+    fun cancelDownloadWork(context: Context) {
+        WorkManager.getInstance(context).cancelAllWorkByTag(DownloadWorker.WORK_TAG)
     }
 
     fun canStartForegroundService(context: Context): Boolean {

@@ -4,12 +4,14 @@ import android.util.Log
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.unmockkAll
+import java.io.File
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.milliseconds
@@ -19,10 +21,8 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.repository.PhotoUpload
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -121,7 +121,7 @@ class PhotoUploaderTest {
 
         val result = photoUploader.uploadSubmitPhotos(null)
 
-        assertNull(result)
+        assertEquals("Uploaded 10 of 10 photos", result)
         assertEquals("expected the semaphore to be saturated", 6, maxConcurrentRequests)
 
         val expectedMarks = (1..10).map { i -> PhotoUpload("photo-$i", "1-rev", "doc-$i") }
@@ -154,7 +154,7 @@ class PhotoUploaderTest {
 
         val result = photoUploader.uploadSubmitPhotos(null)
 
-        assertNull(result)
+        assertEquals("Uploaded 1 of 1 photos", result)
         val capturedList = slot.captured
         assertEquals(1, capturedList.size)
         val captured = capturedList.single()
@@ -195,7 +195,7 @@ class PhotoUploaderTest {
 
         val result = photoUploader.uploadSubmitPhotos(null)
 
-        assertNull(result)
+        assertEquals("Uploaded 2 of 3 photos", result)
 
         val expectedMarks = listOf(
             PhotoUpload("photo-1", "1-rev", "doc-1"),
@@ -204,54 +204,94 @@ class PhotoUploaderTest {
         coVerify(exactly = 1) { submissionsRepository.markPhotosUploadedBatch(expectedMarks) }
     }
 
+    private fun newUploader(testScope: kotlinx.coroutines.test.TestScope): PhotoUploader = PhotoUploader(
+        submissionsRepository = submissionsRepository,
+        dispatcherProvider = TestDispatcherProvider(StandardTestDispatcher(testScope.testScheduler)),
+        scope = testScope,
+        uploadRepository = uploadRepository
+    )
+
+    private fun photoFile(): File = File.createTempFile("photo", ".jpg").apply { deleteOnExit() }
+
+    private fun okAttachment(rev: String) = Response.success(JsonObject().apply {
+        addProperty("ok", true)
+        addProperty("id", "doc-1")
+        addProperty("rev", rev)
+    })
+
     @Test
-    fun `uploadSubmitPhotos invokes uploadAttachment for successful photos when listener is provided`() = runTest {
-        val testDispatcher = StandardTestDispatcher(testScheduler)
-        photoUploader = PhotoUploader(
-            submissionsRepository = submissionsRepository,
-            dispatcherProvider = TestDispatcherProvider(testDispatcher),
-            scope = this,
-            uploadRepository = uploadRepository
-        )
+    fun `uploadSubmitPhotos uploads the image before marking the photo uploaded, even without a listener`() = runTest {
+        photoUploader = newUploader(this)
+        val file = photoFile()
 
-        val photos = listOf(
-            "photo-1" to JsonObject().apply { addProperty("index", 1) }
+        coEvery { submissionsRepository.getUnuploadedPhotos() } returns listOf("photo-1" to JsonObject())
+        coEvery { submissionsRepository.getPhotosByIds(arrayOf("photo-1")) } returns listOf(
+            SubmitPhotos().apply { id = "photo-1"; photoLocation = file.path }
         )
-        coEvery { submissionsRepository.getUnuploadedPhotos() } returns photos
-
-        val responseObj = JsonObject().apply {
+        coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success(JsonObject().apply {
             addProperty("id", "doc-1")
             addProperty("rev", "1-rev")
-        }
-        coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success(responseObj)
+        })
+        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns okAttachment("2-rev")
 
-        val submitPhoto = SubmitPhotos().apply {
-            id = "photo-1"
-            photoLocation = "/sdcard/photo1.jpg"
-        }
-        coEvery { submissionsRepository.getPhotosByIds(arrayOf("photo-1")) } returns listOf(submitPhoto)
+        val result = photoUploader.uploadSubmitPhotos(null)
 
-        val mockAttachmentResp = JsonObject().apply { addProperty("ok", true) }
-        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns Response.success(mockAttachmentResp)
-
-        val listener: OnSuccessListener = mockk(relaxed = true)
-
-        val result = photoUploader.uploadSubmitPhotos(listener)
-
-        assertNull(result)
-        val expectedMarks = listOf(PhotoUpload("photo-1", "1-rev", "doc-1"))
-        coVerify(exactly = 1) { submissionsRepository.markPhotosUploadedBatch(expectedMarks) }
-
-        testScheduler.advanceUntilIdle()
-
-        coVerify {
+        assertEquals("Uploaded 1 of 1 photos", result)
+        coVerifyOrder {
+            submissionsRepository.recordPhotoRemoteDoc("photo-1", "1-rev", "doc-1")
             uploadRepository.uploadAttachment(
-                file = match { it.path == "/sdcard/photo1.jpg" },
+                file = match { it.path == file.path },
                 destinationFormat = "%s/submissions/%s/%s",
                 id = "doc-1",
                 rev = "1-rev",
-                name = "photo1.jpg"
+                name = file.name
             )
+            submissionsRepository.markPhotosUploadedBatch(listOf(PhotoUpload("photo-1", "2-rev", "doc-1")))
         }
+    }
+
+    @Test
+    fun `uploadSubmitPhotos leaves photo pending when the image upload fails`() = runTest {
+        photoUploader = newUploader(this)
+        val file = photoFile()
+
+        coEvery { submissionsRepository.getUnuploadedPhotos() } returns listOf("photo-1" to JsonObject())
+        coEvery { submissionsRepository.getPhotosByIds(arrayOf("photo-1")) } returns listOf(
+            SubmitPhotos().apply { id = "photo-1"; photoLocation = file.path }
+        )
+        coEvery { uploadRepository.postUpload(any(), any()) } returns Response.success(JsonObject().apply {
+            addProperty("id", "doc-1")
+            addProperty("rev", "1-rev")
+        })
+        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } throws IOException("network dropped")
+
+        val result = photoUploader.uploadSubmitPhotos(null)
+
+        assertEquals("Uploaded 0 of 1 photos", result)
+        coVerify { submissionsRepository.recordPhotoRemoteDoc("photo-1", "1-rev", "doc-1") }
+        coVerify(exactly = 0) { submissionsRepository.markPhotosUploadedBatch(any()) }
+    }
+
+    @Test
+    fun `uploadSubmitPhotos re-sends only the image when the doc was created on an earlier run`() = runTest {
+        photoUploader = newUploader(this)
+        val file = photoFile()
+
+        coEvery { submissionsRepository.getUnuploadedPhotos() } returns listOf("photo-1" to JsonObject())
+        coEvery { submissionsRepository.getPhotosByIds(arrayOf("photo-1")) } returns listOf(
+            SubmitPhotos().apply {
+                id = "photo-1"
+                _id = "doc-1"
+                _rev = "1-rev"
+                photoLocation = file.path
+            }
+        )
+        coEvery { uploadRepository.uploadAttachment(any(), any(), any(), any(), any()) } returns okAttachment("2-rev")
+
+        photoUploader.uploadSubmitPhotos(null)
+
+        coVerify(exactly = 0) { uploadRepository.postUpload(any(), any()) }
+        coVerify { uploadRepository.uploadAttachment(any(), any(), "doc-1", "1-rev", any()) }
+        coVerify { submissionsRepository.markPhotosUploadedBatch(listOf(PhotoUpload("photo-1", "2-rev", "doc-1"))) }
     }
 }

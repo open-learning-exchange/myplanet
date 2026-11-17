@@ -1495,6 +1495,19 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
+    fun `storage breakdown leaves out partial downloads`() = runTest {
+        val oleDir = temporaryFolder.newFolder("ole_partials")
+        File(oleDir, "res1/book.pdf").apply { parentFile?.mkdirs(); writeBytes(ByteArray(10)) }
+        File(oleDir, "res2/video.mp4.tmp").apply { parentFile?.mkdirs(); writeBytes(ByteArray(40)) }
+        File(oleDir, "res2/video.mp4.tmp.etag").apply { writeBytes(ByteArray(5)) }
+
+        val breakdown = repository.getStorageBreakdown(oleDir)
+
+        assertEquals(10L, breakdown.totalBytes)
+        assertEquals(1, breakdown.counts.sum())
+    }
+
+    @Test
     fun `storage listing and breakdown leave out personals folder`() = runTest {
         val oleDir = temporaryFolder.newFolder("ole_personals")
         File(oleDir, "res1/book.pdf").apply { parentFile?.mkdirs(); writeBytes(ByteArray(10)) }

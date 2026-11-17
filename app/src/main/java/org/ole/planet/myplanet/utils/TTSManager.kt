@@ -117,15 +117,21 @@ class TTSManager @Inject constructor(
         }
 
         fun formatCsvForSpeech(rows: List<Array<String>>): String {
-            if (rows.isEmpty()) return ""
-            val header = rows.first()
-            return rows.drop(1).mapIndexed { index, row ->
-                val cells = row.mapIndexed { col, value ->
-                    val colName = header.getOrElse(col) { "column ${col + 1}" }
-                    "$colName: $value"
-                }.joinToString(", ")
-                "Row ${index + 1}. $cells"
-            }.joinToString(". ")
+            if (rows.size <= 1) return ""
+            val header = rows[0]
+            return buildString {
+                for (rowIndex in 1 until rows.size) {
+                    if (rowIndex > 1) append(". ")
+                    append("Row $rowIndex. ")
+                    val row = rows[rowIndex]
+                    for (col in row.indices) {
+                        if (col > 0) append(", ")
+                        append(header.getOrElse(col) { "column ${col + 1}" })
+                        append(": ")
+                        append(row[col])
+                    }
+                }
+            }
         }
 
         fun formatCsvTextForSpeech(csv: String): String {

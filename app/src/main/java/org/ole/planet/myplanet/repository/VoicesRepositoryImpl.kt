@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.di.PlainGson
+import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.UserEntity
@@ -37,7 +38,7 @@ class VoicesRepositoryImpl @Inject constructor(
     private val newsLogDao: NewsLogDao,
     private val removedLogDao: RemovedLogDao
 ) : VoicesRepository {
-    private val concatenatedLinks = ArrayList<String>()
+    private val concatenatedLinks = LinkedHashSet<String>()
 
     override suspend fun getNewsForUpload(): List<NewsUploadData> {
         val pendingNews = newsDao.getPendingUploads()
@@ -551,19 +552,25 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     private fun saveConcatenatedLinksToPrefs() {
-        val existingJsonLinks = sharedPrefManager.getConcatenatedLinks()
-        val existingConcatenatedLinks = if (existingJsonLinks != null) {
-            LinkedHashSet(plainGson.fromJson(existingJsonLinks, Array<String>::class.java).toList())
-        } else {
-            LinkedHashSet()
+        synchronized(MyCourse.concatenatedLinksPrefLock) {
+            val linksToProcess: List<String>
+            synchronized(concatenatedLinks) {
+                linksToProcess = concatenatedLinks.toList()
+            }
+            if (linksToProcess.isEmpty()) return
+            val existingJsonLinks = sharedPrefManager.getConcatenatedLinks()
+            val existingConcatenatedLinks = if (existingJsonLinks != null) {
+                LinkedHashSet(plainGson.fromJson(existingJsonLinks, Array<String>::class.java).toList())
+            } else {
+                LinkedHashSet()
+            }
+            existingConcatenatedLinks.addAll(linksToProcess)
+            val jsonConcatenatedLinks = plainGson.toJson(existingConcatenatedLinks)
+            sharedPrefManager.setConcatenatedLinks(jsonConcatenatedLinks)
+            synchronized(concatenatedLinks) {
+                concatenatedLinks.removeAll(linksToProcess.toSet())
+            }
         }
-        val linksToProcess: List<String>
-        synchronized(concatenatedLinks) {
-            linksToProcess = concatenatedLinks.toList()
-        }
-        existingConcatenatedLinks.addAll(linksToProcess)
-        val jsonConcatenatedLinks = plainGson.toJson(existingConcatenatedLinks)
-        sharedPrefManager.setConcatenatedLinks(jsonConcatenatedLinks)
     }
 
     override suspend fun countTeamChats(teamId: String): Long {

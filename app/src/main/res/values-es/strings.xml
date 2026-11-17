@@ -103,6 +103,7 @@
     <string name="user">Usuario</string>
     <string name="remove_selected">Eliminar\nseleccionados</string>
     <string name="stop_download">Detener descarga</string>
+    <string name="download_stopped">Descarga detenida</string>
     <string name="downloading_file">Descargando archivo…</string>
     <string name="cancel">Cancelar</string>
     <string name="added_to">agregado a</string>
@@ -1143,6 +1144,9 @@
     <string name="show_additional_fields">Mostrar campos adicionales</string>
     <string name="hide_additional_fields">Ocultar campos adicionales</string>
     <string name="preparing_download">Preparando la descarga…</string>
+    <string name="download_partially_downloaded">Descargado parcialmente</string>
+    <string name="download_paused_at_percent">En pausa al %1$d%%</string>
+    <string name="resume_download">Reanudar descarga</string>
     <string name="downloading_files">Descargando archivos</string>
     <string name="edit_mission_and_services">editar misión y servicios</string>
     <string name="this_team_has_no_description_defined">Este equipo no tiene descripción definida</string>
@@ -1313,6 +1317,9 @@
     <string name="storage_pdfs">PDFs</string>
     <string name="storage_images">Imágenes</string>
     <string name="storage_other">Otros archivos</string>
+    <string name="storage_partial_downloads">Descargas parciales</string>
+    <string name="storage_clear_partial_downloads">¿Borrar las descargas parciales?</string>
+    <string name="storage_clear_partial_downloads_message">Son descargas que se detuvieron antes de terminar. Borrarlas libera espacio, y esas descargas empezarán de nuevo la próxima vez.</string>
     <string name="storage_empty">No se encontró contenido descargado</string>
     <string name="storage_delete_confirm">¿Eliminar todas las descargas de %1$s?</string>
     <string name="storage_delete_selected_confirm">¿Eliminar %1$d elemento(s) seleccionado(s)?</string>

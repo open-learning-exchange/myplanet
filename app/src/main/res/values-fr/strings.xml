@@ -103,6 +103,7 @@
     <string name="user">Utilisateur</string>
     <string name="remove_selected">Supprimer\nla sélection</string>
     <string name="stop_download">Arrêter le téléchargement</string>
+    <string name="download_stopped">Téléchargement arrêté</string>
     <string name="downloading_file">Téléchargement du fichier en cours…</string>
     <string name="cancel">Annuler</string>
     <string name="added_to">ajouté à</string>
@@ -1144,6 +1145,9 @@
     <string name="show_additional_fields">afficher les champs supplémentaires</string>
     <string name="hide_additional_fields">masquer les champs supplémentaires</string>
     <string name="preparing_download">Préparation du téléchargement…</string>
+    <string name="download_partially_downloaded">Partiellement téléchargé</string>
+    <string name="download_paused_at_percent">En pause à %1$d%%</string>
+    <string name="resume_download">Reprendre le téléchargement</string>
     <string name="downloading_files">Téléchargement des fichiers</string>
     <string name="edit_mission_and_services">modifier la mission et les services</string>
     <string name="this_team_has_no_description_defined">cette équipe n\'a aucune description définie</string>
@@ -1314,6 +1318,9 @@
     <string name="storage_pdfs">PDFs</string>
     <string name="storage_images">Images</string>
     <string name="storage_other">Autres fichiers</string>
+    <string name="storage_partial_downloads">Téléchargements partiels</string>
+    <string name="storage_clear_partial_downloads">Effacer les téléchargements partiels ?</string>
+    <string name="storage_clear_partial_downloads_message">Ce sont des téléchargements arrêtés avant la fin. Les effacer libère de l\'espace, et ces téléchargements recommenceront depuis le début la prochaine fois.</string>
     <string name="storage_empty">Aucun contenu téléchargé trouvé</string>
     <string name="storage_delete_confirm">Supprimer tous les téléchargements de %1$s ?</string>
     <string name="storage_delete_selected_confirm">Supprimer %1$d élément(s) sélectionné(s) ?</string>

@@ -283,12 +283,27 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
+    internal fun isChallengeWindowOpen(
+        isGuest: Boolean,
+        serverUrl: String,
+        validUrls: List<String>,
+        today: LocalDate = LocalDate.now()
+    ): Boolean {
+        val endDate = LocalDate.of(2025, 1, 16)
+        val shouldPrompt = today.isAfter(LocalDate.of(2024, 11, 30)) &&
+                today.isBefore(endDate) &&
+                serverUrl in validUrls
+        return !isGuest && shouldPrompt
+    }
+
     fun evaluateChallengeDialog(
         userId: String?,
         isGuest: Boolean,
         validUrls: List<String>,
         serverUrl: String
     ) {
+        if (!isChallengeWindowOpen(isGuest, serverUrl, validUrls)) return
+
         val startTime = 1730419200000
         val endTime = 1734307200000
         val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
@@ -311,12 +326,7 @@ class DashboardViewModel @Inject constructor(
                     val progress = progressRepository.findProgressForCourse(courseData, courseId)
 
                     val today = LocalDate.now()
-                    val endDate = LocalDate.of(2025, 1, 16)
-                    val shouldPrompt = today.isAfter(LocalDate.of(2024, 11, 30)) &&
-                            today.isBefore(endDate) &&
-                            serverUrl in validUrls
-
-                    if (!isGuest && shouldPrompt) {
+                    if (isChallengeWindowOpen(isGuest, serverUrl, validUrls, today)) {
                         val courseStatus = getCourseStatusString(progress, courseName)
                         val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
                         var hasValidSync = false

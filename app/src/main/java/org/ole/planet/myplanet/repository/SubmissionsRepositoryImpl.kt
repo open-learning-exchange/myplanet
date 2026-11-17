@@ -76,9 +76,21 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return submissionDao.observePendingSurveys(userId)
     }
 
+    private fun sameSubmissionStamps(old: List<Submission>, new: List<Submission>): Boolean {
+        if (old.size != new.size) return false
+        for (i in old.indices) {
+            val o = old[i]
+            val n = new[i]
+            if (o.id != n.id || o.lastUpdateTime != n.lastUpdateTime) {
+                return false
+            }
+        }
+        return true
+    }
+
     override fun getSubmissionsFlow(userId: String): Flow<List<Submission>> {
         return submissionDao.observeByUserId(userId).distinctUntilChanged { old, new ->
-            old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.lastUpdateTime == n.lastUpdateTime }
+            sameSubmissionStamps(old, new)
         }
     }
 
@@ -398,7 +410,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     override suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
         if (stepId == null) return true
         val exam = examDao.getFirstByStepId(stepId)
-            ?: examDao.getByStepIdAndType(stepId, "surveys").firstOrNull()
+            ?: examDao.getFirstByStepIdAndType(stepId, "surveys")
             ?: return true
         return exam.id.let {
             submissionDao.countCompletedByUserAndExamId(userId, it) > 0
@@ -674,6 +686,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
+    override suspend fun recordPhotoRemoteDoc(photoId: String, rev: String, remoteId: String) {
+        submitPhotosDao.recordRemoteDoc(photoId, rev, remoteId)
+    }
+
     override suspend fun getPendingSubmitPhotosUploads(): List<SubmitPhotos> {
         return submitPhotosDao.getUnuploaded()
     }
@@ -808,7 +824,9 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             answerDao.deleteBySubmissionIds(duplicateIds)
             duplicateIds.chunked(900).forEach { submissionDao.deleteByIds(it) }
         }
-        revUpdates.forEach { (id, rev) -> submissionDao.updateRev(id, rev) }
+        if (revUpdates.isNotEmpty()) {
+            submissionDao.updateRevs(revUpdates.toMap())
+        }
         if (submissions.isEmpty() && answers.isEmpty()) return
 
         if (submissions.isNotEmpty()) submissionDao.upsertAllBlocking(submissions)
@@ -847,7 +865,13 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun markSubmissionsUploaded(results: List<UploadedItemResult>): List<UploadedItemResult> =
-        results.filter { submissionDao.markUploaded(it.localId, it.remoteId, it.remoteRev) == 0 }
+        if (results.isEmpty()) {
+            emptyList()
+        } else {
+            val daoItems = results.map { SubmissionDao.UploadedSubmission(it.localId, it.remoteId, it.remoteRev) }
+            val failedSet = submissionDao.markUploadedBatch(daoItems).toSet()
+            results.filter { SubmissionDao.UploadedSubmission(it.localId, it.remoteId, it.remoteRev) in failedSet }
+        }
 
     override suspend fun getExamSubmissionsByUser(userId: String?): List<Submission> {
         return submissionDao.getExamSubmissionsByUser(userId)

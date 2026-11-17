@@ -20,11 +20,11 @@ class CommunityTabFragment : BaseBindingFragment<FragmentTeamDetailBinding>(Frag
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.lifecycleScope.launch {
             val state = viewModel.state.filterNotNull().first()
-            binding.viewPager2.adapter = CommunityPagerAdapter(this@CommunityTabFragment, "${state.planetCode}@${state.parentCode}", false, state.planetType)
+            binding.viewPager2.adapter = CommunityPagerAdapter(this@CommunityTabFragment, state.planetViewInId, false, state.planetType)
             TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
                 tab.text = (binding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
             }.attach()
-            binding.title.text = if (state.planetCode.isEmpty()) state.communityName else state.planetCode
+            binding.title.text = state.title
             binding.subtitle.text = state.planetType
             binding.llActionButtons.visibility = View.GONE
         }

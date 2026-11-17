@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MarkdownUtils
@@ -46,7 +46,7 @@ data class CourseStepUiState(
 class CoursesStepsViewModel @Inject constructor(
     private val storagePathResolver: StoragePathResolver,
     private val coursesRepository: CoursesRepository,
-    private val userRepository: UserRepository,
+    private val userRepository: UserReadRepository,
     private val resourcesRepository: ResourcesRepository,
     private val configurationsRepository: ConfigurationsRepository,
     private val progressRepository: ProgressRepository,
@@ -69,17 +69,15 @@ class CoursesStepsViewModel @Inject constructor(
             val data = coursesRepository.getCourseStepData(stepId ?: "", user?.id)
             val title = data.step.courseId?.let { coursesRepository.getCourseTitleById(it) }
 
-            val baseDirPath = withContext(dispatcherProvider.io) {
-                storagePathResolver.resolveExternalFilesDir()?.toString()
+            val (markdownContentWithLocalPaths, notDownloaded) = withContext(dispatcherProvider.io) {
+                val baseDirPath = storagePathResolver.resolveExternalFilesDir()?.toString()
+                val markdown = MarkdownUtils.prependBaseUrlToImages(
+                    data.step.description,
+                    "file://${baseDirPath}/ole/",
+                    600, 350
+                )
+                markdown to data.resources.filter { !it.isResourceOffline() }
             }
-
-            val markdownContentWithLocalPaths = MarkdownUtils.prependBaseUrlToImages(
-                data.step.description,
-                "file://${baseDirPath}/ole/",
-                600, 350
-            )
-
-            val notDownloaded = data.resources.filter { !it.isResourceOffline() }
 
             _uiState.value = CourseStepUiState(
                 step = data.step,
@@ -107,7 +105,7 @@ class CoursesStepsViewModel @Inject constructor(
                             it
                         }
                     }
-                    viewModelScope.launch {
+                    launch {
                         if (!resourcesRepository.downloadResourcesPriority(notDownloaded)) {
                             _uiState.update {
                                 if (it.step?.id == data.step.id) {
@@ -122,9 +120,10 @@ class CoursesStepsViewModel @Inject constructor(
             }
 
             if (nextStepId != null) {
-                viewModelScope.launch {
-                    val nextResources = resourcesRepository.getAllStepResources(nextStepId)
-                    val nextNotDownloaded = nextResources.filter { !it.isResourceOffline() }
+                launch {
+                    val nextNotDownloaded = withContext(dispatcherProvider.io) {
+                        resourcesRepository.getAllStepResources(nextStepId).filter { !it.isResourceOffline() }
+                    }
                     if (nextNotDownloaded.isNotEmpty()) {
                         val urls = ArrayList(nextNotDownloaded.map { UrlUtils.getUrl(it) })
                         if (urls.isNotEmpty()) {

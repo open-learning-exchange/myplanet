@@ -325,4 +325,42 @@ class RequestsViewModelTest {
         assertEquals(MemberAction.LEAVE_TEAM, failedResult.action)
         assertEquals(errorMessage, failedResult.message)
     }
+
+    @Test
+    fun `loadJoinedMembers loads members and current user concurrently`() = runTest(testDispatcher) {
+        val teamId = "team1"
+        val currentUserId = "currentUser"
+        val currentUser = UserEntity().apply { id = currentUserId }
+        val member = JoinedMemberData(currentUser, 0L, null, isLeader = true)
+        val members = listOf(member)
+
+        var membersStarted = false
+        var membersFinished = false
+        var membersFinishedWhenUserStarted = true
+
+        coEvery { teamsRepository.getJoinedMembersWithVisitInfo(teamId) } coAnswers {
+            membersStarted = true
+            kotlinx.coroutines.delay(100.milliseconds)
+            membersFinished = true
+            members
+        }
+
+        coEvery { userRepository.getUserModel() } coAnswers {
+            membersFinishedWhenUserStarted = membersFinished
+            currentUser
+        }
+
+        viewModel.loadJoinedMembers(teamId)
+        advanceUntilIdle()
+
+        assertTrue(membersStarted)
+        assertTrue(membersFinished)
+        assertFalse(membersFinishedWhenUserStarted)
+
+        val state = viewModel.membersState.value
+        assertEquals(members, state.members)
+        assertEquals(currentUserId, state.currentUserId)
+        assertTrue(state.isLeader)
+        assertTrue(state.isLoaded)
+    }
 }

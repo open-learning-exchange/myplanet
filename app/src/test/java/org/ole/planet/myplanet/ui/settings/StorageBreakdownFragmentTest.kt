@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.repository.StorageBreakdown
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import org.ole.planet.myplanet.utils.TestTimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class StorageBreakdownFragmentTest {
@@ -56,7 +57,7 @@ class StorageBreakdownFragmentTest {
     }
 
     private fun createViewModel(): StorageBreakdownViewModel {
-        return StorageBreakdownViewModel(context, resourcesRepository, dispatcherProvider)
+        return StorageBreakdownViewModel(context, resourcesRepository, dispatcherProvider, TestTimeProvider())
     }
 
     @Test

@@ -1,11 +1,9 @@
 package org.ole.planet.myplanet.model
 
-import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockkObject
-import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import java.util.UUID
 import org.junit.After
@@ -20,11 +18,6 @@ class StepExamTest {
 
     @Before
     fun setup() {
-        mockkStatic(TextUtils::class)
-        every { TextUtils.isEmpty(any()) } answers {
-            val str = arg<CharSequence?>(0)
-            str.isNullOrEmpty()
-        }
         mockkObject(NetworkUtils)
         every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
     }

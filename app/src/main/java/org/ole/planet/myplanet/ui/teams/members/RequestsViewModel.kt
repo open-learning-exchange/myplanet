@@ -66,14 +66,18 @@ class RequestsViewModel @Inject constructor(
 
     fun loadJoinedMembers(teamId: String) {
         viewModelScope.launch {
-            val members = teamsRepository.getJoinedMembersWithVisitInfo(teamId)
-            val currentUserId = userRepository.getUserModel()?.id
-            _membersState.value = MembersUiState(
-                members = members,
-                currentUserId = currentUserId,
-                isLeader = members.any { it.user.id == currentUserId && it.isLeader },
-                isLoaded = true
-            )
+            coroutineScope {
+                val membersDeferred = async { teamsRepository.getJoinedMembersWithVisitInfo(teamId) }
+                val userDeferred = async { userRepository.getUserModel() }
+                val members = membersDeferred.await()
+                val currentUserId = userDeferred.await()?.id
+                _membersState.value = MembersUiState(
+                    members = members,
+                    currentUserId = currentUserId,
+                    isLeader = members.any { it.user.id == currentUserId && it.isLeader },
+                    isLoaded = true
+                )
+            }
         }
     }
 

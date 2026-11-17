@@ -121,11 +121,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         changeLayoutManager(resources.configuration.orientation, binding.rvDiscussion)
 
         viewModel.observeDiscussions(getEffectiveTeamId())
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            val realmNewsList = viewModel.getFilteredNews(getEffectiveTeamId())
-            showRecyclerView(realmNewsList)
-        }
+        viewModel.markDiscussionsSeen(getEffectiveTeamId())
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {

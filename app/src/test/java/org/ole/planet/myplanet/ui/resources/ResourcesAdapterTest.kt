@@ -3,15 +3,13 @@ package org.ole.planet.myplanet.ui.resources
 import android.app.Application
 import android.content.Context
 import androidx.recyclerview.widget.RecyclerView
+import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.Mock
-import org.mockito.Mockito.times
-import org.mockito.Mockito.verify
-import org.mockito.MockitoAnnotations
 import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.ResourceItem
@@ -26,11 +24,8 @@ import org.robolectric.annotation.Config
 @Config(application = Application::class)
 class ResourcesAdapterTest {
 
-    @Mock
-    lateinit var mockContext: Context
-
-    @Mock
-    lateinit var mockObserver: RecyclerView.AdapterDataObserver
+    private lateinit var mockContext: Context
+    private lateinit var mockObserver: RecyclerView.AdapterDataObserver
 
     private lateinit var adapter: ResourcesAdapter
     private val dispatcherProvider = object : DispatcherProvider {
@@ -42,7 +37,8 @@ class ResourcesAdapterTest {
 
     @Before
     fun setUp() {
-        MockitoAnnotations.initMocks(this)
+        mockContext = mockk(relaxed = true)
+        mockObserver = mockk(relaxed = true)
         val testContext = androidx.test.core.app.ApplicationProvider.getApplicationContext<Context>()
         testContext.setTheme(com.google.android.material.R.style.Theme_MaterialComponents)
         adapter = ResourcesAdapter(testContext, false, emptySet(), "user", ListViewMode.GRID, dispatcherProvider)
@@ -64,7 +60,7 @@ class ResourcesAdapterTest {
 
         adapter.setViewMode(ListViewMode.LIST)
 
-        verify(mockObserver, times(1)).onItemRangeChanged(0, 1, ResourcesAdapter.PAYLOAD_VIEW_MODE)
+        verify(exactly = 1) { mockObserver.onItemRangeChanged(0, 1, ResourcesAdapter.PAYLOAD_VIEW_MODE) }
     }
 
     @Test
@@ -82,7 +78,7 @@ class ResourcesAdapterTest {
 
         adapter.updateIdentity(true, "guest")
 
-        verify(mockObserver, times(1)).onItemRangeChanged(0, 1, ResourcesAdapter.PAYLOAD_IDENTITY)
+        verify(exactly = 1) { mockObserver.onItemRangeChanged(0, 1, ResourcesAdapter.PAYLOAD_IDENTITY) }
     }
 
     @Test

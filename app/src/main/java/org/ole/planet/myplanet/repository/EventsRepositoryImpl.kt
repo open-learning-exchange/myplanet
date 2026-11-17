@@ -99,7 +99,7 @@ class EventsRepositoryImpl @Inject constructor(
         }
         meetupDao.upsert(meetup)
 
-        return getMeetupById(meetupId)
+        return meetup
     }
 
     override suspend fun insertMeetupsFromSync(docs: List<JsonObject>) {

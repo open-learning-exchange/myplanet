@@ -327,4 +327,21 @@ class ResourcesViewModelTest {
 
         verify(exactly = 0) { resourcesRepository.getCachedResourceListModels(any(), any()) }
     }
+
+    @Test
+    fun `loadResources when getResourceListModels throws ordinary exception keeps previous resourcesState`() = runTest {
+        val initialItem = createResourceModel("Initial Item", 100L)
+        coEvery { resourcesRepository.getResourceListModels(true, "modelId") } returns listOf(initialItem)
+
+        viewModel.loadResources(true, "modelId")
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(listOf(initialItem), viewModel.resourcesState.value)
+
+        coEvery { resourcesRepository.getResourceListModels(true, "modelId") } throws RuntimeException("Network error")
+
+        viewModel.loadResources(true, "modelId")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf(initialItem), viewModel.resourcesState.value)
+    }
 }

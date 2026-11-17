@@ -28,6 +28,7 @@ class SubmissionsAdapter(
 ) {
     private var listener: OnHomeItemClickListener? = null
     private var type = ""
+    private val dateCache = HashMap<Long, String>()
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -75,7 +76,7 @@ class SubmissionsAdapter(
     inner class SubmissionsViewHolder(val binding: RowMysurveyBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(submission: SubmissionUiModel) {
             binding.status.text = submission.status
-            binding.date.text = getFormattedDate(submission.startTime)
+            binding.date.text = dateCache.getOrPut(submission.startTime) { getFormattedDate(submission.startTime) }
             showSubmittedBy(submission)
             binding.title.text = submission.examTitle
             updateSubmissionCount(submission)

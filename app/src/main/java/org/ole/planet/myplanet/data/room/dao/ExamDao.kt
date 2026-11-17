@@ -36,6 +36,7 @@ interface ExamDao {
     }
 
     @Query("SELECT * FROM exams WHERE stepId = :stepId AND type = :type") suspend fun getByStepIdAndType(stepId: String, type: String): List<StepExam>
+    @Query("SELECT * FROM exams WHERE stepId = :stepId AND type = :type LIMIT 1") suspend fun getFirstByStepIdAndType(stepId: String, type: String): StepExam?
     @Query("SELECT * FROM exams WHERE sourceSurveyId IS NOT NULL AND _rev IS NULL") suspend fun getPendingAdoptedSurveys(): List<StepExam>
     @Query("SELECT * FROM exams") suspend fun getAll(): List<StepExam>
     @Query("SELECT * FROM exams") fun observeAll(): Flow<List<StepExam>>

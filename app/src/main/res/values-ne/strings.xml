@@ -103,6 +103,7 @@
     <string name="user">प्रयोगकर्ता</string>
     <string name="remove_selected">चयनित\nहटाउनुहोस्</string>
     <string name="stop_download">डाउनलोड रोक्नुहोस्</string>
+    <string name="download_stopped">डाउनलोड रोकियो</string>
     <string name="downloading_file">फाइल डाउनलोड गर्दै…</string>
     <string name="cancel">रद्द गर्नुहोस्</string>
     <string name="added_to">थपिएको</string>
@@ -1143,6 +1144,9 @@
     <string name="show_additional_fields">थप क्षेत्रहरू देखाउनुहोस्</string>
     <string name="hide_additional_fields">थप क्षेत्रहरू लुकाउनुहोस्</string>
     <string name="preparing_download">डाउनलोडको तयारी गर्दै…</string>
+    <string name="download_partially_downloaded">आंशिक रूपमा डाउनलोड भयो</string>
+    <string name="download_paused_at_percent">%1$d%% मा रोकिएको</string>
+    <string name="resume_download">डाउनलोड पुनः सुरु गर्नुहोस्</string>
     <string name="downloading_files">फाइलहरू डाउनलोड हुँदैछन्</string>
     <string name="edit_mission_and_services">मिशन र सेवाहरू सम्पादन गर्नुहोस्</string>
     <string name="this_team_has_no_description_defined">यस टिमको कुनै विवरण परिभाषित गरिएको छैन</string>
@@ -1310,6 +1314,9 @@
     <string name="storage_pdfs">PDF हरू</string>
     <string name="storage_images">छविहरू</string>
     <string name="storage_other">अन्य फाइलहरू</string>
+    <string name="storage_partial_downloads">आंशिक डाउनलोडहरू</string>
+    <string name="storage_clear_partial_downloads">आंशिक डाउनलोडहरू हटाउने?</string>
+    <string name="storage_clear_partial_downloads_message">यी पूरा हुनुअघि रोकिएका डाउनलोडहरू हुन्। हटाउँदा ठाउँ खाली हुन्छ, र ती डाउनलोडहरू अर्को पटक सुरुदेखि सुरु हुनेछन्।</string>
     <string name="storage_empty">कुनै डाउनलोड सामग्री फेला परेन</string>
     <string name="storage_delete_confirm">सबै %1$s डाउनलोडहरू मेटाउने?</string>
     <string name="storage_delete_selected_confirm">%1$d छानिएको वस्तु(हरू) मेटाउने?</string>

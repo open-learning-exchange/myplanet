@@ -1,9 +1,12 @@
 package org.ole.planet.myplanet.services
 
+import android.content.Context
 import android.os.SystemClock
 import android.util.Log
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -18,13 +21,16 @@ import org.ole.planet.myplanet.services.upload.PhotoUploader
 import org.ole.planet.myplanet.services.upload.TeamsUploader
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
+import org.ole.planet.myplanet.services.upload.UploadError
 import org.ole.planet.myplanet.services.upload.UploadResult
 import org.ole.planet.myplanet.services.upload.UploadedItem
 import org.ole.planet.myplanet.services.upload.VoicesUploader
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.FileUtils
 
 @Singleton
 class UploadManager @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val uploadCoordinator: UploadCoordinator,
     uploadRepository: UploadRepository,
     private val userRepository: UserRepository,
@@ -99,14 +105,8 @@ class UploadManager @Inject constructor(
         uploadCoordinator.uploadRoom(uploadConfigs.CourseProgress)
     }
 
-    suspend fun uploadFeedback(): Boolean {
-        return when (val result = uploadCoordinator.uploadRoom(uploadConfigs.Feedback)) {
-            is UploadResult.Success -> true
-            is UploadResult.PartialSuccess -> result.failed.isEmpty()
-            is UploadResult.Failure -> false
-            is UploadResult.Empty -> true
-        }
-    }
+    suspend fun uploadFeedback(): UploadResult<Int> =
+        uploadCoordinator.uploadRoom(uploadConfigs.Feedback)
 
     suspend fun uploadSubmitPhotos(listener: OnSuccessListener?) {
         val resultMessage = photoUploader.uploadSubmitPhotos(listener)
@@ -118,13 +118,14 @@ class UploadManager @Inject constructor(
     private suspend fun uploadAttachments(items: List<UploadedItem>, listener: OnSuccessListener?) {
         if (items.isEmpty()) return
         val attachmentListener = listener ?: OnSuccessListener { }
-        
+        val externalFilesDir = FileUtils.getExternalFilesDir(context) ?: return
+
         val libraryIds = items.flatMap { listOf(it.localId, it.remoteId) }
         val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds)
         val libMap = libraries.associateBy { it.id }
         items.forEach { item ->
             (libMap[item.localId] ?: libMap[item.remoteId])?.let { library ->
-                uploadAttachment(item.remoteId, item.remoteRev, library, attachmentListener)
+                uploadAttachment(item.remoteId, item.remoteRev, library, externalFilesDir, attachmentListener)
             }
         }
     }
@@ -156,11 +157,10 @@ class UploadManager @Inject constructor(
         }
     }
 
-    suspend fun uploadTeamTask() {
+    suspend fun uploadTeamTask(): UploadResult<Int> =
         uploadCoordinator.uploadRoom(uploadConfigs.TeamTask)
-    }
 
-    suspend fun uploadSubmissions(buttonClickTime: Long = 0L) {
+    suspend fun uploadSubmissions(buttonClickTime: Long = 0L): UploadResult<Int> {
         Log.d("UploadManager", "uploadSubmissions called with buttonClickTime: $buttonClickTime")
         val startTime = if (buttonClickTime > 0) buttonClickTime else SystemClock.elapsedRealtime()
 
@@ -170,7 +170,7 @@ class UploadManager @Inject constructor(
             Log.d("UploadManager", "Mini survey sync started at: $startTime (buttonClickTime was $buttonClickTime)")
         }
 
-        try {
+        return try {
             val result = uploadCoordinator.upload(uploadConfigs.Submissions)
 
             Log.d("UploadManager", when (result) {
@@ -179,8 +179,12 @@ class UploadManager @Inject constructor(
                 is UploadResult.Failure -> "Upload failed: ${result.errors.size} errors"
                 is UploadResult.Empty -> "No submissions to upload"
             })
+            result
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("UploadManager", "Error uploading submissions", e)
+            UploadResult.Failure(listOf(UploadError("", e, retryable = true)))
         } finally {
             val endTime = SystemClock.elapsedRealtime()
             val duration = endTime - startTime
@@ -220,43 +224,37 @@ class UploadManager @Inject constructor(
         uploadCoordinator.uploadRoom(uploadConfigs.TeamActivities)
     }
 
-    suspend fun uploadRating() {
+    suspend fun uploadRating(): UploadResult<Int> =
         uploadCoordinator.uploadRoom(uploadConfigs.Rating)
-    }
 
     suspend fun uploadNews() {
         voicesUploader.uploadNews()
         uploadNewsActivities()
     }
 
-    suspend fun uploadCrashLog() {
+    suspend fun uploadCrashLog(): UploadResult<Int> =
         uploadCoordinator.uploadRoom(uploadConfigs.CrashLog)
-    }
 
-    suspend fun uploadSearchActivity() {
+    suspend fun uploadSearchActivity(): UploadResult<Int> =
         uploadCoordinator.uploadRoom(uploadConfigs.SearchActivity)
-    }
 
-    suspend fun uploadResourceActivities(type: String) {
+    suspend fun uploadResourceActivities(type: String): UploadResult<Int> {
         val config = if (type == "sync") {
             uploadConfigs.ResourceActivitiesSync
         } else {
             uploadConfigs.ResourceActivities
         }
-        uploadCoordinator.uploadRoom(config)
+        return uploadCoordinator.uploadRoom(config)
     }
 
-    suspend fun uploadCourseActivities() {
+    suspend fun uploadCourseActivities(): UploadResult<Int> =
         uploadCoordinator.uploadRoom(uploadConfigs.CourseActivities)
-    }
 
-    suspend fun uploadMeetups() {
+    suspend fun uploadMeetups(): UploadResult<Int> =
         uploadCoordinator.uploadRoom(uploadConfigs.Meetups)
-    }
 
-    suspend fun uploadAdoptedSurveys() {
+    suspend fun uploadAdoptedSurveys(): UploadResult<Int> =
         uploadCoordinator.upload(uploadConfigs.AdoptedSurveys)
-    }
 
     companion object {
         private const val TAG = "UploadManager"

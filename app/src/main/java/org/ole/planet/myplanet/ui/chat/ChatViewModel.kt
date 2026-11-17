@@ -131,14 +131,12 @@ class ChatViewModel @Inject constructor(
             aiProvidersError = aiState.third
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ChatUiState())
-    fun loadChatHistoryScreenData(
-        userId: String?
-    ) {
+    fun loadChatHistoryScreenData() {
         val config = configurationsRepository.getCommunityConfiguration()
         loadDataJob?.cancel()
         loadDataJob = viewModelScope.launch {
             val result = RetryUtils.retry(maxAttempts = 3, delayMs = 2000L) {
-                val currentUser = cachedUser ?: loadCurrentUser(userId).also { cachedUser = it }
+                val currentUser = cachedUser ?: userRepository.getUserModel().also { cachedUser = it }
                 val (newsMessages, chatHistory) = coroutineScope {
                     val newsDeferred = async { voicesRepository.getPlanetNewsMessages(currentUser?.planetCode) }
                     val historyDeferred = async { chatRepository.getChatHistoryForUser(currentUser?.name) }
@@ -183,12 +181,6 @@ class ChatViewModel @Inject constructor(
             val index = searchIndex ?: ChatSearch.Index(allChats).also { searchIndex = it }
             _filteredChats.value = ChatSearch.search(query, mode, index, dispatcherProvider.default)
         }
-    }
-    private suspend fun loadCurrentUser(userId: String?): UserEntity? {
-        if (userId.isNullOrEmpty()) {
-            return null
-        }
-        return userRepository.getUserById(userId)
     }
     private suspend fun loadShareTargets(parentCode: String?, communityName: String?, userId: String?): ChatShareTargets {
         val teams = teamsRepository.getTeamSummaries(userId)

@@ -1,18 +1,19 @@
 package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
-import android.util.Base64
 import android.util.Log
+import io.mockk.clearMocks
+import io.mockk.clearStaticMockk
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
-import io.mockk.unmockkAll
+import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import java.net.UnknownHostException
-import java.util.Base64 as JavaBase64
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -22,8 +23,9 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody.Companion.toResponseBody
-import org.junit.After
+import org.junit.AfterClass
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
@@ -53,20 +55,13 @@ class LoginSyncManagerTest {
 
     @Before
     fun setup() {
-        mockkStatic(Log::class)
+        clearStaticMockk(Log::class)
         every { Log.e(any(), any()) } returns 0
         every { Log.e(any(), any(), any()) } returns 0
 
-        mockkStatic(Base64::class)
-        every { Base64.encodeToString(any(), any()) } answers {
-            JavaBase64.getEncoder().encodeToString(firstArg<ByteArray>())
-        }
-
-        mockkObject(UrlUtils)
+        clearMocks(UrlUtils, AndroidDecrypter.Companion, answers = true, recordedCalls = true)
         every { UrlUtils.getUrl() } returns "http://mockurl"
         every { UrlUtils.header } returns "Basic mockheader"
-
-        mockkObject(AndroidDecrypter.Companion)
         every { AndroidDecrypter.androidDecrypter(any(), any(), any(), any()) } returns true
 
         loginSyncManager = LoginSyncManager(
@@ -80,9 +75,22 @@ class LoginSyncManagerTest {
         )
     }
 
-    @After
-    fun tearDown() {
-        unmockkAll()
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkStatic(Log::class)
+            mockkObject(UrlUtils)
+            mockkObject(AndroidDecrypter.Companion)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkStatic(Log::class)
+            unmockkObject(UrlUtils)
+            unmockkObject(AndroidDecrypter.Companion)
+        }
     }
 
     @Test

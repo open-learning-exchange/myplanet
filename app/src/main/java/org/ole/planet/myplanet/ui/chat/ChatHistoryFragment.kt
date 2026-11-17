@@ -133,9 +133,7 @@ class ChatHistoryFragment : BaseBindingFragment<FragmentChatHistoryBinding>(Frag
     }
 
     fun refreshChatHistory() {
-        sharedViewModel.loadChatHistoryScreenData(
-            sharedPrefManager.getUserId()
-        )
+        sharedViewModel.loadChatHistoryScreenData()
     }
 
     private fun observeScreenData() {

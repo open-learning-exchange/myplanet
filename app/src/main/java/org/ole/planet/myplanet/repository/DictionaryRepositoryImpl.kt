@@ -35,13 +35,13 @@ class DictionaryRepositoryImpl @Inject constructor(
 
     override suspend fun insertDictionaryData(): DictionaryLoad {
         return withContext(dispatcherProvider.io) {
-            if (!dictionaryFileReader.exists()) {
-                return@withContext DictionaryLoad.FileMissing
-            }
-
             seedMutex.withLock {
                 if (dictionaryDao.count() > 0) {
                     return@withLock DictionaryLoad.AlreadyPopulated
+                }
+
+                if (!dictionaryFileReader.exists()) {
+                    return@withLock DictionaryLoad.FileMissing
                 }
 
                 try {

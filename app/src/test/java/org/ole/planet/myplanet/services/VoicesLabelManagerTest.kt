@@ -214,6 +214,15 @@ class VoicesLabelManagerTest {
     }
 
     @Test
+    fun testShowChips_DuplicateLabels_CanManage() {
+        voice.labels = listOf("offer", "offer", "offer")
+
+        voicesLabelManager.showChips(binding, voice, true)
+
+        assertEquals(View.VISIBLE, btnAddLabel.visibility)
+    }
+
+    @Test
     fun testShowChips_UnchangedLabels_SkipsRedundantRebuild() {
         voice.labels = listOf("offer")
 

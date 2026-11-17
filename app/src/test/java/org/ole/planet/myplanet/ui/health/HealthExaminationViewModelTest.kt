@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.health
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import java.io.IOException
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -160,6 +161,29 @@ class HealthExaminationViewModelTest {
         val user = UserEntity()
         val sign = Examination()
         coEvery { healthRepository.saveExamination(examination, pojo, user) } throws RuntimeException("Network error")
+
+        val results = mutableListOf<Boolean>()
+        val job = launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.saveResult.toList(results)
+        }
+
+        viewModel.saveExamination(examination, pojo, user, sign)
+        advanceUntilIdle()
+
+        assertEquals(1, results.size)
+        assertFalse(results.first())
+        assertFalse(viewModel.isSaving.value)
+
+        job.cancel()
+    }
+
+    @Test
+    fun saveExamination_repositoryThrowsIOException_emitsFalseAndResetsIsSaving() = runTest {
+        val examination = HealthExamination()
+        val pojo = HealthExamination()
+        val user = UserEntity()
+        val sign = Examination()
+        coEvery { healthRepository.saveExamination(examination, pojo, user) } throws IOException("Disk full")
 
         val results = mutableListOf<Boolean>()
         val job = launch(UnconfinedTestDispatcher(testScheduler)) {

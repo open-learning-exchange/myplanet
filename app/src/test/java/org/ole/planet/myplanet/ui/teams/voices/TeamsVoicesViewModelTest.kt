@@ -13,7 +13,6 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.MyTeam
-import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -60,17 +59,16 @@ class TeamsVoicesViewModelTest {
     }
 
     @Test
-    fun `getFilteredNews triggers updateTeamNotification and returns the list`() = runTest(testDispatcher) {
+    fun `markDiscussionsSeen updates notifications with countTopLevelByTeam`() = runTest(testDispatcher) {
         val teamId = "team123"
-        val newsList = listOf<News>(mockk(relaxed = true), mockk(relaxed = true))
-        coEvery { voicesRepository.getFilteredNews(teamId) } returns newsList
+        coEvery { voicesRepository.countTopLevelByTeam(teamId) } returns 5L
 
-        val result = viewModel.getFilteredNews(teamId)
+        viewModel.markDiscussionsSeen(teamId)
+        advanceUntilIdle()
 
-        assertEquals(newsList, result)
-        coVerify(exactly = 1) { notificationsRepository.updateTeamNotification(teamId, newsList.size) }
-        coVerify(exactly = 0) { voicesRepository.countTopLevelByTeam(teamId) }
-        coVerify(exactly = 0) { voicesRepository.countTeamChats(teamId) }
+        coVerify(exactly = 1) { voicesRepository.countTopLevelByTeam(teamId) }
+        coVerify(exactly = 1) { notificationsRepository.updateTeamNotification(teamId, 5) }
+        coVerify(exactly = 0) { voicesRepository.getFilteredNews(any()) }
     }
 
     @Test

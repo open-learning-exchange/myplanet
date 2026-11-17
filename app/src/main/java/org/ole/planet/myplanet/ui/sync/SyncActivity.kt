@@ -34,6 +34,7 @@ import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -48,6 +49,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.CommunityRepository
@@ -143,6 +145,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     @Inject
     lateinit var transactionSyncManager: TransactionSyncManager
+
+    @Inject
+    @ApplicationScope
+    lateinit var applicationScope: CoroutineScope
 
     @Inject
     open lateinit var broadcastService: BroadcastService
@@ -343,8 +349,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         syncFailed = true
         val protocol = extractProtocol("$processedUrl")
         val errorMessage = when (protocol) {
-            context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
-            context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
+            getString(R.string.http_protocol) -> getString(R.string.device_couldn_t_reach_local_server)
+            getString(R.string.https_protocol) -> getString(R.string.device_couldn_t_reach_nation_server)
             else -> ""
         }
         customProgressDialog.dismiss()
@@ -385,26 +391,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         prefData.setAutoSyncInterval(syncTimeInterval[spinner.selectedItemPosition])
         prefData.setAutoSyncPosition(spinner.selectedItemPosition)
         (applicationContext as? MainApplication)?.applyAutoSyncSettings()
-    }
-
-    suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): Boolean {
-        return try {
-            if (!userRepository.hasAtLeastOneUser()) {
-                alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
-                false
-            } else {
-                val user = userRepository.authenticateUser(username, password, isManagerMode)
-                if (user != null) {
-                    profileDbHandler.saveUserInfoPref(password, user)
-                    true
-                } else {
-                    false
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to authenticate user", e)
-            false
-        }
     }
 
     fun startSync(type: String) {
@@ -642,11 +628,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         val syncRepository = syncRepository
         val transactionSyncManager = transactionSyncManager
         val timeProvider = timeProvider
+        val applicationScope = applicationScope
         loginNetworkJob = isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
                 val serverUrl = prefData.getServerUrl()
                 if (serverUrl.isNotEmpty()) {
-                    MainApplication.applicationScope.launch {
+                    applicationScope.launch {
                         val canReachServer = MainApplication.isServerReachable(serverUrl)
                         if (canReachServer) {
                             val state = syncRepository.uploadLoginData()
@@ -659,7 +646,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     }
                 }
             }
-        }.launchIn(MainApplication.applicationScope)
+        }.launchIn(applicationScope)
     }
 
     fun settingDialog() {

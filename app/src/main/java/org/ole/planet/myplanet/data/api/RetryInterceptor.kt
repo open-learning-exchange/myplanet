@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.data.api
 
-import android.content.Intent
 import java.io.IOException
 import javax.inject.Inject
 import kotlin.math.pow
@@ -8,7 +7,6 @@ import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response
 import org.ole.planet.myplanet.services.BroadcastService
-import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.TimeProvider
 
 class RetryInterceptor @Inject constructor(
@@ -59,13 +57,7 @@ class RetryInterceptor @Inject constructor(
 
             val delay = (initialDelay * factor.pow(tryCount - 1)).toLong()
 
-            val intent = Intent(Constants.ACTION_RETRY_EVENT).apply {
-                putExtra("url", request.url.encodedPath)
-                putExtra("attempt", tryCount)
-                putExtra("delay", delay)
-            }
-
-            broadcastService.trySendBroadcast(intent)
+            broadcastService.trySendRetryEvent(request.url.encodedPath, tryCount, delay)
 
             backoff(chain, delay)
         }

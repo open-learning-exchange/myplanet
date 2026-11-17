@@ -78,12 +78,10 @@ measure() {
     done
 }
 
-status() {
-    local used held free
-    local -a live=() slot_epochs=()
-    measure
-
-    local next report soon=0 e
+# Sets: next soon report (from used, LIMIT, free, slot_epochs[], NOW_EPOCH, LAG)
+build_report() {
+    local e
+    soon=0
     if [ "$free" -gt 0 ]; then
         next="$NOW_EPOCH"
         report="playstore save quota: $used of $LIMIT slots used -- $free free now"
@@ -98,8 +96,17 @@ status() {
             report="playstore save quota: $used of $LIMIT slots used"
         fi
         report="$report -- next slot around $(fmt "$next") ($(in_words "$next")), 24h+${LAG}s after the oldest one in use"
-        [ "$soon" -gt 0 ] && report="$report, then $soon more within the hour"
+        if [ "$soon" -gt 0 ]; then
+            report="$report, then $soon more within the hour"
+        fi
     fi
+}
+
+status() {
+    local used held free next soon report
+    local -a live=() slot_epochs=()
+    measure
+    build_report
 
     echo "limit=$LIMIT"
     echo "used=$used"
@@ -112,11 +119,12 @@ status() {
 }
 
 forecast() {
-    local used held free
+    local used held free next soon report
     local -a live=() slot_epochs=()
     measure
+    build_report
 
-    status | sed -n "s/^report='\(.*\)'$/\1/p"
+    printf '%s\n' "$report"
 
     [ "$free" -gt 0 ] && echo "  $free slot(s) free right now"
 

@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysPublicMapper
 import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.utils.TimeProvider
 
 sealed interface PublicSurveyEvent {
     data class SurveyLoaded(val surveyId: String, val teamId: String) : PublicSurveyEvent
@@ -26,7 +27,8 @@ sealed interface PublicSurveyEvent {
 class PublicSurveyViewModel @Inject constructor(
     private val surveysRepository: SurveysRepository,
     private val submissionsRepository: SubmissionsRepository,
-    private val publicMapper: SurveysPublicMapper
+    private val publicMapper: SurveysPublicMapper,
+    private val timeProvider: TimeProvider
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
@@ -59,7 +61,7 @@ class PublicSurveyViewModel @Inject constructor(
                 return@launch
             }
             surveysRepository.saveSurveyFromPublicApi(surveyDoc)
-            launchTime = System.currentTimeMillis()
+            launchTime = timeProvider.now()
             surveyStarted = true
             _events.send(PublicSurveyEvent.SurveyLoaded(surveyId, teamId))
         }

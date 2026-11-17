@@ -645,4 +645,80 @@ class CoursesRepositoryImplTest {
         assertEquals("66", step["percentage"].asString)
         assertFalse(step["completed"].asBoolean)
     }
+
+    @Test
+    fun getCourseTitleById_blankCourseId_returnsNullWithoutQueryingCourseDaoOrCourseStepDao() = runTest {
+        assertNull(repository.getCourseTitleById(""))
+        assertNull(repository.getCourseTitleById("   "))
+
+        coVerify(exactly = 0) { courseDao.getByCourseId(any()) }
+        coVerify(exactly = 0) { courseStepDao.getByCourseId(any()) }
+        coVerify(exactly = 0) { courseStepDao.getByCourseIds(any()) }
+    }
+
+    @Test
+    fun getCourseTitleById_validCourseId_returnsTitleWithoutHydratingSteps() = runTest {
+        coEvery { courseDao.getByCourseId("course1") } returns MyCourse().apply {
+            courseId = "course1"
+            courseTitle = "Kotlin 101"
+        }
+
+        val title = repository.getCourseTitleById("course1")
+
+        assertEquals("Kotlin 101", title)
+        coVerify(exactly = 1) { courseDao.getByCourseId("course1") }
+        coVerify(exactly = 0) { courseStepDao.getByCourseId(any()) }
+        coVerify(exactly = 0) { courseStepDao.getByCourseIds(any()) }
+    }
+
+    @Test
+    fun getCourseTitleById_notFound_returnsNullWithoutHydratingSteps() = runTest {
+        coEvery { courseDao.getByCourseId("missing_course") } returns null
+
+        val title = repository.getCourseTitleById("missing_course")
+
+        assertNull(title)
+        coVerify(exactly = 1) { courseDao.getByCourseId("missing_course") }
+        coVerify(exactly = 0) { courseStepDao.getByCourseId(any()) }
+        coVerify(exactly = 0) { courseStepDao.getByCourseIds(any()) }
+    }
+
+    @Test
+    fun getCourseProgress_loadsTitleFromCourseDaoWithoutHydratingStepsThroughGetCourseById() = runTest {
+        coEvery { courseStepDao.getByCourseId("c1") } returns listOf(CourseStep(id = "s1"))
+        coEvery { courseDao.getByCourseId("c1") } returns MyCourse().apply {
+            courseId = "c1"
+            courseTitle = "Biology"
+        }
+        coEvery { examDao.getByStepIds(listOf("s1")) } returns emptyList()
+        coEvery { submissionsRepository.getExamSubmissionsByUser("user1") } returns emptyList()
+
+        val progress = repository.getCourseProgress("c1", "user1")
+
+        assertEquals("Biology", progress.title)
+        // Steps should only be queried once by getCourseSteps("c1"), never via mapCourse or getByCourseIds
+        coVerify(exactly = 1) { courseStepDao.getByCourseId("c1") }
+        coVerify(exactly = 0) { courseStepDao.getByCourseIds(any()) }
+    }
+
+    @Test
+    fun getMyCourseIds_queriesCourseDaoDirectlyWithoutHydratingSteps() = runTest {
+        coEvery { courseDao.getForUserPattern("%\"u1\"%") } returns listOf(
+            MyCourse().apply { courseId = "c1" },
+            MyCourse().apply { courseId = null },
+            MyCourse().apply { courseId = "c2" },
+            MyCourse().apply { courseId = "c1" } // preserves duplicate and ordering
+        )
+
+        val result = repository.getMyCourseIds("u1")
+
+        assertEquals(3, result.size())
+        assertEquals("c1", result[0].asString)
+        assertEquals("c2", result[1].asString)
+        assertEquals("c1", result[2].asString)
+
+        coVerify(exactly = 1) { courseDao.getForUserPattern("%\"u1\"%") }
+        coVerify(exactly = 0) { courseStepDao.getByCourseId(any()) }
+        coVerify(exactly = 0) { courseStepDao.getByCourseIds(any()) }
+    }
 }

@@ -114,6 +114,44 @@ class ChatRepositoryImplTest {
         coVerify(exactly = 1) { chatDao.getByUser(userName) }
     }
 
+    @Test
+    fun getChatHistoryForUser_keepsDaoOrderForTiesNullAndUnparseableDates() = runTest {
+        val userName = "testUser"
+        val nullDates = ChatHistory().apply {
+            user = userName
+            createdDate = null
+            updatedDate = null
+        }
+        val unparseableDates = ChatHistory().apply {
+            user = userName
+            createdDate = "not-a-date"
+            updatedDate = "also-not-a-date"
+        }
+        val newestTieFirst = ChatHistory().apply {
+            user = userName
+            createdDate = "5000"
+            updatedDate = null
+        }
+        val middle = ChatHistory().apply {
+            user = userName
+            createdDate = "1000"
+            updatedDate = "1000"
+        }
+        val newestTieSecond = ChatHistory().apply {
+            user = userName
+            createdDate = null
+            updatedDate = "5000"
+        }
+
+        val daoOrder = listOf(nullDates, newestTieFirst, unparseableDates, middle, newestTieSecond)
+        coEvery { chatDao.getByUser(userName) } returns daoOrder
+
+        val result = chatRepository.getChatHistoryForUser(userName)
+
+        assertEquals(listOf(newestTieFirst, newestTieSecond, middle, nullDates, unparseableDates), result)
+        coVerify(exactly = 1) { chatDao.getByUser(userName) }
+    }
+
 
     @Test
     fun getLatestRev_findsHighestRevByNumericPrefix() = runTest {

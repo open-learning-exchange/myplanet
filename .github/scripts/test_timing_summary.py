@@ -223,6 +223,12 @@ def main() -> int:
         print(f"| `{name}` | {elapsed:.1f} | {excess_cell} |")
 
     if args.test_sources is not None:
+        source_index: dict[str, str] = {}
+        for root_dir, _, files in os.walk(args.test_sources):
+            for f in files:
+                source_index.setdefault(f, os.path.join(root_dir, f))
+        source_cache: dict[str, str] = {}
+
         def _extract_bodies(file_content: str, ann_regex: str) -> list[str]:
             bodies = []
             for m in re.finditer(ann_regex, file_content, re.MULTILINE):
@@ -245,18 +251,18 @@ def main() -> int:
             if count >= 5 and median_val >= 0.30:
                 simple_name = name.rsplit(".", 1)[-1].split("$")[0]
                 target_file = f"{simple_name}.kt"
-                filepath = None
-                for root_dir, _, files in os.walk(args.test_sources):
-                    if target_file in files:
-                        filepath = os.path.join(root_dir, target_file)
-                        break
+                filepath = source_index.get(target_file)
                 if not filepath:
                     continue
-                try:
-                    with open(filepath, "r", encoding="utf-8", errors="replace") as f:
-                        content = f.read()
-                except OSError:
-                    continue
+                if filepath in source_cache:
+                    content = source_cache[filepath]
+                else:
+                    try:
+                        with open(filepath, "r", encoding="utf-8", errors="replace") as f:
+                            content = f.read()
+                    except OSError:
+                        continue
+                    source_cache[filepath] = content
 
                 reasons = []
                 before_bodies = _extract_bodies(content, r"^ {4}@(Before|BeforeEach)\b")

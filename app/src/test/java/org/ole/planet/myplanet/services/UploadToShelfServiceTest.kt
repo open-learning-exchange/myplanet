@@ -86,8 +86,8 @@ class UploadToShelfServiceTest {
     @Test
     fun `uploadUserData still uploads shelves and notifies when no pending users`() = runTest(testDispatcher) {
         val syncedUser = mockk<UserEntity>(relaxed = true)
-        coEvery { userRepository.getPendingSyncUsers(100) } returns emptyList()
-        coEvery { userRepository.getSyncedUsers() } returns listOf(syncedUser)
+        coEvery { userSyncRepository.getPendingSyncUsers(100) } returns emptyList()
+        coEvery { userSyncRepository.getSyncedUsers() } returns listOf(syncedUser)
         coEvery { userSyncRepository.uploadAllSyncedUsersToShelf(listOf(syncedUser)) } returns Result.success(Unit)
         val listener = mockk<OnSuccessListener>(relaxed = true)
 
@@ -104,24 +104,24 @@ class UploadToShelfServiceTest {
     fun `uploadUserData processes users and uploads to shelf`() = runTest(testDispatcher) {
         val user1 = mockk<UserEntity>(relaxed = true)
         val user2 = mockk<UserEntity>(relaxed = true)
-        coEvery { userRepository.getPendingSyncUsers(100) } returns listOf(user1, user2)
+        coEvery { userSyncRepository.getPendingSyncUsers(100) } returns listOf(user1, user2)
         coEvery { userSyncRepository.checkAndUploadUser(any(), any(), any()) } returns Unit
-        coEvery { userRepository.getSyncedUsers() } returns emptyList()
+        coEvery { userSyncRepository.getSyncedUsers() } returns emptyList()
 
         val listener = mockk<OnSuccessListener>(relaxed = true)
 
         service.uploadUserData(listener)
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { userRepository.getPendingSyncUsers(100) }
+        coVerify(exactly = 1) { userSyncRepository.getPendingSyncUsers(100) }
         coVerify(exactly = 2) { userSyncRepository.checkAndUploadUser(any(), "testPassword", any()) }
-        coVerify(exactly = 1) { userRepository.getSyncedUsers() }
+        coVerify(exactly = 1) { userSyncRepository.getSyncedUsers() }
         verify(exactly = 1) { listener.onSuccess("Sync with server completed successfully") }
     }
 
     @Test
     fun `uploadUserData handles errors gracefully`() = runTest(testDispatcher) {
-        coEvery { userRepository.getPendingSyncUsers(100) } throws RuntimeException("Network error")
+        coEvery { userSyncRepository.getPendingSyncUsers(100) } throws RuntimeException("Network error")
         val listener = mockk<OnSuccessListener>(relaxed = true)
 
         service.uploadUserData(listener)
@@ -135,7 +135,7 @@ class UploadToShelfServiceTest {
         val userName = "testUser"
         val user = mockk<UserEntity>(relaxed = true)
         coEvery { userRepository.getUserByName(userName) } returns user
-        coEvery { userRepository.getSyncedUserByName(userName) } returns user
+        coEvery { userSyncRepository.getSyncedUserByName(userName) } returns user
         coEvery { userSyncRepository.checkAndUploadUser(any(), any(), any()) } returns Unit
         coEvery { userSyncRepository.uploadShelfData(user) } returns Unit
 
@@ -146,7 +146,7 @@ class UploadToShelfServiceTest {
 
         coVerify(exactly = 1) { userRepository.getUserByName(userName) }
         coVerify(exactly = 1) { userSyncRepository.checkAndUploadUser(user, "testPassword", any()) }
-        coVerify(exactly = 1) { userRepository.getSyncedUserByName(userName) }
+        coVerify(exactly = 1) { userSyncRepository.getSyncedUserByName(userName) }
         coVerify(exactly = 1) { userSyncRepository.uploadShelfData(user) }
         verify(exactly = 1) { listener.onSuccess("Single user shelf sync completed successfully") }
     }
@@ -219,28 +219,28 @@ class UploadToShelfServiceTest {
     fun `uploadToShelf handles empty unmanaged users`() = runTest(testDispatcher) {
         // Mock getPendingSyncUsers to return some users so uploadUserData proceeds to uploadToShelf
         val user1 = mockk<UserEntity>(relaxed = true)
-        coEvery { userRepository.getPendingSyncUsers(100) } returns listOf(user1)
+        coEvery { userSyncRepository.getPendingSyncUsers(100) } returns listOf(user1)
         coEvery { userSyncRepository.checkAndUploadUser(any(), any(), any()) } returns Unit
 
         // Mock getSyncedUsers for uploadToShelf
-        coEvery { userRepository.getSyncedUsers() } returns emptyList()
+        coEvery { userSyncRepository.getSyncedUsers() } returns emptyList()
         val listener = mockk<OnSuccessListener>(relaxed = true)
 
         service.uploadUserData(listener)
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { userRepository.getSyncedUsers() }
+        coVerify(exactly = 1) { userSyncRepository.getSyncedUsers() }
         verify(exactly = 1) { listener.onSuccess("Sync with server completed successfully") }
     }
 
     @Test
     fun `uploadToShelf uploads all synced users to shelf successfully`() = runTest(testDispatcher) {
         val user1 = mockk<UserEntity>(relaxed = true)
-        coEvery { userRepository.getPendingSyncUsers(100) } returns listOf(user1)
+        coEvery { userSyncRepository.getPendingSyncUsers(100) } returns listOf(user1)
         coEvery { userSyncRepository.checkAndUploadUser(any(), any(), any()) } returns Unit
 
         val unmanagedUsers = listOf(user1)
-        coEvery { userRepository.getSyncedUsers() } returns unmanagedUsers
+        coEvery { userSyncRepository.getSyncedUsers() } returns unmanagedUsers
         coEvery { userSyncRepository.uploadAllSyncedUsersToShelf(unmanagedUsers) } returns Result.success(Unit)
 
         val listener = mockk<OnSuccessListener>(relaxed = true)
@@ -255,11 +255,11 @@ class UploadToShelfServiceTest {
     @Test
     fun `uploadToShelf handles upload failure`() = runTest(testDispatcher) {
         val user1 = mockk<UserEntity>(relaxed = true)
-        coEvery { userRepository.getPendingSyncUsers(100) } returns listOf(user1)
+        coEvery { userSyncRepository.getPendingSyncUsers(100) } returns listOf(user1)
         coEvery { userSyncRepository.checkAndUploadUser(any(), any(), any()) } returns Unit
 
         val unmanagedUsers = listOf(user1)
-        coEvery { userRepository.getSyncedUsers() } returns unmanagedUsers
+        coEvery { userSyncRepository.getSyncedUsers() } returns unmanagedUsers
         val errorMsg = "Shelf error"
         coEvery { userSyncRepository.uploadAllSyncedUsersToShelf(unmanagedUsers) } returns Result.failure(Exception(errorMsg))
 
@@ -275,7 +275,7 @@ class UploadToShelfServiceTest {
     @Test
     fun `uploadUserData rethrows CancellationException and does not notify listener`() = runTest(testDispatcher) {
         val cancellation = CancellationException("User data sync cancelled")
-        coEvery { userRepository.getPendingSyncUsers(100) } coAnswers {
+        coEvery { userSyncRepository.getPendingSyncUsers(100) } coAnswers {
             delay(1.milliseconds)
             throw cancellation
         }
@@ -295,7 +295,7 @@ class UploadToShelfServiceTest {
         val user = mockk<UserEntity>(relaxed = true)
         val cancellation = CancellationException("Single user sync cancelled")
         coEvery { userRepository.getUserByName(userName) } returns user
-        coEvery { userRepository.getSyncedUserByName(userName) } returns user
+        coEvery { userSyncRepository.getSyncedUserByName(userName) } returns user
         coEvery { userSyncRepository.uploadShelfData(user) } coAnswers {
             delay(1.milliseconds)
             throw cancellation
@@ -315,7 +315,7 @@ class UploadToShelfServiceTest {
         val userName = "testUser"
         val user = mockk<UserEntity>(relaxed = true)
         coEvery { userRepository.getUserByName(userName) } returns user
-        coEvery { userRepository.getSyncedUserByName(userName) } returns user
+        coEvery { userSyncRepository.getSyncedUserByName(userName) } returns user
         coEvery { userSyncRepository.uploadShelfData(user) } throws RuntimeException("Shelf write error")
         val listener = mockk<OnSuccessListener>(relaxed = true)
 

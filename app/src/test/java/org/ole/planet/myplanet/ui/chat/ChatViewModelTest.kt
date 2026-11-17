@@ -123,7 +123,7 @@ class ChatViewModelTest {
             createdDate = "2"
             updatedDate = "2"
         }
-        coEvery { userRepository.getUserById("user123") } returns user
+        coEvery { userRepository.getUserModel() } returns user
         coEvery { chatRepository.getChatHistoryForUser("Test User") } returnsMany listOf(
             listOf(firstChat),
             listOf(firstChat, secondChat)
@@ -131,7 +131,7 @@ class ChatViewModelTest {
 
         // Same wiring as ChatHistoryFragment.setupRealtimeSync: every signal reloads the list
         val job = launch(testDispatcher) {
-            viewModel.refreshChatSignal.collect { viewModel.loadChatHistoryScreenData("user123") }
+            viewModel.refreshChatSignal.collect { viewModel.loadChatHistoryScreenData() }
         }
         testScheduler.advanceUntilIdle()
         assertEquals(listOf(firstChat), viewModel.screenData.value?.chatHistory)
@@ -229,7 +229,7 @@ class ChatViewModelTest {
         val news = News()
         val team = mockk<TeamSummary>(relaxed = true)
 
-        coEvery { userRepository.getUserById("user123") } returns user
+        coEvery { userRepository.getUserModel() } returns user
         coEvery { voicesRepository.getPlanetNewsMessages("planet1") } returns listOf(news)
         coEvery { chatRepository.getChatHistoryForUser("Test User") } returns listOf(conversation)
         coEvery { teamsRepository.getTeamSummaries("user123") } returns listOf(team)
@@ -241,9 +241,7 @@ class ChatViewModelTest {
             viewModel.screenData.collect {}
         }
 
-        viewModel.loadChatHistoryScreenData(
-            userId = "user123"
-        )
+        viewModel.loadChatHistoryScreenData()
 
         testScheduler.advanceUntilIdle()
 
@@ -258,7 +256,7 @@ class ChatViewModelTest {
         assertEquals(listOf(team), result.shareTargets.enterprises)
         assertEquals(team, result.shareTargets.community)
 
-        coVerify { userRepository.getUserById("user123") }
+        coVerify { userRepository.getUserModel() }
         coVerify { voicesRepository.getPlanetNewsMessages("planet1") }
         coVerify { chatRepository.getChatHistoryForUser("Test User") }
         coVerify { teamsRepository.getTeamSummaries("user123") }
@@ -274,7 +272,7 @@ class ChatViewModelTest {
         coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)
         every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("", "", null)
 
-        viewModel.loadChatHistoryScreenData("user123")
+        viewModel.loadChatHistoryScreenData()
         testScheduler.advanceUntilIdle()
 
         viewModel.searchChats("Chat 1", isFullSearch = false, isQuestion = false)
@@ -296,14 +294,14 @@ class ChatViewModelTest {
         coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)
         every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("", "", null)
 
-        viewModel.loadChatHistoryScreenData("user123")
+        viewModel.loadChatHistoryScreenData()
         testScheduler.advanceUntilIdle()
         viewModel.searchChats("Chat 1", isFullSearch = false, isQuestion = false)
         testScheduler.advanceUntilIdle()
 
         // A reload (return to the screen or a realtime update) brings in a new matching chat
         coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2, chat3)
-        viewModel.loadChatHistoryScreenData("user123")
+        viewModel.loadChatHistoryScreenData()
         testScheduler.advanceUntilIdle()
 
         assertEquals(listOf("Chat 1", "Chat 1 follow-up"), viewModel.filteredChats.value.map { it.title })
@@ -317,14 +315,14 @@ class ChatViewModelTest {
         coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)
         every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("", "", null)
 
-        viewModel.loadChatHistoryScreenData("user123")
+        viewModel.loadChatHistoryScreenData()
         testScheduler.advanceUntilIdle()
         viewModel.searchChats("Chat 1", isFullSearch = true, isQuestion = true)
         testScheduler.advanceUntilIdle()
 
         // A fresh ChatHistoryFragment pushes its empty search box before its reload lands
         viewModel.searchChats("", isFullSearch = false, isQuestion = false)
-        viewModel.loadChatHistoryScreenData("user123")
+        viewModel.loadChatHistoryScreenData()
         testScheduler.advanceUntilIdle()
 
         assertEquals(listOf("Chat 1", "Chat 2"), viewModel.filteredChats.value.map { it.title })
@@ -339,7 +337,7 @@ class ChatViewModelTest {
         }
         val news = News()
 
-        coEvery { userRepository.getUserById("user123") } returns cachedUser
+        coEvery { userRepository.getUserModel() } returns cachedUser
         coEvery { cachedUser.planetCode } returns "planet2"
         coEvery { cachedUser.name } returns "Cached User"
         coEvery { voicesRepository.getPlanetNewsMessages("planet2") } returns listOf(news)
@@ -349,9 +347,7 @@ class ChatViewModelTest {
         every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("parent1", "community1", null)
 
         // First call to populate cache
-        viewModel.loadChatHistoryScreenData(
-            userId = "user123"
-        )
+        viewModel.loadChatHistoryScreenData()
         testScheduler.advanceUntilIdle()
 
         // Clear mocks to verify cache usage
@@ -362,9 +358,7 @@ class ChatViewModelTest {
         }
 
         // Second call should use cache
-        viewModel.loadChatHistoryScreenData(
-            userId = "user123"
-        )
+        viewModel.loadChatHistoryScreenData()
         testScheduler.advanceUntilIdle()
 
         val result = viewModel.screenData.value
@@ -375,8 +369,43 @@ class ChatViewModelTest {
         assertEquals(listOf(conversation), result.chatHistory)
         assertEquals(listOf(news), result.newsMessages)
 
-        coVerify(exactly = 0) { userRepository.getUserById(any()) }
+        coVerify(exactly = 0) { userRepository.getUserModel() }
         coVerify(exactly = 0) { teamsRepository.getTeamSummaries(any()) }
+
+        job.cancel()
+    }
+
+    @Test
+    fun `loadChatHistoryScreenData with a null current user still produces screen data`() = runTest {
+        val conversation = ChatHistory().apply {
+            createdDate = "123"
+            updatedDate = "123"
+        }
+        val news = News()
+
+        coEvery { userRepository.getUserModel() } returns null
+        coEvery { voicesRepository.getPlanetNewsMessages(null) } returns listOf(news)
+        coEvery { chatRepository.getChatHistoryForUser(null) } returns listOf(conversation)
+        coEvery { teamsRepository.getTeamSummaries(null) } returns emptyList()
+        coEvery { teamsRepository.getShareableEnterpriseSummaries(null) } returns emptyList()
+        every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("parent1", "community1", null)
+
+        val job = launch(testDispatcher) {
+            viewModel.screenData.collect {}
+        }
+
+        viewModel.loadChatHistoryScreenData()
+        testScheduler.advanceUntilIdle()
+
+        val result = viewModel.screenData.value
+        org.junit.Assert.assertNotNull(result)
+        result!!
+
+        assertNull(result.currentUser)
+        assertEquals(listOf(conversation), result.chatHistory)
+        assertEquals(listOf(news), result.newsMessages)
+
+        coVerify { userRepository.getUserModel() }
 
         job.cancel()
     }
@@ -385,10 +414,10 @@ class ChatViewModelTest {
     fun `two consecutive loadChatHistoryScreenData calls read getCommunityConfiguration twice`() = runTest {
         every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("parent1", "community1", null)
 
-        viewModel.loadChatHistoryScreenData("user123")
+        viewModel.loadChatHistoryScreenData()
         testScheduler.advanceUntilIdle()
 
-        viewModel.loadChatHistoryScreenData("user123")
+        viewModel.loadChatHistoryScreenData()
         testScheduler.advanceUntilIdle()
 
         verify(exactly = 2) { configurationsRepository.getCommunityConfiguration() }
@@ -559,7 +588,7 @@ class ChatViewModelTest {
     @Test
     fun `both news and chat history reads start concurrently before either completes`() = runTest {
         val user = UserEntity(_id = "user123", planetCode = "planet1", name = "Test User")
-        coEvery { userRepository.getUserById("user123") } returns user
+        coEvery { userRepository.getUserModel() } returns user
         every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("parent1", "community1", null)
 
         val newsGate = CompletableDeferred<List<News>>()
@@ -577,7 +606,7 @@ class ChatViewModelTest {
             historyGate.await()
         }
 
-        viewModel.loadChatHistoryScreenData("user123")
+        viewModel.loadChatHistoryScreenData()
         testScheduler.advanceUntilIdle()
 
         assertTrue(newsStarted)
@@ -593,7 +622,7 @@ class ChatViewModelTest {
     @Test
     fun `exception in one read is retried by RetryUtils and does not cancel viewModelScope`() = runTest {
         val user = UserEntity(_id = "user123", planetCode = "planet1", name = "Test User")
-        coEvery { userRepository.getUserById("user123") } returns user
+        coEvery { userRepository.getUserModel() } returns user
         every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("parent1", "community1", null)
 
         var attemptCount = 0
@@ -607,13 +636,13 @@ class ChatViewModelTest {
         }
         coEvery { chatRepository.getChatHistoryForUser("Test User") } returns emptyList()
 
-        viewModel.loadChatHistoryScreenData("user123")
+        viewModel.loadChatHistoryScreenData()
         testScheduler.advanceUntilIdle()
 
         assertEquals(3, attemptCount)
         assertNull(viewModel.screenData.value)
 
-        viewModel.loadChatHistoryScreenData("user123")
+        viewModel.loadChatHistoryScreenData()
         testScheduler.advanceUntilIdle()
 
         assertEquals(4, attemptCount)

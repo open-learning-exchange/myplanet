@@ -142,9 +142,12 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     private fun sortChats(chats: List<ChatHistory>): List<ChatHistory> {
-        return chats.sortedByDescending { chat ->
-            maxOf(chat.createdDate?.toLongOrNull() ?: 0L, chat.updatedDate?.toLongOrNull() ?: 0L)
-        }
+        return chats
+            .map { chat ->
+                maxOf(chat.createdDate?.toLongOrNull() ?: 0L, chat.updatedDate?.toLongOrNull() ?: 0L) to chat
+            }
+            .sortedByDescending { it.first }
+            .map { it.second }
     }
 
     override suspend fun getLatestRev(id: String): String? {

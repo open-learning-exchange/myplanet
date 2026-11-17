@@ -22,6 +22,9 @@ interface AchievementDao {
     @Query("SELECT _id FROM achievements WHERE isUpdated = 1")
     suspend fun getUpdatedIds(): List<String>
 
+    @Query("UPDATE achievements SET _rev = :rev WHERE _id = :id AND isUpdated = 1")
+    suspend fun rebasePendingRev(id: String, rev: String)
+
     @Query("UPDATE achievements SET _rev = COALESCE(:rev, _rev), isUpdated = 0 WHERE _id = :id")
     suspend fun markUploaded(id: String, rev: String?)
 }

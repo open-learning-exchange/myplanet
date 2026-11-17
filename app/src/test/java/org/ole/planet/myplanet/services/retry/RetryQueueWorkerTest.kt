@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.services.retry
 
-import android.util.Log
 import androidx.work.BackoffPolicy
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ListenableWorker.Result
@@ -65,7 +64,6 @@ class RetryQueueWorkerTest {
         @BeforeClass
         @JvmStatic
         fun setUpClass() {
-            mockkStatic(Log::class)
             mockkStatic(WorkManagerImpl::class)
             mockkStatic(WorkManager::class)
             mockkObject(MainApplication)
@@ -81,12 +79,6 @@ class RetryQueueWorkerTest {
     @Before
     fun setUp() {
         MockKAnnotations.init(this, relaxed = true)
-
-        every { Log.d(any<String>(), any<String>()) } returns 0
-        every { Log.i(any<String>(), any<String>()) } returns 0
-        every { Log.w(any<String>(), any<String>()) } returns 0
-        every { Log.e(any<String>(), any<String>()) } returns 0
-        every { Log.e(any<String>(), any<String>(), any<Throwable>()) } returns 0
 
         every { context.applicationContext } returns context
 

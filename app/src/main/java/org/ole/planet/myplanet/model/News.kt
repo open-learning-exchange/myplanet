@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.util.Log
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
@@ -17,17 +16,8 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.toGson
 
-/**
- * Room replacement for the former `News` model (voices/discussion posts).
- *
- * `imageUrls` and `labels` (formerly `RealmList<String>`) are plain `List<String>` stored as JSON
- * via the shared [org.ole.planet.myplanet.data.room.Converters]. Persistence goes through
- * [org.ole.planet.myplanet.data.room.dao.NewsDao]. The class name is kept (`News`) so the
- * large voices UI surface is untouched.
- */
 @Entity(tableName = "news", indices = [Index("userId"), Index("replyTo"), Index("_id")])
 open class News {
-    // @JvmField on id/_id so Room does not see ambiguous getId/get_id accessors.
     @PrimaryKey
     @JvmField
     var id: String = ""
@@ -87,10 +77,27 @@ open class News {
     var parsedSharedTeamName: String? = null
 
     private data class ImagesCache(val raw: String?, val parsed: JsonArray)
+    private data class ReactionsCache(
+        val raw: String?,
+        val parsed: JsonObject,
+        val map: Map<String, List<String>>
+    )
+    private data class PendingReactionsCache(
+        val raw: String?,
+        val map: Map<String, String>
+    )
 
     @Ignore
     @Volatile
     private var imagesCache: ImagesCache? = null
+
+    @Ignore
+    @Volatile
+    private var reactionsCache: ReactionsCache? = null
+
+    @Ignore
+    @Volatile
+    private var pendingReactionsCache: PendingReactionsCache? = null
 
     @get:Ignore
     val imagesArray: JsonArray
@@ -121,38 +128,65 @@ open class News {
             }
         }.toGson()
 
+    private fun getOrUpdateReactionsCache(): ReactionsCache {
+        val currentReactions = reactions
+        val cache = reactionsCache
+        if (cache != null && cache.raw == currentReactions) {
+            return cache
+        }
+        val parsed = if (currentReactions == null) {
+            JsonObject()
+        } else {
+            try {
+                GsonUtils.gson.fromJson(currentReactions, JsonObject::class.java) ?: JsonObject()
+            } catch (_: Exception) {
+                JsonObject()
+            }
+        }
+        val map = parsed.keySet().mapNotNull { emoji ->
+            val users = parsed.get(emoji)
+                ?.takeIf { it.isJsonArray }
+                ?.asJsonArray
+                ?.mapNotNull { if (it.isJsonPrimitive) it.asString else null }
+                .orEmpty()
+            if (users.isEmpty()) null else emoji to users
+        }.toMap()
+        val newCache = ReactionsCache(currentReactions, parsed, map)
+        reactionsCache = newCache
+        return newCache
+    }
+
     @get:Ignore
     val reactionsJson: JsonObject
-        get() = try {
-            reactions?.let { GsonUtils.gson.fromJson(it, JsonObject::class.java) } ?: JsonObject()
-        } catch (_: Exception) {
-            JsonObject()
-        }
+        get() = getOrUpdateReactionsCache().parsed.deepCopy()
 
     @get:Ignore
     val reactionsMap: Map<String, List<String>>
-        get() {
-            val obj = reactionsJson
-            return obj.keySet().mapNotNull { emoji ->
-                val users = obj.get(emoji)
-                    ?.takeIf { it.isJsonArray }
-                    ?.asJsonArray
-                    ?.mapNotNull { if (it.isJsonPrimitive) it.asString else null }
-                    .orEmpty()
-                if (users.isEmpty()) null else emoji to users
-            }.toMap()
-        }
+        get() = getOrUpdateReactionsCache().map
 
     @get:Ignore
     val pendingReactionsMap: Map<String, String>
-        get() = try {
-            pendingReactions?.let { GsonUtils.gson.fromJson(it, JsonObject::class.java) }
-                ?.entrySet()
-                ?.filter { it.value.isJsonPrimitive }
-                ?.associate { it.key to it.value.asString }
-                .orEmpty()
-        } catch (_: Exception) {
-            emptyMap()
+        get() {
+            val currentPending = pendingReactions
+            val cache = pendingReactionsCache
+            if (cache != null && cache.raw == currentPending) {
+                return cache.map
+            }
+            val map = if (currentPending == null) {
+                emptyMap()
+            } else {
+                try {
+                    GsonUtils.gson.fromJson(currentPending, JsonObject::class.java)
+                        ?.entrySet()
+                        ?.filter { it.value.isJsonPrimitive }
+                        ?.associate { it.key to it.value.asString }
+                        .orEmpty()
+                } catch (_: Exception) {
+                    emptyMap()
+                }
+            }
+            pendingReactionsCache = PendingReactionsCache(currentPending, map)
+            return map
         }
 
     fun updateReaction(emoji: String, userId: String) {
@@ -216,8 +250,8 @@ open class News {
                         }
                     }
                 }
-            } catch (e: Exception) {
-                Log.w(TAG, "community section check failed", e)
+            } catch (_: Exception) {
+                // malformed viewIn: keep the default (not community)
             }
             return false
         }
@@ -233,18 +267,13 @@ open class News {
                     }
                 }
             }
-        } catch (e: Exception) {
-            Log.w(TAG, "calculateSortDate failed", e)
+        } catch (_: Exception) {
+            // malformed viewIn: keep the default (time)
         }
         return time
     }
 
     companion object {
-        private const val TAG = "News"
-
-        /**
-         * Builds an unmanaged [News] from a form map. The caller persists it via the DAO.
-         */
         fun createNews(
             map: HashMap<String?, String>,
             user: UserEntity?,
@@ -272,8 +301,8 @@ open class News {
 
             try {
                 news.updatedDate = map["updatedDate"]?.toLong() ?: 0
-            } catch (e: Exception) {
-                Log.w(TAG, "updatedDate parse failed", e)
+            } catch (_: Exception) {
+                // malformed updatedDate: keep the default (0)
             }
 
             news.userId = user?.id
@@ -307,15 +336,15 @@ open class News {
                                     }
                                     news.conversations = GsonUtils.gson.toJson(conversationsList)
                                 }
-                            } catch (e: JsonSyntaxException) {
-                                Log.w(TAG, "conversation parse failed", e)
+                            } catch (_: JsonSyntaxException) {
+                                // malformed conversations: keep the default (unset)
                             }
                         }
                     }
                     news.newsCreatedDate = GsonUtils.getLong("createdDate", newsJson)
                     news.newsUpdatedDate = GsonUtils.getLong("updatedDate", newsJson)
-                } catch (e: JsonSyntaxException) {
-                    Log.w(TAG, "news json parse failed", e)
+                } catch (_: JsonSyntaxException) {
+                    // malformed news json: keep the defaults (unset)
                 }
             }
 

@@ -32,23 +32,22 @@ class ProgressRepositoryImpl @Inject constructor(
     private val questionDao: QuestionDao
 ) : ProgressRepository {
     override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): Map<String, CourseProgressState> = withContext(dispatcherProvider.default) {
-        val allSteps = if (courseIds.isEmpty()) {
-            emptyList()
+        val allCounts = if (courseIds.isEmpty()) {
+            emptyMap()
         } else {
-            courseStepDao.getByCourseIds(courseIds)
+            courseStepDao.countByCourseIds(courseIds)
         }
         val allProgresses = if (courseIds.isEmpty()) emptyList() else courseProgressDao.getByUserAndCourseIds(userId, courseIds)
 
-        val stepsByCourseId = allSteps.groupBy { it.courseId }
         val progressesByCourseId = allProgresses.groupBy { it.courseId }
 
         val map = HashMap<String, CourseProgressState>()
         for (courseId in courseIds) {
-            val steps = stepsByCourseId[courseId] ?: emptyList()
+            val count = allCounts[courseId] ?: 0
             val progresses = progressesByCourseId[courseId] ?: emptyList()
             map[courseId] = CourseProgressState(
-                max = steps.size,
-                current = calculateCurrentProgress(steps, progresses)
+                max = count,
+                current = calculateCurrentProgress(count, progresses)
             )
         }
         map
@@ -148,7 +147,7 @@ class ProgressRepositoryImpl @Inject constructor(
         steps: List<CourseStep?>?, userId: String?, courseId: String?
     ): Int {
         val progresses = courseProgressDao.getByUserAndCourse(userId, courseId)
-        return calculateCurrentProgress(steps, progresses)
+        return calculateCurrentProgress(steps?.size ?: 0, progresses)
     }
 
     override suspend fun saveEarnedExamPasses(
@@ -162,12 +161,36 @@ class ProgressRepositoryImpl @Inject constructor(
         if (steps.none { it?.passingRequired == true }) return
         val examsByStepId = requiredExamsByStepId(steps, courseId)
         val passedStepNums = passedStepNums(userId, courseId)
+        val parentIds = steps.mapIndexedNotNull { index, step ->
+            val stepNum = index + 1
+            if (stepNum in passedStepNums) return@mapIndexedNotNull null
+            val exam = step?.id?.let { examsByStepId[it] } ?: return@mapIndexedNotNull null
+            "${exam.id}@$courseId"
+        }.toSet()
+        if (parentIds.isEmpty()) return
+
         val submissionsRepository = submissionsRepositoryLazy.get()
+        val candidateSubmissions = submissionsRepository.getExamSubmissionsByUser(userId)
+            .filter { it.status == "complete" && it.parentId in parentIds }
+
+        val submissionIds = candidateSubmissions.map { it.id }
+        val answersBySubId = if (submissionIds.isEmpty()) {
+            emptyMap()
+        } else {
+            submissionsRepository.getAnswersBySubmissionIds(submissionIds).groupBy { it.submissionId }
+        }
+
+        candidateSubmissions.forEach { attempt ->
+            attempt.answers = answersBySubId[attempt.id].orEmpty().toMutableList()
+        }
+
+        val attemptsByParentId = candidateSubmissions.groupBy { it.parentId }
+
         steps.forEachIndexed { index, step ->
             val stepNum = index + 1
             val exam = step?.id?.let { examsByStepId[it] } ?: return@forEachIndexed
             if (stepNum in passedStepNums) return@forEachIndexed
-            val attempts = submissionsRepository.getSubmissionsByParentId("${exam.id}@$courseId", userId, "complete")
+            val attempts = attemptsByParentId["${exam.id}@$courseId"].orEmpty()
             val passed = attempts.any { attempt ->
                 val answers = attempt.answers.orEmpty()
                 exam.isPassingAttempt(attempt.grade, answers.isNotEmpty() && answers.all { it.grade == 1 })
@@ -192,9 +215,14 @@ class ProgressRepositoryImpl @Inject constructor(
     private suspend fun requiredExamsByStepId(steps: List<CourseStep?>, courseId: String): Map<String, StepExam> {
         val requiredStepIds = steps.mapNotNullTo(HashSet()) { step -> step?.id?.takeIf { step.passingRequired } }
         val exams = examDao.getByCourseIdAndType(courseId, "courses")
-        return requiredStepIds.mapNotNull { stepId ->
-            exams.firstOrNull { it.stepId == stepId && it.noOfQuestions > 0 }?.let { stepId to it }
-        }.toMap()
+        val result = LinkedHashMap<String, StepExam>()
+        for (exam in exams) {
+            val stepId = exam.stepId
+            if (stepId != null && stepId in requiredStepIds && exam.noOfQuestions > 0 && !result.containsKey(stepId)) {
+                result[stepId] = exam
+            }
+        }
+        return result
     }
 
     private suspend fun passedStepNums(userId: String?, courseId: String): Set<Int> {
@@ -203,9 +231,8 @@ class ProgressRepositoryImpl @Inject constructor(
     }
 
     private fun calculateCurrentProgress(
-        steps: List<CourseStep?>?, progresses: List<CourseProgress>
+        stepsSize: Int, progresses: List<CourseProgress>
     ): Int {
-        val stepsSize = steps?.size ?: 0
         val completed = BooleanArray(stepsSize + 1)
         progresses.forEach { progress ->
             val stepNum = progress.stepNum

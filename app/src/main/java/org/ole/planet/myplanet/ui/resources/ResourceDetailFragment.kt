@@ -269,8 +269,11 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         }
     }
 
-    override fun onRatingChanged(type: String, id: String) {
-        onRatingChanged()
+    override fun onResume() {
+        super.onResume()
+        if (::library.isInitialized) {
+            onRatingChanged()
+        }
     }
 
     override fun onRatingChanged() {

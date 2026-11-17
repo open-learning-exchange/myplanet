@@ -103,6 +103,7 @@
     <string name="user">مستخدم</string>
     <string name="remove_selected">إزالة المحدد</string>
     <string name="stop_download">إيقاف التنزيل</string>
+    <string name="download_stopped">تم إيقاف التنزيل</string>
     <string name="downloading_file">جارٍ تنزيل الملف…</string>
     <string name="cancel">إلغاء</string>
     <string name="added_to">تمت الإضافة إلى</string>
@@ -1147,6 +1148,9 @@
     <string name="show_additional_fields">عرض الحقول الإضافية</string>
     <string name="hide_additional_fields">إخفاء الحقول الإضافية</string>
     <string name="preparing_download">جارٍ تحضير التنزيل…</string>
+    <string name="download_partially_downloaded">تم تنزيل جزء منه</string>
+    <string name="download_paused_at_percent">متوقف عند %1$d%%</string>
+    <string name="resume_download">استئناف التنزيل</string>
     <string name="downloading_files">جارٍ تنزيل الملفات</string>
     <string name="edit_mission_and_services">تعديل المهمة والخدمات</string>
     <string name="this_team_has_no_description_defined">هذا الفريق ليس لديه وصف محدد</string>
@@ -1326,6 +1330,9 @@
     <string name="storage_pdfs">ملفات PDF</string>
     <string name="storage_images">الصور</string>
     <string name="storage_other">ملفات أخرى</string>
+    <string name="storage_partial_downloads">التنزيلات الجزئية</string>
+    <string name="storage_clear_partial_downloads">مسح التنزيلات الجزئية؟</string>
+    <string name="storage_clear_partial_downloads_message">هذه تنزيلات توقفت قبل اكتمالها. مسحها يحرر المساحة، وستبدأ هذه التنزيلات من جديد في المرة القادمة.</string>
     <string name="storage_empty">لم يُعثر على أي محتوى منزَّل</string>
     <string name="storage_delete_confirm">حذف جميع تنزيلات %1$s؟</string>
     <string name="storage_delete_selected_confirm">حذف %1$d عنصر(عناصر) محدد؟</string>

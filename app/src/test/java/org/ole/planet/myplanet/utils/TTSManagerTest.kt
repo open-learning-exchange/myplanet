@@ -77,6 +77,21 @@ class TTSManagerTest {
     }
 
     @Test
+    fun testFormatCsvForSpeech_headerOnly() {
+        val rows = listOf(arrayOf("Name", "Age"))
+        assertEquals("", TTSManager.formatCsvForSpeech(rows))
+    }
+
+    @Test
+    fun testFormatCsvForSpeech_rowShorterThanHeader() {
+        val rows = listOf(
+            arrayOf("Name", "Age", "City"),
+            arrayOf("John")
+        )
+        assertEquals("Row 1. Name: John", TTSManager.formatCsvForSpeech(rows))
+    }
+
+    @Test
     fun testFormatCsvTextForSpeech_parsesQuotedFields() {
         val csv = "Name,City\nJohn,\"New York, NY\"\n"
         assertEquals("Row 1. Name: John, City: New York, NY", TTSManager.formatCsvTextForSpeech(csv))
