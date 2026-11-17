@@ -312,7 +312,7 @@ class ProgressRepositoryImpl @Inject constructor(
             val passedSteps = courseProgressRecords
                 .mapNotNullTo(HashSet()) { if (it.passed) it.stepNum else null }
                 .size
-            val totalSteps = course.courseSteps?.size ?: 0
+            val totalSteps = course.getNumberOfSteps()
 
             // Web logic: ALL steps must be passed AND course must have at least one step
             val allStepsPassed = passedSteps == totalSteps && totalSteps > 0

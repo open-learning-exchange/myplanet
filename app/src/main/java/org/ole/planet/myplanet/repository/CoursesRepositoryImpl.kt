@@ -886,15 +886,10 @@ class CoursesRepositoryImpl @Inject constructor(
     private suspend fun mapCourses(courses: List<MyCourse>): List<MyCourse> {
         if (courses.isEmpty()) return emptyList()
         val courseIds = courses.map { it.courseId ?: it.id }.distinct()
-        val stepsByCourseId = if (courseIds.isEmpty()) {
-            emptyMap()
-        } else {
-            courseStepDao.getByCourseIds(courseIds)
-                .groupBy { it.courseId ?: "" }
-        }
+        val stepCounts = courseStepDao.countByCourseIds(courseIds)
         return courses.map { course ->
             val courseKey = course.courseId ?: course.id
-            course.apply { val steps = stepsByCourseId[courseKey].orEmpty(); courseSteps = steps.toMutableList(); setNumberOfSteps(steps.size) }
+            course.apply { setNumberOfSteps(stepCounts[courseKey] ?: 0) }
         }
     }
 
