@@ -1,163 +1,195 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/colorPrimaryDark"
+    android:orientation="vertical"
     tools:context=".ui.exam.ExamTakingFragment">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
-
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical">
+            android:layout_height="wrap_content"
+            android:background="@color/colorPrimary"
+            android:minHeight="?attr/actionBarSize">
+
+            <ImageButton
+                android:id="@+id/btnBack"
+                style="@style/YellowButtons"
+                android:layout_width="@dimen/_50dp"
+                android:layout_height="@dimen/_50dp"
+                android:background="@drawable/buttonyellow"
+                android:contentDescription="@string/previous"
+                android:padding="8dp"
+                android:src="@drawable/ic_left_arrow"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="@color/md_black_1000" />
+
+            <ImageButton
+                android:id="@+id/btnNext"
+                style="@style/YellowButtons"
+                android:layout_width="@dimen/_50dp"
+                android:layout_height="@dimen/_50dp"
+                android:background="@drawable/buttonyellow"
+                android:contentDescription="@string/next"
+                android:padding="8dp"
+                android:src="@drawable/ic_right_arrow"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="@color/md_black_1000" />
 
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical">
+                android:id="@+id/elapsed_time_chip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/pill_elapsed_chip"
+                android:contentDescription="@string/elapsed_time_description"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="10dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="10dp"
+                android:paddingBottom="4dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/btnNext"
+                app:layout_constraintTop_toTopOf="parent">
 
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:layout_width="match_parent"
+                <ImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_timer"
+                    app:tint="@color/md_white_1000" />
+
+                <TextView
+                    android:id="@+id/tv_elapsed_time"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@color/colorPrimary">
+                    android:layout_marginStart="6dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:textColor="@color/md_white_1000"
+                    android:textSize="12sp"
+                    tools:text="00:00" />
+            </LinearLayout>
 
-                    <ImageButton
-                        android:id="@+id/btnBack"
-                        style="@style/YellowButtons"
-                        android:layout_width="@dimen/_50dp"
-                        android:layout_height="@dimen/_50dp"
-                        android:layout_gravity="center_vertical"
-                        android:background="@drawable/buttonyellow"
-                        android:contentDescription="@string/btn_back"
-                        android:padding="8dp"
-                        android:src="@drawable/ic_left_arrow"
-                        android:text="@string/btn_back"
-                        android:visibility="gone"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:tint="@color/md_black_1000" />
-                    <TextView
-                        android:id="@+id/tv_question_count"
-                        android:layout_width="wrap_content"
-                        android:layout_height="?attr/actionBarSize"
-                        android:layout_gravity="center"
-                        android:gravity="center_vertical"
-                        android:padding="@dimen/padding_normal"
-                        android:text="@string/step"
-                        android:textAllCaps="true"
-                        android:textColor="@color/md_white_1000"
-                        android:textSize="@dimen/text_size_mid"
-                        android:textStyle="bold"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toStartOf="@+id/btnNext"
-                        app:layout_constraintStart_toEndOf="@+id/btnBack"
-                        app:layout_constraintTop_toTopOf="parent" />
-                    <ImageButton
-                        android:id="@+id/btnNext"
-                        style="@style/YellowButtons"
-                        android:layout_width="@dimen/_50dp"
-                        android:layout_height="@dimen/_50dp"
-                        android:layout_gravity="center_vertical"
-                        android:background="@drawable/buttonyellow"
-                        android:contentDescription="@string/next"
-                        android:padding="8dp"
-                        android:visibility="gone"
-                        android:src="@drawable/ic_right_arrow"
-                        android:text="@string/next"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:tint="@color/md_black_1000" />
-                </androidx.constraintlayout.widget.ConstraintLayout>
+            <LinearLayout
+                android:id="@+id/title_block"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/elapsed_time_chip"
+                app:layout_constraintStart_toEndOf="@id/btnBack"
+                app:layout_constraintTop_toTopOf="parent">
 
-                <ProgressBar
-                    android:id="@+id/progress_bar"
-                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="4dp"
-                    android:progress="0"
-                    android:progressTint="@color/colorAccent" />
-                <androidx.core.widget.NestedScrollView
-                    android:id="@+id/container"
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
-                    android:layout_margin="@dimen/padding_large"
-                    android:layout_weight="1"
-                    android:background="@color/card_bg">
+                <TextView
+                    android:id="@+id/tv_exam_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:alpha="0.85"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/md_white_1000"
+                    android:textSize="12sp" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical">
+                <TextView
+                    android:id="@+id/tv_question_count"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:textAllCaps="true"
+                    android:textColor="@color/md_white_1000"
+                    android:textSize="@dimen/text_size_mid"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center"
-                            android:orientation="vertical">
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
-                            <TextView
-                                android:id="@+id/tv_header"
-                                style="@style/HeaderText"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_gravity="center"
-                                android:textColor="@color/daynight_textColor"
-                                android:textSize="18sp" />
-                            <TextView
-                                android:id="@+id/tv_body"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:padding="@dimen/padding_normal"
-                                android:textColor="@color/daynight_textColor"
-                                android:textSize="16sp" />
-                        </LinearLayout>
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:progress="0"
+            android:progressTint="@color/colorAccent" />
 
-                        <RadioGroup
-                            android:id="@+id/group_choices"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center_vertical"
-                            android:orientation="vertical"
-                            android:visibility="gone" />
-                        <LinearLayout
-                            android:id="@+id/ll_checkbox"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center"
-                            android:gravity="center"
-                            android:orientation="vertical"
-                            android:visibility="gone" />
-                        <LinearLayout
-                            android:id="@+id/ll_rating_scale"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center"
-                            android:gravity="center"
-                            android:orientation="vertical"
-                            android:padding="@dimen/padding_large"
-                            android:visibility="gone" />
-                    </LinearLayout>
-                </androidx.core.widget.NestedScrollView>
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/container"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_margin="@dimen/padding_large"
+            android:layout_weight="1"
+            android:background="@color/card_bg">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_normal">
 
                 <LinearLayout
-                    android:layout_width="match_parent"
+                    android:id="@+id/content_column"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:background="@color/card_bg"
-                    android:padding="@dimen/padding_small">
+                    android:orientation="vertical"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintWidth_max="@dimen/exam_content_max_width">
+
+                    <TextView
+                        android:id="@+id/tv_header"
+                        style="@style/HeaderText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/daynight_textColor"
+                        android:textSize="18sp" />
+
+                    <TextView
+                        android:id="@+id/tv_body"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="@dimen/padding_normal"
+                        android:textColor="@color/daynight_textColor"
+                        android:textSize="16sp" />
+
+                    <RadioGroup
+                        android:id="@+id/group_choices"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone" />
+
+                    <LinearLayout
+                        android:id="@+id/ll_checkbox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone" />
+
+                    <LinearLayout
+                        android:id="@+id/ll_rating_scale"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:padding="@dimen/padding_large"
+                        android:visibility="gone" />
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tl_answer"
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:layout_weight="1"
+                        android:layout_marginTop="@dimen/padding_normal"
                         android:padding="@dimen/padding_normal"
                         android:textColorHint="@color/hint_color">
 
@@ -165,23 +197,30 @@
                             android:id="@+id/et_answer"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_gravity="center_vertical"
                             android:backgroundTint="@color/hint_color"
                             android:hint="@string/your_ans"
                             android:textColor="@color/daynight_textColor" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <Button
-                        android:id="@+id/btn_submit"
-                        style="@style/YellowButtons"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:background="@drawable/buttonyellow"
-                        android:padding="@dimen/padding_normal"
-                        android:text="@string/submit_answer" />
                 </LinearLayout>
-            </LinearLayout>
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.core.widget.NestedScrollView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/card_bg"
+            android:gravity="end"
+            android:orientation="horizontal"
+            android:padding="@dimen/padding_normal">
+
+            <Button
+                android:id="@+id/btn_submit"
+                style="@style/YellowButtons"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/buttonyellow"
+                android:padding="@dimen/padding_normal"
+                android:text="@string/submit_answer" />
         </LinearLayout>
-    </LinearLayout>
-</FrameLayout>
+</LinearLayout>

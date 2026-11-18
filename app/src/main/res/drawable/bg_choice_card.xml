@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_checked="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/_10dp" />
+            <stroke
+                android:width="@dimen/hairline_border_width"
+                android:color="@color/mainColor" />
+            <solid android:color="@color/field_fill" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/_10dp" />
+            <stroke
+                android:width="@dimen/hairline_border_width"
+                android:color="@color/choice_border_unselected" />
+            <solid android:color="@color/card_bg" />
+        </shape>
+    </item>
+</selector>
