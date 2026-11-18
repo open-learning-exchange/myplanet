@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class LearnerRegistrationActivity : BaseActivity() {
@@ -35,7 +36,8 @@ class LearnerRegistrationActivity : BaseActivity() {
     private var passwordWatcher: TextWatcher? = null
     private var rePasswordWatcher: TextWatcher? = null
     private var emailWatcher: TextWatcher? = null
-
+    private var progressDialog: CustomProgressDialog? = null
+    private var memberSetupStarted = false
 
     private fun selectedGender(): String? = when {
         binding.male.isChecked -> "male"
@@ -97,34 +99,49 @@ class LearnerRegistrationActivity : BaseActivity() {
         }
     }
 
-    private fun addMember(info: LearnerRegistrationInfo) {
-        val customProgressDialog = CustomProgressDialog(this).apply {
+    private fun showProgress() {
+        val dialog = progressDialog ?: CustomProgressDialog(this).apply {
             setText(getString(R.string.creating_member_account))
-            show()
-        }
+        }.also { progressDialog = it }
+        dialog.show()
+    }
 
-        lifecycleScope.launch {
-            val result = viewModel.createMember(info)
-            withContext(dispatcherProvider.main) {
-                if (result.first) {
-                    val userName = info.username
-                    val securityCallback = OnChangedListener {
-                        customProgressDialog.dismiss()
-                        autoLoginNewMember(info.username, info.password)
-                    }
-                    startUpload("becomeMember", userName, securityCallback)
-
-                    if (result.second == getString(R.string.not_connect_to_planet_created_user_offline)) {
-                        securityCallback.onChanged()
-                    }
-                    Utilities.toast(this@LearnerRegistrationActivity, result.second)
-                } else {
-                    Utilities.toast(this@LearnerRegistrationActivity, result.second)
-                    customProgressDialog.dismiss()
-                    binding.btnSubmit.isEnabled = true
+    private fun renderRegistration(state: RegistrationState) {
+        when (state) {
+            RegistrationState.Idle -> {
+                progressDialog?.dismiss()
+                binding.btnSubmit.isEnabled = true
+            }
+            RegistrationState.Creating -> {
+                binding.btnSubmit.isEnabled = false
+                showProgress()
+            }
+            is RegistrationState.Created -> {
+                binding.btnSubmit.isEnabled = false
+                showProgress()
+                if (!memberSetupStarted) {
+                    memberSetupStarted = true
+                    finishMemberSetup(state.info, state.message)
                 }
             }
+            is RegistrationState.Failed -> {
+                Utilities.toast(this, state.message)
+                viewModel.failureShown()
+            }
         }
+    }
+
+    private fun finishMemberSetup(info: LearnerRegistrationInfo, message: String) {
+        val securityCallback = OnChangedListener {
+            progressDialog?.dismiss()
+            autoLoginNewMember(info.username, info.password)
+        }
+        startUpload("becomeMember", info.username, securityCallback)
+
+        if (message == getString(R.string.not_connect_to_planet_created_user_offline)) {
+            securityCallback.onChanged()
+        }
+        Utilities.toast(this, message)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -139,6 +156,10 @@ class LearnerRegistrationActivity : BaseActivity() {
         binding.spnLang.adapter = lnAadapter
         binding.txtDob.setOnClickListener {
             showDatePickerDialog()
+        }
+        savedInstanceState?.getString(STATE_DOB)?.takeIf { it.isNotEmpty() }?.let {
+            dob = it
+            binding.txtDob.text = it
         }
         val levels = resources.getStringArray(R.array.level)
         val lvAdapter  = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, levels)
@@ -190,16 +211,25 @@ class LearnerRegistrationActivity : BaseActivity() {
                         binding.etUsername.error = error
                         binding.btnSubmit.isEnabled = true
                     } else if (validateRegistrationInfo(info)) {
-                        addMember(info)
+                        viewModel.register(info)
                     } else {
                         binding.btnSubmit.isEnabled = true
                     }
                 }
             }
         }
+
+        collectWhenStarted(viewModel.registration) { renderRegistration(it) }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(STATE_DOB, dob)
     }
 
     override fun onDestroy() {
+        progressDialog?.dismiss()
+        progressDialog = null
         binding.etUsername.removeTextChangedListener(usernameWatcher)
         binding.etPassword.removeTextChangedListener(passwordWatcher)
         binding.etRePassword.removeTextChangedListener(rePasswordWatcher)
@@ -285,6 +315,10 @@ class LearnerRegistrationActivity : BaseActivity() {
             }
         }
         binding.etEmail.addTextChangedListener(emailWatcher)
+    }
+
+    companion object {
+        private const val STATE_DOB = "dob"
     }
 
     private fun validatePasswordMatch() {
