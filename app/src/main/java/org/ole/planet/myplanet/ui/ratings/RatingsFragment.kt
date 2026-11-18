@@ -114,13 +114,7 @@ class RatingsFragment : BaseBindingDialogFragment<FragmentRatingBinding>(Fragmen
             when (state) {
                 is RatingsViewModel.SubmitState.Success -> {
                     Utilities.toast(activity, "Thank you, your rating is submitted.")
-                    val t = type
-                    val i = id
-                    if (t != null && i != null) {
-                        ratingListener?.onRatingChanged(t, i)
-                    } else {
-                        ratingListener?.onRatingChanged()
-                    }
+                    notifyRatingChanged()
                     dismiss()
                 }
                 is RatingsViewModel.SubmitState.Error -> {
@@ -133,6 +127,17 @@ class RatingsFragment : BaseBindingDialogFragment<FragmentRatingBinding>(Fragmen
         }
     }
     
+    internal fun notifyRatingChanged() {
+        val listener = ratingListener ?: parentFragment as? OnRatingChangeListener ?: return
+        val t = type
+        val i = id
+        if (t != null && i != null) {
+            listener.onRatingChanged(t, i)
+        } else {
+            listener.onRatingChanged()
+        }
+    }
+
     private fun loadRatingData() {
         val t = type ?: return
         val i = id ?: return
