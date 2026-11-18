@@ -22,17 +22,12 @@ class RatingsFragment : BaseBindingDialogFragment<FragmentRatingBinding>(Fragmen
     var type: String? = ""
     var title: String? = ""
     private var ratingListener: OnRatingChangeListener? = null
-    private var dismissListener: (() -> Unit)? = null
     private var isUserReady = false
     
     private var hasPrefilledRating = false
     private var currentSubmitState: RatingsViewModel.SubmitState = RatingsViewModel.SubmitState.Idle
     fun setListener(listener: OnRatingChangeListener?) {
         this.ratingListener = listener
-    }
-
-    fun setOnDismissListener(listener: (() -> Unit)?) {
-        this.dismissListener = listener
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -42,7 +37,11 @@ class RatingsFragment : BaseBindingDialogFragment<FragmentRatingBinding>(Fragmen
 
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
-        dismissListener?.invoke()
+        if (!isStateSaved) {
+            if (isAdded) {
+                parentFragmentManager.setFragmentResult(REQUEST_KEY_DISMISSED, Bundle.EMPTY)
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -164,6 +163,7 @@ class RatingsFragment : BaseBindingDialogFragment<FragmentRatingBinding>(Fragmen
     companion object {
         private const val KEY_PREFILLED = "rating_prefilled"
         const val TAG = "RatingsFragment"
+        const val REQUEST_KEY_DISMISSED = "RatingsFragment.dismissed"
 
         fun newInstance(type: String?, id: String?, title: String?): RatingsFragment {
             val fragment = RatingsFragment()
