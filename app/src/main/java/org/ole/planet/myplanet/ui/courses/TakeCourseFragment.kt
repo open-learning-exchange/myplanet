@@ -51,6 +51,7 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
     private var currentCourseProgress = 0
     private var joinDialog: AlertDialog? = null
     private var lastPositionBeforeExam = -1
+    private var restoredPosition = -1
     private var coursesPagerAdapter: CoursesPagerAdapter? = null
     private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
     private var progressJob: Job? = null
@@ -65,6 +66,17 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
                 position = requireArguments().getInt("position")
             }
         }
+        restoredPosition = savedInstanceState?.getInt(KEY_POSITION, -1) ?: -1
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        val current = when {
+            restoredPosition >= 0 -> restoredPosition
+            _binding != null && this::steps.isInitialized -> binding.viewPager2.currentItem
+            else -> -1
+        }
+        if (current >= 0) outState.putInt(KEY_POSITION, current)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -89,7 +101,7 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
             }
         }
 
-        courseId?.let { viewModel.loadCourse(it) }
+        courseId?.let { viewModel.loadCourse(it, forceRefresh = savedInstanceState != null) }
     }
 
     private fun bindCourse(state: TakeCourseUiState.Success) {
@@ -111,9 +123,15 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
             binding.previousStep.visibility = View.GONE
         }
 
-        position = if (lastPositionBeforeExam > 0) lastPositionBeforeExam else if (currentStep > 0) currentStep else 0
+        position = when {
+            lastPositionBeforeExam > 0 -> lastPositionBeforeExam
+            restoredPosition >= 0 -> restoredPosition
+            currentStep > 0 -> currentStep
+            else -> 0
+        }
         position = position.coerceAtMost(CoursesStepsGate.lastOpenPage(blockingStepIndex, steps.size))
         lastPositionBeforeExam = -1
+        restoredPosition = -1
         setNavigationButtons()
 
         if (coursesPagerAdapter == null) {
@@ -520,6 +538,7 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
 
     companion object {
         private const val TAG = "TakeCourseFragment"
+        private const val KEY_POSITION = "current_step_position"
         // Special course with mandatory completion survey (e.g. MyPlanet Onboarding course)
         private const val MANDATORY_SURVEY_COURSE_ID = "4e6b78800b6ad18b4e8b0e1e38a98cac"
 
