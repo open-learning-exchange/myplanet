@@ -583,20 +583,7 @@ class VoicesRepositoryImpl @Inject constructor(
 
     override suspend fun countTopLevelByTeams(teamIds: List<String>): Map<String, Long> {
         if (teamIds.isEmpty()) return emptyMap()
-        val counts = teamIds.associateWith { 0L }.toMutableMap()
-        val patterns = teamIds.map { it to "\"_id\":\"$it\"" }
-        newsDao.getTopLevelTeamMembership(teamIds).forEach { row ->
-            val isTeamsViewable = row.viewableBy.equals("teams", ignoreCase = true)
-            patterns.forEach { (teamId, pattern) ->
-                val matchesViewable = isTeamsViewable &&
-                    row.viewableId.equals(teamId, ignoreCase = true)
-                val matchesViewIn = row.viewIn?.contains(pattern, ignoreCase = true) == true
-                if (matchesViewable || matchesViewIn) {
-                    counts[teamId] = (counts[teamId] ?: 0L) + 1L
-                }
-            }
-        }
-        return counts
+        return teamIds.distinct().associateWith { countTopLevelByTeam(it) }
     }
 
     override suspend fun getPendingNewsLogUploads(): List<org.ole.planet.myplanet.model.NewsLog> {
