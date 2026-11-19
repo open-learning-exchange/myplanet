@@ -304,20 +304,15 @@ class ProgressRepositoryImpl @Inject constructor(
         myCourses.forEach { course ->
             val hasValidId = !course.courseId.isNullOrBlank()
             val hasValidTitle = !course.courseTitle.isNullOrBlank()
-
-            // Get progress records for this specific course
             val courseProgressRecords = progressByCourse[course.courseId].orEmpty()
 
-            // Count UNIQUE steps that are passed (matches web: step.passed === true)
             val passedSteps = courseProgressRecords
                 .mapNotNullTo(HashSet()) { if (it.passed) it.stepNum else null }
                 .size
-            val totalSteps = course.courseSteps?.size ?: 0
+            val totalSteps = course.getNumberOfSteps()
 
-            // Web logic: ALL steps must be passed AND course must have at least one step
             val allStepsPassed = passedSteps == totalSteps && totalSteps > 0
 
-            // Match web behavior: Show badge if ALL steps are passed AND course has steps
             if (allStepsPassed && hasValidId && hasValidTitle) {
                 completedCourses.add(CourseCompletion(course.courseId, course.courseTitle))
             }

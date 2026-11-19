@@ -555,15 +555,12 @@ class ProgressRepositoryImplTest {
             MyCourse().apply {
                 courseId = "course1"
                 courseTitle = "Course 1"
-                courseSteps = mutableListOf(CourseStep().apply { courseId = "course1" })
+                setNumberOfSteps(1)
             },
             MyCourse().apply {
                 courseId = "course2"
                 courseTitle = "Course 2"
-                courseSteps = mutableListOf(
-                    CourseStep().apply { courseId = "course2" },
-                    CourseStep().apply { courseId = "course2" }
-                )
+                setNumberOfSteps(2)
             }
         )
 
@@ -708,7 +705,7 @@ class ProgressRepositoryImplTest {
             MyCourse().apply {
                 courseId = "course1"
                 courseTitle = "Course 1"
-                courseSteps = null
+                setNumberOfSteps(null)
             }
         )
 
@@ -731,10 +728,7 @@ class ProgressRepositoryImplTest {
             MyCourse().apply {
                 courseId = "course1"
                 courseTitle = "Course 1"
-                courseSteps = mutableListOf(
-                    CourseStep().apply { courseId = "course1" },
-                    CourseStep().apply { courseId = "course1" }
-                )
+                setNumberOfSteps(2)
             }
         )
 
@@ -760,10 +754,7 @@ class ProgressRepositoryImplTest {
             MyCourse().apply {
                 courseId = "course1"
                 courseTitle = "Course 1"
-                courseSteps = mutableListOf(
-                    CourseStep().apply { courseId = "course1" },
-                    CourseStep().apply { courseId = "course1" }
-                )
+                setNumberOfSteps(2)
             }
         )
 
@@ -787,7 +778,7 @@ class ProgressRepositoryImplTest {
             MyCourse().apply {
                 courseId = "course1"
                 courseTitle = "Course 1"
-                courseSteps = mutableListOf()
+                setNumberOfSteps(0)
             }
         )
 
@@ -961,17 +952,17 @@ class ProgressRepositoryImplTest {
             MyCourse().apply {
                 courseId = "" // Invalid ID
                 courseTitle = "Course 1"
-                courseSteps = mutableListOf(CourseStep().apply { courseId = "" })
+                setNumberOfSteps(1)
             },
             MyCourse().apply {
                 courseId = "course2"
                 courseTitle = "" // Invalid title
-                courseSteps = mutableListOf(CourseStep().apply { courseId = "course2" })
+                setNumberOfSteps(1)
             },
             MyCourse().apply {
                 courseId = "course3"
                 courseTitle = "Course 3"
-                courseSteps = mutableListOf(CourseStep().apply { courseId = "course3" })
+                setNumberOfSteps(1)
             }
         )
 
