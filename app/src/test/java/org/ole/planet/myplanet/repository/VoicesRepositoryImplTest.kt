@@ -187,6 +187,32 @@ class VoicesRepositoryImplTest {
     }
 
     @Test
+    fun `getDiscussionsByTeamIdFlow hands out posts already parsed so the adapter does no JSON work`() = testScope.runTest {
+        val viewIn = """[{"_id":"team1","section":"teams","name":"Gardeners"},{"_id":"c1","section":"community"}]"""
+        val post = News().apply {
+            id = "n1"
+            this.viewIn = viewIn
+            conversations = """[{"query":"hi","response":"hello"}]"""
+            imageUrls = mutableListOf("""{"imageUrl":"a.jpg"}""")
+        }
+        every { newsDao.getTopLevelByTeamFlow(any(), any()) } returns flowOf(listOf(post))
+
+        val emitted = repository.getDiscussionsByTeamIdFlow("team1").toList().single().single()
+
+        assertEquals(2, emitted.parsedViewIn?.size())
+        assertEquals(viewIn, emitted.rawViewIn)
+        assertEquals("Gardeners", emitted.parsedSharedTeamName)
+        assertEquals(1, emitted.parsedConversations?.size)
+        assertEquals("a.jpg", emitted.parsedImageUrls?.single()?.get("imageUrl")?.asString)
+
+        val cachedViewIn = emitted.parsedViewIn
+        val cachedImages = emitted.parsedImageUrls
+        emitted.preParse()
+        assertTrue(cachedViewIn === emitted.parsedViewIn)
+        assertTrue(cachedImages === emitted.parsedImageUrls)
+    }
+
+    @Test
     fun `getFilteredNews filters top-level posts by team`() = testScope.runTest {
         val news1 = News().apply {
             viewableBy = "teams"

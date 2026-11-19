@@ -9,6 +9,8 @@ import okhttp3.Response
 import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.utils.TimeProvider
 
+object NoNetworkRetry
+
 class RetryInterceptor @Inject constructor(
     private val broadcastService: BroadcastService,
     private val timeProvider: TimeProvider
@@ -30,6 +32,7 @@ class RetryInterceptor @Inject constructor(
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         val retryAllowed = isRetrySafe(request)
+        val retryNetworkErrors = request.tag(NoNetworkRetry::class.java) == null
         var tryCount = 0
         var response: Response? = null
         var lastError: IOException?
@@ -46,7 +49,7 @@ class RetryInterceptor @Inject constructor(
                     return response
                 }
             } catch (e: IOException) {
-                // Network failures (e.g. SocketTimeoutException) are retried like 5xx.
+                if (!retryNetworkErrors) throw e
                 lastError = e
             }
 

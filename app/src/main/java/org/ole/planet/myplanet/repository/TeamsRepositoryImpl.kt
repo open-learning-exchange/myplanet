@@ -1297,7 +1297,7 @@ class TeamsRepositoryImpl @Inject constructor(
             return
         }
         val model = existingTeam ?: MyTeam().apply { _id = teamId }
-        MyTeam.populateTeamFields(doc, model, true)
+        MyTeam.populateTeamFields(doc, model)
         processDescription(model.description)
         teamDao.upsert(model)
         existingTeams?.put(teamId, model)
