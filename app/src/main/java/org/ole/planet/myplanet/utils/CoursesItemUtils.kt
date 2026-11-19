@@ -121,7 +121,12 @@ internal object CoursesItemUtils {
     fun buildMetaLine(context: Context, course: Course): String {
         val parts = mutableListOf<String>()
         parts.add(context.getString(R.string.course_steps_count, course.numberOfSteps))
-        course.gradeLevel.takeIf { it.isNotBlank() }?.let { parts.add(it) }
+        course.gradeLevel.takeIf { it.isNotBlank() }?.let { parts.add(gradeLevelLabel(context, it)) }
         return parts.joinToString(" · ")
+    }
+
+    fun gradeLevelLabel(context: Context, value: String): String {
+        val index = context.resources.getStringArray(R.array.grade_level_values).indexOf(value)
+        return context.resources.getStringArray(R.array.grade_level).getOrNull(index) ?: value
     }
 }

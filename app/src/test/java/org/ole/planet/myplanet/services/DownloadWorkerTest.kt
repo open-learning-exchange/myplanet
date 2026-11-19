@@ -59,6 +59,7 @@ class DownloadWorkerTest {
     private lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var resourcesRepository: ResourcesRepository
     private lateinit var preferences: SharedPreferences
+    private lateinit var fallbackUrlResolver: FallbackUrlResolver
     private lateinit var worker: DownloadWorker
 
     @get:Rule
@@ -72,6 +73,8 @@ class DownloadWorkerTest {
         broadcastService = mockk(relaxed = true)
         resourcesRepository = mockk(relaxed = true)
         preferences = mockk(relaxed = true)
+        fallbackUrlResolver = mockk()
+        every { fallbackUrlResolver.resolve(any()) } returns null
 
         dispatcherProvider = mockk(relaxed = true)
         every { dispatcherProvider.io } returns testDispatcher
@@ -96,7 +99,8 @@ class DownloadWorkerTest {
                 broadcastService,
                 dispatcherProvider,
                 resourcesRepository,
-                preferences
+                preferences,
+                fallbackUrlResolver
             )
         )
         coEvery { worker.setProgress(any()) } returns Unit
@@ -332,6 +336,68 @@ class DownloadWorkerTest {
     }
 
     @Test
+    fun `an unreachable primary fails over without retries and the rest of the run goes to the alternative`() = runTest(testDispatcher) {
+        val primaryBase = "http://192.168.1.73"
+        val altBase = "https://planet.example.org"
+        val first = "$primaryBase/resources/1/a.png"
+        val second = "$primaryBase/resources/2/b.png"
+        every { preferences.getStringSet(any(), any()) } returns linkedSetOf(first, second)
+        every { workerParams.inputData.getString("urls_key") } returns "url_list_key"
+        every { workerParams.inputData.getBoolean("fromSync", false) } returns false
+        every { fallbackUrlResolver.resolve(any()) } answers {
+            val url = firstArg<String>()
+            FallbackUrlResolver.Fallback(primaryBase, url.replace(primaryBase, altBase))
+        }
+        mockkObject(FileUtils)
+        every { FileUtils.checkFileExist(context, any()) } returns false
+        val dir = java.nio.file.Files.createTempDirectory("download_worker").toFile()
+        every { FileUtils.getSDPathFromUrl(context, first) } returns java.io.File(dir, "a.png")
+        every { FileUtils.getSDPathFromUrl(context, second) } returns java.io.File(dir, "b.png")
+        coEvery { downloadRepository.downloadFileResponse(match { it.startsWith(primaryBase) }, any(), any(), any(), any()) } returns
+            DownloadResult.Error("Connection timed out")
+        coEvery { downloadRepository.downloadFileResponse(match { it.startsWith(altBase) }, any(), any(), any(), any()) } answers {
+            DownloadResult.Success("from-alternative".toByteArray().toResponseBody(null), 200)
+        }
+
+        val result = worker.doWork()
+
+        assertTrue(result is androidx.work.ListenableWorker.Result.Success)
+        coVerify(exactly = 1) { downloadRepository.downloadFileResponse(first, any(), any(), any(), false) }
+        coVerify(exactly = 0) { downloadRepository.downloadFileResponse(first, any(), any(), any(), true) }
+        coVerify(exactly = 0) { downloadRepository.downloadFileResponse(second, any(), any(), any(), any()) }
+        coVerify(exactly = 1) { downloadRepository.downloadFileResponse("$altBase/resources/1/a.png", any(), any(), any(), any()) }
+        coVerify(exactly = 1) { downloadRepository.downloadFileResponse("$altBase/resources/2/b.png", any(), any(), any(), any()) }
+        assertEquals("from-alternative", java.io.File(dir, "a.png").readText())
+        assertEquals("from-alternative", java.io.File(dir, "b.png").readText())
+        assertEquals(primaryBase, worker.unreachablePrimaryBase)
+        dir.deleteRecursively()
+        unmockkObject(FileUtils)
+    }
+
+    @Test
+    fun `the worker goes back to the primary when the remembered alternative stops answering`() = runTest(testDispatcher) {
+        val primaryBase = "http://192.168.1.73"
+        val altBase = "https://planet.example.org"
+        val url = "$primaryBase/resources/123/file.txt"
+        val outputFile = stubSingleDownload(url)
+        every { fallbackUrlResolver.resolve(url) } returns
+            FallbackUrlResolver.Fallback(primaryBase, "$altBase/resources/123/file.txt")
+        worker.unreachablePrimaryBase = primaryBase
+        coEvery { downloadRepository.downloadFileResponse(match { it.startsWith(altBase) }, any(), any(), any(), any()) } returns
+            DownloadResult.Error("Connection refused")
+        coEvery { downloadRepository.downloadFileResponse(url, any(), any(), any(), any()) } returns
+            DownloadResult.Success("from-primary".toByteArray().toResponseBody(null), 200)
+
+        val result = worker.doWork()
+
+        assertTrue(result is androidx.work.ListenableWorker.Result.Success)
+        coVerify(exactly = 1) { downloadRepository.downloadFileResponse(url, any(), any(), any(), true) }
+        assertEquals(null, worker.unreachablePrimaryBase)
+        assertEquals("from-primary", outputFile.readText())
+        outputFile.parentFile?.deleteRecursively()
+    }
+
+    @Test
     fun `resultFor succeeds on any success, retries a total failure, then gives up`() {
         assertTrue(DownloadWorker.resultFor(1, 3, runAttemptCount = 0) is androidx.work.ListenableWorker.Result.Success)
         assertTrue(DownloadWorker.resultFor(0, 3, runAttemptCount = 0) is androidx.work.ListenableWorker.Result.Retry)
@@ -439,7 +505,7 @@ class DownloadWorkerTest {
         val notificationManager = mockk<NotificationManager>(relaxed = true)
         every { context.getSystemService(Context.NOTIFICATION_SERVICE) } returns notificationManager
         val stoppable = spyk(
-            DownloadWorker(context, workerParams, downloadRepository, broadcastService, dispatcherProvider, resourcesRepository, preferences)
+            DownloadWorker(context, workerParams, downloadRepository, broadcastService, dispatcherProvider, resourcesRepository, preferences, fallbackUrlResolver)
         )
         coEvery { stoppable.setForeground(any()) } returns Unit
 
