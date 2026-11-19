@@ -152,6 +152,42 @@ class SyncManagerTest {
     }
 
     @Test
+    fun `a failed table pull is retried once and does not fail the sync when the retry succeeds`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+        coEvery { transactionSyncManager.syncDb(any(), any()) } returns 0
+        coEvery { transactionSyncManager.syncDb("notifications", any()) } returnsMany
+            listOf(TransactionSyncManager.SYNC_FAILED, 2584)
+        mockkObject(HeavyTableSyncWorker.Companion)
+        every { HeavyTableSyncWorker.schedule(any(), any()) } just Runs
+
+        syncManager.start(listener, "sync", listOf())
+
+        coVerify(exactly = 2) { transactionSyncManager.syncDb("notifications", any()) }
+        coVerify(exactly = 1) { transactionSyncManager.syncDb("news", any()) }
+        verify(exactly = 0) { listener.onSyncFailed(any()) }
+        assertEquals(SyncManager.SyncStatus.Success("Sync completed"), syncManager.syncStatus.value)
+        verify { sharedPrefManager.setLastSync(any()) }
+    }
+
+    @Test
+    fun `only tables that fail their retry are reported`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+        coEvery { transactionSyncManager.syncDb(any(), any()) } returns 0
+        coEvery { transactionSyncManager.syncDb("tablet_users", any()) } returns TransactionSyncManager.SYNC_FAILED
+        coEvery { transactionSyncManager.syncDb("notifications", any()) } returnsMany
+            listOf(TransactionSyncManager.SYNC_FAILED, 2584)
+        mockkObject(HeavyTableSyncWorker.Companion)
+        every { HeavyTableSyncWorker.schedule(any(), any()) } just Runs
+        val expectedMessage = context.getString(org.ole.planet.myplanet.R.string.sync_tables_failed, "tablet_users")
+
+        syncManager.start(listener, "sync", listOf())
+
+        coVerify(exactly = 2) { transactionSyncManager.syncDb("tablet_users", any()) }
+        verify { listener.onSyncFailed(expectedMessage) }
+        verify(exactly = 0) { sharedPrefManager.setLastSync(any()) }
+    }
+
+    @Test
     fun `a failed resource page fails the sync and does not stamp last sync`() = runTest {
         coEvery { transactionSyncManager.authenticate() } returns true
         coEvery { transactionSyncManager.syncDb(any(), any()) } returns 0

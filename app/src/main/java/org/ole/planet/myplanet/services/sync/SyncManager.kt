@@ -184,6 +184,7 @@ class SyncManager @Inject constructor(
                 }
                 syncJobs.awaitAll()
             }
+            retryFailedTables(failedTables)
 
             _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_resources), 2, 4)
             syncTimeLogger.startProcess("resource_sync")
@@ -238,6 +239,19 @@ class SyncManager @Inject constructor(
             handleException(err.message)
         } finally {
             destroy(succeeded)
+        }
+    }
+
+    // A table that failed while competing with the other parallel pulls (timeouts, dropped
+    // connections) gets one more attempt on its own before the sync is reported as incomplete
+    private suspend fun retryFailedTables(failedTables: ConcurrentLinkedQueue<String>) {
+        for (tableName in failedTables.toList()) {
+            syncPerf { "  ↻ Retrying $tableName sync" }
+            syncTimeLogger.startProcess("${tableName}_retry")
+            if (transactionSyncManager.syncDb(tableName) != TransactionSyncManager.SYNC_FAILED) {
+                failedTables.remove(tableName)
+            }
+            syncTimeLogger.endProcess("${tableName}_retry")
         }
     }
 
