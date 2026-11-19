@@ -70,6 +70,12 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setListeners()
+        parentFragmentManager.setFragmentResultListener(
+            RatingsFragment.REQUEST_KEY_DISMISSED,
+            viewLifecycleOwner
+        ) { _, _ ->
+            FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
+        }
         binding.backButton.setOnClickListener {
             FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
         }
@@ -424,11 +430,6 @@ class TakeCourseFragment : BaseBindingFragment<FragmentTakeCourseBinding>(Fragme
     private fun finishWithRatingPrompt(cId: String?, title: String, decision: RatingPromptDecision) {
         if (cId != null && decision == RatingPromptDecision.Show && isAdded) {
             val ratingDialog = RatingsFragment.newInstance("course", cId, title)
-            ratingDialog.setOnDismissListener {
-                if (isAdded) {
-                    FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
-                }
-            }
             ratingDialog.show(parentFragmentManager, RatingsFragment.TAG)
         } else if (isAdded) {
             FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)

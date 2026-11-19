@@ -231,7 +231,7 @@ class InlineResourceAdapter(
         val context = holder.itemView.context
         val targetWidthPx = (PDF_PREVIEW_WIDTH_DP * context.resources.displayMetrics.density).toInt()
         Glide.with(context).clear(holder.binding.ivResourcePreview)
-        val bitmap = PdfThumbnailLoader.firstPageBitmap(file, dispatcherProvider, targetWidthPx)
+        val bitmap = PdfThumbnailLoader.firstPageBitmap(file, dispatcherProvider, targetWidthPx, context.cacheDir)
         if (bitmap != null) {
             holder.binding.ivResourcePreview.visibility = View.VISIBLE
             holder.binding.ivResourcePreview.scaleType = ImageView.ScaleType.FIT_CENTER

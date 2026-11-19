@@ -41,6 +41,7 @@ class CoursesViewModel @Inject constructor(
     private var isDateAscending = true
     private var activeSort: SortType? = null
     private var sortJob: Job? = null
+    private var filterJob: Job? = null
 
     var currentFilterState: FilterState = FilterState("", "", "", emptyList())
         private set
@@ -110,6 +111,7 @@ class CoursesViewModel @Inject constructor(
     }
 
     fun loadCourses(isMyCourseLib: Boolean, userId: String?) {
+        filterJob?.cancel()
         viewModelScope.launch {
             val newState = withContext(dispatcherProvider.io) {
                 try {
@@ -165,7 +167,9 @@ class CoursesViewModel @Inject constructor(
     ) {
         val filterState = FilterState(searchText, selectedGrade, selectedSubject, tagNames, progressFilter, tags)
         currentFilterState = filterState
-        viewModelScope.launch {
+        
+        filterJob?.cancel()
+        filterJob = viewModelScope.launch {
             val newState = withContext(dispatcherProvider.io) {
                 val progressMap = _coursesState.value.progressMap
                 val tagsMap = _coursesState.value.tagsMap
