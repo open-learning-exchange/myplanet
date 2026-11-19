@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryBinding
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.Conversation
-import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.NewsShare
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
@@ -40,7 +40,6 @@ class ChatHistoryFragment : BaseBindingFragment<FragmentChatHistoryBinding>(Frag
     private var isQuestion: Boolean = false
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
-    private var sharedNewsMessages: List<News> = emptyList()
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
     private var sharedViewInIds: Map<String, Set<String>> = emptyMap()
     
@@ -141,7 +140,6 @@ class ChatHistoryFragment : BaseBindingFragment<FragmentChatHistoryBinding>(Frag
             requireContext(),
             emptyList(),
             user,
-            sharedNewsMessages,
             sharedViewInIds,
             shareTargets
         ) { map, chat ->
@@ -170,11 +168,10 @@ class ChatHistoryFragment : BaseBindingFragment<FragmentChatHistoryBinding>(Frag
             if (data == null) return@collectLatestWhenStarted
 
             user = data.currentUser
-            sharedNewsMessages = data.newsMessages
             shareTargets = data.shareTargets
 
             sharedViewInIds = data.sharedViewInIds
-            newAdapter.updateCachedData(user, sharedNewsMessages, sharedViewInIds)
+            newAdapter.updateCachedData(user, sharedViewInIds)
             newAdapter.updateShareTargets(shareTargets)
 
             if (data.chatHistory.isNotEmpty()) {
@@ -210,11 +207,14 @@ class ChatHistoryFragment : BaseBindingFragment<FragmentChatHistoryBinding>(Frag
                 is ChatViewModel.ShareChatResult.Shared -> {
                     if (isAdded && _binding != null) {
                         if (user?.planetCode != null) {
-                            sharedNewsMessages = sharedNewsMessages + result.news
-                            sharedViewInIds = sharedViewModel.extractSharedViewInIds(sharedNewsMessages)
+                            val newShare = NewsShare(result.news.newsId, result.news.viewIn)
+                            val added = sharedViewModel.extractSharedViewInIds(listOf(newShare))
+                            sharedViewInIds = sharedViewInIds + added.mapValues { (newsId, ids) ->
+                                sharedViewInIds[newsId].orEmpty() + ids
+                            }
                         }
                         (binding.recyclerView.adapter as? ChatHistoryAdapter)?.let { adapter ->
-                            adapter.updateCachedData(user, sharedNewsMessages, sharedViewInIds)
+                            adapter.updateCachedData(user, sharedViewInIds)
                             adapter.notifyChatShared(result.chatId)
                         }
                     }
@@ -224,7 +224,6 @@ class ChatHistoryFragment : BaseBindingFragment<FragmentChatHistoryBinding>(Frag
     }
 
     override fun onDestroyView() {
-        sharedNewsMessages = emptyList()
         shareTargets = ChatShareTargets(null, emptyList(), emptyList())
         user = null
         super.onDestroyView()

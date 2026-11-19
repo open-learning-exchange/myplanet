@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.CouchDBResponse
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.NewsShare
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.ServerReachabilityProvider
@@ -308,28 +309,16 @@ class ChatRepositoryImplTest {
 
     @Test
     fun `extractSharedViewInIds ignores news with null newsId`() {
-        val news = News().apply {
-            newsId = null
-            viewIn = """[{"_id":"id1"}]"""
-        }
+        val news = NewsShare(null, """[{"_id":"id1"}]""")
         val result = chatRepository.extractSharedViewInIds(listOf(news))
         assertTrue(result.isEmpty())
     }
 
     @Test
     fun `extractSharedViewInIds extracts unique viewIn ids grouped by newsId`() {
-        val news1 = News().apply {
-            newsId = "news_1"
-            viewIn = """[{"_id":"id1"}, {"_id":"id2"}]"""
-        }
-        val news2 = News().apply {
-            newsId = "news_1"
-            viewIn = """[{"_id":"id2"}, {"_id":"id3"}]"""
-        }
-        val news3 = News().apply {
-            newsId = "news_2"
-            viewIn = """[{"_id":"id4"}]"""
-        }
+        val news1 = NewsShare("news_1", """[{"_id":"id1"}, {"_id":"id2"}]""")
+        val news2 = NewsShare("news_1", """[{"_id":"id2"}, {"_id":"id3"}]""")
+        val news3 = NewsShare("news_2", """[{"_id":"id4"}]""")
 
         val result = chatRepository.extractSharedViewInIds(listOf(news1, news2, news3))
 
@@ -340,22 +329,10 @@ class ChatRepositoryImplTest {
 
     @Test
     fun `extractSharedViewInIds handles malformed json gracefully`() {
-        val news1 = News().apply {
-            newsId = "news_1"
-            viewIn = "malformed json"
-        }
-        val news2 = News().apply {
-            newsId = "news_2"
-            viewIn = """{"not":"an array"}"""
-        }
-        val news3 = News().apply {
-            newsId = "news_3"
-            viewIn = null
-        }
-        val news4 = News().apply {
-            newsId = "news_4"
-            viewIn = """[{"no_id":"present"}]"""
-        }
+        val news1 = NewsShare("news_1", "malformed json")
+        val news2 = NewsShare("news_2", """{"not":"an array"}""")
+        val news3 = NewsShare("news_3", null)
+        val news4 = NewsShare("news_4", """[{"no_id":"present"}]""")
 
         val result = chatRepository.extractSharedViewInIds(listOf(news1, news2, news3, news4))
 
