@@ -15,6 +15,7 @@ import io.mockk.verify
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
@@ -31,6 +32,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 
 @HiltAndroidTest
@@ -56,12 +58,25 @@ class TakeCourseFragmentStepLockTest {
         CourseStep(id = "step_3", courseId = COURSE_ID, stepTitle = "Three")
     )
 
+    private val activityControllers = mutableListOf<ActivityController<TestDashboardElementActivity>>()
+
     @Before
     fun setUp() {
         hiltRule.inject()
         UrlUtils.init(sharedPrefManager)
         // The step pages load their own step from the database
         runBlocking { courseStepDao.upsertAll(steps) }
+    }
+
+    // The step pages are real CourseStepFragments that load on real IO threads and post back to the
+    // main looper. Left alive, a page that finishes after this test posts its UI update during a later
+    // test's idle(), after Robolectric has reset the environment, and the NPE it throws then fails the
+    // next runTest in the same JVM with UncaughtExceptionsBeforeTest.
+    @After
+    fun tearDown() {
+        activityControllers.forEach { it.pause().stop().destroy() }
+        activityControllers.clear()
+        idle()
     }
 
     @Test
@@ -146,7 +161,9 @@ class TakeCourseFragmentStepLockTest {
         coEvery { viewModel.getBlockingStepIndex(any(), any(), any()) } returns blockingStepIndex
         coEvery { viewModel.getCurrentProgress(any(), any(), any()) } returns savedProgress
 
-        val activity = Robolectric.buildActivity(TestDashboardElementActivity::class.java).setup().get()
+        val controller = Robolectric.buildActivity(TestDashboardElementActivity::class.java).setup()
+        activityControllers += controller
+        val activity = controller.get()
         val fragment = TakeCourseFragment()
         fragment.arguments = Bundle().apply { putString("id", COURSE_ID) }
         savedState?.let { fragment.setInitialSavedState(it) }
