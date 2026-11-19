@@ -30,8 +30,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
-import org.ole.planet.myplanet.model.CustomVoiceLabel
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.TeamVoiceLabel
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.robolectric.RobolectricTestRunner
@@ -322,8 +322,8 @@ class VoicesLabelManagerTest {
     @Test
     fun testAddLabelMenu_IncludesCustomLabels_AndAddsStoredName() = runTest {
         voicesLabelManager.customLabels = listOf(
-            CustomVoiceLabel("announcement", "pink"),
-            CustomVoiceLabel("Offer", "lime"),
+            TeamVoiceLabel("announcement", "pink"),
+            TeamVoiceLabel("Offer", "lime"),
         )
         voicesLabelManager.setupAddLabelMenu(binding, voice, true)
 
@@ -340,7 +340,7 @@ class VoicesLabelManagerTest {
 
     @Test
     fun testShowChips_CustomLabel_UsesConfiguredColor() {
-        voicesLabelManager.customLabels = listOf(CustomVoiceLabel("announcement", "pink"))
+        voicesLabelManager.customLabels = listOf(TeamVoiceLabel("announcement", "pink"))
         voice.labels = listOf("Announcement", "offer")
 
         voicesLabelManager.showChips(binding, voice, true)
@@ -358,7 +358,7 @@ class VoicesLabelManagerTest {
         voicesLabelManager.showChips(binding, voice, true)
         val before = fbChips.getChildAt(0) as Chip
 
-        voicesLabelManager.customLabels = listOf(CustomVoiceLabel("event", "lime"))
+        voicesLabelManager.customLabels = listOf(TeamVoiceLabel("event", "lime"))
         voicesLabelManager.showChips(binding, voice, true)
 
         val after = fbChips.getChildAt(0) as Chip
@@ -368,7 +368,7 @@ class VoicesLabelManagerTest {
 
     @Test
     fun testShowChips_AllBuiltInUsed_StillOffersCustomLabels() {
-        voicesLabelManager.customLabels = listOf(CustomVoiceLabel("event"))
+        voicesLabelManager.customLabels = listOf(TeamVoiceLabel("event"))
         voice.labels = Constants.LABELS.values.toList()
 
         voicesLabelManager.showChips(binding, voice, true)

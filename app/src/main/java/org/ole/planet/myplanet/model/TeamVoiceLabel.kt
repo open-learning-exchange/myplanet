@@ -11,7 +11,7 @@ import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.R
 
 @Serializable
-data class CustomVoiceLabel(
+data class TeamVoiceLabel(
     val name: String,
     val color: String = DEFAULT_COLOR,
 ) {
@@ -33,7 +33,7 @@ data class CustomVoiceLabel(
             "brown" to R.color.voice_label_brown,
         )
 
-        fun parse(array: JsonArray): List<CustomVoiceLabel> {
+        fun parse(array: JsonArray): List<TeamVoiceLabel> {
             val seen = mutableSetOf<String>()
             return array.mapNotNull { element ->
                 val (rawName, rawColor) = when (element) {
@@ -48,11 +48,11 @@ data class CustomVoiceLabel(
                 val name = rawName.trim()
                 if (name.isEmpty() || !seen.add(name.lowercase())) return@mapNotNull null
                 val color = rawColor?.takeIf { it in COLOR_RES } ?: DEFAULT_COLOR
-                CustomVoiceLabel(name, color)
+                TeamVoiceLabel(name, color)
             }
         }
 
-        fun toJsonArray(labels: List<CustomVoiceLabel>): JsonArray = buildJsonArray {
+        fun toJsonArray(labels: List<TeamVoiceLabel>): JsonArray = buildJsonArray {
             labels.forEach { label ->
                 add(buildJsonObject {
                     put("name", label.name)

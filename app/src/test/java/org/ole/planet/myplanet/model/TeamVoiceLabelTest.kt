@@ -5,7 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-class CustomVoiceLabelTest {
+class TeamVoiceLabelTest {
 
     @Test
     fun populateTeamFields_readsObjectAndStringLabels() {
@@ -30,10 +30,10 @@ class CustomVoiceLabelTest {
 
         assertEquals(
             listOf(
-                CustomVoiceLabel("announcement", "pink"),
-                CustomVoiceLabel("event", "lime"),
-                CustomVoiceLabel("Legacy", CustomVoiceLabel.DEFAULT_COLOR),
-                CustomVoiceLabel("odd", CustomVoiceLabel.DEFAULT_COLOR),
+                TeamVoiceLabel("announcement", "pink"),
+                TeamVoiceLabel("event", "lime"),
+                TeamVoiceLabel("Legacy", TeamVoiceLabel.DEFAULT_COLOR),
+                TeamVoiceLabel("odd", TeamVoiceLabel.DEFAULT_COLOR),
             ),
             team.customVoiceLabels
         )
@@ -51,7 +51,7 @@ class CustomVoiceLabelTest {
         val team = MyTeam().apply {
             _id = "planet@parent"
             type = "services"
-            customVoiceLabels = listOf(CustomVoiceLabel("announcement", "pink"))
+            customVoiceLabels = listOf(TeamVoiceLabel("announcement", "pink"))
         }
 
         val serialized = MyTeam.serialize(team)
@@ -62,7 +62,7 @@ class CustomVoiceLabelTest {
 
     @Test
     fun colorRes_defaultHasNoOverride() {
-        assertNull(CustomVoiceLabel("x").colorRes)
-        assertEquals(org.ole.planet.myplanet.R.color.voice_label_pink, CustomVoiceLabel("x", "pink").colorRes)
+        assertNull(TeamVoiceLabel("x").colorRes)
+        assertEquals(org.ole.planet.myplanet.R.color.voice_label_pink, TeamVoiceLabel("x", "pink").colorRes)
     }
 }

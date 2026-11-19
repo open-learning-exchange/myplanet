@@ -5,7 +5,7 @@ import java.util.Date
 import kotlinx.serialization.json.Json
 import org.ole.planet.myplanet.model.Attachment
 import org.ole.planet.myplanet.model.Conversation
-import org.ole.planet.myplanet.model.CustomVoiceLabel
+import org.ole.planet.myplanet.model.TeamVoiceLabel
 
 class Converters {
     @TypeConverter
@@ -52,14 +52,14 @@ class Converters {
     }
 
     @TypeConverter
-    fun fromCustomVoiceLabelList(value: List<CustomVoiceLabel>?): String? {
+    fun fromTeamVoiceLabelList(value: List<TeamVoiceLabel>?): String? {
         return value?.let { json.encodeToString(it) }
     }
 
     @TypeConverter
-    fun toCustomVoiceLabelList(value: String?): List<CustomVoiceLabel>? {
+    fun toTeamVoiceLabelList(value: String?): List<TeamVoiceLabel>? {
         if (value.isNullOrBlank()) return null
-        return json.decodeFromString<List<CustomVoiceLabel>>(value)
+        return json.decodeFromString<List<TeamVoiceLabel>>(value)
     }
 
     companion object {

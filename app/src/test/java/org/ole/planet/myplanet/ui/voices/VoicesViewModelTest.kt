@@ -18,9 +18,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.model.CustomVoiceLabel
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.TeamVoiceLabel
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -364,7 +364,7 @@ class VoicesViewModelTest {
     fun `community custom labels join the filter list and filter case-insensitively`() = runTest {
         val community = MyTeam().apply {
             _id = "test_user"
-            customVoiceLabels = listOf(CustomVoiceLabel("announcement", "pink"), CustomVoiceLabel("event", "lime"))
+            customVoiceLabels = listOf(TeamVoiceLabel("announcement", "pink"), TeamVoiceLabel("event", "lime"))
         }
         coEvery { teamsRepository.getTeamById("test_user") } returns community
         val announced = mockk<News>(relaxed = true) { coEvery { labels } returns listOf("Announcement") }

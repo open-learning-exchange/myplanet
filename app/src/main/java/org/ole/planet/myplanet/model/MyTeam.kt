@@ -59,7 +59,7 @@ open class MyTeam(
     var endDate: Long = 0,
     var updatedDate: Long = 0,
     var imageName: String? = null,
-    var customVoiceLabels: List<CustomVoiceLabel>? = null
+    var customVoiceLabels: List<TeamVoiceLabel>? = null
 ) {
     @get:androidx.room.Ignore
     var id: String
@@ -121,7 +121,7 @@ open class MyTeam(
             team.updatedDate = JsonUtils.getLong("updatedDate", kDoc)
             getFirstAttachmentName(doc)?.let { team.imageName = it }
             team.customVoiceLabels = (kDoc["customVoiceLabels"] as? KJsonArray)
-                ?.let(CustomVoiceLabel::parse)
+                ?.let(TeamVoiceLabel::parse)
 
             val localCourses = team.courses?.toList() ?: emptyList()
 
@@ -228,7 +228,7 @@ open class MyTeam(
                 put("title", team.title)
                 put("rules", team.rules)
 
-                team.customVoiceLabels?.let { put("customVoiceLabels", CustomVoiceLabel.toJsonArray(it)) }
+                team.customVoiceLabels?.let { put("customVoiceLabels", TeamVoiceLabel.toJsonArray(it)) }
 
                 if (team.teamType == "debit" || team.teamType == "credit") {
                     put("type", team.teamType)

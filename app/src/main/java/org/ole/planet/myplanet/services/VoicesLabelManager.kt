@@ -15,8 +15,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
-import org.ole.planet.myplanet.model.CustomVoiceLabel
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.TeamVoiceLabel
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities
@@ -30,7 +30,7 @@ class VoicesLabelManager(
 ) {
     private val renderedStateCache = WeakHashMap<RowNewsBinding, RenderedState>()
 
-    var customLabels: List<CustomVoiceLabel> = emptyList()
+    var customLabels: List<TeamVoiceLabel> = emptyList()
 
     fun setupAddLabelMenu(binding: RowNewsBinding, voice: News?, canManageLabels: Boolean) {
         binding.btnAddLabel.setOnClickListener(null)
@@ -119,7 +119,7 @@ class VoicesLabelManager(
         val voiceId: String?,
         val labels: List<String>,
         val canManageLabels: Boolean,
-        val customLabels: List<CustomVoiceLabel>,
+        val customLabels: List<TeamVoiceLabel>,
     )
 
     private fun allLabelOptions(): Map<String, String> {

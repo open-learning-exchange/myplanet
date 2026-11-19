@@ -18,9 +18,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.model.CustomVoiceLabel
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.TeamVoiceLabel
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
@@ -55,9 +55,9 @@ class VoicesViewModel @Inject constructor(
     private val _createNewsSuccess = Channel<News?>(Channel.BUFFERED)
     val createNewsSuccess: Flow<News?> = _createNewsSuccess.receiveAsFlow()
 
-    private val _customLabels = MutableStateFlow<List<CustomVoiceLabel>>(emptyList())
+    private val _customLabels = MutableStateFlow<List<TeamVoiceLabel>>(emptyList())
 
-    val customLabels: StateFlow<List<CustomVoiceLabel>> = _customLabels.asStateFlow()
+    val customLabels: StateFlow<List<TeamVoiceLabel>> = _customLabels.asStateFlow()
 
     private var observeJob: Job? = null
 
@@ -85,7 +85,7 @@ class VoicesViewModel @Inject constructor(
         }
     }
 
-    private suspend fun loadCustomLabels(communityId: String): List<CustomVoiceLabel> = try {
+    private suspend fun loadCustomLabels(communityId: String): List<TeamVoiceLabel> = try {
         teamsRepository.getTeamById(communityId)?.customVoiceLabels.orEmpty()
     } catch (e: CancellationException) {
         throw e
