@@ -38,6 +38,7 @@ class ResourceViewerActivity : AppCompatActivity() {
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
 
+        exitCoordinator.register()
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
