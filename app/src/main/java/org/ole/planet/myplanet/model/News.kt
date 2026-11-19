@@ -235,6 +235,29 @@ open class News {
         labels = newLabels
     }
 
+    fun preParse() {
+        if (rawViewIn != viewIn || (parsedViewIn == null && !viewIn.isNullOrEmpty())) {
+            parsedViewIn = viewIn?.takeIf { it.isNotEmpty() }?.let {
+                try { GsonUtils.gson.fromJson(it, JsonArray::class.java) } catch (_: Exception) { null }
+            }
+            rawViewIn = viewIn
+            parsedSharedTeamName = GsonUtils.extractSharedTeamName(this)
+        }
+        if (rawConversations != conversations || (parsedConversations == null && !conversations.isNullOrEmpty())) {
+            parsedConversations = conversations?.takeIf { it.isNotEmpty() }?.let {
+                try { GsonUtils.gson.fromJson(it, Array<Conversation>::class.java).toList() } catch (_: Exception) { null }
+            }
+            rawConversations = conversations
+        }
+        val currentImageUrls = imageUrls?.toList()
+        if (rawImageUrls != currentImageUrls) {
+            parsedImageUrls = currentImageUrls?.takeIf { it.isNotEmpty() }?.let { urls ->
+                try { urls.map { GsonUtils.gson.fromJson(it, JsonObject::class.java) } } catch (_: Exception) { null }
+            }
+            rawImageUrls = currentImageUrls
+        }
+    }
+
     @get:Ignore
     val isCommunityNews: Boolean
         get() {
