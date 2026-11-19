@@ -66,6 +66,7 @@ class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(Fragme
     var user: UserEntity? = null
 
     private var lastChatHistory: List<Conversation>? = null
+    private var hasRenderedHistory = false
     private var lastAiProvider: String? = null
     private var lastAiProvidersLoading: Boolean? = null
     private var lastAiProvidersError: Boolean? = null
@@ -152,7 +153,7 @@ class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(Fragme
             binding.courseContextBanner.text = buildBannerText()
         }
         val prefill = selectedText
-        if (!prefill.isNullOrBlank()) {
+        if (savedInstanceState == null && !prefill.isNullOrBlank()) {
             binding.editGchatMessage.setText(prefill)
             binding.editGchatMessage.setSelection(prefill.length)
         }
@@ -410,7 +411,10 @@ class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(Fragme
                     lastChatHistory = state.selectedChatHistory
                     mAdapter.clearData()
                     sharedViewModel.clearPaginationState()
-                    binding.editGchatMessage.text.clear()
+                    if (hasRenderedHistory) {
+                        binding.editGchatMessage.text.clear()
+                    }
+                    hasRenderedHistory = true
                     binding.textGchatIndicator.visibility = View.GONE
                     pendingQueryShown = false
                     if (!state.selectedChatHistory.isNullOrEmpty()) {
@@ -753,6 +757,7 @@ class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(Fragme
         speechRecognizer?.destroy()
 
         lastChatHistory = null
+        hasRenderedHistory = false
         lastAiProvider = null
         lastAiProvidersLoading = null
         lastAiProvidersError = null
