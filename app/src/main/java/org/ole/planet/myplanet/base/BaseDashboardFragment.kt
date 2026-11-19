@@ -205,7 +205,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
         val filteredCourses = courses.filter { !it.courseTitle.isNullOrBlank() }
         userCourses = filteredCourses
         setCountText(filteredCourses.size, MyCourse::class.java, requireView())
-        if (flexboxLayout.isRenderedWith(filteredCourses.map { it.courseId to it.courseTitle })) return
+        if (flexboxLayout.isRenderedWith(filteredCourses.map { listOf(it.courseId, it.courseTitle, it.coverFileName, it.courseRev) })) return
         flexboxLayout.removeAllViews()
         if (filteredCourses.isEmpty()) {
             renderPlaceholder(flexboxLayout, getString(R.string.no_courses_joined_yet)) {
@@ -218,8 +218,7 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
             return
         }
         for (items in filteredCourses) {
-            val dashboardItem = DashboardItem(items.courseId, items.courseTitle, null, ItemType.COURSE)
-            flexboxLayout.addView(createCourseChip(dashboardItem), createChipLayoutParams())
+            flexboxLayout.addView(createCourseChip(items), createChipLayoutParams())
         }
     }
 

@@ -9,6 +9,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.NoNetworkRetry
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -22,11 +23,18 @@ class DownloadRepositoryImpl @Inject constructor(
 
     private fun diagnosticUrl(u: HttpUrl): String = u.newBuilder().username("").password("").query(null).fragment(null).build().toString()
 
-    override suspend fun downloadFileResponse(url: String, authHeader: String, resumeOffset: Long, ifRange: String?): DownloadResult = withContext(dispatcherProvider.io) {
+    override suspend fun downloadFileResponse(
+        url: String,
+        authHeader: String,
+        resumeOffset: Long,
+        ifRange: String?,
+        retryNetworkErrors: Boolean
+    ): DownloadResult = withContext(dispatcherProvider.io) {
         try {
             val rangeHeader = if (resumeOffset > 0) "bytes=$resumeOffset-" else null
             val ifRangeHeader = if (resumeOffset > 0) ifRange else null
-            val response = apiInterface.downloadFile(authHeader, url, rangeHeader, ifRangeHeader)
+            val noNetworkRetry = if (retryNetworkErrors) null else NoNetworkRetry
+            val response = apiInterface.downloadFile(authHeader, url, rangeHeader, ifRangeHeader, noNetworkRetry)
             if (response.isSuccessful) {
                 val responseBody = response.body()
                 if (responseBody == null) {
