@@ -606,12 +606,7 @@ class TeamsRepositoryImpl @Inject constructor(
         if (validIds.isEmpty()) return emptyMap()
 
         val cutoff = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -30) }.timeInMillis
-        val recentLogs = teamLogDao.getRecentTeamVisits(cutoff, validIds)
-
-        return recentLogs.mapNotNull { it.teamId }
-            .groupingBy { it }
-            .eachCount()
-            .mapValues { it.value.toLong() }
+        return teamLogDao.countRecentTeamVisits(cutoff, validIds).associate { it.teamId to it.visits }
     }
 
     override suspend fun requestToJoin(teamId: String, userId: String?, userPlanetCode: String?, teamType: String?) {
