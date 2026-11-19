@@ -5,6 +5,7 @@ import java.util.Date
 import kotlinx.serialization.json.Json
 import org.ole.planet.myplanet.model.Attachment
 import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.TeamVoiceLabel
 
 class Converters {
     @TypeConverter
@@ -48,6 +49,17 @@ class Converters {
     fun toAttachmentList(value: String?): List<Attachment>? {
         if (value.isNullOrBlank()) return null
         return json.decodeFromString<List<Attachment>>(value)
+    }
+
+    @TypeConverter
+    fun fromTeamVoiceLabelList(value: List<TeamVoiceLabel>?): String? {
+        return value?.let { json.encodeToString(it) }
+    }
+
+    @TypeConverter
+    fun toTeamVoiceLabelList(value: String?): List<TeamVoiceLabel>? {
+        if (value.isNullOrBlank()) return null
+        return json.decodeFromString<List<TeamVoiceLabel>>(value)
     }
 
     companion object {
