@@ -12,21 +12,8 @@
 -keepattributes EnclosingMethod
 -keepattributes InnerClasses
 
-# Realm
--keep class io.realm.annotations.RealmModule
--keep @io.realm.annotations.RealmModule class *
--keep class io.realm.internal.Keep
--keep @io.realm.internal.Keep class * { *; }
--dontwarn javax.**
--dontwarn io.realm.**
-
-# Gson / Retrofit
+# Gson reflects over model fields; Gson and Retrofit ship their own consumer rules
 -keep class org.ole.planet.myplanet.model.** { *; }
--keep class com.google.gson.** { *; }
--keep interface com.google.gson.** { *; }
--dontwarn com.google.gson.**
--dontwarn retrofit2.**
--keep class retrofit2.** { *; }
 
 # Glide
 -keep public class * implements com.bumptech.glide.module.GlideModule
@@ -36,9 +23,9 @@
   public *;
 }
 
-# MPAndroidChart
--keep class com.github.mikephil.charting.** { *; }
-
 # Markwon missing optional dependencies
 -dontwarn com.caverock.androidsvg.**
 -dontwarn org.commonmark.ext.gfm.strikethrough.**
+
+# PdfBox-Android optional JPEG 2000 decoder
+-dontwarn com.gemalto.jp2.**

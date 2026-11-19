@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
@@ -50,6 +51,12 @@ data class ChatUiState(
     val aiProvidersLoading: Boolean = false,
     val aiProvidersError: Boolean = false
 )
+
+sealed class ChatRequestState {
+    object Idle : ChatRequestState()
+    data class Sending(val requestId: Long, val query: String) : ChatRequestState()
+    data class Done(val requestId: Long, val query: String, val result: ChatResult) : ChatRequestState()
+}
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
@@ -278,6 +285,52 @@ class ChatViewModel @Inject constructor(
     }
     suspend fun getLatestRev(id: String): String? {
         return chatRepository.getLatestRev(id)
+    }
+
+    private val _chatRequest = MutableStateFlow<ChatRequestState>(ChatRequestState.Idle)
+    val chatRequest: StateFlow<ChatRequestState> = _chatRequest.asStateFlow()
+    private var nextRequestId = 0L
+
+    fun sendChat(query: String, displayQuery: String, userName: String?, aiProvider: AiProvider,
+        conversationId: String, rev: String, refreshRev: Boolean, beforeSend: suspend () -> Unit = {}
+    ): Boolean {
+        if (_chatRequest.value is ChatRequestState.Sending) return false
+        val requestId = ++nextRequestId
+        _chatRequest.value = ChatRequestState.Sending(requestId, displayQuery)
+        viewModelScope.launch {
+            val result = try {
+                beforeSend()
+                if (conversationId.isEmpty()) {
+                    chatRepository.sendNewChatRequest(query, userName, aiProvider)
+                } else {
+                    val latestRev = if (refreshRev) {
+                        try {
+                            chatRepository.getLatestRev(conversationId)
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (_: Exception) {
+                            null
+                        } ?: rev
+                    } else {
+                        rev
+                    }
+                    chatRepository.sendContinueChatRequest(query, userName, aiProvider, conversationId, latestRev)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                ChatResult.Error(e.message ?: "")
+            }
+            _chatRequest.value = ChatRequestState.Done(requestId, displayQuery, result)
+        }
+        return true
+    }
+
+    fun consumeChatResult(requestId: Long) {
+        val state = _chatRequest.value
+        if (state is ChatRequestState.Done && state.requestId == requestId) {
+            _chatRequest.value = ChatRequestState.Idle
+        }
     }
     suspend fun sendNewChatRequest(query: String, userName: String?, aiProvider: AiProvider): ChatResult {
         return chatRepository.sendNewChatRequest(query, userName, aiProvider)

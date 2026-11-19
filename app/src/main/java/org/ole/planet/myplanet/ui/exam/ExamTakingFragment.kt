@@ -88,6 +88,10 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         savedInstanceState?.let { currentIndex = it.getInt(KEY_CURRENT_INDEX, currentIndex) }
+        if (savedInstanceState?.getBoolean(KEY_FINISHED) == true) {
+            restoreFinishedState()
+            return
+        }
         val resumeSubmissionId = savedInstanceState?.getString(KEY_SUBMISSION_ID) ?: sub?.id
         initializeExamData(resumeSubmissionId)
         setupListeners()
@@ -97,6 +101,18 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         super.onSaveInstanceState(outState)
         outState.putString(KEY_SUBMISSION_ID, sub?.id)
         outState.putInt(KEY_CURRENT_INDEX, currentIndex)
+        outState.putBoolean(KEY_FINISHED, isFinished)
+    }
+
+    private fun restoreFinishedState() {
+        isFinished = true
+        binding.container.visibility = View.GONE
+        binding.btnSubmit.visibility = View.GONE
+        
+        val isTeamSurvey = isTeam && type?.startsWith("survey") == true
+        if (!isTeamSurvey) {
+            showFinishDialog()
+        }
     }
 
     private fun computeParentId(): String? {
@@ -897,5 +913,6 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         const val TAG = "ExamTakingFragment"
         const val KEY_SUBMISSION_ID = "exam_submission_id"
         const val KEY_CURRENT_INDEX = "exam_current_index"
+        const val KEY_FINISHED = "exam_finished"
     }
 }
