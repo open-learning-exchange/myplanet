@@ -375,7 +375,7 @@
 
     <string-array name="grade_level">
         <item>Tous</item>
-        <item>Pré-maternelle</item>
+        <item>Ouvert</item>
         <item>Maternelle</item>
         <item>1</item>
         <item>2</item>

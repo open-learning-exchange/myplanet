@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.MyTeam
@@ -47,6 +49,8 @@ class TeamViewModel @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val realtimeSyncManager: RealtimeSyncManager
 ) : ViewModel() {
+    private val teamSaveMutex = Mutex()
+
     private val _teamData = MutableStateFlow<List<TeamDetails>>(emptyList())
     val teamData: StateFlow<List<TeamDetails>> = _teamData
 
@@ -260,10 +264,10 @@ class TeamViewModel @Inject constructor(
         isPublic: Boolean,
         category: String?,
         userModel: UserEntity
-    ): TeamActionResult {
+    ): TeamActionResult = teamSaveMutex.withLock {
         val teamTypeForValidation = if (category == "enterprise") "enterprise" else "team"
         if (teamsRepository.isTeamNameExists(name, teamTypeForValidation, null)) {
-            return TeamActionResult.NameExists
+            return@withLock TeamActionResult.NameExists
         }
 
         val request = CreateTeamRequest(
@@ -276,7 +280,7 @@ class TeamViewModel @Inject constructor(
             category = category
         )
 
-        return teamsRepository.createTeamAndAddMember(request, userModel)
+        teamsRepository.createTeamAndAddMember(request, userModel)
             .fold(
                 onSuccess = { TeamActionResult.Success },
                 onFailure = { TeamActionResult.Failure(it.message) }
@@ -290,13 +294,13 @@ class TeamViewModel @Inject constructor(
         services: String,
         rules: String,
         category: String?
-    ): TeamActionResult {
+    ): TeamActionResult = teamSaveMutex.withLock {
         val teamTypeForValidation = if (category == "enterprise") "enterprise" else "team"
         if (teamsRepository.isTeamNameExists(name, teamTypeForValidation, teamId)) {
-            return TeamActionResult.NameExists
+            return@withLock TeamActionResult.NameExists
         }
 
-        return teamsRepository.updateTeam(
+        teamsRepository.updateTeam(
             teamId = teamId,
             name = name,
             description = description,

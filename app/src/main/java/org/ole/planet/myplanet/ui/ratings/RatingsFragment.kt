@@ -22,17 +22,12 @@ class RatingsFragment : BaseBindingDialogFragment<FragmentRatingBinding>(Fragmen
     var type: String? = ""
     var title: String? = ""
     private var ratingListener: OnRatingChangeListener? = null
-    private var dismissListener: (() -> Unit)? = null
     private var isUserReady = false
     
     private var hasPrefilledRating = false
     private var currentSubmitState: RatingsViewModel.SubmitState = RatingsViewModel.SubmitState.Idle
     fun setListener(listener: OnRatingChangeListener?) {
         this.ratingListener = listener
-    }
-
-    fun setOnDismissListener(listener: (() -> Unit)?) {
-        this.dismissListener = listener
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -42,7 +37,11 @@ class RatingsFragment : BaseBindingDialogFragment<FragmentRatingBinding>(Fragmen
 
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
-        dismissListener?.invoke()
+        if (!isStateSaved) {
+            if (isAdded) {
+                parentFragmentManager.setFragmentResult(REQUEST_KEY_DISMISSED, Bundle.EMPTY)
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -114,13 +113,7 @@ class RatingsFragment : BaseBindingDialogFragment<FragmentRatingBinding>(Fragmen
             when (state) {
                 is RatingsViewModel.SubmitState.Success -> {
                     Utilities.toast(activity, "Thank you, your rating is submitted.")
-                    val t = type
-                    val i = id
-                    if (t != null && i != null) {
-                        ratingListener?.onRatingChanged(t, i)
-                    } else {
-                        ratingListener?.onRatingChanged()
-                    }
+                    notifyRatingChanged()
                     dismiss()
                 }
                 is RatingsViewModel.SubmitState.Error -> {
@@ -133,6 +126,17 @@ class RatingsFragment : BaseBindingDialogFragment<FragmentRatingBinding>(Fragmen
         }
     }
     
+    internal fun notifyRatingChanged() {
+        val listener = ratingListener ?: parentFragment as? OnRatingChangeListener ?: return
+        val t = type
+        val i = id
+        if (t != null && i != null) {
+            listener.onRatingChanged(t, i)
+        } else {
+            listener.onRatingChanged()
+        }
+    }
+
     private fun loadRatingData() {
         val t = type ?: return
         val i = id ?: return
@@ -164,6 +168,7 @@ class RatingsFragment : BaseBindingDialogFragment<FragmentRatingBinding>(Fragmen
     companion object {
         private const val KEY_PREFILLED = "rating_prefilled"
         const val TAG = "RatingsFragment"
+        const val REQUEST_KEY_DISMISSED = "RatingsFragment.dismissed"
 
         fun newInstance(type: String?, id: String?, title: String?): RatingsFragment {
             val fragment = RatingsFragment()

@@ -7,17 +7,25 @@ import androidx.room.Query
 import androidx.room.Upsert
 import org.ole.planet.myplanet.model.TeamLog
 
+data class TeamVisitCount(
+    val teamId: String,
+    val visits: Long
+)
+
 @Dao
 interface TeamLogDao {
     @Query("SELECT * FROM team_log WHERE _rev IS NULL")
     suspend fun getPendingUploads(): List<TeamLog>
 
-    @Query("SELECT * FROM team_log WHERE type = 'teamVisit' AND time > :cutoff AND teamId IN (:teamIds)")
-    suspend fun getRecentTeamVisitsInternal(cutoff: Long, teamIds: List<String>): List<TeamLog>
+    @Query(
+        "SELECT teamId, COUNT(*) AS visits FROM team_log " +
+            "WHERE type = 'teamVisit' AND time > :cutoff AND teamId IN (:teamIds) GROUP BY teamId"
+    )
+    suspend fun countRecentTeamVisitsInternal(cutoff: Long, teamIds: List<String>): List<TeamVisitCount>
 
-    suspend fun getRecentTeamVisits(cutoff: Long, teamIds: List<String>): List<TeamLog> {
+    suspend fun countRecentTeamVisits(cutoff: Long, teamIds: List<String>): List<TeamVisitCount> {
         if (teamIds.isEmpty()) return emptyList()
-        return teamIds.distinct().chunked(900).flatMap { getRecentTeamVisitsInternal(cutoff, it) }
+        return teamIds.distinct().chunked(900).flatMap { countRecentTeamVisitsInternal(cutoff, it) }
     }
 
     @Query("SELECT * FROM team_log WHERE type = 'teamVisit' AND teamId = :teamId AND user IN (:userNames)")

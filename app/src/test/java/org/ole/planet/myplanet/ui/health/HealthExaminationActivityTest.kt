@@ -178,4 +178,45 @@ class HealthExaminationActivityTest {
         assertFalse(mapConditions.containsKey(labels[0]))
         assertFalse(mapConditions.containsKey(labels[1]))
     }
+
+    @Test
+    fun rotation_keepsEditedNotesTickedConditionsAndCustomDiagnoses() {
+        val controller = Robolectric.buildActivity(HealthExaminationActivity::class.java).setup()
+        val keys = HealthExaminationActivity.diagnosisKeys(controller.get())
+        val cls = HealthExaminationActivity::class.java
+        @Suppress("UNCHECKED_CAST")
+        fun conditions(a: HealthExaminationActivity) =
+            cls.getDeclaredField("mapConditions").apply { isAccessible = true }.get(a) as MutableMap<String?, Boolean>
+        @Suppress("UNCHECKED_CAST")
+        fun customDiag(a: HealthExaminationActivity) =
+            cls.getDeclaredField("customDiag").apply { isAccessible = true }.get(a) as MutableSet<String?>
+
+        conditions(controller.get())[keys[0]] = false
+        conditions(controller.get())[keys[1]] = true
+        customDiag(controller.get()).add("Custom Typed Diagnosis")
+        controller.get().findViewById<android.widget.EditText>(R.id.et_diag).setText("edited diagnosis")
+
+        controller.recreate()
+        val activity = controller.get()
+
+        val key = org.ole.planet.myplanet.utils.AndroidDecrypter.generateKey()
+        val iv = org.ole.planet.myplanet.utils.AndroidDecrypter.generateIv()
+        val sign = org.ole.planet.myplanet.model.Examination().apply { diagnosis = "saved diagnosis" }
+        activity.user = org.ole.planet.myplanet.model.UserEntity(id = "u1").apply { this.key = key; this.iv = iv }
+        cls.getDeclaredField("examination").apply { isAccessible = true }.set(activity, HealthExamination().apply {
+            data = org.ole.planet.myplanet.utils.AndroidDecrypter.encrypt(
+                org.ole.planet.myplanet.utils.GsonUtils.gson.toJson(sign), key, iv
+            )
+        })
+        cls.getDeclaredField("conditionsMap").apply { isAccessible = true }
+            .set(activity, mapOf(keys[0] to true, "Saved Custom" to true))
+        cls.getDeclaredMethod("initExamination").apply { isAccessible = true }.invoke(activity)
+
+        assertEquals("edited diagnosis", activity.findViewById<android.widget.EditText>(R.id.et_diag).text.toString())
+        val boxes = activity.findViewById<android.view.ViewGroup>(R.id.container_checkbox)
+        assertFalse((boxes.getChildAt(0) as android.widget.CheckBox).isChecked)
+        assertTrue((boxes.getChildAt(1) as android.widget.CheckBox).isChecked)
+        assertEquals(setOf("Custom Typed Diagnosis"), customDiag(activity).toSet())
+        assertEquals(1, activity.findViewById<android.view.ViewGroup>(R.id.container_other_diagnosis).childCount)
+    }
 }

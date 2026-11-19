@@ -297,7 +297,8 @@ class TeamsRepositoryImplTest {
         every { teamDao.observeMemberTeams(userId) } returns kotlinx.coroutines.flow.flowOf(listOf(team1, team2))
 
         // Mock getRecentVisitCounts behavior via teamLogDao
-        coEvery { teamLogDao.getRecentTeamVisits(any(), any()) } returns listOf()
+        coEvery { teamLogDao.countRecentTeamVisits(any(), listOf(team1Id)) } returns
+            listOf(org.ole.planet.myplanet.data.room.dao.TeamVisitCount(team1Id, 5L))
 
         // Mock getTeamMemberStatuses behavior via teamDao.getByTeamIdAndDocType
         coEvery { teamDao.getByTeamIdAndDocType(team1Id, "membership") } returns listOf(membership1)
@@ -321,6 +322,7 @@ class TeamsRepositoryImplTest {
         assert(teamDetailsList.size == 1)
         assert(teamDetailsList[0]._id == team1Id)
         assert(teamDetailsList[0].name == "Team 1")
+        assertEquals(5L, teamDetailsList[0].visitCount)
 
         collectJob.cancel()
     }
