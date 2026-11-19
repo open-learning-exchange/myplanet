@@ -27,7 +27,6 @@ import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.CouchDBResponse
-import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.NewsShare
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper

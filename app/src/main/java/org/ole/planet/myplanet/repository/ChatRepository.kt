@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
-import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.NewsShare
 
 sealed class ChatResult {
