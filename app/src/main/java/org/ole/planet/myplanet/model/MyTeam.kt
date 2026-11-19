@@ -59,7 +59,8 @@ open class MyTeam(
     var endDate: Long = 0,
     var updatedDate: Long = 0,
     var imageName: String? = null,
-    var customVoiceLabels: List<TeamVoiceLabel>? = null
+    var customVoiceLabels: List<TeamVoiceLabel>? = null,
+    var icon: String? = null
 ) {
     @get:androidx.room.Ignore
     var id: String
@@ -98,6 +99,7 @@ open class MyTeam(
             team.resourceId = JsonUtils.getString("resourceId", kDoc)
             team.teamType = JsonUtils.getString("teamType", kDoc)
             team.route = JsonUtils.getString("route", kDoc)
+            team.icon = JsonUtils.getString("icon", kDoc).ifEmpty { null }
             team.type = JsonUtils.getString("type", kDoc)
             team.services = JsonUtils.getString("services", kDoc)
             team.rules = JsonUtils.getString("rules", kDoc)
@@ -221,6 +223,7 @@ open class MyTeam(
                 put("parentCode", team.parentCode)
                 put("type", team.type)
                 put("route", team.route)
+                if (!team.icon.isNullOrEmpty()) put("icon", team.icon)
                 put("sourcePlanet", team.sourcePlanet)
                 put("services", team.services)
                 put("createdBy", team.createdBy)
