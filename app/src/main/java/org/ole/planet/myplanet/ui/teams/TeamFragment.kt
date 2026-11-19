@@ -133,11 +133,17 @@ class TeamFragment : BaseBindingFragment<FragmentTeamBinding>(FragmentTeamBindin
                 Utilities.toast(activity, failureMessage)
                 return
             }
+            val saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            saveButton?.isEnabled = false
             viewLifecycleOwner.lifecycleScope.launch {
-                if (team == null) {
-                    createNewTeam(name, description, services, rules, selectedTeamType, userModel, dialog, failureMessage)
-                } else {
-                    updateExistingTeam(team, name, description, services, rules, dialog, failureMessage)
+                try {
+                    if (team == null) {
+                        createNewTeam(name, description, services, rules, selectedTeamType, userModel, dialog, failureMessage)
+                    } else {
+                        updateExistingTeam(team, name, description, services, rules, dialog, failureMessage)
+                    }
+                } finally {
+                    saveButton?.isEnabled = true
                 }
             }
         }

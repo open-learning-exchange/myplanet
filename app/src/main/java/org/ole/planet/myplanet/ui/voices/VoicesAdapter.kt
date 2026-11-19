@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import android.text.Spanned
-import android.text.TextUtils
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -21,7 +20,6 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
 import org.ole.planet.myplanet.R
@@ -29,7 +27,6 @@ import org.ole.planet.myplanet.callback.OnChatItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.ChatMessage
-import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
@@ -615,72 +612,11 @@ class VoicesAdapter(
         super.submitList(prepareSubmitList(children))
     }
 
-    private fun parseViewIn(viewIn: String?): JsonArray? {
-        if (TextUtils.isEmpty(viewIn)) return null
-        return try {
-            GsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
-        } catch (e: Exception) {
-            Log.w(TAG, "parseViewIn failed", e)
-            null
-        }
-    }
-
-    private fun parseConversations(conversations: String?): List<Conversation>? {
-        if (conversations.isNullOrEmpty()) return null
-        return try {
-            GsonUtils.gson.fromJson(conversations, Array<Conversation>::class.java).toList()
-        } catch (e: Exception) {
-            Log.w(TAG, "parseConversations failed", e)
-            null
-        }
-    }
-
-    private fun parseImageUrls(imageUrls: List<String>?): List<JsonObject>? {
-        if (imageUrls.isNullOrEmpty()) return null
-        return try {
-            imageUrls.map { GsonUtils.gson.fromJson(it, JsonObject::class.java) }
-        } catch (e: Exception) {
-            Log.w(TAG, "parseImageUrls failed", e)
-            null
-        }
-    }
-
     private fun preParseNews(news: News?) {
-        news?.let {
-            try {
-                if ((it.parsedViewIn == null || it.rawViewIn != it.viewIn) && !TextUtils.isEmpty(it.viewIn)) {
-                    val parsed = parseViewIn(it.viewIn)
-                    if (parsed != null) {
-                        it.parsedViewIn = parsed
-                        it.rawViewIn = it.viewIn
-                    }
-                }
-                if ((it.parsedConversations == null || it.rawConversations != it.conversations) && !it.conversations.isNullOrEmpty()) {
-                    val parsed = parseConversations(it.conversations)
-                    if (parsed != null) {
-                        it.parsedConversations = parsed
-                        it.rawConversations = it.conversations
-                    }
-                }
-
-                val currentImageUrls = it.imageUrls?.toList()
-                if (it.rawImageUrls != currentImageUrls) {
-                    if (!currentImageUrls.isNullOrEmpty()) {
-                        val parsed = parseImageUrls(currentImageUrls)
-                        if (parsed != null) {
-                            it.parsedImageUrls = parsed
-                            it.rawImageUrls = currentImageUrls
-                        }
-                    } else {
-                        it.parsedImageUrls = null
-                        it.rawImageUrls = null
-                    }
-                }
-                it.parsedSharedTeamName = GsonUtils.extractSharedTeamName(it)
-            } catch (e: Exception) {
-                // Catch any parsing exceptions so one bad row doesn't break submitList
-                Log.w(TAG, "preParseNews failed", e)
-            }
+        try {
+            news?.preParse()
+        } catch (e: Exception) {
+            Log.w(TAG, "preParseNews failed", e)
         }
     }
 

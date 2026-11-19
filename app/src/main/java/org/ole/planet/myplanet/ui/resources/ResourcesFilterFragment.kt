@@ -29,7 +29,9 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
     var subjects: Set<String>? = null
     var mediums: Set<String>? = null
     var levels: Set<String>? = null
-    private var filterListener: OnFilterListener? = null
+    private var explicitListener: OnFilterListener? = null
+    private val filterListener: OnFilterListener?
+        get() = explicitListener ?: parentFragment as? OnFilterListener
     private var selectedLang: MutableSet<String> = HashSet()
     private var selectedSubs: MutableSet<String> = HashSet()
     private var selectedMeds: MutableSet<String> = HashSet()
@@ -40,7 +42,7 @@ class ResourcesFilterFragment : BaseBindingBottomSheetFragment<FragmentLibraryFi
     private var isLevelsExpanded = false
 
     fun setListener(listener: OnFilterListener?) {
-        this.filterListener = listener
+        this.explicitListener = listener
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
