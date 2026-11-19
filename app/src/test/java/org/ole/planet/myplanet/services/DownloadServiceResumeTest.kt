@@ -111,7 +111,7 @@ class DownloadServiceResumeTest {
 
         val serverUrlMapper = mockk<ServerUrlMapper>()
         every { serverUrlMapper.processUrl(any()) } answers { ServerUrlMapper.UrlMapping(firstArg()) }
-        setDeclaredField("alternativeDownloadUrls", service, AlternativeDownloadUrls(serverUrlMapper, mockk(relaxed = true)))
+        setDeclaredField("fallbackUrlResolver", service, FallbackUrlResolver(serverUrlMapper, mockk(relaxed = true)))
 
         return service
     }
@@ -121,7 +121,7 @@ class DownloadServiceResumeTest {
         every { serverUrlMapper.processUrl(any()) } answers {
             ServerUrlMapper.UrlMapping(firstArg(), alternativeUrl = altBase, extractedBaseUrl = primaryBase)
         }
-        setDeclaredField("alternativeDownloadUrls", service, AlternativeDownloadUrls(serverUrlMapper, mockk(relaxed = true)))
+        setDeclaredField("fallbackUrlResolver", service, FallbackUrlResolver(serverUrlMapper, mockk(relaxed = true)))
     }
 
     private fun invokeInitDownload(service: DownloadService, url: String): Any? {

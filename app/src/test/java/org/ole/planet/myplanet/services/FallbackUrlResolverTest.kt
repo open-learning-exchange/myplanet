@@ -12,12 +12,12 @@ import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(application = android.app.Application::class)
-class AlternativeDownloadUrlsTest {
+class FallbackUrlResolverTest {
 
     private val url = "http://192.168.1.73/db/resources/abc/photo.png?rev=2"
     private val serverUrlMapper = mockk<ServerUrlMapper>()
     private val sharedPrefManager = mockk<SharedPrefManager>()
-    private val resolver = AlternativeDownloadUrls(serverUrlMapper, sharedPrefManager)
+    private val resolver = FallbackUrlResolver(serverUrlMapper, sharedPrefManager)
 
     @Test
     fun `a hardcoded mapping wins and keeps the path and query`() {
@@ -26,7 +26,7 @@ class AlternativeDownloadUrlsTest {
         every { sharedPrefManager.getProcessedAlternativeUrl() } returns "https://stored.example.org/"
 
         assertEquals(
-            AlternativeDownloadUrls.Fallback("http://192.168.1.73", "https://planet.example.org/db/resources/abc/photo.png?rev=2"),
+            FallbackUrlResolver.Fallback("http://192.168.1.73", "https://planet.example.org/db/resources/abc/photo.png?rev=2"),
             resolver.resolve(url)
         )
     }

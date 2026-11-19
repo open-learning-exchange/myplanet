@@ -44,7 +44,7 @@ class DownloadWorker @AssistedInject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val resourcesRepository: ResourcesRepository,
     @DownloadPreferences private val preferences: SharedPreferences,
-    private val alternativeDownloadUrls: AlternativeDownloadUrls
+    private val fallbackUrlResolver: FallbackUrlResolver
 ) : CoroutineWorker(context, workerParams) {
     internal var unreachablePrimaryBase: String? = null
 
@@ -154,7 +154,7 @@ class DownloadWorker @AssistedInject constructor(
     }
 
     private suspend fun fetch(url: String, authHeader: String, partial: PartialFiles): DownloadResult {
-        val fallback = alternativeDownloadUrls.resolve(url)
+        val fallback = fallbackUrlResolver.resolve(url)
         var altUrl = fallback?.alternativeUrl
 
         if (fallback != null && fallback.primaryBase == unreachablePrimaryBase) {

@@ -6,7 +6,7 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.UrlUtils
 
-class AlternativeDownloadUrls @Inject constructor(
+class FallbackUrlResolver @Inject constructor(
     private val serverUrlMapper: ServerUrlMapper,
     private val sharedPrefManager: SharedPrefManager
 ) {
@@ -33,6 +33,6 @@ class AlternativeDownloadUrls @Inject constructor(
     }
 
     companion object {
-        private const val TAG = "AlternativeDownloadUrls"
+        private const val TAG = "FallbackUrlResolver"
     }
 }

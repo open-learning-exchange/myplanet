@@ -59,7 +59,7 @@ class DownloadWorkerTest {
     private lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var resourcesRepository: ResourcesRepository
     private lateinit var preferences: SharedPreferences
-    private lateinit var alternativeDownloadUrls: AlternativeDownloadUrls
+    private lateinit var fallbackUrlResolver: FallbackUrlResolver
     private lateinit var worker: DownloadWorker
 
     @get:Rule
@@ -73,8 +73,8 @@ class DownloadWorkerTest {
         broadcastService = mockk(relaxed = true)
         resourcesRepository = mockk(relaxed = true)
         preferences = mockk(relaxed = true)
-        alternativeDownloadUrls = mockk()
-        every { alternativeDownloadUrls.resolve(any()) } returns null
+        fallbackUrlResolver = mockk()
+        every { fallbackUrlResolver.resolve(any()) } returns null
 
         dispatcherProvider = mockk(relaxed = true)
         every { dispatcherProvider.io } returns testDispatcher
@@ -100,7 +100,7 @@ class DownloadWorkerTest {
                 dispatcherProvider,
                 resourcesRepository,
                 preferences,
-                alternativeDownloadUrls
+                fallbackUrlResolver
             )
         )
         coEvery { worker.setProgress(any()) } returns Unit
@@ -344,9 +344,9 @@ class DownloadWorkerTest {
         every { preferences.getStringSet(any(), any()) } returns linkedSetOf(first, second)
         every { workerParams.inputData.getString("urls_key") } returns "url_list_key"
         every { workerParams.inputData.getBoolean("fromSync", false) } returns false
-        every { alternativeDownloadUrls.resolve(any()) } answers {
+        every { fallbackUrlResolver.resolve(any()) } answers {
             val url = firstArg<String>()
-            AlternativeDownloadUrls.Fallback(primaryBase, url.replace(primaryBase, altBase))
+            FallbackUrlResolver.Fallback(primaryBase, url.replace(primaryBase, altBase))
         }
         mockkObject(FileUtils)
         every { FileUtils.checkFileExist(context, any()) } returns false
@@ -380,8 +380,8 @@ class DownloadWorkerTest {
         val altBase = "https://planet.example.org"
         val url = "$primaryBase/resources/123/file.txt"
         val outputFile = stubSingleDownload(url)
-        every { alternativeDownloadUrls.resolve(url) } returns
-            AlternativeDownloadUrls.Fallback(primaryBase, "$altBase/resources/123/file.txt")
+        every { fallbackUrlResolver.resolve(url) } returns
+            FallbackUrlResolver.Fallback(primaryBase, "$altBase/resources/123/file.txt")
         worker.unreachablePrimaryBase = primaryBase
         coEvery { downloadRepository.downloadFileResponse(match { it.startsWith(altBase) }, any(), any(), any(), any()) } returns
             DownloadResult.Error("Connection refused")
@@ -505,7 +505,7 @@ class DownloadWorkerTest {
         val notificationManager = mockk<NotificationManager>(relaxed = true)
         every { context.getSystemService(Context.NOTIFICATION_SERVICE) } returns notificationManager
         val stoppable = spyk(
-            DownloadWorker(context, workerParams, downloadRepository, broadcastService, dispatcherProvider, resourcesRepository, preferences, alternativeDownloadUrls)
+            DownloadWorker(context, workerParams, downloadRepository, broadcastService, dispatcherProvider, resourcesRepository, preferences, fallbackUrlResolver)
         )
         coEvery { stoppable.setForeground(any()) } returns Unit
 

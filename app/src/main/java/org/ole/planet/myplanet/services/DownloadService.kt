@@ -60,7 +60,7 @@ class DownloadService : Service() {
     lateinit var resourcesRepository: ResourcesRepository
 
     @Inject
-    lateinit var alternativeDownloadUrls: AlternativeDownloadUrls
+    lateinit var fallbackUrlResolver: FallbackUrlResolver
 
     private var data = ByteArray(BUFFER_SIZE)
     private var outputFile: File? = null
@@ -267,7 +267,7 @@ class DownloadService : Service() {
 
             var resumeOffset = resumeOffsetFor(url)
             val ifRange = if (resumeOffset > 0) resumeValidatorFor(url) else null
-            val fallback = alternativeDownloadUrls.resolve(url)
+            val fallback = fallbackUrlResolver.resolve(url)
             var altUrl = fallback?.alternativeUrl
             val primaryBase = fallback?.primaryBase
 
