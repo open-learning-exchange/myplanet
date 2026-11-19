@@ -8,6 +8,7 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
+import kotlinx.serialization.json.JsonArray as KJsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
@@ -57,7 +58,8 @@ open class MyTeam(
     var startDate: Long = 0,
     var endDate: Long = 0,
     var updatedDate: Long = 0,
-    var imageName: String? = null
+    var imageName: String? = null,
+    var customVoiceLabels: List<TeamVoiceLabel>? = null
 ) {
     @get:androidx.room.Ignore
     var id: String
@@ -78,7 +80,7 @@ open class MyTeam(
             )
         }
 
-        fun populateTeamFields(doc: JsonObject, team: MyTeam, includeCourses: Boolean = false) {
+        fun populateTeamFields(doc: JsonObject, team: MyTeam) {
             val kDoc = doc.toKotlinx().jsonObject
             val hadLocalChanges = team.updated
 
@@ -118,6 +120,8 @@ open class MyTeam(
             team.endDate = JsonUtils.getLong("endDate", kDoc)
             team.updatedDate = JsonUtils.getLong("updatedDate", kDoc)
             getFirstAttachmentName(doc)?.let { team.imageName = it }
+            team.customVoiceLabels = (kDoc["customVoiceLabels"] as? KJsonArray)
+                ?.let(TeamVoiceLabel::parse)
 
             val localCourses = team.courses?.toList() ?: emptyList()
 
@@ -131,7 +135,7 @@ open class MyTeam(
                 try {
                     val id = (e.jsonObject["_id"] as JsonPrimitive).content
                     serverCourseIds.add(id)
-                } catch (ex: Exception) {
+                } catch (_: Exception) {
                     if (e is JsonPrimitive) {
                         serverCourseIds.add(e.content)
                     }
@@ -150,7 +154,7 @@ open class MyTeam(
         fun serialize(team: MyTeam): JsonObject {
             if (team.isDeletePending) {
                 val `object` = buildJsonObject {
-                    if (!team._id.isNullOrEmpty()) put("_id", team._id)
+                    if (team._id.isNotEmpty()) put("_id", team._id)
                     if (!team._rev.isNullOrEmpty()) put("_rev", team._rev)
                     put("_deleted", true)
                     if (!team.teamId.isNullOrEmpty()) put("teamId", team.teamId)
@@ -168,7 +172,7 @@ open class MyTeam(
 
             if (team.docType == "resourceLink") {
                 val `object` = buildJsonObject {
-                    if (!team._id.isNullOrEmpty()) put("_id", team._id)
+                    if (team._id.isNotEmpty()) put("_id", team._id)
                     if (!team._rev.isNullOrEmpty()) put("_rev", team._rev)
                     put("resourceId", team.resourceId)
                     put("title", team.title)
@@ -185,7 +189,7 @@ open class MyTeam(
             }
 
             val `object` = buildJsonObject {
-                if (!team._id.isNullOrEmpty()) put("_id", team._id)
+                if (team._id.isNotEmpty()) put("_id", team._id)
                 if (!team._rev.isNullOrEmpty()) put("_rev", team._rev)
                 put("name", team.name)
                 put("userId", team.userId)
@@ -223,6 +227,8 @@ open class MyTeam(
                 put("resourceId", team.resourceId)
                 put("title", team.title)
                 put("rules", team.rules)
+
+                team.customVoiceLabels?.let { put("customVoiceLabels", TeamVoiceLabel.toJsonArray(it)) }
 
                 if (team.teamType == "debit" || team.teamType == "credit") {
                     put("type", team.teamType)
