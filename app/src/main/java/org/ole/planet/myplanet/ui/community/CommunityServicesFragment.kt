@@ -94,7 +94,7 @@ class CommunityServicesFragment : BaseTeamFragment() {
         if (links.isEmpty()) return
         val inflater = LayoutInflater.from(parent.context)
         addHeader(inflater, parent, getString(R.string.community_links)).setTypeface(null, Typeface.BOLD)
-        val sections = links.toLinkSections()
+        val sections = links.toServicesLinks()
         addSection(inflater, parent, getString(R.string.local), sections.local)
         addSection(inflater, parent, getString(R.string.social_and_web), sections.social)
     }

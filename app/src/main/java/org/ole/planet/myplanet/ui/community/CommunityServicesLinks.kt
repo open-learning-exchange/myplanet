@@ -4,11 +4,11 @@ import androidx.annotation.DrawableRes
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.MyTeam
 
-data class CommunityLinkSections(val local: List<MyTeam>, val social: List<MyTeam>)
+data class CommunityServicesLinks(val local: List<MyTeam>, val social: List<MyTeam>)
 
-fun List<MyTeam>.toLinkSections(): CommunityLinkSections {
+fun List<MyTeam>.toServicesLinks(): CommunityServicesLinks {
     val (social, local) = partition { it.teamType == SOCIAL_TEAM_TYPE }
-    return CommunityLinkSections(local, social)
+    return CommunityServicesLinks(local, social)
 }
 
 @DrawableRes

@@ -5,19 +5,19 @@ import org.junit.Test
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.MyTeam
 
-class CommunityLinkSectionsTest {
+class CommunityServicesLinksTest {
 
     private fun link(title: String, teamType: String? = null, icon: String? = null) =
         MyTeam(_id = title, title = title, docType = "link", teamType = teamType, icon = icon)
 
     @Test
-    fun `toLinkSections splits social links from local links and keeps order`() {
+    fun `toServicesLinks splits social links from local links and keeps order`() {
         val team = link("team", "sync", "groups")
         val insta = link("insta", "social", "instagram")
         val enterprise = link("enterprise", "local", "work")
         val legacy = link("legacy")
 
-        val sections = listOf(team, insta, enterprise, legacy).toLinkSections()
+        val sections = listOf(team, insta, enterprise, legacy).toServicesLinks()
 
         assertEquals(listOf(team, enterprise, legacy), sections.local)
         assertEquals(listOf(insta), sections.social)
