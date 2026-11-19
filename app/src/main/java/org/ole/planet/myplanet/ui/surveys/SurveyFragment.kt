@@ -88,15 +88,25 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener 
         }
         setupRecyclerView()
         setupListeners()
-        viewModel.loadSurveys(isTeam, teamId, false)
-        showHideRadioButton()
+        showHideRadioButton(isFirstLaunch = savedInstanceState == null)
         setupObservers()
     }
 
-    private fun showHideRadioButton() {
+    override fun onViewStateRestored(savedInstanceState: Bundle?) {
+        super.onViewStateRestored(savedInstanceState)
+        if (isTeam && !binding.rbAdoptSurvey.isChecked && !binding.rbTeamSurvey.isChecked) {
+            binding.rbTeamSurvey.isChecked = true
+        }
+        
+        viewModel.loadSurveys(isTeam, teamId, isTeam && binding.rbAdoptSurvey.isChecked)
+    }
+
+    private fun showHideRadioButton(isFirstLaunch: Boolean) {
         if (isTeam) {
             binding.rgSurvey.visibility = View.VISIBLE
-            binding.rbTeamSurvey.isChecked = true
+            if (isFirstLaunch) {
+                binding.rbTeamSurvey.isChecked = true
+            }
         }
     }
 
