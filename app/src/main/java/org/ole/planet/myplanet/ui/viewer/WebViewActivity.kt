@@ -76,6 +76,7 @@ class WebViewActivity : AppCompatActivity() {
         activityWebViewBinding.contentWebView.pBar.max = 100
         activityWebViewBinding.contentWebView.pBar.progress = 0
 
+        exitCoordinator.register()
         setListeners()
 
         activityWebViewBinding.contentWebView.finish.setOnClickListener { handleBackNavigation() }

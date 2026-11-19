@@ -40,7 +40,6 @@ import org.ole.planet.myplanet.utils.StringUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CoursesRepositoryImplTest {
-
     private val progressRepository: ProgressRepository = mockk(relaxed = true)
     private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)
     private val tagsRepository: TagsRepository = mockk(relaxed = true)
@@ -206,17 +205,16 @@ class CoursesRepositoryImplTest {
             MyCourse(id = "id1", courseId = "id1", courseTitle = "Course 1"),
             MyCourse(id = "id2", courseId = "id2", courseTitle = "Course 2")
         )
-        coEvery { courseStepDao.getByCourseIds(listOf("id1", "id2")) } returns listOf(
-            CourseStep(id = "step1", courseId = "id1", stepTitle = "Step 1"),
-            CourseStep(id = "step2", courseId = "id2", stepTitle = "Step 2")
-        )
+        coEvery { courseStepDao.countByCourseIds(listOf("id1", "id2")) } returns mapOf("id1" to 3, "id2" to 1)
 
         val result = repository.getCoursesByIds(listOf("id1", "id2"))
 
         assertEquals(2, result.size)
         assertEquals("Course 1", result[0].courseTitle)
-        assertEquals("Step 1", result[0].courseSteps?.first()?.stepTitle)
+        assertEquals(3, result[0].getNumberOfSteps())
         assertEquals("Course 2", result[1].courseTitle)
+        assertEquals(1, result[1].getNumberOfSteps())
+        coVerify(exactly = 0) { courseStepDao.getByCourseIds(any()) }
     }
 
     @Test
@@ -317,12 +315,12 @@ class CoursesRepositoryImplTest {
 
         val flow = repository.getMyCoursesFlow("user1")
 
-        coVerify(exactly = 0) { courseStepDao.getByCourseIds(any()) }
+        coVerify(exactly = 0) { courseStepDao.countByCourseIds(any()) }
 
         val emissions = flow.toList()
 
         assertEquals(1, emissions.size)
-        coVerify(atLeast = 1) { courseStepDao.getByCourseIds(any()) }
+        coVerify(atLeast = 1) { courseStepDao.countByCourseIds(any()) }
     }
 
     @Test
