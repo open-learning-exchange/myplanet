@@ -5,4 +5,6 @@ import okhttp3.ResponseBody
 sealed class DownloadResult {
     data class Success(val body: ResponseBody, val code: Int, val validator: String? = null) : DownloadResult()
     data class Error(val message: String, val code: Int? = null) : DownloadResult()
+
+    fun isNetworkError(): Boolean = this is Error && code == null
 }

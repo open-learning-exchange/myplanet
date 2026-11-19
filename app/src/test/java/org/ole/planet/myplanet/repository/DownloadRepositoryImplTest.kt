@@ -21,6 +21,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.NoNetworkRetry
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
@@ -60,6 +61,27 @@ class DownloadRepositoryImplTest {
         assertTrue(result is DownloadResult.Success)
         val successResult = result as DownloadResult.Success
         assertTrue(successResult.body == mockResponseBody)
+    }
+
+    @Test
+    fun `downloadFileResponse tags the request to skip network retries only when asked`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns testDispatcher
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+        val url = "http://example.com/file"
+        val authHeader = "auth"
+        coEvery { mockApiInterface.downloadFile(authHeader, url, null, null, any()) } answers {
+            Response.success("content".toResponseBody(null))
+        }
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
+
+        repository.downloadFileResponse(url, authHeader, retryNetworkErrors = false)
+        repository.downloadFileResponse(url, authHeader)
+
+        coVerify(exactly = 1) { mockApiInterface.downloadFile(authHeader, url, null, null, NoNetworkRetry) }
+        coVerify(exactly = 1) { mockApiInterface.downloadFile(authHeader, url, null, null, null) }
     }
 
     @Test
