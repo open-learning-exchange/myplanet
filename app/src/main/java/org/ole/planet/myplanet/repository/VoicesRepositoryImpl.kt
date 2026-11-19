@@ -176,9 +176,7 @@ class VoicesRepositoryImpl @Inject constructor(
             }
             .map { allNews ->
                 allNews.mapNotNull { news ->
-                    news.viewIn?.takeIf { it.isNotEmpty() }?.let { s ->
-                        news.parsedViewIn = try { gson.fromJson(s, JsonArray::class.java) } catch (_: Exception) { null }
-                    }
+                    news.preParse()
 
                     if (isVisibleToUser(news, userIdentifier)) {
                         news.sortDate = news.calculateSortDate()
@@ -208,6 +206,7 @@ class VoicesRepositoryImpl @Inject constructor(
                             o.reactions == n.reactions
                 }
             }
+            .map { list -> list.onEach { it.preParse() } }
             .flowOn(dispatcherProvider.default)
     }
 

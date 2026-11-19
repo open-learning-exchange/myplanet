@@ -34,7 +34,7 @@ class TeamLogDaoTest {
     }
 
     @Test
-    fun getRecentTeamVisits_returnsAllRowsAndFiltersByCutoffAcrossLargeChunkedList() = runBlocking {
+    fun countRecentTeamVisits_countsPerTeamAndFiltersByCutoffAcrossLargeChunkedList() = runBlocking {
         val cutoff = 1000L
         val logs = listOf(
             TeamLog().apply { id = "log_1"; type = "teamVisit"; teamId = "team_1"; time = 2000L },
@@ -44,17 +44,21 @@ class TeamLogDaoTest {
             TeamLog().apply { id = "log_1201"; type = "teamVisit"; teamId = "team_1201"; time = 1000L },
             TeamLog().apply { id = "log_1300"; type = "teamVisit"; teamId = "team_1300"; time = 500L },
             TeamLog().apply { id = "log_non_visit"; type = "otherType"; teamId = "team_1"; time = 2000L },
-            TeamLog().apply { id = "log_unrequested"; type = "teamVisit"; teamId = "team_1301"; time = 2000L }
+            TeamLog().apply { id = "log_unrequested"; type = "teamVisit"; teamId = "team_1301"; time = 2000L },
+            TeamLog().apply { id = "log_1_again"; type = "teamVisit"; teamId = "team_1"; time = 3000L },
+            TeamLog().apply { id = "log_901_again"; type = "teamVisit"; teamId = "team_901"; time = 3000L },
+            TeamLog().apply { id = "log_901_third"; type = "teamVisit"; teamId = "team_901"; time = 4000L }
         )
 
         teamLogDao.upsertAll(logs)
 
         val teamIds = (1..1300).map { "team_$it" }
-        val results = teamLogDao.getRecentTeamVisits(cutoff, teamIds)
+        val results = teamLogDao.countRecentTeamVisits(cutoff, teamIds)
 
-        assertEquals(4, results.size)
-        assertEquals(setOf("log_1", "log_900", "log_901", "log_1200"), results.map { it.id }.toSet())
-        assertTrue(results.all { (it.time ?: 0L) > cutoff })
+        assertEquals(
+            mapOf("team_1" to 2L, "team_900" to 1L, "team_901" to 3L, "team_1200" to 1L),
+            results.associate { it.teamId to it.visits }
+        )
     }
 
     @Test
@@ -81,7 +85,7 @@ class TeamLogDaoTest {
 
     @Test
     fun emptyInput_returnsEmptyList() = runBlocking {
-        val recentVisits = teamLogDao.getRecentTeamVisits(1000L, emptyList())
+        val recentVisits = teamLogDao.countRecentTeamVisits(1000L, emptyList())
         val userVisits = teamLogDao.getTeamVisitsForUsers("team_1", emptyList())
 
         assertTrue(recentVisits.isEmpty())

@@ -32,7 +32,10 @@ class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding
     private var childMap: Map<String, List<TagEntity>> = emptyMap()
     private lateinit var adapter: ResourcesTagsAdapter
     private var dbType: String? = null
-    private var listener: OnTagClickListener? = null
+    private var explicitListener: OnTagClickListener? = null
+    private val listener: OnTagClickListener?
+        get() = explicitListener ?: parentFragment as? OnTagClickListener
+    private var restoredSelection: List<TagEntity>? = null
     private var selectedItemsList: ArrayList<TagEntity> = ArrayList()
     private var currentTagDataList: List<TagData> = emptyList()
     private var filterQuery = ""
@@ -43,6 +46,12 @@ class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding
         super.onCreate(savedInstanceState)
         setStyle(STYLE_NO_TITLE, R.style.AppTheme_Dialog_NoActionBar_MinWidth)
         dbType = arguments?.getString("dbType")
+        restoredSelection = savedInstanceState?.let(::readSelection)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        writeSelection(outState, selectedItemsList)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -56,7 +65,8 @@ class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding
 
         adapter = ResourcesTagsAdapter(this@CollectionsFragment)
         binding.listTags.adapter = adapter
-        selectedItemsList = ArrayList(recentList)
+        selectedItemsList = ArrayList(restoredSelection ?: recentList)
+        restoredSelection = null
 
         viewModel.loadTags(dbType)
 
@@ -246,7 +256,25 @@ class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding
     }
 
     companion object {
+        private const val KEY_SELECTED_IDS = "selectedTagIds"
+        private const val KEY_SELECTED_NAMES = "selectedTagNames"
         private var recentList: MutableList<TagEntity> = ArrayList()
+
+        internal fun writeSelection(outState: Bundle, selected: List<TagEntity>) {
+            outState.putStringArray(KEY_SELECTED_IDS, selected.map { it.id }.toTypedArray())
+            outState.putStringArray(KEY_SELECTED_NAMES, selected.map { it.name.orEmpty() }.toTypedArray())
+        }
+
+        internal fun readSelection(state: Bundle): List<TagEntity>? {
+            val ids = state.getStringArray(KEY_SELECTED_IDS) ?: return null
+            val names = state.getStringArray(KEY_SELECTED_NAMES) ?: return null
+            return ids.indices.map { i ->
+                TagEntity().apply {
+                    id = ids[i]
+                    name = names.getOrNull(i)?.takeIf { it.isNotEmpty() }
+                }
+            }
+        }
         fun getInstance(l: MutableList<TagEntity>, dbType: String): CollectionsFragment {
             recentList = l
             val f = CollectionsFragment()
@@ -258,6 +286,6 @@ class CollectionsFragment : BaseBindingDialogFragment<FragmentCollectionsBinding
     }
 
     fun setListener(listener: OnTagClickListener) {
-        this.listener = listener
+        this.explicitListener = listener
     }
 }

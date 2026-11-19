@@ -354,4 +354,25 @@ class HealthExaminationViewModelTest {
         coVerify(exactly = 1) { healthRepository.getByIdOrUserId("patient_id") }
         coVerify(exactly = 0) { healthRepository.getExaminationById("patient_id") }
     }
+
+    @Test
+    fun loadData_calledAgainAfterRotation_keepsTheLoadedStateAndDoesNotReload() = runTest {
+        val mockUser = mockk<UserEntity>()
+        val mockPojo = mockk<HealthExamination>()
+        val mockHealth = mockk<MyHealth>()
+
+        coEvery { userRepository.getUserById("patient_id") } returns mockUser
+        coEvery { healthRepository.getByIdOrUserId("patient_id") } returns mockPojo
+        coEvery { userRepository.ensureUserSecurityKeys("patient_id") } returns mockUser
+        coEvery { healthRepository.getDecryptedHealth(mockPojo, mockUser) } returns mockHealth
+        coEvery { healthRepository.getExaminationConditions(null) } returns emptyMap()
+
+        viewModel.loadData("patient_id", null)
+        advanceUntilIdle()
+        viewModel.loadData("patient_id", null)
+
+        assertFalse(viewModel.state.value.isLoading)
+        advanceUntilIdle()
+        coVerify(exactly = 1) { healthRepository.getByIdOrUserId("patient_id") }
+    }
 }
