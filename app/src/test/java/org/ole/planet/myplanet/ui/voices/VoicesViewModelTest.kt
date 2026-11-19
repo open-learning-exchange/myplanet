@@ -14,10 +14,13 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.TeamVoiceLabel
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -355,5 +358,36 @@ class VoicesViewModelTest {
 
         assertEquals(mockLeaders, result)
         verify(exactly = 1) { configurationsRepository.getCommunityLeaders() }
+    }
+
+    @Test
+    fun `community custom labels join the filter list and filter case-insensitively`() = runTest {
+        val community = MyTeam().apply {
+            _id = "test_user"
+            customVoiceLabels = listOf(TeamVoiceLabel("announcement", "pink"), TeamVoiceLabel("event", "lime"))
+        }
+        coEvery { teamsRepository.getTeamById("test_user") } returns community
+        val announced = mockk<News>(relaxed = true) { coEvery { labels } returns listOf("Announcement") }
+        val other = mockk<News>(relaxed = true) { coEvery { labels } returns listOf("offer") }
+        coEvery { voicesRepository.getCommunityNews(any()) } returns flowOf(listOf(announced, other))
+
+        var result: List<News?> = emptyList()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.filteredNews.collect { result = it ?: emptyList() }
+        }
+
+        viewModel.observeCommunityNews("test_user")
+        advanceUntilIdle()
+
+        assertEquals(community.customVoiceLabels, viewModel.customLabels.value)
+        assertTrue(viewModel.labels.value.containsAll(listOf("Announcement", "Event")))
+
+        viewModel.updateSelectedLabel("Event")
+        advanceUntilIdle()
+        assertEquals(0, result.size)
+
+        viewModel.updateSelectedLabel("Announcement")
+        advanceUntilIdle()
+        assertEquals(listOf(announced), result)
     }
 }
