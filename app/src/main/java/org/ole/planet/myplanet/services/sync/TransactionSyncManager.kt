@@ -29,12 +29,14 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.Achievement
+import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatSyncWriter
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.repository.EventsSyncWriter
 import org.ole.planet.myplanet.repository.FeedbackSyncWriter
 import org.ole.planet.myplanet.repository.HealthRepository
@@ -59,6 +61,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.StringUtils
 import org.ole.planet.myplanet.utils.SyncTimeLogger
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.toGson
 import org.ole.planet.myplanet.utils.toKotlinx
@@ -86,7 +89,9 @@ class TransactionSyncManager @Inject constructor(
     private val surveysRepository: SurveysRepository,
     private val dispatcherProvider: DispatcherProvider,
     private val userSessionManager: UserSessionManager,
-    private val syncTimeLogger: SyncTimeLogger
+    private val syncTimeLogger: SyncTimeLogger,
+    private val diagnosticsRepository: DiagnosticsRepository,
+    private val timeProvider: TimeProvider
 ) {
     // The heavy tables are fetched in parallel (see SyncManager), but SQLite has a single
     // writer, so running ~14 batch inserts concurrently just thrashes the write lock/WAL — the
@@ -97,6 +102,7 @@ class TransactionSyncManager @Inject constructor(
     companion object {
         private const val TAG = "TransactionSyncManager"
         private const val MAX_CONCURRENT_ATTACHMENT_DOWNLOADS = 6
+        private const val MAX_FAILURE_TRACE_CHARS = 4000
         const val SYNC_FAILED = -1
     }
     
@@ -213,6 +219,9 @@ class TransactionSyncManager @Inject constructor(
         val syncStartTime = SystemClock.elapsedRealtime()
         val checkpointKey = "heavy_sync_skip_$table"
         Log.d("SyncPerf", "  ▶ Starting $table sync")
+        // Where the pull stood when it broke, kept outside the try so the catch can report it
+        var position = "before the first batch"
+        var docsSynced = 0
         try {
             val pageSize = when (table) {
                 "ratings" -> 20
@@ -237,6 +246,7 @@ class TransactionSyncManager @Inject constructor(
                 // so we propagate cancellation instead of hammering the server mid-shutdown.
                 currentCoroutineContext().ensureActive()
                 batchNumber++
+                position = "batch $batchNumber (skip=$skip, pageSize=$pageSize)"
                 if (useCheckpoint) {
                     sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).apply()
                 }
@@ -252,7 +262,12 @@ class TransactionSyncManager @Inject constructor(
                 if (response.body() == null || !response.isSuccessful) {
                     Log.d("SyncPerf", "  ✗ Failed $table batch $batchNumber: HTTP ${response.code()}")
                     // Older servers may not have this table; nothing to pull is not a failure.
-                    if (response.code() == 404) syncCompletedFully = true else syncFailed = true
+                    if (response.code() == 404) {
+                        syncCompletedFully = true
+                    } else {
+                        syncFailed = true
+                        recordSyncFailure(table, useCheckpoint, syncStartTime, docsSynced, position, "HTTP ${response.code()}", null)
+                    }
                     break
                 }
                 val arr = getJsonArray("rows", response.body()?.toGson())
@@ -286,6 +301,7 @@ class TransactionSyncManager @Inject constructor(
                     coursesRepository.flushPendingCourseResources()
                 }
                 totalDocs += arr.size()
+                docsSynced = totalDocs
                 skip += arr.size()
                 // Persist progress immediately after a batch is committed so an interruption
                 // resumes past it rather than re-processing the just-inserted page.
@@ -321,8 +337,33 @@ class TransactionSyncManager @Inject constructor(
             Log.e(TAG, "syncDb $table failed", e)
             val failDuration = SystemClock.elapsedRealtime() - syncStartTime
             Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
+            recordSyncFailure(table, useCheckpoint, syncStartTime, docsSynced, position, "${e.javaClass.simpleName}: ${e.message}", e)
             SYNC_FAILED
         }
+    }
+
+    // Persisted to apk_log (uploaded with crash/ANR logs) so a "Some data could not be downloaded"
+    // report from the field says why the table failed, not just which one
+    private suspend fun recordSyncFailure(
+        table: String,
+        background: Boolean,
+        syncStartTime: Long,
+        docsSynced: Int,
+        position: String,
+        cause: String,
+        error: Throwable?
+    ) {
+        val elapsed = SystemClock.elapsedRealtime() - syncStartTime
+        val detail = buildString {
+            append("Sync of table '").append(table).append("' failed")
+            append(if (background) " (background heavy-table sync)" else " (full sync)")
+            append("\nCause: ").append(cause)
+            append("\nAt: ").append(position)
+            append("\nDocs synced before failure: ").append(docsSynced)
+            append("\nElapsed: ").append(elapsed).append("ms")
+            error?.let { append("\n").append(it.stackTraceToString().take(MAX_FAILURE_TRACE_CHARS)) }
+        }
+        diagnosticsRepository.saveLogToRoom(ApkLog.ERROR_TYPE_SYNC_TABLE, detail, "${timeProvider.now()}")
     }
 
     private suspend fun timedBatchInsert(table: String, batchSize: Int, insert: suspend () -> Unit) {

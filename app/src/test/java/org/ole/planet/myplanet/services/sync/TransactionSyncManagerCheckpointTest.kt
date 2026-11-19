@@ -23,9 +23,11 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatSyncWriter
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.repository.EventsSyncWriter
 import org.ole.planet.myplanet.repository.FeedbackSyncWriter
 import org.ole.planet.myplanet.repository.HealthRepository
@@ -42,6 +44,7 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.SyncTimeLogger
+import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.robolectric.RobolectricTestRunner
 import retrofit2.Response
@@ -61,6 +64,9 @@ class TransactionSyncManagerCheckpointTest {
     private val prefs: SharedPreferences = mockk()
     private val editor: SharedPreferences.Editor = mockk()
     private val putValues = mutableListOf<Int>()
+    private val diagnosticsRepository: DiagnosticsRepository = mockk()
+    private val loggedTypes = mutableListOf<String>()
+    private val loggedErrors = mutableListOf<String>()
 
     // Plain Dispatchers.Unconfined + runBlocking (no TestDispatcher/runTest): syncDb only needs
     // its withContext(io) to run inline, and this avoids runTest's uncaught-exception detector
@@ -112,6 +118,9 @@ class TransactionSyncManagerCheckpointTest {
         every { editor.putInt(any(), capture(putValues)) } returns editor
         every { editor.remove(any()) } returns editor
         every { editor.apply() } returns Unit
+        coEvery {
+            diagnosticsRepository.saveLogToRoom(capture(loggedTypes), capture(loggedErrors), any())
+        } returns true
 
         transactionSyncManager = TransactionSyncManager(
             apiInterface,
@@ -135,7 +144,9 @@ class TransactionSyncManagerCheckpointTest {
             mockk<SurveysRepository>(relaxed = true),
             dispatcherProvider,
             mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true),
-            mockSyncTimeLogger
+            mockSyncTimeLogger,
+            diagnosticsRepository,
+            TestTimeProvider(1234L)
         )
     }
 
@@ -205,5 +216,49 @@ class TransactionSyncManagerCheckpointTest {
         } catch (_: CancellationException) {
             // expected: the generic catch(Exception) must not swallow cancellation
         }
+    }
+
+    @Test
+    fun `server error failure is recorded with its status and position`() = runBlocking {
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returnsMany
+            listOf(rowsResponse(20), errorResponse(503))
+        coEvery { ratingsRepository.insertRatingsFromSync(any()) } returns Unit
+
+        val total = transactionSyncManager.syncDb("ratings")
+
+        assertEquals(TransactionSyncManager.SYNC_FAILED, total)
+        assertEquals(listOf(ApkLog.ERROR_TYPE_SYNC_TABLE), loggedTypes)
+        val detail = loggedErrors.single()
+        assertTrue(detail, detail.contains("'ratings'"))
+        assertTrue(detail, detail.contains("(full sync)"))
+        assertTrue(detail, detail.contains("Cause: HTTP 503"))
+        assertTrue(detail, detail.contains("At: batch 2 (skip=20, pageSize=20)"))
+        assertTrue(detail, detail.contains("Docs synced before failure: 20"))
+    }
+
+    @Test
+    fun `exception failure is recorded with its type and message`() = runBlocking {
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns rowsResponse(20)
+        coEvery { ratingsRepository.insertRatingsFromSync(any()) } throws RuntimeException("insert boom")
+
+        val total = transactionSyncManager.syncDb("ratings", useCheckpoint = true)
+
+        assertEquals(TransactionSyncManager.SYNC_FAILED, total)
+        val detail = loggedErrors.single()
+        assertTrue(detail, detail.contains("(background heavy-table sync)"))
+        assertTrue(detail, detail.contains("Cause: RuntimeException: insert boom"))
+        assertTrue(detail, detail.contains("At: batch 1 (skip=0, pageSize=20)"))
+    }
+
+    @Test
+    fun `missing table and successful pull record nothing`() = runBlocking {
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returnsMany
+            listOf(errorResponse(404), rowsResponse(5))
+        coEvery { ratingsRepository.insertRatingsFromSync(any()) } returns Unit
+
+        transactionSyncManager.syncDb("ratings")
+        transactionSyncManager.syncDb("ratings")
+
+        assertTrue(loggedErrors.isEmpty())
     }
 }
