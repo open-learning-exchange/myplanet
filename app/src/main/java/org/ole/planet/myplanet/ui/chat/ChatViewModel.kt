@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.NewsShare
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ChatRepository
@@ -144,8 +145,8 @@ class ChatViewModel @Inject constructor(
         loadDataJob = viewModelScope.launch {
             val result = RetryUtils.retry(maxAttempts = 3, delayMs = 2000L) {
                 val currentUser = cachedUser ?: userRepository.getUserModel().also { cachedUser = it }
-                val (newsMessages, chatHistory) = coroutineScope {
-                    val newsDeferred = async { voicesRepository.getPlanetNewsMessages(currentUser?.planetCode) }
+                val (shares, chatHistory) = coroutineScope {
+                    val newsDeferred = async { voicesRepository.getPlanetMessageShares(currentUser?.planetCode) }
                     val historyDeferred = async { chatRepository.getChatHistoryForUser(currentUser?.name) }
                     Pair(newsDeferred.await(), historyDeferred.await())
                 }
@@ -153,9 +154,9 @@ class ChatViewModel @Inject constructor(
                 allChats = chatHistory
                 searchIndex = null
                 val sharedViewInIds = withContext(dispatcherProvider.default) {
-                    chatRepository.extractSharedViewInIds(newsMessages)
+                    chatRepository.extractSharedViewInIds(shares)
                 }
-                ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets, sharedViewInIds)
+                ChatHistoryScreenData(currentUser, chatHistory, targets, sharedViewInIds)
             }
             result?.let { data ->
                 _screenData.value = data
@@ -341,7 +342,7 @@ class ChatViewModel @Inject constructor(
     suspend fun getUserById(userId: String): UserEntity? {
         return userRepository.getUserById(userId)
     }
-    fun extractSharedViewInIds(sharedNewsMessages: List<News>): Map<String, Set<String>> {
-        return chatRepository.extractSharedViewInIds(sharedNewsMessages)
+    fun extractSharedViewInIds(shares: List<NewsShare>): Map<String, Set<String>> {
+        return chatRepository.extractSharedViewInIds(shares)
     }
 }
