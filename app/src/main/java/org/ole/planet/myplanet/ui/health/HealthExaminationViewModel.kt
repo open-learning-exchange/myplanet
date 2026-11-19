@@ -52,7 +52,11 @@ class HealthExaminationViewModel @Inject constructor(
     private val _saveResult = Channel<Boolean>(Channel.BUFFERED)
     val saveResult: Flow<Boolean> = _saveResult.receiveAsFlow()
 
+    private var loadStarted = false
+
     fun loadData(userId: String?, examinationId: String?) {
+        if (loadStarted) return
+        loadStarted = true
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true)
 
