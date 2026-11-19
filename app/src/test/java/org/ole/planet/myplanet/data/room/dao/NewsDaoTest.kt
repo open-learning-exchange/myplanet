@@ -18,6 +18,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.NewsShare
 
 @RunWith(AndroidJUnit4::class)
 class NewsDaoTest {
@@ -201,6 +202,24 @@ class NewsDaoTest {
 
         assertEquals(2L, newsDao.countTopLevelByTeam("teamA", "%\"_id\":\"teamA\"%"))
         assertEquals(0L, newsDao.countTopLevelByTeam("teamB", "%\"_id\":\"teamB\"%"))
+    }
+
+    @Test
+    fun getPlanetMessageShares_returnsOnlyThisPlanetsSharedMessages() = runBlocking {
+        fun post(block: News.() -> Unit) = News().apply { id = UUID.randomUUID().toString(); time = 100L; block() }
+        val shared = post { docType = "message"; createdOn = "planet1"; newsId = "chat_1"; viewIn = "[{\"_id\":\"teamA\"}]"; message = "long body" }
+        val sharedOtherCase = post { docType = "Message"; createdOn = "PLANET1"; newsId = "chat_2"; viewIn = "[]" }
+        val notAChatShare = post { docType = "message"; createdOn = "planet1"; newsId = null }
+        val otherPlanet = post { docType = "message"; createdOn = "planet2"; newsId = "chat_3" }
+        val notAMessage = post { docType = "news"; createdOn = "planet1"; newsId = "chat_4" }
+        newsDao.upsertAll(listOf(shared, sharedOtherCase, notAChatShare, otherPlanet, notAMessage))
+
+        val rows = newsDao.getPlanetMessageShares("planet1")
+
+        assertEquals(
+            setOf(NewsShare("chat_1", "[{\"_id\":\"teamA\"}]"), NewsShare("chat_2", "[]")),
+            rows.toSet()
+        )
     }
 
     @Test

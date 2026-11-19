@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.NewsShare
 
 @Dao
 interface NewsDao {
@@ -59,8 +60,11 @@ interface NewsDao {
     @Query("WITH RECURSIVE thread(id) AS (SELECT :newsId UNION SELECT news.id FROM news JOIN thread ON news.replyTo = thread.id) SELECT id FROM thread")
     suspend fun getNewsAndRepliesIds(newsId: String): List<String>
 
-    @Query("SELECT * FROM news WHERE docType = 'message' COLLATE NOCASE AND createdOn = :planetCode COLLATE NOCASE")
-    suspend fun getPlanetMessages(planetCode: String): List<News>
+    @Query(
+        "SELECT newsId, viewIn FROM news WHERE docType = 'message' COLLATE NOCASE " +
+            "AND createdOn = :planetCode COLLATE NOCASE AND newsId IS NOT NULL"
+    )
+    suspend fun getPlanetMessageShares(planetCode: String): List<NewsShare>
 
     @Query(
         "SELECT COUNT(*) FROM (SELECT DISTINCT strftime('%Y-%m-%d', time / 1000, 'unixepoch', 'localtime') " +

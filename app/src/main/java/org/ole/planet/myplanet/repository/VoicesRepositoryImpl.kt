@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.di.PlainGson
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.NewsShare
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -382,11 +383,11 @@ class VoicesRepositoryImpl @Inject constructor(
         return newsDao.getById(newsId)
     }
 
-    override suspend fun getPlanetNewsMessages(planetCode: String?): List<News> {
+    override suspend fun getPlanetMessageShares(planetCode: String?): List<NewsShare> {
         if (planetCode.isNullOrEmpty()) {
             return emptyList()
         }
-        return newsDao.getPlanetMessages(planetCode)
+        return newsDao.getPlanetMessageShares(planetCode)
     }
 
     private suspend fun deleteNewsRows(ids: List<String>) {
