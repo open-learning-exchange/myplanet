@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import org.junit.Assert.assertNull
+import okhttp3.MediaType.Companion.toMediaType
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -551,5 +553,38 @@ class DownloadRepositoryImplTest {
         coVerify(exactly = 0) {
             diagnosticsRepository.saveLogToRoom(any(), any(), any())
         }
+    }
+
+    @Test
+    fun `downloadFileResponse rejects an HTML page served for a non-HTML file`() = runTest {
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns UnconfinedTestDispatcher(testScheduler)
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+        val url = "https://clone.planet.gt/resources/abc/post.jpg"
+        val html = "<!doctype html><html></html>".toResponseBody("text/html; charset=utf-8".toMediaType())
+        coEvery { mockApiInterface.downloadFile("auth", url, null, null) } returns Response.success(html)
+
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
+        val result = repository.downloadFileResponse(url, "auth", 0L, null)
+
+        assertTrue(result is DownloadResult.Error)
+        assertNull((result as DownloadResult.Error).code)
+    }
+
+    @Test
+    fun `downloadFileResponse accepts HTML for an HTML resource`() = runTest {
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns UnconfinedTestDispatcher(testScheduler)
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+        val url = "https://clone.planet.gt/db/resources/abc/index.html"
+        val html = "<!doctype html><html></html>".toResponseBody("text/html".toMediaType())
+        coEvery { mockApiInterface.downloadFile("auth", url, null, null) } returns Response.success(html)
+
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
+        val result = repository.downloadFileResponse(url, "auth", 0L, null)
+
+        assertTrue(result is DownloadResult.Success)
     }
 }
