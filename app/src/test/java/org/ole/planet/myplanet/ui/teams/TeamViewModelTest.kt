@@ -4,6 +4,8 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -21,6 +23,7 @@ import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.model.TeamTask
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
@@ -326,5 +329,26 @@ class TeamViewModelTest {
                 teamType = "type1"
             )
         }
+    }
+
+    @Test
+    fun `createTeam called twice at once creates the team only once`() = runTest(testDispatcher) {
+        var created = false
+        coEvery { teamsRepository.isTeamNameExists("Alpha", "team", null) } answers { created }
+        coEvery { teamsRepository.createTeamAndAddMember(any(), any()) } coAnswers {
+            delay(100)
+            created = true
+            Result.success("team1")
+        }
+        val user = mockk<UserEntity>(relaxed = true)
+
+        val first = async { viewModel.createTeam("Alpha", "", "", "", "local", false, null, user) }
+        val second = async { viewModel.createTeam("Alpha", "", "", "", "local", false, null, user) }
+
+        val results = listOf(first.await(), second.await())
+
+        assertTrue(results.contains(TeamActionResult.Success))
+        assertTrue(results.contains(TeamActionResult.NameExists))
+        coVerify(exactly = 1) { teamsRepository.createTeamAndAddMember(any(), any()) }
     }
 }
