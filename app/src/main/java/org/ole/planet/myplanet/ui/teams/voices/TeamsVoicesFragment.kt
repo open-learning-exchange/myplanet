@@ -184,6 +184,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
     private fun showRecyclerView(realmNewsList: List<News?>?) {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
+            realmNewsList?.let { viewModel.downloadReferencedResources(it) }
             val labelManager = VoicesLabelManager(
                 context = requireActivity(),
                 scope = viewLifecycleOwner.lifecycleScope,

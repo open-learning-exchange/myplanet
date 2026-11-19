@@ -27,7 +27,7 @@ class FallbackUrlResolver @Inject constructor(
         }
         val parsed = url.toUri()
         val query = parsed.query?.let { "?$it" }.orEmpty()
-        val alternativeUrl = altBase + parsed.path.orEmpty() + query
+        val alternativeUrl = DownloadService.alternativeDownloadUrl(altBase, parsed.path.orEmpty(), query)
         Log.d(TAG, "resolve: primary=$primaryBase, alternative=${UrlUtils.redactForLog(altBase)}")
         return Fallback(primaryBase, alternativeUrl)
     }

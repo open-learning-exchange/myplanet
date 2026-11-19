@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.VoicesEditor
+import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
@@ -60,6 +61,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     lateinit var timeProvider: TimeProvider
     @Inject
     lateinit var voicesEditor: VoicesEditor
+    @Inject
+    lateinit var broadcastService: BroadcastService
 
     private lateinit var imageList: MutableList<String>
     private var llImage: ViewGroup? = null
@@ -95,6 +98,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                 user = userSessionManager.getUserModel()
             }
             val (news, list) = viewModel.getNewsWithReplies(id)
+            viewModel.downloadReferencedResources(listOf(news) + list)
             if (!::newsAdapter.isInitialized) {
                 val labelManager = VoicesLabelManager(
                     context = this@ReplyActivity,
@@ -152,6 +156,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                 newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
                 newsAdapter.setImageList(imageList)
                 activityReplyBinding.rvReply.adapter = newsAdapter
+                VoicesAdapterHelper.refreshOnImageDownloads(this@ReplyActivity, broadcastService.events) { newsAdapter }
             } else {
                 newsAdapter.updateParentNews(news)
             }

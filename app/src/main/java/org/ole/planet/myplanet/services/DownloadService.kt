@@ -678,6 +678,12 @@ class DownloadService : Service() {
             return downloadQueue.maxByOrNull { it.priority } ?: downloadQueue.first()
         }
 
+        @VisibleForTesting
+        internal fun alternativeDownloadUrl(alternativeBase: String, path: String, query: String): String {
+            val relative = path.removePrefix("/db").let { if (it.startsWith("/")) it else "/$it" }
+            return UrlUtils.dbUrl(alternativeBase) + relative + query
+        }
+
         /** Whether the session's summary should mention errors, or null when nothing was attempted. */
         @VisibleForTesting
         internal fun completionHadErrors(completed: Int, total: Int): Boolean? =
