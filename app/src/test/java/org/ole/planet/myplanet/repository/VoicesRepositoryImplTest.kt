@@ -205,7 +205,6 @@ class VoicesRepositoryImplTest {
         assertEquals(1, emitted.parsedConversations?.size)
         assertEquals("a.jpg", emitted.parsedImageUrls?.single()?.get("imageUrl")?.asString)
 
-        // A second pass (what the adapter does on the main thread) must reuse the cached results.
         val cachedViewIn = emitted.parsedViewIn
         val cachedImages = emitted.parsedImageUrls
         emitted.preParse()
