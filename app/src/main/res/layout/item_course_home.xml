@@ -13,7 +13,6 @@
         android:contentDescription="@null"
         android:scaleType="centerCrop"
         android:visibility="invisible" />
-
     <LinearLayout
         android:id="@+id/content"
         android:layout_width="match_parent"
