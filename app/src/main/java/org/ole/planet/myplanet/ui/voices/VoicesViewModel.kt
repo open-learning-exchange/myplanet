@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -19,6 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.TeamVoiceLabel
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
@@ -53,6 +55,10 @@ class VoicesViewModel @Inject constructor(
     private val _createNewsSuccess = Channel<News?>(Channel.BUFFERED)
     val createNewsSuccess: Flow<News?> = _createNewsSuccess.receiveAsFlow()
 
+    private val _customLabels = MutableStateFlow<List<TeamVoiceLabel>>(emptyList())
+
+    val customLabels: StateFlow<List<TeamVoiceLabel>> = _customLabels.asStateFlow()
+
     private var observeJob: Job? = null
 
     private val labelDisplayToValue: Map<String, String> = Constants.LABELS
@@ -70,12 +76,21 @@ class VoicesViewModel @Inject constructor(
     fun observeCommunityNews(userIdentifier: String) {
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
+            _customLabels.value = loadCustomLabels(userIdentifier)
             voicesRepository.getCommunityNews(userIdentifier).collect { newsList ->
                 val filtered: List<News?> = newsList
                 _baseNewsList.value = filtered
                 _labels.value = collectLabels(filtered)
             }
         }
+    }
+
+    private suspend fun loadCustomLabels(communityId: String): List<TeamVoiceLabel> = try {
+        teamsRepository.getTeamById(communityId)?.customVoiceLabels.orEmpty()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        emptyList()
     }
 
     fun updateSearchQuery(query: String) {
@@ -120,7 +135,9 @@ class VoicesViewModel @Inject constructor(
             list
         } else {
             val staticLabelValue = labelDisplayToValue[selectedLabel]
-            val resolvedLabelValue = staticLabelValue ?: buildDynamicLabelMap(list)[selectedLabel]
+            val resolvedLabelValue = staticLabelValue
+                ?: buildDynamicLabelMap(list)[selectedLabel]
+                ?: _customLabels.value.firstOrNull { VoicesLabelManager.formatLabelValue(it.name) == selectedLabel }?.name
 
             list.filter { news ->
                 when {
@@ -128,7 +145,7 @@ class VoicesViewModel @Inject constructor(
                         news?.chat == true || news?.viewableBy.equals("community", ignoreCase = true)
                     }
                     resolvedLabelValue != null -> {
-                        news?.labels?.contains(resolvedLabelValue) == true
+                        news?.labels?.any { it.equals(resolvedLabelValue, ignoreCase = true) } == true
                     }
                     else -> {
                         (news?.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)) == selectedLabel
@@ -203,6 +220,12 @@ class VoicesViewModel @Inject constructor(
         }
 
         allLabels.add("Shared Chat")
+
+        _customLabels.value.forEach { custom ->
+            val labelName = Constants.LABEL_VALUE_TO_NAME[custom.name]
+                ?: VoicesLabelManager.formatLabelValue(custom.name)
+            allLabels.add(labelName)
+        }
 
         newsList.forEach { news ->
             val sharedTeamName = news?.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)

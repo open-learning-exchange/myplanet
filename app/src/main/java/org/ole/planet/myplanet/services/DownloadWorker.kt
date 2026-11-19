@@ -43,8 +43,10 @@ class DownloadWorker @AssistedInject constructor(
     private val downloadRepository: DownloadRepository, private val broadcastService: BroadcastService,
     private val dispatcherProvider: DispatcherProvider,
     private val resourcesRepository: ResourcesRepository,
-    @DownloadPreferences private val preferences: SharedPreferences
+    @DownloadPreferences private val preferences: SharedPreferences,
+    private val fallbackUrlResolver: FallbackUrlResolver
 ) : CoroutineWorker(context, workerParams) {
+    internal var unreachablePrimaryBase: String? = null
 
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private var isForegroundPromoted = false
@@ -133,15 +135,7 @@ class DownloadWorker @AssistedInject constructor(
             val partial = PartialFiles(outputFile)
             File(outputFile.parentFile, "${outputFile.name}.part").delete()
 
-            val resumeOffset = partial.resumeOffset()
-            val ifRange = if (resumeOffset > 0) partial.validator() else null
-            var response = downloadRepository.downloadFileResponse(url, authHeader, resumeOffset, ifRange)
-            if (response is DownloadResult.Error && response.code == 416 && resumeOffset > 0) {
-                Log.w(TAG, "Resume offset ${resumeOffset}B rejected (416) for ${getFileNameFromUrl(url)}, restarting")
-                partial.discard()
-                response = downloadRepository.downloadFileResponse(url, authHeader, 0L, null)
-            }
-            when (response) {
+            when (val response = fetch(url, authHeader, partial)) {
                 is DownloadResult.Success -> {
                     downloadFileBody(response, url, partial, index, total)
                     true
@@ -157,6 +151,40 @@ class DownloadWorker @AssistedInject constructor(
             Log.e(TAG, "Failed to download file: ${UrlUtils.redactForLog(url)}", e)
             false
         }
+    }
+
+    private suspend fun fetch(url: String, authHeader: String, partial: PartialFiles): DownloadResult {
+        val fallback = fallbackUrlResolver.resolve(url)
+        var altUrl = fallback?.alternativeUrl
+
+        if (fallback != null && fallback.primaryBase == unreachablePrimaryBase) {
+            val altResult = fetchWithResume(fallback.alternativeUrl, authHeader, partial, retryNetworkErrors = true)
+            if (!altResult.isNetworkError()) return altResult
+            Log.w(TAG, "Alternative failed with a network error too, trying primary again for ${getFileNameFromUrl(url)}")
+            unreachablePrimaryBase = null
+            altUrl = null
+        }
+
+        val primaryResult = fetchWithResume(url, authHeader, partial, retryNetworkErrors = altUrl == null)
+        if (primaryResult.isNetworkError() && altUrl != null) {
+            Log.w(TAG, "Primary unreachable, retrying ${getFileNameFromUrl(url)} with ${UrlUtils.redactForLog(altUrl)}")
+            val altResult = fetchWithResume(altUrl, authHeader, partial, retryNetworkErrors = true)
+            if (!altResult.isNetworkError()) unreachablePrimaryBase = fallback?.primaryBase
+            return altResult
+        }
+        return primaryResult
+    }
+
+    private suspend fun fetchWithResume(target: String, authHeader: String, partial: PartialFiles, retryNetworkErrors: Boolean): DownloadResult {
+        val resumeOffset = partial.resumeOffset()
+        val ifRange = if (resumeOffset > 0) partial.validator() else null
+        val response = downloadRepository.downloadFileResponse(target, authHeader, resumeOffset, ifRange, retryNetworkErrors)
+        if (response is DownloadResult.Error && response.code == 416 && resumeOffset > 0) {
+            Log.w(TAG, "Resume offset ${resumeOffset}B rejected (416) for ${getFileNameFromUrl(target)}, restarting")
+            partial.discard()
+            return downloadRepository.downloadFileResponse(target, authHeader, 0L, null, retryNetworkErrors)
+        }
+        return response
     }
 
     private class PartialFiles(val outputFile: File) {
