@@ -2,12 +2,12 @@ package org.ole.planet.myplanet.ui.user
 
 import android.os.Bundle
 import android.os.Looper
-import android.widget.FrameLayout
-import androidx.appcompat.app.AppCompatActivity
-import dagger.hilt.android.AndroidEntryPoint
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.RadioGroup
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import dagger.hilt.android.testing.HiltTestApplication
