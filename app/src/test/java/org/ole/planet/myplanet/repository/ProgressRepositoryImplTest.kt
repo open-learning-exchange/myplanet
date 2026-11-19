@@ -449,6 +449,41 @@ class ProgressRepositoryImplTest {
     }
 
     @Test
+    fun testFetchCourseData_loadsAnswersOnceForAllCourses() = testScope.runTest {
+        coEvery { mockCoursesRepository.getMyCourses(any()) } returns listOf(
+            MyCourse().apply { courseId = "course1"; courseTitle = "Course 1" },
+            MyCourse().apply { courseId = "course2"; courseTitle = "Course 2" }
+        )
+        coEvery { courseStepDao.countByCourseIds(any()) } returns mapOf("course1" to 1, "course2" to 1)
+        coEvery { courseProgressDao.getByUserAndCourseIds(any(), any()) } returns emptyList()
+        coEvery { examDao.getByCourseIds(any()) } returns listOf(
+            StepExam(id = "exam1", courseId = "course1"), StepExam(id = "exam2", courseId = "course2")
+        )
+        coEvery { mockSubmissionsRepository.getExamSubmissionsByUser("user1") } returns listOf(
+            Submission(id = "sub1", parentId = "course1", userId = "user1", type = "exam"),
+            Submission(id = "sub2", parentId = "course2", userId = "user1", type = "exam")
+        )
+        coEvery { mockSubmissionsRepository.getAnswersBySubmissionIds(any()) } returns listOf(
+            Answer(id = "a1", questionId = "q1", submissionId = "sub1", mistakes = 2),
+            Answer(id = "a2", questionId = "q2", submissionId = "sub2", mistakes = 3)
+        )
+        coEvery { questionDao.getByIds(any()) } returns listOf(
+            ExamQuestion(id = "q1", examId = "exam1"),
+            ExamQuestion(id = "q2", examId = "exam2")
+        )
+
+        val result = repository.fetchCourseData("user1")
+        advanceUntilIdle()
+
+        // Each course still gets only its own mistakes...
+        assertEquals(2, result[0].asJsonObject.get("mistakes").asInt)
+        assertEquals(3, result[1].asJsonObject.get("mistakes").asInt)
+        // ...but answers and questions are loaded once, not once per course.
+        coVerify(exactly = 1) { mockSubmissionsRepository.getAnswersBySubmissionIds(any()) }
+        coVerify(exactly = 1) { questionDao.getByIds(any()) }
+    }
+
+    @Test
     fun testGetCourseProgress() = testScope.runTest {
         val courseIds = listOf("course1", "course2")
         val steps1 = listOf(CourseStep().apply { courseId = "course1" })
