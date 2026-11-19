@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.toVoicePostingPolicy
 import org.ole.planet.myplanet.ui.voices.DefaultLabelManipulator
 import org.ole.planet.myplanet.ui.voices.LabelManipulator
+import org.ole.planet.myplanet.ui.voices.VoicesAdapterHelper
 
 @HiltViewModel
 class TeamsVoicesViewModel @Inject constructor(
@@ -47,6 +48,14 @@ class TeamsVoicesViewModel @Inject constructor(
     val createNewsSuccess: Flow<Boolean> = _createNewsSuccess.receiveAsFlow()
 
     private var observeJob: Job? = null
+
+    fun downloadReferencedResources(list: List<News?>) {
+        val resourceIds = VoicesAdapterHelper.referencedResourceIds(list)
+        if (resourceIds.isEmpty()) return
+        viewModelScope.launch {
+            resourcesRepository.downloadResources(resourcesRepository.getLibraryItemsByResourceIds(resourceIds))
+        }
+    }
 
     fun loadTeam(teamId: String) {
         viewModelScope.launch {

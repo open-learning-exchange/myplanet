@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.voices
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.net.Uri
 import android.os.Build
 import android.text.Spanned
 import android.util.Log
@@ -21,6 +22,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.gson.JsonObject
+import io.noties.markwon.image.AsyncDrawableScheduler
 import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatItemClickListener
@@ -114,7 +116,7 @@ class VoicesAdapter(
             // Every field checked in areContentsTheSame is covered by the buckets above.
             // If payloads is empty here, it means a future field was added to areContentsTheSame
             // without a corresponding bucket. We MUST return null to trigger a full rebind to prevent stale UI.
-            if (payloads.isNotEmpty()) payloads else null
+            payloads.ifEmpty { null }
         }
     )
 ) {
@@ -130,6 +132,7 @@ class VoicesAdapter(
         const val PAYLOAD_IMAGES_CHANGED = "PAYLOAD_IMAGES_CHANGED"
         const val PAYLOAD_VIEW_IN_CHANGED = "PAYLOAD_VIEW_IN_CHANGED"
         const val PAYLOAD_REACTIONS_CHANGED = "PAYLOAD_REACTIONS_CHANGED"
+        const val PAYLOAD_RESOURCE_DOWNLOADED = "PAYLOAD_RESOURCE_DOWNLOADED"
     }
 
     private data class RowState(
@@ -334,6 +337,11 @@ class VoicesAdapter(
                         setMessageAndDate(holder, news, sharedTeamName)
                     }
                     PAYLOAD_REACTIONS_CHANGED -> showReactions(holder, news)
+                    PAYLOAD_RESOURCE_DOWNLOADED -> {
+                        loadImage(holder.binding, news)
+                        val sharedTeamName = news.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)
+                        setMessageAndDate(holder, news, sharedTeamName)
+                    }
                 }
             }
         }
@@ -395,6 +403,15 @@ class VoicesAdapter(
             notifyItemChanged(0, PAYLOAD_REPLY_COUNT)
         }
         listener?.onDataChanged()
+    }
+
+    fun onResourceDownloaded(resourceId: String) {
+        if (resourceId.isEmpty()) return
+        currentList.forEachIndexed { index, news ->
+            val referenced = news.images?.contains(resourceId) == true ||
+                news.message?.contains("resources/$resourceId/") == true
+            if (referenced) safeNotifyItemChanged(index, PAYLOAD_RESOURCE_DOWNLOADED)
+        }
     }
 
     fun updateReplyBadge(newsId: String?) {
@@ -470,8 +487,13 @@ class VoicesAdapter(
     }
 
     private fun setMessageAndDate(holder: VoicesViewHolder, news: News, sharedTeamName: String) {
-        val markdownContentWithLocalPaths = prependBaseUrlToImages(
+        val withoutAttachments = VoicesAdapterHelper.stripAttachedImages(
             news.message,
+            VoicesAdapterHelper.attachedResourceIds(news.imagesArray)
+        )
+        val message = VoicesAdapterHelper.stripUnavailableImages(withoutAttachments, ::isImageOnDisk)
+        val markdownContentWithLocalPaths = prependBaseUrlToImages(
+            message,
             "file://$externalFilesDir/ole/",
             600,
             350
@@ -489,6 +511,11 @@ class VoicesAdapter(
                 "${formatDate(news.time)} | Shared from $sharedTeamName"
             }
         holder.binding.tvEdited.visibility = if (news.isEdited) View.VISIBLE else View.GONE
+    }
+
+    private fun isImageOnDisk(resourcePath: String): Boolean {
+        val base = externalFilesDir ?: return false
+        return File(base, "ole/$resourcePath").isFile || File(base, "ole/${Uri.decode(resourcePath)}").isFile
     }
 
     private fun setMessageMarkdown(textView: TextView, news: News, markdown: String) {
@@ -950,6 +977,11 @@ class VoicesAdapter(
         fetchingUserIds.clear()
     }
 
+    override fun onViewAttachedToWindow(holder: RecyclerView.ViewHolder) {
+        super.onViewAttachedToWindow(holder)
+        if (holder is VoicesViewHolder) AsyncDrawableScheduler.schedule(holder.binding.tvMessage)
+    }
+
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
         super.onViewRecycled(holder)
         if (holder is VoicesViewHolder) {
@@ -992,7 +1024,7 @@ class VoicesAdapter(
         val imagesToLoad = news?.imagesArray
         imagesToLoad?.let { imagesArray ->
             val size = imagesArray.size()
-            if (!imagesArray.isEmpty()) {
+            if (!imagesArray.isEmpty) {
                 if (size == 1) {
                     val ob = imagesArray[0]?.asJsonObject
                     val resourceId = GsonUtils.getString("resourceId", ob)

@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatSharePayload
 import org.ole.planet.myplanet.model.ChatShareTargets
-import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.teams.TeamsSelectionAdapter

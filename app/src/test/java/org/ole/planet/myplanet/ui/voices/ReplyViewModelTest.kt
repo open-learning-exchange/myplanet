@@ -28,7 +28,7 @@ class ReplyViewModelTest {
     @Before
     fun setup() {
         voicesRepository = mockk()
-        viewModel = ReplyViewModel(voicesRepository)
+        viewModel = ReplyViewModel(voicesRepository, mockk(relaxed = true))
     }
 
     @Test
