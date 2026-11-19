@@ -698,4 +698,74 @@ class UploadCoordinatorTest {
     )
 
     private data class TestRoomItem(val id: String, val dbId: String?)
+
+    @Test
+    fun `overlapping runs of the same upload post each new document once`() = runTest {
+        uploadCoordinator = UploadCoordinator(
+            uploadRepository = uploadRepository,
+            retryQueue = retryQueue,
+            dispatcherProvider = TestDispatcherProvider(StandardTestDispatcher(testScheduler))
+        )
+        val pending = mutableSetOf("local-1", "local-2", "local-3")
+        val posts = AtomicInteger(0)
+        coEvery { uploadRepository.postUpload(any(), any()) } coAnswers {
+            val n = posts.incrementAndGet()
+            delay(50.milliseconds)
+            Response.success(JsonObject().apply {
+                addProperty("id", "remote-$n")
+                addProperty("rev", "1-rev")
+            })
+        }
+        val config = RoomUploadConfig(
+            endpoint = "overlap_endpoint",
+            modelClassName = "Overlap",
+            fetchPendingItems = { pending.toList() },
+            serializer = UploadSerializer.Simple { JsonObject() },
+            idExtractor = { it },
+            markUploaded = { results ->
+                results.forEach { pending.remove(it.localId) }
+                emptyList()
+            }
+        )
+
+        val first = async { uploadCoordinator.uploadRoom(config) }
+        val second = async { uploadCoordinator.uploadRoom(config) }
+        advanceUntilIdle()
+
+        assertEquals(3, posts.get())
+        assertTrue(first.await() is UploadResult.Success)
+        assertTrue(second.await() is UploadResult.Empty)
+    }
+
+    @Test
+    fun `different uploads still run side by side`() = runTest {
+        uploadCoordinator = UploadCoordinator(
+            uploadRepository = uploadRepository,
+            retryQueue = retryQueue,
+            dispatcherProvider = TestDispatcherProvider(StandardTestDispatcher(testScheduler))
+        )
+        val active = AtomicInteger(0)
+        var maxActive = 0
+        coEvery { uploadRepository.postUpload(any(), any()) } coAnswers {
+            maxActive = maxOf(maxActive, active.incrementAndGet())
+            delay(50.milliseconds)
+            active.decrementAndGet()
+            Response.success(JsonObject().apply { addProperty("id", "r"); addProperty("rev", "1") })
+        }
+        fun config(endpoint: String) = RoomUploadConfig(
+            endpoint = endpoint,
+            modelClassName = "Side",
+            fetchPendingItems = { listOf("only") },
+            serializer = UploadSerializer.Simple { JsonObject() },
+            idExtractor = { it },
+            markUploaded = { emptyList() }
+        )
+
+        val a = async { uploadCoordinator.uploadRoom(config("side_a")) }
+        val b = async { uploadCoordinator.uploadRoom(config("side_b")) }
+        advanceUntilIdle()
+        a.await(); b.await()
+
+        assertEquals(2, maxActive)
+    }
 }

@@ -38,6 +38,12 @@ class UploadCoordinator @Inject constructor(
 
     private suspend fun <T : Any> runPipeline(
         config: UploadPipelineConfig<T>
+    ): UploadResult<Int> = UploadLocks.withLock("${config.endpoint}:${config.modelLabel}") {
+        runPipelineLocked(config)
+    }
+
+    private suspend fun <T : Any> runPipelineLocked(
+        config: UploadPipelineConfig<T>
     ): UploadResult<Int> = withContext(dispatcherProvider.io) {
         try {
             val pendingItems = config.fetchPendingItems.invoke()
