@@ -34,15 +34,11 @@ class AppDatabaseMigrationTest {
 
     @Test
     fun `in-place migration ends at the current database version`() {
-        // A later schema bump must either add the next migration in the chain or consciously
-        // drop this one; either way this fails until someone looks. It cannot catch two branches
-        // that both claim the same VERSION, so check master before bumping.
         assertEquals(AppDatabase.VERSION, AppDatabase.MIGRATION_20_21.endVersion)
     }
 
     @Test
     fun `upgrading from 20 adds the my_library indices and keeps unsynced rows`() = runBlocking {
-        // Make a database that looks like version 20: the current schema minus the new indices.
         build().apply {
             myLibraryDao().upsertAll(listOf(MyLibrary().apply { id = "pending"; title = "Not uploaded yet" }))
             close()
