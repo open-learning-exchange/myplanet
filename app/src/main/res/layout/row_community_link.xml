@@ -18,7 +18,6 @@
         android:importantForAccessibility="no"
         app:tint="@color/daynight_textColor"
         tools:src="@drawable/ic_link" />
-
     <TextView
         android:id="@+id/tv_link_title"
         android:layout_width="0dp"
