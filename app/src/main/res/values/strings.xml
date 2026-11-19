@@ -373,9 +373,29 @@
         <item>Order By Name - Desc</item>
     </string-array>
 
-    <string-array name="grade_level">
+    <string-array name="grade_level_values" translatable="false">
         <item>All</item>
         <item>Pre-Kindergarten</item>
+        <item>Kindergarten</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
+        <item>10</item>
+        <item>11</item>
+        <item>12</item>
+        <item>College</item>
+        <item>Post-Graduate</item>
+    </string-array>
+
+    <string-array name="grade_level">
+        <item>All</item>
+        <item>Open</item>
         <item>Kindergarten</item>
         <item>1</item>
         <item>2</item>

@@ -15,6 +15,7 @@ import retrofit2.http.HeaderMap
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Streaming
+import retrofit2.http.Tag
 import retrofit2.http.Url
 
 interface ApiInterface {
@@ -24,7 +25,8 @@ interface ApiInterface {
         @Header("Authorization") header: String?,
         @Url fileUrl: String?,
         @Header("Range") range: String? = null,
-        @Header("If-Range") ifRange: String? = null
+        @Header("If-Range") ifRange: String? = null,
+        @Tag noNetworkRetry: NoNetworkRetry? = null
     ): Response<ResponseBody>
 
     @GET

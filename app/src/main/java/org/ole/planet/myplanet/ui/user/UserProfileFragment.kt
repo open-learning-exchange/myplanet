@@ -76,6 +76,8 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
     lateinit var dispatcherProvider: DispatcherProvider
     private var model: UserEntity? = null
     private var editProfileDialog: Dialog? = null
+    private var editProfileBinding: EditProfileDialogBinding? = null
+    private var pendingEditDraft: Bundle? = null
     private lateinit var pickImageLauncher: ActivityResultLauncher<Intent>
     private var selectedGender: String? = null
     var selectedLevel: String? = null
@@ -88,6 +90,7 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         photoURI = savedInstanceState?.getString(KEY_PHOTO_URI)?.let(Uri::parse)
+        pendingEditDraft = savedInstanceState?.getBundle(KEY_EDIT_DRAFT)
         pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK && result.data != null) {
                 val uri = result.data?.data ?: return@registerForActivityResult
@@ -138,6 +141,40 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         photoURI?.let { outState.putString(KEY_PHOTO_URI, it.toString()) }
+        val draft = editProfileBinding?.takeIf { editProfileDialog?.isShowing == true }?.let(::editDraft) ?: pendingEditDraft
+        draft?.let { outState.putBundle(KEY_EDIT_DRAFT, it) }
+    }
+
+    private fun editDraft(binding: EditProfileDialogBinding) = Bundle().apply {
+        putString(DRAFT_FIRST_NAME, binding.firstName.text.toString())
+        putString(DRAFT_MIDDLE_NAME, binding.middleName.text.toString())
+        putString(DRAFT_LAST_NAME, binding.lastName.text.toString())
+        putString(DRAFT_EMAIL, binding.email.text.toString())
+        putString(DRAFT_PHONE, binding.phoneNumber.text.toString())
+        putInt(DRAFT_LANGUAGE, binding.language.selectedItemPosition)
+        putInt(DRAFT_LEVEL, binding.level.selectedItemPosition)
+        putInt(DRAFT_GENDER, binding.rdGender.checkedRadioButtonId)
+        putString(DRAFT_DATE, date)
+        putString(DRAFT_DATE_TEXT, binding.dateOfBirth.text.toString())
+    }
+
+    private fun applyEditDraft(binding: EditProfileDialogBinding, draft: Bundle) {
+        binding.firstName.setText(draft.getString(DRAFT_FIRST_NAME))
+        binding.middleName.setText(draft.getString(DRAFT_MIDDLE_NAME))
+        binding.lastName.setText(draft.getString(DRAFT_LAST_NAME))
+        binding.email.setText(draft.getString(DRAFT_EMAIL))
+        binding.phoneNumber.setText(draft.getString(DRAFT_PHONE))
+        draft.getInt(DRAFT_LANGUAGE, -1).takeIf { it in 0 until binding.language.count }?.let {
+            binding.language.setSelection(it)
+            selectedLanguage = binding.language.getItemAtPosition(it).toString()
+        }
+        draft.getInt(DRAFT_LEVEL, -1).takeIf { it in 0 until binding.level.count }?.let {
+            binding.level.setSelection(it)
+            selectedLevel = CoursesFilterFragment.englishValues(requireContext(), subject_level).drop(1).getOrElse(it - 1) { "" }
+        }
+        draft.getInt(DRAFT_GENDER, View.NO_ID).takeIf { it != View.NO_ID }?.let { binding.rdGender.check(it) }
+        date = draft.getString(DRAFT_DATE)
+        draft.getString(DRAFT_DATE_TEXT)?.let { binding.dateOfBirth.text = it }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -150,6 +187,10 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
         observeUserProfile()
         viewModel.loadCurrentUserProfile()
         viewModel.getOfflineVisits()
+        pendingEditDraft?.let { draft ->
+            pendingEditDraft = null
+            openEditProfileDialog(draft)
+        }
 
         val combinedFlow = combine(
             viewModel.offlineVisits,
@@ -279,10 +320,17 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
             .into(binding.image)
     }
 
-    private fun openEditProfileDialog() {
+    private fun openEditProfileDialog(draft: Bundle? = null) {
         val dialog = Dialog(requireContext()).apply { setCancelable(false) }
         editProfileDialog = dialog
         val binding = EditProfileDialogBinding.inflate(LayoutInflater.from(requireContext()))
+        editProfileBinding = binding
+        dialog.setOnDismissListener {
+            if (editProfileDialog === dialog) {
+                editProfileDialog = null
+                editProfileBinding = null
+            }
+        }
         dialog.setContentView(binding.root)
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
@@ -293,6 +341,7 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
         setupGender(binding)
         setupDatePicker(binding)
         setupSaveButton(dialog, binding)
+        draft?.let { applyEditDraft(binding, it) }
 
         binding.btnCancel.setOnClickListener {
             dialog.dismiss()
@@ -549,10 +598,22 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
     override fun onDestroyView() {
         editProfileDialog?.dismiss()
         editProfileDialog = null
+        editProfileBinding = null
         super.onDestroyView()
     }
 
     private companion object {
         const val KEY_PHOTO_URI = "photo_uri"
+        const val KEY_EDIT_DRAFT = "edit_profile_draft"
+        const val DRAFT_FIRST_NAME = "firstName"
+        const val DRAFT_MIDDLE_NAME = "middleName"
+        const val DRAFT_LAST_NAME = "lastName"
+        const val DRAFT_EMAIL = "email"
+        const val DRAFT_PHONE = "phoneNumber"
+        const val DRAFT_LANGUAGE = "language"
+        const val DRAFT_LEVEL = "level"
+        const val DRAFT_GENDER = "gender"
+        const val DRAFT_DATE = "date"
+        const val DRAFT_DATE_TEXT = "dateText"
     }
 }
