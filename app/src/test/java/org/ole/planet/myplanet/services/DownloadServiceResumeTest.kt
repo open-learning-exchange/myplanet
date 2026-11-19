@@ -382,8 +382,8 @@ class DownloadServiceResumeTest {
         coVerify(exactly = 1) { downloadRepository.downloadFileResponse(url, any(), any(), any(), false) }
         coVerify(exactly = 0) { downloadRepository.downloadFileResponse(url, any(), any(), any(), true) }
         coVerify(exactly = 0) { downloadRepository.downloadFileResponse(secondUrl, any(), any(), any(), any()) }
-        coVerify(exactly = 1) { downloadRepository.downloadFileResponse("$altBase/resources/course.zip", any(), any(), any(), any()) }
-        coVerify(exactly = 1) { downloadRepository.downloadFileResponse("$altBase/resources/other.zip", any(), any(), any(), any()) }
+        coVerify(exactly = 1) { downloadRepository.downloadFileResponse("$altBase/db/resources/course.zip", any(), any(), any(), any()) }
+        coVerify(exactly = 1) { downloadRepository.downloadFileResponse("$altBase/db/resources/other.zip", any(), any(), any(), any()) }
         assertEquals(primaryBase, service.unreachablePrimaryBase)
     }
 
