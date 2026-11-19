@@ -11,6 +11,7 @@ import dagger.hilt.android.testing.HiltTestApplication
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
@@ -107,7 +108,35 @@ class TakeCourseFragmentStepLockTest {
         assertEquals(1, viewPager(fragment).currentItem)
     }
 
-    private fun launchFragment(blockingStepIndex: Int, savedProgress: Int): TakeCourseFragment {
+    @Test
+    fun rotation_staysOnTheStepTheLearnerWasViewing_andReloadsTheCourse() {
+        val fragment = launchFragment(blockingStepIndex = -1, savedProgress = 1)
+        clickNext(fragment)
+        assertEquals(2, viewPager(fragment).currentItem)
+        val savedState = fragment.parentFragmentManager.saveFragmentInstanceState(fragment)
+
+        val restored = launchFragment(blockingStepIndex = -1, savedProgress = 1, savedState = savedState)
+
+        assertEquals(2, viewPager(restored).currentItem)
+        verify { viewModel.loadCourse(COURSE_ID, true) }
+    }
+
+    @Test
+    fun rotation_stillStopsAtTheStepThatMustBePassed() {
+        val fragment = launchFragment(blockingStepIndex = -1, savedProgress = 3)
+        assertEquals(3, viewPager(fragment).currentItem)
+        val savedState = fragment.parentFragmentManager.saveFragmentInstanceState(fragment)
+
+        val restored = launchFragment(blockingStepIndex = 0, savedProgress = 3, savedState = savedState)
+
+        assertEquals(1, viewPager(restored).currentItem)
+    }
+
+    private fun launchFragment(
+        blockingStepIndex: Int,
+        savedProgress: Int,
+        savedState: androidx.fragment.app.Fragment.SavedState? = null
+    ): TakeCourseFragment {
         val user = UserEntity().apply { id = USER_ID }
         val course = MyCourse(id = COURSE_ID, courseId = COURSE_ID, courseTitle = "Course", userId = listOf(USER_ID))
         every { viewModel.uiState } returns MutableStateFlow(
@@ -120,6 +149,7 @@ class TakeCourseFragmentStepLockTest {
         val activity = Robolectric.buildActivity(TestDashboardElementActivity::class.java).setup().get()
         val fragment = TakeCourseFragment()
         fragment.arguments = Bundle().apply { putString("id", COURSE_ID) }
+        savedState?.let { fragment.setInitialSavedState(it) }
         TakeCourseFragment::class.java.getDeclaredField("viewModel\$delegate").apply {
             isAccessible = true
             set(fragment, lazyOf(viewModel))
