@@ -367,6 +367,21 @@ class SurveysRepositoryImplTest {
     }
 
     @Test
+    fun `getSurveyInfos leaves out a creation date the survey does not have`() = runTest {
+        val courseStepSurvey = StepExam(id = "stepSurvey", createdDate = 0L)
+        val dated = StepExam(id = "dated", createdDate = 1696161600000L)
+        coEvery { submissionDao.getByUserIdWithoutTeam("user1") } returns emptyList()
+        every { context.resources.getQuantityString(any(), any(), any()) } returns "0 taken"
+
+        val result = repository.getSurveyInfos(
+            isTeam = false, teamId = null, userId = "user1", surveys = listOf(courseStepSurvey, dated)
+        )
+
+        assertEquals("", result["stepSurvey"]?.creationDate)
+        assertTrue(result["dated"]?.creationDate.orEmpty().contains("2023"))
+    }
+
+    @Test
     fun `markExamsUploaded with empty succeeded list returns empty list`() = runTest {
         val failed = repository.markExamsUploaded(emptyList())
 
