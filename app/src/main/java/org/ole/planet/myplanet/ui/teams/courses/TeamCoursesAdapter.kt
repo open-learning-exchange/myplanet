@@ -40,7 +40,7 @@ class TeamCoursesAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val myCourse = getItem(position)
         val course = myCourse.toCourse()
-        val subject = CourseSubjectClassifier.classify(course.subjectLevel)
+        val subject = CourseSubjectClassifier.classify(course.courseTitle)
         val binding = holder.binding
 
         CoursesItemUtils.bindCover(context, ListViewMode.LIST, course, subject, binding.coverContainer, binding.ivCover, binding.ivSubjectIcon)

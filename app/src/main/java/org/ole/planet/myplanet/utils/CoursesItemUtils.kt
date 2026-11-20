@@ -31,6 +31,7 @@ internal object CoursesItemUtils {
         CourseSubject.HEALTH -> R.color.subject_health
         CourseSubject.SOCIAL_STUDIES -> R.color.subject_social_studies
         CourseSubject.TECHNOLOGY -> R.color.subject_technology
+        CourseSubject.GENERAL -> R.color.subject_general
     }
 
     fun subjectIconRes(subject: CourseSubject): Int = when (subject) {
@@ -39,14 +40,17 @@ internal object CoursesItemUtils {
         CourseSubject.HEALTH -> R.drawable.ic_subject_health
         CourseSubject.SOCIAL_STUDIES -> R.drawable.ic_subject_social
         CourseSubject.TECHNOLOGY -> R.drawable.ic_subject_technology
+        CourseSubject.GENERAL -> R.drawable.ic_type_book
     }
 
-    fun subjectLabelRes(subject: CourseSubject): Int = when (subject) {
+    // GENERAL has no label: a subject the course doesn't have shouldn't be printed on its cover
+    fun subjectLabelRes(subject: CourseSubject): Int? = when (subject) {
         CourseSubject.MATHEMATICS -> R.string.subject_label_mathematics
         CourseSubject.LITERACY -> R.string.subject_label_literacy
         CourseSubject.HEALTH -> R.string.subject_label_health
         CourseSubject.SOCIAL_STUDIES -> R.string.subject_label_social_studies
         CourseSubject.TECHNOLOGY -> R.string.subject_label_technology
+        CourseSubject.GENERAL -> null
     }
 
     private fun setCoverColor(context: Context, view: View, subject: CourseSubject) {
