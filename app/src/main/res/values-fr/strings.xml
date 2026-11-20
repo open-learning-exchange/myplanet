@@ -592,7 +592,6 @@
     <string name="all_files_downloaded_successfully">Tous les fichiers ont été téléchargés avec succès</string>
     <string name="removed_from_mylibrary">Supprimé de ma bibliothèque</string>
     <string name="removed_from_mycourse">Supprimé de mon cours</string>
-    <string name="please_allow_usages_permission_to_myplanet_app">Veuillez autoriser les permissions d\'utilisation pour l\'application myPlanet.</string>
     <string name="title_is_required">Le titre est requis</string>
     <string name="no_data_available">Aucune donnée disponible</string>
     <string name="are_you_sure_you_want_to_leave_these_courses">Êtes-vous sûr de vouloir quitter ces cours ?</string>
@@ -1428,4 +1427,8 @@
 
     <string name="playback_speed">Vitesse de lecture</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="usage_access_title">Autoriser l\'accès aux données d\'utilisation</string>
+    <string name="usage_access_message">myPlanet indique à la Planet de votre communauté combien de temps il est utilisé sur cet appareil, afin que votre communauté voie comment l\'application est utilisée. Android appelle cela \"Accès aux données d\'utilisation\". Sur l\'écran suivant, trouvez myPlanet et activez-le.</string>
+    <string name="open_settings">Ouvrir les paramètres</string>
+    <string name="not_now">Plus tard</string>
 </resources>

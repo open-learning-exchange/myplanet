@@ -39,9 +39,24 @@ abstract class BasePermissionActivity : AppCompatActivity() {
         strPermission?.let { hasPermission(it) } == true
 
     fun checkUsagesPermission() {
-        if (!getUsagesPermission(this)) {
-            Utilities.toast(this, getString(R.string.please_allow_usages_permission_to_myplanet_app))
+        if (getUsagesPermission(this)) return
+        val now = timeProvider.now()
+        if (!isUsageAccessPromptDue(sharedPrefManager.getRawLong(KEY_USAGE_ACCESS_PROMPTED), now)) return
+        sharedPrefManager.setRawLong(KEY_USAGE_ACCESS_PROMPTED, now)
+        AlertDialog.Builder(this, R.style.AlertDialogTheme)
+            .setTitle(R.string.usage_access_title)
+            .setMessage(R.string.usage_access_message)
+            .setPositiveButton(R.string.open_settings) { _, _ -> openUsageAccessSettings() }
+            .setNegativeButton(R.string.not_now, null)
+            .show()
+    }
+
+    private fun openUsageAccessSettings() {
+        try {
             startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+        } catch (e: ActivityNotFoundException) {
+            Log.w("BasePermissionActivity", "No usage access settings screen", e)
+            IntentUtils.openAppSettings(this)
         }
     }
 
@@ -484,6 +499,14 @@ abstract class BasePermissionActivity : AppCompatActivity() {
         const val PERMISSION_REQUEST_CODE_FILE = 111
         const val PERMISSION_REQUEST_CODE_NOTIFICATION = 112
         const val PERMISSION_REQUEST_CODE_MEDIA = 113
+        private const val KEY_USAGE_ACCESS_PROMPTED = "usage_access_prompted_at"
+        private const val USAGE_ACCESS_PROMPT_INTERVAL_MS = 7L * 24 * 60 * 60 * 1000
+
+        internal fun isUsageAccessPromptDue(lastPromptedAt: Long, now: Long): Boolean {
+            if (lastPromptedAt <= 0) return true
+            val elapsed = now - lastPromptedAt
+            return elapsed !in 0..<USAGE_ACCESS_PROMPT_INTERVAL_MS
+        }
 
         fun hasInstallPermission(context: Context): Boolean {
             return !BuildConfig.LITE && context.packageManager.canRequestPackageInstalls()
