@@ -977,7 +977,6 @@
     <string name="password_toggle_description">Toggle password visibility</string>
     <string name="skill_level">select skill level</string>
     <string name="go_to_feedback_page">go to feedback page</string>
-    <string name="select_date_of_birth">select date of birth</string>
     <string name="confirm_membership">confirm to become a member</string>
     <string name="trial_period_ended">Trial period ended! Kindly complete registration to continue</string>
     <string name="guest_visit_limit_warning">You have 1 login remaining before you are blocked from logging in.</string>
@@ -1447,4 +1446,5 @@
 
     <string name="playback_speed">Playback Speed</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="set">Set</string>
 </resources>

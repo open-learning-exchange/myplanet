@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.exam
 
-import android.app.DatePickerDialog
 import android.content.DialogInterface
 import android.os.Bundle
 import android.os.SystemClock
@@ -30,6 +29,7 @@ import org.ole.planet.myplanet.services.SubmissionsUploader
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.courses.CoursesFilterFragment
+import org.ole.planet.myplanet.utils.BirthDatePicker
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -305,16 +305,10 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     }
 
     private fun showDatePickerDialog() {
-        val now = Calendar.getInstance()
-        val dpd = DatePickerDialog(
-            requireContext(), { _, i, i1, i2 ->
-                dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
-                fragmentUserInformationBinding.txtDob.text = dob
-            }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
-        )
-        dpd.setTitle(getString(R.string.select_date_of_birth))
-        dpd.datePicker.maxDate = now.timeInMillis
-        dpd.show()
+        BirthDatePicker.show(requireContext(), dob) { i, i1, i2 ->
+            dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
+            fragmentUserInformationBinding.txtDob.text = dob
+        }
     }
 
     override val key: String
