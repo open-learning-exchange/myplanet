@@ -7,6 +7,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
+import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -260,5 +261,44 @@ class TransactionSyncManagerCheckpointTest {
         transactionSyncManager.syncDb("ratings")
 
         assertTrue(loggedErrors.isEmpty())
+    }
+
+    @Test
+    fun `tablet_users and notifications are pulled in pages of 200`() = runBlocking {
+        val urls = mutableListOf<String>()
+        coEvery { apiInterface.postDoc(any(), any(), capture(urls), any()) } returns rowsResponse(0)
+
+        transactionSyncManager.syncDb("tablet_users")
+        transactionSyncManager.syncDb("notifications")
+
+        assertEquals(2, urls.size)
+        urls.forEach { assertTrue(it, it.contains("limit=200&")) }
+    }
+
+    @Test
+    fun `a checkpointed pull resumes from the saved page`() = runBlocking {
+        val urls = mutableListOf<String>()
+        every { prefs.getInt("heavy_sync_skip_notifications", 0) } returns 400
+        coEvery { apiInterface.postDoc(any(), any(), capture(urls), any()) } returns rowsResponse(0)
+
+        transactionSyncManager.syncDb("notifications", useCheckpoint = true)
+
+        assertTrue(urls.single(), urls.single().contains("skip=400"))
+    }
+
+    @Test
+    fun `a checkpointed full-sync table failure is not labelled as background sync`() = runBlocking {
+        coEvery { apiInterface.postDoc(any(), any(), any(), any()) } returns errorResponse(503)
+
+        transactionSyncManager.syncDb("notifications", useCheckpoint = true)
+
+        assertTrue(loggedErrors.single(), loggedErrors.single().contains("(full sync)"))
+    }
+
+    @Test
+    fun `clearCheckpoint removes the table's saved page`() {
+        transactionSyncManager.clearCheckpoint("tablet_users")
+
+        verify { editor.remove("heavy_sync_skip_tablet_users") }
     }
 }

@@ -170,6 +170,27 @@ class SyncManagerTest {
     }
 
     @Test
+    fun `a full sync clears each table's checkpoint and the retry resumes from it`() = runTest {
+        coEvery { transactionSyncManager.authenticate() } returns true
+        coEvery { transactionSyncManager.syncDb(any(), any()) } returns 0
+        coEvery { transactionSyncManager.syncDb("notifications", any()) } returnsMany
+            listOf(TransactionSyncManager.SYNC_FAILED, 2584)
+        mockkObject(HeavyTableSyncWorker.Companion)
+        every { HeavyTableSyncWorker.schedule(any(), any()) } just Runs
+
+        syncManager.start(listener, "sync", listOf())
+
+        verify(exactly = 1) { transactionSyncManager.clearCheckpoint("notifications") }
+        verify(exactly = 1) { transactionSyncManager.clearCheckpoint("tablet_users") }
+        coVerifyOrder {
+            transactionSyncManager.clearCheckpoint("notifications")
+            transactionSyncManager.syncDb("notifications", true)
+            transactionSyncManager.syncDb("notifications", true)
+        }
+        coVerify(exactly = 0) { transactionSyncManager.syncDb(any(), false) }
+    }
+
+    @Test
     fun `only tables that fail their retry are reported`() = runTest {
         coEvery { transactionSyncManager.authenticate() } returns true
         coEvery { transactionSyncManager.syncDb(any(), any()) } returns 0
@@ -251,7 +272,7 @@ class SyncManagerTest {
 
         coVerifyOrder {
             userSyncRepository.uploadShelfData(userModel)
-            transactionSyncManager.syncDb(any())
+            transactionSyncManager.syncDb(any(), any())
         }
     }
 
@@ -262,7 +283,7 @@ class SyncManagerTest {
 
         syncManager.start(listener, "sync", listOf())
 
-        coVerify(exactly = 0) { transactionSyncManager.syncDb(any()) }
+        coVerify(exactly = 0) { transactionSyncManager.syncDb(any(), any()) }
     }
 
     @Test

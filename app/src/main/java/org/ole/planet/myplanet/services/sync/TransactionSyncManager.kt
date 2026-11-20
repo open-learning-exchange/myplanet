@@ -226,7 +226,9 @@ class TransactionSyncManager @Inject constructor(
             val pageSize = when (table) {
                 "ratings" -> 20
                 "submissions" -> 100
-                "courses_progress", "login_activities", "team_activities" -> 200
+                // tablet_users and notifications pages of 1000 full documents could take close to a
+                // minute each on a slow link, long enough for a network change to cut them mid-read
+                "courses_progress", "login_activities", "team_activities", "tablet_users", "notifications" -> 200
                 else -> 1000
             }
             var skip = if (useCheckpoint) {
@@ -346,7 +348,7 @@ class TransactionSyncManager @Inject constructor(
     // report from the field says why the table failed, not just which one
     private suspend fun recordSyncFailure(
         table: String,
-        background: Boolean,
+        checkpointed: Boolean,
         syncStartTime: Long,
         docsSynced: Int,
         position: String,
@@ -356,7 +358,7 @@ class TransactionSyncManager @Inject constructor(
         val elapsed = SystemClock.elapsedRealtime() - syncStartTime
         val detail = buildString {
             append("Sync of table '").append(table).append("' failed")
-            append(if (background) " (background heavy-table sync)" else " (full sync)")
+            append(if (checkpointed && table in HeavyTableSyncWorker.ALL_HEAVY_TABLES) " (background heavy-table sync)" else " (full sync)")
             append("\nCause: ").append(cause)
             append("\nAt: ").append(position)
             append("\nDocs synced before failure: ").append(docsSynced)
@@ -364,6 +366,10 @@ class TransactionSyncManager @Inject constructor(
             error?.let { append("\n").append(it.stackTraceToString().take(MAX_FAILURE_TRACE_CHARS)) }
         }
         diagnosticsRepository.saveLogToRoom(ApkLog.ERROR_TYPE_SYNC_TABLE, detail, "${timeProvider.now()}")
+    }
+
+    fun clearCheckpoint(table: String) {
+        sharedPrefManager.rawPreferences.edit().remove("heavy_sync_skip_$table").apply()
     }
 
     private suspend fun timedBatchInsert(table: String, batchSize: Int, insert: suspend () -> Unit) {

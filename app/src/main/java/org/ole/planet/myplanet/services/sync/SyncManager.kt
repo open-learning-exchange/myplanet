@@ -162,6 +162,9 @@ class SyncManager @Inject constructor(
                 "health", "certifications", "chat_history", "teams",
                 "meetups", "courses", "notifications"
             )
+            // Every full sync starts each table from its first page; the checkpoints only let the
+            // retry below resume a table from the page where its first attempt broke off
+            parallelTables.forEach { transactionSyncManager.clearCheckpoint(it) }
             val completedTables = AtomicInteger(0)
             val failedTables = ConcurrentLinkedQueue<String>()
             _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_account_data), 1, 4,
@@ -170,7 +173,7 @@ class SyncManager @Inject constructor(
                 val syncJobs = parallelTables.map { tableName ->
                     async {
                         syncTimeLogger.startProcess("${tableName}_sync")
-                        if (transactionSyncManager.syncDb(tableName) == TransactionSyncManager.SYNC_FAILED) {
+                        if (transactionSyncManager.syncDb(tableName, useCheckpoint = true) == TransactionSyncManager.SYNC_FAILED) {
                             failedTables.add(tableName)
                         }
                         syncTimeLogger.endProcess("${tableName}_sync")
@@ -248,7 +251,7 @@ class SyncManager @Inject constructor(
         for (tableName in failedTables.toList()) {
             syncPerf { "  ↻ Retrying $tableName sync" }
             syncTimeLogger.startProcess("${tableName}_retry")
-            if (transactionSyncManager.syncDb(tableName) != TransactionSyncManager.SYNC_FAILED) {
+            if (transactionSyncManager.syncDb(tableName, useCheckpoint = true) != TransactionSyncManager.SYNC_FAILED) {
                 failedTables.remove(tableName)
             }
             syncTimeLogger.endProcess("${tableName}_retry")
