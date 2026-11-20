@@ -249,4 +249,23 @@ class BasePermissionActivityTest {
             unmockkStatic(androidx.core.app.ActivityCompat::class)
         }
     }
+
+    @Test
+    fun `usage access prompt is due on first launch`() {
+        assertTrue(BasePermissionActivity.isUsageAccessPromptDue(0L, 1_000_000L))
+    }
+
+    @Test
+    fun `usage access prompt waits a week after not now`() {
+        val day = 24L * 60 * 60 * 1000
+        val promptedAt = 100 * day
+        assertFalse(BasePermissionActivity.isUsageAccessPromptDue(promptedAt, promptedAt + 1))
+        assertFalse(BasePermissionActivity.isUsageAccessPromptDue(promptedAt, promptedAt + 6 * day))
+        assertTrue(BasePermissionActivity.isUsageAccessPromptDue(promptedAt, promptedAt + 7 * day))
+    }
+
+    @Test
+    fun `usage access prompt is due when the clock went backwards`() {
+        assertTrue(BasePermissionActivity.isUsageAccessPromptDue(5_000_000L, 1_000L))
+    }
 }

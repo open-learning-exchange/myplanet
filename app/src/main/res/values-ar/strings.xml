@@ -593,7 +593,6 @@
     <string name="all_files_downloaded_successfully">تم تنزيل جميع الملفات بنجاح</string>
     <string name="removed_from_mylibrary">تمت الإزالة من مكتبتي</string>
     <string name="removed_from_mycourse">تمت الإزالة من دوراتي</string>
-    <string name="please_allow_usages_permission_to_myplanet_app">يرجى السماح بإذن الاستخدام لتطبيق MyPlanet.</string>
     <string name="title_is_required">العنوان مطلوب</string>
     <string name="no_data_available">لا توجد بيانات متاحة</string>
     <string name="are_you_sure_you_want_to_leave_these_courses">هل أنت متأكد أنك تريد حذف هذه الدورات؟</string>
@@ -1440,4 +1439,8 @@
 
     <string name="playback_speed">سرعة التشغيل</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="usage_access_title">السماح بالوصول إلى بيانات الاستخدام</string>
+    <string name="usage_access_message">يُبلغ myPlanet منصة Planet الخاصة بمجتمعك بمدة استخدامه على هذا الجهاز، ليتمكن مجتمعك من معرفة كيفية استخدام التطبيق. يسمي Android هذا \"الوصول إلى بيانات الاستخدام\". في الشاشة التالية، ابحث عن myPlanet وفعّله.</string>
+    <string name="open_settings">فتح الإعدادات</string>
+    <string name="not_now">ليس الآن</string>
 </resources>

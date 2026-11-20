@@ -593,7 +593,6 @@
     <string name="all_files_downloaded_successfully">Todos los archivos se han descargado correctamente.</string>
     <string name="removed_from_mylibrary">Eliminado de miBiblioteca.</string>
     <string name="removed_from_mycourse">Eliminado de misCursos.</string>
-    <string name="please_allow_usages_permission_to_myplanet_app">Por favor, permite los permisos de uso a la aplicación myPlanet.</string>
     <string name="title_is_required">Se requiere un título.</string>
     <string name="no_data_available">No hay datos disponibles.</string>
     <string name="are_you_sure_you_want_to_leave_these_courses">¿Estás seguro de que quieres eliminar estos cursos?</string>
@@ -1427,4 +1426,8 @@
 
     <string name="playback_speed">Velocidad de reproducción</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="usage_access_title">Permitir acceso de uso</string>
+    <string name="usage_access_message">myPlanet informa a la Planet de tu comunidad cuánto tiempo se usa en este dispositivo, para que tu comunidad vea cómo se usa la aplicación. Android lo llama \"Acceso de uso\". En la siguiente pantalla, busca myPlanet y actívalo.</string>
+    <string name="open_settings">Abrir ajustes</string>
+    <string name="not_now">Ahora no</string>
 </resources>
