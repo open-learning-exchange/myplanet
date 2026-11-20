@@ -46,6 +46,7 @@ import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.data.room.dao.UserDao
+import org.ole.planet.myplanet.services.sync.SyncCheckpointResetCallback
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -60,6 +61,7 @@ object RoomModule {
             // migration instead, so they don't wipe rows that haven't been uploaded yet.
             .addMigrations(AppDatabase.MIGRATION_20_21)
             .fallbackToDestructiveMigration(true)
+            .addCallback(SyncCheckpointResetCallback(context))
             .build()
     }
 
