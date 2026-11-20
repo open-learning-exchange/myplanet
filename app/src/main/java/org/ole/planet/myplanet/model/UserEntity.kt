@@ -157,13 +157,12 @@ open class UserEntity(
         }
     }
 
-    fun getFullName(): String {
-        return "$firstName $lastName"
-    }
+    fun getFullName(): String = joinNameParts(firstName, lastName)
 
-    fun getFullNameWithMiddleName(): String {
-        return "$firstName ${middleName ?: ""} $lastName"
-    }
+    fun getFullNameWithMiddleName(): String = joinNameParts(firstName, middleName, lastName)
+
+    private fun joinNameParts(vararg parts: String?): String =
+        parts.mapNotNull { it?.trim()?.takeIf(String::isNotEmpty) }.joinToString(" ")
 
     fun addImageUrl(jsonDoc: JsonObject?) {
         if (jsonDoc?.has("_attachments") == true) {
