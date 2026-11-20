@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.user
 
-import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
@@ -9,7 +8,6 @@ import android.widget.ArrayAdapter
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Calendar
 import java.util.Locale
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -20,6 +18,7 @@ import org.ole.planet.myplanet.databinding.ActivityLearnerRegistrationBinding
 import org.ole.planet.myplanet.model.LearnerRegistrationInfo
 import org.ole.planet.myplanet.ui.courses.CoursesFilterFragment
 import org.ole.planet.myplanet.ui.sync.LoginActivity
+import org.ole.planet.myplanet.utils.BirthDatePicker
 import org.ole.planet.myplanet.utils.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -47,16 +46,10 @@ class LearnerRegistrationActivity : BaseActivity() {
     }
 
     private fun showDatePickerDialog() {
-        val now = Calendar.getInstance()
-        val dpd = DatePickerDialog(
-            this, { _, i, i1, i2 ->
-                dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
-                binding.txtDob.text = dob
-            }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
-        )
-        dpd.setTitle(getString(R.string.select_date_of_birth))
-        dpd.datePicker.maxDate = now.timeInMillis
-        dpd.show()
+        BirthDatePicker.show(this, dob) { i, i1, i2 ->
+            dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
+            binding.txtDob.text = dob
+        }
     }
 
     private fun collectRegistrationInfo(): LearnerRegistrationInfo {

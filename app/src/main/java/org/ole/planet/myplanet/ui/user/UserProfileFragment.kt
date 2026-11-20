@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.user
 
 import android.Manifest
 import android.app.Activity.RESULT_OK
-import android.app.DatePickerDialog
 import android.app.Dialog
 import android.content.Intent
 import android.graphics.drawable.Drawable
@@ -38,7 +37,6 @@ import java.util.ArrayList
 import java.util.Calendar
 import java.util.LinkedHashMap
 import java.util.Locale
-import java.util.TimeZone
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.combine
@@ -54,6 +52,7 @@ import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.courses.CoursesFilterFragment
+import org.ole.planet.myplanet.utils.BirthDatePicker
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ImageUtils
@@ -420,35 +419,14 @@ class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(Frag
 
     private fun setupDatePicker(binding: EditProfileDialogBinding) {
         binding.dateOfBirth.setOnClickListener {
-            val now = Calendar.getInstance()
-            var dobPrevious = Calendar.getInstance()
-            val previousSelectedDate = date ?: model?.dob
-            if(!previousSelectedDate.isNullOrEmpty()){
-                val instant = TimeUtils.parseInstantFromString(previousSelectedDate)
-                instant?.let {
-                    dobPrevious = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
-                        timeInMillis = it.toEpochMilli()
-                    }
-                }
+            BirthDatePicker.show(requireContext(), date ?: model?.dob) { year, monthOfYear, dayOfMonth ->
+                val calendar = Calendar.getInstance()
+                calendar.set(year, monthOfYear, dayOfMonth)
+                val dobFormatted = TimeUtils.getFormattedDate(calendar.timeInMillis)
+
+                date = format(Locale.US, "%04d-%02d-%02dT00:00:00.000Z", year, monthOfYear + 1, dayOfMonth)
+                binding.dateOfBirth.text = dobFormatted
             }
-
-            val dpd = DatePickerDialog(
-                requireContext(),
-                { _, year, monthOfYear, dayOfMonth ->
-                    val calendar = Calendar.getInstance()
-                    calendar.set(year, monthOfYear, dayOfMonth)
-                    val dobMillis = calendar.timeInMillis
-                    val dobFormatted = TimeUtils.getFormattedDate(dobMillis)
-
-                    date = format(Locale.US, "%04d-%02d-%02dT00:00:00.000Z", year, monthOfYear + 1, dayOfMonth)
-                    binding.dateOfBirth.text = dobFormatted
-                },
-                dobPrevious.get(Calendar.YEAR),
-                dobPrevious.get(Calendar.MONTH),
-                dobPrevious.get(Calendar.DAY_OF_MONTH)
-            )
-            dpd.datePicker.maxDate = now.timeInMillis
-            dpd.show()
         }
     }
 
