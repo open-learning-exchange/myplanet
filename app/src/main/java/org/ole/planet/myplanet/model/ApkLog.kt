@@ -30,6 +30,7 @@ open class ApkLog {
 
     companion object {
         const val ERROR_TYPE_CRASH = "crash"
+        const val ERROR_TYPE_SYNC_TABLE = "sync_table"
 
         fun serialize(log: ApkLog, customDeviceName: String): JsonObject {
             val `object` = buildJsonObject {
