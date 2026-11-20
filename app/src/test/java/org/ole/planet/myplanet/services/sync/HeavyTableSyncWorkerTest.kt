@@ -9,6 +9,9 @@ import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -57,5 +60,44 @@ class HeavyTableSyncWorkerTest {
 
         assertEquals(Result.retry(), result)
         coVerify(exactly = 0) { configurationsRepository.ensureServerUrlUpdated() }
+    }
+
+    @Test
+    fun doWork_pullsOneTableAtATime() = runTest {
+        val ratingsStarted = CompletableDeferred<Unit>()
+        val releaseRatings = CompletableDeferred<Unit>()
+        coEvery { transactionSyncManager.syncDb("ratings", useCheckpoint = true) } coAnswers {
+            ratingsStarted.complete(Unit)
+            releaseRatings.await()
+            10
+        }
+        coEvery { transactionSyncManager.syncDb("submissions", useCheckpoint = true) } returns 5
+        val submissionsParams = mockk<WorkerParameters>(relaxed = true)
+        every { submissionsParams.inputData } returns workDataOf(HeavyTableSyncWorker.KEY_TABLE to "submissions")
+        val submissionsWorker = HeavyTableSyncWorker(
+            context, submissionsParams, transactionSyncManager, sharedPrefManager, syncManager, configurationsRepository
+        )
+
+        val ratings = async { worker.doWork() }
+        ratingsStarted.await()
+        val submissions = async { submissionsWorker.doWork() }
+        runCurrent()
+
+        coVerify(exactly = 0) { transactionSyncManager.syncDb("submissions", any()) }
+
+        releaseRatings.complete(Unit)
+        assertEquals(Result.success(), ratings.await())
+        assertEquals(Result.success(), submissions.await())
+        coVerify(exactly = 1) { transactionSyncManager.syncDb("submissions", useCheckpoint = true) }
+    }
+
+    @Test
+    fun doWork_failedTableReleasesTheLockForTheNext() = runTest {
+        coEvery { transactionSyncManager.syncDb("ratings", useCheckpoint = true) } returns TransactionSyncManager.SYNC_FAILED
+
+        assertEquals(Result.retry(), worker.doWork())
+
+        coEvery { transactionSyncManager.syncDb("ratings", useCheckpoint = true) } returns 10
+        assertEquals(Result.success(), worker.doWork())
     }
 }
