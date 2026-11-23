@@ -1,17 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools">
-
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fillViewport="true">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
 
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        tools:context=".ui.userprofile.EditAchievementFragment">
+        tools:context=".ui.user.EditAchievementFragment">
 
         <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
@@ -35,6 +34,7 @@
                         android:layout_height="wrap_content"
                         android:background="?attr/colorPrimary"
                         android:theme="?attr/actionBarTheme"
+                        app:navigationContentDescription="@string/btn_back"
                         app:navigationIcon="@drawable/baseline_arrow_back_24"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/edt_achivement"
@@ -52,7 +52,7 @@
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintBottom_toBottomOf="parent"/>
                 </androidx.constraintlayout.widget.ConstraintLayout>
-    
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
@@ -231,7 +231,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="@dimen/padding_small"
-                        android:text="Add any references below"
+                        android:text="@string/label_add_references"
                         android:textColor="@color/daynight_textColor"
                         android:visibility="invisible"/>
                     <LinearLayout
@@ -252,6 +252,71 @@
                             android:contentDescription="@string/add_a_reference"
                             android:text="@string/add_a_reference"
                             android:theme="@style/PrimaryButton" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingStart="@dimen/padding_small"
+                        android:paddingTop="@dimen/padding_normal"
+                        android:paddingEnd="@dimen/padding_small"
+                        android:text="@string/upload_cv_label"
+                        android:textColor="@color/daynight_textColor" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingTop="@dimen/padding_small">
+
+                        <Button
+                            android:id="@+id/btn_choose_cv"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/choose_file"
+                            android:theme="@style/PrimaryButton" />
+                        <TextView
+                            android:id="@+id/tv_cv_filename"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="8dp"
+                            android:text="@string/no_file_chosen"
+                            android:textColor="@color/daynight_textColor" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/ll_current_cv"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingTop="@dimen/padding_small"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/tv_current_cv"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:textColor="@color/daynight_textColor" />
+                        <Button
+                            android:id="@+id/btn_view_cv_edit"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="4dp"
+                            android:drawableStart="@drawable/ic_folder"
+                            android:drawablePadding="@dimen/_2dp"
+                            android:text="@string/view_cv"
+                            android:theme="@style/PrimaryButton" />
+                        <ImageButton
+                            android:id="@+id/btn_delete_cv"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="@string/delete_cv"
+                            android:src="@drawable/ic_delete"
+                            android:tint="@color/md_red_700" />
                     </LinearLayout>
 
                     <CheckBox
@@ -290,4 +355,3 @@
         </androidx.core.widget.NestedScrollView>
     </FrameLayout>
 </ScrollView>
-</layout>

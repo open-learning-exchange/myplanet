@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dashboard_sync_status">Dernière synchronisation · %1$s</string>
+</resources>

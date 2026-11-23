@@ -1,25 +1,21 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.model.RealmFeedback
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.Feedback
 
 interface FeedbackRepository {
-    fun createFeedback(
+    suspend fun createAndSaveFeedback(
         user: String?,
         urgent: String,
         type: String,
         message: String,
         item: String? = null,
         state: String? = null,
-    ): RealmFeedback
-    suspend fun getFeedback(userModel: RealmUser?): Flow<List<RealmFeedback>>
-    suspend fun getFeedbackById(id: String?): RealmFeedback?
+    )
+    fun getFeedback(ownerName: String?, isManager: Boolean): Flow<List<Feedback>>
+    suspend fun getPendingFeedback(): List<Feedback>
+    suspend fun getFeedbackById(id: String?): Feedback?
     suspend fun closeFeedback(id: String?)
-    suspend fun addReply(id: String?, obj: JsonObject)
-    suspend fun saveFeedback(feedback: RealmFeedback)
-    suspend fun insertFromJson(jsonObject: JsonObject)
-    suspend fun insertFeedbackList(jsonObjects: List<JsonObject>)
-    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
+    suspend fun addReply(id: String?, message: String, user: String?)
+    suspend fun markFeedbackUploaded(id: String, remoteId: String, remoteRev: String): Boolean
 }

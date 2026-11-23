@@ -2,15 +2,21 @@ package org.ole.planet.myplanet.services
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.google.gson.Gson
+import androidx.preference.PreferenceManager
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
 import io.mockk.slot
+import io.mockk.unmockkObject
 import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.di.NetworkModule
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 
@@ -37,7 +43,7 @@ class SharedPrefManagerTest {
         every { mockEditor.putLong(any(), any()) } returns mockEditor
         every { mockEditor.remove(any()) } returns mockEditor
 
-        sharedPrefManager = SharedPrefManager(mockContext)
+        sharedPrefManager = SharedPrefManager(mockContext, NetworkModule.provideGson())
     }
 
     @Test
@@ -53,7 +59,7 @@ class SharedPrefManagerTest {
         verify { mockEditor.putString("savedUsers", capture(jsonSlot)) }
         verify { mockEditor.apply() }
 
-        val expectedJson = Gson().toJson(users)
+        val expectedJson = NetworkModule.provideGson().toJson(users)
         assertEquals(expectedJson, jsonSlot.captured)
 
         // Retrieve mocked using the generated JSON
@@ -61,6 +67,115 @@ class SharedPrefManagerTest {
         val retrievedUsers = sharedPrefManager.getSavedUsers()
         assertEquals(1, retrievedUsers.size)
         assertEquals("Test User", retrievedUsers[0].name)
+    }
+
+    @Test
+    fun testGetSavedUsersSuccessiveCallsCacheHit() {
+        val spyGson = io.mockk.spyk(NetworkModule.provideGson())
+        val manager = SharedPrefManager(mockContext, spyGson)
+        val users = listOf(User(name = "User 1"))
+        val json = spyGson.toJson(users)
+        every { mockSharedPreferences.getString("savedUsers", null) } returns json
+
+        val res1 = manager.getSavedUsers()
+        val res2 = manager.getSavedUsers()
+
+        assertEquals(res1, res2)
+        assertEquals("User 1", res1[0].name)
+        verify(exactly = 1) { spyGson.fromJson<List<User>>(json, any<java.lang.reflect.Type>()) }
+    }
+
+    @Test
+    fun testGetSavedUsersRawComparisonOutOfStringWrite() {
+        val manager = SharedPrefManager(mockContext, NetworkModule.provideGson())
+        val initialUsers = listOf(User(name = "User 1"))
+        val initialJson = NetworkModule.provideGson().toJson(initialUsers)
+        every { mockSharedPreferences.getString("savedUsers", null) } returns initialJson
+
+        val res1 = manager.getSavedUsers()
+        assertEquals("User 1", res1[0].name)
+
+        val updatedUsers = listOf(User(name = "User 2"))
+        val updatedJson = NetworkModule.provideGson().toJson(updatedUsers)
+        every { mockSharedPreferences.getString("savedUsers", null) } returns updatedJson
+
+        val res2 = manager.getSavedUsers()
+        assertEquals("User 2", res2[0].name)
+    }
+
+    @Test
+    fun testSetSavedUsersFollowedByGetSavedUsersNoReparse() {
+        val spyGson = io.mockk.spyk(NetworkModule.provideGson())
+        val manager = SharedPrefManager(mockContext, spyGson)
+        val users = listOf(User(name = "User 1"))
+        val json = NetworkModule.provideGson().toJson(users)
+
+        every { mockSharedPreferences.getString("savedUsers", null) } returns json
+
+        manager.setSavedUsers(users)
+
+        val retrieved = manager.getSavedUsers()
+        assertEquals(1, retrieved.size)
+        assertEquals("User 1", retrieved[0].name)
+        verify(exactly = 0) { spyGson.fromJson<List<User>>(any<String>(), any<java.lang.reflect.Type>()) }
+    }
+
+    @Test
+    @Suppress("UNCHECKED_CAST")
+    fun testGetSavedUsersReturnsDefensiveCopyOfList() {
+        val json = NetworkModule.provideGson().toJson(listOf(User(name = "User 1")))
+        every { mockSharedPreferences.getString("savedUsers", null) } returns json
+
+        val mutable = sharedPrefManager.getSavedUsers() as MutableList<User>
+        mutable.clear()
+
+        val retrieved = sharedPrefManager.getSavedUsers()
+        assertEquals(1, retrieved.size)
+        assertEquals("User 1", retrieved[0].name)
+    }
+
+    @Test
+    fun testGetSavedUsersReturnsDefensiveCopyOfElements() {
+        val json = NetworkModule.provideGson().toJson(listOf(User(name = "User 1")))
+        every { mockSharedPreferences.getString("savedUsers", null) } returns json
+
+        sharedPrefManager.getSavedUsers()[0].name = "mutated"
+
+        assertEquals("User 1", sharedPrefManager.getSavedUsers()[0].name)
+    }
+
+    @Test
+    fun testSetSavedUsersDoesNotCacheCallerElements() {
+        val user = User(name = "User 1")
+        val users = mutableListOf(user)
+        val json = NetworkModule.provideGson().toJson(users)
+        every { mockSharedPreferences.getString("savedUsers", null) } returns json
+
+        sharedPrefManager.setSavedUsers(users)
+        user.name = "mutated"
+        users.clear()
+
+        val retrieved = sharedPrefManager.getSavedUsers()
+        assertEquals(1, retrieved.size)
+        assertEquals("User 1", retrieved[0].name)
+    }
+
+    @Test
+    fun testGetSavedUsersAbsentReturnsEmptyList() {
+        every { mockSharedPreferences.getString("savedUsers", null) } returns null
+        val result = sharedPrefManager.getSavedUsers()
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun testGetSavedUsersMalformedJson() {
+        every { mockSharedPreferences.getString("savedUsers", null) } returns "invalid json {"
+        try {
+            sharedPrefManager.getSavedUsers()
+            org.junit.Assert.fail("Expected JsonSyntaxException or similar error on malformed json")
+        } catch (e: Exception) {
+            assertTrue(e is com.google.gson.JsonSyntaxException || e is com.google.gson.JsonParseException)
+        }
     }
 
     @Test
@@ -108,38 +223,6 @@ class SharedPrefManagerTest {
     }
 
     @Test
-    fun testSetSynced() {
-        // Test false synced
-        sharedPrefManager.setSynced(SharedPrefManager.SyncKey.CHAT_HISTORY, false)
-        verify { mockEditor.putBoolean("chat_history_synced", false) }
-        verify(exactly = 0) { mockEditor.putLong(eq("chat_history_synced_time"), any()) }
-        verify { mockEditor.apply() }
-
-        // Test true synced
-        sharedPrefManager.setSynced(SharedPrefManager.SyncKey.CHAT_HISTORY, true)
-        verify { mockEditor.putBoolean("chat_history_synced", true) }
-        verify { mockEditor.putLong(eq("chat_history_synced_time"), any()) }
-        verify { mockEditor.apply() }
-    }
-
-    @Test
-    fun testGetSyncTime() {
-        val testTime = 1634567890L
-        every { mockSharedPreferences.getLong("chat_history_synced_time", 0L) } returns testTime
-        assertEquals(testTime, sharedPrefManager.getSyncTime(SharedPrefManager.SyncKey.CHAT_HISTORY))
-    }
-
-    @Test
-    fun testGetAndSetRepliedNewsId() {
-        every { mockSharedPreferences.getString("repliedNewsId", null) } returns "123"
-        assertEquals("123", sharedPrefManager.getRepliedNewsId())
-
-        sharedPrefManager.setRepliedNewsId("456")
-        verify { mockEditor.putString("repliedNewsId", "456") }
-        verify { mockEditor.apply() }
-    }
-
-    @Test
     fun testGetAndSetManualConfig() {
         every { mockSharedPreferences.getBoolean("manualConfig", false) } returns true
         assertTrue(sharedPrefManager.getManualConfig())
@@ -150,22 +233,21 @@ class SharedPrefManagerTest {
     }
 
     @Test
-    fun testGetAndSetUrlHost() {
+    fun testGetUrlHost() {
         every { mockSharedPreferences.getString("url_Host", "") } returns "example.com"
         assertEquals("example.com", sharedPrefManager.getUrlHost())
-
-        sharedPrefManager.setUrlHost("new.example.com")
-        verify { mockEditor.putString("url_Host", "new.example.com") }
-        verify { mockEditor.apply() }
     }
 
     @Test
-    fun testGetAndSetUrlPort() {
-        every { mockSharedPreferences.getInt("url_Port", 443) } returns 8080
-        assertEquals(8080, sharedPrefManager.getUrlPort())
+    fun testGetAndSetLoggedIn() {
+        every { mockSharedPreferences.getBoolean(SharedPrefManager.KEY_LOGIN, false) } returns true
+        assertTrue(sharedPrefManager.isLoggedIn())
 
-        sharedPrefManager.setUrlPort(8081)
-        verify { mockEditor.putInt("url_Port", 8081) }
+        every { mockSharedPreferences.getBoolean(SharedPrefManager.KEY_LOGIN, false) } returns false
+        assertEquals(false, sharedPrefManager.isLoggedIn())
+
+        sharedPrefManager.setLoggedIn(true)
+        verify { mockEditor.putBoolean(SharedPrefManager.KEY_LOGIN, true) }
         verify { mockEditor.apply() }
     }
 
@@ -178,4 +260,179 @@ class SharedPrefManagerTest {
         verify { mockEditor.putString("test_key", "new_val") }
         verify { mockEditor.apply() }
     }
+
+    @Test
+    fun testClearPreferences() {
+        mockkStatic(PreferenceManager::class)
+        val mockDefaultSharedPreferences: SharedPreferences = mockk()
+        val mockDefaultEditor: SharedPreferences.Editor = mockk(relaxed = true)
+
+        every { PreferenceManager.getDefaultSharedPreferences(mockContext) } returns mockDefaultSharedPreferences
+        every { mockDefaultSharedPreferences.edit() } returns mockDefaultEditor
+        every { mockDefaultEditor.clear() } returns mockDefaultEditor
+
+        // First launch and manual config boolean mocks
+        every { mockSharedPreferences.getBoolean(SharedPrefManager.FIRST_LAUNCH, false) } returns true
+        every { mockSharedPreferences.getBoolean(SharedPrefManager.MANUAL_CONFIG, false) } returns false
+
+        every { mockEditor.clear() } returns mockEditor
+        every { mockEditor.apply() } just Runs
+
+        sharedPrefManager.clearPreferences()
+
+        verify { mockEditor.clear() }
+        verify { mockEditor.putBoolean(SharedPrefManager.FIRST_LAUNCH, true) }
+        verify { mockEditor.putBoolean(SharedPrefManager.MANUAL_CONFIG, false) }
+        verify { mockEditor.apply() }
+
+        verify { mockDefaultEditor.clear() }
+    }
+
+    @Test
+    fun testRemoveKey() {
+        sharedPrefManager.removeKey("some_key")
+        verify { mockEditor.remove("some_key") }
+        verify { mockEditor.apply() }
+    }
+
+    @Test
+    fun testGetAndSetNewLoginUsername() {
+        mockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
+        every { org.ole.planet.myplanet.utils.SecurePrefs.encryptString(any(), "test_user") } returns "encrypted_user"
+        every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "encrypted_user") } returns "test_user"
+
+        // Set
+        sharedPrefManager.setNewLoginUsername("test_user")
+        verify { mockEditor.putString("new_login_username", "encrypted_user") }
+
+        // Get
+        every { mockSharedPreferences.getString("new_login_username", null) } returns "encrypted_user"
+        assertEquals("test_user", sharedPrefManager.getNewLoginUsername())
+
+        // Set null
+        sharedPrefManager.setNewLoginUsername(null)
+        verify { mockEditor.remove("new_login_username") }
+
+        unmockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
+    }
+
+    @Test
+    fun testGetAndSetNewLoginPassword() {
+        mockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
+        every { org.ole.planet.myplanet.utils.SecurePrefs.encryptString(any(), "test_pass") } returns "encrypted_pass"
+        every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "encrypted_pass") } returns "test_pass"
+
+        // Set
+        sharedPrefManager.setNewLoginPassword("test_pass")
+        verify { mockEditor.putString("new_login_password", "encrypted_pass") }
+
+        // Get
+        every { mockSharedPreferences.getString("new_login_password", null) } returns "encrypted_pass"
+        assertEquals("test_pass", sharedPrefManager.getNewLoginPassword())
+
+        // Set null
+        sharedPrefManager.setNewLoginPassword(null)
+        verify { mockEditor.remove("new_login_password") }
+
+        unmockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
+    }
+
+    @Test
+    fun testUrlSettersInvalidateCache() {
+        mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        every { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() } just Runs
+
+        sharedPrefManager.setProcessedAlternativeUrl("http://new-alt.com")
+        verify(exactly = 1) { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() }
+
+        sharedPrefManager.setIsAlternativeUrl(true)
+        verify(exactly = 2) { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() }
+
+        unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+    }
+
+    @Test
+    fun testSaveServerConfig() {
+        mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        every { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() } just Runs
+
+        sharedPrefManager.saveServerConfig(
+            serverPin = "1234",
+            urlScheme = "http",
+            urlHost = "host.com",
+            serverUrl = "http://host.com",
+            couchdbUrl = "http://satellite:1234@host.com:80",
+            urlUser = "satellite",
+            urlPwd = "1234"
+        )
+
+        verify(exactly = 1) { mockSharedPreferences.edit() }
+        verify { mockEditor.putString("serverPin", "1234") }
+        verify { mockEditor.putString("url_Scheme", "http") }
+        verify { mockEditor.putString("url_Host", "host.com") }
+        verify { mockEditor.putString("serverURL", "http://host.com") }
+        verify { mockEditor.putString("couchdbURL", "http://satellite:1234@host.com:80") }
+        verify { mockEditor.putString("url_user", "satellite") }
+        verify { mockEditor.putString("url_pwd", "1234") }
+        verify { mockEditor.apply() }
+        verify(exactly = 1) { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() }
+
+        unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+    }
+
+    @Test
+    fun testSaveAlternativeServerConfig() {
+        mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        every { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() } just Runs
+
+        sharedPrefManager.saveAlternativeServerConfig(
+            serverPin = "5678",
+            urlUser = "admin",
+            urlPwd = "pass",
+            urlScheme = "https",
+            urlHost = "alt.com",
+            alternativeUrl = "https://alt.com",
+            processedAlternativeUrl = "https://admin:pass@alt.com:443",
+            isAlternativeUrl = true
+        )
+
+        verify(exactly = 1) { mockSharedPreferences.edit() }
+        verify { mockEditor.putString("serverPin", "5678") }
+        verify { mockEditor.putString("url_user", "admin") }
+        verify { mockEditor.putString("url_pwd", "pass") }
+        verify { mockEditor.putString("url_Scheme", "https") }
+        verify { mockEditor.putString("url_Host", "alt.com") }
+        verify { mockEditor.putString("alternativeUrl", "https://alt.com") }
+        verify { mockEditor.putString("processedAlternativeUrl", "https://admin:pass@alt.com:443") }
+        verify { mockEditor.putBoolean("isAlternativeUrl", true) }
+        verify { mockEditor.apply() }
+        verify(exactly = 1) { org.ole.planet.myplanet.utils.UrlUtils.invalidateCaches() }
+
+        unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+    }
+
+    @Test
+    fun testSaveUserInfo() {
+        sharedPrefManager.saveUserInfo(
+            userId = "usr123",
+            userName = "john_doe",
+            firstName = "John",
+            lastName = "Doe",
+            middleName = "M",
+            isUserAdmin = true,
+            lastLogin = 1000L
+        )
+
+        verify(exactly = 1) { mockSharedPreferences.edit() }
+        verify { mockEditor.putString("userId", "usr123") }
+        verify { mockEditor.putString("name", "john_doe") }
+        verify { mockEditor.remove("password") }
+        verify { mockEditor.putString("firstName", "John") }
+        verify { mockEditor.putString("lastName", "Doe") }
+        verify { mockEditor.putString("middleName", "M") }
+        verify { mockEditor.putBoolean("isUserAdmin", true) }
+        verify { mockEditor.putLong("lastLogin", 1000L) }
+        verify { mockEditor.apply() }
+    }
+
 }

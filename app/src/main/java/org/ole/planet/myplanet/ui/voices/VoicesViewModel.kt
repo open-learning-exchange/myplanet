@@ -1,0 +1,256 @@
+package org.ole.planet.myplanet.ui.voices
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.TeamVoiceLabel
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.VoicesLabelManager
+import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.GsonUtils
+
+@HiltViewModel
+class VoicesViewModel @Inject constructor(
+    private val voicesRepository: VoicesRepository,
+    private val teamsRepository: TeamsRepository,
+    private val dispatcherProvider: DispatcherProvider,
+    private val userRepository: UserRepository,
+    private val resourcesRepository: ResourcesRepository,
+    private val configurationsRepository: ConfigurationsRepository
+) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository) {
+
+    private val _searchQuery = MutableStateFlow("")
+
+    private val _selectedLabel = MutableStateFlow("All")
+    val selectedLabel: StateFlow<String> = _selectedLabel.asStateFlow()
+
+    private val _baseNewsList = MutableStateFlow<List<News?>?>(null)
+
+    private val _labels = MutableStateFlow<List<String>>(emptyList())
+    val labels: StateFlow<List<String>> = _labels.asStateFlow()
+
+    private val _createNewsSuccess = Channel<News?>(Channel.BUFFERED)
+    val createNewsSuccess: Flow<News?> = _createNewsSuccess.receiveAsFlow()
+
+    private val _customLabels = MutableStateFlow<List<TeamVoiceLabel>>(emptyList())
+
+    val customLabels: StateFlow<List<TeamVoiceLabel>> = _customLabels.asStateFlow()
+
+    private var observeJob: Job? = null
+
+    private val labelDisplayToValue: Map<String, String> = Constants.LABELS
+
+    val filteredNews: StateFlow<List<News?>?> = combine(
+        _baseNewsList,
+        _searchQuery,
+        _selectedLabel
+    ) { news, query, label ->
+        news?.let { filterNews(it, query, label) }
+    }
+    .flowOn(dispatcherProvider.default)
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    fun observeCommunityNews(userIdentifier: String) {
+        observeJob?.cancel()
+        observeJob = viewModelScope.launch {
+            _customLabels.value = loadCustomLabels(userIdentifier)
+            voicesRepository.getCommunityNews(userIdentifier).collect { newsList ->
+                val filtered: List<News?> = newsList
+                _baseNewsList.value = filtered
+                _labels.value = collectLabels(filtered)
+            }
+        }
+    }
+
+    private suspend fun loadCustomLabels(communityId: String): List<TeamVoiceLabel> = try {
+        teamsRepository.getTeamById(communityId)?.customVoiceLabels.orEmpty()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        emptyList()
+    }
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun updateSelectedLabel(label: String) {
+        _selectedLabel.value = label
+    }
+
+    fun createNews(map: HashMap<String?, String>, user: UserEntity, imageList: List<String>) {
+        viewModelScope.launch {
+            try {
+                val news = voicesRepository.createNews(map, user, imageList)
+                _createNewsSuccess.send(news)
+            } catch (e: Exception) {
+                _createNewsSuccess.send(null)
+            }
+        }
+    }
+
+    private fun buildDynamicLabelMap(list: List<News?>): Map<String, String> {
+        val dynamicLabelDisplayToValue = mutableMapOf<String, String>()
+        list.forEach { news ->
+            news?.labels?.forEach { label ->
+                if (!labelDisplayToValue.containsValue(label)) {
+                    val labelName = Constants.LABEL_VALUE_TO_NAME[label]
+                        ?: VoicesLabelManager.formatLabelValue(label)
+                    dynamicLabelDisplayToValue.putIfAbsent(labelName, label)
+                }
+            }
+        }
+        return dynamicLabelDisplayToValue
+    }
+
+    private fun filterNews(
+        list: List<News?>,
+        query: String,
+        selectedLabel: String
+    ): List<News?> {
+        val labelFiltered = if (selectedLabel == "All") {
+            list
+        } else {
+            val staticLabelValue = labelDisplayToValue[selectedLabel]
+            val resolvedLabelValue = staticLabelValue
+                ?: buildDynamicLabelMap(list)[selectedLabel]
+                ?: _customLabels.value.firstOrNull { VoicesLabelManager.formatLabelValue(it.name) == selectedLabel }?.name
+
+            list.filter { news ->
+                when {
+                    selectedLabel == "Shared Chat" -> {
+                        news?.chat == true || news?.viewableBy.equals("community", ignoreCase = true)
+                    }
+                    resolvedLabelValue != null -> {
+                        news?.labels?.any { it.equals(resolvedLabelValue, ignoreCase = true) } == true
+                    }
+                    else -> {
+                        (news?.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)) == selectedLabel
+                    }
+                }
+            }
+        }
+
+        if (query.isEmpty()) return labelFiltered
+
+        val lowerQuery = query.trim().lowercase()
+        return labelFiltered.filter { news ->
+            news?.message?.contains(lowerQuery, ignoreCase = true) == true ||
+            news?.userName?.contains(lowerQuery, ignoreCase = true) == true ||
+            news?.newsTitle?.contains(lowerQuery, ignoreCase = true) == true
+        }
+    }
+
+    fun deletePost(newsId: String, teamName: String, onComplete: () -> Unit) {
+        viewModelScope.launch {
+            voicesRepository.deletePost(newsId, teamName)
+            onComplete()
+        }
+    }
+
+    fun shareNewsToCommunity(
+        newsId: String,
+        userId: String,
+        planetCode: String,
+        parentCode: String,
+        teamName: String,
+        onResult: (Result<Unit>) -> Unit
+    ) {
+        viewModelScope.launch {
+            val result = voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+            onResult(result)
+        }
+    }
+
+    // Note: The following are read-only suspend functions designed to be called directly from
+    // the UI's lifecycleScope, avoiding intermediate MutableStateFlow caching for point-in-time reads.
+    suspend fun getUserById(userId: String): UserEntity? {
+        return userRepository.getUserById(userId)
+    }
+
+    suspend fun getReplyCount(newsId: String): Int {
+        return try {
+            voicesRepository.getReplyCount(newsId)
+        } catch (e: Exception) {
+            0
+        }
+    }
+
+    suspend fun getLibraryResource(resourceId: String): MyLibrary? {
+        return resourcesRepository.getLibraryItemByResourceId(resourceId)
+    }
+
+    suspend fun isTeamLeader(teamId: String?, userId: String?): Boolean {
+        return try {
+            if (teamId != null) teamsRepository.isTeamLeader(teamId, userId) else false
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun collectLabels(newsList: List<News?>): List<String> = withContext(dispatcherProvider.default) {
+        val allLabels = mutableSetOf<String>()
+        allLabels.add("All")
+
+        Constants.LABELS.forEach { (labelName, _) ->
+            allLabels.add(labelName)
+        }
+
+        allLabels.add("Shared Chat")
+
+        _customLabels.value.forEach { custom ->
+            val labelName = Constants.LABEL_VALUE_TO_NAME[custom.name]
+                ?: VoicesLabelManager.formatLabelValue(custom.name)
+            allLabels.add(labelName)
+        }
+
+        newsList.forEach { news ->
+            val sharedTeamName = news?.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)
+            if (sharedTeamName.isNotEmpty()) {
+                allLabels.add(sharedTeamName)
+            }
+
+            news?.labels?.forEach { label ->
+                val labelName = Constants.LABEL_VALUE_TO_NAME[label]
+                    ?: VoicesLabelManager.formatLabelValue(label)
+                allLabels.add(labelName)
+            }
+        }
+
+        allLabels.sorted()
+    }
+
+    fun downloadReferencedResources(list: List<News?>) {
+        val resourceIds = VoicesAdapterHelper.referencedResourceIds(list)
+        if (resourceIds.isEmpty()) return
+        viewModelScope.launch {
+            resourcesRepository.downloadResources(resourcesRepository.getLibraryItemsByResourceIds(resourceIds))
+        }
+    }
+
+    fun getCommunityLeaders(): List<UserEntity> = configurationsRepository.getCommunityLeaders()
+
+}

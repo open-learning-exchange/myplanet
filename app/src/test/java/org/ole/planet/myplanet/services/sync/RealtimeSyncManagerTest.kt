@@ -1,67 +1,19 @@
 package org.ole.planet.myplanet.services.sync
 
-import io.mockk.mockk
-import io.mockk.verify
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertSame
-import org.junit.Before
+import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.ole.planet.myplanet.callback.OnRealtimeSyncListener
 import org.ole.planet.myplanet.model.TableDataUpdate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RealtimeSyncManagerTest {
-
-    @Before
-    @After
-    fun resetSingleton() {
-        try {
-            val clazz = RealtimeSyncManager.Companion::class.java
-            val field = clazz.getDeclaredFields().find { it.name == "INSTANCE" }
-                ?: RealtimeSyncManager::class.java.getDeclaredFields().find { it.name == "INSTANCE" }
-
-            field?.let {
-                it.isAccessible = true
-                if (java.lang.reflect.Modifier.isStatic(it.modifiers)) {
-                    it.set(null, null)
-                } else {
-                    it.set(RealtimeSyncManager.Companion, null)
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    @Test
-    fun testGetInstance() {
-        val instance1 = RealtimeSyncManager.getInstance()
-        val instance2 = RealtimeSyncManager.getInstance()
-        assertSame(instance1, instance2)
-    }
-
-    @Test
-    fun testAddAndRemoveListener() {
-        val manager = RealtimeSyncManager()
-        val listener = mockk<OnRealtimeSyncListener>(relaxed = true)
-        val update = TableDataUpdate("test_table", 1, 1, true)
-
-        manager.addListener(listener)
-        manager.notifyTableUpdated(update)
-        verify(exactly = 1) { listener.onTableDataUpdated(update) }
-
-        manager.removeListener(listener)
-        val secondUpdate = TableDataUpdate("test_table_2", 0, 0, true)
-        manager.notifyTableUpdated(secondUpdate)
-        verify(exactly = 0) { listener.onTableDataUpdated(secondUpdate) }
-    }
 
     @Test
     fun testNotifyTableUpdatedFlow() = runTest {
@@ -83,27 +35,157 @@ class RealtimeSyncManagerTest {
     }
 
     @Test
-    fun testConcurrentListenerModification() {
+    fun testMultipleCollectorsReceiveUpdates() = runTest {
         val manager = RealtimeSyncManager()
-        val executor = Executors.newFixedThreadPool(10)
-        val listeners = List(100) { mockk<OnRealtimeSyncListener>(relaxed = true) }
+        val update = TableDataUpdate("shared_table", 1, 0, true)
 
-        listeners.forEach { listener ->
-            executor.execute {
-                manager.addListener(listener)
-                manager.removeListener(listener)
-                manager.addListener(listener)
-            }
+        val results1 = mutableListOf<TableDataUpdate>()
+        val results2 = mutableListOf<TableDataUpdate>()
+        val job1 = launch(UnconfinedTestDispatcher()) {
+            manager.dataUpdateFlow.collect { results1.add(it) }
+        }
+        val job2 = launch(UnconfinedTestDispatcher()) {
+            manager.dataUpdateFlow.collect { results2.add(it) }
         }
 
-        executor.shutdown()
-        executor.awaitTermination(5, TimeUnit.SECONDS)
-
-        val update = TableDataUpdate("concurrent_test", 0, 0)
         manager.notifyTableUpdated(update)
 
-        listeners.forEach { listener ->
-            verify(exactly = 1) { listener.onTableDataUpdated(update) }
+        assertEquals(listOf(update), results1)
+        assertEquals(listOf(update), results2)
+        job1.cancel()
+        job2.cancel()
+    }
+
+    @Test
+    fun testNotifyWithoutCollectorsDoesNotThrow() {
+        val manager = RealtimeSyncManager()
+        manager.notifyTableUpdated(TableDataUpdate("no_collectors", 0, 0))
+        assertTrue(true)
+    }
+
+    @Test
+    fun testBurstTableUpdatesNotDropped() = runTest {
+        val manager = RealtimeSyncManager()
+        val results = mutableListOf<TableDataUpdate>()
+
+        val job = launch(StandardTestDispatcher(testScheduler)) {
+            manager.dataUpdateFlow.collect { results.add(it) }
         }
+        runCurrent()
+
+        val updates = List(30) { index ->
+            TableDataUpdate("table_$index", index, 0, false)
+        }
+
+        updates.forEach { update ->
+            manager.notifyTableUpdated(update)
+        }
+
+        advanceUntilIdle()
+
+        assertEquals(30, results.size)
+        assertEquals(updates, results)
+        job.cancel()
+    }
+
+    @Test
+    fun testNewSubscriberDoesNotReceiveHistoricalUpdatesWhenReplayIsZero() = runTest {
+        val manager = RealtimeSyncManager()
+        val updates = List(5) { index ->
+            TableDataUpdate("table_$index", index, 1, false)
+        }
+
+        updates.forEach { manager.notifyTableUpdated(it) }
+
+        val results = mutableListOf<TableDataUpdate>()
+        val job = launch(UnconfinedTestDispatcher()) {
+            manager.dataUpdateFlow.collect { results.add(it) }
+        }
+
+        assertTrue(results.isEmpty())
+        job.cancel()
+    }
+
+    @Test
+    fun testUpdatesForSetIgnoresUnwatchedTables() = runTest {
+        val manager = RealtimeSyncManager()
+        val updateOutside = TableDataUpdate("table_other", 1, 0, true)
+        val updateInside = TableDataUpdate("table_a", 2, 0, true)
+
+        val results = mutableListOf<TableDataUpdate>()
+        val job = launch(UnconfinedTestDispatcher()) {
+            manager.updatesFor(setOf("table_a", "table_b")).collect { results.add(it) }
+        }
+
+        manager.notifyTableUpdated(updateOutside)
+        manager.notifyTableUpdated(updateInside)
+
+        assertEquals(listOf(updateInside), results)
+        job.cancel()
+    }
+
+    @Test
+    fun testUpdatesForSetEmitsInOrderForMultipleTables() = runTest {
+        val manager = RealtimeSyncManager()
+        val update1 = TableDataUpdate("table_a", 1, 0, true)
+        val update2 = TableDataUpdate("table_b", 2, 0, true)
+        val update3 = TableDataUpdate("table_a", 3, 0, true)
+
+        val results = mutableListOf<TableDataUpdate>()
+        val job = launch(UnconfinedTestDispatcher()) {
+            manager.updatesFor(setOf("table_a", "table_b")).collect { results.add(it) }
+        }
+
+        manager.notifyTableUpdated(update1)
+        manager.notifyTableUpdated(update2)
+        manager.notifyTableUpdated(update3)
+
+        assertEquals(listOf(update1, update2, update3), results)
+        job.cancel()
+    }
+
+    @Test
+    fun testUpdatesForSingleStringDelegatesToSet() = runTest {
+        val manager = RealtimeSyncManager()
+        val updateTarget = TableDataUpdate("target_table", 1, 1, false)
+        val updateOther = TableDataUpdate("other_table", 1, 1, false)
+
+        val resultsSingle = mutableListOf<TableDataUpdate>()
+        val resultsSet = mutableListOf<TableDataUpdate>()
+
+        val job1 = launch(UnconfinedTestDispatcher()) {
+            manager.updatesFor("target_table").collect { resultsSingle.add(it) }
+        }
+        val job2 = launch(UnconfinedTestDispatcher()) {
+            manager.updatesFor(setOf("target_table")).collect { resultsSet.add(it) }
+        }
+
+        manager.notifyTableUpdated(updateOther)
+        manager.notifyTableUpdated(updateTarget)
+
+        assertEquals(listOf(updateTarget), resultsSingle)
+        assertEquals(listOf(updateTarget), resultsSet)
+
+        job1.cancel()
+        job2.cancel()
+    }
+
+    @Test
+    fun testUpdatesForEmptySetEmitsNothingAndDoesNotComplete() = runTest {
+        val manager = RealtimeSyncManager()
+        val update = TableDataUpdate("any_table", 1, 0, true)
+
+        val results = mutableListOf<TableDataUpdate>()
+        var isCompleted = false
+        val job = launch(UnconfinedTestDispatcher()) {
+            manager.updatesFor(emptySet()).collect { results.add(it) }
+            isCompleted = true
+        }
+
+        manager.notifyTableUpdated(update)
+
+        assertTrue(results.isEmpty())
+        assertTrue(!isCompleted)
+        job.cancel()
     }
 }

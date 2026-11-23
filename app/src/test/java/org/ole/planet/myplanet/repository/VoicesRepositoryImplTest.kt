@@ -1,23 +1,38 @@
 package org.ole.planet.myplanet.repository
 
+import android.text.TextUtils
 import com.google.gson.Gson
+import com.google.gson.JsonObject
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.spyk
+import io.mockk.unmockkObject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.data.room.dao.NewsDao
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @ExperimentalCoroutinesApi
 class VoicesRepositoryImplTest {
@@ -26,25 +41,46 @@ class VoicesRepositoryImplTest {
     private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
-    private val databaseService: DatabaseService = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+    private val newsDao: NewsDao = mockk(relaxed = true)
+    private val newsLogDao: org.ole.planet.myplanet.data.room.dao.NewsLogDao = mockk(relaxed = true)
+    private val removedLogDao: org.ole.planet.myplanet.data.room.dao.RemovedLogDao = mockk(relaxed = true)
+
+    private fun newRepository(gsonInstance: Gson, spm: SharedPrefManager = sharedPrefManager): VoicesRepositoryImpl {
+        return spyk(
+            VoicesRepositoryImpl(
+                dispatcherProvider,
+                gsonInstance,
+                Gson(),
+                spm,
+                newsDao,
+                newsLogDao,
+                removedLogDao
+            ),
+            recordPrivateCalls = true
+        )
+    }
 
     @Before
     fun setUp() {
         every { dispatcherProvider.default } returns testDispatcher
-        repository = spyk(VoicesRepositoryImpl(
-            databaseService,
-            UnconfinedTestDispatcher(),
-            dispatcherProvider,
-            gson,
-            sharedPrefManager
-        ), recordPrivateCalls = true)
+        repository = newRepository(gson)
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
+        mockkObject(UrlUtils)
+        every { UrlUtils.getUrl() } returns "http://test.local"
+    }
+
+    @After
+    fun tearDown() {
+        unmockkObject(NetworkUtils)
+        unmockkObject(UrlUtils)
     }
 
     @Test
     fun getCommunityNews_uses_dispatcherProvider_default() = testScope.runTest {
-        coEvery { repository["queryListFlow"](RealmNews::class.java, any<Function1<*, *>>()) } returns kotlinx.coroutines.flow.flowOf(emptyList<RealmNews>())
+        every { newsDao.getTopLevelCommunityCandidatesFlow() } returns flowOf(emptyList())
 
         val flow = repository.getCommunityNews("testUser")
         val result = flow.toList()
@@ -54,13 +90,381 @@ class VoicesRepositoryImplTest {
     }
 
     @Test
+    fun `getCommunityVoiceDateCount delegates to count query when userId is null`() = testScope.runTest {
+        coEvery { newsDao.countDistinctCommunityVoiceDates(1000L, 2000L) } returns 3
+
+        val count = repository.getCommunityVoiceDateCount(1000L, 2000L, null)
+
+        assertEquals(3, count)
+        coVerify(exactly = 1) { newsDao.countDistinctCommunityVoiceDates(1000L, 2000L) }
+        coVerify(exactly = 0) { newsDao.countDistinctCommunityVoiceDatesForUser(any(), any(), any()) }
+    }
+
+    @Test
+    fun `getCommunityVoiceDateCount delegates to user-scoped count query when userId is non-null`() = testScope.runTest {
+        coEvery { newsDao.countDistinctCommunityVoiceDatesForUser(1000L, 2000L, "user1") } returns 5
+
+        val count = repository.getCommunityVoiceDateCount(1000L, 2000L, "user1")
+
+        assertEquals(5, count)
+        coVerify(exactly = 1) { newsDao.countDistinctCommunityVoiceDatesForUser(1000L, 2000L, "user1") }
+        coVerify(exactly = 0) { newsDao.countDistinctCommunityVoiceDates(any(), any()) }
+    }
+
+    @Test
+    fun `getNewsForUpload filters guest users and correctly serializes payloads`() = testScope.runTest {
+        mockkStatic(TextUtils::class)
+        every { TextUtils.isEmpty(any()) } answers { firstArg<CharSequence?>().isNullOrEmpty() }
+
+        val repoWithRealGson = newRepository(Gson())
+
+        val guestNews = News().apply {
+            id = "guest_news_id"
+            userId = "guest_123"
+        }
+        val validNews = News().apply {
+            id = "valid_news_id"
+            _id = "valid_news_id"
+            userId = "user_123"
+            message = "Hello World"
+            user = "{}"
+            conversations = "[]"
+        }
+        coEvery { newsDao.getPendingUploads() } returns listOf(guestNews, validNews)
+        coEvery { newsDao.getByIds(any()) } returns emptyList()
+
+        val result = repoWithRealGson.getNewsForUpload()
+
+        assertEquals(1, result.size)
+        assertEquals("valid_news_id", result[0].id)
+        assertEquals("Hello World", result[0].message)
+        assertEquals("Hello World", result[0].newsJson.get("message").asString)
+        assertNotNull(result[0].newsJson.get("user"))
+        assertEquals("uniqueIdentifier", result[0].newsJson.get("androidId").asString)
+        assertEquals("myplanet", result[0].newsJson.get("app").asString)
+    }
+
+    @Test
+    fun `getNewsForUpload resolves reply parent outside the pending set`() = testScope.runTest {
+        mockkStatic(TextUtils::class)
+        every { TextUtils.isEmpty(any()) } answers { firstArg<CharSequence?>().isNullOrEmpty() }
+
+        val repoWithRealGson = newRepository(Gson())
+
+        val parent = News().apply {
+            id = "parent_local"
+            _id = "parent_remote"
+            userId = "user_123"
+        }
+        val reply = News().apply {
+            id = "reply_local"
+            userId = "user_123"
+            replyTo = "parent_local"
+            message = "Reply"
+            user = "{}"
+            conversations = "[]"
+        }
+        coEvery { newsDao.getPendingUploads() } returns listOf(reply)
+        coEvery { newsDao.getByIds(listOf("parent_local")) } returns listOf(parent)
+
+        val result = repoWithRealGson.getNewsForUpload()
+
+        assertEquals(1, result.size)
+        assertEquals("parent_remote", result[0].newsJson.get("replyTo").asString)
+        coVerify(exactly = 0) { newsDao.getAll() }
+    }
+
+    @Test
     fun getDiscussionsByTeamIdFlow_uses_dispatcherProvider_default() = testScope.runTest {
-        coEvery { repository["queryListFlow"](RealmNews::class.java, any<Function1<*, *>>()) } returns kotlinx.coroutines.flow.flowOf(emptyList<RealmNews>())
+        every { newsDao.getTopLevelByTeamFlow(any(), any()) } returns flowOf(emptyList())
 
         val flow = repository.getDiscussionsByTeamIdFlow("testTeam")
         val result = flow.toList()
 
         assertNotNull(result)
         io.mockk.verify { dispatcherProvider.default }
+    }
+
+    @Test
+    fun `getDiscussionsByTeamIdFlow hands out posts already parsed so the adapter does no JSON work`() = testScope.runTest {
+        val viewIn = """[{"_id":"team1","section":"teams","name":"Gardeners"},{"_id":"c1","section":"community"}]"""
+        val post = News().apply {
+            id = "n1"
+            this.viewIn = viewIn
+            conversations = """[{"query":"hi","response":"hello"}]"""
+            imageUrls = mutableListOf("""{"imageUrl":"a.jpg"}""")
+        }
+        every { newsDao.getTopLevelByTeamFlow(any(), any()) } returns flowOf(listOf(post))
+
+        val emitted = repository.getDiscussionsByTeamIdFlow("team1").toList().single().single()
+
+        assertEquals(2, emitted.parsedViewIn?.size())
+        assertEquals(viewIn, emitted.rawViewIn)
+        assertEquals("Gardeners", emitted.parsedSharedTeamName)
+        assertEquals(1, emitted.parsedConversations?.size)
+        assertEquals("a.jpg", emitted.parsedImageUrls?.single()?.get("imageUrl")?.asString)
+
+        val cachedViewIn = emitted.parsedViewIn
+        val cachedImages = emitted.parsedImageUrls
+        emitted.preParse()
+        assertTrue(cachedViewIn === emitted.parsedViewIn)
+        assertTrue(cachedImages === emitted.parsedImageUrls)
+    }
+
+    @Test
+    fun `getFilteredNews filters top-level posts by team`() = testScope.runTest {
+        val news1 = News().apply {
+            viewableBy = "teams"
+            viewableId = "team1"
+        }
+        coEvery { newsDao.getTopLevelByTeam(any(), any()) } returns listOf(news1)
+
+        val result = repository.getFilteredNews("team1")
+
+        assertEquals(1, result.size)
+        assertEquals("teams", result[0].viewableBy)
+    }
+
+    @Test
+    fun `addLabel appends label and upserts`() = testScope.runTest {
+        val news = News().apply {
+            id = "newsId"
+            labels = listOf("existing")
+        }
+        coEvery { newsDao.getById("newsId") } returns news
+
+        repository.addLabel("newsId", "testLabel")
+
+        val slot = slot<News>()
+        coVerify(exactly = 1) { newsDao.upsert(capture(slot)) }
+        assertTrue(slot.captured.labels!!.contains("testLabel"))
+        assertTrue(slot.captured.labels!!.contains("existing"))
+        assertTrue(slot.captured.isUpdated)
+    }
+
+    @Test
+    fun `removeLabel drops label and upserts`() = testScope.runTest {
+        val news = News().apply {
+            id = "newsId"
+            labels = listOf("testLabel", "keep")
+        }
+        coEvery { newsDao.getById("newsId") } returns news
+
+        repository.removeLabel("newsId", "testLabel")
+
+        val slot = slot<News>()
+        coVerify(exactly = 1) { newsDao.upsert(capture(slot)) }
+        assertEquals(listOf("keep"), slot.captured.labels)
+        assertTrue(slot.captured.isUpdated)
+    }
+
+    @Test
+    fun `postReply sets replyTo to the parent's local id, not its server _id`() = testScope.runTest {
+        val repoWithRealGson = newRepository(Gson())
+        val parentNews = News().apply {
+            id = "local-uuid-1234"
+            _id = "server-doc-id-5678"
+        }
+        val currentUser = UserEntity()
+
+        repoWithRealGson.postReply("Hello reply", parentNews, currentUser, null)
+
+        val slot = slot<News>()
+        coVerify(exactly = 1) { newsDao.upsert(capture(slot)) }
+        assertEquals("local-uuid-1234", slot.captured.replyTo)
+    }
+
+    @Test
+    fun `deletePost from community unshares shared enterprise post without deleting row`() = testScope.runTest {
+        val repoWithRealGson = newRepository(Gson())
+        val sharedNews = News().apply {
+            id = "shared_news_123"
+            sharedBy = "user_1"
+            viewIn = "[{\"_id\":\"team_123\",\"section\":\"teams\",\"name\":\"Enterprise A\"},{\"section\":\"community\",\"_id\":\"planet@parent\",\"sharedDate\":123456789}]"
+        }
+        coEvery { newsDao.getById("shared_news_123") } returns sharedNews
+
+        repoWithRealGson.deletePost("shared_news_123", "")
+
+        val slot = slot<News>()
+        coVerify(exactly = 1) { newsDao.upsert(capture(slot)) }
+        coVerify(exactly = 0) { newsDao.deleteByIds(any()) }
+
+        val updatedNews = slot.captured
+        assertEquals("", updatedNews.sharedBy)
+        assertEquals("[{\"_id\":\"team_123\",\"section\":\"teams\",\"name\":\"Enterprise A\"}]", updatedNews.viewIn)
+    }
+
+    @Test
+    fun `deletePost from team deletes post and replies completely`() = testScope.runTest {
+        val repoWithRealGson = newRepository(Gson())
+        val teamNews = News().apply {
+            id = "team_news_123"
+            viewIn = "[{\"_id\":\"team_123\",\"section\":\"teams\",\"name\":\"Enterprise A\"},{\"section\":\"community\",\"_id\":\"planet@parent\",\"sharedDate\":123456789}]"
+        }
+        coEvery { newsDao.getById("team_news_123") } returns teamNews
+        coEvery { newsDao.getNewsAndRepliesIds("team_news_123") } returns listOf("team_news_123")
+
+        repoWithRealGson.deletePost("team_news_123", "Enterprise A")
+
+        val idsSlot = slot<List<String>>()
+        coVerify(exactly = 1) { newsDao.deleteByIds(capture(idsSlot)) }
+        assertEquals(listOf("team_news_123"), idsSlot.captured)
+        coVerify(exactly = 0) { newsDao.upsert(any()) }
+    }
+
+    @Test
+    fun `deletePost from community deletes direct community post`() = testScope.runTest {
+        val repoWithRealGson = newRepository(Gson())
+        val communityNews = News().apply {
+            id = "comm_news_123"
+            viewIn = "[{\"_id\":\"planet@parent\",\"section\":\"community\",\"name\":\"\"}]"
+        }
+        coEvery { newsDao.getById("comm_news_123") } returns communityNews
+        coEvery { newsDao.getNewsAndRepliesIds("comm_news_123") } returns listOf("comm_news_123")
+
+        repoWithRealGson.deletePost("comm_news_123", "")
+
+        val idsSlot = slot<List<String>>()
+        coVerify(exactly = 1) { newsDao.deleteByIds(capture(idsSlot)) }
+        assertEquals(listOf("comm_news_123"), idsSlot.captured)
+        coVerify(exactly = 0) { newsDao.upsert(any()) }
+    }
+
+    @Test
+    fun `countTopLevelByTeams counts each requested team in the database`() = testScope.runTest {
+        coEvery { newsDao.countTopLevelByTeam("teamA", "%\"_id\":\"teamA\"%") } returns 2L
+        coEvery { newsDao.countTopLevelByTeam("teamB", "%\"_id\":\"teamB\"%") } returns 1L
+        coEvery { newsDao.countTopLevelByTeam("team_C", "%\"_id\":\"team\\_C\"%") } returns 0L
+
+        val counts = repository.countTopLevelByTeams(listOf("teamA", "teamB", "team_C", "teamA"))
+
+        assertEquals(mapOf("teamA" to 2L, "teamB" to 1L, "team_C" to 0L), counts)
+        coVerify(exactly = 1) { newsDao.countTopLevelByTeam("teamA", any()) }
+    }
+
+    @Test
+    fun `countTopLevelByTeams returns empty map without querying for empty input`() = testScope.runTest {
+        val counts = repository.countTopLevelByTeams(emptyList())
+
+        assertTrue(counts.isEmpty())
+        coVerify(exactly = 0) { newsDao.countTopLevelByTeam(any(), any()) }
+    }
+
+    @Test
+    fun `createTeamNews propagates CancellationException when newsDao upsert is cancelled`() = testScope.runTest {
+        val user = UserEntity()
+        coEvery { newsDao.upsert(any()) } throws CancellationException("Cancelled")
+
+        try {
+            repository.createTeamNews(hashMapOf("message" to "test"), user, null)
+            fail("Expected CancellationException")
+        } catch (e: CancellationException) {
+            assertEquals("Cancelled", e.message)
+        }
+    }
+
+    @Test
+    fun `createTeamNews returns false on ordinary exception`() = testScope.runTest {
+        val user = UserEntity()
+        coEvery { newsDao.upsert(any()) } throws RuntimeException("Database error")
+
+        val result = repository.createTeamNews(hashMapOf("message" to "test"), user, null)
+
+        assertEquals(false, result)
+    }
+
+    @Test
+    fun `shareNewsToCommunity propagates CancellationException when newsDao throws CancellationException`() = testScope.runTest {
+        coEvery { newsDao.getById("news123") } throws CancellationException("Cancelled")
+
+        try {
+            repository.shareNewsToCommunity("news123", "user1", "planet", "parent", "team")
+            fail("Expected CancellationException")
+        } catch (e: CancellationException) {
+            assertEquals("Cancelled", e.message)
+        }
+    }
+
+    @Test
+    fun `shareNewsToCommunity returns failure Result on ordinary exception`() = testScope.runTest {
+        coEvery { newsDao.getById("news123") } throws RuntimeException("Database error")
+
+        val result = repository.shareNewsToCommunity("news123", "user1", "planet", "parent", "team")
+
+        assertTrue(result.isFailure)
+        assertEquals("Database error", result.exceptionOrNull()?.message)
+    }
+
+    private fun messageDoc(id: String, message: String): JsonObject = JsonObject().apply {
+        addProperty("_id", id)
+        addProperty("_rev", "1-$id")
+        addProperty("docType", "message")
+        addProperty("message", message)
+        addProperty("time", 1000L)
+        add("user", JsonObject().apply {
+            addProperty("_id", "org.couchdb.user:Alice")
+            addProperty("name", "Alice")
+        })
+    }
+
+    @Test
+    fun `voices save drains the buffer so a second save with no new links writes once`() = testScope.runTest {
+        val spm = mockk<SharedPrefManager>(relaxed = true)
+        val writtenJson = slot<String>()
+        every { spm.getConcatenatedLinks() } returns null
+        every { spm.setConcatenatedLinks(capture(writtenJson)) } returns Unit
+        val repo = newRepository(Gson(), spm)
+
+        repo.insertNewsList(listOf(messageDoc("n1", "see ![](resources/abc/file.png)")))
+        // No new links arrived, so this second save must not touch prefs at all.
+        repo.insertNewsList(listOf(messageDoc("n2", "plain text")))
+
+        io.mockk.verify(exactly = 1) { spm.setConcatenatedLinks(any()) }
+        assertEquals(
+            listOf("http://test.local/resources/abc/file.png"),
+            Gson().fromJson(writtenJson.captured, Array<String>::class.java).toList()
+        )
+    }
+
+    @Test
+    fun `voices save that throws keeps the buffer so the retry persists the link`() = testScope.runTest {
+        val spm = mockk<SharedPrefManager>(relaxed = true)
+        val writtenJson = slot<String>()
+        every { spm.getConcatenatedLinks() } returns null
+        every { spm.setConcatenatedLinks(any()) } throws RuntimeException("prefs write failed")
+        val repo = newRepository(Gson(), spm)
+
+        try {
+            repo.insertNewsList(listOf(messageDoc("n1", "see ![](resources/abc/file.png)")))
+        } catch (_: RuntimeException) {
+        }
+
+        // The first write failed, so the link must still be buffered for this retry.
+        every { spm.setConcatenatedLinks(capture(writtenJson)) } returns Unit
+        repo.insertNewsList(listOf(messageDoc("n2", "plain text")))
+
+        assertEquals(
+            listOf("http://test.local/resources/abc/file.png"),
+            Gson().fromJson(writtenJson.captured, Array<String>::class.java).toList()
+        )
+    }
+
+    @Test
+    fun `repeated identical links in one voices page are stored once`() = testScope.runTest {
+        val spm = mockk<SharedPrefManager>(relaxed = true)
+        val writtenJson = slot<String>()
+        every { spm.getConcatenatedLinks() } returns null
+        every { spm.setConcatenatedLinks(capture(writtenJson)) } returns Unit
+        val repo = newRepository(Gson(), spm)
+
+        repo.insertNewsList(
+            listOf(messageDoc("n1", "a ![](resources/abc/file.png) and again ![](resources/abc/file.png)"))
+        )
+
+        assertEquals(
+            listOf("http://test.local/resources/abc/file.png"),
+            Gson().fromJson(writtenJson.captured, Array<String>::class.java).toList()
+        )
     }
 }

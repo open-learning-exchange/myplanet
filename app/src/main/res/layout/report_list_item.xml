@@ -144,7 +144,6 @@
                 android:id="@+id/personnelValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="$2000"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp" />
         </TableRow>
@@ -273,6 +272,16 @@
             android:textSize="16sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/tbReport" />
+
+        <ImageView
+            android:id="@+id/reportImage"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_marginTop="@dimen/_10dp"
+            android:adjustViewBounds="true"
+            android:contentDescription="@string/report_image"
+            android:scaleType="centerCrop"
+            android:visibility="gone" />
     </LinearLayout>
 
     <TextView

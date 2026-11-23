@@ -1,11 +1,13 @@
 package org.ole.planet.myplanet.data.auth
 
+import android.util.Log
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import java.io.DataOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -46,7 +48,7 @@ class AuthSessionUpdater @AssistedInject constructor(
         job = scope.launch {
             while (isActive) {
                 sendPost()
-                delay(15 * 60 * 1000L)
+                delay(15.minutes)
             }
         }
     }
@@ -62,24 +64,26 @@ class AuthSessionUpdater @AssistedInject constructor(
         try {
             withContext(dispatcherProvider.io) {
                 val conn = getSessionUrl()?.openConnection() as HttpURLConnection? ?: throw Exception("Unable to get session URL")
-                conn.requestMethod = "GET"
-                conn.setRequestProperty("Content-Type", "application/json")
-                conn.setRequestProperty("Accept", "application/json")
-                conn.doOutput = true
-                conn.doInput = true
+                try {
+                    conn.requestMethod = "GET"
+                    conn.setRequestProperty("Content-Type", "application/json")
+                    conn.setRequestProperty("Accept", "application/json")
+                    conn.doOutput = true
+                    conn.doInput = true
 
-                val os = DataOutputStream(conn.outputStream)
-                os.writeBytes(getJsonObject().toString())
+                    DataOutputStream(conn.outputStream).use { os ->
+                        os.writeBytes(getJsonObject().toString())
+                        os.flush()
+                    }
 
-                os.flush()
-                os.close()
-
-                callback.setAuthSession(conn.headerFields)
-                conn.disconnect()
+                    callback.setAuthSession(conn.headerFields)
+                } finally {
+                    conn.disconnect()
+                }
             }
         } catch (e: Exception) {
             callback.onError(e.message.orEmpty())
-            e.printStackTrace()
+            Log.w("AuthSessionUpdater", "Error in sendPost", e)
         }
     }
 
@@ -90,7 +94,7 @@ class AuthSessionUpdater @AssistedInject constructor(
             jsonParam.put("password", sharedPrefManager.getUrlPwd())
             jsonParam
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w("AuthSessionUpdater", "Error in getJsonObject", e)
             null
         }
     }
@@ -102,7 +106,7 @@ class AuthSessionUpdater @AssistedInject constructor(
             val serverUrl = URL(urlString)
             serverUrl
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w("AuthSessionUpdater", "Error in getSessionUrl", e)
             null
         }
     }

@@ -1,13 +1,17 @@
 package org.ole.planet.myplanet.model
 
+import java.util.UUID
+
 data class ChatMessage(
     val message: String,
     val viewType: Int,
-    val source: Int = 0
+    val source: Int = 0,
+    val id: String = UUID.randomUUID().toString()
 ) {
     companion object {
         const val QUERY = 1
         const val RESPONSE = 2
+        const val LOAD_MORE = 3
         const val RESPONSE_SOURCE_UNKNOWN = 0
         const val RESPONSE_SOURCE_SHARED_VIEW_MODEL = 1
         const val RESPONSE_SOURCE_NETWORK = 2

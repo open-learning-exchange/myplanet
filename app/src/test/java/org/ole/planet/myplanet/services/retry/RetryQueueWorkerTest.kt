@@ -1,0 +1,366 @@
+package org.ole.planet.myplanet.services.retry
+
+import androidx.work.BackoffPolicy
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ListenableWorker.Result
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
+import androidx.work.Operation
+import androidx.work.PeriodicWorkRequest
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
+import androidx.work.impl.WorkManagerImpl
+import io.mockk.MockKAnnotations
+import io.mockk.clearAllMocks
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.impl.annotations.MockK
+import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import io.mockk.verify
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.runTest
+import org.junit.After
+import org.junit.AfterClass
+import org.junit.Assert.assertEquals
+import org.junit.Before
+import org.junit.BeforeClass
+import org.junit.Test
+import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.model.RetryOperation
+import org.ole.planet.myplanet.repository.RetryOperationResult
+import org.ole.planet.myplanet.repository.RetryRepository
+import org.ole.planet.myplanet.services.sync.SyncManager
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class RetryQueueWorkerTest {
+
+    @MockK(relaxed = true)
+    lateinit var workManagerImpl: WorkManagerImpl
+
+    @MockK(relaxed = true)
+    lateinit var context: MainApplication
+
+    @MockK
+    lateinit var workerParams: WorkerParameters
+
+    @MockK
+    lateinit var retryRepository: RetryRepository
+
+    @MockK
+    lateinit var syncManager: SyncManager
+
+    private lateinit var worker: RetryQueueWorker
+
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkStatic(WorkManagerImpl::class)
+            mockkStatic(WorkManager::class)
+            mockkObject(MainApplication)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkAll()
+        }
+    }
+
+    @Before
+    fun setUp() {
+        MockKAnnotations.init(this, relaxed = true)
+
+        every { context.applicationContext } returns context
+
+        every { WorkManagerImpl.getInstance(any()) } returns workManagerImpl
+
+        every { WorkManager.getInstance(any()) } returns workManagerImpl
+
+        every { syncManager.isMainSyncActive() } returns false
+
+        worker = RetryQueueWorker(context, workerParams, retryRepository, syncManager)
+    }
+
+    @After
+    fun tearDown() {
+        clearAllMocks(answers = false, childMocks = false)
+    }
+
+    @Test
+    fun schedule_enqueuesUniquePeriodicWork() {
+        every { workManagerImpl.enqueueUniquePeriodicWork(any(), any(), any<PeriodicWorkRequest>()) } returns mockk<Operation>(relaxed = true)
+
+        RetryQueueWorker.schedule(context)
+
+        verify(exactly = 1) {
+            workManagerImpl.enqueueUniquePeriodicWork(
+                "retryQueueWork",
+                ExistingPeriodicWorkPolicy.KEEP,
+                any<PeriodicWorkRequest>()
+            )
+        }
+    }
+
+    @Test
+    fun schedule_workRequestHasConnectedNetworkConstraint() {
+        val workRequest = RetryQueueWorker.createScheduleWorkRequest()
+
+        assertEquals(NetworkType.CONNECTED, workRequest.workSpec.constraints.requiredNetworkType)
+        assertEquals(BackoffPolicy.EXPONENTIAL, workRequest.workSpec.backoffPolicy)
+        assertEquals(15 * 60 * 1000L, workRequest.workSpec.intervalDuration)
+    }
+
+    @Test
+    fun triggerImmediateRetry_enqueuesOneTimeWork() {
+        every { workManagerImpl.enqueue(any<OneTimeWorkRequest>()) } returns mockk<Operation>(relaxed = true)
+
+        RetryQueueWorker.triggerImmediateRetry(context)
+
+        verify(exactly = 1) {
+            workManagerImpl.enqueue(any<OneTimeWorkRequest>())
+        }
+    }
+
+    @Test
+    fun triggerImmediateRetry_workRequestHasConnectedNetworkConstraint() {
+        val workRequest = RetryQueueWorker.createImmediateRetryWorkRequest()
+
+        assertEquals(NetworkType.CONNECTED, workRequest.workSpec.constraints.requiredNetworkType)
+    }
+
+    @Test
+    fun doWork_returnsSuccessImmediately_whenSyncIsRunning() = runTest {
+        MainApplication.isSyncRunning.set(true)
+
+        val result = worker.doWork()
+
+        assertEquals(Result.success(), result)
+        coVerify(exactly = 0) { retryRepository.tryStartProcessing() }
+        coVerify(exactly = 0) { retryRepository.finishProcessing() }
+    }
+
+    @Test
+    fun doWork_returnsSuccessImmediately_whenSyncManagerReportsMainSyncActive() = runTest {
+        MainApplication.isSyncRunning.set(false)
+        every { syncManager.isMainSyncActive() } returns true
+
+        val result = worker.doWork()
+
+        assertEquals(Result.success(), result)
+        coVerify(exactly = 0) { retryRepository.tryStartProcessing() }
+        coVerify(exactly = 0) { retryRepository.finishProcessing() }
+    }
+
+    @Test
+    fun doWork_returnsSuccessImmediately_whenQueueIsProcessing() = runTest {
+        MainApplication.isSyncRunning.set(false)
+        coEvery { retryRepository.tryStartProcessing() } returns false
+
+        val result = worker.doWork()
+
+        assertEquals(Result.success(), result)
+        coVerify(exactly = 0) { retryRepository.getPending() }
+        coVerify(exactly = 0) { retryRepository.finishProcessing() }
+    }
+
+    @Test
+    fun doWork_callsCleanup_afterProcessingNonEmptyQueue() = runTest {
+        MainApplication.isSyncRunning.set(false)
+        coEvery { retryRepository.tryStartProcessing() } returns true
+        coEvery { retryRepository.finishProcessing() } returns Unit
+        coEvery { retryRepository.cleanup() } returns Unit
+
+        val operation = RetryOperation().apply { id = "testId" }
+        coEvery { retryRepository.getPending() } returns listOf(operation)
+        coEvery { retryRepository.executeOperation(operation) } returns RetryOperationResult.Success
+
+        val result = worker.doWork()
+
+        assertEquals(Result.success(), result)
+        coVerify(exactly = 1) { retryRepository.cleanup() }
+        coVerify(exactly = 1) { retryRepository.finishProcessing() }
+    }
+
+    @Test
+    fun doWork_returnsRetry_onUnexpectedException() = runTest {
+        MainApplication.isSyncRunning.set(false)
+        val e = Exception("Unexpected error")
+        coEvery { retryRepository.tryStartProcessing() } returns true
+        coEvery { retryRepository.getPending() } throws e
+
+        val result = worker.doWork()
+
+        assertEquals(Result.retry(), result)
+        coVerify(exactly = 1) { retryRepository.finishProcessing() }
+    }
+
+    @Test
+    fun doWork_processesOperationsConcurrentlyBoundedToMax6() = runTest {
+        MainApplication.isSyncRunning.set(false)
+        coEvery { retryRepository.tryStartProcessing() } returns true
+        coEvery { retryRepository.finishProcessing() } returns Unit
+        coEvery { retryRepository.cleanup() } returns Unit
+
+        val operations = (1..10).map { index ->
+            RetryOperation().apply {
+                id = "op_$index"
+                serializedPayload = "{}"
+                endpoint = "test"
+            }
+        }
+        coEvery { retryRepository.getPending() } returns operations
+
+        val activeRequests = AtomicInteger(0)
+        var maxConcurrent = 0
+
+        coEvery { retryRepository.executeOperation(any()) } coAnswers {
+            val current = activeRequests.incrementAndGet()
+            synchronized(this) {
+                if (current > maxConcurrent) {
+                    maxConcurrent = current
+                }
+            }
+            delay(50.milliseconds)
+            activeRequests.decrementAndGet()
+            RetryOperationResult.Success
+        }
+
+        val result = worker.doWork()
+
+        assertEquals(Result.success(), result)
+        assertEquals(6, maxConcurrent)
+        coVerify(exactly = 10) { retryRepository.executeOperation(any()) }
+        coVerify(exactly = 1) { retryRepository.finishProcessing() }
+    }
+
+    @Test
+    fun doWork_accuratelyCountsSuccessesAndFailuresAndIsolatesSiblingFailures() = runTest {
+        MainApplication.isSyncRunning.set(false)
+        coEvery { retryRepository.tryStartProcessing() } returns true
+        coEvery { retryRepository.finishProcessing() } returns Unit
+        coEvery { retryRepository.cleanup() } returns Unit
+
+        val ops = (1..5).map { index ->
+            RetryOperation().apply {
+                id = "op_$index"
+                dbId = "op_$index"
+                serializedPayload = "{}"
+                endpoint = "test"
+            }
+        }
+        coEvery { retryRepository.getPending() } returns ops
+
+        coEvery { retryRepository.executeOperation(any()) } coAnswers {
+            val op = firstArg<RetryOperation>()
+            if (op.id == "op_2" || op.id == "op_4") {
+                RetryOperationResult.RetryableFailure("HTTP 500", 500)
+            } else {
+                RetryOperationResult.Success
+            }
+        }
+
+        val result = worker.doWork()
+
+        assertEquals(Result.success(), result)
+        coVerify(exactly = 5) { retryRepository.executeOperation(any()) }
+        coVerify(exactly = 1) { retryRepository.finishProcessing() }
+    }
+
+    @Test
+    fun doWork_pausesRetryProcessingBetweenBatchesWhenSyncStarts() = runTest {
+        MainApplication.isSyncRunning.set(false)
+        coEvery { retryRepository.tryStartProcessing() } returns true
+        coEvery { retryRepository.finishProcessing() } returns Unit
+        coEvery { retryRepository.cleanup() } returns Unit
+
+        // Create 60 items so BATCH_SIZE (50) splits into 2 batches (50 and 10)
+        val ops = (1..60).map { index ->
+            RetryOperation().apply {
+                id = "op_$index"
+                serializedPayload = "{}"
+                endpoint = "test"
+            }
+        }
+        coEvery { retryRepository.getPending() } returns ops
+
+        coEvery { retryRepository.executeOperation(any()) } coAnswers {
+            // When processing batch 1, set isSyncRunning = true so second batch won't run
+            MainApplication.isSyncRunning.set(true)
+            RetryOperationResult.Success
+        }
+
+        val result = worker.doWork()
+
+        assertEquals(Result.success(), result)
+        // Only first batch of 50 operations should have completed
+        coVerify(exactly = 50) { retryRepository.executeOperation(any()) }
+        coVerify(exactly = 1) { retryRepository.finishProcessing() }
+    }
+
+    @Test
+    fun doWork_rethrowsCancellationException_whenWorkerIsCancelled() = runTest {
+        MainApplication.isSyncRunning.set(false)
+        coEvery { retryRepository.tryStartProcessing() } returns true
+        coEvery { retryRepository.getPending() } throws CancellationException("Worker stopped")
+
+        var exceptionThrown = false
+        try {
+            worker.doWork()
+        } catch (e: CancellationException) {
+            exceptionThrown = true
+            assertEquals("Worker stopped", e.message)
+        }
+
+        assertEquals(true, exceptionThrown)
+        coVerify(exactly = 1) { retryRepository.finishProcessing() }
+    }
+
+    @Test
+    fun doWork_returnsSuccess_onTimeoutCancellationException() = runTest {
+        MainApplication.isSyncRunning.set(false)
+        coEvery { retryRepository.tryStartProcessing() } returns true
+        coEvery { retryRepository.getPending() } throws mockk<TimeoutCancellationException>(relaxed = true)
+
+        val result = worker.doWork()
+
+        assertEquals(Result.success(), result)
+        coVerify(exactly = 1) { retryRepository.finishProcessing() }
+    }
+
+    @Test
+    fun doWork_cancelledRun_doesNotIncrementAttemptCount() = runTest {
+        MainApplication.isSyncRunning.set(false)
+        val mockRepo = mockk<RetryRepository>(relaxed = true)
+
+        val customWorker = RetryQueueWorker(context, workerParams, mockRepo, syncManager)
+
+        coEvery { mockRepo.tryStartProcessing() } returns true
+        val operation = RetryOperation().apply {
+            id = "op_cancelled"
+            serializedPayload = "{}"
+            endpoint = "test"
+        }
+        coEvery { mockRepo.getPending() } returns listOf(operation)
+        coEvery { mockRepo.executeOperation(operation) } throws CancellationException("Worker cancelled")
+
+        try {
+            customWorker.doWork()
+        } catch (e: CancellationException) {
+            // Cancellation propagates when WorkManager stops the worker
+        }
+
+        coVerify(exactly = 0) { mockRepo.markFailed(any(), any(), any()) }
+        coVerify(exactly = 1) { mockRepo.executeOperation(operation) }
+        coVerify(exactly = 1) { mockRepo.finishProcessing() }
+    }
+}

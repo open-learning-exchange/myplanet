@@ -11,12 +11,10 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <androidx.cardview.widget.CardView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="16dp"
-            app:cardUseCompatPadding="true">
+            android:orientation="vertical">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -67,17 +65,24 @@
                         android:layout_height="@dimen/_50dp"
                         android:layout_gravity="center_vertical"
                         android:background="@drawable/buttonyellow"
-                        android:contentDescription="@string/btn_back"
+                        android:contentDescription="@string/next"
                         android:padding="8dp"
                         android:visibility="gone"
                         android:src="@drawable/ic_right_arrow"
-                        android:text="@string/btn_back"
+                        android:text="@string/next"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:tint="@color/md_black_1000" />
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
+                <ProgressBar
+                    android:id="@+id/progress_bar"
+                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="4dp"
+                    android:progress="0"
+                    android:progressTint="@color/colorAccent" />
                 <androidx.core.widget.NestedScrollView
                     android:id="@+id/container"
                     android:layout_width="match_parent"
@@ -132,131 +137,12 @@
                         <LinearLayout
                             android:id="@+id/ll_rating_scale"
                             android:layout_width="match_parent"
-                            android:layout_height="match_parent"
+                            android:layout_height="wrap_content"
                             android:layout_gravity="center"
                             android:gravity="center"
                             android:orientation="vertical"
                             android:padding="@dimen/padding_large"
-                            android:visibility="gone">
-
-                            <LinearLayout
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:orientation="vertical"
-                                android:gravity="center"
-                                android:layout_gravity="center">
-
-                                <LinearLayout
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:orientation="horizontal"
-                                    android:layout_marginBottom="8dp">
-
-                                    <Button
-                                        android:id="@+id/rb_rating_1"
-                                        android:layout_width="60dp"
-                                        android:layout_height="60dp"
-                                        android:layout_marginEnd="8dp"
-                                        android:background="@drawable/bg_rating_button_1"
-                                        android:text="1"
-                                        android:textColor="@color/rating_button_text_color"
-                                        android:textSize="16sp"
-                                        android:textStyle="bold" />
-                                    <Button
-                                        android:id="@+id/rb_rating_2"
-                                        android:layout_width="60dp"
-                                        android:layout_height="60dp"
-                                        android:layout_marginEnd="8dp"
-                                        android:background="@drawable/bg_rating_button_2"
-                                        android:text="2"
-                                        android:textColor="@color/rating_button_text_color"
-                                        android:textSize="16sp"
-                                        android:textStyle="bold" />
-                                    <Button
-                                        android:id="@+id/rb_rating_3"
-                                        android:layout_width="60dp"
-                                        android:layout_height="60dp"
-                                        android:background="@drawable/bg_rating_button_3"
-                                        android:text="3"
-                                        android:textColor="@color/rating_button_text_color"
-                                        android:textSize="16sp"
-                                        android:textStyle="bold" />
-                                </LinearLayout>
-
-                                <LinearLayout
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:orientation="horizontal"
-                                    android:layout_marginBottom="8dp">
-
-                                    <Button
-                                        android:id="@+id/rb_rating_4"
-                                        android:layout_width="60dp"
-                                        android:layout_height="60dp"
-                                        android:layout_marginEnd="8dp"
-                                        android:background="@drawable/bg_rating_button_4"
-                                        android:text="4"
-                                        android:textColor="@color/rating_button_text_color"
-                                        android:textSize="16sp"
-                                        android:textStyle="bold" />
-                                    <Button
-                                        android:id="@+id/rb_rating_5"
-                                        android:layout_width="60dp"
-                                        android:layout_height="60dp"
-                                        android:layout_marginEnd="8dp"
-                                        android:background="@drawable/bg_rating_button_5"
-                                        android:text="5"
-                                        android:textColor="@color/rating_button_text_color"
-                                        android:textSize="16sp"
-                                        android:textStyle="bold" />
-                                    <Button
-                                        android:id="@+id/rb_rating_6"
-                                        android:layout_width="60dp"
-                                        android:layout_height="60dp"
-                                        android:background="@drawable/bg_rating_button_6"
-                                        android:text="6"
-                                        android:textColor="@color/rating_button_text_color"
-                                        android:textSize="16sp"
-                                        android:textStyle="bold" />
-                                </LinearLayout>
-
-                                <LinearLayout
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:orientation="horizontal">
-
-                                    <Button
-                                        android:id="@+id/rb_rating_7"
-                                        android:layout_width="60dp"
-                                        android:layout_height="60dp"
-                                        android:layout_marginEnd="8dp"
-                                        android:background="@drawable/bg_rating_button_7"
-                                        android:text="7"
-                                        android:textColor="@color/rating_button_text_color"
-                                        android:textSize="16sp"
-                                        android:textStyle="bold" />
-                                    <Button
-                                        android:id="@+id/rb_rating_8"
-                                        android:layout_width="60dp"
-                                        android:layout_height="60dp"
-                                        android:layout_marginEnd="8dp"
-                                        android:background="@drawable/bg_rating_button_8"
-                                        android:text="8"
-                                        android:textColor="@color/rating_button_text_color"
-                                        android:textSize="16sp"
-                                        android:textStyle="bold" />
-                                    <Button
-                                        android:id="@+id/rb_rating_9"
-                                        android:layout_width="60dp"
-                                        android:layout_height="60dp"
-                                        android:background="@drawable/bg_rating_button_9"
-                                        android:text="9"
-                                        android:textColor="@color/rating_button_text_color"
-                                        android:textSize="16sp"
-                                        android:textStyle="bold" />
-                                </LinearLayout>
-                            </LinearLayout>
-                        </LinearLayout>
+                            android:visibility="gone" />
                     </LinearLayout>
                 </androidx.core.widget.NestedScrollView>
 
@@ -296,6 +182,6 @@
                         android:text="@string/submit_answer" />
                 </LinearLayout>
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </LinearLayout>
     </LinearLayout>
 </FrameLayout>

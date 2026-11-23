@@ -1,27 +1,38 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
+import android.util.Log
 import android.view.View
-import fisk.chipcloud.ChipCloud
-import io.realm.RealmList
+import android.widget.PopupMenu
+import androidx.appcompat.view.ContextThemeWrapper
+import androidx.core.content.ContextCompat
+import com.google.android.material.chip.Chip
 import java.util.Locale
+import java.util.WeakHashMap
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.TeamVoiceLabel
 import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities
 
 class VoicesLabelManager(
     private val context: Context,
-    private val voicesRepository: VoicesRepository,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val dispatcherProvider: DispatcherProvider,
+    private val addLabelFn: suspend (String, String) -> Unit,
+    private val removeLabelFn: suspend (String, String) -> Unit
 ) {
-    fun setupAddLabelMenu(binding: RowNewsBinding, voice: RealmNews?, canManageLabels: Boolean) {
+    private val renderedStateCache = WeakHashMap<RowNewsBinding, RenderedState>()
+
+    var customLabels: List<TeamVoiceLabel> = emptyList()
+
+    fun setupAddLabelMenu(binding: RowNewsBinding, voice: News?, canManageLabels: Boolean) {
         binding.btnAddLabel.setOnClickListener(null)
         binding.btnAddLabel.isEnabled = canManageLabels
         if (!canManageLabels) {
@@ -29,31 +40,24 @@ class VoicesLabelManager(
         }
 
         binding.btnAddLabel.setOnClickListener {
-            val usedLabels = voice?.labels?.toSet() ?: emptySet()
-            val availableLabels = Constants.LABELS.filterValues { it !in usedLabels }
+            val usedLabels = voice?.labels.orEmpty()
+            val availableLabels = allLabelOptions().filterValues { value ->
+                usedLabels.none { it.equals(value, ignoreCase = true) }
+            }
 
-            val wrapper = androidx.appcompat.view.ContextThemeWrapper(context, R.style.CustomPopupMenu)
-            val menu = android.widget.PopupMenu(wrapper, binding.btnAddLabel)
+            val wrapper = ContextThemeWrapper(context, R.style.CustomPopupMenu)
+            val menu = PopupMenu(wrapper, binding.btnAddLabel)
             availableLabels.keys.forEach { labelName ->
                 menu.menu.add(labelName)
             }
             menu.setOnMenuItemClickListener { menuItem ->
-                val selectedLabel = Constants.LABELS[menuItem.title]
+                val selectedLabel = availableLabels[menuItem.title.toString()]
                 val voiceId = voice?.id
                 if (selectedLabel != null && voiceId != null && voice.labels?.contains(selectedLabel) != true) {
-                    scope.launch {
-                        try {
-                            voicesRepository.addLabel(voiceId, selectedLabel)
-                            withContext(Dispatchers.Main) {
-                                if (voice.labels == null) {
-                                    voice.labels = RealmList()
-                                }
-                                voice.labels?.add(selectedLabel)
-                                Utilities.toast(context, context.getString(R.string.label_added))
-                                showChips(binding, voice, canManageLabels)
-                            }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
+                    launchLabelWrite("addLabel") {
+                        addLabelFn(voiceId, selectedLabel)
+                        withContext(dispatcherProvider.main) {
+                            Utilities.toast(context, context.getString(R.string.label_added))
                         }
                     }
                 }
@@ -63,47 +67,73 @@ class VoicesLabelManager(
         }
     }
 
-    fun showChips(binding: RowNewsBinding, voice: RealmNews, canManageLabels: Boolean) {
+    fun showChips(binding: RowNewsBinding, voice: News, canManageLabels: Boolean) {
+        val labels = voice.labels ?: emptyList()
+
+        val renderedState = RenderedState(voice.id, labels, canManageLabels, customLabels)
+        if (renderedStateCache[binding] == renderedState) {
+            return
+        }
+
         binding.fbChips.removeAllViews()
 
-        for (label in voice.labels ?: emptyList()) {
-            val chipConfig = Utilities.getCloudConfig().apply {
-                selectMode(if (canManageLabels) ChipCloud.SelectMode.close else ChipCloud.SelectMode.none)
-            }
-
-            val chipCloud = ChipCloud(context, binding.fbChips, chipConfig)
-            chipCloud.addChip(getLabel(label))
-
-            if (canManageLabels) {
-                chipCloud.setDeleteListener { _: Int, labelText: String? ->
-                    val selectedLabel = when {
-                        labelText == null -> null
-                        Constants.LABELS.containsKey(labelText) -> Constants.LABELS[labelText]
-                        else -> voice.labels?.firstOrNull { getLabel(it) == labelText }
+        if (labels.isNotEmpty()) {
+            val chipContext = ContextThemeWrapper(context, R.style.Theme_App_Chip)
+            for (label in labels) {
+                val chip = Chip(chipContext).apply {
+                    text = getLabel(label)
+                    customLabels.firstOrNull { it.matches(label) }?.colorRes?.let { fill ->
+                        chipBackgroundColor = ContextCompat.getColorStateList(context, fill)
+                        val ink = ContextCompat.getColorStateList(context, R.color.voice_label_text)
+                        setTextColor(ink)
+                        closeIconTint = ink
                     }
-                    val voiceId = voice.id
-                    if (selectedLabel != null && voiceId != null) {
-                        scope.launch {
-                            try {
-                                voicesRepository.removeLabel(voiceId, selectedLabel)
-                                withContext(Dispatchers.Main) {
-                                    voice.labels?.remove(selectedLabel)
-                                    showChips(binding, voice, canManageLabels)
-                                }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
+                    isCloseIconVisible = canManageLabels
+                    if (canManageLabels) {
+                        setOnCloseIconClickListener {
+                            launchLabelWrite("removeLabel") { removeLabelFn(voice.id, label) }
                         }
                     }
                 }
+                binding.fbChips.addView(chip)
             }
         }
-        updateAddLabelVisibility(binding, voice, canManageLabels)
+
+        renderedStateCache[binding] = renderedState
+        updateAddLabelVisibility(binding, labels, canManageLabels)
+    }
+
+    private fun launchLabelWrite(operation: String, write: suspend () -> Unit) {
+        scope.launch {
+            try {
+                write()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "$operation failed", e)
+            }
+        }
+    }
+
+    private data class RenderedState(
+        val voiceId: String?,
+        val labels: List<String>,
+        val canManageLabels: Boolean,
+        val customLabels: List<TeamVoiceLabel>,
+    )
+
+    private fun allLabelOptions(): Map<String, String> {
+        val options = LinkedHashMap(Constants.LABELS)
+        customLabels.forEach { custom ->
+            val taken = options.values.any { it.equals(custom.name, ignoreCase = true) }
+            if (!taken) options.putIfAbsent(getLabel(custom.name), custom.name)
+        }
+        return options
     }
 
     private fun updateAddLabelVisibility(
         binding: RowNewsBinding,
-        voice: RealmNews?,
+        labels: List<String>,
         canManageLabels: Boolean,
     ) {
         if (!canManageLabels) {
@@ -111,36 +141,33 @@ class VoicesLabelManager(
             return
         }
 
-        val usedLabels = voice?.labels?.toSet() ?: emptySet()
-        val labels = Constants.LABELS.values.toSet()
-        binding.btnAddLabel.visibility =
-            if (usedLabels.containsAll(labels)) View.GONE else View.VISIBLE
+        val allUsed = allLabelOptions().values.all { value -> labels.any { it.equals(value, ignoreCase = true) } }
+        binding.btnAddLabel.visibility = if (allUsed) View.GONE else View.VISIBLE
     }
 
     private fun getLabel(s: String): String {
-        for (key in Constants.LABELS.keys) {
-            if (s == Constants.LABELS[key]) {
-                return key
-            }
-        }
-        return formatLabelValue(s)
+        return Constants.LABEL_VALUE_TO_NAME[s] ?: formatLabelValue(s)
     }
 
     companion object {
+        private const val TAG = "VoicesLabelManager"
+        private val separatorRegex by lazy { Regex("[_-]") }
+        private val whitespaceRegex by lazy { Regex("\\s+") }
+
         internal fun formatLabelValue(raw: String): String {
-            val cleaned = raw.replace("_", " ").replace("-", " ")
+            val cleaned = raw.replace(separatorRegex, " ")
             if (cleaned.isBlank()) {
                 return raw
             }
+            val locale = Locale.getDefault()
             return cleaned
                 .trim()
                 .split(whitespaceRegex)
                 .joinToString(" ") { part ->
-                    part.lowercase(Locale.getDefault()).replaceFirstChar { ch ->
-                        if (ch.isLowerCase()) ch.titlecase(Locale.getDefault()) else ch.toString()
+                    part.lowercase(locale).replaceFirstChar { ch ->
+                        if (ch.isLowerCase()) ch.titlecase(locale) else ch.toString()
                     }
                 }
         }
-        private val whitespaceRegex by lazy { Regex("\\s+") }
     }
 }
