@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.base
 
 import android.os.Bundle
+import android.util.Log
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -13,7 +14,6 @@ import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.repository.TeamsSyncRepository
 
 @AndroidEntryPoint
 abstract class BaseTeamFragment : BaseVoicesFragment() {
@@ -28,8 +28,6 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
     var team: MyTeam? = null
     @Inject
     lateinit var teamsRepository: TeamsRepository
-    @Inject
-    lateinit var teamsSyncRepository: TeamsSyncRepository
     private var loadTeamJob: Job? = null
     private val _teamFlow = MutableStateFlow<MyTeam?>(null)
     val teamFlow: StateFlow<MyTeam?> = _teamFlow.asStateFlow()
@@ -37,12 +35,16 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
     val isMemberFlow: StateFlow<Boolean> = _isMemberFlow.asStateFlow()
 
 
+    protected suspend fun ensureUserResolved(): UserEntity? {
+        return user ?: userRepository.getUserModel()?.also { user = it }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         teamId = requireArguments().getString("id", "")
 
         lifecycleScope.launch {
-            user = userRepository.getUserModel()
+            ensureUserResolved()
             loadTeamDetails()
         }
     }
@@ -58,7 +60,7 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
                 try {
                     teamsRepository.getTeamById(teamId)
                 } catch (e: IllegalArgumentException) {
-                    e.printStackTrace()
+                    Log.e(TAG, "getTeamById failed", e)
                     null
                 }
             } else {
@@ -102,5 +104,8 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
         _isMemberFlow.value = false
         super.onDestroy()
     }
-    
+
+    private companion object {
+        const val TAG = "BaseTeamFragment"
+    }
 }

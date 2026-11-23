@@ -7,9 +7,10 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
 
 class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : FragmentStateAdapter(fm) {
-    private val steps = mutableListOf<String>()
+    private var steps: List<String> = emptyList()
     private val itemIds = mutableMapOf<String, Long>()
     private var nextId = 1L
+    private var currentIds: Set<Long> = emptySet()
 
     companion object {
         private const val COURSE_DETAIL_ID = 0L
@@ -33,9 +34,13 @@ class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : Fragmen
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )
 
-        steps.clear()
-        steps.addAll(newSteps)
+        steps = newSteps
+        rebuildIds()
         diffResult.dispatchUpdatesTo(this)
+    }
+
+    private fun rebuildIds() {
+        currentIds = steps.mapNotNullTo(HashSet()) { itemIds[it] }
     }
 
     override fun createFragment(position: Int): Fragment {
@@ -66,6 +71,6 @@ class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : Fragmen
     }
 
     override fun containsItem(itemId: Long): Boolean {
-        return itemId == COURSE_DETAIL_ID || steps.any { itemIds[it] == itemId }
+        return itemId == COURSE_DETAIL_ID || itemId in currentIds
     }
 }

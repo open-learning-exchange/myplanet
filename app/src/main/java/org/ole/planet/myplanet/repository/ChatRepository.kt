@@ -3,11 +3,17 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
-import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.NewsShare
 
 sealed class ChatResult {
     data class Success(val response: String, val id: String, val rev: String) : ChatResult()
     data class Error(val message: String) : ChatResult()
+}
+
+enum class ChatSearchMode {
+    TITLE,
+    QUESTION,
+    RESPONSE
 }
 
 interface ChatRepository {
@@ -17,5 +23,5 @@ interface ChatRepository {
     suspend fun getChatHistoryForUser(userName: String?): List<ChatHistory>
     suspend fun getLatestRev(id: String): String?
     suspend fun insertChatHistoryList(chats: List<JsonObject>)
-    fun extractSharedViewInIds(sharedNews: List<News>): Map<String, Set<String>>
+    fun extractSharedViewInIds(sharedNews: List<NewsShare>): Map<String, Set<String>>
 }

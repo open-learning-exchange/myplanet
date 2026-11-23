@@ -1,13 +1,11 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
-import android.widget.ImageView
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import androidx.core.content.ContextCompat
@@ -15,10 +13,6 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.load.model.GlideUrl
-import com.bumptech.glide.load.model.LazyHeaders
-import com.bumptech.glide.signature.ObjectKey
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnCourseItemSelectedListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -26,13 +20,12 @@ import org.ole.planet.myplanet.databinding.ItemCourseGridBinding
 import org.ole.planet.myplanet.databinding.ItemCourseListBinding
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.CourseProgressState
-import org.ole.planet.myplanet.model.MyCourse
-import org.ole.planet.myplanet.utils.CourseSubject
 import org.ole.planet.myplanet.utils.CourseSubjectClassifier
+import org.ole.planet.myplanet.utils.CoursesItemUtils
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ListViewMode
 import org.ole.planet.myplanet.utils.SelectionUtils
-import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.StableIdGenerator
 
 class CoursesAdapter(
     private val context: Context,
@@ -89,44 +82,29 @@ class CoursesAdapter(
     companion object {
         const val PAYLOAD_PROGRESS = "payload_progress"
         const val PAYLOAD_SELECTION = "payload_selection"
+        const val PAYLOAD_VIEW_MODE = "payload_view_mode"
+        const val PAYLOAD_IDENTITY = "payload_identity"
         private const val VIEW_TYPE_GRID = 0
         private const val VIEW_TYPE_LIST = 1
-
-        private fun subjectColorRes(subject: CourseSubject): Int = when (subject) {
-            CourseSubject.MATHEMATICS -> R.color.subject_math
-            CourseSubject.LITERACY -> R.color.subject_literacy
-            CourseSubject.HEALTH -> R.color.subject_health
-            CourseSubject.SOCIAL_STUDIES -> R.color.subject_social_studies
-            CourseSubject.TECHNOLOGY -> R.color.subject_technology
-        }
-
-        private fun subjectIconRes(subject: CourseSubject): Int = when (subject) {
-            CourseSubject.MATHEMATICS -> R.drawable.ic_subject_math
-            CourseSubject.LITERACY -> R.drawable.ic_type_book
-            CourseSubject.HEALTH -> R.drawable.ic_subject_health
-            CourseSubject.SOCIAL_STUDIES -> R.drawable.ic_subject_social
-            CourseSubject.TECHNOLOGY -> R.drawable.ic_subject_technology
-        }
-
-        private fun subjectLabelRes(subject: CourseSubject): Int = when (subject) {
-            CourseSubject.MATHEMATICS -> R.string.subject_label_mathematics
-            CourseSubject.LITERACY -> R.string.subject_label_literacy
-            CourseSubject.HEALTH -> R.string.subject_label_health
-            CourseSubject.SOCIAL_STUDIES -> R.string.subject_label_social_studies
-            CourseSubject.TECHNOLOGY -> R.string.subject_label_technology
-        }
     }
 
     init {
         if (context is OnHomeItemClickListener) {
             homeItemClickListener = context
         }
+        setHasStableIds(true)
+    }
+
+    override fun getItemId(position: Int): Long {
+        val item = getItem(position)
+        val id = StableIdGenerator.generateStringId(item.courseId)
+        return if (id != RecyclerView.NO_ID) id else StableIdGenerator.generateFallbackId(item)
     }
 
     fun setViewMode(mode: ListViewMode, onChanged: (() -> Unit)? = null) {
         if (viewMode != mode) {
             viewMode = mode
-            notifyItemRangeChanged(0, itemCount)
+            notifyItemRangeChanged(0, itemCount, PAYLOAD_VIEW_MODE)
         }
         onChanged?.invoke()
     }
@@ -134,12 +112,13 @@ class CoursesAdapter(
     fun updateIdentity(isGuest: Boolean) {
         if (this.isGuest != isGuest) {
             this.isGuest = isGuest
-            notifyItemRangeChanged(0, itemCount)
+            notifyItemRangeChanged(0, itemCount, PAYLOAD_IDENTITY)
         }
     }
 
     fun removeCourses(courseIds: List<String>, onComplete: (() -> Unit)? = null) {
-        val updated = currentList.filter { it.courseId !in courseIds }
+        val idsSet = courseIds.toSet()
+        val updated = currentList.filter { it.courseId !in idsSet }
         submitList(updated) {
             onComplete?.invoke()
         }
@@ -183,8 +162,8 @@ class CoursesAdapter(
     }
 
     fun areAllSelected(): Boolean {
-        val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }
-        return selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
+        val count = currentList.count { isMyCourseLib || !it.isMyCourse }
+        return count > 0 && selectedItems.size == count
     }
 
     fun selectAllItems(selectAll: Boolean) {
@@ -192,8 +171,7 @@ class CoursesAdapter(
         selectedItems.clear()
 
         if (selectAll) {
-            val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }
-            selectedItems.addAll(selectableCourses)
+            currentList.filterTo(selectedItems) { isMyCourseLib || !it.isMyCourse }
         }
 
         val newSelectedIds = selectedItems.mapNotNull { it?.courseId }.toSet()
@@ -221,29 +199,37 @@ class CoursesAdapter(
 
         val flatPayloads = payloads.flatMap { if (it is List<*>) it else listOf(it) }
         val hasSelectionPayload = flatPayloads.any { it == PAYLOAD_SELECTION }
+        val hasIdentityPayload = flatPayloads.any { it == PAYLOAD_IDENTITY }
         val hasProgressPayload = flatPayloads.any { it == PAYLOAD_PROGRESS } ||
                 flatPayloads.filterIsInstance<Bundle>().any { it.containsKey(PAYLOAD_PROGRESS) }
+        val hasViewModePayload = flatPayloads.any { it == PAYLOAD_VIEW_MODE }
 
-        if (hasProgressPayload || hasSelectionPayload) {
-            val course = getItem(position) ?: return
-            when (holder) {
-                is GridViewHolder -> holder.bindPayloads(course, hasProgressPayload, hasSelectionPayload)
-                is ListViewHolder -> holder.bindPayloads(course, hasProgressPayload, hasSelectionPayload)
+        var partialHandled = false
+        if (hasProgressPayload || hasSelectionPayload || hasIdentityPayload) {
+            val course = getItem(position)
+            if (course != null) {
+                when (holder) {
+                    is GridViewHolder -> holder.bindPayloads(course, hasProgressPayload, hasSelectionPayload, hasIdentityPayload)
+                    is ListViewHolder -> holder.bindPayloads(course, hasProgressPayload, hasSelectionPayload, hasIdentityPayload)
+                }
+                partialHandled = true
             }
-        } else {
+        }
+
+        if (hasViewModePayload || !partialHandled) {
             super.onBindViewHolder(holder, position, payloads)
         }
     }
 
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
         super.onViewRecycled(holder)
-        when (holder) {
-            is GridViewHolder -> {
-                Glide.with(context).clear(holder.binding.ivCover)
-            }
-            is ListViewHolder -> {
-                Glide.with(context).clear(holder.binding.ivCover)
-            }
+        val targetView = when (holder) {
+            is GridViewHolder -> holder.binding.ivCover
+            is ListViewHolder -> holder.binding.ivCover
+            else -> null
+        }
+        targetView?.let { view ->
+            Glide.with(context.applicationContext).clear(view)
         }
     }
 
@@ -256,53 +242,6 @@ class CoursesAdapter(
             f.arguments = b
             homeItemClickListener?.openCallFragment(f)
         }
-    }
-
-    private fun setCoverColor(view: View, subject: CourseSubject) {
-        val background = view.background?.mutate()
-        if (background is GradientDrawable) {
-            background.setColor(ContextCompat.getColor(context, subjectColorRes(subject)))
-        }
-    }
-
-    private fun bindCover(
-        course: Course,
-        subject: CourseSubject,
-        coverContainer: View,
-        ivCover: ImageView,
-        ivSubjectIcon: ImageView
-    ) {
-        setCoverColor(coverContainer, subject)
-        val coverFile = MyCourse.getCoverImageFile(context, course.courseId, course.coverFileName)
-        val model: Any? = if (coverFile?.exists() == true) {
-            coverFile
-        } else {
-            UrlUtils.getCourseImageUrl(course.courseId, course.coverFileName)?.let { url ->
-                GlideUrl(url, LazyHeaders.Builder().addHeader("Authorization", UrlUtils.header).build())
-            }
-        }
-        if (model == null) {
-            ivCover.visibility = View.GONE
-            ivSubjectIcon.visibility = View.VISIBLE
-            ivSubjectIcon.setImageResource(subjectIconRes(subject))
-            return
-        }
-        ivSubjectIcon.visibility = View.GONE
-        ivCover.visibility = View.VISIBLE
-        Glide.with(context)
-            .load(model)
-            .diskCacheStrategy(DiskCacheStrategy.ALL)
-            .signature(ObjectKey(course.courseRev.orEmpty()))
-            .centerCrop()
-            .error(R.drawable.ole_logo)
-            .into(ivCover)
-    }
-
-    private fun buildMetaLine(course: Course): String {
-        val parts = mutableListOf<String>()
-        parts.add(context.getString(R.string.course_steps_count, course.numberOfSteps))
-        course.gradeLevel.takeIf { it.isNotBlank() }?.let { parts.add(it) }
-        return parts.joinToString(" · ")
     }
 
     private fun updateVisibilityForMyCourse(course: Course, isMyCourseView: View, checkbox: CheckBox) {
@@ -321,11 +260,13 @@ class CoursesAdapter(
     private fun setupCheckbox(course: Course, checkbox: CheckBox, adapterPositionProvider: () -> Int) {
         if (isGuest) {
             checkbox.visibility = View.GONE
+            checkbox.setOnClickListener(null)
             return
         }
         val showCheckbox = isMyCourseLib || !course.isMyCourse
         if (!showCheckbox) {
             checkbox.visibility = View.GONE
+            checkbox.setOnClickListener(null)
             return
         }
         checkbox.visibility = View.VISIBLE
@@ -366,39 +307,49 @@ class CoursesAdapter(
                 }
             }
             binding.courseProgress.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
+                private var requestedStep: Int? = null
+
                 override fun onProgressChanged(seekBar: SeekBar, i: Int, fromUser: Boolean) {
+                    if (!fromUser) return
                     val position = bindingAdapterPosition
-                    if (position != RecyclerView.NO_POSITION && position < itemCount) {
-                        val course = getItem(position)
-                        val progress = progressMap?.get(course.courseId)
-                        if (progress != null) {
-                            val current = progress.current
-                            if (fromUser && i <= current + 1) {
-                                openCourse(course, seekBar.progress)
-                            }
-                        }
-                    }
+                    if (position == RecyclerView.NO_POSITION || position >= itemCount) return
+                    val current = progressState(getItem(position)).first
+                    requestedStep = i
+                    seekBar.progress = current
                 }
 
-                override fun onStartTrackingTouch(seekBar: SeekBar) {}
-                override fun onStopTrackingTouch(seekBar: SeekBar) {}
+                override fun onStartTrackingTouch(seekBar: SeekBar) {
+                    requestedStep = null
+                }
+
+                override fun onStopTrackingTouch(seekBar: SeekBar) {
+                    val step = requestedStep ?: return
+                    requestedStep = null
+                    val position = bindingAdapterPosition
+                    if (position == RecyclerView.NO_POSITION || position >= itemCount) return
+                    val course = getItem(position)
+                    val progress = progressMap?.get(course.courseId) ?: return
+                    if (step <= progress.current + 1) {
+                        openCourse(course, step)
+                    }
+                }
             })
         }
 
         fun bind(course: Course) {
             val subject = CourseSubjectClassifier.classify(course.subjectLevel)
-            bindCover(course, subject, binding.coverContainer, binding.ivCover, binding.ivSubjectIcon)
-            binding.tvSubjectLabel.text = context.getString(subjectLabelRes(subject))
+            CoursesItemUtils.bindCover(context, viewMode, course, subject, binding.coverContainer, binding.ivCover, binding.ivSubjectIcon)
+            binding.tvSubjectLabel.text = context.getString(CoursesItemUtils.subjectLabelRes(subject))
             binding.title.text = course.courseTitle
-            binding.tvMeta.text = buildMetaLine(course)
+            binding.tvMeta.text = CoursesItemUtils.buildMetaLine(context, course)
             updateVisibilityForMyCourse(course, binding.isMyCourse, binding.checkbox)
             setupCheckbox(course, binding.checkbox) { bindingAdapterPosition }
             bindProgress(course)
         }
 
-        fun bindPayloads(course: Course, hasProgressPayload: Boolean, hasSelectionPayload: Boolean) {
+        fun bindPayloads(course: Course, hasProgressPayload: Boolean, hasSelectionPayload: Boolean, hasIdentityPayload: Boolean = false) {
             if (hasProgressPayload) bindProgress(course)
-            if (hasSelectionPayload) {
+            if (hasSelectionPayload || hasIdentityPayload) {
                 updateVisibilityForMyCourse(course, binding.isMyCourse, binding.checkbox)
                 setupCheckbox(course, binding.checkbox) { bindingAdapterPosition }
             }
@@ -435,17 +386,17 @@ class CoursesAdapter(
 
         fun bind(course: Course) {
             val subject = CourseSubjectClassifier.classify(course.subjectLevel)
-            bindCover(course, subject, binding.coverContainer, binding.ivCover, binding.ivSubjectIcon)
+            CoursesItemUtils.bindCover(context, viewMode, course, subject, binding.coverContainer, binding.ivCover, binding.ivSubjectIcon)
             binding.title.text = course.courseTitle
-            binding.tvMeta.text = buildMetaLine(course)
+            binding.tvMeta.text = CoursesItemUtils.buildMetaLine(context, course)
             updateVisibilityForMyCourse(course, binding.isMyCourse, binding.checkbox)
             setupCheckbox(course, binding.checkbox) { bindingAdapterPosition }
             bindStatus(course)
         }
 
-        fun bindPayloads(course: Course, hasProgressPayload: Boolean, hasSelectionPayload: Boolean) {
+        fun bindPayloads(course: Course, hasProgressPayload: Boolean, hasSelectionPayload: Boolean, hasIdentityPayload: Boolean = false) {
             if (hasProgressPayload) bindStatus(course)
-            if (hasSelectionPayload) {
+            if (hasSelectionPayload || hasIdentityPayload) {
                 updateVisibilityForMyCourse(course, binding.isMyCourse, binding.checkbox)
                 setupCheckbox(course, binding.checkbox) { bindingAdapterPosition }
             }

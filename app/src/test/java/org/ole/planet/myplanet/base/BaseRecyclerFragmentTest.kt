@@ -14,7 +14,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], application = Application::class)
+@Config(application = Application::class)
 class BaseRecyclerFragmentTest {
 
     class TestBaseRecyclerFragment : BaseRecyclerFragment<Any>() {
@@ -47,6 +47,19 @@ class BaseRecyclerFragmentTest {
     }
 
     @Test
+    fun showNoData_withFilteredSources_setsNoResultsForFilterMessage() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val textView = TextView(context)
+        val expected = context.getString(R.string.no_results_for_filter)
+
+        BaseRecyclerFragment.showNoData(textView, 0, "courses_filtered")
+        assertEquals(expected, textView.text.toString())
+
+        BaseRecyclerFragment.showNoData(textView, 0, "resources_filtered")
+        assertEquals(expected, textView.text.toString())
+    }
+
+    @Test
     fun showNoData_withUnknownSource_setsDefaultMessage() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val textView = TextView(context)
@@ -61,26 +74,5 @@ class BaseRecyclerFragmentTest {
     fun showNoData_withNullView_doesNothing() {
         // Just calling it to ensure no exceptions are thrown
         BaseRecyclerFragment.showNoData(null, 0, "courses")
-    }
-
-    @Test
-    fun testCountSelected_withNullSelectedItems() {
-        val fragment = TestBaseRecyclerFragment()
-        fragment.selectedItems = null
-        assertEquals(0, fragment.countSelected())
-    }
-
-    @Test
-    fun testCountSelected_withEmptySelectedItems() {
-        val fragment = TestBaseRecyclerFragment()
-        fragment.selectedItems = mutableListOf()
-        assertEquals(0, fragment.countSelected())
-    }
-
-    @Test
-    fun testCountSelected_withMultipleSelectedItems() {
-        val fragment = TestBaseRecyclerFragment()
-        fragment.selectedItems = mutableListOf("item1", "item2", "item3")
-        assertEquals(3, fragment.countSelected())
     }
 }

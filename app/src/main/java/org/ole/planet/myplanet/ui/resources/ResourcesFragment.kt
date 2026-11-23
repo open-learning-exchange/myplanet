@@ -3,34 +3,29 @@ package org.ole.planet.myplanet.ui.resources
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
-import android.content.res.ColorStateList
 import android.os.Build
 import android.os.Bundle
+import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.annotation.VisibleForTesting
 import androidx.core.content.ContextCompat
-import androidx.core.view.isVisible
-import androidx.core.widget.ImageViewCompat
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
-import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.chip.Chip
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import fisk.chipcloud.ChipCloud
-import fisk.chipcloud.ChipCloudConfig
-import fisk.chipcloud.ChipDeletedListener
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -52,21 +47,21 @@ import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import org.ole.planet.myplanet.ui.components.ViewModeToggleController
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
-import org.ole.planet.myplanet.utils.GridSpanCalculator
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utils.ListViewMode
-import org.ole.planet.myplanet.utils.ResourceSearchUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.debounceDistinct
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
 class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelectedListener,
-    ChipDeletedListener, OnTagClickListener, OnFilterListener, RealtimeSyncMixin {
+    OnTagClickListener, OnFilterListener, RealtimeSyncMixin {
     private var _binding: FragmentMyLibraryBinding? = null
     private val binding get() = _binding!!
     private val tvAddToLib get() = binding.tvAdd
@@ -75,39 +70,45 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private val layoutSearch get() = binding.layoutSearch.root
     private val etSearch get() = binding.layoutSearch.etSearch
     private val flexBoxTags get() = binding.layoutSearch.flexboxTags
-    private val clearTags get() = binding.btnClearTags
     private val selectAll get() = binding.selectAll
-    private val filter get() = binding.filter
-    private val layoutViewToggle get() = binding.root.findViewById<View>(R.id.layout_view_toggle) ?: (toggleGridButton?.parent as? View)
-    private lateinit var searchTags: MutableList<TagEntity>
-    private lateinit var config: ChipCloudConfig
+    private val sortFilterCapsule get() = binding.sortFilterCapsule
+    private val capsuleSort get() = binding.btnCapsuleSort
+    private val capsuleFilters get() = binding.btnCapsuleFilters
+    private val filterBadge get() = binding.tvCapsuleFilterBadge
+    private var layoutViewToggle: View? = null
+    private var toggleGridButton: ImageButton? = null
+    private var toggleListButton: ImageButton? = null
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal var searchTags: MutableList<TagEntity> = ArrayList()
     private lateinit var adapterLibrary: ResourcesAdapter
     var userModel: UserEntity ?= null
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
+    private var modelsById: Map<String, ResourceListModel> = emptyMap()
+    private var modelsByLocalAddress: Map<String, ResourceListModel> = emptyMap()
+    private var tagsById: Map<String, TagItem> = emptyMap()
     private var allResourceModels: List<ResourceListModel> = emptyList()
         set(value) {
             field = value
-            resourceModelsByResourceId = value.mapNotNull { model -> model.library.resourceId?.let { it to model } }.toMap()
+            val indexes = buildResourcesListIndexes(value)
+            modelsById = indexes.modelsById
+            modelsByLocalAddress = indexes.modelsByLocalAddress
+            tagsById = indexes.tagsById
         }
-    private var resourceModelsByResourceId: Map<String, ResourceListModel> = emptyMap()
 
-    private var lastSearchQuery: String? = null
-    private var lastSearchTags: List<String>? = null
-    private var lastSubjects: Set<String>? = null
-    private var lastLevels: Set<String>? = null
-    private var lastLanguages: Set<String>? = null
-    private var lastMediums: Set<String>? = null
+    private var lastFilteredCount: Int = 0
     @Inject
     lateinit var prefManager: SharedPrefManager
 
     private val viewModel: ResourcesViewModel by viewModels()
     @Inject
     lateinit var realtimeSyncManager: RealtimeSyncManager
-
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal var selectedDownloadFilterIndex: Int = 0   // 0 = All
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
-    private var refreshJob: Job? = null
     private var searchJob: Job? = null
+
+    private var viewModeController: ViewModeToggleController? = null
 
     internal val addResourceLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
@@ -119,6 +120,42 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        restoreFilterState(savedInstanceState)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        saveFilterState(outState)
+    }
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal fun saveFilterState(outState: Bundle) {
+        outState.putStringArrayList(KEY_FILTER_SUBJECTS, ArrayList(subjects))
+        outState.putStringArrayList(KEY_FILTER_LANGUAGES, ArrayList(languages))
+        outState.putStringArrayList(KEY_FILTER_LEVELS, ArrayList(levels))
+        outState.putStringArrayList(KEY_FILTER_MEDIUMS, ArrayList(mediums))
+        outState.putInt(KEY_FILTER_DOWNLOAD_INDEX, selectedDownloadFilterIndex)
+        outState.putStringArrayList(KEY_FILTER_TAG_IDS, ArrayList(searchTags.map { it.id }))
+        outState.putStringArrayList(KEY_FILTER_TAG_NAMES, ArrayList(searchTags.map { it.name.orEmpty() }))
+    }
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal fun restoreFilterState(bundle: Bundle?) {
+        bundle ?: return
+        bundle.getStringArrayList(KEY_FILTER_SUBJECTS)?.let { subjects = it.toMutableSet() }
+        bundle.getStringArrayList(KEY_FILTER_LANGUAGES)?.let { languages = it.toMutableSet() }
+        bundle.getStringArrayList(KEY_FILTER_LEVELS)?.let { levels = it.toMutableSet() }
+        bundle.getStringArrayList(KEY_FILTER_MEDIUMS)?.let { mediums = it.toMutableSet() }
+        selectedDownloadFilterIndex = bundle.getInt(KEY_FILTER_DOWNLOAD_INDEX, 0)
+        val tagIds = bundle.getStringArrayList(KEY_FILTER_TAG_IDS) ?: emptyList()
+        val tagNames = bundle.getStringArrayList(KEY_FILTER_TAG_NAMES) ?: emptyList()
+        searchTags.clear()
+        for (i in tagIds.indices) {
+            searchTags.add(TagEntity().apply {
+                id = tagIds[i]
+                name = tagNames.getOrNull(i).orEmpty()
+            })
+        }
     }
 
     override fun getLayout(): Int {
@@ -137,22 +174,29 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
-        refreshJob?.cancel()
-        refreshJob = lifecycleScope.launch {
-            try {
-                allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
-                lastSearchQuery = null
-                applyFiltersAndUpdateUI(scrollToTop = false)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
+        if (view == null) return
+        viewModel.loadResources(isMyCourseLib, model?.id)
     }
 
-    override suspend fun getAdapter(): ListAdapter<*, *> {
-        allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
+    override suspend fun postAddRefresh() {
+        refreshResourcesData()
+    }
 
-        val user = userRepository.getUserModel()
+    private fun currentFilterCriteria(): ResourcesFilterCriteria = ResourcesFilterCriteria(
+        searchQuery = etSearch.text?.toString()?.trim().orEmpty(),
+        searchTags = searchTags,
+        subjects = subjects,
+        levels = levels,
+        languages = languages,
+        mediums = mediums,
+        downloadFilterIndex = selectedDownloadFilterIndex
+    )
+
+    private fun currentLocallyOfflineIds(): Set<String> =
+        if (::adapterLibrary.isInitialized) adapterLibrary.getLocallyOfflineIds() else emptySet()
+
+    override suspend fun getAdapter(): ListAdapter<*, *> {
+        val user = viewModel.getCurrentUser()
         // The adapter caches the Context (Activity) which outlives onCreateView,
         // but Fragments and their host Activities are re-created together so this is safe from leaks.
         if (!::adapterLibrary.isInitialized) {
@@ -170,38 +214,55 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             adapterLibrary.setViewMode(prefManager.getLibraryViewMode())
             adapterLibrary.updateIdentity(user?.isGuest() == true, user?.name)
         }
-
         adapterLibrary.setListener(this)
 
-        val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, etSearch.text?.toString()?.trim().orEmpty(), searchTags))
-        adapterLibrary.setLibraryList(filteredList)
+        val cached = viewModel.resourcesState.value.ifEmpty {
+            viewModel.getCachedResources(isMyCourseLib, model?.id) ?: emptyList()
+        }
+        if (cached.isNotEmpty()) {
+            allResourceModels = cached
+            val filteredList = viewModel.applyFilter(allResourceModels, currentFilterCriteria(), currentLocallyOfflineIds())
+            adapterLibrary.setLibraryList(filteredList)
 
-        checkList(filteredList.size)
-        showNoData(tvMessage, filteredList.size, "resources")
-        changeButtonStatus()
+            checkList(filteredList.size)
+            showNoData(tvMessage, filteredList.size, emptySource)
+            changeButtonStatus()
+        } else {
+            viewModel.resetFilter()
+        }
+
+        viewModel.loadResources(isMyCourseLib, model?.id)
         return adapterLibrary
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        toggleGridButton = view.findViewById(R.id.toggle_grid)
+        toggleListButton = view.findViewById(R.id.toggle_list)
+        layoutViewToggle = view.findViewById(R.id.layout_view_toggle) ?: (toggleGridButton?.parent as? View)
         isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
-        searchTags = ArrayList()
-        config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
 
         initializeViews()
         setupEventListeners()
-        initArrays()
+        renderSearchTagsUi()
         hideButton()
+
+        setupDownloadFilterChips()
 
         childFragmentManager.setFragmentResultListener("resource_added", viewLifecycleOwner) { _, _ ->
             refreshResourcesData()
         }
 
-        collectWhenStarted(viewModel.downloadComplete) { completed ->
-            if (completed) {
-                refreshResourcesData()
+        collectWhenStarted(viewModel.downloadComplete) {
+            refreshResourcesData()
+        }
+        collectWhenStarted(viewModel.resourcesState) { list ->
+            allResourceModels = list
+            if (::adapterLibrary.isInitialized && _binding != null) {
+                applyFiltersAndUpdateUI(scrollToTop = false, forceUpdate = true)
             }
         }
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 broadcastService.events.collect { intent ->
@@ -220,94 +281,57 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             }
         }
         viewLifecycleOwner.lifecycleScope.launch {
-            userModel = userRepository.getUserModel()
-            if (::adapterLibrary.isInitialized && _binding != null) {
-                checkList()
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.currentUser.filterNotNull().collectLatest { user ->
+                    userModel = user
+                    if (::adapterLibrary.isInitialized && _binding != null) {
+                        checkList()
+                    }
+                    val userId = userModel?.id
+                    if (userId != null) {
+                        viewModel.observeOpenedResourceIds(userId)
+                    }
+                }
             }
-            val userId = userModel?.id
-            if (userId != null) {
-                viewModel.observeOpenedResourceIds(userId)
-                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    viewModel.openedResourceIds.collectLatest { openedResourceIds ->
-                        if (::adapterLibrary.isInitialized) {
-                            adapterLibrary.setOpenedResourceIds(openedResourceIds)
-                        }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.openedResourceIds.collectLatest { openedResourceIds ->
+                    if (::adapterLibrary.isInitialized) {
+                        adapterLibrary.setOpenedResourceIds(openedResourceIds)
                     }
                 }
             }
         }
 
         if (::adapterLibrary.isInitialized) {
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+            showNoData(tvMessage, adapterLibrary.itemCount, emptySource)
             changeButtonStatus()
             checkList()
         }
-        clearTagsButton()
         setupDownloadButtonListener()
         setupUI(binding.myLibraryParentLayout, requireActivity())
         additionalSetup()
-        setupViewModeToggle()
+        viewModeController = ViewModeToggleController(
+            fragment = this,
+            recyclerView = recyclerView,
+            toggleGridButton = toggleGridButton,
+            toggleListButton = toggleListButton,
+            getMode = { prefManager.getLibraryViewMode() },
+            setMode = { prefManager.setLibraryViewMode(it) },
+            onModeChanged = { mode ->
+                if (::adapterLibrary.isInitialized) {
+                    adapterLibrary.setViewMode(mode)
+                }
+            }
+        ).also { it.setup() }
 
         tvFragmentInfo = binding.tvFragmentInfo
         if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
 
         realtimeSyncHelper = RealtimeSyncHelper(this, this, realtimeSyncManager)
         realtimeSyncHelper.setupRealtimeSync()
-    }
-
-    private val toggleGridButton get() = binding.root.findViewById<ImageButton>(R.id.toggle_grid)
-    private val toggleListButton get() = binding.root.findViewById<ImageButton>(R.id.toggle_list)
-
-    private fun setupViewModeToggle() {
-        updateToggleUi(prefManager.getLibraryViewMode())
-        toggleGridButton.setOnClickListener { setViewMode(ListViewMode.GRID) }
-        toggleListButton.setOnClickListener { setViewMode(ListViewMode.LIST) }
-        recyclerView.addOnLayoutChangeListener { _, left, _, right, _, oldLeft, _, oldRight, _ ->
-            if (right - left != oldRight - oldLeft) {
-                recyclerView.post { updateGridSpanIfNeeded() }
-            }
-        }
-    }
-
-    private fun setViewMode(mode: ListViewMode) {
-        prefManager.setLibraryViewMode(mode)
-        updateToggleUi(mode)
-        if (::adapterLibrary.isInitialized) {
-            adapterLibrary.setViewMode(mode)
-        }
-    }
-
-    private fun applyRecyclerLayoutManager(mode: ListViewMode) {
-        recyclerView.layoutManager = if (mode == ListViewMode.GRID) {
-            GridLayoutManager(requireContext(), currentSpanCount())
-        } else {
-            LinearLayoutManager(requireContext())
-        }
-    }
-
-    private fun currentSpanCount(): Int {
-        val displayMetrics = requireContext().resources.displayMetrics
-        val widthPx = recyclerView.width.takeIf { it > 0 } ?: displayMetrics.widthPixels
-        val widthDp = (widthPx / displayMetrics.density).toInt()
-        return GridSpanCalculator.columnCount(widthDp)
-    }
-
-    private fun updateGridSpanIfNeeded() {
-        val layoutManager = recyclerView.layoutManager
-        if (layoutManager is GridLayoutManager) {
-            layoutManager.spanCount = currentSpanCount()
-        }
-    }
-
-    private fun updateToggleUi(mode: ListViewMode) {
-        val isGrid = mode == ListViewMode.GRID
-        val activeColor = ContextCompat.getColor(requireContext(), android.R.color.white)
-        val inactiveColor = ContextCompat.getColor(requireContext(), R.color.daynight_textColor)
-        toggleGridButton.setBackgroundResource(if (isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
-        toggleListButton.setBackgroundResource(if (!isGrid) R.drawable.bg_toggle_selected else android.R.color.transparent)
-        ImageViewCompat.setImageTintList(toggleGridButton, ColorStateList.valueOf(if (isGrid) activeColor else inactiveColor))
-        ImageViewCompat.setImageTintList(toggleListButton, ColorStateList.valueOf(if (!isGrid) activeColor else inactiveColor))
-        applyRecyclerLayoutManager(mode)
     }
 
     private fun initializeViews() {
@@ -324,21 +348,20 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             putExtra("resource_local_url", model.library.resourceLocalAddress)
             putExtra("is_edit_mode", true)
         }
-        startActivity(intent)
+        addResourceLauncher.launch(intent)
     }
 
     private fun setupEventListeners() {
         setupAddToLibListener()
         setupDeleteListener()
         setupSearchTextListener()
-        setupCollectionsButton()
         setupSelectAllListener()
         setupAddResourceButtonListener()
     }
 
     private fun setupAddToLibListener() {
         tvAddToLib.setOnClickListener {
-            if ((selectedItems?.size ?: 0) > 0) {
+            if (!selectedItems.isNullOrEmpty()) {
                 confirmation = createAlertDialog()
                 confirmation?.show()
             }
@@ -347,19 +370,16 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     private fun setupDeleteListener() {
         tvDelete?.setOnClickListener {
-            AlertDialog.Builder(this.context, R.style.AlertDialogTheme)
-                .setMessage(R.string.confirm_removal)
-                .setPositiveButton(R.string.yes) { _, _ ->
-                    deleteSelected(true)
-                }
-                .setNegativeButton(R.string.no, null).show()
+            requireContext().confirmDialog(
+                message = getString(R.string.confirm_removal),
+                onPositive = { deleteSelected(true) }
+            )
         }
     }
 
     private fun setupSearchTextListener() {
         etSearch.textChanges()
-            .debounce(300L)
-            .distinctUntilChanged()
+            .debounceDistinct(300L)
             .onEach {
                 if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return@onEach
                 applyFiltersAndUpdateUI()
@@ -367,31 +387,25 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 
-    private fun applyFiltersAndUpdateUI(scrollToTop: Boolean = true) {
-        if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return
-        val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
-
-        val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
-        val searchTagIds = currentSearchTags.map { it.id }.sorted()
-
-        if (searchQuery == lastSearchQuery &&
-            searchTagIds == lastSearchTags &&
-            subjects == lastSubjects &&
-            levels == lastLevels &&
-            languages == lastLanguages &&
-            mediums == lastMediums
-        ) {
-            return
+    private fun scheduleFilterRefresh() {
+        if (view == null) return
+        searchJob?.cancel()
+        searchJob = viewLifecycleOwner.lifecycleScope.launch {
+            applyFiltersAndUpdateUI()
         }
+    }
 
-        lastSearchQuery = searchQuery
-        lastSearchTags = searchTagIds
-        lastSubjects = HashSet(subjects)
-        lastLevels = HashSet(levels)
-        lastLanguages = HashSet(languages)
-        lastMediums = HashSet(mediums)
+    private fun applyFiltersAndUpdateUI(scrollToTop: Boolean = true, forceUpdate: Boolean = false): Int {
+        if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return lastFilteredCount
 
-        val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, searchQuery, currentSearchTags))
+        val criteria = currentFilterCriteria()
+        val locallyOfflineIds = currentLocallyOfflineIds()
+        val filteredList = if (forceUpdate) {
+            viewModel.applyFilter(allResourceModels, criteria, locallyOfflineIds)
+        } else {
+            viewModel.filterIfChanged(allResourceModels, criteria, locallyOfflineIds)
+                ?: return lastFilteredCount
+        }
 
         if (scrollToTop) {
             adapterLibrary.setLibraryList(filteredList) {
@@ -402,15 +416,9 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
 
         checkList(filteredList.size)
-        showNoData(tvMessage, filteredList.size, "resources")
-    }
-
-    private fun setupCollectionsButton() {
-        binding.btnCollections.setOnClickListener {
-            val f = CollectionsFragment.getInstance(searchTags, "resources")
-            f.setListener(this@ResourcesFragment)
-            f.show(childFragmentManager, "")
-        }
+        showNoData(tvMessage, filteredList.size, emptySource)
+        lastFilteredCount = filteredList.size
+        return lastFilteredCount
     }
 
     private fun setupSelectAllListener() {
@@ -453,7 +461,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private fun isItemOffline(item: MyLibrary): Boolean {
-        val model = item.resourceId?.let { resourceModelsByResourceId[it] }
+        val model = modelsById[item.id]
         return if (::adapterLibrary.isInitialized && model != null) {
             adapterLibrary.isItemOffline(model)
         } else {
@@ -475,7 +483,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                 viewModel.addResourcesToUserLibrary(targetList.mapNotNull { it.resourceId }, userId)
             }
             if (resourcesRepository.downloadResources(targetList)) {
-                val urls = targetList.mapNotNull { it.resourceRemoteAddress }
+                val urls = queuedUrls(targetList)
                 trackDownloadUrls(urls)
                 showProgressDialog()
             }
@@ -483,6 +491,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private fun hideButton(){
+        if (_binding == null) return
         val selected = selectedItems?.filterNotNull() ?: emptyList()
         val count = selected.size
         tvDelete?.isEnabled = count != 0
@@ -510,6 +519,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     private fun checkList(listSize: Int = if (::adapterLibrary.isInitialized) adapterLibrary.currentList.size else 0) {
         val hasAnyLibraryData = allResourceModels.isNotEmpty()
         val isGuest = userModel?.isGuest() == true
+        val scrollChipFilter = binding.root.findViewById<View>(R.id.scroll_chip_filter)
 
         if (!hasAnyLibraryData && listSize == 0) {
             selectAll.visibility = View.GONE
@@ -518,33 +528,37 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             tvAddToLib.visibility = View.GONE
             tvDownload.visibility = View.GONE
             tvSelected.visibility = View.GONE
-            binding.btnCollections.visibility = View.GONE
-            filter.visibility = View.GONE
-            clearTags.visibility = View.GONE
+            sortFilterCapsule.visibility = View.GONE
             tvDelete?.visibility = View.GONE
+            scrollChipFilter?.visibility = View.GONE
         } else {
             selectAll.visibility = if (isGuest) View.GONE else View.VISIBLE
             layoutSearch.visibility = View.VISIBLE
             layoutViewToggle?.visibility = View.VISIBLE
-            binding.btnCollections.visibility = View.VISIBLE
-            filter.visibility = View.VISIBLE
-            clearTags.visibility = if (hasActiveFilters()) View.VISIBLE else View.GONE
-            hideButton()
+            sortFilterCapsule.visibility = View.VISIBLE
+            scrollChipFilter?.visibility = View.VISIBLE
         }
         hideButton()
     }
 
-    private fun hasActiveFilters(): Boolean {
-        val hasSearchText = etSearch.text?.toString()?.trim()?.isNotEmpty() == true
-        val hasTagFilter = ::searchTags.isInitialized && searchTags.isNotEmpty()
-        return hasSearchText || hasTagFilter || subjects.isNotEmpty() || languages.isNotEmpty() || mediums.isNotEmpty() || levels.isNotEmpty()
+    private fun renderSearchTagsUi() {
+        if (_binding == null) return
+        tvSelected.visibility = if (searchTags.isNotEmpty()) View.VISIBLE else View.GONE
+        renderTagChips()
+        showTagText(searchTags, tvSelected)
+        updateFilterBadge()
     }
 
-    private fun initArrays() {
-        subjects = HashSet()
-        languages = HashSet()
-        levels = HashSet()
-        mediums = HashSet()
+    private fun updateFilterBadge() {
+        if (_binding == null) return
+        val count = searchTags.size + subjects.size + languages.size + mediums.size + levels.size +
+                (if (selectedDownloadFilterIndex != 0) 1 else 0)
+        if (count > 0) {
+            filterBadge.text = count.toString()
+            filterBadge.visibility = View.VISIBLE
+        } else {
+            filterBadge.visibility = View.GONE
+        }
     }
 
     private fun createAlertDialog(): AlertDialog {
@@ -557,7 +571,8 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                     guestDialog(requireContext())
                 } else {
                     hasAdded = true
-                    addToMyList {
+                    addToMyList { succeeded ->
+                        if (!succeeded) return@addToMyList
                         val fragment = ResourcesFragment().apply {
                             arguments = Bundle().apply {
                                 putBoolean("isMyCourseLib", true)
@@ -600,26 +615,25 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
-    private fun clearTagsButton() {
-        clearTags.setOnClickListener {
-            saveSearchActivity()
-            searchTags.clear()
-            etSearch.setText(R.string.empty_text)
-            tvSelected.text = getString(R.string.empty_text)
-            levels.clear()
-            mediums.clear()
-            subjects.clear()
-            languages.clear()
-            searchJob?.cancel()
-            searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                applyFiltersAndUpdateUI()
-            }
-        }
+    override fun clearAllFilters() {
+        saveSearchActivity()
+        selectedDownloadFilterIndex = 0
+        searchTags.clear()
+        levels.clear()
+        mediums.clear()
+        subjects.clear()
+        languages.clear()
+
+        setupDownloadFilterChips()
+        renderSearchTagsUi()
+        etSearch.setText(R.string.empty_text)
+        updateFilterBadge()
+        scheduleFilterRefresh()
     }
 
     override fun onSelectedListChange(list: List<ResourceItem>) {
         val newSelected = list.mapNotNull { item ->
-            allResourceModels.find { it.item.id == item.id }?.library
+            modelsById[item.id]?.library
         }
         selectedItems?.clear()
         selectedItems?.addAll(newSelected)
@@ -628,7 +642,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     override fun onTagClicked(tag: TagItem) {
-        val realmTag = allResourceModels.flatMap { it.tags }.find { it.id == tag.id }
+        val realmTag = tag.id?.let { tagsById[it] }
         if (realmTag != null) {
             val rTag = searchTags.find { it.id == realmTag.id } ?: TagEntity().apply {
                 id = realmTag.id.orEmpty()
@@ -641,59 +655,62 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override fun onSingleResourceDownloaded(url: String) {
         if (!::adapterLibrary.isInitialized) return
         val localAddress = url.substringAfterLast('/')
-        val id = allResourceModels.find { it.item.resourceLocalAddress == localAddress }?.item?.id ?: return
+        val id = modelsByLocalAddress[localAddress]?.item?.id ?: return
         adapterLibrary.markItemAsOffline(id)
         refreshResourcesData()
     }
 
     override fun onResourceClicked(item: ResourceItem) {
-        val model = allResourceModels.find { it.item.id == item.id }
+        val model = modelsById[item.id]
         if (model != null) {
             homeItemClickListener?.openLibraryDetailFragment(model.library)
         }
     }
 
     override fun onTagClicked(tag: TagEntity) {
-        tvSelected.visibility = View.VISIBLE
-        flexBoxTags.removeAllViews()
-        val chipCloud = ChipCloud(activity, flexBoxTags, config)
-        chipCloud.setDeleteListener(this)
         if (!searchTags.any { it.name == tag.name }) searchTags.add(tag)
-        chipCloud.addChips(searchTags)
-        showTagText(searchTags, tvSelected)
-        searchJob?.cancel()
-        searchJob = viewLifecycleOwner.lifecycleScope.launch {
-            applyFiltersAndUpdateUI()
+        renderSearchTagsUi()
+        scheduleFilterRefresh()
+    }
+
+    private fun renderTagChips() {
+        val context = context ?: return
+        val chipContext = ContextThemeWrapper(context, R.style.Theme_App_Chip)
+        flexBoxTags.removeAllViews()
+        for (tag in searchTags) {
+            val chip = Chip(chipContext).apply {
+                text = tag.name
+                isCloseIconVisible = true
+                setOnCloseIconClickListener {
+                    searchTags.remove(tag)
+                    renderSearchTagsUi()
+                    scheduleFilterRefresh()
+                }
+            }
+            flexBoxTags.addView(chip)
         }
     }
 
     override fun onTagSelected(tag: TagEntity) {
-        tvSelected.visibility = View.VISIBLE
-        val li: MutableList<TagEntity> = ArrayList()
-        li.add(tag)
-        searchTags = li
-        tvSelected.text = getString(R.string.tag_selected, tag.name)
-        searchJob?.cancel()
-        searchJob = viewLifecycleOwner.lifecycleScope.launch {
-            applyFiltersAndUpdateUI()
-        }
+        searchTags = mutableListOf(tag)
+        renderSearchTagsUi()
+        scheduleFilterRefresh()
     }
 
     override fun onOkClicked(list: List<TagEntity>?) {
         if (list?.isEmpty() == true) {
             searchTags.clear()
-            searchJob?.cancel()
-            searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                applyFiltersAndUpdateUI()
-            }
         } else {
             for (tag in list ?: emptyList()) {
-                onTagClicked(tag)
+                if (!searchTags.any { it.name == tag.name }) searchTags.add(tag)
             }
         }
+        renderSearchTagsUi()
+        scheduleFilterRefresh()
     }
 
     private fun changeButtonStatus() {
+        if (!::adapterLibrary.isInitialized || _binding == null) return
         if (adapterLibrary.areAllSelected()) {
             selectAll.isChecked = true
             selectAll.text = getString(R.string.unselect_all)
@@ -703,23 +720,28 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
-    override fun chipDeleted(i: Int, s: String) {
-        searchTags.removeAt(i)
-        searchJob?.cancel()
-        searchJob = viewLifecycleOwner.lifecycleScope.launch {
-            applyFiltersAndUpdateUI()
-        }
-    }
-
-    override fun filter(subjects: MutableSet<String>, languages: MutableSet<String>, mediums: MutableSet<String>, levels: MutableSet<String>) {
+    override fun filter(subjects: MutableSet<String>, languages: MutableSet<String>, mediums: MutableSet<String>, levels: MutableSet<String>): Int {
         this.subjects = subjects
         this.languages = languages
         this.mediums = mediums
         this.levels = levels
+
+        if (view == null) return lastFilteredCount
+        setupDownloadFilterChips()
+        updateFilterBadge()
+
         searchJob?.cancel()
-        searchJob = viewLifecycleOwner.lifecycleScope.launch {
-            applyFiltersAndUpdateUI()
-        }
+        return applyFiltersAndUpdateUI()
+    }
+
+    override fun getFilteredCount(subjects: Set<String>, languages: Set<String>, mediums: Set<String>, levels: Set<String>): Int {
+        val criteria = currentFilterCriteria().copy(
+            subjects = subjects,
+            levels = levels,
+            languages = languages,
+            mediums = mediums
+        )
+        return viewModel.countMatching(allResourceModels, criteria, currentLocallyOfflineIds())
     }
 
     override suspend fun getData(): Map<String, Set<String>> {
@@ -739,7 +761,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override fun onResume() {
         super.onResume()
         selectAll.isChecked = false
-        recyclerView.post { updateGridSpanIfNeeded() }
+        viewModeController?.refreshSpanOnResume()
     }
 
     override fun onPause() {
@@ -748,17 +770,33 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     override fun onDestroyView() {
+        viewModeController?.teardown()
+        viewModeController = null
         if (confirmation?.isShowing == true) {
             confirmation?.dismiss()
         }
         confirmation = null
         if (::adapterLibrary.isInitialized) {
+            adapterLibrary.selectAllItems(false)
             adapterLibrary.setListener(null)
         }
+
+        viewModel.resetFilter()
+
+        layoutViewToggle = null
+        toggleGridButton = null
+        toggleListButton = null
 
         _binding = null
         super.onDestroyView()
     }
+
+    private val emptySource: String
+        get() = if (filterApplied(_binding?.layoutSearch?.etSearch?.text?.toString()?.trim().orEmpty()) || selectedDownloadFilterIndex != 0) {
+            "resources_filtered"
+        } else {
+            "resources"
+        }
 
     private fun filterApplied(searchText: String): Boolean {
         return !(subjects.isEmpty() && languages.isEmpty()
@@ -791,45 +829,35 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
-
     private fun additionalSetup() {
-        val bottomSheet = binding.cardFilter
-        filter.setOnClickListener {
-            bottomSheet.visibility = if (bottomSheet.isVisible) View.GONE else View.VISIBLE
-        }
-        binding.root.findViewById<View>(R.id.btn_close_filter)?.setOnClickListener {
-            bottomSheet.visibility = View.GONE
-        }
-        binding.btnCollections.setOnClickListener {
-            bottomSheet.visibility = View.GONE
-        }
-        binding.btnClearTags.setOnClickListener {
-            bottomSheet.visibility = View.GONE
-        }
-        binding.filterCategories.setOnClickListener {
-            val f = ResourcesFilterFragment()
-            f.setListener(this)
-            f.show(childFragmentManager, "")
-            bottomSheet.visibility = View.GONE
-        }
-        binding.orderByDateButton.setOnClickListener {
-            bottomSheet.visibility = View.GONE
+        capsuleSort.setOnClickListener { showSortSheet() }
+        capsuleFilters.setOnClickListener { showFilterSheet() }
+    }
+
+    private fun showSortSheet() {
+        val f = ResourcesSortFragment()
+        f.setCurrentMode(viewModel.currentSortMode)
+        f.setCurrentDirection(viewModel.isDateSortAscending, viewModel.isTitleSortAscending)
+        f.setListener { mode ->
             viewLifecycleOwner.lifecycleScope.launch {
-                val sorted = viewModel.toggleSortOrder(adapterLibrary.currentList)
-                adapterLibrary.setLibraryList(sorted) {
-                    recyclerView.scrollToPosition(0)
+                allResourceModels = when (mode) {
+                    ResourcesViewModel.SortMode.DATE -> viewModel.toggleSortOrder(allResourceModels)
+                    ResourcesViewModel.SortMode.TITLE -> viewModel.toggleTitleSortOrder(
+                        allResourceModels
+                    )
+
+                    ResourcesViewModel.SortMode.NONE -> allResourceModels
                 }
+                applyFiltersAndUpdateUI(scrollToTop = true, forceUpdate = true)
             }
         }
-        binding.orderByTitleButton.setOnClickListener {
-            bottomSheet.visibility = View.GONE
-            viewLifecycleOwner.lifecycleScope.launch {
-                val sorted = viewModel.toggleTitleSortOrder(adapterLibrary.currentList)
-                adapterLibrary.setLibraryList(sorted) {
-                    recyclerView.scrollToPosition(0)
-                }
-            }
-        }
+        f.show(childFragmentManager, "resources_sort")
+    }
+
+    private fun showFilterSheet() {
+        val f = ResourcesFilterFragment()
+        f.setListener(this)
+        f.show(childFragmentManager, "resources_filter")
     }
     
     override fun getWatchedTables(): List<String> {
@@ -838,34 +866,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     
     override fun onDataUpdated(table: String, update: TableDataUpdate) {
         refreshResourcesData()
-    }
-
-    override fun shouldAutoRefresh(table: String): Boolean = false
-    
-    override fun getSyncRecyclerView(): RecyclerView? {
-        return if (::recyclerView.isInitialized) recyclerView else null
-    }
-
-    private fun filterLocalLibraryByTag(models: List<ResourceListModel>, s: String, tags: List<TagEntity>): List<ResourceListModel> {
-        var filteredList = ResourceSearchUtils.searchLocalModels(models, s)
-
-        if (tags.isNotEmpty()) {
-            filteredList = filteredList.filter { model ->
-                tags.any { searchTag -> model.tags.any { it.id == searchTag.id } }
-            }
-        }
-        return filteredList
-    }
-
-    private fun applyFilterModels(models: List<ResourceListModel>): List<ResourceListModel> {
-        return models.filter { model ->
-            val l = model.library
-            val sub = subjects.isEmpty() || subjects.let { l.subject?.containsAll(it) } == true
-            val lev = levels.isEmpty() || l.level?.containsAll(levels) == true
-            val lan = languages.isEmpty() || languages.contains(l.language)
-            val med = mediums.isEmpty() || mediums.contains(l.mediaType)
-            sub && lev && lan && med
-        }
     }
 
     override fun deleteSelected(deleteProgress: Boolean) {
@@ -891,12 +891,13 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
-    override fun addToMyList(onComplete: (() -> Unit)?) {
+    override fun addToMyList(onComplete: ((succeeded: Boolean) -> Unit)?) {
         val userId = userModel?.id
         val itemsToAdd = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToAdd.isNotEmpty()) {
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
+                var succeeded = false
                 try {
                     viewModel.addResourcesToUserLibrary(itemsToAdd, userId)
                         .onSuccess {
@@ -906,17 +907,97 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                             selectedItems?.clear()
                             changeButtonStatus()
                             hideButton()
+                            succeeded = true
                         }
                         .onFailure {
                             _binding ?: return@onFailure
                             Utilities.toast(activity, getString(R.string.error, it.message))
                         }
                 } finally {
-                    onComplete?.invoke()
+                    onComplete?.invoke(succeeded)
                 }
             }
         } else {
-            onComplete?.invoke()
+            onComplete?.invoke(false)
         }
+    }
+
+    private fun setupDownloadFilterChips() {
+        if (_binding == null) return
+        val chipRow = binding.chipFilterRow
+        chipRow.removeAllViews()
+
+        val context = context ?: return
+        val chipContext = ContextThemeWrapper(context, R.style.Theme_App_Chip)
+
+        val options = context.resources.getStringArray(R.array.download_filter)
+        options.indices.forEach { label ->
+            val chip = layoutInflater.inflate(R.layout.item_filter_chip, chipRow, false) as TextView
+            chip.text = options[label]
+            chip.tag = label
+            chip.setOnClickListener {
+                selectedDownloadFilterIndex = label
+                setupDownloadFilterChips()
+                updateFilterBadge()
+                applyFiltersAndUpdateUI()
+            }
+            chipRow.addView(chip)
+        }
+
+        renderDownloadChipSelection(chipRow)
+
+        renderActiveFacetChips(chipRow, chipContext)
+    }
+
+    private fun renderActiveFacetChips(chipRow: LinearLayout, chipContext: ContextThemeWrapper) {
+        val facetFilters = listOf(
+            Pair(subjects) { item: String -> subjects.remove(item) },
+            Pair(languages) { item: String -> languages.remove(item) },
+            Pair(mediums) { item: String -> mediums.remove(item) },
+            Pair(levels) { item: String -> levels.remove(item) }
+        )
+
+        for ((set, removeAction) in facetFilters) {
+            for (item in set) {
+                val displayText = if (set === mediums) {
+                    ResourcesMediaType.displayName(requireContext(), item)
+                } else {
+                    item
+                }
+                val chip = Chip(chipContext).apply {
+                    text = displayText
+                    isCloseIconVisible = true
+                    setOnCloseIconClickListener {
+                        removeAction(item)
+                        setupDownloadFilterChips()
+                        updateFilterBadge()
+                        scheduleFilterRefresh()
+                    }
+                }
+                chipRow.addView(chip)
+            }
+        }
+    }
+
+    private fun renderDownloadChipSelection(chipRow: LinearLayout) {
+        val selected = selectedDownloadFilterIndex
+        for (i in 0 until chipRow.childCount) {
+            val chip = chipRow.getChildAt(i) as? TextView ?: continue
+            val tagIndex = chip.tag as? Int ?: continue
+            val isSelected = tagIndex == selected
+            chip.setBackgroundResource(if (isSelected) R.drawable.bg_chip_selected else R.drawable.bg_chip_unselected)
+            chip.setTextColor(ContextCompat.getColor(requireContext(),
+                if (isSelected) R.color.chip_selected_text else R.color.daynight_textColor))
+        }
+    }
+
+    companion object {
+        const val KEY_FILTER_SUBJECTS = "filter_subjects"
+        const val KEY_FILTER_LANGUAGES = "filter_languages"
+        const val KEY_FILTER_LEVELS = "filter_levels"
+        const val KEY_FILTER_MEDIUMS = "filter_mediums"
+        const val KEY_FILTER_DOWNLOAD_INDEX = "filter_download_index"
+        const val KEY_FILTER_TAG_IDS = "filter_tag_ids"
+        const val KEY_FILTER_TAG_NAMES = "filter_tag_names"
     }
 }

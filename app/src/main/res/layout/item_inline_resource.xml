@@ -20,13 +20,13 @@
         <ImageView
             android:id="@+id/iv_resource_preview"
             android:layout_width="match_parent"
-            android:layout_height="180dp"
+            android:layout_height="@dimen/inline_resource_preview_height"
             android:scaleType="centerCrop"
             android:visibility="gone" />
         <FrameLayout
             android:id="@+id/video_thumbnail_container"
             android:layout_width="match_parent"
-            android:layout_height="180dp"
+            android:layout_height="@dimen/inline_resource_preview_height"
             android:visibility="gone">
 
             <ImageView

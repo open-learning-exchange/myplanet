@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.feedback
 
+import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.view.LayoutInflater
@@ -8,6 +9,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFeedbackBinding
 import org.ole.planet.myplanet.model.Feedback
@@ -31,7 +33,22 @@ class FeedbackAdapter :
         )
     ) {
 
+    private val dateCache = HashMap<Long, String>()
+    private var primaryColorStateList: ColorStateList? = null
+    private var greyColorStateList: ColorStateList? = null
+    private var statusText: String? = null
+    private var priorityText: String? = null
+    private var openDateText: String? = null
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FeedbackViewHolder {
+        if (primaryColorStateList == null || greyColorStateList == null) {
+            val context = parent.context
+            primaryColorStateList = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.mainColor))
+            greyColorStateList = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.md_amber_500))
+            statusText = context.getString(R.string.status)
+            priorityText = context.getString(R.string.priority)
+            openDateText = context.getString(R.string.open_date)
+        }
         val binding = RowFeedbackBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return FeedbackViewHolder(binding)
     }
@@ -41,39 +58,61 @@ class FeedbackAdapter :
         val binding = holder.rowFeedbackBinding
         val context = binding.root.context
 
+        val type = localizedLabel(context, feedback.type)
+        val priority = localizedLabel(context, feedback.priority)
         binding.tvTitle.text = feedback.title
-        binding.tvType.text = feedback.type
-        binding.tvPriority.text = feedback.priority
+        binding.tvType.text = type
+        binding.tvPriority.text = priority
         binding.tvStatus.text = feedback.status
-        val contentDescription = "${feedback.title}, ${feedback.type}, " +
-                "${context.getString(R.string.status)}: ${feedback.status}, ${context.getString(R.string.priority)}: ${feedback.priority}, " +
-                "${context.getString(R.string.open_date)}: ${getFormattedDate(feedback.openTime)}"
+        val formattedDate = dateCache.getOrPut(feedback.openTime) { getFormattedDate(feedback.openTime) }
+        val contentDescription = "${feedback.title}, ${type}, " +
+                "${statusText}: ${feedback.status}, ${priorityText}: ${priority}, " +
+                "${openDateText}: $formattedDate"
         binding.feedbackCardView.contentDescription = contentDescription
-
-        val primaryColor = ContextCompat.getColor(context, R.color.mainColor)
-        val greyColor = ContextCompat.getColor(context, R.color.md_amber_500)
-
-        binding.tvPriority.background = ContextCompat.getDrawable(context, R.drawable.bg_primary)
-        binding.tvStatus.background = ContextCompat.getDrawable(context, R.drawable.bg_primary)
 
         ViewCompat.setBackgroundTintList(
             binding.tvPriority,
-            ColorStateList.valueOf(if ("yes".equals(feedback.priority, ignoreCase = true)) primaryColor else greyColor)
+            if ("yes".equals(feedback.priority, ignoreCase = true)) primaryColorStateList else greyColorStateList
         )
         ViewCompat.setBackgroundTintList(
             binding.tvStatus,
-            ColorStateList.valueOf(if ("open".equals(feedback.status, ignoreCase = true)) primaryColor else greyColor)
+            if ("open".equals(feedback.status, ignoreCase = true)) primaryColorStateList else greyColorStateList
         )
-        binding.tvOpenDate.text = getFormattedDate(feedback.openTime)
-        binding.root.setOnClickListener {
-            binding.root.contentDescription = feedback.title
-            context.startActivity(
-                Intent(context, FeedbackDetailActivity::class.java)
-                    .putExtra("id", feedback.id)
-            )
-        }
+        binding.tvOpenDate.text = formattedDate
     }
 
-    class FeedbackViewHolder(val rowFeedbackBinding: RowFeedbackBinding) :
-        RecyclerView.ViewHolder(rowFeedbackBinding.root)
+    private fun localizedLabel(context: Context, value: String?): String? {
+        val resId = LABELS[value?.lowercase(Locale.ROOT)] ?: return value
+        return context.getString(resId)
+    }
+
+    companion object {
+        private val LABELS = mapOf(
+            "yes" to R.string.yes,
+            "no" to R.string.no,
+            "question" to R.string.question,
+            "bug" to R.string.bug,
+            "suggestion" to R.string.suggestion,
+        )
+    }
+
+    inner class FeedbackViewHolder(val rowFeedbackBinding: RowFeedbackBinding) :
+        RecyclerView.ViewHolder(rowFeedbackBinding.root) {
+        init {
+            val context = rowFeedbackBinding.root.context
+            rowFeedbackBinding.tvPriority.background = ContextCompat.getDrawable(context, R.drawable.bg_primary)
+            rowFeedbackBinding.tvStatus.background = ContextCompat.getDrawable(context, R.drawable.bg_primary)
+
+            rowFeedbackBinding.root.setOnClickListener {
+                if (bindingAdapterPosition != RecyclerView.NO_POSITION) {
+                    val feedback = getItem(bindingAdapterPosition)
+                    rowFeedbackBinding.root.contentDescription = feedback.title
+                    context.startActivity(
+                        Intent(context, FeedbackDetailActivity::class.java)
+                            .putExtra("id", feedback.id)
+                    )
+                }
+            }
+        }
+    }
 }

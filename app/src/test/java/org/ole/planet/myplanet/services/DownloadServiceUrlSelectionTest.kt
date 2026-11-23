@@ -125,4 +125,24 @@ class DownloadServiceUrlSelectionTest {
         assertEquals("url1", result?.url)
         assertEquals(10, result?.priority)
     }
+
+    @Test
+    fun `alternativeDownloadUrl routes a CouchDB-rooted path through the clone's db prefix`() {
+        assertEquals(
+            "https://u:p@clone.planet.gt:443/db/resources/abc/post.jpg",
+            DownloadService.alternativeDownloadUrl("https://u:p@clone.planet.gt:443", "/resources/abc/post.jpg", "")
+        )
+    }
+
+    @Test
+    fun `alternativeDownloadUrl does not double the db prefix`() {
+        assertEquals(
+            "https://clone.planet.gt/db/resources/abc/post.jpg?rev=2",
+            DownloadService.alternativeDownloadUrl("https://clone.planet.gt/", "/db/resources/abc/post.jpg", "?rev=2")
+        )
+        assertEquals(
+            "https://clone.planet.gt/db/resources/abc/post.jpg",
+            DownloadService.alternativeDownloadUrl("https://clone.planet.gt/db", "/resources/abc/post.jpg", "")
+        )
+    }
 }

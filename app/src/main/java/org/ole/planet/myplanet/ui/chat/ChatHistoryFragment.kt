@@ -3,67 +3,48 @@ package org.ole.planet.myplanet.ui.chat
 import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryBinding
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.Conversation
-import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.NewsShare
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.debounceDistinct
 import org.ole.planet.myplanet.utils.textChanges
 
-private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
-
-
 @AndroidEntryPoint
-class ChatHistoryFragment : Fragment() {
-    private var _binding: FragmentChatHistoryBinding? = null
-    private val binding get() = _binding!!
+class ChatHistoryFragment : BaseBindingFragment<FragmentChatHistoryBinding>(FragmentChatHistoryBinding::inflate) {
     private val sharedViewModel: ChatViewModel by activityViewModels()
     var user: UserEntity? = null
     private var isFullSearch: Boolean = false
     private var isQuestion: Boolean = false
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
-    private var sharedNewsMessages: List<News> = emptyList()
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
     private var sharedViewInIds: Map<String, Set<String>> = emptyMap()
     
-    @Inject
-    lateinit var chatRepository: ChatRepository
     private val serverUrl: String
         get() = sharedPrefManager.getServerUrl()
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentChatHistoryBinding.inflate(inflater, container, false)
-        return binding.root
-    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -97,10 +78,9 @@ class ChatHistoryFragment : Fragment() {
             }
         }
 
-        refreshChatHistory()
-
         binding.searchBar.textChanges()
-            .debounce(300)
+            .drop(1)
+            .debounceDistinct(300)
             .onEach { text -> sharedViewModel.searchChats(text?.toString() ?: "", isFullSearch, isQuestion) }
             .launchIn(viewLifecycleOwner.lifecycleScope)
 
@@ -146,17 +126,13 @@ class ChatHistoryFragment : Fragment() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        refreshChatHistory()
+    override fun onViewStateRestored(savedInstanceState: Bundle?) {
+        super.onViewStateRestored(savedInstanceState)
+        sharedViewModel.searchChats(binding.searchBar.text.toString(), isFullSearch, isQuestion)
     }
 
     fun refreshChatHistory() {
-        sharedViewModel.loadChatHistoryScreenData(
-            sharedPrefManager.getUserId(),
-            sharedPrefManager.getParentCode(),
-            sharedPrefManager.getCommunityName()
-        )
+        sharedViewModel.loadChatHistoryScreenData()
     }
 
     private fun observeScreenData() {
@@ -164,7 +140,6 @@ class ChatHistoryFragment : Fragment() {
             requireContext(),
             emptyList(),
             user,
-            sharedNewsMessages,
             sharedViewInIds,
             shareTargets
         ) { map, chat ->
@@ -187,16 +162,16 @@ class ChatHistoryFragment : Fragment() {
             }
         })
         binding.recyclerView.adapter = newAdapter
+        binding.recyclerView.setHasFixedSize(true)
 
         collectLatestWhenStarted(sharedViewModel.screenData) { data ->
             if (data == null) return@collectLatestWhenStarted
 
             user = data.currentUser
-            sharedNewsMessages = data.newsMessages
             shareTargets = data.shareTargets
 
             sharedViewInIds = data.sharedViewInIds
-            newAdapter.updateCachedData(user, sharedNewsMessages, sharedViewInIds)
+            newAdapter.updateCachedData(user, sharedViewInIds)
             newAdapter.updateShareTargets(shareTargets)
 
             if (data.chatHistory.isNotEmpty()) {
@@ -215,23 +190,7 @@ class ChatHistoryFragment : Fragment() {
     }
 
     private fun checkAiProvidersIfNeeded() {
-        if (!sharedViewModel.shouldFetchAiProviders()) {
-            return
-        }
-
-        sharedViewModel.setAiProvidersLoading(true)
-        sharedViewModel.setAiProvidersError(false)
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            val providers = chatRepository.fetchAiProviders(serverUrl)
-            sharedViewModel.setAiProvidersLoading(false)
-            if (providers == null || providers.values.all { !it }) {
-                sharedViewModel.setAiProvidersError(true)
-                sharedViewModel.setAiProviders(null)
-            } else {
-                sharedViewModel.setAiProviders(providers)
-            }
-        }
+        sharedViewModel.fetchAiProviders(serverUrl)
     }
 
     private fun setupRealtimeSync() {
@@ -248,10 +207,14 @@ class ChatHistoryFragment : Fragment() {
                 is ChatViewModel.ShareChatResult.Shared -> {
                     if (isAdded && _binding != null) {
                         if (user?.planetCode != null) {
-                            sharedNewsMessages = sharedNewsMessages + result.news
+                            val newShare = NewsShare(result.news.newsId, result.news.viewIn)
+                            val added = sharedViewModel.extractSharedViewInIds(listOf(newShare))
+                            sharedViewInIds = sharedViewInIds + added.mapValues { (newsId, ids) ->
+                                sharedViewInIds[newsId].orEmpty() + ids
+                            }
                         }
                         (binding.recyclerView.adapter as? ChatHistoryAdapter)?.let { adapter ->
-                            adapter.updateCachedData(user, sharedNewsMessages, sharedViewInIds)
+                            adapter.updateCachedData(user, sharedViewInIds)
                             adapter.notifyChatShared(result.chatId)
                         }
                     }
@@ -261,13 +224,10 @@ class ChatHistoryFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        sharedNewsMessages = emptyList()
         shareTargets = ChatShareTargets(null, emptyList(), emptyList())
         user = null
-        _binding = null
         super.onDestroyView()
     }
-
 }
 
 class ChatHistoryOnBackPressedCallback(private val slidingPaneLayout: SlidingPaneLayout) :

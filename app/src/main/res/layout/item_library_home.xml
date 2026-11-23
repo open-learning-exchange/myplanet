@@ -16,7 +16,7 @@
             android:layout_width="@dimen/dashboard_chip_icon_size"
             android:layout_height="@dimen/dashboard_chip_icon_size"
             app:srcCompat="@drawable/library"
-            app:tint="@color/dashboard_tile_library"
+            app:tint="@color/dashboard_chip_icon_library"
             android:contentDescription="@null" />
         <TextView
             android:id="@+id/title"

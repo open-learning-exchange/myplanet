@@ -5,9 +5,11 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -16,17 +18,33 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.model.Feedback
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FeedbackRepositoryImplTest {
 
     private lateinit var feedbackDao: FeedbackDao
+    private lateinit var timeProvider: TimeProvider
     private lateinit var repository: FeedbackRepositoryImpl
 
     @Before
     fun setup() {
         feedbackDao = mockk(relaxed = true)
-        repository = FeedbackRepositoryImpl(feedbackDao, Gson())
+        timeProvider = mockk(relaxed = true)
+        repository = FeedbackRepositoryImpl(feedbackDao, Gson(), timeProvider)
+    }
+
+    @Test
+    fun createFeedback_usesTimeProviderNow() {
+        every { timeProvider.now() } returns 123456789L
+
+        val feedback = repository.createFeedback("user1", "High", "Bug", "Test message", null, null)
+
+        assertEquals(123456789L, feedback.openTime)
+        val messages = Gson().fromJson(feedback.messages, JsonArray::class.java)
+        assertEquals(1, messages.size())
+        assertEquals("123456789", messages[0].asJsonObject["time"].asString)
     }
 
     @Test
@@ -43,6 +61,7 @@ class FeedbackRepositoryImplTest {
 
     @Test
     fun addReply_marksFeedbackPendingSoItGetsUploaded() = runTest {
+        every { timeProvider.now() } returns 987654321L
         val feedback = Feedback().apply {
             id = "fb1"
             isUploaded = true
@@ -58,16 +77,17 @@ class FeedbackRepositoryImplTest {
         val messages = Gson().fromJson(updated.captured.messages, JsonArray::class.java)
         assertEquals(1, messages.size())
         assertEquals("a reply", messages[0].asJsonObject["message"].asString)
+        assertEquals("987654321", messages[0].asJsonObject["time"].asString)
     }
 
     @Test
-    fun insertFromJson_withPendingLocalReply_preservesLocalMessagesAndPendingState() = runTest {
+    fun insertFeedbackList_withPendingLocalReply_preservesLocalMessagesAndPendingState() = runTest {
         val existing = Feedback().apply {
             id = "fb1"
             isUploaded = false
             messages = "[{\"message\":\"local unsynced reply\"}]"
         }
-        coEvery { feedbackDao.findById("fb1") } returns existing
+        coEvery { feedbackDao.getByIds(listOf("fb1")) } returns listOf(existing)
 
         val serverDoc = JsonObject().apply {
             addProperty("_id", "fb1")
@@ -75,19 +95,44 @@ class FeedbackRepositoryImplTest {
             add("messages", JsonArray().apply { add(JsonObject().apply { addProperty("message", "server reply") } ) })
         }
 
-        val saved = slot<Feedback>()
-        coEvery { feedbackDao.upsert(capture(saved)) } returns Unit
+        val saved = slot<List<Feedback>>()
+        coEvery { feedbackDao.upsertAll(capture(saved)) } returns Unit
 
-        repository.insertFromJson(serverDoc)
+        repository.insertFeedbackList(listOf(serverDoc))
 
-        assertEquals("Closed", saved.captured.status)
-        assertFalse(saved.captured.isUploaded)
-        assertEquals(existing.messages, saved.captured.messages)
+        assertEquals("Closed", saved.captured.single().status)
+        assertFalse(saved.captured.single().isUploaded)
+        assertEquals(existing.messages, saved.captured.single().messages)
     }
 
     @Test
-    fun insertFromJson_withNoPendingLocalChanges_overwritesFromServer() = runTest {
-        coEvery { feedbackDao.findById("fb1") } returns null
+    fun insertFeedbackList_withPendingLocalClose_keepsClosedStatus() = runTest {
+        val existing = Feedback().apply {
+            id = "fb1"
+            status = "Closed"
+            isUploaded = false
+            messages = "[]"
+        }
+        coEvery { feedbackDao.getByIds(listOf("fb1")) } returns listOf(existing)
+
+        val serverDoc = JsonObject().apply {
+            addProperty("_id", "fb1")
+            addProperty("status", "Open")
+            add("messages", JsonArray())
+        }
+
+        val saved = slot<List<Feedback>>()
+        coEvery { feedbackDao.upsertAll(capture(saved)) } returns Unit
+
+        repository.insertFeedbackList(listOf(serverDoc))
+
+        assertEquals("Closed", saved.captured.single().status)
+        assertFalse(saved.captured.single().isUploaded)
+    }
+
+    @Test
+    fun insertFeedbackList_withNoPendingLocalChanges_overwritesFromServer() = runTest {
+        coEvery { feedbackDao.getByIds(listOf("fb1")) } returns emptyList()
 
         val serverDoc = JsonObject().apply {
             addProperty("_id", "fb1")
@@ -95,13 +140,84 @@ class FeedbackRepositoryImplTest {
             add("messages", JsonArray().apply { add(JsonObject().apply { addProperty("message", "server reply") } ) })
         }
 
-        val saved = slot<Feedback>()
-        coEvery { feedbackDao.upsert(capture(saved)) } returns Unit
+        val saved = slot<List<Feedback>>()
+        coEvery { feedbackDao.upsertAll(capture(saved)) } returns Unit
 
-        repository.insertFromJson(serverDoc)
+        repository.insertFeedbackList(listOf(serverDoc))
 
-        assertTrue(saved.captured.isUploaded)
-        val messages = Gson().fromJson(saved.captured.messages, JsonArray::class.java)
+        assertTrue(saved.captured.single().isUploaded)
+        val messages = Gson().fromJson(saved.captured.single().messages, JsonArray::class.java)
         assertEquals("server reply", messages[0].asJsonObject["message"].asString)
+    }
+
+    @Test
+    fun insertFeedbackList_updatesUploadedLocalFeedbackInsteadOfDuplicatingIt() = runTest {
+        val local = Feedback().apply { id = "local-uuid"; _id = "fb1"; isUploaded = true; messages = "[]" }
+        coEvery { feedbackDao.getByIds(listOf("fb1")) } returns emptyList()
+        coEvery { feedbackDao.getByRemoteIds(listOf("fb1")) } returns listOf(local)
+        val serverDoc = JsonObject().apply {
+            addProperty("_id", "fb1")
+            addProperty("status", "Open")
+            add("messages", JsonArray())
+        }
+        val saved = slot<List<Feedback>>()
+        coEvery { feedbackDao.upsertAll(capture(saved)) } returns Unit
+
+        repository.insertFeedbackList(listOf(serverDoc))
+
+        assertEquals("local-uuid", saved.captured.single().id)
+        assertEquals("fb1", saved.captured.single()._id)
+        coVerify(exactly = 0) { feedbackDao.deleteByIds(any()) }
+    }
+
+    @Test
+    fun insertFeedbackList_removesAnEarlierServerKeyedDuplicateOfLocalFeedback() = runTest {
+        val local = Feedback().apply { id = "local-uuid"; _id = "fb1"; isUploaded = true; messages = "[]" }
+        val duplicate = Feedback().apply { id = "fb1"; _id = "fb1"; isUploaded = true; messages = "[]" }
+        coEvery { feedbackDao.getByIds(listOf("fb1")) } returns listOf(duplicate)
+        coEvery { feedbackDao.getByRemoteIds(listOf("fb1")) } returns listOf(local, duplicate)
+        val serverDoc = JsonObject().apply {
+            addProperty("_id", "fb1")
+            add("messages", JsonArray())
+        }
+        val saved = slot<List<Feedback>>()
+        coEvery { feedbackDao.upsertAll(capture(saved)) } returns Unit
+
+        repository.insertFeedbackList(listOf(serverDoc))
+
+        coVerify { feedbackDao.deleteByIds(listOf("fb1")) }
+        assertEquals("local-uuid", saved.captured.single().id)
+    }
+
+    @Test
+    fun `getFeedback deduplicates byte-identical flow emissions for manager`() = runTest {
+        val user = mockk<UserEntity> {
+            every { isManager() } returns true
+            every { name } returns "managerName"
+        }
+        val f1 = Feedback().apply { id = "f1"; _rev = "rev1"; status = "Open"; isUploaded = true; messages = "[]" }
+        val f2 = Feedback().apply { id = "f1"; _rev = "rev1"; status = "Open"; isUploaded = true; messages = "[]" }
+        coEvery { feedbackDao.getAllSortedFlow() } returns flowOf(listOf(f1), listOf(f2))
+
+        val emissions = mutableListOf<List<Feedback>>()
+        repository.getFeedback(user.name, user.isManager()).collect { emissions.add(it) }
+
+        assertEquals(1, emissions.size)
+    }
+
+    @Test
+    fun `getFeedback deduplicates byte-identical flow emissions for owner`() = runTest {
+        val user = mockk<UserEntity> {
+            every { isManager() } returns false
+            every { name } returns "ownerName"
+        }
+        val f1 = Feedback().apply { id = "f1"; _rev = "rev1"; status = "Open"; isUploaded = true; messages = "[]" }
+        val f2 = Feedback().apply { id = "f1"; _rev = "rev1"; status = "Open"; isUploaded = true; messages = "[]" }
+        coEvery { feedbackDao.getByOwnerFlow("ownerName") } returns flowOf(listOf(f1), listOf(f2))
+
+        val emissions = mutableListOf<List<Feedback>>()
+        repository.getFeedback(user.name, user.isManager()).collect { emissions.add(it) }
+
+        assertEquals(1, emissions.size)
     }
 }

@@ -30,6 +30,8 @@ class LeadersFragment : Fragment() {
         binding?.rvMember?.adapter = adapter
 
         collectWhenStarted(viewModel.leaders) { leadersList ->
+            if (leadersList == null) return@collectWhenStarted
+
             if (leadersList.isEmpty()) {
                 binding?.tvNodata?.let { it.text = getString(R.string.no_data_available) }
             } else {

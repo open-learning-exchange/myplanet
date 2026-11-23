@@ -1,56 +1,64 @@
 package org.ole.planet.myplanet.repository
 
-import android.text.TextUtils
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.HashMap
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.NewsLogDao
-import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
+import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.di.PlainGson
+import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.News
-import org.ole.planet.myplanet.model.TeamNotification
+import org.ole.planet.myplanet.model.NewsShare
+import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
 
 class VoicesRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val gson: Gson,
     @PlainGson private val plainGson: Gson,
     private val sharedPrefManager: SharedPrefManager,
-    private val teamNotificationDao: TeamNotificationDao,
     private val newsDao: NewsDao,
-    private val myLibraryDao: MyLibraryDao,
-    private val newsLogDao: NewsLogDao
+    private val newsLogDao: NewsLogDao,
+    private val removedLogDao: RemovedLogDao
 ) : VoicesRepository {
-    private val concatenatedLinks = ArrayList<String>()
+    private val concatenatedLinks = LinkedHashSet<String>()
 
     override suspend fun getNewsForUpload(): List<NewsUploadData> {
-        return newsDao.getAll()
+        val pendingNews = newsDao.getPendingUploads()
+        val parentIds = pendingNews.mapNotNull { news -> news.replyTo?.takeIf { it.isNotEmpty() } }.distinct()
+        val byId = (pendingNews + newsDao.getByIds(parentIds)).associateBy { it.id }
+        return pendingNews
             .mapNotNull { news ->
-                if (news.userId?.startsWith("guest") == true) null
-                else NewsUploadData(
+                if (news.userId?.startsWith("guest") == true) return@mapNotNull null
+                val parent = news.replyTo?.takeIf { it.isNotEmpty() }?.let { byId[it] }
+                if (parent != null && parent._id.isNullOrEmpty()) return@mapNotNull null
+                val newsJson = serializeNews(news)
+                parent?._id?.let { newsJson.addProperty("replyTo", it) }
+                NewsUploadData(
                     id = news.id,
                     _id = news._id,
                     message = news.message,
                     imageUrls = news.imageUrls?.toList() ?: emptyList(),
-                    newsJson = serializeNews(news)
+                    newsJson = newsJson,
+                    pendingReactions = news.pendingReactions
                 )
             }
     }
@@ -67,6 +75,9 @@ class VoicesRepositoryImpl @Inject constructor(
                     news._id = update._id
                     news._rev = update._rev
                     news.images = gson.toJson(update.imagesArray)
+                    update.message?.let { news.message = it }
+                    if (news.pendingReactions == update.pendingReactions) news.pendingReactions = null
+                    news.isUpdated = false
                     toUpdate.add(news)
                 }
             }
@@ -82,16 +93,13 @@ class VoicesRepositoryImpl @Inject constructor(
         return news to replies
     }
 
-    override suspend fun getCommunityVisibleNews(userIdentifier: String): List<News> {
-        return newsDao.getTopLevelMessages().filter { news ->
-            isVisibleToUser(news, userIdentifier)
-        }
-    }
-
     override suspend fun isAlreadyShared(chatId: String, viewInId: String): Boolean {
-        return newsDao.getByNewsId(chatId).any { news ->
-            news.viewIn?.contains("\"_id\":\"$viewInId\"", ignoreCase = true) == true
-        }
+        val escaped = viewInId
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_")
+        val pattern = "%\"_id\":\"$escaped\"%"
+        return newsDao.isSharedWith(chatId, pattern)
     }
 
     override suspend fun createNews(map: HashMap<String?, String>, user: UserEntity?, imageList: List<String>?): News {
@@ -105,12 +113,13 @@ class VoicesRepositoryImpl @Inject constructor(
             val news = News.createNews(newsData, user, imageList)
             newsDao.upsert(news)
             true
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("VoicesRepository", "Failed to create team news", e)
             false
         }
     }
-
 
     private fun teamIdPattern(teamId: String): String {
         val escaped = teamId
@@ -118,10 +127,6 @@ class VoicesRepositoryImpl @Inject constructor(
             .replace("%", "\\%")
             .replace("_", "\\_")
         return "%\"_id\":\"$escaped\"%"
-    }
-
-    override suspend fun getNewsByTeamId(teamId: String): List<News> {
-        return newsDao.getTopLevelByTeam(teamId, teamIdPattern(teamId))
     }
 
     private fun isVisibleToUser(news: News, userIdentifier: String): Boolean {
@@ -139,40 +144,40 @@ class VoicesRepositoryImpl @Inject constructor(
             array?.any { element ->
                 if (element == null || !element.isJsonObject) return@any false
                 val obj = element.asJsonObject
-                val section = JsonUtils.getString("section", obj)
+                val section = GsonUtils.getString("section", obj)
                 if (section.equals("community", ignoreCase = true)) {
-                    val id = JsonUtils.getString("_id", obj)
+                    val id = GsonUtils.getString("_id", obj)
                     id.isEmpty() || id == "@" || userIdentifier.isEmpty() || userIdentifier == "@" || id.equals(userIdentifier, ignoreCase = true)
                 } else {
                     false
                 }
             } == true
-        } catch (throwable: Throwable) {
+        } catch (_: Throwable) {
             false
         }
     }
 
     override suspend fun getCommunityNews(userIdentifier: String): Flow<List<News>> {
-        return newsDao.getTopLevelMessagesFlow()
+        return newsDao.getTopLevelCommunityCandidatesFlow()
             .distinctUntilChanged { old, new ->
                 old.size == new.size && old.zip(new).all { (o, n) ->
                     o.id == n.id && o.time == n.time &&
+                            // Labels are semantically a set; order carries no meaning.
                             o.labels?.toSet() == n.labels?.toSet() &&
                             o.message == n.message &&
                             o.isEdited == n.isEdited &&
-                            o.imageUrls?.toList() == n.imageUrls?.toList() &&
+                            o.imageUrls == n.imageUrls &&
                             o.images == n.images &&
                             o.viewIn == n.viewIn &&
                             o.viewableBy == n.viewableBy &&
                             o.viewableId == n.viewableId &&
-                            o.sharedBy == n.sharedBy
+                            o.sharedBy == n.sharedBy &&
+                            o.reactions == n.reactions
                 }
             }
             .map { allNews ->
                 allNews.mapNotNull { news ->
-                    news.viewIn?.takeIf { it.isNotEmpty() }?.let { s ->
-                        news.parsedViewIn = try { gson.fromJson(s, JsonArray::class.java) } catch (e: Exception) { null }
-                    }
+                    news.preParse()
 
                     if (isVisibleToUser(news, userIdentifier)) {
                         news.sortDate = news.calculateSortDate()
@@ -191,15 +196,18 @@ class VoicesRepositoryImpl @Inject constructor(
                     o.id == n.id && o.time == n.time &&
                             o.message == n.message &&
                             o.isEdited == n.isEdited &&
-                            o.imageUrls?.toList() == n.imageUrls?.toList() &&
+                            o.imageUrls == n.imageUrls &&
                             o.images == n.images &&
+                            // Labels are semantically a set; order carries no meaning.
                             o.labels?.toSet() == n.labels?.toSet() &&
                             o.viewIn == n.viewIn &&
                             o.viewableBy == n.viewableBy &&
                             o.viewableId == n.viewableId &&
-                            o.sharedBy == n.sharedBy
+                            o.sharedBy == n.sharedBy &&
+                            o.reactions == n.reactions
                 }
             }
+            .map { list -> list.onEach { it.preParse() } }
             .flowOn(dispatcherProvider.default)
     }
 
@@ -210,11 +218,11 @@ class VoicesRepositoryImpl @Inject constructor(
                 val viewInStr = news.viewIn
                 val array = try {
                     if (viewInStr.isNullOrEmpty()) JsonArray() else gson.fromJson(viewInStr, JsonArray::class.java)
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     null
                 } ?: JsonArray()
 
-                if (array.size() > 0) {
+                if (!array.isEmpty) {
                     val firstElement = array.get(0)
                     if (firstElement.isJsonObject) {
                         val obj = firstElement.asJsonObject
@@ -240,27 +248,15 @@ class VoicesRepositoryImpl @Inject constructor(
 
                 news.sharedBy = userId
                 news.viewIn = gson.toJson(array)
+                news.isUpdated = true
                 newsDao.upsert(news)
             }
             Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
+            Log.e("VoicesRepository", "Failed to share news to community", e)
             Result.failure(e)
-        }
-    }
-
-    override suspend fun updateTeamNotification(teamId: String, count: Int) {
-        val existing = teamNotificationDao.findByParentAndType(teamId, "chat")
-        if (existing != null) {
-            existing.lastCount = count
-            teamNotificationDao.update(existing)
-        } else {
-            val notification = TeamNotification().apply {
-                id = UUID.randomUUID().toString()
-                parentId = teamId
-                type = "chat"
-                lastCount = count
-            }
-            teamNotificationDao.insert(notification)
         }
     }
 
@@ -269,19 +265,19 @@ class VoicesRepositoryImpl @Inject constructor(
         val viewInStr = news.viewIn
         val ar = try {
             if (viewInStr.isNullOrEmpty()) null else gson.fromJson(viewInStr, JsonArray::class.java)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
 
         if (teamName.isNotEmpty() || ar == null || ar.size() < 2) {
             val idsToDelete = collectNewsAndReplies(newsId)
-            newsDao.deleteByIds(idsToDelete)
+            deleteNewsRows(idsToDelete)
         } else {
             val filtered = JsonArray().apply {
                 ar.forEach { elem ->
                     if (elem.isJsonObject) {
                         val obj = elem.asJsonObject
-                        val isCommunity = JsonUtils.getString("section", obj).equals("community", ignoreCase = true)
+                        val isCommunity = GsonUtils.getString("section", obj).equals("community", ignoreCase = true)
                         val hasSharedDate = obj.has("sharedDate")
                         if (!isCommunity && !hasSharedDate) {
                             add(elem)
@@ -289,12 +285,13 @@ class VoicesRepositoryImpl @Inject constructor(
                     }
                 }
             }
-            if (filtered.size() == 0) {
+            if (filtered.isEmpty) {
                 val idsToDelete = collectNewsAndReplies(newsId)
-                newsDao.deleteByIds(idsToDelete)
+                deleteNewsRows(idsToDelete)
             } else {
                 news.viewIn = gson.toJson(filtered)
                 news.sharedBy = ""
+                news.isUpdated = true
                 newsDao.upsert(news)
             }
         }
@@ -309,12 +306,6 @@ class VoicesRepositoryImpl @Inject constructor(
         return newsDao.getReplyCount(newsId)
     }
 
-    override suspend fun deleteNews(newsId: String) {
-        val idsToDelete = collectNewsAndReplies(newsId)
-        newsDao.deleteByIds(idsToDelete)
-    }
-
-    // Gathers a post and all of its (recursive) replies for deletion.
     private suspend fun collectNewsAndReplies(newsId: String): List<String> {
         return newsDao.getNewsAndRepliesIds(newsId)
     }
@@ -324,7 +315,12 @@ class VoicesRepositoryImpl @Inject constructor(
         val labels = news.labels?.toMutableList() ?: mutableListOf()
         labels.add(label)
         news.labels = labels
+        news.isUpdated = true
         newsDao.upsert(news)
+    }
+
+    override suspend fun toggleReaction(newsId: String, emoji: String, userId: String) {
+        newsDao.toggleReaction(newsId, emoji, userId)
     }
 
     override suspend fun removeLabel(newsId: String, label: String) {
@@ -332,18 +328,16 @@ class VoicesRepositoryImpl @Inject constructor(
         val labels = news.labels?.toMutableList() ?: return
         labels.remove(label)
         news.labels = labels
+        news.isUpdated = true
         newsDao.upsert(news)
     }
 
-    override suspend fun getCommunityVoiceDates(startTime: Long, endTime: Long, userId: String?): List<String> {
-        val results = if (userId != null) {
-            newsDao.getInTimeRangeForUser(startTime, endTime, userId)
+    override suspend fun getCommunityVoiceDateCount(startTime: Long, endTime: Long, userId: String?): Int {
+        return if (userId != null) {
+            newsDao.countDistinctCommunityVoiceDatesForUser(startTime, endTime, userId)
         } else {
-            newsDao.getInTimeRange(startTime, endTime)
+            newsDao.countDistinctCommunityVoiceDates(startTime, endTime)
         }
-        return results.filter { isCommunitySection(it) }
-            .map { getDateFromTimestamp(it.time) }
-            .distinct()
     }
 
     override suspend fun getNewsById(id: String): News? {
@@ -372,7 +366,7 @@ class VoicesRepositoryImpl @Inject constructor(
             val updatedUrls = urls.filter { imageUrlJson ->
                 try {
                     val imgObject = plainGson.fromJson(imageUrlJson, JsonObject::class.java)
-                    val path = JsonUtils.getString("imageUrl", imgObject)
+                    val path = GsonUtils.getString("imageUrl", imgObject)
                     !imagesToRemove.contains(path)
                 } catch (_: Exception) {
                     true
@@ -384,75 +378,91 @@ class VoicesRepositoryImpl @Inject constructor(
         newImages?.let { urls.addAll(it) }
         news.imageUrls = urls
         news.updateMessage(message)
+        news.isUpdated = true
         newsDao.upsert(news)
         return newsDao.getById(newsId)
     }
 
-    private fun isCommunitySection(news: News): Boolean {
-        news.viewIn?.let { viewInStr ->
-            try {
-                val viewInArray = org.json.JSONArray(viewInStr)
-                for (i in 0 until viewInArray.length()) {
-                    val viewInObj = viewInArray.getJSONObject(i)
-                    if (viewInObj.optString("section") == "community") {
-                        return true
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-        return false
-    }
-
-    private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-
-    private fun getDateFromTimestamp(timestamp: Long): String {
-        return Instant.ofEpochMilli(timestamp)
-            .atZone(ZoneId.systemDefault())
-            .format(dateFormatter)
-    }
-
-    override suspend fun getPlanetNewsMessages(planetCode: String?): List<News> {
+    override suspend fun getPlanetMessageShares(planetCode: String?): List<NewsShare> {
         if (planetCode.isNullOrEmpty()) {
             return emptyList()
         }
-        return newsDao.getPlanetMessages(planetCode)
+        return newsDao.getPlanetMessageShares(planetCode)
+    }
+
+    private suspend fun deleteNewsRows(ids: List<String>) {
+        val remoteIds = newsDao.getByIds(ids).mapNotNull { it._id?.takeIf { remoteId -> remoteId.isNotEmpty() } }
+        if (remoteIds.isNotEmpty()) {
+            removedLogDao.insertAll(remoteIds.map { remoteId ->
+                RemovedLog().apply {
+                    id = UUID.randomUUID().toString()
+                    type = NEWS_DELETION_TYPE
+                    docId = remoteId
+                }
+            })
+        }
+        newsDao.deleteByIds(ids)
+    }
+
+    override suspend fun getPendingNewsDeletions(): List<String> =
+        removedLogDao.getRemovedDocIds(NEWS_DELETION_TYPE, null)
+
+    override suspend fun markNewsDeletionsUploaded(remoteIds: List<String>) {
+        if (remoteIds.isEmpty()) return
+        removedLogDao.deleteByTypeUserAndDocsChunked(NEWS_DELETION_TYPE, null, remoteIds)
     }
 
     override suspend fun insertNewsList(docs: List<JsonObject>) {
-        // Pre-fetch existing rows in one query instead of a getByUnderscoreId per doc (an N+1
-        // that ran serially inside the sync write lock for hundreds of news items).
-        val mappedDocs = docs.map { it to JsonUtils.getString("_id", it) }
-        val underscoreIds = mappedDocs.map { it.second }.filter { it.isNotEmpty() }
+        val pendingDeletions = removedLogDao.getRemovedDocIds(NEWS_DELETION_TYPE, null).toHashSet()
+        val underscoreIds = ArrayList<String>(docs.size)
+        val mappedDocs = docs.filterNot { GsonUtils.getString("_id", it) in pendingDeletions }.map { doc ->
+            val id = GsonUtils.getString("_id", doc)
+            if (id.isNotEmpty()) {
+                underscoreIds.add(id)
+            }
+            doc to id
+        }
         val existing = newsDao.getByUnderscoreIds(underscoreIds).associateBy { it._id }
-        val newsList = mappedDocs.map { (doc, id) -> buildNewsFromJson(doc, id, existing) }
+        val replyToIds = docs.map { GsonUtils.getString("replyTo", it) }.filter { it.isNotEmpty() }
+        val localIdByRemoteId = newsDao.getByUnderscoreIds(replyToIds)
+            .filter { it._id != null && it.id != it._id }
+            .associate { it._id!! to it.id }
+        val newsList = mappedDocs.map { (doc, id) ->
+            buildNewsFromJson(doc, id, existing).apply {
+                replyTo?.let { remote -> localIdByRemoteId[remote]?.let { replyTo = it } }
+            }
+        }
         newsDao.upsertAll(newsList)
         saveConcatenatedLinksToPrefs()
     }
 
-    private suspend fun buildNewsFromJson(doc: JsonObject, underscoreId: String, existing: Map<String?, News>? = null): News {
-        val news = (existing?.get(underscoreId) ?: newsDao.getByUnderscoreId(underscoreId))
-            ?: News().apply { id = underscoreId }
-        news._rev = JsonUtils.getString("_rev", doc)
+    private fun buildNewsFromJson(doc: JsonObject, underscoreId: String, existing: Map<String?, News>): News {
+        val news = existing[underscoreId] ?: News().apply { id = underscoreId }
+        if (news.isUpdated) {
+            news._rev = GsonUtils.getString("_rev", doc)
+            news.reactions = parseReactions(doc.get("reactions"))
+            news.applyPendingReactions()
+            return news
+        }
+        news._rev = GsonUtils.getString("_rev", doc)
         news._id = underscoreId
-        news.viewableBy = JsonUtils.getString("viewableBy", doc)
-        news.docType = JsonUtils.getString("docType", doc)
-        news.avatar = JsonUtils.getString("avatar", doc)
-        news.updatedDate = JsonUtils.getLong("updatedDate", doc)
-        news.viewableId = JsonUtils.getString("viewableId", doc)
-        news.createdOn = JsonUtils.getString("createdOn", doc)
-        news.messageType = JsonUtils.getString("messageType", doc)
-        news.messagePlanetCode = JsonUtils.getString("messagePlanetCode", doc)
-        news.replyTo = JsonUtils.getString("replyTo", doc)
-        news.parentCode = JsonUtils.getString("parentCode", doc)
-        val user = JsonUtils.getJsonObject("user", doc)
+        news.viewableBy = GsonUtils.getString("viewableBy", doc)
+        news.docType = GsonUtils.getString("docType", doc)
+        news.avatar = GsonUtils.getString("avatar", doc)
+        news.updatedDate = GsonUtils.getLong("updatedDate", doc)
+        news.viewableId = GsonUtils.getString("viewableId", doc)
+        news.createdOn = GsonUtils.getString("createdOn", doc)
+        news.messageType = GsonUtils.getString("messageType", doc)
+        news.messagePlanetCode = GsonUtils.getString("messagePlanetCode", doc)
+        news.replyTo = GsonUtils.getString("replyTo", doc)
+        news.parentCode = GsonUtils.getString("parentCode", doc)
+        val user = GsonUtils.getJsonObject("user", doc)
         news.user = plainGson.toJson(user)
-        news.userId = JsonUtils.getString("_id", user)
-        news.userName = JsonUtils.getString("name", user)
-        news.time = JsonUtils.getLong("time", doc)
-        val images = JsonUtils.getJsonArray("images", doc)
-        val message = JsonUtils.getString("message", doc)
+        news.userId = GsonUtils.getString("_id", user)
+        news.userName = GsonUtils.getString("name", user)
+        news.time = GsonUtils.getLong("time", doc)
+        val images = GsonUtils.getJsonArray("images", doc)
+        val message = GsonUtils.getString("message", doc)
         news.message = message
         val links = extractLinks(message)
         val baseUrl = UrlUtils.getUrl()
@@ -463,22 +473,35 @@ class VoicesRepositoryImpl @Inject constructor(
             }
         }
         news.images = plainGson.toJson(images)
-        val labels = JsonUtils.getJsonArray("labels", doc)
-        news.viewIn = plainGson.toJson(JsonUtils.getJsonArray("viewIn", doc))
+        val labels = GsonUtils.getJsonArray("labels", doc)
+        news.viewIn = plainGson.toJson(GsonUtils.getJsonArray("viewIn", doc))
         news.setLabels(labels)
-        news.chat = JsonUtils.getBoolean("chat", doc)
+        news.chat = GsonUtils.getBoolean("chat", doc)
+        news.reactions = parseReactions(doc.get("reactions"))
+        news.applyPendingReactions()
 
-        val newsObj = JsonUtils.getJsonObject("news", doc)
-        news.newsId = JsonUtils.getString("_id", newsObj)
-        news.newsRev = JsonUtils.getString("_rev", newsObj)
-        news.newsUser = JsonUtils.getString("user", newsObj)
-        news.aiProvider = JsonUtils.getString("aiProvider", newsObj)
-        news.newsTitle = JsonUtils.getString("title", newsObj)
-        news.conversations = plainGson.toJson(JsonUtils.getJsonArray("conversations", newsObj))
-        news.newsCreatedDate = JsonUtils.getLong("createdDate", newsObj)
-        news.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsObj)
-        news.sharedBy = JsonUtils.getString("sharedBy", newsObj)
+        val newsObj = GsonUtils.getJsonObject("news", doc)
+        news.newsId = GsonUtils.getString("_id", newsObj)
+        news.newsRev = GsonUtils.getString("_rev", newsObj)
+        news.newsUser = GsonUtils.getString("user", newsObj)
+        news.aiProvider = GsonUtils.getString("aiProvider", newsObj)
+        news.newsTitle = GsonUtils.getString("title", newsObj)
+        news.conversations = plainGson.toJson(GsonUtils.getJsonArray("conversations", newsObj))
+        news.newsCreatedDate = GsonUtils.getLong("createdDate", newsObj)
+        news.newsUpdatedDate = GsonUtils.getLong("updatedDate", newsObj)
+        news.sharedBy = GsonUtils.getString("sharedBy", newsObj)
         return news
+    }
+
+    private fun parseReactions(element: JsonElement?): String? = when {
+        element == null || element.isJsonNull -> null
+        element.isJsonObject -> plainGson.toJson(element)
+        element.isJsonPrimitive && element.asJsonPrimitive.isString -> try {
+            plainGson.fromJson(element.asString, JsonObject::class.java)?.let { plainGson.toJson(it) }
+        } catch (_: Exception) {
+            null
+        }
+        else -> null
     }
 
     private fun serializeNews(news: News): JsonObject {
@@ -499,6 +522,7 @@ class VoicesRepositoryImpl @Inject constructor(
         `object`.addProperty("parentCode", news.parentCode)
         `object`.add("images", news.imagesArray)
         `object`.add("labels", news.labelsArray)
+        news.reactions?.let { `object`.add("reactions", news.reactionsJson) }
         `object`.add("user", plainGson.fromJson(news.user, JsonObject::class.java))
         val newsObject = JsonObject()
         newsObject.addProperty("_id", news.newsId)
@@ -511,48 +535,55 @@ class VoicesRepositoryImpl @Inject constructor(
         newsObject.addProperty("updatedDate", news.newsUpdatedDate)
         newsObject.addProperty("sharedBy", news.sharedBy)
         `object`.add("news", newsObject)
+        `object`.addDocumentOrigin()
         return `object`
     }
 
     private fun addViewIn(`object`: JsonObject, news: News) {
-        if (!TextUtils.isEmpty(news.viewableId)) {
+        if (!news.viewableId.isNullOrEmpty()) {
             `object`.addProperty("viewableId", news.viewableId)
             `object`.addProperty("viewableBy", news.viewableBy)
         }
         val viewInStr = news.viewIn
-        if (!TextUtils.isEmpty(viewInStr)) {
+        if (!viewInStr.isNullOrEmpty()) {
             val ar = plainGson.fromJson(viewInStr, JsonArray::class.java)
-            if (ar.size() > 0) `object`.add("viewIn", ar)
+            if (!ar.isEmpty) `object`.add("viewIn", ar)
         }
     }
 
     private fun saveConcatenatedLinksToPrefs() {
-        val existingJsonLinks = sharedPrefManager.getConcatenatedLinks()
-        val existingConcatenatedLinks = if (existingJsonLinks != null) {
-            LinkedHashSet(plainGson.fromJson(existingJsonLinks, Array<String>::class.java).toList())
-        } else {
-            LinkedHashSet()
+        synchronized(MyCourse.concatenatedLinksPrefLock) {
+            val linksToProcess: List<String>
+            synchronized(concatenatedLinks) {
+                linksToProcess = concatenatedLinks.toList()
+            }
+            if (linksToProcess.isEmpty()) return
+            val existingJsonLinks = sharedPrefManager.getConcatenatedLinks()
+            val existingConcatenatedLinks = if (existingJsonLinks != null) {
+                LinkedHashSet(plainGson.fromJson(existingJsonLinks, Array<String>::class.java).toList())
+            } else {
+                LinkedHashSet()
+            }
+            existingConcatenatedLinks.addAll(linksToProcess)
+            val jsonConcatenatedLinks = plainGson.toJson(existingConcatenatedLinks)
+            sharedPrefManager.setConcatenatedLinks(jsonConcatenatedLinks)
+            synchronized(concatenatedLinks) {
+                concatenatedLinks.removeAll(linksToProcess.toSet())
+            }
         }
-        val linksToProcess: List<String>
-        synchronized(concatenatedLinks) {
-            linksToProcess = concatenatedLinks.toList()
-        }
-        existingConcatenatedLinks.addAll(linksToProcess)
-        val jsonConcatenatedLinks = plainGson.toJson(existingConcatenatedLinks)
-        sharedPrefManager.setConcatenatedLinks(jsonConcatenatedLinks)
-    }
-
-    override suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String> {
-        return myLibraryDao.getPrivateImagesCreatedAfter(timestamp)
-            .mapNotNull { it.resourceRemoteAddress }
     }
 
     override suspend fun countTeamChats(teamId: String): Long {
         return newsDao.countTeamChats(teamId)
     }
 
-    override suspend fun getTeamChatViewableIds(teamIds: List<String>): List<String> {
-        return newsDao.getTeamChatViewableIds(teamIds)
+    override suspend fun countTopLevelByTeam(teamId: String): Long {
+        return newsDao.countTopLevelByTeam(teamId, teamIdPattern(teamId))
+    }
+
+    override suspend fun countTopLevelByTeams(teamIds: List<String>): Map<String, Long> {
+        if (teamIds.isEmpty()) return emptyMap()
+        return teamIds.distinct().associateWith { countTopLevelByTeam(it) }
     }
 
     override suspend fun getPendingNewsLogUploads(): List<org.ole.planet.myplanet.model.NewsLog> {
@@ -561,5 +592,9 @@ class VoicesRepositoryImpl @Inject constructor(
 
     override suspend fun markNewsLogUploaded(localId: String, remoteId: String, rev: String): Boolean {
         return newsLogDao.markUploaded(localId, remoteId, rev) != 0
+    }
+
+    private companion object {
+        const val NEWS_DELETION_TYPE = "news"
     }
 }

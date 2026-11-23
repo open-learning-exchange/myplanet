@@ -22,6 +22,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.model.Download
@@ -29,10 +30,9 @@ import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.services.DownloadService
@@ -41,7 +41,9 @@ import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.getProgressDialog
-import org.ole.planet.myplanet.utils.DialogUtils.showError
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.DownloadUtils
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -58,13 +60,13 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var coursesRepository: CoursesRepository
     @Inject
-    lateinit var submissionsRepository: SubmissionsRepository
-    @Inject
-    lateinit var surveysRepository: SurveysRepository
-    @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
+    lateinit var configurationsRepository: ConfigurationsRepository
+    @Inject
     lateinit var broadcastService: BroadcastService
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
 
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: UserEntity? = null
@@ -85,13 +87,6 @@ abstract class BaseResourceFragment : Fragment() {
                 prgDialog.setIndeterminateMode(true)
                 prgDialog.show()
             }
-        }
-    }
-
-    internal fun showNotConnectedToast() {
-        if (isFragmentActive()) {
-            Utilities.toast(requireActivity(),
-                getString(R.string.device_not_connected_to_planet))
         }
     }
 
@@ -138,7 +133,8 @@ abstract class BaseResourceFragment : Fragment() {
                     }
                 } else {
                     pendingDownloadUrls.clear()
-                    download?.message?.let { showError(prgDialog, it) } ?: prgDialog.dismiss()
+                    if (prgDialog.isShowing()) showDownloadError(download?.message ?: getString(R.string.download_failed))
+                    onDownloadFailed()
                 }
             }
         }
@@ -201,7 +197,7 @@ abstract class BaseResourceFragment : Fragment() {
                 addToLibrary(dbMyLibrary, ArrayList(it))
                 val selectedLibraries = it.mapNotNull { index -> dbMyLibrary.getOrNull(index) }
                 if (resourcesRepository.downloadResources(selectedLibraries)) {
-                    val urls = selectedLibraries.mapNotNull { lib -> lib.resourceRemoteAddress }
+                    val urls = queuedUrls(selectedLibraries)
                     trackDownloadUrls(urls)
                     showProgressDialog()
                 }
@@ -214,7 +210,7 @@ abstract class BaseResourceFragment : Fragment() {
             addAllToLibrary(dbMyLibrary)
             val filtered = dbMyLibrary.filterNotNull()
             if (resourcesRepository.downloadResources(filtered)) {
-                val urls = filtered.mapNotNull { lib -> lib.resourceRemoteAddress }
+                val urls = queuedUrls(filtered)
                 trackDownloadUrls(urls)
                 showProgressDialog()
             }
@@ -252,6 +248,15 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
+    private fun showDownloadError(message: String) {
+        prgDialog.setTitle(message)
+        prgDialog.setIndeterminateMode(false)
+        prgDialog.setNegativeButton(getString(R.string.close)) {
+            prgDialog.dismiss()
+            activity?.let { prgDialog = getProgressDialog(it) }
+        }
+    }
+
     fun setProgress(download: Download) {
         prgDialog.setProgress(download.progress)
         if (!TextUtils.isEmpty(download.fileName)) {
@@ -262,15 +267,37 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
+    private suspend fun reconcilePendingDownloads() {
+        if (pendingDownloadUrls.isEmpty()) return
+        val ctx = context ?: return
+        val pending = pendingDownloadUrls.toSet()
+        val outcome = withContext(dispatcherProvider.io) {
+            val queued = DownloadUtils.queuedDownloadUrls(ctx)
+            reconcile(pending, queued) { url -> FileUtils.checkFileExist(ctx, url) }
+        }
+        outcome.finished.forEach { url ->
+            pendingDownloadUrls.remove(url)
+            onSingleResourceDownloaded(url)
+        }
+        when {
+            outcome.failed.isNotEmpty() -> {
+                pendingDownloadUrls.clear()
+                prgDialog.dismiss()
+                onDownloadFailed()
+            }
+            outcome.finished.isNotEmpty() && pendingDownloadUrls.isEmpty() -> onDownloadComplete()
+        }
+    }
+
     protected open fun onSingleResourceDownloaded(url: String) {}
+
+    protected open fun onDownloadFailed() {}
 
     open fun onDownloadComplete() {
         prgDialog.dismiss()
 
-        if (sharedPrefManager.isAlternativeUrl()) {
-            sharedPrefManager.setAlternativeUrl("")
-            sharedPrefManager.setProcessedAlternativeUrl("")
-            sharedPrefManager.setIsAlternativeUrl(false)
+        lifecycleScope.launch {
+            configurationsRepository.clearAlternativeUrlIfPrimaryReachable()
         }
     }
 
@@ -288,6 +315,7 @@ abstract class BaseResourceFragment : Fragment() {
     private fun registerReceiver() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                reconcilePendingDownloads()
                 broadcastService.events.collect { intent ->
                     if (isActive) {
                         when (intent.action) {
@@ -382,5 +410,18 @@ abstract class BaseResourceFragment : Fragment() {
         resourceNotFoundDialog = null
         convertView = null
         super.onDestroyView()
+    }
+
+    internal data class PendingOutcome(val finished: Set<String>, val failed: Set<String>)
+
+    companion object {
+        internal fun queuedUrls(libraries: List<MyLibrary>): List<String> =
+            libraries.filterNot { it.isResourceOffline() }.mapNotNull { it.resourceRemoteAddress }
+        
+        internal fun reconcile(pending: Set<String>, queued: Set<String>, isOnDisk: (String) -> Boolean): PendingOutcome {
+            val finished = pending.filter(isOnDisk).toSet()
+            val failed = (pending - finished).filterNot { it in queued }.toSet()
+            return PendingOutcome(finished, failed)
+        }
     }
 }

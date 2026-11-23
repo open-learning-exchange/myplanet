@@ -6,3 +6,7 @@
 	path = .agents/skills/kotlin-importing
 	url = https://github.com/dogi/kotlin-importing.git
 	branch = main
+[submodule ".agents/skills/agents-summoning"]
+	path = .agents/skills/agents-summoning
+	url = https://github.com/dogi/agents-summoning.git
+	branch = main

@@ -27,19 +27,18 @@ class UsersAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val member = getItem(position)
         holder.bindView(member)
-
-        holder.itemView.setOnClickListener {
-            val currentPosition = holder.bindingAdapterPosition
-            if (currentPosition != RecyclerView.NO_POSITION) {
-                val member = getItem(currentPosition)
-                onItemClickListener.onItemClick(member)
-            }
-        }
     }
 
-    fun getList(): List<User> = currentList
+    inner class ViewHolder(private val binding: UserListItemBinding, private val avatarSize: Int) : RecyclerView.ViewHolder(binding.root) {
+        init {
+            binding.root.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos != RecyclerView.NO_POSITION) {
+                    onItemClickListener.onItemClick(getItem(pos))
+                }
+            }
+        }
 
-    class ViewHolder(private val binding: UserListItemBinding, private val avatarSize: Int) : RecyclerView.ViewHolder(binding.root) {
         fun bindView(account: User) {
             if (account.fullName?.isEmpty() == true || account.fullName == " ") {
                 binding.userNameTextView.text = account.name

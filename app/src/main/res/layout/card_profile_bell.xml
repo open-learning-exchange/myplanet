@@ -30,6 +30,7 @@
             android:id="@+id/ll_user"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:minWidth="90dp"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toEndOf="@id/imageView"
@@ -59,9 +60,11 @@
 
         <LinearLayout
             android:id="@+id/linearLayout"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:orientation="vertical"
+            app:layout_constraintWidth_default="wrap"
+            app:layout_constraintWidth_max="@dimen/dashboard_profile_badges_max_width"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toEndOf="@id/ll_user"
@@ -104,7 +107,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fillViewport="true"
-                    android:scrollbars="none">
+                    android:requiresFadingEdge="horizontal"
+                    android:fadingEdgeLength="14dp"
+                    android:scrollbars="horizontal">
 
                     <LinearLayout
                         android:id="@+id/ll_badges"

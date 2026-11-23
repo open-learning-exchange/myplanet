@@ -3,7 +3,9 @@ package org.ole.planet.myplanet.utils
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import androidx.core.net.toUri
+import android.net.Uri
+import android.provider.Settings
+import android.util.Log
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 
@@ -18,19 +20,18 @@ object IntentUtils {
         context.startActivity(intent)
     }
 
-    fun openPlayStore(context: Context) {
-        val appPackageName = context.packageName
-        val intent = Intent(Intent.ACTION_VIEW, "market://details?id=$appPackageName".toUri()).apply {
+    fun openAppSettings(context: Context) {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", context.packageName, null)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         try {
             context.startActivity(intent)
         } catch (e: ActivityNotFoundException) {
-            val webIntent = Intent(
-                Intent.ACTION_VIEW,
-                "https://play.google.com/store/apps/details?id=$appPackageName".toUri(),
-            ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-            context.startActivity(webIntent)
+            Log.e("IntentUtils", "ActivityNotFoundException for app settings", e)
+            context.startActivity(
+                Intent(Settings.ACTION_SETTINGS).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) },
+            )
         }
     }
 }

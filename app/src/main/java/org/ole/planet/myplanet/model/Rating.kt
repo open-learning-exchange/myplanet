@@ -4,8 +4,14 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.addDocumentOrigin
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 /**
  * Room replacement for the former `Rating` model. Uploaded (Room upload path) and
@@ -37,23 +43,25 @@ open class Rating {
     var user: String? = null
 
     companion object {
-        fun serializeRating(realmRating: Rating): JsonObject {
-            val ob = JsonObject()
-            if (realmRating._id != null) ob.addProperty("_id", realmRating._id)
-            if (realmRating._rev != null) ob.addProperty("_rev", realmRating._rev)
-            ob.add("user", org.ole.planet.myplanet.utils.JsonUtils.gson.fromJson(realmRating.user, JsonObject::class.java))
-            ob.addProperty("item", realmRating.item)
-            ob.addProperty("type", realmRating.type)
-            ob.addProperty("title", realmRating.title)
-            ob.addProperty("time", realmRating.time)
-            ob.addProperty("comment", realmRating.comment)
-            ob.addProperty("rate", realmRating.rate)
-            ob.addProperty("createdOn", realmRating.createdOn)
-            ob.addProperty("parentCode", realmRating.parentCode)
-            ob.addProperty("planetCode", realmRating.planetCode)
-            ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
-            ob.addProperty("deviceName", NetworkUtils.getDeviceName())
-            ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+        fun serializeRating(realmRating: Rating, customDeviceName: String): JsonObject {
+            val userJson = GsonUtils.gson.fromJson(realmRating.user, JsonObject::class.java)
+            val ob = buildJsonObject {
+                if (realmRating._id != null) put("_id", realmRating._id)
+                if (realmRating._rev != null) put("_rev", realmRating._rev)
+                put("user", userJson?.toKotlinx() ?: JsonNull)
+                put("item", realmRating.item)
+                put("type", realmRating.type)
+                put("title", realmRating.title)
+                put("time", realmRating.time)
+                put("comment", realmRating.comment)
+                put("rate", realmRating.rate)
+                put("createdOn", realmRating.createdOn)
+                put("parentCode", realmRating.parentCode)
+                put("planetCode", realmRating.planetCode)
+                put("customDeviceName", customDeviceName)
+                put("deviceName", NetworkUtils.getDeviceName())
+            }.toGson()
+            ob.addDocumentOrigin()
             return ob
         }
     }

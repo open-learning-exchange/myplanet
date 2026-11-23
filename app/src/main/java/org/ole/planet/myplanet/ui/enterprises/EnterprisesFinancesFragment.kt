@@ -1,9 +1,9 @@
 package org.ole.planet.myplanet.ui.enterprises
 
 import android.app.DatePickerDialog
-import android.content.DialogInterface
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,9 +11,9 @@ import android.widget.DatePicker
 import android.widget.ImageView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -26,7 +26,6 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.Calendar
 import java.util.Locale
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.DialogAddTransactionBinding
@@ -34,10 +33,11 @@ import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
 import org.ole.planet.myplanet.databinding.HeaderFinanceBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.Transaction
-import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.AmountUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class EnterprisesFinancesFragment : BaseTeamFragment() {
@@ -82,7 +82,6 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                 }
             }
         }
-        date = Calendar.getInstance()
         return binding.root
     }
 
@@ -124,10 +123,11 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
         hBinding.imgDate.rotation = if (headerState.isAsc) 180f else 0f
 
-        hBinding.tvDebit.text = getString(R.string.number_placeholder, headerState.debit)
-        hBinding.tvCredit.text = getString(R.string.number_placeholder, headerState.credit)
-        hBinding.tvBalance.text = getString(R.string.number_placeholder, headerState.total)
-        hBinding.balanceCaution.visibility = if (headerState.isCautionVisible) View.VISIBLE else View.GONE
+        val summary = viewModel.financeSummary.value
+        hBinding.tvDebit.text = AmountUtils.format(summary.debit)
+        hBinding.tvCredit.text = AmountUtils.format(summary.credit)
+        hBinding.tvBalance.text = AmountUtils.format(summary.total)
+        hBinding.balanceCaution.visibility = if (summary.isCautionVisible) View.VISIBLE else View.GONE
     }
 
     private fun showDatePickerDialog(isFromDate: Boolean) {
@@ -208,7 +208,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             Calendar.getInstance().apply {
                 timeInMillis = localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
             }
-        } catch (e: DateTimeParseException) {
+        } catch (_: DateTimeParseException) {
             null
         }
     }
@@ -223,16 +223,19 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
     private fun filterDataByDateRange(fromDate: String, toDate: String) {
         try {
-            val start = LocalDate.parse(fromDate, dateFormatter).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-            val end = LocalDate.parse(toDate, dateFormatter).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            val (start, end) = inclusiveDayRange(
+                LocalDate.parse(fromDate, dateFormatter),
+                LocalDate.parse(toDate, dateFormatter),
+                ZoneId.systemDefault()
+            )
             currentStartDate = start
             currentEndDate = end
             observeTransactions()
 
         } catch (e: DateTimeParseException) {
-            e.printStackTrace()
+            Log.w(TAG, "Date range parsing failed", e)
         } catch (e: IllegalArgumentException) {
-            e.printStackTrace()
+            Log.w(TAG, "Date range filtering failed", e)
         }
     }
 
@@ -256,6 +259,18 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             transactions = results
             updatedFinanceList(results)
         }
+        collectLatestWhenStarted(viewModel.financeSummary) {
+            headerAdapter.notifyItemChanged(0, PAYLOAD_HEADER)
+        }
+        collectWhenStarted(viewModel.transactionCreated) { result ->
+            if (result.isSuccess) {
+                Utilities.toast(activity, getString(R.string.transaction_added))
+            } else {
+                val errorMessage = result.exceptionOrNull()?.localizedMessage
+                    ?: getString(R.string.no_data_available_please_check_and_try_again)
+                Utilities.toast(activity, errorMessage)
+            }
+        }
 
         observeTransactions()
     }
@@ -266,73 +281,51 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    private fun calculateTotal(list: List<Transaction>) {
-        var debit = 0
-        var credit = 0
-        for (team in list) {
-            if ("credit".equals(team.type?.lowercase(Locale.getDefault()), ignoreCase = true)) {
-                credit += team.amount
+    private fun addTransaction() {
+        val dialog = AlertDialog.Builder(requireActivity()).setView(setUpAlertUi()).setTitle(R.string.add_transaction)
+            .setPositiveButton("Submit", null)
+            .setNegativeButton("Cancel", null)
+            .create()
+        dialog.show()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val type = if (addTransactionBinding.spnType.selectedItemPosition == 1) "Debit" else "Credit"
+            val note = "${addTransactionBinding.tlNote.editText?.text}".trim { it <= ' ' }
+            val amountValue = AmountUtils.parse(addTransactionBinding.tlAmount.editText?.text)
+            if (note.isEmpty()) {
+                Utilities.toast(activity, getString(R.string.note_is_required))
+            } else if (amountValue == null || amountValue <= 0.0) {
+                Utilities.toast(activity, getString(R.string.amount_is_required))
+            } else if (date == null) {
+                Utilities.toast(activity, getString(R.string.date_is_required))
             } else {
-                debit += team.amount
+                val capturedDate = date ?: return@setOnClickListener
+                val dateInMillis = capturedDate.timeInMillis
+                val capturedTeamId = teamId
+                val parentCode = user?.parentCode
+                val planetCode = user?.planetCode
+                val imageUri = selectedImageUri
+
+                viewModel.createTransaction(
+                    teamId = capturedTeamId,
+                    type = type,
+                    note = note,
+                    amount = amountValue,
+                    date = dateInMillis,
+                    parentCode = parentCode,
+                    planetCode = planetCode,
+                    imageUri = imageUri,
+                )
+                dialog.dismiss()
             }
         }
-        val total = credit - debit
-        headerState.debit = debit
-        headerState.credit = credit
-        headerState.total = total
-        headerState.isCautionVisible = total < 0
-        headerAdapter.notifyItemChanged(0, PAYLOAD_HEADER)
-    }
-
-    private fun addTransaction() {
-        AlertDialog.Builder(requireActivity()).setView(setUpAlertUi()).setTitle(R.string.add_transaction)
-            .setPositiveButton("Submit") { _: DialogInterface?, _: Int ->
-                val type = addTransactionBinding.spnType.selectedItem.toString()
-                val note = "${addTransactionBinding.tlNote.editText?.text}".trim { it <= ' ' }
-                val amount = "${addTransactionBinding.tlAmount.editText?.text}".trim { it <= ' ' }
-                if (note.isEmpty()) {
-                    Utilities.toast(activity, getString(R.string.note_is_required))
-                } else if (amount.isEmpty()) {
-                    Utilities.toast(activity, getString(R.string.amount_is_required))
-                } else if (date == null) {
-                    Utilities.toast(activity, getString(R.string.date_is_required))
-                } else {
-                    val amountValue = amount.toIntOrNull()
-                    if (amountValue == null) {
-                        Utilities.toast(activity, getString(R.string.amount_is_required))
-                        return@setPositiveButton
-                    }
-                    val imageUri = selectedImageUri
-                    val imageName = imageUri?.let { FileUtils.getDisplayName(requireContext(), it, timeProvider) }
-                    val imageData = imageUri?.let { FileUtils.readBytesFromUri(requireContext(), it) }
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        val capturedDate = date ?: return@launch
-                        val result = teamsRepository.createTransaction(
-                            teamId = teamId,
-                            type = type,
-                            note = note,
-                            amount = amountValue,
-                            date = capturedDate.timeInMillis,
-                            parentCode = user?.parentCode,
-                            planetCode = user?.planetCode,
-                            imageName = imageName,
-                            imageData = imageData,
-                        )
-                        if (result.isSuccess) {
-                            Utilities.toast(activity, getString(R.string.transaction_added))
-                        } else {
-                            val errorMessage = result.exceptionOrNull()?.localizedMessage
-                                ?: getString(R.string.no_data_available_please_check_and_try_again)
-                            Utilities.toast(activity, errorMessage)
-                        }
-                    }
-                }
-            }.setNegativeButton("Cancel", null).show()
     }
 
     private fun setUpAlertUi(): View {
         addTransactionBinding = DialogAddTransactionBinding.inflate(LayoutInflater.from(activity))
         selectedImageUri = null
+        date = Calendar.getInstance().also { today ->
+            addTransactionBinding.tvSelectDate.text = formatDateTZ(today.timeInMillis)
+        }
         dialogImagePreview = addTransactionBinding.imagePreview
         addTransactionBinding.btnAddImage.setOnClickListener {
             pickImageLauncher.launch("image/*")
@@ -348,7 +341,6 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         if (view == null) return
 
         financeAdapter.submitList(results)
-        calculateTotal(results)
 
         binding.rvFinance.visibility = View.VISIBLE
         binding.tvNodata.visibility = if (results.isEmpty()) View.VISIBLE else View.GONE
@@ -401,10 +393,6 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         var toDate: String = "",
         var isToDateEnabled: Boolean = false,
         var isAsc: Boolean = false,
-        var debit: Int = 0,
-        var credit: Int = 0,
-        var total: Int = 0,
-        var isCautionVisible: Boolean = false,
     )
 
     private class FinanceHeaderAdapter(
@@ -428,5 +416,16 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         }
 
         override fun getItemCount(): Int = 1
+    }
+
+    companion object {
+        private const val TAG = "EnterprisesFinancesFragment"
+
+        @VisibleForTesting
+        internal fun inclusiveDayRange(from: LocalDate, to: LocalDate, zone: ZoneId): Pair<Long, Long> {
+            val start = from.atStartOfDay(zone).toInstant().toEpochMilli()
+            val end = to.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
+            return start to end
+        }
     }
 }

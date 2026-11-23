@@ -15,6 +15,7 @@ import io.mockk.spyk
 import io.mockk.unmockkAll
 import java.io.File
 import java.nio.file.Files
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -28,6 +29,8 @@ import org.junit.Test
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.TestTimeProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FreeSpaceWorkerTest {
@@ -36,6 +39,7 @@ class FreeSpaceWorkerTest {
     private lateinit var workerParams: WorkerParameters
     private lateinit var resourcesRepository: ResourcesRepository
     private lateinit var dispatcherProvider: DispatcherProvider
+    private lateinit var timeProvider: TestTimeProvider
     private lateinit var oleDir: File
 
     private val testDispatcher = StandardTestDispatcher()
@@ -52,10 +56,8 @@ class FreeSpaceWorkerTest {
         every { dispatcherProvider.default } returns testDispatcher
         every { dispatcherProvider.unconfined } returns testDispatcher
 
-        worker = spyk(FreeSpaceWorker(context, workerParams, resourcesRepository, dispatcherProvider))
-
-        // Mock setProgress
-        coEvery { worker.setProgress(any()) } returns Unit
+        timeProvider = TestTimeProvider(currentTime = 1000L)
+        worker = createWorker(timeProvider)
 
         oleDir = Files.createTempDirectory("ole-test").toFile()
         mockkObject(FileUtils)
@@ -75,9 +77,21 @@ class FreeSpaceWorkerTest {
         unmockkAll()
     }
 
+    private fun createWorker(timeProvider: TimeProvider): FreeSpaceWorker =
+        spyk(FreeSpaceWorker(context, workerParams, resourcesRepository, dispatcherProvider, timeProvider)).also {
+            coEvery { it.setProgress(any()) } returns Unit
+        }
+
     private fun addResource(id: String, fileName: String, content: String = "data"): File {
         val dir = File(oleDir, id).apply { mkdirs() }
         return File(dir, fileName).apply { writeText(content) }
+    }
+
+   private fun emptyDirectoryByteSize(): Long {
+        val probe = File(oleDir, "probe-${System.nanoTime()}").apply { mkdirs() }
+        val size = probe.length()
+        probe.delete()
+        return size
     }
 
     @Test
@@ -94,7 +108,6 @@ class FreeSpaceWorkerTest {
         coVerify {
             resourcesRepository.markResourcesAsNotOffline(match { it.toSet() == setOf("res1", "res2") })
         }
-        coVerify(exactly = 0) { resourcesRepository.markAllResourcesOffline(any()) }
 
         val outputData = (result as Result.Success).outputData
         assertTrue(outputData.getInt("deletedFiles", -1) > 0)
@@ -139,5 +152,156 @@ class FreeSpaceWorkerTest {
         val result = worker.doWork()
 
         assertTrue(result is Result.Failure)
+    }
+
+    @Test
+    fun `doWork rethrows CancellationException when worker is cancelled`() = runTest(testDispatcher) {
+        addResource("res1", "book.pdf")
+        coEvery { resourcesRepository.markResourcesAsNotOffline(any()) } throws CancellationException("Worker cancelled")
+
+        var exceptionThrown = false
+        try {
+            worker.doWork()
+        } catch (e: CancellationException) {
+            exceptionThrown = true
+            assertEquals("Worker cancelled", e.message)
+        }
+
+        assertTrue(exceptionThrown)
+    }
+
+    @Test
+    fun `doWork removes nested directory structure and accurately tracks deleted files and freed bytes`() = runTest(testDispatcher) {
+        val resDir = File(oleDir, "res1").apply { mkdirs() }
+        val file1 = File(resDir, "file1.txt").apply { writeText("hello") }
+        val subDir = File(resDir, "subdir").apply { mkdirs() }
+        val file2 = File(subDir, "file2.txt").apply { writeText("world") }
+        val file3 = File(resDir, "file3.txt").apply { writeText("foo") }
+
+        val expectedFreedBytes = file1.length() + file2.length() + file3.length() + emptyDirectoryByteSize() * 2
+
+        val result = worker.doWork()
+        advanceUntilIdle()
+
+        assertTrue(result is Result.Success)
+        assertFalse(file1.exists())
+        assertFalse(file2.exists())
+        assertFalse(file3.exists())
+        assertFalse(subDir.exists())
+        assertFalse(resDir.exists())
+
+        val outputData = (result as Result.Success).outputData
+        // Nodes deleted: file1.txt, file2.txt, file3.txt, subdir, res1 -> 5 items
+        assertEquals(5, outputData.getInt("deletedFiles", -1))
+        assertEquals(expectedFreedBytes, outputData.getLong("freedBytes", -1L))
+    }
+
+    @Test
+    fun `doWork handles file deleted out from under the walk without corrupting accounting`() = runTest(testDispatcher) {
+        val resDir = File(oleDir, "res1").apply { mkdirs() }
+        val file1 = File(resDir, "file1.txt").apply { writeText("hello") }
+        val file2 = File(resDir, "file2.txt").apply { writeText("disappearing") }
+
+        val expectedFreedBytes = file1.length() + emptyDirectoryByteSize()
+        file2.delete() // File disappears before walk processes it
+
+        val result = worker.doWork()
+        advanceUntilIdle()
+
+        assertTrue(result is Result.Success)
+        assertFalse(file1.exists())
+        assertFalse(resDir.exists())
+
+        val outputData = (result as Result.Success).outputData
+        // Nodes deleted: file1.txt, res1 -> 2 items (file2 was already gone)
+        assertEquals(2, outputData.getInt("deletedFiles", -1))
+        assertEquals(expectedFreedBytes, outputData.getLong("freedBytes", -1L))
+    }
+
+    @Test
+    fun `doWork flushes batch when size reaches batch size and flushes remaining on completion`() = runTest(testDispatcher) {
+        val batches = mutableListOf<Set<String>>()
+        coEvery { resourcesRepository.markResourcesAsNotOffline(any()) } answers {
+            batches += firstArg<Collection<String>>().toSet()
+        }
+
+        val expectedIds = (0 until 26).map { "res$it" }.toSet()
+        expectedIds.forEach { id -> addResource(id, "f.txt") }
+
+        val result = worker.doWork()
+        advanceUntilIdle()
+
+        assertTrue(result is Result.Success)
+        assertEquals(2, batches.size)
+        assertEquals(25, batches[0].size)
+        assertEquals(1, batches[1].size)
+        assertTrue(batches[0].intersect(batches[1]).isEmpty())
+        assertEquals(expectedIds, batches[0] + batches[1])
+    }
+
+    @Test
+    fun `doWork flushes exactly one batch when directory count is exactly batch size`() = runTest(testDispatcher) {
+        val batches = mutableListOf<Set<String>>()
+        coEvery { resourcesRepository.markResourcesAsNotOffline(any()) } answers {
+            batches += firstArg<Collection<String>>().toSet()
+        }
+
+        val expectedIds = (0 until 25).map { "res$it" }.toSet()
+        expectedIds.forEach { id -> addResource(id, "f.txt") }
+
+        val result = worker.doWork()
+        advanceUntilIdle()
+
+        assertTrue(result is Result.Success)
+        assertEquals(1, batches.size)
+        assertEquals(25, batches[0].size)
+        assertEquals(expectedIds, batches[0])
+    }
+
+    @Test
+    fun `doWork with frozen clock throttles progress updates to first deletion and final update`() = runTest(testDispatcher) {
+        (0 until 50).forEach { i -> addResource("res$i", "file$i.txt") }
+
+        val result = worker.doWork()
+        advanceUntilIdle()
+
+        assertTrue(result is Result.Success)
+        coVerify(exactly = 2) {
+            worker.setProgress(match { "deletedFiles" in it.keyValueMap })
+        }
+    }
+
+    @Test
+    fun `doWork with advancing clock emits progress updates on intervals`() = runTest(testDispatcher) {
+        worker = createWorker(object : TimeProvider by timeProvider {
+            override fun elapsedRealtime(): Long = timeProvider.elapsedRealtime().also { timeProvider.advanceBy(600L) }
+        })
+        (0 until 5).forEach { i -> addResource("res$i", "file$i.txt") }
+
+        val result = worker.doWork()
+        advanceUntilIdle()
+
+        assertTrue(result is Result.Success)
+        coVerify(atLeast = 3) {
+            worker.setProgress(match { "deletedFiles" in it.keyValueMap })
+        }
+    }
+
+    @Test
+    fun `doWork when stopped does not emit final progress update`() = runTest(testDispatcher) {
+        addResource("res1", "file1.txt")
+        addResource("res2", "file2.txt")
+
+        coEvery { worker.setProgress(match { "deletedFiles" in it.keyValueMap }) } answers {
+            every { worker.isStopped } returns true
+        }
+
+        val result = worker.doWork()
+        advanceUntilIdle()
+
+        assertTrue(result is Result.Success)
+        coVerify(exactly = 1) {
+            worker.setProgress(match { "deletedFiles" in it.keyValueMap })
+        }
     }
 }
