@@ -1440,4 +1440,7 @@
 
     <string name="playback_speed">سرعة التشغيل</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="add_cover_image">إضافة صورة الغلاف</string>
+    <string name="change_cover_image">تغيير صورة الغلاف</string>
+    <string name="team_cover_image">صورة غلاف الفريق</string>
 </resources>

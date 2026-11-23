@@ -1428,4 +1428,7 @@
 
     <string name="playback_speed">Vitesse de lecture</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="add_cover_image">Ajouter une image de couverture</string>
+    <string name="change_cover_image">Changer l\'image de couverture</string>
+    <string name="team_cover_image">Image de couverture de l\'équipe</string>
 </resources>

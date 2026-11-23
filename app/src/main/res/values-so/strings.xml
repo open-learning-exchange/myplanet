@@ -1424,4 +1424,7 @@
 
     <string name="playback_speed">Xawaaraha dib-u-daawashada</string>
     <string name="playback_speed_format">%1$sx</string>
+    <string name="add_cover_image">Ku dar sawirka daboolka</string>
+    <string name="change_cover_image">Beddel sawirka daboolka</string>
+    <string name="team_cover_image">Sawirka daboolka kooxda</string>
 </resources>

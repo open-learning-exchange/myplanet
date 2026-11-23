@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.services.upload
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -42,7 +43,8 @@ class TeamsUploader @Inject constructor(
                 val deletedIds = mutableListOf<String>()
                 val uploadedTeams = mutableMapOf<String, String>()
 
-                BulkDocsUploader.upload(uploadRepository, "${UrlUtils.getUrl()}/teams/_bulk_docs", batch.map { it to it.serialized }) { teamData, outcome ->
+                val payloads = batch.associateWith { withAttachmentStub(it) }
+                BulkDocsUploader.upload(uploadRepository, "${UrlUtils.getUrl()}/teams/_bulk_docs", batch.map { it to payloads.getValue(it) }) { teamData, outcome ->
                     when (outcome) {
                         is BulkDocsUploader.Outcome.Accepted -> {
                             val id = getString("id", outcome.element)
@@ -58,10 +60,10 @@ class TeamsUploader @Inject constructor(
                         }
                         is BulkDocsUploader.Outcome.Rejected -> {
                             val id = getString("id", outcome.element)
-                            queueTeamRetry(teamData, outcome.httpCode, if (teamData.isDeletePending) "PUT" else "POST", id)
+                            queueTeamRetry(teamData, payloads.getValue(teamData), outcome.httpCode, if (teamData.isDeletePending) "PUT" else "POST", id)
                         }
                         is BulkDocsUploader.Outcome.RequestFailed -> {
-                            queueTeamRetry(teamData, outcome.httpCode, if (teamData.isDeletePending) "PUT" else "POST", teamData.teamId, outcome.exception)
+                            queueTeamRetry(teamData, payloads.getValue(teamData), outcome.httpCode, if (teamData.isDeletePending) "PUT" else "POST", teamData.teamId, outcome.exception)
                         }
                     }
                 }
@@ -78,6 +80,7 @@ class TeamsUploader @Inject constructor(
 
     private suspend fun queueTeamRetry(
         teamData: TeamUploadData,
+        payload: JsonObject,
         httpCode: Int?,
         httpMethod: String,
         dbId: String?,
@@ -93,12 +96,27 @@ class TeamsUploader @Inject constructor(
                 retryable = true,
                 httpCode = httpCode
             ),
-            payload = teamData.serialized,
+            payload = payload,
             endpoint = "teams",
             httpMethod = httpMethod,
             dbId = dbId,
             modelClassName = "MyTeam"
         )
+    }
+
+    // A bulk_docs write that omits _attachments deletes the server's copy. When the image lives
+    // only on the server (synced down, never re-picked here), send a stub so CouchDB keeps it;
+    // when a local file exists, it is re-uploaded after the doc write instead.
+    private fun withAttachmentStub(teamData: TeamUploadData): JsonObject {
+        val imageName = teamData.imageName
+        val serialized = teamData.serialized
+        if (teamData.isDeletePending || imageName.isNullOrEmpty() || !serialized.has("_rev")) return serialized
+        if (MyTeam.getAttachmentFile(context, teamData.teamId, imageName)?.exists() == true) return serialized
+        return serialized.deepCopy().apply {
+            add("_attachments", JsonObject().apply {
+                add(imageName, JsonObject().apply { addProperty("stub", true) })
+            })
+        }
     }
 
     private suspend fun uploadTeamImageAttachment(teamId: String, rev: String, imageName: String): String {
