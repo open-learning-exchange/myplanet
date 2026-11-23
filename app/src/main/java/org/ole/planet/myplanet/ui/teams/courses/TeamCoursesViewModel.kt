@@ -47,12 +47,28 @@ class TeamCoursesViewModel @Inject constructor(
         }
     }
 
+    // Same as adding: drop the row at once, write in the background, put it back on failure.
     suspend fun removeCourse(teamId: String, courseId: String): Result<Unit> {
+        val previous = _uiState.value
+        if (previous != null) {
+            _uiState.value = previous.copy(courses = previous.courses.filterNot { it.courseId == courseId })
+        }
         return teamsRepository.removeCourseFromTeam(teamId, courseId)
+            .onFailure { if (_uiState.value?.courses?.none { it.courseId == courseId } == true) _uiState.value = previous }
     }
 
-    suspend fun addCourses(teamId: String, courseIds: List<String>): Result<Unit> {
+    // Show the picked courses at once and write in the background; waiting on the write and a
+    // full reload before the list changed is what made adding feel slow. Rolled back on failure.
+    suspend fun addCourses(teamId: String, courses: List<MyCourse>): Result<Unit> {
+        val previous = _uiState.value
+        val current = previous ?: TeamCoursesUiState()
+        val shownIds = current.courses.mapNotNullTo(mutableSetOf()) { it.courseId }
+        val added = courses.filter { !it.courseId.isNullOrBlank() && shownIds.add(it.courseId!!) }
+        val courseIds = courses.mapNotNull { it.courseId?.takeIf(String::isNotBlank) }
+        if (courseIds.isEmpty()) return Result.success(Unit)
+        if (added.isNotEmpty()) _uiState.value = current.copy(courses = current.courses + added)
         return teamsRepository.addCoursesToTeam(teamId, courseIds)
+            .onFailure { if (_uiState.value?.courses?.containsAll(added) == true) _uiState.value = previous }
     }
 
     suspend fun getAvailableCourses(teamId: String): List<MyCourse> {
