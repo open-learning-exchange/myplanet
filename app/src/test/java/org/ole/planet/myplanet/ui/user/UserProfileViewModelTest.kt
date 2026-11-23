@@ -4,7 +4,6 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -15,9 +14,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.ProfileActivityStats
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -29,33 +27,34 @@ class UserProfileViewModelTest {
     val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     private lateinit var userRepository: UserRepository
-    private lateinit var userSessionManager: UserSessionManager
     private lateinit var activitiesRepository: ActivitiesRepository
     private lateinit var viewModel: UserProfileViewModel
-
-    private val dispatcherProvider = object : DispatcherProvider {
-        override val main: CoroutineDispatcher = testDispatcher
-        override val mainImmediate: CoroutineDispatcher = testDispatcher
-        override val io: CoroutineDispatcher = testDispatcher
-        override val default: CoroutineDispatcher = testDispatcher
-        override val unconfined: CoroutineDispatcher = testDispatcher
-    }
 
     @Before
     fun setup() {
         userRepository = mockk(relaxed = true)
-        userSessionManager = mockk(relaxed = true)
         activitiesRepository = mockk(relaxed = true)
 
         val mockUser = mockk<UserEntity>(relaxed = true)
         every { mockUser.name } returns "Test User"
-        coEvery { userSessionManager.getUserModel() } returns mockUser
+        coEvery { userRepository.getUserModel() } returns mockUser
 
-        coEvery { activitiesRepository.getMostOpenedResource("Test User", UserSessionManager.KEY_RESOURCE_OPEN) } returns Pair("Test Resource", 5)
-        coEvery { activitiesRepository.getGlobalLastVisit() } returns 123456789L
-        coEvery { activitiesRepository.getResourceOpenCount("Test User", UserSessionManager.KEY_RESOURCE_OPEN) } returns 10L
+        coEvery { activitiesRepository.getProfileActivityStats("Test User") } returns ProfileActivityStats(
+            mostOpenedResource = Pair("Test Resource", 5),
+            lastVisit = 123456789L,
+            resourceOpenCount = 10L
+        )
 
-        viewModel = UserProfileViewModel(userRepository, userSessionManager, activitiesRepository)
+        viewModel = UserProfileViewModel(userRepository, activitiesRepository)
+    }
+
+    @Test
+    fun `init loads profile activity stats into state flows`() = runTest {
+        advanceUntilIdle()
+
+        assertEquals("Test Resource opened 5 times", viewModel.maxOpenedResource.value)
+        assertEquals(123456789L, viewModel.lastVisit.value)
+        assertEquals("Resource opened 10 times.", viewModel.numberOfResourceOpen.value)
     }
 
     @Test

@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.ui.chat
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.Typeface
 import android.os.Bundle
 import android.speech.RecognitionListener
@@ -20,7 +20,6 @@ import android.widget.LinearLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.view.isNotEmpty
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -29,12 +28,13 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isPrimaryServerReachable
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatMessage
@@ -46,14 +46,15 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.TextRevealer
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.hasPermission
+import org.ole.planet.myplanet.utils.showPermissionDeniedFeedback
 
 @AndroidEntryPoint
-class ChatDetailFragment : Fragment() {
-    private var _binding: FragmentChatDetailBinding? = null
-    private val binding get() = _binding!!
+class ChatDetailFragment : BaseBindingFragment<FragmentChatDetailBinding>(FragmentChatDetailBinding::inflate) {
     private lateinit var mAdapter: ChatAdapter
     private val sharedViewModel: ChatViewModel by activityViewModels()
     private lateinit var messageTextWatcher: TextWatcher
@@ -65,11 +66,14 @@ class ChatDetailFragment : Fragment() {
     var user: UserEntity? = null
 
     private var lastChatHistory: List<Conversation>? = null
+    private var hasRenderedHistory = false
     private var lastAiProvider: String? = null
     private var lastAiProvidersLoading: Boolean? = null
     private var lastAiProvidersError: Boolean? = null
     private var lastAiProviders: Map<String, Boolean>? = null
 
+    private var cachedRawModelsString: String? = null
+    private var cachedModelsMap: Map<String, String>? = null
 
     private var isUserLoaded = false
     private var isAiUnavailable = false
@@ -85,14 +89,22 @@ class ChatDetailFragment : Fragment() {
     private var speechRecognizer: SpeechRecognizer? = null
     private var isListening = false
     private var textBeforeVoice: String = ""
+    private var pendingQueryShown = false
+    private var handledRequestId = -1L
+    private var newsConversationLoaded = false
 
-    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        if (isGranted) {
-            startSpeechToText()
-        } else {
-            Utilities.toast(requireContext(), getString(R.string.microphone_permission_required))
+    private val requestMicPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                startSpeechToText()
+            } else {
+                requireActivity().showPermissionDeniedFeedback(
+                    Manifest.permission.RECORD_AUDIO,
+                    R.string.microphone_permission_required,
+                )
+            }
         }
-    }
+
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
@@ -114,9 +126,9 @@ class ChatDetailFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentChatDetailBinding.inflate(inflater, container, false)
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-        return binding.root
+        return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -141,7 +153,7 @@ class ChatDetailFragment : Fragment() {
             binding.courseContextBanner.text = buildBannerText()
         }
         val prefill = selectedText
-        if (!prefill.isNullOrBlank()) {
+        if (savedInstanceState == null && !prefill.isNullOrBlank()) {
             binding.editGchatMessage.setText(prefill)
             binding.editGchatMessage.setSelection(prefill.length)
         }
@@ -151,12 +163,10 @@ class ChatDetailFragment : Fragment() {
         binding.buttonGchatMic.setOnClickListener {
             if (isListening) {
                 stopSpeechToText()
+            } else if (requireContext().hasPermission(Manifest.permission.RECORD_AUDIO)) {
+                startSpeechToText()
             } else {
-                if (ContextCompat.checkSelfPermission(requireContext(), android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                    startSpeechToText()
-                } else {
-                    requestPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
-                }
+                requestMicPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
             }
         }
         initSpeechRecognizer()
@@ -168,9 +178,11 @@ class ChatDetailFragment : Fragment() {
             speechRecognizer?.setRecognitionListener(object : RecognitionListener {
                 override fun onReadyForSpeech(params: Bundle?) {
                     isListening = true
-                    binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_red_500))
-                    binding.textGchatIndicator.text = getString(R.string.voice_to_text)
-                    binding.textGchatIndicator.visibility = View.VISIBLE
+                    _binding?.let { binding ->
+                        binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_red_500))
+                        binding.textGchatIndicator.text = getString(R.string.voice_to_text)
+                        binding.textGchatIndicator.visibility = View.VISIBLE
+                    }
                 }
 
                 override fun onBeginningOfSpeech() {}
@@ -181,7 +193,7 @@ class ChatDetailFragment : Fragment() {
                 }
 
                 override fun onError(error: Int) {
-                    stopSpeechToText()
+                    resetListeningUi()
                     val message = when (error) {
                         SpeechRecognizer.ERROR_AUDIO -> "Audio recording error"
                         SpeechRecognizer.ERROR_CLIENT -> "Client side error"
@@ -202,8 +214,10 @@ class ChatDetailFragment : Fragment() {
                     if (!matches.isNullOrEmpty()) {
                         val finalMatch = matches[0]
                         val newText = if (textBeforeVoice.isEmpty()) finalMatch else "$textBeforeVoice $finalMatch"
-                        binding.editGchatMessage.setText(newText)
-                        binding.editGchatMessage.setSelection(newText.length)
+                        _binding?.let { binding ->
+                            binding.editGchatMessage.setText(newText)
+                            binding.editGchatMessage.setSelection(newText.length)
+                        }
                     }
                 }
 
@@ -212,8 +226,10 @@ class ChatDetailFragment : Fragment() {
                     if (!matches.isNullOrEmpty()) {
                         val partialMatch = matches[0]
                         val newText = if (textBeforeVoice.isEmpty()) partialMatch else "$textBeforeVoice $partialMatch"
-                        binding.editGchatMessage.setText(newText)
-                        binding.editGchatMessage.setSelection(newText.length)
+                        _binding?.let { binding ->
+                            binding.editGchatMessage.setText(newText)
+                            binding.editGchatMessage.setSelection(newText.length)
+                        }
                     }
                 }
 
@@ -228,16 +244,22 @@ class ChatDetailFragment : Fragment() {
         textBeforeVoice = binding.editGchatMessage.text.toString().trim()
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag())
         intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
         speechRecognizer?.startListening(intent)
     }
 
     private fun stopSpeechToText() {
         speechRecognizer?.stopListening()
+        resetListeningUi()
+    }
+
+    private fun resetListeningUi() {
         isListening = false
-        binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_500))
-        binding.textGchatIndicator.visibility = View.GONE
+        _binding?.let { binding ->
+            binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_500))
+            binding.textGchatIndicator.visibility = View.GONE
+        }
     }
 
     private fun initChatComponents() {
@@ -252,13 +274,7 @@ class ChatDetailFragment : Fragment() {
         }
         mAdapter = ChatAdapter(requireContext(), binding.recyclerGchat) { response, onUpdate, onComplete ->
             val job = viewLifecycleOwner.lifecycleScope.launch {
-                var currentIndex = 0
-                while (currentIndex < response.length) {
-                    if (!kotlin.coroutines.coroutineContext.isActive) return@launch
-                    onUpdate(response.substring(0, currentIndex + 1))
-                    currentIndex++
-                    kotlinx.coroutines.delay(10L)
-                }
+                TextRevealer.reveal(response, onUpdate)
                 onComplete()
             }
             return@ChatAdapter { job.cancel() }
@@ -286,20 +302,13 @@ class ChatDetailFragment : Fragment() {
                 binding.textGchatIndicator.text = context?.getString(R.string.kindly_enter_message)
             } else {
                 val message = "${binding.editGchatMessage.text}".replace("\n", " ")
+                if (sharedViewModel.chatRequest.value is ChatRequestState.Sending) return@setOnClickListener
                 mAdapter.addQuery(message)
+                pendingQueryShown = true
                 when {
-                    _id.isNotEmpty() -> {
-                        viewLifecycleOwner.lifecycleScope.launch {
-                            val newRev = getLatestRev(_id) ?: _rev
-                            launchContinueChatRequest(message, user?.name, aiProvider, _id, newRev)
-                        }
-                    }
-                    currentID.isNotEmpty() -> {
-                        launchContinueChatRequest(message, user?.name, aiProvider, currentID, _rev)
-                    }
-                    else -> {
-                        launchNewChatRequest(message, user?.name, aiProvider)
-                    }
+                    _id.isNotEmpty() -> startChatRequest(message, aiProvider, _id, _rev, refreshRev = true)
+                    currentID.isNotEmpty() -> startChatRequest(message, aiProvider, currentID, _rev, refreshRev = false)
+                    else -> startChatRequest(message, aiProvider, "", "", refreshRev = false)
                 }
                 binding.editGchatMessage.text.clear()
                 binding.textGchatIndicator.visibility = View.GONE
@@ -343,8 +352,10 @@ class ChatDetailFragment : Fragment() {
             try {
                 val messages = sharedViewModel.parseAndBuildInitialPage(newsConversations)
                 mAdapter.submitList(messages) {
-                    binding.recyclerGchat.post {
-                        binding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
+                    newsConversationLoaded = true
+                    handleChatRequest(sharedViewModel.chatRequest.value)
+                    _binding?.recyclerGchat?.post {
+                        _binding?.recyclerGchat?.scrollToPosition(mAdapter.itemCount - 1)
                     }
                 }
             } catch (e: Exception) {
@@ -356,7 +367,8 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun observeUiState() {
-        collectWhenStarted(sharedViewModel.chatUiState) { state ->
+        val uiAndRequest = combine(sharedViewModel.chatUiState, sharedViewModel.chatRequest) { state, request -> state to request }
+        collectWhenStarted(uiAndRequest) { (state, request) ->
             // aiProviders
             if (state.aiProviders != lastAiProviders) {
                 lastAiProviders = state.aiProviders
@@ -399,10 +411,20 @@ class ChatDetailFragment : Fragment() {
                     lastChatHistory = state.selectedChatHistory
                     mAdapter.clearData()
                     sharedViewModel.clearPaginationState()
-                    binding.editGchatMessage.text.clear()
+                    if (hasRenderedHistory) {
+                        binding.editGchatMessage.text.clear()
+                    }
+                    hasRenderedHistory = true
                     binding.textGchatIndicator.visibility = View.GONE
+                    pendingQueryShown = false
                     if (!state.selectedChatHistory.isNullOrEmpty()) {
-                        val messages = sharedViewModel.processChatHistory(state.selectedChatHistory)
+                        val history = sharedViewModel.processChatHistory(state.selectedChatHistory)
+                        val messages = if (request is ChatRequestState.Sending) {
+                            pendingQueryShown = true
+                            history + ChatMessage(request.query, ChatMessage.QUERY)
+                        } else {
+                            history
+                        }
                         mAdapter.submitList(messages) {
                             binding.recyclerGchat.post {
                                 binding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
@@ -425,6 +447,34 @@ class ChatDetailFragment : Fragment() {
                 if (state.selectedRev != _rev) {
                     _rev = state.selectedRev
                 }
+            }
+            handleChatRequest(request)
+        }
+    }
+
+    private fun isConversationLoaded() = newsId == null || newsConversationLoaded
+
+    private fun handleChatRequest(request: ChatRequestState) {
+        if (_binding == null) return
+        when (request) {
+            is ChatRequestState.Idle -> Unit
+            is ChatRequestState.Sending -> {
+                disableUI()
+                if (!pendingQueryShown && isConversationLoaded()) {
+                    mAdapter.addQuery(request.query)
+                    pendingQueryShown = true
+                }
+            }
+            is ChatRequestState.Done -> {
+                if (request.requestId == handledRequestId || !isConversationLoaded()) return
+                handledRequestId = request.requestId
+                if (pendingQueryShown) {
+                    handleChatResult(request.result, request.query)
+                } else {
+                    handleChatResultAfterRecreate(request.result, request.query)
+                }
+                pendingQueryShown = false
+                sharedViewModel.consumeChatResult(request.requestId)
             }
         }
     }
@@ -526,6 +576,10 @@ class ChatDetailFragment : Fragment() {
         _id = ""
         _rev = ""
         currentID = ""
+        lastChatHistory = emptyList()
+        sharedViewModel.setSelectedChatHistory(emptyList())
+        sharedViewModel.setSelectedId("")
+        sharedViewModel.setSelectedRev("")
         binding.editGchatMessage.text.clear()
         binding.textGchatIndicator.visibility = View.GONE
     }
@@ -537,27 +591,20 @@ class ChatDetailFragment : Fragment() {
         refreshInputState()
     }
 
-    private fun launchNewChatRequest(query: String, userName: String?, aiProvider: AiProvider) {
-        disableUI()
-        val mapping = processServerUrl()
-        val contextualQuery = if (hasCourseContext && !contextIncluded) {
+    private fun startChatRequest(message: String, aiProvider: AiProvider, conversationId: String, rev: String, refreshRev: Boolean) {
+        val query = if (conversationId.isEmpty() && hasCourseContext && !contextIncluded) {
             contextIncluded = true
-            buildContextPrefix() + query
+            buildContextPrefix() + message
         } else {
-            query
+            message
         }
-        viewLifecycleOwner.lifecycleScope.launch {
-            updateServerIfNecessary(mapping)
-            sendNewChatRequest(contextualQuery, userName, aiProvider)
-        }
-    }
-
-    private fun launchContinueChatRequest(query: String, userName: String?, aiProvider: AiProvider, id: String, rev: String) {
-        disableUI()
         val mapping = processServerUrl()
-        viewLifecycleOwner.lifecycleScope.launch {
-            updateServerIfNecessary(mapping)
-            sendContinueChatRequest(query, userName, aiProvider, id, rev)
+        val mapper = serverUrlMapper
+        val preferences = sharedPrefManager.rawPreferences
+        disableUI()
+
+        sharedViewModel.sendChat(query, message, user?.name, aiProvider, conversationId, rev, refreshRev) {
+            mapper.updateServerIfNecessary(mapping, preferences) { url -> isServerReachable(url) }
         }
     }
 
@@ -578,7 +625,8 @@ class ChatDetailFragment : Fragment() {
 
     private fun refreshInputState() {
         _binding?.let { binding ->
-            val enableInput = isUserLoaded && !isAiUnavailable
+            val enableInput = isUserLoaded && !isAiUnavailable &&
+                sharedViewModel.chatRequest.value !is ChatRequestState.Sending
             binding.buttonGchatSend.isEnabled = enableInput
             binding.editGchatMessage.isEnabled = enableInput
         }
@@ -587,19 +635,19 @@ class ChatDetailFragment : Fragment() {
     private fun processServerUrl(): ServerUrlMapper.UrlMapping =
         serverUrlMapper.processUrl(serverUrl)
 
-    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-            isServerReachable(url)
-        }
-    }
-
     private fun getModelsMap(): Map<String, String> {
-        val modelsString = sharedPrefManager.getRawString("ai_models").takeIf { it.isNotEmpty() }
-        return if (modelsString != null) {
-            JsonUtils.gson.fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
+        val modelsString = sharedPrefManager.getRawString("ai_models")
+        if (modelsString == cachedRawModelsString && cachedModelsMap != null) {
+            return cachedModelsMap!!
+        }
+        val parsedMap: Map<String, String> = if (modelsString.isNotEmpty()) {
+            GsonUtils.gson.fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type) ?: emptyMap()
         } else {
             emptyMap()
         }
+        cachedRawModelsString = modelsString
+        cachedModelsMap = parsedMap
+        return parsedMap
     }
 
     private fun getCachedProviderAvailability(): Map<String, Boolean>? {
@@ -612,50 +660,75 @@ class ChatDetailFragment : Fragment() {
             .takeIf { it.isNotEmpty() }
     }
 
-    private suspend fun getLatestRev(id: String): String? {
-        return try {
-            sharedViewModel.getLatestRev(id)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
-    }
-
-    private fun sendNewChatRequest(query: String, userName: String?, aiProvider: AiProvider) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val result = sharedViewModel.sendNewChatRequest(query, userName, aiProvider)
-            handleChatResult(result)
-        }
-    }
-
-    private fun sendContinueChatRequest(query: String, userName: String?, aiProvider: AiProvider, id: String, rev: String) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val result = sharedViewModel.sendContinueChatRequest(query, userName, aiProvider, id, rev)
-            handleChatResult(result)
-        }
-    }
-
-    private fun handleChatResult(result: ChatResult) {
+    private fun handleChatResult(result: ChatResult, query: String) {
         when (result) {
             is ChatResult.Success -> {
                 mAdapter.addResponse(result.response, ChatMessage.RESPONSE_SOURCE_NETWORK)
                 _rev = result.rev
                 currentID = result.id
+                keepConversationInViewModel(result, query)
                 if (isAdded && activity is DashboardActivity) {
                     (activity as DashboardActivity).refreshChatHistory()
                 }
             }
             is ChatResult.Error -> {
+                restoreUnsentQuery(query)
                 showError(result.message)
             }
         }
         enableUI()
     }
 
+    private fun handleChatResultAfterRecreate(result: ChatResult, query: String) {
+        when (result) {
+            is ChatResult.Success -> {
+                val messages = mAdapter.currentList +
+                    ChatMessage(query, ChatMessage.QUERY) +
+                    ChatMessage(result.response, ChatMessage.RESPONSE, ChatMessage.RESPONSE_SOURCE_NETWORK)
+                mAdapter.submitList(messages) {
+                    _binding?.recyclerGchat?.scrollToPosition(mAdapter.itemCount - 1)
+                }
+                _rev = result.rev
+                currentID = result.id
+                keepConversationInViewModel(result, query)
+                if (isAdded && activity is DashboardActivity) {
+                    (activity as DashboardActivity).refreshChatHistory()
+                }
+            }
+            is ChatResult.Error -> {
+                restoreUnsentQuery(query)
+                showError(result.message)
+            }
+        }
+        enableUI()
+    }
+
+    private fun keepConversationInViewModel(result: ChatResult.Success, query: String) {
+        val turn = Conversation().apply {
+            this.query = query
+            response = result.response
+        }
+        val history = sharedViewModel.selectedChatHistory.value.orEmpty() + turn
+        lastChatHistory = history
+        sharedViewModel.setSelectedChatHistory(history)
+        sharedViewModel.setSelectedId(result.id)
+        sharedViewModel.setSelectedRev(result.rev)
+    }
+
+    private fun restoreUnsentQuery(query: String) {
+        _binding?.editGchatMessage?.let { input ->
+            if (input.text.isNullOrEmpty()) {
+                input.setText(query)
+                input.setSelection(query.length)
+            }
+        }
+    }
+
     private fun showError(message: String?) {
         _binding?.let { binding ->
             binding.textGchatIndicator.visibility = View.VISIBLE
-            binding.textGchatIndicator.text = context?.getString(R.string.message_placeholder, message)
+            binding.textGchatIndicator.text = message?.takeIf { it.isNotBlank() }
+                ?: getString(R.string.request_failed_please_retry)
         }
     }
 
@@ -665,6 +738,7 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun clearChatDetail() {
+        if (sharedViewModel.chatRequest.value !is ChatRequestState.Idle) return
         if (newsId == null && sharedViewModel.selectedChatHistory.value.isNullOrEmpty()) {
             if (::mAdapter.isInitialized) {
                 mAdapter.clearData()
@@ -683,12 +757,15 @@ class ChatDetailFragment : Fragment() {
         speechRecognizer?.destroy()
 
         lastChatHistory = null
+        hasRenderedHistory = false
         lastAiProvider = null
         lastAiProvidersLoading = null
         lastAiProvidersError = null
         lastAiProviders = null
 
-        _binding = null
+        cachedRawModelsString = null
+        cachedModelsMap = null
+
         super.onDestroyView()
     }
 
@@ -697,7 +774,7 @@ class ChatDetailFragment : Fragment() {
         val primaryUrl = serverUrl
         val prefManager = sharedPrefManager
         MainApplication.applicationScope.launch(dispatcherProvider.io) {
-            if (isPrimaryServerReachable(primaryUrl, dispatcherProvider.io)) {
+            if (isPrimaryServerReachable(primaryUrl)) {
                 prefManager.setAlternativeUrl("")
                 prefManager.setProcessedAlternativeUrl("")
                 prefManager.setIsAlternativeUrl(false)

@@ -1,8 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import org.ole.planet.myplanet.model.HealthExamination
-import org.ole.planet.myplanet.model.MyHealth
-import org.ole.planet.myplanet.model.UserEntity
 
 data class HealthRecord(
     val healthPojo: HealthExamination,

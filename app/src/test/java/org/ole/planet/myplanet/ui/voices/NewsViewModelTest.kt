@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.voices
 
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -13,7 +12,6 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -25,18 +23,10 @@ class NewsViewModelTest {
     private lateinit var resourcesRepository: ResourcesRepository
     private lateinit var viewModel: NewsViewModel
 
-    private val testDispatcherProvider = object : DispatcherProvider {
-        override val main: CoroutineDispatcher = UnconfinedTestDispatcher()
-        override val mainImmediate: CoroutineDispatcher = UnconfinedTestDispatcher()
-        override val io: CoroutineDispatcher = UnconfinedTestDispatcher()
-        override val default: CoroutineDispatcher = UnconfinedTestDispatcher()
-        override val unconfined: CoroutineDispatcher = UnconfinedTestDispatcher()
-    }
-
     @Before
     fun setup() {
         resourcesRepository = mockk()
-        viewModel = NewsViewModel(resourcesRepository, testDispatcherProvider)
+        viewModel = NewsViewModel(resourcesRepository)
     }
 
     @Test
@@ -77,5 +67,36 @@ class NewsViewModelTest {
         advanceUntilIdle()
 
         assertEquals(expectedUrls, capturedResult)
+    }
+
+    @Test
+    fun `re-subscribing after event is collected does not replay previous emission`() = runTest {
+        val timestamp = 123456789L
+        val expectedUrls = listOf("url1", "url2")
+        coEvery { resourcesRepository.getPrivateImageUrlsCreatedAfter(timestamp) } returns expectedUrls
+
+        var firstCollectorResult: List<String>? = null
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.privateImageUrls.collect { urls ->
+                firstCollectorResult = urls
+            }
+        }
+
+        viewModel.getPrivateImageUrlsCreatedAfter(timestamp)
+        advanceUntilIdle()
+
+        assertEquals(expectedUrls, firstCollectorResult)
+
+        job.cancel()
+
+        var reSubscribedResult: List<String>? = null
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.privateImageUrls.collect { urls ->
+                reSubscribedResult = urls
+            }
+        }
+        advanceUntilIdle()
+
+        assertEquals(null, reSubscribedResult)
     }
 }

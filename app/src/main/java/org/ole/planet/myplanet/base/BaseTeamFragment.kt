@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.base
 
 import android.os.Bundle
+import android.util.Log
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -34,12 +35,16 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
     val isMemberFlow: StateFlow<Boolean> = _isMemberFlow.asStateFlow()
 
 
+    protected suspend fun ensureUserResolved(): UserEntity? {
+        return user ?: userRepository.getUserModel()?.also { user = it }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         teamId = requireArguments().getString("id", "")
 
         lifecycleScope.launch {
-            user = userRepository.getUserModel()
+            ensureUserResolved()
             loadTeamDetails()
         }
     }
@@ -55,7 +60,7 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
                 try {
                     teamsRepository.getTeamById(teamId)
                 } catch (e: IllegalArgumentException) {
-                    e.printStackTrace()
+                    Log.e(TAG, "getTeamById failed", e)
                     null
                 }
             } else {
@@ -99,5 +104,8 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
         _isMemberFlow.value = false
         super.onDestroy()
     }
-    
+
+    private companion object {
+        const val TAG = "BaseTeamFragment"
+    }
 }

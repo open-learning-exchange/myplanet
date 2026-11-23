@@ -13,8 +13,11 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -23,11 +26,11 @@ import org.ole.planet.myplanet.data.room.dao.ChatDao
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatResponse
-import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.CouchDBResponse
-import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.NewsShare
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.ServerReachabilityProvider
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -37,13 +40,15 @@ class ChatRepositoryImplTest {
     private val chatApiService: ChatApiService = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+    private val serverReachabilityProvider: ServerReachabilityProvider = mockk(relaxed = true)
     private val testDispatcher = kotlinx.coroutines.test.StandardTestDispatcher()
     private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {
         every { sharedPrefManager.rawPreferences } returns mockk(relaxed = true)
-        chatRepository = ChatRepositoryImpl(chatDao, chatApiService, serverUrlMapper, sharedPrefManager, dispatcherProvider, Gson())
+        chatRepository = ChatRepositoryImpl(chatDao, chatApiService, serverUrlMapper, sharedPrefManager,
+            serverReachabilityProvider, Gson())
     }
 
     @After
@@ -82,65 +87,76 @@ class ChatRepositoryImplTest {
     }
 
     @Test
-    fun getChatHistoryForUser_delegatesToDao() = runTest {
+    fun getChatHistoryForUser_delegatesToDaoAndSortsByRepositoryOrdering() = runTest {
         val userName = "testUser"
-        val mockHistoryList = listOf(ChatHistory().apply { user = userName })
-        coEvery { chatDao.getByUser(userName) } returns mockHistoryList
+        val oldestChat = ChatHistory().apply {
+            user = userName
+            createdDate = "1000"
+            updatedDate = "1000"
+        }
+        val middleChat = ChatHistory().apply {
+            user = userName
+            createdDate = "2000"
+            updatedDate = "1500"
+        }
+        val newestChat = ChatHistory().apply {
+            user = userName
+            createdDate = "1000"
+            updatedDate = "3000"
+        }
+
+        val reversedDaoList = listOf(oldestChat, middleChat, newestChat)
+        coEvery { chatDao.getByUser(userName) } returns reversedDaoList
 
         val result = chatRepository.getChatHistoryForUser(userName)
 
-        assertEquals(mockHistoryList, result)
+        assertEquals(listOf(newestChat, middleChat, oldestChat), result)
         coVerify(exactly = 1) { chatDao.getByUser(userName) }
     }
 
     @Test
-    fun `searchChats by title correctly filters list`() = runTest(testDispatcher) {
-        val chat1 = ChatHistory().apply { title = "First Chat" }
-        val chat2 = ChatHistory().apply { title = "Second Discussion" }
-        val chats = listOf(chat1, chat2)
-
-        val result = chatRepository.searchChats("First", ChatSearchMode.TITLE, chats)
-
-        assertEquals(1, result.size)
-        assertEquals("First Chat", result[0].title)
-    }
-
-    @Test
-    fun `searchChats by full conversation filters by question`() = runTest(testDispatcher) {
-        val chat1 = ChatHistory().apply {
-            title = "Chat 1"
-            conversations = listOf(Conversation().apply { query = "How is the weather?" })
+    fun getChatHistoryForUser_keepsDaoOrderForTiesNullAndUnparseableDates() = runTest {
+        val userName = "testUser"
+        val nullDates = ChatHistory().apply {
+            user = userName
+            createdDate = null
+            updatedDate = null
         }
-        val chat2 = ChatHistory().apply {
-            title = "Chat 2"
-            conversations = listOf(Conversation().apply { query = "Tell me a joke." })
+        val unparseableDates = ChatHistory().apply {
+            user = userName
+            createdDate = "not-a-date"
+            updatedDate = "also-not-a-date"
         }
-        val chats = listOf(chat1, chat2)
+        val newestTieFirst = ChatHistory().apply {
+            user = userName
+            createdDate = "5000"
+            updatedDate = null
+        }
+        val middle = ChatHistory().apply {
+            user = userName
+            createdDate = "1000"
+            updatedDate = "1000"
+        }
+        val newestTieSecond = ChatHistory().apply {
+            user = userName
+            createdDate = null
+            updatedDate = "5000"
+        }
 
-        val result = chatRepository.searchChats("weather", ChatSearchMode.QUESTION, chats)
+        val daoOrder = listOf(nullDates, newestTieFirst, unparseableDates, middle, newestTieSecond)
+        coEvery { chatDao.getByUser(userName) } returns daoOrder
 
-        assertEquals(1, result.size)
-        assertEquals("Chat 1", result[0].title)
+        val result = chatRepository.getChatHistoryForUser(userName)
+
+        assertEquals(listOf(newestTieFirst, newestTieSecond, middle, nullDates, unparseableDates), result)
+        coVerify(exactly = 1) { chatDao.getByUser(userName) }
     }
 
-    @Test
-    fun `searchChats with empty query returns empty when filtered list logic is applied`() = runTest(testDispatcher) {
-        val chat1 = ChatHistory().apply { title = "Chat 1" }
-        val chat2 = ChatHistory().apply { title = "Chat 2" }
-        val chats = listOf(chat1, chat2)
-
-        val result = chatRepository.searchChats("", ChatSearchMode.TITLE, chats)
-
-        assertEquals(2, result.size)
-    }
 
     @Test
     fun getLatestRev_findsHighestRevByNumericPrefix() = runTest {
         val id = "123"
-        val item1 = ChatHistory().apply { _rev = "1-abc" }
-        val item2 = ChatHistory().apply { _rev = "10-def" }
-        val item3 = ChatHistory().apply { _rev = "2-ghi" }
-        coEvery { chatDao.getByDocId(id) } returns listOf(item1, item2, item3)
+        coEvery { chatDao.getRevsByDocId(id) } returns listOf("1-abc", "10-def", "2-ghi")
 
         val result = chatRepository.getLatestRev(id)
 
@@ -223,6 +239,68 @@ class ChatRepositoryImplTest {
     }
 
     @Test
+    fun sendContinueChatRequest_failedResponse_doesNotSaveATurnWithABlankReply() = runTest {
+        val mockResponse = retrofit2.Response.success(ChatResponse(status = "Error", chat = null, couchDBResponse = null))
+        coEvery { chatApiService.sendChatRequest(any()) } returns mockResponse
+
+        val result = chatRepository.sendContinueChatRequest("hello", "testUser", AiProvider("OpenAI", "GPT-4"), "chat-123", "1-rev")
+
+        assertTrue(result is ChatResult.Error)
+        coVerify(exactly = 0) { chatDao.findByDocId(any()) }
+        coVerify(exactly = 0) { chatDao.update(any()) }
+    }
+
+    @Test
+    fun sendNewChatRequest_serverErrorStatus_surfacesTheErrorBodyMessage() = runTest {
+        val errorJson = """{"error":"Internal Server Error","message":"Invalid API key"}"""
+        val mockResponse = retrofit2.Response.error<ChatResponse>(
+            500,
+            errorJson.toResponseBody("application/json".toMediaType())
+        )
+        coEvery { chatApiService.sendChatRequest(any()) } returns mockResponse
+
+        val result = chatRepository.sendNewChatRequest("hello", "testUser", AiProvider("OpenAI", "GPT-4"))
+
+        assertEquals(ChatResult.Error("Invalid API key"), result)
+    }
+
+    @Test
+    fun sendContinueChatRequest_serverErrorWithoutMessage_fallsBackToErrorField() = runTest {
+        val mockResponse = retrofit2.Response.error<ChatResponse>(
+            404,
+            """{"error":"Not Found"}""".toResponseBody("application/json".toMediaType())
+        )
+        coEvery { chatApiService.sendChatRequest(any()) } returns mockResponse
+
+        val result = chatRepository.sendContinueChatRequest("hello", "testUser", AiProvider("OpenAI", "GPT-4"), "chat-123", "1-rev")
+
+        assertEquals(ChatResult.Error("Not Found"), result)
+    }
+
+    @Test
+    fun sendNewChatRequest_serverErrorWithUnreadableBody_isNeverBlank() = runTest {
+        val mockResponse = retrofit2.Response.error<ChatResponse>(
+            502,
+            "<html>bad gateway</html>".toResponseBody("text/html".toMediaType())
+        )
+        coEvery { chatApiService.sendChatRequest(any()) } returns mockResponse
+
+        val result = chatRepository.sendNewChatRequest("hello", "testUser", AiProvider("OpenAI", "GPT-4"))
+
+        assertTrue(result is ChatResult.Error && result.message.isNotBlank())
+    }
+
+    @Test
+    fun sendContinueChatRequest_networkError_doesNotSaveATurnWithABlankReply() = runTest {
+        coEvery { chatApiService.sendChatRequest(any()) } throws java.io.IOException("offline")
+
+        val result = chatRepository.sendContinueChatRequest("hello", "testUser", AiProvider("OpenAI", "GPT-4"), "chat-123", "1-rev")
+
+        assertTrue(result is ChatResult.Error)
+        coVerify(exactly = 0) { chatDao.update(any()) }
+    }
+
+    @Test
     fun `extractSharedViewInIds returns empty map for empty list`() {
         val result = chatRepository.extractSharedViewInIds(emptyList())
         assertTrue(result.isEmpty())
@@ -230,28 +308,16 @@ class ChatRepositoryImplTest {
 
     @Test
     fun `extractSharedViewInIds ignores news with null newsId`() {
-        val news = News().apply {
-            newsId = null
-            viewIn = """[{"_id":"id1"}]"""
-        }
+        val news = NewsShare(null, """[{"_id":"id1"}]""")
         val result = chatRepository.extractSharedViewInIds(listOf(news))
         assertTrue(result.isEmpty())
     }
 
     @Test
     fun `extractSharedViewInIds extracts unique viewIn ids grouped by newsId`() {
-        val news1 = News().apply {
-            newsId = "news_1"
-            viewIn = """[{"_id":"id1"}, {"_id":"id2"}]"""
-        }
-        val news2 = News().apply {
-            newsId = "news_1"
-            viewIn = """[{"_id":"id2"}, {"_id":"id3"}]"""
-        }
-        val news3 = News().apply {
-            newsId = "news_2"
-            viewIn = """[{"_id":"id4"}]"""
-        }
+        val news1 = NewsShare("news_1", """[{"_id":"id1"}, {"_id":"id2"}]""")
+        val news2 = NewsShare("news_1", """[{"_id":"id2"}, {"_id":"id3"}]""")
+        val news3 = NewsShare("news_2", """[{"_id":"id4"}]""")
 
         val result = chatRepository.extractSharedViewInIds(listOf(news1, news2, news3))
 
@@ -262,22 +328,10 @@ class ChatRepositoryImplTest {
 
     @Test
     fun `extractSharedViewInIds handles malformed json gracefully`() {
-        val news1 = News().apply {
-            newsId = "news_1"
-            viewIn = "malformed json"
-        }
-        val news2 = News().apply {
-            newsId = "news_2"
-            viewIn = """{"not":"an array"}"""
-        }
-        val news3 = News().apply {
-            newsId = "news_3"
-            viewIn = null
-        }
-        val news4 = News().apply {
-            newsId = "news_4"
-            viewIn = """[{"no_id":"present"}]"""
-        }
+        val news1 = NewsShare("news_1", "malformed json")
+        val news2 = NewsShare("news_2", """{"not":"an array"}""")
+        val news3 = NewsShare("news_3", null)
+        val news4 = NewsShare("news_4", """[{"no_id":"present"}]""")
 
         val result = chatRepository.extractSharedViewInIds(listOf(news1, news2, news3, news4))
 
@@ -286,5 +340,45 @@ class ChatRepositoryImplTest {
         assertTrue(result["news_2"]!!.isEmpty())
         assertTrue(result["news_3"]!!.isEmpty())
         assertTrue(result["news_4"]!!.isEmpty())
+    }
+
+    @Test
+    fun getLatestRev_spansDigitBoundary() = runTest {
+        val id = "digit_boundary_id"
+        coEvery { chatDao.getRevsByDocId(id) } returns listOf("9-abc", "10-def")
+
+        val result = chatRepository.getLatestRev(id)
+
+        assertEquals("10-def", result)
+    }
+
+    @Test
+    fun getLatestRev_handlesNullRevAmongValidRevs() = runTest {
+        val id = "null_rev_id"
+        coEvery { chatDao.getRevsByDocId(id) } returns listOf("1-abc", null, "2-def")
+
+        val result = chatRepository.getLatestRev(id)
+
+        assertEquals("2-def", result)
+    }
+
+    @Test
+    fun getLatestRev_handlesRevWithNoLeadingInteger() = runTest {
+        val id = "no_leading_int_id"
+        coEvery { chatDao.getRevsByDocId(id) } returns listOf("invalid_rev", "5-abc", "no-leading-int")
+
+        val result = chatRepository.getLatestRev(id)
+
+        assertEquals("5-abc", result)
+    }
+
+    @Test
+    fun getLatestRev_returnsNullWhenNoRowsExist() = runTest {
+        val id = "empty_id"
+        coEvery { chatDao.getRevsByDocId(id) } returns emptyList()
+
+        val result = chatRepository.getLatestRev(id)
+
+        assertNull(result)
     }
 }

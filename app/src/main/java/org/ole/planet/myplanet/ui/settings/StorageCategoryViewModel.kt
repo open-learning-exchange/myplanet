@@ -1,10 +1,8 @@
 package org.ole.planet.myplanet.ui.settings
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -17,20 +15,21 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.OfflineResourceItem
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.FileUtils
 
 data class StorageCategoryUiState(
     val items: List<OfflineResourceItem> = emptyList(),
     val isLoading: Boolean = false,
     val isDeleting: Boolean = false,
-    val isEmpty: Boolean = false
-)
+    val isEmpty: Boolean = false,
+    val checkedCount: Int = 0
+) {
+    val allChecked: Boolean get() = checkedCount == items.size && items.isNotEmpty()
+}
 
 @HiltViewModel
 class StorageCategoryViewModel @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
-    private val dispatcherProvider: DispatcherProvider,
-    @ApplicationContext private val context: Context
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(StorageCategoryUiState())
@@ -41,18 +40,19 @@ class StorageCategoryViewModel @Inject constructor(
 
     private var hasLoaded = false
 
-    fun loadResources(extensions: Set<String>, allKnownExtensions: Set<String>) {
+    fun loadResources(olePath: String, extensions: Set<String>, allKnownExtensions: Set<String>) {
         if (hasLoaded) return
         hasLoaded = true
         _uiState.update { it.copy(isLoading = true, isEmpty = false) }
         viewModelScope.launch(dispatcherProvider.io) {
-            val olePath = FileUtils.getOlePath(context)
             val loaded = resourcesRepository.getOfflineResourceItems(olePath, extensions, allKnownExtensions)
+            val checkedCount = loaded.count { it.isChecked }
             _uiState.update {
                 it.copy(
                     items = loaded,
                     isLoading = false,
-                    isEmpty = loaded.isEmpty()
+                    isEmpty = loaded.isEmpty(),
+                    checkedCount = checkedCount
                 )
             }
         }
@@ -60,26 +60,41 @@ class StorageCategoryViewModel @Inject constructor(
 
     fun toggleItemChecked(resourceId: String) {
         _uiState.update { state ->
-            val updatedItems = state.items.map {
-                if (it.resourceId == resourceId) it.copy(isChecked = !it.isChecked) else it
+            var checkedCount = 0
+            val updatedItems = state.items.map { item ->
+                val updated = if (item.resourceId == resourceId) item.copy(isChecked = !item.isChecked) else item
+                if (updated.isChecked) checkedCount++
+                updated
             }
-            state.copy(items = updatedItems)
+            state.copy(items = updatedItems, checkedCount = checkedCount)
         }
     }
 
     fun toggleAllChecked() {
         _uiState.update { state ->
-            val allChecked = state.items.all { it.isChecked }
-            val updatedItems = state.items.map { it.copy(isChecked = !allChecked) }
-            state.copy(items = updatedItems)
+            val targetChecked = !state.allChecked
+            val updatedItems = state.items.map { it.copy(isChecked = targetChecked) }
+            val checkedCount = if (targetChecked) updatedItems.size else 0
+            state.copy(items = updatedItems, checkedCount = checkedCount)
         }
     }
 
-    fun deleteItems(items: List<OfflineResourceItem>) {
+    fun deleteSelected(olePath: String) {
+        val selected = _uiState.value.items.filter { it.isChecked }
+        if (selected.isEmpty()) return
+        deleteItems(olePath, selected)
+    }
+
+    fun deleteAll(olePath: String) {
+        val items = _uiState.value.items
+        if (items.isEmpty()) return
+        deleteItems(olePath, items)
+    }
+
+    private fun deleteItems(olePath: String, items: List<OfflineResourceItem>) {
         if (_uiState.value.isDeleting) return
         _uiState.update { it.copy(isDeleting = true) }
         viewModelScope.launch(dispatcherProvider.io) {
-            val olePath = FileUtils.getOlePath(context)
             resourcesRepository.deleteOfflineResources(olePath, items)
             _uiState.update { it.copy(isDeleting = false) }
             _deleteCompleteEvent.send(Unit)

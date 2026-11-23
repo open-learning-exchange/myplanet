@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.application)
     alias(libs.plugins.ksp)
     alias(libs.plugins.dagger.hilt.android)
+    alias(libs.plugins.kotlin.serialization)
 }
 android {
     compileSdk = 37
@@ -10,19 +11,28 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6759
-        versionName = "0.67.59"
+        versionCode = 7936
+        versionName = "0.79.36"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
     testOptions {
         unitTests {
             includeAndroidResources = true
+            returnDefaultValues = true
             all { test ->
                 def requested = project.findProperty('testMaxParallelForks') as String
                 test.maxParallelForks = requested ? requested.toInteger()
                     : Math.min(Runtime.runtime.availableProcessors(), 4)
                 test.maxHeapSize = "1536m"
+                // Robolectric 4.17's FileDescriptorInterceptor reflects into jdk.internal.access.SharedSecrets
+                // for the ApplicationSharedMemory shadow; JDK 17+ blocks that without this opt-in.
+                test.jvmArgs += ["--add-opens=java.base/jdk.internal.access=ALL-UNNAMED"]
+                test.testLogging {
+                    events "failed"
+                    exceptionFormat = "short"
+                    showStackTraces = true
+                }
                 def shardTotal = (project.findProperty('testShardTotal') ?: '1').toInteger()
                 def shardIndex = (project.findProperty('testShardIndex') ?: '0').toInteger()
                 if (shardTotal < 1 || shardIndex < 0 || shardIndex >= shardTotal) {
@@ -48,7 +58,8 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled = false
+            minifyEnabled = true
+            shrinkResources = true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
@@ -205,6 +216,7 @@ dependencies {
     implementation(libs.cardview)
     implementation(libs.constraintlayout)
     implementation(libs.core.ktx)
+    implementation(libs.flexbox)
     implementation(libs.lifecycle.process)
     implementation(libs.hilt.work)
     ksp(libs.hilt.compiler)
@@ -236,11 +248,11 @@ dependencies {
     implementation(libs.opencsv) { exclude group: 'commons-logging', module: 'commons-logging' }
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
     implementation(libs.okhttp)
     implementation(libs.circleimageview)
     implementation(libs.pbkdf2)
     implementation(libs.markwon.editor)
-    implementation(libs.markwon.image)
     implementation(libs.markwon.image.glide)
     implementation(libs.markwon.html)
     implementation(libs.markwon.ext.tables)
@@ -254,18 +266,14 @@ dependencies {
     implementation(libs.pdfbox.android) { exclude group: 'org.bouncycastle' }
 }
 // From DefaultSdkProvider; dependabot cannot bump these. See docs/TESTING.md.
-def robolectricSdkJarsFrom = '4.16.1'
+def robolectricSdkJarsFrom = '4.18'
 def robolectricPinned = libs.versions.robolectric.get()
 def robolectricSdkJars = [
     26: '8.0.0_r4-robolectric-r1-i7',
     27: '8.1.0-robolectric-4611349-i7',
     28: '9-robolectric-4913185-2-i7',
-    30: '11-robolectric-6757853-i7',
-    31: '12-robolectric-7732740-i7',
-    32: '12.1-robolectric-8229987-i7',
     33: '13-robolectric-9030017-i7',
-    34: '14-robolectric-10818077-i7',
-    36: '16-robolectric-13921718-i7',
+    36: '16-robolectric-13921718-2-i7',
 ]
 // One per level: nine versions of one module would collapse to the newest.
 robolectricSdkJars.each { apiLevel, jarVersion ->

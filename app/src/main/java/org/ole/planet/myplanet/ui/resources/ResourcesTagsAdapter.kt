@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
+import android.widget.CompoundButton
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
@@ -13,7 +14,6 @@ import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.databinding.RowNavigationChildAdapterBinding
 import org.ole.planet.myplanet.databinding.RowNavigationParentAdapterBinding
 import org.ole.planet.myplanet.model.TagData
-import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.utils.DiffUtils
 
 class ResourcesTagsAdapter(
@@ -66,6 +66,31 @@ class ResourcesTagsAdapter(
     }
 
     inner class ParentViewHolder(private val binding: RowNavigationParentAdapterBinding) : RecyclerView.ViewHolder(binding.root) {
+        private val checkedListener = CompoundButton.OnCheckedChangeListener { _, _ ->
+            val pos = bindingAdapterPosition
+            if (pos == RecyclerView.NO_POSITION) return@OnCheckedChangeListener
+            val item = getItem(pos) as? TagData.Parent ?: return@OnCheckedChangeListener
+            listener.onCheckboxTagSelected(item.tag)
+        }
+
+        init {
+            binding.tvDrawerTitle1.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                val item = getItem(pos) as? TagData.Parent ?: return@setOnClickListener
+                listener.onTagClicked(item.tag)
+            }
+
+            binding.root.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                val item = getItem(pos) as? TagData.Parent ?: return@setOnClickListener
+                if (listener.hasChildren(item.tag.id)) {
+                    listener.onParentTagClicked(item)
+                }
+            }
+        }
+
         fun bind(parent: TagData.Parent) {
             binding.tvDrawerTitle1.text = parent.tag.name
             binding.tvDrawerTitle.text = parent.tag.name
@@ -76,15 +101,13 @@ class ResourcesTagsAdapter(
                 binding.tvDrawerTitle1.visibility = View.VISIBLE
                 binding.tvDrawerTitle.visibility = View.GONE
                 binding.ivIndicators.visibility = View.GONE
-                binding.tvDrawerTitle1.setOnClickListener { listener.onTagClicked(parent.tag) }
             } else {
                 binding.tvDrawerTitle.visibility = View.VISIBLE
                 binding.tvDrawerTitle1.visibility = View.GONE
                 binding.ivIndicators.visibility = View.VISIBLE
                 setExpandedIcon(parent.isExpanded, binding.ivIndicators)
-                binding.root.setOnClickListener { listener.onParentTagClicked(parent) }
             }
-            createCheckbox(binding.checkbox, parent.tag, parent.isSelectMultiple, parent.isSelected)
+            createCheckbox(binding.checkbox, parent.isSelectMultiple, parent.isSelected, checkedListener)
         }
     }
 
@@ -92,12 +115,27 @@ class ResourcesTagsAdapter(
         private val backgroundColor = ContextCompat.getColor(itemView.context, R.color.multi_select_grey)
         private val textColor = ContextCompat.getColor(itemView.context, R.color.daynight_textColor)
 
+        private val checkedListener = CompoundButton.OnCheckedChangeListener { _, _ ->
+            val pos = bindingAdapterPosition
+            if (pos == RecyclerView.NO_POSITION) return@OnCheckedChangeListener
+            val item = getItem(pos) as? TagData.Child ?: return@OnCheckedChangeListener
+            listener.onCheckboxTagSelected(item.tag)
+        }
+
+        init {
+            binding.tvDrawerTitle.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                val item = getItem(pos) as? TagData.Child ?: return@setOnClickListener
+                listener.onTagClicked(item.tag)
+            }
+        }
+
         fun bind(child: TagData.Child) {
             binding.tvDrawerTitle.text = child.tag.name
             binding.root.setBackgroundColor(backgroundColor)
             binding.tvDrawerTitle.setTextColor(textColor)
-            binding.tvDrawerTitle.setOnClickListener { listener.onTagClicked(child.tag) }
-            createCheckbox(binding.checkbox, child.tag, child.isSelectMultiple, child.isSelected)
+            createCheckbox(binding.checkbox, child.isSelectMultiple, child.isSelected, checkedListener)
         }
     }
 
@@ -107,15 +145,15 @@ class ResourcesTagsAdapter(
 
     private fun createCheckbox(
         checkBox: CheckBox,
-        tag: TagEntity,
         isSelectMultiple: Boolean,
-        isSelected: Boolean
+        isSelected: Boolean,
+        checkedListener: CompoundButton.OnCheckedChangeListener
     ) {
         checkBox.visibility = if (isSelectMultiple) View.VISIBLE else View.GONE
 
         checkBox.setOnCheckedChangeListener(null)
         checkBox.isChecked = isSelected
-        checkBox.setOnCheckedChangeListener { _, _ -> listener.onCheckboxTagSelected(tag) }
+        checkBox.setOnCheckedChangeListener(checkedListener)
     }
 
 }

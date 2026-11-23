@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.health
 
 import android.app.DatePickerDialog
+import android.content.Context
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
@@ -25,6 +27,7 @@ class AddHealthActivity : AppCompatActivity() {
     private val viewModel: HealthViewModel by viewModels()
     var userId: String? = null
     private var myHealth: MyHealth? = null
+    private var isPrefilled = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,7 +37,9 @@ class AddHealthActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         userId = intent.getStringExtra("userId")
+        isPrefilled = savedInstanceState?.getBoolean(KEY_PREFILLED) ?: false
         binding.btnSubmit.setOnClickListener {
+            it.isEnabled = false
             createMyHealth()
         }
 
@@ -56,6 +61,11 @@ class AddHealthActivity : AppCompatActivity() {
         binding.ivDatePicker.setOnClickListener(datePickerClickListener)
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_PREFILLED, isPrefilled)
+    }
+
     private fun createMyHealth() {
         val fname = "${binding.etFname.editText?.text}".trim { ch -> ch <= ' ' }
         val mname = "${binding.etMname.editText?.text}".trim { ch -> ch <= ' ' }
@@ -66,7 +76,7 @@ class AddHealthActivity : AppCompatActivity() {
         val phone = "${binding.etPhone.editText?.text}".trim { ch -> ch <= ' ' }
         val emergencyName = "${binding.etEmergency.editText?.text}".trim { ch -> ch <= ' ' }
         val emergencyContact = "${binding.etContact.editText?.text}".trim { ch -> ch <= ' ' }
-        val emergencyType = "${binding.spnContactType.selectedItem}".trim { ch -> ch <= ' ' }
+        val emergencyType = contactTypeKeys(this).getOrElse(binding.spnContactType.selectedItemPosition) { "" }
         val specialNeeds = "${binding.etSpecialNeed.editText?.text}".trim { ch -> ch <= ' ' }
         val otherNeed = "${binding.etOtherNeed.editText?.text}".trim { ch -> ch <= ' ' }
 
@@ -85,7 +95,13 @@ class AddHealthActivity : AppCompatActivity() {
             "notes" to otherNeed
         )
 
-        userId?.let { viewModel.saveHealthData(it, userData) }
+        val id = userId
+        if (id == null) {
+            binding.btnSubmit.isEnabled = true
+            Utilities.toast(this, getString(R.string.unable_to_add_health_record))
+            return
+        }
+        viewModel.saveHealthData(id, userData)
     }
 
     private fun initViews() {
@@ -93,23 +109,27 @@ class AddHealthActivity : AppCompatActivity() {
     }
 
     private fun populate() {
-        userId?.let { viewModel.loadHealthData(it) }
+        if (!isPrefilled) {
+            userId?.let { viewModel.loadHealthData(it) }
+        }
 
         collectWhenStarted(viewModel.isLoading) { isLoading ->
             binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         }
 
         collectWhenStarted(viewModel.healthData) { healthData ->
+            if (isPrefilled) return@collectWhenStarted
             healthData?.let {
+                isPrefilled = true
                 myHealth = it.myHealth
                 val health = myHealth?.profile
 
                 binding.etEmergency.editText?.setText(health?.emergencyContactName)
                 binding.etContact.editText?.setText(health?.emergencyContact)
-                val contactTypes = resources.getStringArray(R.array.contact_type)
                 val contactType = health?.emergencyContactType
                 if (!contactType.isNullOrEmpty()) {
-                    val index = contactTypes.indexOf(contactType)
+                    val index = contactTypeKeys(this@AddHealthActivity).indexOf(contactType)
+                        .takeIf { it >= 0 } ?: resources.getStringArray(R.array.contact_type).indexOf(contactType)
                     if (index >= 0) {
                         binding.spnContactType.setSelection(index)
                     }
@@ -133,6 +153,11 @@ class AddHealthActivity : AppCompatActivity() {
                 finish()
             }
         }
+
+        collectWhenStarted(viewModel.saveFailed) {
+            binding.btnSubmit.isEnabled = true
+            Utilities.toast(this@AddHealthActivity, getString(R.string.unable_to_add_health_record))
+        }
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -140,4 +165,17 @@ class AddHealthActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
+    companion object {
+        private const val KEY_PREFILLED = "is_prefilled"
+
+        fun contactTypeKeys(context: Context): Array<String> {
+            val english = Configuration(context.resources.configuration).apply { setLocale(Locale.ENGLISH) }
+            return context.createConfigurationContext(english).resources.getStringArray(R.array.contact_type)
+        }
+        
+        fun contactTypeLabel(context: Context, value: String?): String? {
+            val index = contactTypeKeys(context).indexOf(value)
+            return if (index >= 0) context.resources.getStringArray(R.array.contact_type).getOrNull(index) ?: value else value
+        }
+    }
 }

@@ -2,12 +2,10 @@ package org.ole.planet.myplanet.ui.personals
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import java.io.File
 import org.ole.planet.myplanet.callback.OnPersonalSelectedListener
 import org.ole.planet.myplanet.databinding.RowMyPersonalBinding
 import org.ole.planet.myplanet.model.Personal
@@ -20,6 +18,7 @@ import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 
 class PersonalsAdapter(private val context: Context) : ListAdapter<Personal, PersonalsViewHolder>(DIFF_CALLBACK) {
     private var listener: OnPersonalSelectedListener? = null
+    private val dateCache = HashMap<Long, String>()
 
     fun setListener(listener: OnPersonalSelectedListener?) {
         this.listener = listener
@@ -27,15 +26,7 @@ class PersonalsAdapter(private val context: Context) : ListAdapter<Personal, Per
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PersonalsViewHolder {
         val binding = RowMyPersonalBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return PersonalsViewHolder(binding)
-    }
-
-    override fun onBindViewHolder(holder: PersonalsViewHolder, position: Int) {
-        val binding = holder.binding
-        val item = getItem(position)
-        binding.title.text = item.title
-        binding.description.text = item.description
-        binding.date.text = getFormattedDate(item.date)
+        val holder = PersonalsViewHolder(binding)
         binding.imgDelete.setOnClickListener {
             val adapterPosition = holder.bindingAdapterPosition
             if (adapterPosition != RecyclerView.NO_POSITION) {
@@ -60,6 +51,15 @@ class PersonalsAdapter(private val context: Context) : ListAdapter<Personal, Per
                 listener?.onUpload(getItem(adapterPosition))
             }
         }
+        return holder
+    }
+
+    override fun onBindViewHolder(holder: PersonalsViewHolder, position: Int) {
+        val binding = holder.binding
+        val item = getItem(position)
+        binding.title.text = item.title
+        binding.description.text = item.description
+        binding.date.text = dateCache.getOrPut(item.date) { getFormattedDate(item.date) }
     }
 
     private fun openResource(path: String?) {
@@ -68,6 +68,7 @@ class PersonalsAdapter(private val context: Context) : ListAdapter<Personal, Per
             "pdf" -> context.startActivity(
                 Intent(context, ResourceViewerActivity::class.java)
                     .putExtra("TOUCHED_FILE", path)
+                    .putExtra("isFullPath", true)
                     .putExtra("resourceType", ResourceViewerFragment.ResourceType.PDF.name)
             )
             "bmp", "gif", "jpg", "png", "webp" -> context.startActivity(
@@ -79,7 +80,8 @@ class PersonalsAdapter(private val context: Context) : ListAdapter<Personal, Per
             "aac", "mp3" -> openAudioFile(context, path)
             "mp4" -> context.startActivity(
                 Intent(context, ResourceViewerActivity::class.java)
-                    .putExtra("TOUCHED_FILE", Uri.fromFile(File(path)).toString())
+                    .putExtra("TOUCHED_FILE", path)
+                    .putExtra("isFullPath", true)
                     .putExtra("resourceType", ResourceViewerFragment.ResourceType.VIDEO.name)
             )
         }

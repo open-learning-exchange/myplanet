@@ -6,7 +6,13 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import org.ole.planet.myplanet.utils.JsonUtils
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.toGson
+import org.ole.planet.myplanet.utils.toKotlinx
 
 @Entity(tableName = "answers", indices = [Index("examId"), Index("questionId"), Index("submissionId")])
 open class Answer(
@@ -15,7 +21,7 @@ open class Answer(
     var valueChoices: List<String>? = null,
     var mistakes: Int = 0,
     var isPassed: Boolean = false,
-    var grade: Int = 0,
+    var grade: Int? = null,
     var examId: String? = null,
     var questionId: String? = null,
     var submissionId: String? = null
@@ -23,38 +29,36 @@ open class Answer(
     @get:Ignore
     val valueChoicesArray: JsonArray
         get() {
-            val array = JsonArray()
             if (valueChoices == null) {
-                return array
+                return JsonArray()
             }
-            for (choice in valueChoices ?: emptyList()) {
-                array.add(JsonUtils.gson.fromJson(choice, JsonObject::class.java))
-            }
-            return array
+            return buildJsonArray {
+                for (choice in valueChoices ?: emptyList()) {
+                    val parsed = GsonUtils.gson.fromJson(choice, JsonObject::class.java)
+                    add(parsed?.toKotlinx() ?: JsonNull)
+                }
+            }.toGson()
         }
 
     companion object {
-        fun serializeAnswer(answers: List<Answer>): JsonArray {
-            val array = JsonArray()
+        fun serializeAnswer(answers: List<Answer>): JsonArray = buildJsonArray {
             for (ans in answers) {
-                array.add(createObject(ans))
+                add(createObject(ans).toKotlinx())
             }
-            return array
-        }
+        }.toGson()
 
-        private fun createObject(ans: Answer): JsonObject {
-            val `object` = JsonObject()
+        private fun createObject(ans: Answer): JsonObject = buildJsonObject {
             if (!ans.value.isNullOrEmpty()) {
-                `object`.addProperty("value", ans.value)
+                put("value", ans.value)
             } else {
-                `object`.add("value", ans.valueChoicesArray)
+                put("value", ans.valueChoicesArray.toKotlinx())
             }
-            `object`.addProperty("mistakes", ans.mistakes)
-            `object`.addProperty("passed", ans.isPassed)
+            put("mistakes", ans.mistakes)
+            put("passed", ans.isPassed)
+            ans.grade?.let { put("grade", it) }
             if (!ans.questionId.isNullOrEmpty()) {
-                `object`.addProperty("questionId", ans.questionId)
+                put("questionId", ans.questionId)
             }
-            return `object`
-        }
+        }.toGson()
     }
 }

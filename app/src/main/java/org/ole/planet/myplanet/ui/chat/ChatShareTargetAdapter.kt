@@ -22,23 +22,28 @@ class ChatShareTargetAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val layoutInflater = LayoutInflater.from(parent.context)
-        return if (viewType == VIEW_TYPE_GROUP) {
+        val holder = if (viewType == VIEW_TYPE_GROUP) {
             val view = layoutInflater.inflate(R.layout.expandable_list_group, parent, false)
             GroupViewHolder(view)
         } else {
             val view = layoutInflater.inflate(R.layout.expandable_list_item, parent, false)
             ChildViewHolder(view)
         }
+        holder.itemView.setOnClickListener {
+            val pos = holder.bindingAdapterPosition
+            if (pos != RecyclerView.NO_POSITION) {
+                onItemClick(getItem(pos))
+            }
+        }
+        return holder
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val item = getItem(position)
         if (holder is GroupViewHolder) {
             holder.bind(item)
-            holder.itemView.setOnClickListener { onItemClick(item) }
         } else if (holder is ChildViewHolder) {
             holder.bind(item)
-            holder.itemView.setOnClickListener { onItemClick(item) }
         }
     }
 

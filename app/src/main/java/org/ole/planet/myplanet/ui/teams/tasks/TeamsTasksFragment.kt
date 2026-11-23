@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.databinding.FragmentTeamsTasksBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.effectiveStatus
 import org.ole.planet.myplanet.ui.teams.TeamViewModel
 import org.ole.planet.myplanet.ui.user.UserArrayAdapter
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
@@ -53,6 +54,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         val description: String?,
         val deadline: Long,
         val completed: Boolean,
+        val effectiveStatus: String,
         val assignee: String?
     )
     private var lastSubmittedSnapshot: List<TaskSnapshot>? = null
@@ -125,13 +127,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         // Handle member assignment
         alertTaskBinding.tvAssignMember.setOnClickListener {
             viewLifecycleOwner.lifecycleScope.launch {
-                val userList = teamsTasksViewModel.getJoinedMembers(teamId)
-                val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() || !user.name.isNullOrBlank() }
-
-                if (filteredUserList.isEmpty()) {
-                    Toast.makeText(context, R.string.no_members_task, Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
+                val filteredUserList = loadAssignableMembers() ?: return@launch
 
                 showMemberSelectionDialog(filteredUserList) { user ->
                     selectedAssignee = user
@@ -141,7 +137,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
 
         val titleView = TextView(requireActivity()).apply {
-            text = getString(R.string.add_task)
+            text = getString(if (t == null) R.string.add_task else R.string.edit_task)
             setTextColor(context.getColor(R.color.daynight_textColor))
             setPadding(75, 50, 0, 0)
             textSize = 24f
@@ -155,8 +151,8 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         val alertDialog = builder.create()
         alertDialog.show()
         alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            val task = alertTaskBinding.etTask.text.toString()
-            val desc = alertTaskBinding.etDescription.text.toString()
+            val task = alertTaskBinding.etTask.text.toString().trim()
+            val desc = alertTaskBinding.etDescription.text.toString().trim()
             var isValid = true
             if (task.isEmpty()) {
                 Utilities.toast(activity, getString(R.string.task_title_is_required))
@@ -170,12 +166,22 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                 isValid = false
             }
             if (isValid) {
-                createOrUpdateTask(task, desc, t, selectedAssignee?.id)
+                createOrUpdateTask(task, desc, t, selectedAssignee?.id ?: t?.assignee)
                 alertDialog.dismiss()
             }
         }
         alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
     }
+
+    private suspend fun loadAssignableMembers(): List<UserEntity>? {
+        val filteredUserList = teamsTasksViewModel.getAssignableMembers(teamId)
+        if (filteredUserList.isEmpty()) {
+            Toast.makeText(context, R.string.no_members_task, Toast.LENGTH_SHORT).show()
+            return null
+        }
+        return filteredUserList
+    }
+
     private fun showMemberSelectionDialog(filteredUserList: List<UserEntity>, onAssigneeSelected: (UserEntity) -> Unit) {
         var dialogSelectedItem: UserEntity? = filteredUserList.firstOrNull()
 
@@ -273,18 +279,6 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
     }
 
-    private fun allTasks(tasks: List<TeamTask>): List<TeamTask> {
-        return tasks.sortedWith(compareBy<TeamTask> { it.completed }.thenByDescending { it.deadline })
-    }
-
-    private fun completedTasks(tasks: List<TeamTask>): List<TeamTask> {
-        return tasks.filter { it.completed }.sortedByDescending { it.deadline }
-    }
-
-    private fun myTasks(tasks: List<TeamTask>): List<TeamTask> {
-        return tasks.filter { !it.completed && it.assignee == user?.id }.sortedByDescending { it.deadline }
-    }
-
     override fun onNewsItemClick(news: News?) {}
     override fun clearImages() {
         imageList.clear()
@@ -300,22 +294,25 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
             val tasksSnapshot = teamViewModel.taskList.value
 
             val (taskList, fetchedNames, currentSnapshot) = withContext(dispatcherProvider.io) {
-                val list = when (currentTab) {
-                    R.id.btn_my -> myTasks(tasksSnapshot)
-                    R.id.btn_completed -> completedTasks(tasksSnapshot)
-                    else -> allTasks(tasksSnapshot)
+                val tab = when (currentTab) {
+                    R.id.btn_todo -> TaskTab.TODO
+                    R.id.btn_in_progress -> TaskTab.IN_PROGRESS
+                    R.id.btn_completed -> TaskTab.COMPLETED
+                    R.id.btn_my -> TaskTab.MINE
+                    else -> TaskTab.ALL
                 }
+                val list = TeamsTasksViewModel.filterTasks(tasksSnapshot, tab, user?.id)
 
                 val currentSnapshot = list.map {
-                    TaskSnapshot(it.id, it.title, it.description, it.deadline, it.completed, it.assignee)
+                    TaskSnapshot(it.id, it.title, it.description, it.deadline, it.completed, it.effectiveStatus(), it.assignee)
                 }
                 if (currentSnapshot == lastSubmittedSnapshot) {
                     return@withContext Triple(null, null, currentSnapshot)
                 }
 
-                val assigneesToFetch = list.mapNotNull { it.assignee }
-                    .filter { it.isNotBlank() && !knownAssigneeIds.contains(it) }
-                    .distinct()
+                val assigneesToFetch = list.mapNotNullTo(LinkedHashSet()) { task ->
+                    task.assignee?.takeIf { it.isNotBlank() && it !in knownAssigneeIds }
+                }
 
                 val fetchedAssigneeNames = if (assigneesToFetch.isNotEmpty()) teamsTasksViewModel.fetchAssigneeNames(assigneesToFetch) else emptyMap()
                 Triple(list, fetchedAssigneeNames, currentSnapshot)
@@ -335,9 +332,9 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
     }
 
-    override fun onCheckChange(realmTeamTask: TeamTask?, completed: Boolean) {
-        val taskId = realmTeamTask?.id ?: return
-        teamsTasksViewModel.setTaskCompletion(taskId, completed)
+    override fun onStatusChange(task: TeamTask?, newStatus: String) {
+        val taskId = task?.id ?: return
+        teamsTasksViewModel.setTaskStatus(taskId, newStatus)
     }
 
     override fun onEdit(task: TeamTask?) {
@@ -356,13 +353,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val userList = teamsTasksViewModel.getJoinedMembers(teamId)
-            val filteredUserList = userList.filter { user -> user.getFullName().isNotBlank() || !user.name.isNullOrBlank() }
-
-            if (filteredUserList.isEmpty()) {
-                Toast.makeText(context, R.string.no_members_task, Toast.LENGTH_SHORT).show()
-                return@launch
-            }
+            val filteredUserList = loadAssignableMembers() ?: return@launch
 
             var dialogSelectedItem: UserEntity? = filteredUserList.firstOrNull()
 

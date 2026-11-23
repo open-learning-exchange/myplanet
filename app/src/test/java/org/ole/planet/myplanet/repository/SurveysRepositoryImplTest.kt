@@ -3,9 +3,13 @@ package org.ole.planet.myplanet.repository
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
 import java.util.concurrent.TimeUnit
@@ -89,6 +93,29 @@ class SurveysRepositoryImplTest {
     }
 
     @Test
+    fun `bulkInsertExamsFromSync keeps the course link written by the courses sync`() = runTest {
+        coEvery { examDao.getByIds(listOf("exam1")) } returns listOf(StepExam(id = "exam1", courseId = "course1", stepId = "step1"))
+        val saved = slot<List<StepExam>>()
+        coEvery { examDao.upsertAll(capture(saved)) } returns Unit
+        val jsonArray = JsonArray().apply {
+            add(JsonObject().apply {
+                add("doc", JsonObject().apply {
+                    addProperty("_id", "exam1")
+                    addProperty("name", "Course Test")
+                    addProperty("type", "courses")
+                })
+            })
+        }
+
+        repository.bulkInsertExamsFromSync(jsonArray)
+
+        val exam = saved.captured.single()
+        assertEquals("Course Test", exam.name)
+        assertEquals("course1", exam.courseId)
+        assertEquals("step1", exam.stepId)
+    }
+
+    @Test
     fun `getExamQuestions filters by examId`() = runTest {
         coEvery { questionDao.getByExamId("exam1") } returns listOf(ExamQuestion(id = "q1", examId = "exam1"))
 
@@ -123,11 +150,9 @@ class SurveysRepositoryImplTest {
         coEvery { examDao.getByTeamIdAndType(teamId, "surveys") } returns listOf(
             StepExam(id = "survey1", sourceSurveyId = "source1")
         )
-        // Mock all surveys
-        coEvery { examDao.getByType("surveys") } returns listOf(
-            StepExam(id = "exam1", teamId = "other"), // Filtered by submission ID
-            StepExam(id = "survey2", teamId = teamId), // Filtered by teamId
-            StepExam(id = "survey3", teamId = "other") // Excluded
+        coEvery { examDao.getTeamOwnedSurveys(teamId, setOf("exam1")) } returns listOf(
+            StepExam(id = "exam1", teamId = "other"),
+            StepExam(id = "survey2", teamId = teamId)
         )
 
         val result = repository.getTeamOwnedSurveys(teamId)
@@ -152,12 +177,8 @@ class SurveysRepositoryImplTest {
         coEvery { examDao.getByTeamIdAndType(teamId, "surveys") } returns listOf(
             StepExam(id = "survey1", sourceSurveyId = "source1")
         )
-        // Mock all surveys
-        coEvery { examDao.getByType("surveys") } returns listOf(
-            StepExam(id = "exam1", isTeamShareAllowed = true), // Excluded (in submissions)
-            StepExam(id = "source1", isTeamShareAllowed = true), // Excluded (adopted source)
-            StepExam(id = "survey2", isTeamShareAllowed = true), // Included
-            StepExam(id = "survey3", isTeamShareAllowed = false) // Excluded (not shareable)
+        coEvery { examDao.getAdoptableTeamSurveys(setOf("exam1", "source1")) } returns listOf(
+            StepExam(id = "survey2", isTeamShareAllowed = true)
         )
 
         val result = repository.getAdoptableTeamSurveys(teamId)
@@ -166,17 +187,16 @@ class SurveysRepositoryImplTest {
     }
 
     @Test
-    fun `getIndividualSurveys filters surveys without team and not shareable`() = runTest {
-        coEvery { examDao.getByType("surveys") } returns listOf(
-            StepExam(id = "survey1", isTeamShareAllowed = false, teamId = null), // Included
-            StepExam(id = "survey2", isTeamShareAllowed = true, teamId = null), // Excluded (shareable)
-            StepExam(id = "survey3", isTeamShareAllowed = false, teamId = "team1"), // Excluded (has teamId)
-            StepExam(id = "survey4", isTeamShareAllowed = false, teamId = "") // Included (empty teamId)
+    fun `getIndividualSurveys delegates to examDao`() = runTest {
+        val expected = listOf(
+            StepExam(id = "survey1", isTeamShareAllowed = false, teamId = null),
+            StepExam(id = "survey4", isTeamShareAllowed = false, teamId = "")
         )
+        coEvery { examDao.getIndividualSurveys() } returns expected
 
         val result = repository.getIndividualSurveys()
 
-        assertEquals(listOf("survey1", "survey4"), result.map { it.id })
+        assertEquals(expected, result)
     }
 
     @Test
@@ -344,6 +364,57 @@ class SurveysRepositoryImplTest {
 
         // Only 2 surveys were requested
         assertEquals(2, result.size)
+    }
+
+    @Test
+    fun `markExamsUploaded with empty succeeded list returns empty list`() = runTest {
+        val failed = repository.markExamsUploaded(emptyList())
+
+        assertEquals(emptyList<UploadedItemResult>(), failed)
+        coVerify(exactly = 0) { examDao.getByIds(any()) }
+    }
+
+    @Test
+    fun `markExamsUploaded updates exams and returns missing exams as failures`() = runTest {
+        val existingExam = StepExam(id = "exam-1")
+        coEvery { examDao.getByIds(listOf("exam-1", "exam-missing")) } returns listOf(existingExam)
+
+        val result1 = UploadedItemResult("exam-1", "remote-1", "rev-1", com.google.gson.JsonObject())
+        val result2 = UploadedItemResult("exam-missing", "remote-2", "rev-2", com.google.gson.JsonObject())
+
+        val failed = repository.markExamsUploaded(listOf(result1, result2))
+
+        // Only "exam-missing" should fail
+        assertEquals(1, failed.size)
+        assertEquals("exam-missing", failed.first().localId)
+
+        // examDao.upsertAll should be called with existingExam whose _rev has been updated to "rev-1"
+        assertEquals("rev-1", existingExam._rev)
+        coVerify { examDao.upsertAll(listOf(existingExam)) }
+    }
+
+    @Test
+    fun `getSurveyFormState uses questionDao countByExamIds and handles team submissions and missing counts`() = runTest {
+        val survey1 = StepExam(id = "survey1")
+        val survey2 = StepExam(id = "survey2")
+        val surveys = listOf(survey1, survey2)
+
+        val teamId = "team-1"
+        val submission1 = Submission(id = "sub1", parentId = "survey1")
+        coEvery { submissionDao.getByParentIdsAndTeamId(listOf("survey1", "survey2"), teamId) } returns listOf(submission1)
+        coEvery { questionDao.countByExamIds(listOf("survey1", "survey2")) } returns mapOf("survey1" to 5)
+
+        val formStates = repository.getSurveyFormState(surveys, teamId)
+
+        assertEquals(2, formStates.size)
+        assertEquals(submission1, formStates["survey1"]?.teamSubmission)
+        assertEquals(5, formStates["survey1"]?.questionCount)
+
+        assertEquals(null, formStates["survey2"]?.teamSubmission)
+        assertEquals(0, formStates["survey2"]?.questionCount)
+
+        coVerify(exactly = 1) { questionDao.countByExamIds(listOf("survey1", "survey2")) }
+        coVerify(exactly = 0) { questionDao.getByExamIds(any()) }
     }
 
 }

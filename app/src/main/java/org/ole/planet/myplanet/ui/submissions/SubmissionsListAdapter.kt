@@ -18,6 +18,7 @@ class SubmissionsListAdapter(
     private val listener: OnHomeItemClickListener?,
     private val onGeneratePdf: (String?) -> Unit
 ) : ListAdapter<SubmissionItem, SubmissionsListAdapter.ViewHolder>(USER_COMPARATOR) {
+    private val dateCache = HashMap<Long, String>()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemSubmissionBinding.inflate(LayoutInflater.from(context), parent, false)
@@ -30,20 +31,26 @@ class SubmissionsListAdapter(
     }
 
     inner class ViewHolder(private val binding: ItemSubmissionBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(submission: SubmissionItem, number: Int) {
-            binding.tvSubmissionNumber.text = "#$number"
-            binding.tvSubmissionDate.text = TimeUtils.getFormattedDateWithTime(submission.lastUpdateTime)
-            binding.tvSubmissionStatus.text = submission.status
-
-            binding.tvSyncStatus.text = if (submission.uploaded) "✅" else "❌"
-
+        init {
             binding.btnViewDetails.setOnClickListener {
-                openSubmissionDetail(submission.id)
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                openSubmissionDetail(getItem(pos).id)
             }
 
             binding.btnDownloadPdf.setOnClickListener {
-                onGeneratePdf(submission.id)
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                onGeneratePdf(getItem(pos).id)
             }
+        }
+
+        fun bind(submission: SubmissionItem, number: Int) {
+            binding.tvSubmissionNumber.text = "#$number"
+            binding.tvSubmissionDate.text = dateCache.getOrPut(submission.lastUpdateTime) { TimeUtils.getFormattedDateWithTime(submission.lastUpdateTime) }
+            binding.tvSubmissionStatus.text = submission.status
+
+            binding.tvSyncStatus.text = if (submission.uploaded) "✅" else "❌"
         }
 
         private fun openSubmissionDetail(id: String?) {

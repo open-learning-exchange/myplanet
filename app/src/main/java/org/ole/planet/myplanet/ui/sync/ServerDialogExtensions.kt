@@ -238,7 +238,7 @@ fun SyncActivity.initServerDialog(binding: DialogServerUrlBinding) {
     serverPassword = binding.inputServerPassword
     serverAddresses = binding.serverUrls
     syncToServerText = binding.syncToServerText
-    binding.deviceName.setText(NetworkUtils.getDeviceName())
+    binding.deviceName.setText(prefData.getCustomDeviceName().ifEmpty { NetworkUtils.getDeviceName() })
 }
 
 fun SyncActivity.setRadioProtocolListener(binding: DialogServerUrlBinding) {
@@ -296,8 +296,7 @@ fun SyncActivity.setupManualConfigEnabled(binding: DialogServerUrlBinding, dialo
 
     lifecycleScope.launch {
         val communities = communityRepository.getAllSorted()
-        val nonEmptyCommunities = communities.filter { !TextUtils.isEmpty(it.name) }
-        val adapter = ArrayAdapter(this@setupManualConfigEnabled, android.R.layout.simple_spinner_item, nonEmptyCommunities)
+        val adapter = ArrayAdapter(this@setupManualConfigEnabled, android.R.layout.simple_spinner_item, communities)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spnCloud.adapter = adapter
         binding.spnCloud.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {

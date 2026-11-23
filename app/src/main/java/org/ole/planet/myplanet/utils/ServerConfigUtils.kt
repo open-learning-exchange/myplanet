@@ -7,7 +7,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Community
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 
 object ServerConfigUtils {
 
@@ -70,7 +69,7 @@ object ServerConfigUtils {
     }
 
     private fun isLocalNetwork(url: String): Boolean {
-        val host = url.split(":").firstOrNull()?.split("/")?.firstOrNull() ?: url
+        val host = url.substringBefore(':').substringBefore('/')
         return host.startsWith("192.168.") ||
                 host.startsWith("10.") ||
                 host.matches(localNetworkRegex) ||
@@ -96,8 +95,8 @@ object ServerConfigUtils {
     ): String {
         val uri = url.toUri()
         val (urlUser, urlPwd, couchdbURL) = if (url.contains("@")) {
-            val userinfo = ProcessUserDataActivity.getUserInfo(uri)
-            Triple(userinfo[0], userinfo[1], url)
+            val (u, p) = UrlUtils.getUserInfo(uri.userInfo)
+            Triple(u, p, url)
         } else {
             val user = "satellite"
             val scheme = uri.scheme
@@ -111,14 +110,16 @@ object ServerConfigUtils {
             Triple(user, password, dbUrl)
         }
 
-        sharedPrefManager.setServerPin(password)
-        sharedPrefManager.setUrlUser(urlUser)
-        sharedPrefManager.setUrlPwd(urlPwd)
-        sharedPrefManager.setUrlScheme(uri.scheme ?: "")
-        sharedPrefManager.setUrlHost(uri.host ?: "")
-        sharedPrefManager.setAlternativeUrl(url)
-        sharedPrefManager.setProcessedAlternativeUrl(couchdbURL)
-        sharedPrefManager.setIsAlternativeUrl(true)
+        sharedPrefManager.saveAlternativeServerConfig(
+            serverPin = password,
+            urlUser = urlUser,
+            urlPwd = urlPwd,
+            urlScheme = uri.scheme ?: "",
+            urlHost = uri.host ?: "",
+            alternativeUrl = url,
+            processedAlternativeUrl = couchdbURL,
+            isAlternativeUrl = true
+        )
 
         return couchdbURL
     }
@@ -132,14 +133,13 @@ object ServerConfigUtils {
 
     fun getCommunityConfig(selected: Community, httpsProtocol: String): CommunityConfig {
         val domain = selected.localDomain
-        val protocol = httpsProtocol
         val pin = if (selected.weight == 0) BuildConfig.PLANET_LEARNING_PIN else ""
         val isPinEnabled = selected.weight != 0
-        return CommunityConfig(domain, protocol, pin, isPinEnabled)
+        return CommunityConfig(domain, httpsProtocol, pin, isPinEnabled)
     }
 
-    fun getTrustedServerHosts(): List<String> {
-        return listOfNotNull(
+    private val _trustedServerHosts: List<String> by lazy {
+        listOfNotNull(
             BuildConfig.PLANET_LEARNING_URL.takeIf { it.isNotEmpty() },
             BuildConfig.PLANET_GUATEMALA_URL.takeIf { it.isNotEmpty() },
             BuildConfig.PLANET_SANPABLO_URL.takeIf { it.isNotEmpty() },
@@ -157,8 +157,10 @@ object ServerConfigUtils {
         )
     }
 
-    fun getChallengeServerUrls(): List<String> {
-        return listOfNotNull(
+    fun getTrustedServerHosts(): List<String> = _trustedServerHosts
+
+    private val _challengeServerUrls: List<String> by lazy {
+        listOfNotNull(
             BuildConfig.PLANET_GUATEMALA_URL.takeIf { it.isNotEmpty() }?.let { "https://$it" },
             BuildConfig.PLANET_XELA_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
             BuildConfig.PLANET_URIUR_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
@@ -167,4 +169,6 @@ object ServerConfigUtils {
             BuildConfig.PLANET_VI_URL.takeIf { it.isNotEmpty() }?.let { "https://$it" }
         )
     }
+
+    fun getChallengeServerUrls(): List<String> = _challengeServerUrls
 }

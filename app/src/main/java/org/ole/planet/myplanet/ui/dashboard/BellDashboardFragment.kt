@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,12 +14,15 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.TimeUnit
-import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -28,7 +32,6 @@ import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.life.LifeFragment
@@ -47,12 +50,10 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private var _binding: FragmentHomeBellBinding? = null
     private val binding get() = _binding!!
     private var networkStatusJob: Job? = null
+    private var lastSyncStatusJob: Job? = null
     private val viewModel: BellDashboardViewModel by viewModels()
     var user: UserEntity? = null
     private var surveyListDialog: AlertDialog? = null
-
-    @Inject
-    lateinit var serverUrlMapper: ServerUrlMapper
 
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -67,6 +68,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         super.onViewCreated(view, savedInstanceState)
         initView(view)
         setupNetworkStatusMonitoring()
+        startLastSyncStatusTicker()
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         observeCompletedCourses()
         observeSurveyReminders()
@@ -100,30 +102,16 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
-    private suspend fun isServerReachable(mapping: ServerUrlMapper.UrlMapping): Boolean {
-        val primaryAvailable = viewModel.checkServerConnection(mapping.primaryUrl)
-
-        if (primaryAvailable) {
-            return true
-        }
-
-        mapping.alternativeUrl?.let {
-            val alternativeAvailable = viewModel.checkServerConnection(it)
-            return alternativeAvailable
-        }
-
-        return false
-    }
-
     private suspend fun handleConnectingState() {
         setNetworkIndicatorColor(R.color.md_yellow_600)
         val updateUrl = prefData.getServerUrl().ifEmpty { return }
-        val mapping = serverUrlMapper.processUrl(updateUrl)
         try {
-            val reachable = isServerReachable(mapping)
+            val reachable = viewModel.checkServerConnection(updateUrl)
             setNetworkIndicatorColor(if (reachable) R.color.green else R.color.md_yellow_600)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.w(TAG, "handleConnectingState failed", e)
             setNetworkIndicatorColor(R.color.md_yellow_600)
         }
     }
@@ -273,7 +261,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            delay(2000)
+            delay(2000.milliseconds)
             if (binding.cardProfileBell.progressBarBadges?.visibility == View.VISIBLE) {
                 binding.cardProfileBell.progressBarBadges?.visibility = View.GONE
             }
@@ -309,9 +297,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private fun setColor(courseId: String?, star: ImageView) {
         viewLifecycleOwner.lifecycleScope.launch {
             if (courseId != null && viewModel.isCourseCertified(courseId)) {
-                star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.colorPrimary))
+                star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.dashboard_star_filled))
             } else {
-                star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_grey_300))
+                star.setColorFilter(ContextCompat.getColor(requireContext(), R.color.dashboard_star_empty))
             }
         }
     }
@@ -366,9 +354,21 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val timeText = if (lastSyncMillis <= 0L) {
             getString(R.string.last_synced_never)
         } else {
-            TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
+            TimeUtils.getRelativeTime(requireContext(), lastSyncMillis, timeProvider)
         }
         railSyncStatus.text = getString(R.string.dashboard_sync_status, timeText)
+    }
+
+    private fun startLastSyncStatusTicker() {
+        lastSyncStatusJob?.cancel()
+        lastSyncStatusJob = viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                while (true) {
+                    delay(LAST_SYNC_STATUS_REFRESH_INTERVAL_MS.milliseconds)
+                    updateRailSyncStatus()
+                }
+            }
+        }
     }
 
     private fun openHelperFragment(f: Fragment) {
@@ -398,6 +398,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         surveyListDialog?.dismiss()
         surveyListDialog = null
         networkStatusJob?.cancel()
+        lastSyncStatusJob?.cancel()
         super.onDestroyView()
         _binding = null
     }
@@ -421,5 +422,10 @@ class BellDashboardFragment : BaseDashboardFragment() {
         } else {
             super.handleClick(id, title, f, v)
         }
+    }
+
+    companion object {
+        private const val TAG = "BellDashboardFragment"
+        private const val LAST_SYNC_STATUS_REFRESH_INTERVAL_MS = 60_000L
     }
 }

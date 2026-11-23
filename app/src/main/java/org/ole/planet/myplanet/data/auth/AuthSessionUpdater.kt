@@ -7,6 +7,7 @@ import dagger.assisted.AssistedInject
 import java.io.DataOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -47,7 +48,7 @@ class AuthSessionUpdater @AssistedInject constructor(
         job = scope.launch {
             while (isActive) {
                 sendPost()
-                delay(15 * 60 * 1000L)
+                delay(15.minutes)
             }
         }
     }

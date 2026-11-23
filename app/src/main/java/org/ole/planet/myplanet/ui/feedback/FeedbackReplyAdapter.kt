@@ -18,14 +18,12 @@ class FeedbackReplyAdapter(var context: Context) : ListAdapter<FeedbackReply, Fe
 
     override fun onBindViewHolder(holder: ReplyViewHolder, position: Int) {
         val feedbackReply = getItem(position)
-        holder.binding.tvDate.text = feedbackReply.date.let {
-            getFormattedDateWithTime(it.toLong())
-        }
+        holder.binding.tvDate.text = getFormattedDateWithTime(feedbackReply.date.toLong())
         holder.binding.tvUser.text = feedbackReply.user
         holder.binding.tvMessage.text = feedbackReply.message
     }
 
-    inner class ReplyViewHolder(val binding: RowFeedbackReplyBinding) : RecyclerView.ViewHolder(binding.root)
+    class ReplyViewHolder(val binding: RowFeedbackReplyBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
         val DIFF_CALLBACK = DiffUtils.itemCallback<FeedbackReply>(

@@ -53,10 +53,9 @@ class FeedbackDetailActivity : AppCompatActivity() {
             fb?.let {
                 feedback = it
                 activityFeedbackDetailBinding.tvDate.text = getFormattedDateWithTime(it.openTime)
+                val message = it.message
                 activityFeedbackDetailBinding.tvMessage.text =
-                    if (TextUtils.isEmpty(it.message)) "N/A" else it.message
-                replyAdapter = FeedbackReplyAdapter(this@FeedbackDetailActivity)
-                activityFeedbackDetailBinding.rvFeedbackReply.adapter = replyAdapter
+                    if (TextUtils.isEmpty(message)) "N/A" else message
                 replyAdapter?.submitList(it.messageList)
                 updateForClosed()
             }
@@ -90,6 +89,8 @@ class FeedbackDetailActivity : AppCompatActivity() {
     private fun setUpReplies() {
         layoutManager = LinearLayoutManager(this)
         activityFeedbackDetailBinding.rvFeedbackReply.layoutManager = layoutManager
+        replyAdapter = FeedbackReplyAdapter(this)
+        activityFeedbackDetailBinding.rvFeedbackReply.adapter = replyAdapter
     }
 
     private fun updateForClosed() {

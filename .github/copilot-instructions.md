@@ -6,6 +6,7 @@ Read `CLAUDE.md` at the repo root first — it is the full codebase guide (archi
 
 Reusable skills live as git submodules under `.agents/skills/`:
 
+- **agents-summoning** — summon other AI agents on PRs/issues; reviewers speak, doers act (source: https://github.com/dogi/agents-summoning)
 - **merge-prepping** — rewrite PR titles into house style (source: https://github.com/dogi/merge-prepping)
 - **kotlin-importing** — sort/clean Kotlin imports (source: https://github.com/dogi/kotlin-importing)
 
@@ -15,4 +16,4 @@ Submodules are **not** initialized on a default clone or `actions/checkout`. Bef
 git submodule update --init --recursive
 ```
 
-Each skill's entry point is `.agents/skills/<name>/SKILL.md`. Full setup and maintenance docs: `docs/AGENT_SPELLBOOK.md` → "The Skill Sync".
+Each skill's entry point is `.agents/skills/<name>/SKILL.md`.

@@ -2,13 +2,12 @@ package org.ole.planet.myplanet.ui.sync
 
 import android.content.Context
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.button.MaterialButton
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.ItemServerAddressBinding
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.utils.DiffUtils
 
@@ -65,9 +64,8 @@ class ServerAddressAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_server_address, parent, false)
-        return ViewHolder(view)
+        val binding = ItemServerAddressBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return ViewHolder(binding)
     }
 
     override fun onBindViewHolder(
@@ -85,20 +83,25 @@ class ServerAddressAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val serverAddress = getItem(position)
         holder.bind(serverAddress, position == selectedPosition) // ← only selectedPosition matters
-        holder.itemView.setOnClickListener {
-            if (isServerAlreadyConfigured && position != selectedPosition) {
-                // user is clicking a DIFFERENT server than currently selected → warn them
-                onClearDataDialog(serverAddress, position)
-            } else {
-                // either no server configured yet, or clicking the already selected one
-                onItemClick(serverAddress)
-                setSelectedPosition(position)
-            }
-        }
     }
 
-    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val button: MaterialButton = itemView.findViewById(R.id.btn_server_address)
+    inner class ViewHolder(val binding: ItemServerAddressBinding) : RecyclerView.ViewHolder(binding.root) {
+        private val button get() = binding.btnServerAddress
+
+        init {
+            itemView.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                val serverAddress = getItem(pos)
+                if (isServerAlreadyConfigured && pos != selectedPosition) {
+                    onClearDataDialog(serverAddress, pos)
+                } else {
+                    onItemClick(serverAddress)
+                    setSelectedPosition(pos)
+                }
+            }
+        }
+
         fun bind(serverAddress: ServerAddress, isSelected: Boolean) {
             button.text = serverAddress.name
             button.contentDescription =

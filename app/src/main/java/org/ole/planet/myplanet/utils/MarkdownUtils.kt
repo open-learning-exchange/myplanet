@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.utils
 import android.content.Context
 import android.text.Layout
 import android.text.Spannable
+import android.text.Spanned
 import android.text.TextPaint
 import android.text.method.LinkMovementMethod
 import android.text.style.AlignmentSpan
@@ -22,7 +23,6 @@ import io.noties.markwon.html.HtmlPlugin
 import io.noties.markwon.html.HtmlTag
 import io.noties.markwon.html.tag.SimpleTagHandler
 import io.noties.markwon.image.ImageProps
-import io.noties.markwon.image.ImagesPlugin
 import io.noties.markwon.image.glide.GlideImagesPlugin
 import io.noties.markwon.movement.MovementMethodPlugin
 import java.util.regex.Pattern
@@ -31,6 +31,7 @@ import org.commonmark.node.Image
 object MarkdownUtils {
     @Volatile private var markwonInstance: Markwon? = null
     private val imagePattern = Pattern.compile("!\\[.*?]\\((.*?)\\)")
+    private val linkMovementMethod = CustomLinkMovementMethod()
 
     fun warmUp(context: Context) {
         if (markwonInstance == null) {
@@ -47,7 +48,6 @@ object MarkdownUtils {
     private fun buildMarkwon(context: Context): Markwon {
         return Markwon.builder(context)
             .usePlugin(HtmlPlugin.create())
-            .usePlugin(ImagesPlugin.create())
             .usePlugin(GlideImagesPlugin.create(Glide.with(context)))
             .usePlugin(MovementMethodPlugin.create(LinkMovementMethod.getInstance()))
             .usePlugin(TablePlugin.create(context))
@@ -65,7 +65,18 @@ object MarkdownUtils {
     fun setMarkdownText(textView: TextView, markdown: String) {
         val markwon = create(textView.context)
         markwon.setMarkdown(textView, markdown)
-        textView.movementMethod = CustomLinkMovementMethod()
+        textView.movementMethod = linkMovementMethod
+    }
+
+    fun parseMarkdown(context: Context, markdown: String): Spanned {
+        val markwon = create(context)
+        return markwon.toMarkdown(markdown)
+    }
+
+    fun setParsedMarkdown(textView: TextView, spanned: Spanned) {
+        val markwon = create(textView.context)
+        markwon.setParsedMarkdown(textView, spanned)
+        textView.movementMethod = linkMovementMethod
     }
 
     private class CustomImageSpan(private val theme: MarkwonTheme, private val url: String) : ClickableSpan() {
@@ -84,10 +95,13 @@ object MarkdownUtils {
         width: Int = 150,
         height: Int = 100
     ): String {
-        val matcher = markdownContent?.let { imagePattern.matcher(it) }
-            ?: return markdownContent.orEmpty()
-        val result = StringBuffer()
+        val content = markdownContent ?: return markdownContent.orEmpty()
+        if (!content.contains("![")) return content
+        val matcher = imagePattern.matcher(content)
+        val result = StringBuilder()
+        var last = 0
         while (matcher.find()) {
+            result.append(content, last, matcher.start())
             val relativePath = matcher.group(1)
             val modifiedPath = if (relativePath != null && relativePath.startsWith("resources/")) {
                 relativePath.substring("resources/".length)
@@ -95,9 +109,10 @@ object MarkdownUtils {
                 relativePath
             }
             val fullUrl = baseUrl + modifiedPath
-            matcher.appendReplacement(result, "<img src=$fullUrl width=$width height=$height/>")
+            result.append("<img src=\"$fullUrl\" width=$width height=$height/>")
+            last = matcher.end()
         }
-        matcher.appendTail(result)
+        result.append(content, last, content.length)
         return result.toString()
     }
 

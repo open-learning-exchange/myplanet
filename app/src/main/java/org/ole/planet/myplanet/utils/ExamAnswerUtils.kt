@@ -2,11 +2,10 @@ package org.ole.planet.myplanet.utils
 
 import androidx.annotation.VisibleForTesting
 import com.google.gson.JsonObject
-import java.util.Arrays
 import java.util.Collections
 import java.util.Locale
 import org.ole.planet.myplanet.model.ExamQuestion
-import org.ole.planet.myplanet.utils.JsonUtils.getStringAsJsonArray
+import org.ole.planet.myplanet.utils.GsonUtils.getStringAsJsonArray
 
 object ExamAnswerUtils {
     // Process-lifetime cache mapping a stringified choices JSON to a Map of id -> text.
@@ -23,8 +22,8 @@ object ExamAnswerUtils {
     internal fun cacheSize(): Int = choicesCache.size
 
     fun choiceDisplayValue(choice: JsonObject): String? {
-        return JsonUtils.getString("text", choice).ifBlank {
-            JsonUtils.getString("res", choice).ifBlank { null }
+        return GsonUtils.getString("text", choice).ifBlank {
+            GsonUtils.getString("res", choice).ifBlank { null }
         }
     }
 
@@ -38,7 +37,7 @@ object ExamAnswerUtils {
             for (i in 0 until choices.size()) {
                 if (choices[i].isJsonObject) {
                     val obj = choices[i].asJsonObject
-                    val choiceId = JsonUtils.getString("id", obj)
+                    val choiceId = GsonUtils.getString("id", obj)
                     val displayValue = choiceDisplayValue(obj)
                     if (choiceId.isNotEmpty() && displayValue != null) {
                         mutableMap[choiceId] = displayValue
@@ -69,17 +68,22 @@ object ExamAnswerUtils {
     }
 
     private fun checkSelectAnswer(ans: String, correctChoices: List<String>?): Boolean {
-        val normalizedAns = ans.lowercase(Locale.getDefault())
-        return correctChoices?.any { it.lowercase(Locale.getDefault()) == normalizedAns } == true
+        if (correctChoices == null) return false
+        val locale = Locale.getDefault()
+        val normalizedAns = ans.lowercase(locale)
+        return correctChoices.any { it.lowercase(locale) == normalizedAns }
     }
 
     private fun checkMultipleSelectAnswer(
         listAns: Map<String, String>?,
         correctChoices: List<String>?
     ): Boolean {
-        val selectedAns = listAns?.values?.map { it.lowercase(Locale.getDefault()) }?.toTypedArray()
-        val correctChoicesArray = correctChoices?.map { it.lowercase(Locale.getDefault()) }?.toTypedArray()
-        return isEqual(selectedAns, correctChoicesArray)
+        if (listAns == null || correctChoices == null) return false
+        if (listAns.size != correctChoices.size) return false
+        val locale = Locale.getDefault()
+        val selectedAns = listAns.values.map { it.lowercase(locale) }.sorted()
+        val correctList = correctChoices.map { it.lowercase(locale) }.sorted()
+        return selectedAns == correctList
     }
 
     private fun checkTextAnswer(ans: String, correctChoices: List<String>?): Boolean {
@@ -89,11 +93,5 @@ object ExamAnswerUtils {
         return correctChoices.any {
             normalizedAns.contains(it.lowercase(locale))
         }
-    }
-
-    private fun isEqual(ar1: Array<String>?, ar2: Array<String>?): Boolean {
-        ar1?.let { Arrays.sort(it) }
-        ar2?.let { Arrays.sort(it) }
-        return ar1.contentEquals(ar2)
     }
 }

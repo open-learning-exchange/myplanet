@@ -1,32 +1,43 @@
 package org.ole.planet.myplanet.ui.notifications
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Locale
-import java.util.regex.Pattern
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.R
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.Notification
 import org.ole.planet.myplanet.model.NotificationListItem
 import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.repository.NotificationsRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TaskNotificationUtils
+
+data class NotificationStrings(
+    val storageRunningLow: String,
+    val storageAvailable: String,
+    val joinRequestPrefix: String,
+    val resourceCount: (Int) -> String,
+    val taskDue: (title: String, date: String) -> String,
+    val userRequestedToJoin: (user: String, team: String) -> String
+)
 
 @HiltViewModel
 class NotificationsViewModel @Inject constructor(
     private val notificationsRepository: NotificationsRepository,
-    @ApplicationContext private val context: Context
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
@@ -47,59 +58,40 @@ class NotificationsViewModel @Inject constructor(
         .map { it.size }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
+    private data class NotificationGroup(
+        val type: String,
+        val unreadCount: Int,
+        val items: List<Notification>
+    )
+
+    private val groupedNotifications: StateFlow<List<NotificationGroup>> = _notifications
+        .map { buildNotificationGroups(it) }
+        .flowOn(dispatcherProvider.default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val groupedItems: StateFlow<List<NotificationListItem>> = combine(
-        _notifications, _selectedIds, _collapsedGroups, _expandedGroups
-    ) { notifs, selected, collapsed, expanded ->
-        buildGroupedList(notifs, selected, collapsed, expanded)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        groupedNotifications, _selectedIds, _collapsedGroups, _expandedGroups
+    ) { groups, selected, collapsed, expanded ->
+        buildGroupedList(groups, selected, collapsed, expanded)
+    }
+        .flowOn(dispatcherProvider.default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private var currentFilter: String = "all"
+    private var loadJob: Job? = null
 
-    fun loadNotifications(userId: String, filter: String, isAdmin: Boolean = false) {
+    fun loadNotifications(userId: String, filter: String, isAdmin: Boolean = false, strings: NotificationStrings) {
         currentFilter = filter
-        viewModelScope.launch {
-            val payloadNotifications = notificationsRepository.getNotifications(userId, filter, isAdmin)
-
-            val taskNotifications = mutableListOf<NotificationPayload>()
-            val joinRequestNotifications = mutableListOf<NotificationPayload>()
-            for (notification in payloadNotifications) {
-                if (notification.type.equals("task", ignoreCase = true)) {
-                    taskNotifications.add(notification)
-                } else if (notification.type.equals("join_request", ignoreCase = true)) {
-                    joinRequestNotifications.add(notification)
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            val enrichment = notificationsRepository.getEnrichedNotifications(userId, filter, isAdmin)
+            val formatted = withContext(dispatcherProvider.default) {
+                enrichment.payloads.map {
+                    formatNotification(it, enrichment.taskTeamNames, enrichment.joinRequestDetails, enrichment.parsedTaskDates, strings)
                 }
             }
-
-            val taskIds = taskNotifications
-                .mapNotNull { it.relatedId }
-                .distinct()
-            val taskTeamNames = notificationsRepository.getTaskTeamNamesByTaskIds(taskIds).toMutableMap()
-
-            val taskTitles = taskNotifications
-                .filter { it.relatedId.isNullOrEmpty() || !taskTeamNames.containsKey(it.relatedId) }
-                .mapNotNull { parseTaskDate(it.message)?.first }
-                .distinct()
-            if (taskTitles.isNotEmpty()) {
-                val teamNamesByTitle = notificationsRepository.getTaskTeamNamesByTaskTitles(taskTitles)
-                taskTeamNames.putAll(teamNamesByTitle)
-            }
-
-            val joinRequestIds = joinRequestNotifications
-                .mapNotNull { it.relatedId }
-                .distinct()
-            val joinRequestDetails = notificationsRepository.getJoinRequestDetailsBatch(joinRequestIds).toMutableMap()
-
-            val joinRequestsWithoutRelatedId = joinRequestNotifications
-                .filter { it.relatedId.isNullOrEmpty() }
-            if (joinRequestsWithoutRelatedId.isNotEmpty()) {
-                val fallbackDetail = notificationsRepository.getJoinRequestDetails(null)
-                joinRequestDetails[""] = fallbackDetail
-            }
-
-            _notifications.value = payloadNotifications.map {
-                formatNotification(it, taskTeamNames, joinRequestDetails)
-            }
-            _unreadCount.value = notificationsRepository.getUnreadCount(userId, isAdmin)
+            _notifications.value = formatted
+            _unreadCount.value = enrichment.unreadCount
         }
     }
 
@@ -131,14 +123,21 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
+    private fun applyAndCountUnread(
+        ids: Set<String>,
+        transform: (List<Notification>) -> List<Notification>
+    ): Int {
+        val previous = _notifications.getAndUpdate(transform)
+        return previous.count { it.id in ids && !it.isRead }
+    }
+
     fun markSelectedAsRead() {
         val ids = _selectedIds.value
         if (ids.isEmpty()) return
         viewModelScope.launch {
             val markedIds = notificationsRepository.markNotificationsAsRead(ids)
             if (markedIds.isNotEmpty()) {
-                val wasUnreadCount = _notifications.value.count { it.id in markedIds && !it.isRead }
-                _notifications.update { currentList ->
+                val wasUnreadCount = applyAndCountUnread(markedIds) { currentList ->
                     if (currentFilter == "unread") {
                         currentList.filterNot { it.id in markedIds }
                     } else {
@@ -157,8 +156,7 @@ class NotificationsViewModel @Inject constructor(
         viewModelScope.launch {
             val deletedIds = notificationsRepository.deleteNotifications(ids)
             if (deletedIds.isNotEmpty()) {
-                val wasUnreadCount = _notifications.value.count { it.id in deletedIds && !it.isRead }
-                _notifications.update { it.filterNot { n -> n.id in deletedIds } }
+                val wasUnreadCount = applyAndCountUnread(deletedIds) { it.filterNot { n -> n.id in deletedIds } }
                 _unreadCount.update { maxOf(0, it - wasUnreadCount) }
                 _selectedIds.value = emptySet()
             }
@@ -192,9 +190,9 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    fun markAllAsRead(userId: String) {
+    fun markAllAsRead(userId: String, isAdmin: Boolean = false) {
         viewModelScope.launch {
-            val markedIds = notificationsRepository.markAllUnreadAsRead(userId)
+            val markedIds = notificationsRepository.markAllUnreadAsRead(userId, isAdmin)
             if (markedIds.isNotEmpty()) {
                 _notifications.update { currentList ->
                     if (currentFilter == "unread") {
@@ -210,44 +208,53 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    private fun List<Notification>.markAsRead(id: String): List<Notification> {
-        return map { if (it.id == id && !it.isRead) it.copy(isRead = true) else it }
-    }
     private fun List<Notification>.markAsRead(ids: Set<String>): List<Notification> {
         return map { if (it.id in ids && !it.isRead) it.copy(isRead = true) else it }
     }
 
+    private fun groupTypeOf(rawType: String): String {
+        val t = rawType.lowercase(Locale.ROOT)
+        return if (t in NotificationsRepository.KNOWN_TYPES) t else "notification"
+    }
+
     private fun isGroupDefaultExpanded(type: String, notifications: List<Notification>): Boolean {
-        return notifications.any { it.type == type && !it.isRead }
+        return notifications.any { groupTypeOf(it.type) == type && !it.isRead }
+    }
+
+    private fun buildNotificationGroups(notifications: List<Notification>): List<NotificationGroup> {
+        if (notifications.isEmpty()) return emptyList()
+        val grouped = notifications.groupBy { groupTypeOf(it.type) }
+        val orderedTypes = TYPE_ORDER.filter { grouped.containsKey(it) } +
+                grouped.keys.filter { it !in TYPE_ORDER }
+        return orderedTypes.mapNotNull { type ->
+            val items = grouped[type] ?: return@mapNotNull null
+            val unreadCount = items.count { !it.isRead }
+            NotificationGroup(
+                type = type,
+                unreadCount = unreadCount,
+                items = items
+            )
+        }
     }
 
     private fun buildGroupedList(
-        notifications: List<Notification>,
+        groups: List<NotificationGroup>,
         selectedIds: Set<String>,
         collapsedGroups: Set<String>,
         expandedGroups: Set<String>
     ): List<NotificationListItem> {
-        if (notifications.isEmpty()) return emptyList()
-        // Normalize any unrecognized type to "notification" for a single Other group
-        val grouped = notifications.groupBy { notif ->
-            val t = notif.type.lowercase(Locale.ROOT)
-            if (t in KNOWN_TYPES) t else "notification"
-        }
-        val orderedTypes = (TYPE_ORDER.filter { grouped.containsKey(it) } +
-                grouped.keys.filter { it !in TYPE_ORDER }).distinct()
+        if (groups.isEmpty()) return emptyList()
         val inSelectionMode = selectedIds.isNotEmpty()
         return buildList {
-            for (type in orderedTypes) {
-                val items = grouped[type] ?: continue
-                val unreadCount = items.count { !it.isRead }
+            for (group in groups) {
                 val isExpanded = when {
-                    type in expandedGroups -> true
-                    type in collapsedGroups -> false
-                    else -> unreadCount > 0
+                    group.type in expandedGroups -> true
+                    group.type in collapsedGroups -> false
+                    else -> group.unreadCount > 0
                 }
-                add(NotificationListItem.Header(type, typeLabelFor(type), unreadCount, isExpanded))
+                add(NotificationListItem.Header(group.type, group.unreadCount, isExpanded))
                 if (isExpanded) {
-                    items.forEach { notification ->
+                    group.items.forEach { notification ->
                         add(NotificationListItem.Item(notification, notification.id in selectedIds, inSelectionMode))
                     }
                 }
@@ -255,63 +262,8 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    private fun resolveType(type: String, message: String, subType: String? = null): String {
-        if (type.lowercase(Locale.ROOT) in KNOWN_TYPES) return type.lowercase(Locale.ROOT)
-        val lower = message.lowercase(Locale.ROOT)
-        // Raw server type "team" covers every team-related event (message/request/added/rejected/removed) in
-        // whatever language the server rendered the message in, so classify structurally first and only fall
-        // back to English message-sniffing to pick a more specific sub-bucket when it's recognizable.
-        if (type == "team") {
-            if (subType != null) return subType
-            return when {
-                lower.contains("requested to join") || lower.contains("wants to join") ||
-                    lower.contains("solicitado unirse") -> "join_request"
-                lower.contains("posted a message on") || lower.contains("posted a new voice") ||
-                    lower.contains("new voice in") || lower.contains("posted in") -> "chat"
-                else -> "team_join"
-            }
-        }
-        if (type == "newTask") return "task"
-        if (type == "newResource") return "resource"
-        return when {
-            lower.contains("requested to join") || lower.contains("wants to join") -> "join_request"
-            lower.contains("added you to") || lower.contains("you've been added") || lower.contains("you have been added") -> "team_join"
-            lower.contains("replied to your") || lower.contains("replied on your") || lower.contains("new reply to") -> "voice_reply"
-            lower.contains("posted a new voice") || lower.contains("new voice in") || lower.contains("posted in") -> "chat"
-            lower.contains("is due") || lower.contains("due:") -> "task"
-            lower.contains("storage") -> "storage"
-            lower.contains("resource") -> "resource"
-            else -> "notification"
-        }
-    }
-
-    internal fun typeLabelFor(type: String): String = when (type.lowercase(Locale.ROOT)) {
-        "join_request" -> context.getString(R.string.notif_group_join_requests)
-        "team_join" -> context.getString(R.string.notif_group_team_updates)
-        "task" -> context.getString(R.string.tasks)
-        "chat" -> context.getString(R.string.notif_group_new_voices)
-        "voice_reply" -> context.getString(R.string.notif_group_voice_replies)
-        "resource" -> context.getString(R.string.resources)
-        "storage" -> context.getString(R.string.notification_group_system)
-        else -> context.getString(R.string.notification_group_other)
-    }
-
     companion object {
-        val KNOWN_TYPES = setOf("join_request", "team_join", "task", "chat", "voice_reply", "resource", "storage")
         val TYPE_ORDER = listOf("join_request", "team_join", "task", "chat", "voice_reply", "resource", "storage")
-
-        private val TASK_DATE_PATTERN = Pattern.compile("\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s\\d{1,2},\\s\\w+\\s\\d{4}\\b")
-
-        internal fun parseTaskDate(message: String): Pair<String, String>? {
-            val matcher = TASK_DATE_PATTERN.matcher(message)
-            return if (matcher.find()) {
-                val taskTitle = message.substring(0, matcher.start()).trim()
-                val dateValue = message.substring(matcher.start()).trim()
-                Pair(taskTitle, dateValue)
-            } else {
-                null
-            }
-        }
 
         internal fun formatStorageNotification(message: String, storageRunningLowStr: String, storageAvailableStr: String): String {
             val storageValue = message.replace("%", "").toIntOrNull()
@@ -335,33 +287,38 @@ class NotificationsViewModel @Inject constructor(
     private fun formatNotification(
         notification: NotificationPayload,
         taskTeamNames: Map<String, String> = emptyMap(),
-        joinRequestDetails: Map<String, Pair<String, String>> = emptyMap()
+        joinRequestDetails: Map<String, Pair<String, String>> = emptyMap(),
+        parsedTaskDates: Map<String, Pair<String, String>?> = emptyMap(),
+        strings: NotificationStrings
     ): Notification {
-        val resolvedType = resolveType(notification.type, notification.message, notification.subType)
+        val resolvedType = notificationsRepository.resolveType(notification.type, notification.message, notification.subType)
         val formattedText = when (resolvedType) {
             "task" -> {
-                val parsedDate = parseTaskDate(notification.message)
+                val parsedDate = if (parsedTaskDates.containsKey(notification.id)) {
+                    parsedTaskDates[notification.id]
+                } else {
+                    TaskNotificationUtils.splitTitleAndDate(notification.message)
+                }
                 if (parsedDate != null) {
-                    formatTaskNotification(parsedDate.first, parsedDate.second, notification.relatedId, taskTeamNames)
+                    formatTaskNotification(parsedDate.first, parsedDate.second, notification.relatedId, taskTeamNames, strings)
                 } else {
                     notification.message
                 }
             }
             "resource" -> {
                 notification.message.toIntOrNull()?.let { count ->
-                    context.getString(R.string.resource_notification, count)
+                    strings.resourceCount(count)
                 } ?: notification.message
             }
             "storage" -> {
                 formatStorageNotification(
                     notification.message,
-                    context.getString(R.string.storage_running_low),
-                    context.getString(R.string.storage_available)
+                    strings.storageRunningLow,
+                    strings.storageAvailable
                 )
             }
             "join_request" -> {
                 if (!notification.type.equals("join_request", ignoreCase = true)) {
-                    // Server notification with pre-formatted message
                     notification.message
                 } else {
                     val relatedId = notification.relatedId
@@ -372,9 +329,9 @@ class NotificationsViewModel @Inject constructor(
                     }
                     val requesterName = details.first
                     val teamName = details.second
-                    val userRequestedStr = context.getString(R.string.user_requested_to_join_team, requesterName, teamName)
+                    val userRequestedStr = strings.userRequestedToJoin(requesterName, teamName)
                     formatJoinRequestNotification(
-                        context.getString(R.string.join_request_prefix),
+                        strings.joinRequestPrefix,
                         userRequestedStr
                     )
                 }
@@ -392,16 +349,22 @@ class NotificationsViewModel @Inject constructor(
         )
     }
 
-    private fun formatTaskNotification(taskTitle: String, dateValue: String, relatedId: String?, taskTeamNames: Map<String, String> = emptyMap()): String {
+    private fun formatTaskNotification(
+        taskTitle: String,
+        dateValue: String,
+        relatedId: String?,
+        taskTeamNames: Map<String, String> = emptyMap(),
+        strings: NotificationStrings
+    ): String {
         val teamName = if (!relatedId.isNullOrEmpty()) {
             taskTeamNames[relatedId] ?: taskTeamNames[taskTitle]
         } else {
             taskTeamNames[taskTitle]
         }
         return if (teamName != null) {
-            "<b>$teamName</b>: ${context.getString(R.string.task_notification, taskTitle, dateValue)}"
+            "<b>$teamName</b>: ${strings.taskDue(taskTitle, dateValue)}"
         } else {
-            context.getString(R.string.task_notification, taskTitle, dateValue)
+            strings.taskDue(taskTitle, dateValue)
         }
     }
 
@@ -414,7 +377,4 @@ class NotificationsViewModel @Inject constructor(
         return notificationsRepository.getJoinRequestTeamId(relatedId)
     }
 
-    suspend fun getUnreadCount(userId: String): Int {
-        return notificationsRepository.getUnreadCount(userId)
-    }
 }
