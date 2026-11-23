@@ -8,8 +8,13 @@ import org.junit.Test
 class StableIdGeneratorTest {
     @Test
     fun testGenerateStringId_nullOrEmpty() {
-        assertEquals(RecyclerView.NO_ID, StableIdGenerator.generateStringId(null))
-        assertEquals(RecyclerView.NO_ID, StableIdGenerator.generateStringId(""))
+        assertEquals(StableIdGenerator.NO_ID, StableIdGenerator.generateStringId(null))
+        assertEquals(StableIdGenerator.NO_ID, StableIdGenerator.generateStringId(""))
+    }
+
+    @Test
+    fun testNoIdMatchesRecyclerViewNoId() {
+        assertEquals(RecyclerView.NO_ID, StableIdGenerator.NO_ID)
     }
 
     @Test

@@ -39,6 +39,39 @@ class AutoSyncUploadRunnerTest {
     }
 
     @Test
+    fun `a retryable upload failure is reported so last sync is not stamped`() = runTest {
+        coEvery { uploadManager.uploadRating() } returns UploadResult.Failure(
+            listOf(UploadError("r1", java.io.IOException("offline"), retryable = true))
+        )
+
+        val result = runner.runAll(listener)
+
+        assertTrue(result is AutoSyncUploadRunner.UploadFailedException)
+        assertEquals("Some ratings failed to upload", result?.message)
+    }
+
+    @Test
+    fun `a partially failed upload with a retryable error is reported`() = runTest {
+        coEvery { uploadManager.uploadSubmissions() } returns UploadResult.PartialSuccess(
+            succeeded = emptyList(),
+            failed = listOf(UploadError("s1", Exception("HTTP 503"), retryable = true, httpCode = 503))
+        )
+
+        val result = runner.runAll(listener)
+
+        assertTrue(result is AutoSyncUploadRunner.UploadFailedException)
+    }
+
+    @Test
+    fun `a permanently rejected item does not fail the sync`() = runTest {
+        coEvery { uploadManager.uploadFeedback() } returns UploadResult.Failure(
+            listOf(UploadError("f1", Exception("HTTP 400"), retryable = false, httpCode = 400))
+        )
+
+        assertNull(runner.runAll(listener))
+    }
+
+    @Test
     fun `within group A, calls execute in sequence`() = runTest {
         runner.runAll(listener)
         coVerifyOrder {
@@ -85,7 +118,7 @@ class AutoSyncUploadRunnerTest {
         val deferred = CompletableDeferred<Unit>()
         coEvery { uploadManager.uploadFeedback() } coAnswers {
             deferred.await()
-            true
+            UploadResult.Empty
         }
 
         val testJob = launch {
@@ -115,13 +148,13 @@ class AutoSyncUploadRunnerTest {
 
         coEvery { uploadManager.uploadExamResult(any()) } coAnswers { simulateWork() }
         coEvery { uploadManager.uploadUserActivities(any()) } coAnswers { simulateWork() }
-        coEvery { uploadManager.uploadResourceActivities(any()) } coAnswers { simulateWork() }
-        coEvery { uploadManager.uploadFeedback() } coAnswers { simulateWork(); true }
+        coEvery { uploadManager.uploadResourceActivities(any()) } coAnswers { simulateWork(); UploadResult.Empty }
+        coEvery { uploadManager.uploadFeedback() } coAnswers { simulateWork(); UploadResult.Empty }
         coEvery { uploadManager.uploadAchievement() } coAnswers { simulateWork() }
-        coEvery { uploadManager.uploadCourseActivities() } coAnswers { simulateWork() }
-        coEvery { uploadManager.uploadSearchActivity() } coAnswers { simulateWork() }
+        coEvery { uploadManager.uploadCourseActivities() } coAnswers { simulateWork(); UploadResult.Empty }
+        coEvery { uploadManager.uploadSearchActivity() } coAnswers { simulateWork(); UploadResult.Empty }
         coEvery { uploadManager.uploadNews() } coAnswers { simulateWork() }
-        coEvery { uploadManager.uploadCrashLog() } coAnswers { simulateWork() }
+        coEvery { uploadManager.uploadCrashLog() } coAnswers { simulateWork(); UploadResult.Empty }
 
         runner.runAll(listener)
 

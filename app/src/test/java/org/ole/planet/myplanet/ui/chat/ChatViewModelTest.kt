@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.NewsShare
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.UserEntity
@@ -226,11 +227,12 @@ class ChatViewModelTest {
             createdDate = "123"
             updatedDate = "123"
         }
-        val news = News()
+        val news = NewsShare("news_1", """[{"_id":"planet1"}]""")
+        every { chatRepository.extractSharedViewInIds(listOf(news)) } returns mapOf("news_1" to setOf("planet1"))
         val team = mockk<TeamSummary>(relaxed = true)
 
         coEvery { userRepository.getUserModel() } returns user
-        coEvery { voicesRepository.getPlanetNewsMessages("planet1") } returns listOf(news)
+        coEvery { voicesRepository.getPlanetMessageShares("planet1") } returns listOf(news)
         coEvery { chatRepository.getChatHistoryForUser("Test User") } returns listOf(conversation)
         coEvery { teamsRepository.getTeamSummaries("user123") } returns listOf(team)
         coEvery { teamsRepository.getShareableEnterpriseSummaries("user123") } returns listOf(team)
@@ -251,13 +253,13 @@ class ChatViewModelTest {
 
         assertEquals(user, result.currentUser)
         assertEquals(listOf(conversation), result.chatHistory)
-        assertEquals(listOf(news), result.newsMessages)
+        assertEquals(mapOf("news_1" to setOf("planet1")), result.sharedViewInIds)
         assertEquals(listOf(team), result.shareTargets.teams)
         assertEquals(listOf(team), result.shareTargets.enterprises)
         assertEquals(team, result.shareTargets.community)
 
         coVerify { userRepository.getUserModel() }
-        coVerify { voicesRepository.getPlanetNewsMessages("planet1") }
+        coVerify { voicesRepository.getPlanetMessageShares("planet1") }
         coVerify { chatRepository.getChatHistoryForUser("Test User") }
         coVerify { teamsRepository.getTeamSummaries("user123") }
 
@@ -335,12 +337,13 @@ class ChatViewModelTest {
             createdDate = "123"
             updatedDate = "123"
         }
-        val news = News()
+        val news = NewsShare("news_1", """[{"_id":"planet1"}]""")
+        every { chatRepository.extractSharedViewInIds(listOf(news)) } returns mapOf("news_1" to setOf("planet1"))
 
         coEvery { userRepository.getUserModel() } returns cachedUser
         coEvery { cachedUser.planetCode } returns "planet2"
         coEvery { cachedUser.name } returns "Cached User"
-        coEvery { voicesRepository.getPlanetNewsMessages("planet2") } returns listOf(news)
+        coEvery { voicesRepository.getPlanetMessageShares("planet2") } returns listOf(news)
         coEvery { chatRepository.getChatHistoryForUser("Cached User") } returns listOf(conversation)
         coEvery { teamsRepository.getTeamSummaries(any()) } returns emptyList()
         coEvery { teamsRepository.getShareableEnterpriseSummaries(any()) } returns emptyList()
@@ -367,7 +370,7 @@ class ChatViewModelTest {
 
         assertEquals(cachedUser, result.currentUser)
         assertEquals(listOf(conversation), result.chatHistory)
-        assertEquals(listOf(news), result.newsMessages)
+        assertEquals(mapOf("news_1" to setOf("planet1")), result.sharedViewInIds)
 
         coVerify(exactly = 0) { userRepository.getUserModel() }
         coVerify(exactly = 0) { teamsRepository.getTeamSummaries(any()) }
@@ -381,10 +384,11 @@ class ChatViewModelTest {
             createdDate = "123"
             updatedDate = "123"
         }
-        val news = News()
+        val news = NewsShare("news_1", """[{"_id":"planet1"}]""")
+        every { chatRepository.extractSharedViewInIds(listOf(news)) } returns mapOf("news_1" to setOf("planet1"))
 
         coEvery { userRepository.getUserModel() } returns null
-        coEvery { voicesRepository.getPlanetNewsMessages(null) } returns listOf(news)
+        coEvery { voicesRepository.getPlanetMessageShares(null) } returns listOf(news)
         coEvery { chatRepository.getChatHistoryForUser(null) } returns listOf(conversation)
         coEvery { teamsRepository.getTeamSummaries(null) } returns emptyList()
         coEvery { teamsRepository.getShareableEnterpriseSummaries(null) } returns emptyList()
@@ -403,7 +407,7 @@ class ChatViewModelTest {
 
         assertNull(result.currentUser)
         assertEquals(listOf(conversation), result.chatHistory)
-        assertEquals(listOf(news), result.newsMessages)
+        assertEquals(mapOf("news_1" to setOf("planet1")), result.sharedViewInIds)
 
         coVerify { userRepository.getUserModel() }
 
@@ -591,13 +595,13 @@ class ChatViewModelTest {
         coEvery { userRepository.getUserModel() } returns user
         every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("parent1", "community1", null)
 
-        val newsGate = CompletableDeferred<List<News>>()
+        val newsGate = CompletableDeferred<List<NewsShare>>()
         val historyGate = CompletableDeferred<List<ChatHistory>>()
 
         var newsStarted = false
         var historyStarted = false
 
-        coEvery { voicesRepository.getPlanetNewsMessages("planet1") } coAnswers {
+        coEvery { voicesRepository.getPlanetMessageShares("planet1") } coAnswers {
             newsStarted = true
             newsGate.await()
         }
@@ -626,7 +630,7 @@ class ChatViewModelTest {
         every { configurationsRepository.getCommunityConfiguration() } returns CommunityConfiguration("parent1", "community1", null)
 
         var attemptCount = 0
-        coEvery { voicesRepository.getPlanetNewsMessages("planet1") } coAnswers {
+        coEvery { voicesRepository.getPlanetMessageShares("planet1") } coAnswers {
             attemptCount++
             if (attemptCount <= 3) {
                 throw RuntimeException("Temporary read failure")
@@ -647,5 +651,58 @@ class ChatViewModelTest {
 
         assertEquals(4, attemptCount)
         org.junit.Assert.assertNotNull(viewModel.screenData.value)
+    }
+
+    @Test
+    fun `sendChat keeps the request alive and reports the result through chatRequest`() = runTest(testDispatcher) {
+        val aiProvider = AiProvider("model1", "provider1")
+        val reply = CompletableDeferred<ChatResult>()
+        coEvery { chatRepository.sendNewChatRequest("[ctx] hi", "User", aiProvider) } coAnswers { reply.await() }
+
+        assertTrue(viewModel.sendChat("[ctx] hi", "hi", "User", aiProvider, "", "", refreshRev = false))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val sending = viewModel.chatRequest.value as ChatRequestState.Sending
+        assertEquals("hi", sending.query)
+        assertFalse(viewModel.sendChat("again", "again", "User", aiProvider, "", "", refreshRev = false))
+
+        val success = ChatResult.Success("hello", "chat1", "1-a")
+        reply.complete(success)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val done = viewModel.chatRequest.value as ChatRequestState.Done
+        assertEquals(sending.requestId, done.requestId)
+        assertEquals("hi", done.query)
+        assertEquals(success, done.result)
+
+        viewModel.consumeChatResult(done.requestId)
+        assertEquals(ChatRequestState.Idle, viewModel.chatRequest.value)
+        coVerify(exactly = 1) { chatRepository.sendNewChatRequest(any(), any(), any()) }
+    }
+
+    @Test
+    fun `sendChat continues with the latest rev and falls back to the known rev`() = runTest(testDispatcher) {
+        val aiProvider = AiProvider("model1", "provider1")
+        coEvery { chatRepository.getLatestRev("chat1") } throws RuntimeException("offline")
+        coEvery { chatRepository.sendContinueChatRequest(any(), any(), any(), any(), any()) } returns ChatResult.Success("r", "chat1", "3-c")
+
+        viewModel.sendChat("q", "q", "User", aiProvider, "chat1", "2-b", refreshRev = true)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { chatRepository.sendContinueChatRequest("q", "User", aiProvider, "chat1", "2-b") }
+        assertTrue(viewModel.chatRequest.value is ChatRequestState.Done)
+    }
+
+    @Test
+    fun `sendChat turns an exception into an error result`() = runTest(testDispatcher) {
+        val aiProvider = AiProvider("model1", "provider1")
+
+        viewModel.sendChat("q", "q", "User", aiProvider, "", "", refreshRev = false) {
+            throw IllegalStateException("no server")
+        }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val done = viewModel.chatRequest.value as ChatRequestState.Done
+        assertEquals(ChatResult.Error("no server"), done.result)
     }
 }

@@ -92,6 +92,14 @@ class TeamDetailFragment : BaseTeamFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        savedInstanceState?.getBundle(KEY_LAST_PAGES)?.let { saved ->
+            saved.keySet().forEach { teamId -> saved.getString(teamId)?.let { teamLastPage[teamId] = it } }
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBundle(KEY_LAST_PAGES, Bundle().apply { teamLastPage.forEach { (teamId, pageId) -> putString(teamId, pageId) } })
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -432,6 +440,8 @@ class TeamDetailFragment : BaseTeamFragment() {
 
 
     companion object {
+        private const val KEY_LAST_PAGES = "teamLastPages"
+
         fun newInstance(
             teamId: String,
             teamName: String,

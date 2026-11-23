@@ -83,7 +83,17 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     var userModel: UserEntity ?= null
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
+    private var modelsById: Map<String, ResourceListModel> = emptyMap()
+    private var modelsByLocalAddress: Map<String, ResourceListModel> = emptyMap()
+    private var tagsById: Map<String, TagItem> = emptyMap()
     private var allResourceModels: List<ResourceListModel> = emptyList()
+        set(value) {
+            field = value
+            val indexes = buildResourcesListIndexes(value)
+            modelsById = indexes.modelsById
+            modelsByLocalAddress = indexes.modelsByLocalAddress
+            tagsById = indexes.tagsById
+        }
 
     private var lastFilteredCount: Int = 0
     @Inject
@@ -571,7 +581,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
     override fun onSelectedListChange(list: List<ResourceItem>) {
         val newSelected = list.mapNotNull { item ->
-            allResourceModels.find { it.item.id == item.id }?.library
+            modelsById[item.id]?.library
         }
         selectedItems?.clear()
         selectedItems?.addAll(newSelected)
@@ -580,7 +590,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     override fun onTagClicked(tag: TagItem) {
-        val realmTag = allResourceModels.flatMap { it.tags }.find { it.id == tag.id }
+        val realmTag = tag.id?.let { tagsById[it] }
         if (realmTag != null) {
             val rTag = searchTags.find { it.id == realmTag.id } ?: TagEntity().apply {
                 id = realmTag.id.orEmpty()
@@ -593,13 +603,13 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override fun onSingleResourceDownloaded(url: String) {
         if (!::adapterLibrary.isInitialized) return
         val localAddress = url.substringAfterLast('/')
-        val id = allResourceModels.find { it.item.resourceLocalAddress == localAddress }?.item?.id ?: return
+        val id = modelsByLocalAddress[localAddress]?.item?.id ?: return
         adapterLibrary.markItemAsOffline(id)
         refreshResourcesData()
     }
 
     override fun onResourceClicked(item: ResourceItem) {
-        val model = allResourceModels.find { it.item.id == item.id }
+        val model = modelsById[item.id]
         if (model != null) {
             homeItemClickListener?.openLibraryDetailFragment(model.library)
         }

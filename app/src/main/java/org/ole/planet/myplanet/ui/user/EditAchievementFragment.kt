@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
 import android.text.TextUtils
+import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
@@ -29,12 +30,15 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
+import java.io.IOException
+import java.io.InputStream
 import java.util.Calendar
 import java.util.Locale
 import kotlin.Array
 import kotlin.Int
 import kotlin.String
 import kotlin.arrayOf
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -182,6 +186,10 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
             lifecycleScope.launch {
                 val cvFilename = computeCvFilename()
+                if (cvFilename == null) {
+                    _binding?.btnUpdate?.isEnabled = true
+                    return@launch
+                }
                 val userPayload = ProfileFieldsUpdate(
                     firstName = firstName.takeIf { it.isNotEmpty() },
                     lastName = lastName.takeIf { it.isNotEmpty() },
@@ -189,22 +197,31 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                     birthPlace = birthPlace.takeIf { it.isNotEmpty() },
                     birthDate = selectedDobIso?.takeIf { it.isNotEmpty() }
                 )
-                viewModel.saveAchievement(
-                    AchievementSaveRequest(
-                        achievementId = achievementId,
-                        header = header,
-                        goals = goals,
-                        purpose = purpose,
-                        sendToNation = sendToNation,
-                        achievements = achievementArray ?: JsonArray(),
-                        references = referenceArray ?: JsonArray(),
-                        createdOn = user?.planetCode ?: "",
-                        username = user?.name ?: "",
-                        parentCode = user?.parentCode ?: "",
-                        resumeFileName = cvFilename,
-                        profileFields = userPayload,
+                try {
+                    viewModel.saveAchievement(
+                        AchievementSaveRequest(
+                            achievementId = achievementId,
+                            header = header,
+                            goals = goals,
+                            purpose = purpose,
+                            sendToNation = sendToNation,
+                            achievements = achievementArray ?: JsonArray(),
+                            references = referenceArray ?: JsonArray(),
+                            createdOn = user?.planetCode ?: "",
+                            username = user?.name ?: "",
+                            parentCode = user?.parentCode ?: "",
+                            resumeFileName = cvFilename,
+                            profileFields = userPayload,
+                        )
                     )
-                )
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to save achievement", e)
+                    Utilities.toast(activity, "Failed to save achievement: ${e.message}")
+                    _binding?.btnUpdate?.isEnabled = true
+                    return@launch
+                }
 
                 lifecycle.withStarted {
                     Utilities.toast(activity, getString(R.string.achievement_saved))
@@ -484,24 +501,26 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         }
     }
 
-    private suspend fun computeCvFilename(): String {
+    private suspend fun computeCvFilename(): String? {
         if (deleteCv) return ""
         val uri = selectedCvUri
         val filename = pendingCvFilename
         if (uri != null && filename != null) {
             val context = requireContext()
-            withContext(dispatcherProvider.io) {
+            val copied = withContext(dispatcherProvider.io) {
                 val destFile = File(FileUtils.getOlePath(context) + Achievement.cvRelativePath(achievement?._id, filename))
-                destFile.parentFile?.mkdirs()
                 try {
-                    context.contentResolver.openInputStream(uri)?.use { input ->
-                        destFile.outputStream().use { output -> input.copyTo(output) }
-                    }
+                    copyCvFile({ context.contentResolver.openInputStream(uri) }, destFile)
+                    true
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
+                    Log.e(TAG, "Failed to save CV", e)
                     Utilities.toast(activity, "Failed to save CV: ${e.message}")
+                    false
                 }
             }
-            return filename
+            return if (copied) filename else null
         }
         return achievement?.resumeFileName ?: ""
     }
@@ -527,4 +546,21 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         super.onDestroyView()
     }
 
+    companion object {
+        private const val TAG = "EditAchievementFragment"
+
+        internal fun copyCvFile(openInput: () -> InputStream?, destFile: File) {
+            val tempFile = File(destFile.path + ".part")
+            try {
+                destFile.parentFile?.mkdirs()
+                val input = openInput() ?: throw IOException("Couldn't open the selected file")
+                input.use { stream -> tempFile.outputStream().use { output -> stream.copyTo(output) } }
+                if (!tempFile.renameTo(destFile)) {
+                    tempFile.copyTo(destFile, overwrite = true)
+                }
+            } finally {
+                tempFile.delete()
+            }
+        }
+    }
 }

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services.upload
 
+import com.google.gson.JsonObject
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UploadedItemResult
 
@@ -18,6 +19,8 @@ interface UploadPipelineConfig<T : Any> {
 
     val beforeUpload: (suspend (T) -> Unit)?
     val afterUpload: (suspend (T, UploadedItem) -> Unit)?
+    
+    val mergeConflict: ((local: JsonObject, server: JsonObject) -> JsonObject?)?
 
     fun shouldFilter(item: T): Boolean = false
 

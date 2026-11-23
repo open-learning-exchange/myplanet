@@ -30,7 +30,6 @@ import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NotificationUtils
@@ -48,6 +47,7 @@ class NotificationActionReceiverTest {
     private lateinit var testScope: TestScope
 
     private val mockNotificationsRepository: NotificationsRepository = mockk(relaxed = true)
+    private val mockBroadcastService: BroadcastService = mockk(relaxed = true)
     private var mockDispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private lateinit var mockNotificationUtils: NotificationUtils.NotificationManager
 
@@ -56,14 +56,12 @@ class NotificationActionReceiverTest {
         @JvmStatic
         fun setUpClass() {
             mockkObject(NotificationUtils)
-            mockkStatic("org.ole.planet.myplanet.di.ServiceDependenciesEntryPointKt")
         }
 
         @AfterClass
         @JvmStatic
         fun tearDownClass() {
             unmockkObject(NotificationUtils)
-            unmockkStatic("org.ole.planet.myplanet.di.ServiceDependenciesEntryPointKt")
         }
     }
 
@@ -85,10 +83,9 @@ class NotificationActionReceiverTest {
         mockNotificationUtils = mockk(relaxed = true)
         every { NotificationUtils.getInstance(any()) } returns mockNotificationUtils
 
-        every { getBroadcastService(any()) } returns mockk(relaxed = true)
-
         receiver = spyk(NotificationActionReceiver().apply {
             notificationsRepository = mockNotificationsRepository
+            broadcastService = mockBroadcastService
             dispatcherProvider = mockDispatcherProvider
             applicationScope = testScope
         })
@@ -110,6 +107,7 @@ class NotificationActionReceiverTest {
         advanceUntilIdle()
 
         coVerify { mockNotificationsRepository.markNotificationsAsRead(setOf(notificationId)) }
+        coVerify { mockBroadcastService.sendBroadcast(match { it.action == "org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM_LOCAL" }) }
     }
 
     @Test

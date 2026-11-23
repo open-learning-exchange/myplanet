@@ -9,8 +9,10 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.NoNetworkRetry
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 
 class DownloadRepositoryImpl @Inject constructor(
@@ -19,18 +21,30 @@ class DownloadRepositoryImpl @Inject constructor(
     private val diagnosticsRepository: DiagnosticsRepository,
     private val timeProvider: TimeProvider
 ) : DownloadRepository {
+    private fun isHtmlStandIn(subtype: String?, url: String): Boolean =
+        subtype.equals("html", ignoreCase = true) && !FileUtils.isHtmlFileName(url.substringBefore('?'))
 
     private fun diagnosticUrl(u: HttpUrl): String = u.newBuilder().username("").password("").query(null).fragment(null).build().toString()
 
-    override suspend fun downloadFileResponse(url: String, authHeader: String, resumeOffset: Long, ifRange: String?): DownloadResult = withContext(dispatcherProvider.io) {
+    override suspend fun downloadFileResponse(
+        url: String,
+        authHeader: String,
+        resumeOffset: Long,
+        ifRange: String?,
+        retryNetworkErrors: Boolean
+    ): DownloadResult = withContext(dispatcherProvider.io) {
         try {
             val rangeHeader = if (resumeOffset > 0) "bytes=$resumeOffset-" else null
             val ifRangeHeader = if (resumeOffset > 0) ifRange else null
-            val response = apiInterface.downloadFile(authHeader, url, rangeHeader, ifRangeHeader)
+            val noNetworkRetry = if (retryNetworkErrors) null else NoNetworkRetry
+            val response = apiInterface.downloadFile(authHeader, url, rangeHeader, ifRangeHeader, noNetworkRetry)
             if (response.isSuccessful) {
                 val responseBody = response.body()
                 if (responseBody == null) {
                     return@withContext DownloadResult.Error("Empty response body")
+                } else if (isHtmlStandIn(responseBody.contentType()?.subtype, url)) {
+                    responseBody.close()
+                    return@withContext DownloadResult.Error("Server returned a web page instead of the file")
                 } else {
                     val validator = response.headers()["ETag"] ?: response.headers()["Last-Modified"]
                     return@withContext DownloadResult.Success(responseBody, response.code(), validator)

@@ -539,7 +539,10 @@ class UserRepositoryImplTest {
         val jsonArray = JsonArray().apply {
             listOf("user1@planet1", "user2@planet1").forEach { achievementId ->
                 add(JsonObject().apply {
-                    add("doc", JsonObject().apply { addProperty("_id", achievementId) })
+                    add("doc", JsonObject().apply {
+                        addProperty("_id", achievementId)
+                        addProperty("_rev", "5-server")
+                    })
                 })
             }
         }
@@ -549,6 +552,8 @@ class UserRepositoryImplTest {
         coVerify(exactly = 1) {
             achievementDao.upsertAll(match { it.map { achievement -> achievement._id } == listOf("user2@planet1") })
         }
+        coVerify(exactly = 1) { achievementDao.rebasePendingRev("user1@planet1", "5-server") }
+        coVerify(exactly = 0) { achievementDao.rebasePendingRev("user2@planet1", any()) }
     }
 
     @Test
