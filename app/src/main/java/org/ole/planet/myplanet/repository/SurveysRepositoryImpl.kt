@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
+import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -119,6 +120,20 @@ class SurveysRepositoryImpl @Inject constructor(
                 teamId = teamId
             )?.let { submissionDao.upsertAll(listOf(it)) }
         }
+    }
+
+    override suspend fun getAdoptionTargets(surveyId: String, userId: String?): List<TeamSummary> {
+        if (userId.isNullOrEmpty()) return emptyList()
+        val teams = teamsRepository.get()
+        // A team has adopted a survey if it holds a copy of it, or (older adoptions, as the
+        // team page's Adopt tab also counts them) has team submissions against the original.
+        val alreadyAdopted = examDao.getAdoptingTeamIds(surveyId).toSet() +
+            submissionDao.getTeamIdsWithSubmissionsFor(surveyId)
+        return (teams.getTeamSummaries(userId) + teams.getShareableEnterpriseSummaries(userId))
+            .distinctBy { it._id }
+            .filter { it._id !in alreadyAdopted }
+            .sortedWith(compareBy<TeamSummary> { it.type == "enterprise" }
+                .thenBy(String.CASE_INSENSITIVE_ORDER) { it.name })
     }
 
     private fun createParentJsonString(exam: StepExam): String {

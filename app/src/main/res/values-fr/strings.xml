@@ -1136,6 +1136,9 @@
     <string name="no_reports">Aucun rapport disponible</string>
     <string name="fetching_ai_providers">Récupération des fournisseurs d\'IA…</string>
     <string name="adopt_survey">Adopter le sondage</string>
+    <string name="adopt_survey_to">Adopter le sondage pour…</string>
+    <string name="survey_adopted_to">Sondage adopté pour %1$s</string>
+    <string name="no_survey_adoption_targets">Rejoignez une équipe ou une entreprise pour adopter ce sondage</string>
     <string name="survey_adopted_successfully">Enquête adoptée avec succès !</string>
     <string name="user_verification_in_progress">Vérification de l\'utilisateur en cours. Veuillez patienter pendant que nous traitons les données.</string>
     <string name="go_to_mylibrary">Aller à Ma Bibliothèque</string>

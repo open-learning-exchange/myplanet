@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -379,6 +380,28 @@ class SurveysRepositoryImplTest {
         )
 
         assertEquals("", result["undated"]?.creationDate)
+    }
+
+    @Test
+    fun `getAdoptionTargets lists member teams then enterprises, skipping ones with a copy or team submissions`() = runTest {
+        fun summary(id: String, name: String, type: String) =
+            TeamSummary(id, name, null, null, null, type, null, null, null, null, null)
+        coEvery { teamsRepository.getTeamSummaries("user1") } returns listOf(
+            summary("t2", "zeta", "team"), summary("t1", "Alpha", "team"), summary("t3", "Done", "team")
+        )
+        coEvery { teamsRepository.getShareableEnterpriseSummaries("user1") } returns listOf(summary("e1", "Beta", "enterprise"))
+        coEvery { examDao.getAdoptingTeamIds("s1") } returns listOf("t3")
+        coEvery { submissionDao.getTeamIdsWithSubmissionsFor("s1") } returns listOf("t2")
+
+        val result = repository.getAdoptionTargets("s1", "user1")
+
+        assertEquals(listOf("t1", "e1"), result.map { it._id })
+    }
+
+    @Test
+    fun `getAdoptionTargets is empty without a user`() = runTest {
+        assertEquals(emptyList<TeamSummary>(), repository.getAdoptionTargets("s1", null))
+        coVerify(exactly = 0) { teamsRepository.getTeamSummaries(any()) }
     }
 
     @Test

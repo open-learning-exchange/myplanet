@@ -1135,6 +1135,9 @@
     <string name="no_reports">Warbixin la heli karo ma jirto</string>
     <string name="fetching_ai_providers">Helitaanka bixiyeyaasha AI…</string>
     <string name="adopt_survey">Sahaminta qaado</string>
+    <string name="adopt_survey_to">U qaado sahanka…</string>
+    <string name="survey_adopted_to">Sahanka waxaa qaatay %1$s</string>
+    <string name="no_survey_adoption_targets">Ku biir koox ama shirkad si aad u qaadato sahankan</string>
     <string name="survey_adopted_successfully">Sahanka si guul ah ayaa la qaatay!</string>
     <string name="user_verification_in_progress">Hubinta isticmaalaha ayaa socota. Fadlan sug inta aan xogta ka shaqeynayno.</string>
     <string name="go_to_mylibrary">Tag Maktabaddayda</string>
