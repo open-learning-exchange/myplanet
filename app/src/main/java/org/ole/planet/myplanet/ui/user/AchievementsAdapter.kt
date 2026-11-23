@@ -2,16 +2,22 @@ package org.ole.planet.myplanet.ui.user
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.AsyncDifferConfig
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.databinding.RowOtherInfoBinding
 import org.ole.planet.myplanet.ui.user.AchievementsAdapter.AchievementsViewHolder
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils.getString
 
-class AchievementsAdapter(list: List<String>) : ListAdapter<ReferenceRow, AchievementsViewHolder>(DIFF_CALLBACK) {
+class AchievementsAdapter @JvmOverloads constructor(
+    list: List<String>,
+    diffConfig: AsyncDifferConfig<ReferenceRow>? = null
+) : ListAdapter<ReferenceRow, AchievementsViewHolder>(
+    diffConfig ?: AsyncDifferConfig.Builder(DIFF_CALLBACK).build()
+) {
     init {
         submitJsonList(list)
     }
@@ -20,7 +26,7 @@ class AchievementsAdapter(list: List<String>) : ListAdapter<ReferenceRow, Achiev
         val rows = list.map { jsonString ->
             var obj: JsonObject? = null
             try {
-                obj = JsonUtils.gson.fromJson(jsonString, JsonObject::class.java)
+                obj = GsonUtils.gson.fromJson(jsonString, JsonObject::class.java)
             } catch (e: Exception) {
             }
             if (obj == null) {
@@ -60,16 +66,15 @@ class AchievementsAdapter(list: List<String>) : ListAdapter<ReferenceRow, Achiev
         val payloadSet = flatPayloads.filterIsInstance<String>().toSet()
 
         // If there are payloads we didn't handle, default to full bind
-        val handledPayloads = setOf(PHONE_PAYLOAD, EMAIL_PAYLOAD)
-        if (payloadSet.subtract(handledPayloads).isNotEmpty() || flatPayloads.any { it !is String }) {
+        if (payloadSet.subtract(HANDLED_PAYLOADS).isNotEmpty() || flatPayloads.any { it !is String }) {
             super.onBindViewHolder(holder, position, payloads)
             return
         }
 
-        if (payloadSet.contains(PHONE_PAYLOAD)) {
+        if (payloadSet.contains(PAYLOAD_PHONE)) {
             holder.binding.tvRefPhone.text = row.phone
         }
-        if (payloadSet.contains(EMAIL_PAYLOAD)) {
+        if (payloadSet.contains(PAYLOAD_EMAIL)) {
             holder.binding.tvRefEmail.text = row.email
         }
     }
@@ -77,10 +82,12 @@ class AchievementsAdapter(list: List<String>) : ListAdapter<ReferenceRow, Achiev
     class AchievementsViewHolder(val binding: RowOtherInfoBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        private const val PHONE_PAYLOAD = "payload_phone"
-        private const val EMAIL_PAYLOAD = "payload_email"
+        const val PAYLOAD_PHONE = "payload_phone"
+        const val PAYLOAD_EMAIL = "payload_email"
 
-        private val DIFF_CALLBACK = DiffUtils.itemCallback<ReferenceRow>(
+        private val HANDLED_PAYLOADS = setOf(PAYLOAD_PHONE, PAYLOAD_EMAIL)
+
+        internal val DIFF_CALLBACK = DiffUtils.itemCallback<ReferenceRow>(
             areItemsTheSame = { oldItem, newItem ->
                 // We use name and relationship as the unique identity.
                 oldItem.name == newItem.name && oldItem.relationship == newItem.relationship
@@ -89,8 +96,8 @@ class AchievementsAdapter(list: List<String>) : ListAdapter<ReferenceRow, Achiev
             getChangePayload = { oldItem, newItem ->
                 val payloads = mutableListOf<String>()
                 // Name and relationship are the identity so they shouldn't change for the "same" item
-                if (oldItem.phone != newItem.phone) payloads.add(PHONE_PAYLOAD)
-                if (oldItem.email != newItem.email) payloads.add(EMAIL_PAYLOAD)
+                if (oldItem.phone != newItem.phone) payloads.add(PAYLOAD_PHONE)
+                if (oldItem.email != newItem.email) payloads.add(PAYLOAD_EMAIL)
                 if (payloads.isNotEmpty()) payloads else null
             }
         )

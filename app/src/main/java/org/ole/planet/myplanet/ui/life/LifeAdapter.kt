@@ -7,10 +7,6 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -20,6 +16,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnItemDragStateListener
 import org.ole.planet.myplanet.callback.OnItemMoveListener
 import org.ole.planet.myplanet.callback.OnStartDragListener
+import org.ole.planet.myplanet.databinding.RowLifeBinding
 import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
@@ -41,48 +38,27 @@ class LifeAdapter(
     private val show = 1f
 
     private val drawableCache = mutableMapOf<String, Int>()
-    private var workingList: MutableList<MyLife> = mutableListOf()
-
-    override fun onCurrentListChanged(previousList: MutableList<MyLife>, currentList: MutableList<MyLife>) {
-        super.onCurrentListChanged(previousList, currentList)
-        workingList = currentList.toMutableList()
-    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        val v = LayoutInflater.from(context).inflate(R.layout.row_life, parent, false)
-        return LifeViewHolder(v)
+        val binding = RowLifeBinding.inflate(LayoutInflater.from(context), parent, false)
+        return LifeViewHolder(binding)
     }
 
-    @SuppressLint("ClickableViewAccessibility")
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val myLife = getItem(position)
         if (holder is LifeViewHolder) {
             holder.title.text = myLife.title
             myLife.imageId?.let { imgId ->
-                val resId = drawableCache.getOrPut(imgId) {
+                // Keep drawableCache and getIdentifier fallback for names outside the seven known defaults (legacy or unknown rows)
+                val resId = LifeItemDefaults.knownDrawables[imgId] ?: drawableCache.getOrPut(imgId) {
                     context.resources.getIdentifier(imgId, "drawable", context.packageName)
                 }
                 holder.imageView.setImageResource(resId)
             }
             holder.imageView.contentDescription = context.getString(R.string.icon, myLife.title)
+            holder.dragImageButton.contentDescription = context.getString(R.string.drag, myLife.title)
+            holder.visibility.contentDescription = context.getString(R.string.visibility_of, myLife.title)
 
-            holder.imageView.setOnClickListener { view: View ->
-                val fragment = findFragment(myLife.imageId)
-                if (fragment != null) {
-                    transactionFragment(fragment, view)
-                }
-            }
-            holder.dragImageButton.setOnTouchListener { _: View?, event: MotionEvent ->
-                holder.dragImageButton.contentDescription = context.getString(R.string.drag, myLife.title)
-                if (event.actionMasked == MotionEvent.ACTION_DOWN) {
-                    mDragStartListener.onStartDrag(holder)
-                }
-                false
-            }
-            holder.visibility.setOnClickListener {
-                holder.visibility.contentDescription = context.getString(R.string.visibility_of, myLife.title)
-                updateVisibility(holder.bindingAdapterPosition, myLife.isVisible)
-            }
             if (!myLife.isVisible) {
                 changeVisibility(holder, R.drawable.ic_visibility, hide)
             } else {
@@ -91,9 +67,18 @@ class LifeAdapter(
         }
     }
 
-    private fun updateVisibility(position: Int, isVisible: Boolean) {
+    private fun updateVisibility(holder: LifeViewHolder) {
+        val position = holder.bindingAdapterPosition
+        if (position == RecyclerView.NO_POSITION) return
         val myLife = getItem(position)
-        visibilityCallback(myLife, !isVisible)
+        val newVisibility = !myLife.isVisible
+        myLife.isVisible = newVisibility
+        if (newVisibility) {
+            changeVisibility(holder, R.drawable.ic_visibility_off, show)
+        } else {
+            changeVisibility(holder, R.drawable.ic_visibility, hide)
+        }
+        visibilityCallback(myLife, newVisibility)
     }
 
     private fun changeVisibility(holder: RecyclerView.ViewHolder, imageId: Int, alpha: Float) {
@@ -101,30 +86,70 @@ class LifeAdapter(
         holder.rvItemContainer.alpha = alpha
     }
 
+    private var dragList: MutableList<MyLife>? = null
+
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
+        if (dragList == null) {
+            dragList = currentList.toMutableList()
+        }
+        val list = dragList ?: return false
         if (fromPosition == toPosition ||
-            fromPosition !in workingList.indices ||
-            toPosition !in workingList.indices
+            fromPosition !in list.indices ||
+            toPosition !in list.indices
         ) {
             return false
         }
-        val movedItem = workingList.removeAt(fromPosition)
-        workingList.add(toPosition, movedItem)
-        submitList(workingList.toList())
+        val movedItem = list.removeAt(fromPosition)
+        list.add(toPosition, movedItem)
+        notifyItemMoved(fromPosition, toPosition)
         return true
     }
 
     override fun onItemMoveFinished() {
-        reorderCallback(workingList.toList())
+        val list = dragList ?: return
+        val updatedList = list.mapIndexed { index, item ->
+            MyLife().apply {
+                _id = item._id
+                imageId = item.imageId
+                userId = item.userId
+                title = item.title
+                isVisible = item.isVisible
+                weight = index
+            }
+        }
+        dragList = null
+        reorderCallback(updatedList)
+        submitList(updatedList)
     }
 
-    internal inner class LifeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView),
+    internal inner class LifeViewHolder(val binding: RowLifeBinding) : RecyclerView.ViewHolder(binding.root),
         OnItemDragStateListener {
-        var title: TextView = itemView.findViewById(R.id.titleTextView)
-        var imageView: ImageView = itemView.findViewById(R.id.itemImageView)
-        var dragImageButton: ImageButton = itemView.findViewById(R.id.drag_image_button)
-        var visibility: ImageButton = itemView.findViewById(R.id.visibility_image_button)
-        var rvItemContainer: LinearLayout = itemView.findViewById(R.id.rv_item_parent_layout)
+        val title get() = binding.titleTextView
+        val imageView get() = binding.itemImageView
+        val dragImageButton get() = binding.dragImageButton
+        val visibility get() = binding.visibilityImageButton
+        val rvItemContainer get() = binding.rvItemContent
+
+        init {
+            imageView.setOnClickListener { view: View ->
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                val item = getItem(pos)
+                findFragment(item.imageId)?.let {
+                    transactionFragment(it, view)
+                }
+            }
+            @SuppressLint("ClickableViewAccessibility")
+            dragImageButton.setOnTouchListener { _: View?, event: MotionEvent ->
+                if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+                    mDragStartListener.onStartDrag(this)
+                }
+                false
+            }
+            visibility.setOnClickListener {
+                updateVisibility(this)
+            }
+        }
 
         override fun onItemSelected() {
             itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.user_profile_background))
@@ -143,10 +168,20 @@ class LifeAdapter(
 
     companion object {
         private val DIFF_CALLBACK = DiffUtils.itemCallback<MyLife>(
-            areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
-            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+            areItemsTheSame = { oldItem, newItem ->
+                if (!oldItem._id.isNullOrBlank() && !newItem._id.isNullOrBlank()) {
+                    oldItem._id == newItem._id
+                } else if (!oldItem.imageId.isNullOrBlank() && !newItem.imageId.isNullOrBlank()) {
+                    oldItem.imageId == newItem.imageId
+                } else {
+                    oldItem.title == newItem.title
+                }
+            },
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem.isVisible == newItem.isVisible && oldItem.weight == newItem.weight && oldItem.title == newItem.title
+            }
         )
-        private val fragmentCache = mapOf<String, () -> Fragment>(
+        private val fragmentCache = mapOf(
             "ic_mypersonals" to { PersonalsFragment() },
             "ic_submissions" to { SubmissionsFragment() },
             "ic_my_survey" to { newInstance("survey") },

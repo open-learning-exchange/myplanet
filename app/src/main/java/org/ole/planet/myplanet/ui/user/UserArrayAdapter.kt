@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.ui.user
 
-import android.text.TextUtils
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class UserArrayAdapter(
+    private val context: Context,
     private val onItemClick: (UserEntity) -> Unit
 ) : ListAdapter<UserEntity, UserArrayAdapter.ViewHolder>(
     DiffUtils.itemCallback<UserEntity>(
@@ -24,6 +25,13 @@ class UserArrayAdapter(
 
     var selectedUser: UserEntity? = null
     private var avatarSize = 0
+    private val dateCache = HashMap<Long, String>()
+    private val selectedColor by lazy(LazyThreadSafetyMode.NONE) {
+        ContextCompat.getColor(context, R.color.md_grey_300)
+    }
+    private val transparentColor by lazy(LazyThreadSafetyMode.NONE) {
+        ContextCompat.getColor(context, android.R.color.transparent)
+    }
 
     class ViewHolder(val binding: ItemUserBinding) : RecyclerView.ViewHolder(binding.root)
 
@@ -36,13 +44,12 @@ class UserArrayAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
-        if (payloads.contains(SELECTION_PAYLOAD)) {
+        if (payloads.contains(PAYLOAD_SELECTION)) {
             val user = getItem(position)
-            val context = holder.itemView.context
             if (user.id == selectedUser?.id) {
-                holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_300))
+                holder.itemView.setBackgroundColor(selectedColor)
             } else {
-                holder.itemView.setBackgroundColor(ContextCompat.getColor(context, android.R.color.transparent))
+                holder.itemView.setBackgroundColor(transparentColor)
             }
         } else {
             super.onBindViewHolder(holder, position, payloads)
@@ -51,21 +58,23 @@ class UserArrayAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val user = getItem(position)
-        val context = holder.itemView.context
 
         holder.binding.txtName.text = context.getString(R.string.two_strings, user.getFullName(), "(${user.name})")
-        holder.binding.txtJoined.text = context.getString(R.string.joined_colon, TimeUtils.formatDate(user.joinDate))
+        holder.binding.txtJoined.text = context.getString(
+            R.string.joined_colon,
+            dateCache.getOrPut(user.joinDate) { TimeUtils.formatDate(user.joinDate) }
+        )
 
-        if (!TextUtils.isEmpty(user.userImage)) {
+        if (!user.userImage.isNullOrEmpty()) {
             ImageUtils.loadProfileImage(user.userImage, holder.binding.ivUser, avatarSize)
         } else {
             holder.binding.ivUser.setImageResource(R.drawable.profile)
         }
 
         if (user.id == selectedUser?.id) {
-            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_300))
+            holder.itemView.setBackgroundColor(selectedColor)
         } else {
-            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, android.R.color.transparent))
+            holder.itemView.setBackgroundColor(transparentColor)
         }
 
         holder.itemView.setOnClickListener {
@@ -74,13 +83,13 @@ class UserArrayAdapter(
             val previousUser = selectedUser
             selectedUser = user
             val prevPos = currentList.indexOfFirst { it.id == previousUser?.id }
-            if (prevPos != -1) notifyItemChanged(prevPos, SELECTION_PAYLOAD)
-            notifyItemChanged(currentPos, SELECTION_PAYLOAD)
+            if (prevPos != -1) notifyItemChanged(prevPos, PAYLOAD_SELECTION)
+            notifyItemChanged(currentPos, PAYLOAD_SELECTION)
             onItemClick(user)
         }
     }
 
     companion object {
-        private const val SELECTION_PAYLOAD = "selection_payload"
+        const val PAYLOAD_SELECTION = "selection_payload"
     }
 }

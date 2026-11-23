@@ -1,0 +1,44 @@
+name: myPlanet labels
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: 'pull request number to (re)label'
+        required: true
+        type: string
+      dry_run:
+        description: 'report what would happen, change nothing'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: labels-${{ inputs.pr || github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  GRADLE_FILE: app/build.gradle
+  EXCLUDE_PATHS: app/src/main/res/values-*/strings.xml
+
+jobs:
+  size:
+    name: myPlanet labels
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: label the pull request by size
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ inputs.pr || github.event.pull_request.number }}
+          DRY_RUN: ${{ inputs.dry_run || false }}
+        run: |
+          gh api "repos/$REPO/contents/.github/scripts/labels.sh" -H "Accept: application/vnd.github.v3.raw" | bash

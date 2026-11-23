@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.data.room
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import org.ole.planet.myplanet.data.room.dao.AchievementDao
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
@@ -64,6 +66,7 @@ import org.ole.planet.myplanet.model.NewsLog
 import org.ole.planet.myplanet.model.OfflineActivity
 import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.model.Rating
+import org.ole.planet.myplanet.model.RatingPromptLog
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.RetryOperation
@@ -78,13 +81,6 @@ import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserChallengeActions
 import org.ole.planet.myplanet.model.UserEntity
 
-/**
- * Room database that is progressively replacing the legacy Realm store.
- *
- * Entities and DAOs are added here as each domain is migrated off Realm. Because the migration
- * uses a drop-and-resync strategy (data is re-pulled from the Planet/CouchDB server on first
- * launch), destructive schema migrations are acceptable and configured in the Hilt module.
- */
 @Database(
     entities = [
         DictionaryEntity::class,
@@ -99,6 +95,7 @@ import org.ole.planet.myplanet.model.UserEntity
         ChatHistory::class,
         Feedback::class,
         Rating::class,
+        RatingPromptLog::class,
         TagEntity::class,
         Meetup::class,
         SearchActivity::class,
@@ -125,7 +122,7 @@ import org.ole.planet.myplanet.model.UserEntity
         Answer::class,
         MyTeam::class,
     ],
-    version = 5,
+    version = AppDatabase.VERSION,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -167,4 +164,19 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun submissionDao(): SubmissionDao
     abstract fun answerDao(): AnswerDao
     abstract fun teamDao(): TeamDao
+
+    companion object {
+        // Bump this on any schema change. Without a matching in-place Migration ending here,
+        // RoomModule falls back to drop-and-resync. When adding one, end it at VERSION and
+        // update the guard in AppDatabaseMigrationTest.
+        const val VERSION = 21
+
+        val MIGRATION_20_21 = object : Migration(20, 21) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_my_library_courseId` ON `my_library` (`courseId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_my_library_stepId` ON `my_library` (`stepId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_my_library_resourceLocalAddress` ON `my_library` (`resourceLocalAddress`)")
+            }
+        }
+    }
 }

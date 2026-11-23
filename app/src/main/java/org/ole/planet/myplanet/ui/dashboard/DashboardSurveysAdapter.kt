@@ -23,10 +23,14 @@ class DashboardSurveysAdapter(
 
     inner class SurveyViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val textView: TextView = itemView.findViewById(android.R.id.text1)
+        val textColor: Int = ContextCompat.getColor(itemView.context, R.color.daynight_textColor)
 
         init {
+            textView.setTextColor(textColor)
             itemView.setOnClickListener {
-                onItemClick(bindingAdapterPosition)
+                val position = bindingAdapterPosition
+                if (position == RecyclerView.NO_POSITION) return@setOnClickListener
+                onItemClick(position)
                 dialog.dismiss()
             }
         }
@@ -40,12 +44,6 @@ class DashboardSurveysAdapter(
 
     override fun onBindViewHolder(holder: SurveyViewHolder, position: Int) {
         holder.textView.text = getItem(position)
-        holder.textView.setTextColor(
-            ContextCompat.getColor(
-                holder.itemView.context,
-                R.color.daynight_textColor
-            )
-        )
     }
 
 }

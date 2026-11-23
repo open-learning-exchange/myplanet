@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.StepItem
+import org.ole.planet.myplanet.utils.CoursesItemUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -77,7 +78,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         val course = state.course
         setTextViewVisibility(binding.subjectLevel, course.subjectLevel, binding.ltSubjectLevel)
         setTextViewVisibility(binding.method, course.method, binding.ltMethod)
-        setTextViewVisibility(binding.gradeLevel, course.gradeLevel, binding.ltGradeLevel)
+        setTextViewVisibility(binding.gradeLevel, course.gradeLevel?.let { CoursesItemUtils.gradeLevelLabel(requireContext(), it) }, binding.ltGradeLevel)
         setTextViewVisibility(binding.language, course.languageOfInstruction, binding.ltLanguage)
         setCourseCover(course.courseId, course.coverFileName, course.courseRev)
 
@@ -133,7 +134,12 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         if (stepsAdapter == null) {
             binding.stepsList.layoutManager = LinearLayoutManager(activity)
             stepsAdapter = CoursesStepsAdapter(requireActivity()) { stepId ->
-                viewModel.toggleStepDescription(stepId)
+                val parent = parentFragment as? TakeCourseFragment
+                if (parent != null) {
+                    parent.navigateToStep(stepId)
+                } else {
+                    viewModel.toggleStepDescription(stepId)
+                }
             }
             binding.stepsList.adapter = stepsAdapter
         }
@@ -156,6 +162,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onDestroyView() {
         _binding = null
         stepsAdapter = null
+        isRatingViewInitialized = false
         super.onDestroyView()
     }
 }

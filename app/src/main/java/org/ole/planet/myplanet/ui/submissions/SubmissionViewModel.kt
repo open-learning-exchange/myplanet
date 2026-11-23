@@ -5,20 +5,18 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import org.ole.planet.myplanet.model.StepExam
-import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -30,23 +28,18 @@ class SubmissionViewModel @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val surveysRepository: SurveysRepository,
     private val userRepository: UserRepository,
-    private val dispatcherProvider: DispatcherProvider,
+    dispatcherProvider: DispatcherProvider,
 ) : ViewModel() {
-
-    private data class SubmissionViewData(
-        val submission: Submission,
-        val submitterName: String,
-    )
 
     private val _type = MutableStateFlow("")
     private val _query = MutableStateFlow("")
 
     private val userIdFlow = flow { emit(userRepository.getActiveUserIdSuspending()) }
-        .shareIn(viewModelScope, SharingStarted.Lazily, 1)
+        .shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1)
 
     private val allSubmissionsFlow = userIdFlow.flatMapLatest { uid ->
         submissionsRepository.getSubmissionsFlow(uid)
-    }.shareIn(viewModelScope, SharingStarted.Lazily, 1)
+    }.shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1)
 
     private val exams: StateFlow<HashMap<String?, StepExam>> = allSubmissionsFlow.mapLatest { subs ->
         HashMap(submissionsRepository.getExamMap(subs))
@@ -54,7 +47,7 @@ class SubmissionViewModel @Inject constructor(
 
     private val assignedSurveysFlow = userIdFlow.mapLatest { uid ->
         surveysRepository.getAssignedSurveys(uid)
-    }.flowOn(dispatcherProvider.io).shareIn(viewModelScope, SharingStarted.Lazily, 1)
+    }.flowOn(dispatcherProvider.io).shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1)
 
     private val assignedSurveyModels: Flow<List<SubmissionUiModel>> = combine(
         assignedSurveysFlow, allSubmissionsFlow, userIdFlow, _query
@@ -89,59 +82,23 @@ class SubmissionViewModel @Inject constructor(
         list.sortedByDescending { it.lastUpdateTime }
     }.flowOn(dispatcherProvider.io)
 
-    private val filteredSubmissionsRaw = combine(allSubmissionsFlow, _type, _query, exams, userIdFlow) { subs, type, query, examMap, uid ->
-        var filtered = when (type) {
-            "survey_submission" -> subs.filter {
-                it.userId == uid && it.type == "survey" && it.status != "pending"
-            }
-            else -> subs.filter { it.userId == uid && it.type != "survey" }
-        }.sortedByDescending { it.lastUpdateTime }
+    private val filteredProjections = combine(allSubmissionsFlow, _type, _query, exams, userIdFlow) { subs, type, query, examMap, uid ->
+        submissionsRepository.getSubmissionProjections(subs, uid, type, query, examMap)
+    }.flowOn(dispatcherProvider.io).shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1)
 
-        if (query.isNotEmpty()) {
-            val examIds = examMap.filter { (_, exam) ->
-                exam.name?.contains(query, ignoreCase = true) == true
-            }.keys
-            filtered = filtered.filter { examIds.contains(it.parentId) }
-        }
-
-        val groupedSubmissions = filtered.groupBy { it.parentId }
-
-        val uniqueRawSubmissions = groupedSubmissions
-            .mapValues { entry -> entry.value.maxByOrNull { it.lastUpdateTime } }
-            .values
-            .filterNotNull()
-
-        val userIds = uniqueRawSubmissions.mapNotNull { it.userId }.distinct()
-        val fallbackUsersMap = userRepository.getUsersByIds(userIds).associateBy { it.id }
-
-        val uniqueSubmissions = uniqueRawSubmissions.map { sub ->
-            val name = submissionsRepository.getNormalizedSubmitterName(sub)
-            val fallback = sub.userId?.let { fallbackUsersMap[it]?.name }
-            SubmissionViewData(sub, name ?: fallback ?: "")
-        }.sortedByDescending { it.submission.lastUpdateTime }
-
-        val submissionCountMap = groupedSubmissions.mapValues { it.value.size }
-            .mapKeys { entry ->
-                groupedSubmissions[entry.key]?.maxByOrNull { it.lastUpdateTime }?.id
-            }
-
-        Triple(uniqueSubmissions, submissionCountMap, filtered)
-    }.flowOn(dispatcherProvider.io).shareIn(viewModelScope, SharingStarted.Lazily, 1)
-
-    private val submissionBasedModels: Flow<List<SubmissionUiModel>> = combine(filteredSubmissionsRaw, exams) { (uniqueSubmissions, submissionCountMap), examsMap ->
-        uniqueSubmissions.map { viewData ->
-            val examTitle = examsMap[viewData.submission.parentId]?.name ?: "Submissions"
-            val count = submissionCountMap[viewData.submission.id] ?: 1
+    private val submissionBasedModels: Flow<List<SubmissionUiModel>> = combine(filteredProjections, exams) { projections, examsMap ->
+        projections.map { projection ->
+            val examTitle = examsMap[projection.submission.parentId]?.name ?: "Submissions"
             SubmissionUiModel(
-                id = viewData.submission.id,
-                status = viewData.submission.status,
-                startTime = viewData.submission.startTime,
-                lastUpdateTime = viewData.submission.lastUpdateTime,
-                parentId = viewData.submission.parentId,
-                userId = viewData.submission.userId,
-                submitterName = viewData.submitterName,
+                id = projection.submission.id,
+                status = projection.submission.status,
+                startTime = projection.submission.startTime,
+                lastUpdateTime = projection.submission.lastUpdateTime,
+                parentId = projection.submission.parentId,
+                userId = projection.submission.userId,
+                submitterName = projection.submitterName,
                 examTitle = examTitle,
-                submissionCount = count
+                submissionCount = projection.submissionCount
             )
         }
     }

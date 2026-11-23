@@ -29,6 +29,7 @@ class SubmissionsAdapter(
 ) {
     private var listener: OnHomeItemClickListener? = null
     private var type = ""
+    private val dateCache = HashMap<Long, String>()
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -77,7 +78,7 @@ class SubmissionsAdapter(
         fun bind(submission: SubmissionUiModel) {
             binding.status.text = submission.status?.takeIf { it.isNotEmpty() }
                 ?: context.getString(R.string.status_not_started)
-            binding.date.text = getFormattedDate(submission.startTime)
+            binding.date.text = dateCache.getOrPut(submission.startTime) { getFormattedDate(submission.startTime) }
             showSubmittedBy(submission)
             binding.title.text = submission.examTitle
             updateSubmissionCount(submission)

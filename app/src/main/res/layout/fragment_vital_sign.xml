@@ -347,14 +347,13 @@
                 android:textColor="@color/daynight_textColor" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
-        <com.github.clans.fab.FloatingActionButton
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/update_health"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
             android:layout_margin="@dimen/padding_large"
+            android:contentDescription="@string/update_health_record"
             android:src="@drawable/ic_myhealth"
-            android:text="@string/update_health_record"
-            android:tint="@color/md_white_1000"
-            app:fab_label="@string/update_health_record" />
+            app:tint="@color/md_white_1000" />
 </FrameLayout>

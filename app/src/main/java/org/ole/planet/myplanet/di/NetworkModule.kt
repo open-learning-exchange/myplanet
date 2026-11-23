@@ -8,19 +8,26 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import java.lang.reflect.Modifier
+import java.lang.reflect.Type
 import java.net.InetAddress
 import java.net.Socket
 import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
 import javax.net.SocketFactory
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import okhttp3.ConnectionPool
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
+import org.ole.planet.myplanet.data.api.AllowlistFactory
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.api.RetryInterceptor
-import org.ole.planet.myplanet.services.BroadcastService
+import org.ole.planet.myplanet.model.ChatResponse
+import org.ole.planet.myplanet.model.DocumentResponse
+import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.utils.Constants.NETWORK_TRAFFIC_TAG
-import org.ole.planet.myplanet.utils.TimeProvider
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -39,7 +46,15 @@ annotation class StandardHttpClient
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
+annotation class ReachabilityHttpClient
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
 annotation class StandardRetrofit
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class PlainGson
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -47,6 +62,7 @@ object NetworkModule {
     private const val CONNECT_TIMEOUT_SECONDS = 10L
     private const val READ_TIMEOUT_SECONDS = 60L
     private const val WRITE_TIMEOUT_SECONDS = 120L
+    private const val REACHABILITY_TIMEOUT_SECONDS = 5L
 
     @Provides
     @Singleton
@@ -56,15 +72,53 @@ object NetworkModule {
             .serializeNulls()
             .create()
     }
-    
+
+    @Provides
+    @Singleton
+    @PlainGson
+    fun providePlainGson(): Gson {
+        return Gson()
+    }
+
+    @Provides
+    @Singleton
+    fun provideJson(): Json {
+        return Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            coerceInputValues = true
+        }
+    }
+
+    private val kotlinxHandledTypes: Set<Type> = setOf(
+        MyPlanet::class.java,
+        ChatResponse::class.java,
+        DocumentResponse::class.java,
+        JsonObject::class.java,
+        JsonArray::class.java
+    )
+
     private const val MAX_REQUESTS_PER_HOST = 20
 
-    private fun buildOkHttpClient(connect: Long, read: Long, write: Long, retryInterceptor: RetryInterceptor? = null): OkHttpClient {
+    @Provides
+    @Singleton
+    fun provideConnectionPool(): ConnectionPool {
+        return ConnectionPool(MAX_REQUESTS_PER_HOST, 5, TimeUnit.MINUTES)
+    }
+
+    private fun buildOkHttpClient(
+        connect: Long,
+        read: Long,
+        write: Long,
+        connectionPool: ConnectionPool,
+        retryInterceptor: RetryInterceptor? = null
+    ): OkHttpClient {
         val dispatcher = Dispatcher().apply {
             maxRequestsPerHost = MAX_REQUESTS_PER_HOST
         }
         val builder = OkHttpClient.Builder()
             .dispatcher(dispatcher)
+            .connectionPool(connectionPool)
             .connectTimeout(connect, TimeUnit.SECONDS)
             .readTimeout(read, TimeUnit.SECONDS)
             .writeTimeout(write, TimeUnit.SECONDS)
@@ -80,12 +134,30 @@ object NetworkModule {
     @Provides
     @Singleton
     @StandardHttpClient
-    fun provideStandardOkHttpClient(broadcastService: BroadcastService, timeProvider: TimeProvider): OkHttpClient {
+    fun provideStandardOkHttpClient(
+        retryInterceptor: RetryInterceptor,
+        connectionPool: ConnectionPool
+    ): OkHttpClient {
         return buildOkHttpClient(
             CONNECT_TIMEOUT_SECONDS,
             READ_TIMEOUT_SECONDS,
             WRITE_TIMEOUT_SECONDS,
-            RetryInterceptor(broadcastService, timeProvider)
+            connectionPool,
+            retryInterceptor
+        )
+    }
+
+    @Provides
+    @Singleton
+    @ReachabilityHttpClient
+    fun provideReachabilityOkHttpClient(
+        connectionPool: ConnectionPool
+    ): OkHttpClient {
+        return buildOkHttpClient(
+            REACHABILITY_TIMEOUT_SECONDS,
+            REACHABILITY_TIMEOUT_SECONDS,
+            REACHABILITY_TIMEOUT_SECONDS,
+            connectionPool
         )
     }
 
@@ -94,11 +166,13 @@ object NetworkModule {
     @StandardRetrofit
     fun provideStandardRetrofit(
         @StandardHttpClient okHttpClient: OkHttpClient,
-        gson: Gson
+        gson: Gson,
+        json: Json
     ): Retrofit {
         return Retrofit.Builder()
             .baseUrl("https://vi.media.mit.edu/")
             .client(okHttpClient)
+            .addConverterFactory(AllowlistFactory(json, kotlinxHandledTypes))
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
     }

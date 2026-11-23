@@ -1,43 +1,58 @@
 package org.ole.planet.myplanet.repository
 
-import androidx.core.content.edit
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
-import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyLife
-import org.ole.planet.myplanet.services.SharedPrefManager
 
-data class CachedMyLifeItem(
-    var imageId: String?,
-    var title: String?,
-    var isVisible: Boolean,
-    var weight: Int
-)
 class LifeRepositoryImpl @Inject constructor(
     private val myLifeDao: MyLifeDao,
-    private val sharedPrefManager: SharedPrefManager,
-    private val gson: Gson,
-    @ApplicationScope private val appScope: CoroutineScope
+    private val lifeCache: LifeCache
 ) : LifeRepository {
 
-    private val MY_LIFE_CACHE_PREFIX = "myLifeCache_"
+    private val seedMutex = Mutex()
 
-    override suspend fun updateVisibility(isVisible: Boolean, myLifeId: String) {
-        myLifeDao.updateVisibility(myLifeId, isVisible)
+    private fun normalizeUserId(userId: String?): String? {
+        return userId?.takeIf { it.isNotBlank() && it != "--" }
     }
 
-    override suspend fun updateMyLifeListOrder(list: List<MyLife>) {
-        val userId = list.firstOrNull()?.userId
-        val idToIndex = list.mapIndexed { index, item -> item._id to index }.toMap()
+    override fun observeMyLifeByUserId(userId: String?): Flow<List<MyLife>> {
+        return myLifeDao.observeByUserId(normalizeUserId(userId)).map { it.dedupedByKey() }
+    }
+
+    override suspend fun updateVisibility(isVisible: Boolean, myLifeId: String, userId: String?): List<MyLife> {
+        myLifeDao.updateVisibility(myLifeId, isVisible)
+        val managedLives = myLifeDao.getByIds(listOf(myLifeId))
+        val rawUserId = managedLives.firstOrNull()?.userId ?: userId
+        val effectiveUserId = normalizeUserId(rawUserId)
+        val updatedLives = getMyLifeByUserId(effectiveUserId)
+        lifeCache.write(effectiveUserId ?: "--", updatedLives)
+        return updatedLives
+    }
+
+    private fun hasForeignOwner(rowUserId: String?, effectiveUserId: String?): Boolean {
+        val normalizedRowOwner = normalizeUserId(rowUserId)
+        return normalizedRowOwner != null && normalizedRowOwner != effectiveUserId
+    }
+
+    override suspend fun updateMyLifeListOrder(list: List<MyLife>, userId: String?) {
+        if (list.isEmpty()) return
+        val effectiveUserId = normalizeUserId(userId)
+        if (list.any { hasForeignOwner(it.userId, effectiveUserId) }) return
+        val idToIndex = buildMap(list.size) {
+            list.forEachIndexed { index, item ->
+                put(item._id, index)
+            }
+        }
         val ids = idToIndex.keys.filter { it.isNotEmpty() }
         if (ids.isEmpty()) return
 
         val managedLives = myLifeDao.getByIds(ids)
+        if (managedLives.any { hasForeignOwner(it.userId, effectiveUserId) }) return
         val changed = managedLives.mapNotNull { managedLife ->
             val index = idToIndex[managedLife._id]
             if (index != null && managedLife.weight != index) {
@@ -50,79 +65,92 @@ class LifeRepositoryImpl @Inject constructor(
 
         if (changed.isNotEmpty()) {
             myLifeDao.update(changed)
-            if (userId != null) {
-                val updatedLives = getMyLifeByUserId(userId, ensureLatest = true)
-                cacheMyLifeItems(userId, updatedLives)
-            }
         }
+        val updatedLives = getMyLifeByUserId(effectiveUserId)
+        lifeCache.write(effectiveUserId ?: "--", updatedLives)
     }
 
-    override suspend fun getMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<MyLife> {
-        return myLifeDao.getByUserId(userId)
+    private fun MyLife.dedupKey(): Any {
+        return imageId?.takeIf { it.isNotBlank() }
+            ?: title?.takeIf { it.isNotBlank() }
+            ?: _id.takeIf { it.isNotBlank() }
+            ?: listOf(userId, isVisible, weight)
     }
 
-    override suspend fun getVisibleMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<MyLife> {
-        return myLifeDao.getVisibleByUserId(userId)
+    private fun List<MyLife>.dedupedByKey(): List<MyLife> = distinctBy { it.dedupKey() }
+
+    override suspend fun getMyLifeByUserId(userId: String?, defaultItems: List<MyLife>): List<MyLife> {
+        val effectiveUserId = normalizeUserId(userId)
+        suspend fun loadItems() = myLifeDao.getByUserId(effectiveUserId).dedupedByKey()
+        val items = loadItems()
+        if (items.isNotEmpty() || defaultItems.isEmpty()) {
+            return items
+        }
+        val seeded = seedMyLifeIfEmpty(effectiveUserId, defaultItems)
+        if (seeded.isNotEmpty()) {
+            return seeded
+        }
+        return loadItems()
+    }
+
+    private suspend fun getVisibleMyLifeByUserId(userId: String?): List<MyLife> {
+        val effectiveUserId = normalizeUserId(userId)
+        return myLifeDao.getVisibleByUserId(effectiveUserId).dedupedByKey()
     }
 
     override suspend fun getMyLifeForDashboard(userId: String, seedBase: List<MyLife>): List<MyLife> {
-        val json = sharedPrefManager.rawPreferences.getString("$MY_LIFE_CACHE_PREFIX$userId", null)
-        if (json != null) {
-            val cached: List<CachedMyLifeItem>? = try {
-                val type = object : TypeToken<List<CachedMyLifeItem>>() {}.type
-                gson.fromJson(json, type)
-            } catch (e: Exception) {
-                null
-            }
-            if (cached != null) {
-                appScope.launch {
-                    val storedItems = getMyLifeByUserId(userId, ensureLatest = false)
-                    if (storedItems.isNotEmpty()) {
-                        cacheMyLifeItems(userId, storedItems)
-                    }
-                }
-                return cached.filter { it.isVisible }.map { item ->
-                    MyLife(item.imageId, userId, item.title).apply {
+        val effectiveUserId = normalizeUserId(userId)
+        val visibleForUser = getVisibleMyLifeByUserId(effectiveUserId)
+        if (visibleForUser.isNotEmpty()) {
+            return visibleForUser
+        }
+        if (myLifeDao.countByUserId(effectiveUserId) > 0) {
+            return emptyList()
+        }
+
+        val cacheKey = effectiveUserId ?: "--"
+        val cached = lifeCache.read(cacheKey)
+        if (cached != null) {
+            return cached.mapNotNull { item ->
+                if (item.isVisible) {
+                    MyLife(item.imageId, effectiveUserId, item.title).apply {
                         isVisible = item.isVisible
                         weight = item.weight
                     }
+                } else {
+                    null
                 }
-            }
+            }.sortedBy { it.weight }
         }
 
-        val allForUser = getMyLifeByUserId(userId, ensureLatest = false)
-        val visibleItems = if (allForUser.isEmpty()) {
-            seedMyLifeIfEmpty(userId, seedBase)
-            val seeded = getMyLifeByUserId(userId, ensureLatest = true)
-            cacheMyLifeItems(userId, seeded)
-            seeded.filter { it.isVisible }
-        } else {
-            cacheMyLifeItems(userId, allForUser)
-            allForUser.filter { it.isVisible }
+        val seeded = seedMyLifeIfEmpty(effectiveUserId, seedBase).ifEmpty {
+            getMyLifeByUserId(effectiveUserId)
         }
-        return visibleItems
+        lifeCache.write(cacheKey, seeded)
+        return seeded.filter { it.isVisible }.sortedBy { it.weight }
     }
 
-    private fun cacheMyLifeItems(userId: String, items: List<MyLife>) {
-        val cached = items.map { CachedMyLifeItem(it.imageId, it.title, it.isVisible, it.weight) }
-        sharedPrefManager.rawPreferences.edit { putString("$MY_LIFE_CACHE_PREFIX$userId", gson.toJson(cached)) }
-    }
-
-    override suspend fun seedMyLifeIfEmpty(userId: String?, items: List<MyLife>) {
-        val existing = myLifeDao.countByUserId(userId)
-        if (existing == 0) {
-            var weight = 1
-            val newItems = items.map { item ->
-                MyLife().apply {
-                    _id = UUID.randomUUID().toString()
-                    title = item.title
-                    imageId = item.imageId
-                    this.weight = weight++
-                    this.userId = item.userId
-                    isVisible = true
+    override suspend fun seedMyLifeIfEmpty(userId: String?, items: List<MyLife>): List<MyLife> {
+        val effectiveUserId = normalizeUserId(userId)
+        return seedMutex.withLock {
+            val existing = myLifeDao.countByUserId(effectiveUserId)
+            if (existing == 0) {
+                var weight = 1
+                val newItems = items.map { item ->
+                    MyLife().apply {
+                        _id = UUID.randomUUID().toString()
+                        title = item.title
+                        imageId = item.imageId
+                        this.weight = weight++
+                        this.userId = effectiveUserId
+                        isVisible = true
+                    }
                 }
+                myLifeDao.insertAll(newItems)
+                newItems.distinctBy { it.dedupKey() }.sortedBy { it.weight }
+            } else {
+                emptyList()
             }
-            myLifeDao.insertAll(newItems)
         }
     }
 }

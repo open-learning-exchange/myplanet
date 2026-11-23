@@ -8,7 +8,6 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
-import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
@@ -16,21 +15,20 @@ import com.bumptech.glide.Glide
 import com.google.android.material.textfield.TextInputLayout
 import com.google.gson.JsonObject
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
+import org.ole.planet.myplanet.databinding.AlertInputBinding
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.repository.VoicesEditor
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.ui.teams.members.MembersDetailInfo
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 object VoicesActions {
     data class EditDialogComponents(
+        val binding: AlertInputBinding,
         val view: View,
         val editText: EditText,
         val inputLayout: TextInputLayout,
@@ -41,12 +39,13 @@ object VoicesActions {
         context: Context,
         listener: OnNewsItemClickListener?
     ): EditDialogComponents {
-        val v = LayoutInflater.from(context).inflate(R.layout.alert_input, null)
-        val tlInput = v.findViewById<TextInputLayout>(R.id.tl_input)
-        val et = v.findViewById<EditText>(R.id.et_input)
-        val llImage = v.findViewById<ViewGroup>(R.id.ll_alert_image)
-        v.findViewById<View>(R.id.add_news_image).setOnClickListener { listener?.addImage(llImage) }
-        return EditDialogComponents(v, et, tlInput, llImage)
+        val binding = AlertInputBinding.inflate(LayoutInflater.from(context))
+        val v = binding.root
+        val tlInput = binding.tlInput
+        val et = binding.etInput
+        val llImage = binding.llAlertImage
+        binding.addNewsImage.setOnClickListener { listener?.addImage(llImage) }
+        return EditDialogComponents(binding, v, et, tlInput, llImage)
     }
 
     private fun loadExistingImages(context: Context, news: News?, imageLayout: ViewGroup, imagesToRemove: MutableSet<String>) {
@@ -56,8 +55,8 @@ object VoicesActions {
         if (!imageUrls.isNullOrEmpty()) {
             imageUrls.forEach { imageUrl ->
                 try {
-                    val imgObject = JsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
-                    val path = JsonUtils.getString("imageUrl", imgObject)
+                    val imgObject = GsonUtils.gson.fromJson(imageUrl, JsonObject::class.java)
+                    val path = GsonUtils.getString("imageUrl", imgObject)
                     if (path.isNotEmpty()) {
                         addImageWithRemoveIcon(context, path, imageLayout, imagesToRemove)
                     }
@@ -86,7 +85,7 @@ object VoicesActions {
         }
 
         val request = Glide.with(context)
-        val target = if (imagePath.lowercase(Locale.getDefault()).endsWith(".gif")) {
+        val target = if (imagePath.endsWith(".gif", ignoreCase = true)) {
             request.asGif().load(if (File(imagePath).exists()) File(imagePath) else imagePath)
         } else {
             request.load(if (File(imagePath).exists()) File(imagePath) else imagePath)
@@ -128,12 +127,12 @@ object VoicesActions {
         isEdit: Boolean,
         components: EditDialogComponents,
         news: News?,
-        repository: VoicesRepository,
+        repository: VoicesEditor,
         currentUser: UserEntity?,
         imageList: List<String>?,
         listener: OnNewsItemClickListener?,
         imagesToRemove: MutableSet<String>,
-        onSuccess: () -> Unit
+        onSuccess: (News?) -> Unit
     ) {
         val s = components.editText.text.toString().trim()
         if (s.isEmpty()) {
@@ -144,7 +143,7 @@ object VoicesActions {
         imagesToRemove.clear()
         dialog.dismiss()
         try {
-            if (isEdit) {
+            val updatedNews = if (isEdit) {
                 news?.id?.let {
                     repository.editPost(it, s, imagesToRemoveCopy, imageList)
                 }
@@ -152,10 +151,11 @@ object VoicesActions {
                 if (news != null && currentUser != null) {
                     repository.postReply(s, news, currentUser, imageList)
                 }
+                null
             }
             listener?.clearImages()
             if (isEdit) listener?.onDataChanged() else listener?.onReplyPosted(news?.id)
-            onSuccess()
+            onSuccess(updatedNews)
         } catch (e: Exception) {
             Utilities.toast(dialog.context, "An error occurred: ${e.message}")
         }
@@ -168,59 +168,51 @@ object VoicesActions {
         currentUser: UserEntity?,
         listener: OnNewsItemClickListener?,
         viewHolder: RecyclerView.ViewHolder,
-        repository: VoicesRepository,
+        repository: VoicesEditor,
         updateReplyButton: (RecyclerView.ViewHolder, News?, Int) -> Unit = { _, _, _ -> },
         launchAction: (suspend () -> Unit) -> Unit
     ) {
         val components = createEditDialogComponents(context, listener)
-        val message = components.view.findViewById<TextView>(R.id.cust_msg)
+        val message = components.binding.custMsg
         message.text = context.getString(if (isEdit) R.string.edit_post else R.string.reply)
-        val icon = components.view.findViewById<ImageView>(R.id.alert_icon)
+        val icon = components.binding.alertIcon
         icon.setImageResource(R.drawable.ic_edit)
         val imagesToRemove = mutableSetOf<String>()
 
         val news = id?.let { repository.getNewsById(it) }
 
         if (isEdit) {
+            listener?.clearImages()
             components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
             loadExistingImages(context, news, components.imageLayout, imagesToRemove)
         }
+        val imagesBeforeDialog = listener?.getCurrentImageList()?.toList().orEmpty()
         val dialog = AlertDialog.Builder(context, R.style.ReplyAlertDialog)
             .setView(components.view)
             .setPositiveButton(R.string.button_submit, null)
-            .setNegativeButton(R.string.cancel) { d, _ -> d.dismiss() }
+            .setNegativeButton(R.string.cancel) { d, _ ->
+                listener?.restoreImages(imagesBeforeDialog)
+                d.dismiss()
+            }
+            .setOnCancelListener { listener?.restoreImages(imagesBeforeDialog) }
             .create()
 
         dialog.show()
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             val currentImageList = listener?.getCurrentImageList()
             launchAction {
-                handlePositiveButton(dialog, isEdit, components, news, repository, currentUser, currentImageList, listener, imagesToRemove) {
-                    updateReplyButton(viewHolder, news, viewHolder.bindingAdapterPosition)
+                handlePositiveButton(dialog, isEdit, components, news, repository, currentUser, currentImageList, listener, imagesToRemove) { updatedNews ->
+                    updateReplyButton(viewHolder, updatedNews ?: news, viewHolder.bindingAdapterPosition)
                 }
             }
         }
     }
 
-    suspend fun showMemberDetails(
-        userModel: UserEntity?,
-        activitiesRepository: ActivitiesRepository
+    fun showMemberDetails(
+        userModel: UserEntity?
     ): MembersDetailFragment? {
         if (userModel == null) return null
-        val userName = "${userModel.firstName} ${userModel.lastName}".trim().ifBlank { userModel.name }
-        val fragment = MembersDetailFragment.newInstance(
-            userName.toString(),
-            userModel.email.toString(),
-            userModel.dob.toString().substringBefore("T"),
-            userModel.language.toString(),
-            userModel.phoneNumber.toString(),
-            (userModel.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0).toString(),
-            (activitiesRepository.getLastVisit(userModel.name ?: "")?.let { SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(Date(it)) } ?: "No logout record found"),
-            "${userModel.firstName} ${userModel.lastName}",
-            userModel.level.toString(),
-            userModel.userImage
-        )
-        return fragment
+        return MembersDetailFragment.newInstance(MembersDetailInfo.fromUser(userModel))
     }
 
 }

@@ -4,33 +4,23 @@ import android.Manifest
 import android.app.Activity.RESULT_OK
 import android.app.DatePickerDialog
 import android.app.Dialog
-import android.content.ContentValues
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.provider.MediaStore
-import android.provider.Settings
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.TextView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.core.view.children
-import androidx.fragment.app.Fragment
+import androidx.core.content.FileProvider
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
@@ -39,8 +29,10 @@ import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
 import java.lang.String.format
 import java.util.ArrayList
 import java.util.Calendar
@@ -51,29 +43,41 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.language
 import org.ole.planet.myplanet.R.array.subject_level
+import org.ole.planet.myplanet.base.BaseBindingFragment
+import org.ole.planet.myplanet.databinding.DialogPhotoPickerBinding
 import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.ui.courses.CoursesFilterFragment
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.ImageUtils
+import org.ole.planet.myplanet.utils.StringUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.hasPermission
+import org.ole.planet.myplanet.utils.showPermissionDeniedFeedback
 
 @AndroidEntryPoint
-class UserProfileFragment : Fragment() {
-    private var _binding: FragmentUserProfileBinding? = null
-    private val binding get() = _binding!!
+class UserProfileFragment : BaseBindingFragment<FragmentUserProfileBinding>(FragmentUserProfileBinding::inflate) {
     private val viewModel: UserProfileViewModel by viewModels()
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var timeProvider: TimeProvider
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
     private var model: UserEntity? = null
     private var editProfileDialog: Dialog? = null
+    private var editProfileBinding: EditProfileDialogBinding? = null
+    private var pendingEditDraft: Bundle? = null
     private lateinit var pickImageLauncher: ActivityResultLauncher<Intent>
     private var selectedGender: String? = null
     var selectedLevel: String? = null
@@ -85,54 +89,92 @@ class UserProfileFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        photoURI = savedInstanceState?.getString(KEY_PHOTO_URI)?.let(Uri::parse)
+        pendingEditDraft = savedInstanceState?.getBundle(KEY_EDIT_DRAFT)
         pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK && result.data != null) {
                 val uri = result.data?.data ?: return@registerForActivityResult
-                photoURI  = uri
-                startIntent(photoURI)
-                val imageSize = resources.getDimensionPixelSize(R.dimen.user_image_size)
-                Glide.with(this)
-                    .load(uri)
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .override(imageSize, imageSize)
-                    .circleCrop()
-                    .placeholder(R.drawable.profile)
-                    .error(R.drawable.profile)
-                    .into(binding.image)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val appContext = requireContext().applicationContext
+                    val path = withContext(dispatcherProvider.io) {
+                        FileUtils.resolveUriToPath(appContext, uri, appContext.filesDir)
+                    }
+                    if (path != null) {
+                        startIntent(path)
+                        val imageSize = resources.getDimensionPixelSize(R.dimen.profile_image_size)
+                        ImageUtils.loadProfileImage(path, binding.image, imageSize)
+                    }
+                }
             }
         }
 
         captureImageLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
-            if (isSuccess) {
-                startIntent(photoURI)
-                binding.image.setImageURI(photoURI)
-            }
-        }
-
-        requestCameraLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestPermission()
-        ) { isGranted ->
-            if (isGranted) {
-                takePhoto()
-            } else {
-                if (!shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
-                    AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-                        .setTitle(R.string.permission_required)
-                        .setMessage(R.string.camera_permission_required)
-                        .setPositiveButton(R.string.settings) { dialog, _ ->
-                            dialog.dismiss()
-                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                            val uri: Uri = Uri.fromParts("package", requireContext().packageName, null)
-                            intent.data = uri
-                            startActivity(intent)
-                        }
-                        .setNegativeButton(R.string.cancel) { dialog, _ -> dialog.dismiss() }
-                        .show()
-                } else {
-                    Utilities.toast(requireContext(), "camera permission is required.")
+            val uri = photoURI
+            if (isSuccess && uri != null) {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val appContext = requireContext().applicationContext
+                    val path = withContext(dispatcherProvider.io) {
+                        FileUtils.resolveUriToPath(appContext, uri, appContext.filesDir)
+                    }
+                    if (path != null) {
+                        startIntent(path)
+                        val imageSize = resources.getDimensionPixelSize(R.dimen.profile_image_size)
+                        ImageUtils.loadProfileImage(path, binding.image, imageSize)
+                    }
                 }
             }
         }
+
+        requestCameraLauncher =
+            registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                if (granted) {
+                    capturePhoto()
+                } else {
+                    requireActivity().showPermissionDeniedFeedback(
+                        Manifest.permission.CAMERA,
+                        R.string.camera_permission_required,
+                    )
+                }
+            }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        photoURI?.let { outState.putString(KEY_PHOTO_URI, it.toString()) }
+        val draft = editProfileBinding?.takeIf { editProfileDialog?.isShowing == true }?.let(::editDraft) ?: pendingEditDraft
+        draft?.let { outState.putBundle(KEY_EDIT_DRAFT, it) }
+    }
+
+    private fun editDraft(binding: EditProfileDialogBinding) = Bundle().apply {
+        putString(DRAFT_FIRST_NAME, binding.firstName.text.toString())
+        putString(DRAFT_MIDDLE_NAME, binding.middleName.text.toString())
+        putString(DRAFT_LAST_NAME, binding.lastName.text.toString())
+        putString(DRAFT_EMAIL, binding.email.text.toString())
+        putString(DRAFT_PHONE, binding.phoneNumber.text.toString())
+        putInt(DRAFT_LANGUAGE, binding.language.selectedItemPosition)
+        putInt(DRAFT_LEVEL, binding.level.selectedItemPosition)
+        putInt(DRAFT_GENDER, binding.rdGender.checkedRadioButtonId)
+        putString(DRAFT_DATE, date)
+        putString(DRAFT_DATE_TEXT, binding.dateOfBirth.text.toString())
+    }
+
+    private fun applyEditDraft(binding: EditProfileDialogBinding, draft: Bundle) {
+        binding.firstName.setText(draft.getString(DRAFT_FIRST_NAME))
+        binding.middleName.setText(draft.getString(DRAFT_MIDDLE_NAME))
+        binding.lastName.setText(draft.getString(DRAFT_LAST_NAME))
+        binding.email.setText(draft.getString(DRAFT_EMAIL))
+        binding.phoneNumber.setText(draft.getString(DRAFT_PHONE))
+        draft.getInt(DRAFT_LANGUAGE, -1).takeIf { it in 0 until binding.language.count }?.let {
+            binding.language.setSelection(it)
+            selectedLanguage = binding.language.getItemAtPosition(it).toString()
+        }
+        draft.getInt(DRAFT_LEVEL, -1).takeIf { it in 0 until binding.level.count }?.let {
+            binding.level.setSelection(it)
+            selectedLevel = CoursesFilterFragment.englishValues(requireContext(), subject_level).drop(1).getOrElse(it - 1) { "" }
+        }
+        draft.getInt(DRAFT_GENDER, View.NO_ID).takeIf { it != View.NO_ID }?.let { binding.rdGender.check(it) }
+        date = draft.getString(DRAFT_DATE)
+        draft.getString(DRAFT_DATE_TEXT)?.let { binding.dateOfBirth.text = it }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -145,34 +187,37 @@ class UserProfileFragment : Fragment() {
         observeUserProfile()
         viewModel.loadCurrentUserProfile()
         viewModel.getOfflineVisits()
+        pendingEditDraft?.let { draft ->
+            pendingEditDraft = null
+            openEditProfileDialog(draft)
+        }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                combine(
-                    viewModel.offlineVisits,
-                    viewModel.maxOpenedResource,
-                    viewModel.lastVisit,
-                    viewModel.numberOfResourceOpen
-                ) { _, _, _, _ -> Unit }
-                    .collect {
-                        if (isAdded) {
-                            setupStatsRecycler()
-                        }
-                    }
+        val combinedFlow = combine(
+            viewModel.offlineVisits,
+            viewModel.maxOpenedResource,
+            viewModel.lastVisit,
+            viewModel.numberOfResourceOpen,
+            viewModel.connectedCommunityCode
+        ) { _, _, _, _, _ -> }
+
+        collectWhenStarted(combinedFlow) {
+            if (isAdded) {
+                setupStatsRecycler()
             }
         }
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentUserProfileBinding.inflate(inflater, container, false)
-
-        return binding.root
     }
 
     private fun initializeDependencies() {
         binding.rvStat.layoutManager = LinearLayoutManager(activity)
         binding.rvStat.isNestedScrollingEnabled = false
         binding.rvStat.adapter = StatsAdapter(requireContext())
+
+        binding.rowEmail.tvLabel.text = getString(R.string.email)
+        binding.rowDob.tvLabel.text = getString(R.string.birth_date)
+        binding.rowGender.tvLabel.text = getString(R.string.gender)
+        binding.rowLanguage.tvLabel.text = getString(R.string.language)
+        binding.rowLevel.tvLabel.text = getString(R.string.profile_label_level)
+        binding.rowLevel.divider.visibility = View.GONE
     }
 
     private fun observeUserProfile() {
@@ -210,12 +255,20 @@ class UserProfileFragment : Fragment() {
         } else {
             model?.name ?: ""
         }
-        binding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), Utilities.checkNA(model?.email))
+        binding.txtSecondary.text = getString(
+            R.string.profile_secondary_line,
+            StringUtils.checkNA(model?.email),
+            StringUtils.checkNA(communityCode())
+        )
+
+        binding.rowEmail.tvValue.text = StringUtils.checkNA(model?.email)
+
         val dob = if (TextUtils.isEmpty(model?.dob)) getString(R.string.n_a) else TimeUtils.getFormattedDate(model?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-        binding.txtDob.text = getString(R.string.two_strings, getString(R.string.date_of_birth), dob)
-        binding.txtGender.text = getString(R.string.gender_colon, Utilities.checkNA(model?.gender))
-        binding.txtLanguage.text = getString(R.string.two_strings, getString(R.string.language_colon), Utilities.checkNA(model?.language))
-        binding.txtLevel.text = getString(R.string.level_colon, Utilities.checkNA(model?.level))
+        binding.rowDob.tvValue.text = dob
+
+        binding.rowGender.tvValue.text = StringUtils.checkNA(model?.gender)
+        binding.rowLanguage.tvValue.text = StringUtils.checkNA(model?.language)
+        binding.rowLevel.tvValue.text = StringUtils.checkNA(model?.level)
     }
 
     private fun loadProfileImage() {
@@ -229,7 +282,7 @@ class UserProfileFragment : Fragment() {
 
         if (!isAdded) return
 
-        val imageSize = resources.getDimensionPixelSize(R.dimen.user_image_size)
+        val imageSize = resources.getDimensionPixelSize(R.dimen.profile_image_size)
         Glide.with(this)
             .load(profileImageUrl)
             .diskCacheStrategy(DiskCacheStrategy.ALL)
@@ -267,11 +320,19 @@ class UserProfileFragment : Fragment() {
             .into(binding.image)
     }
 
-    private fun openEditProfileDialog() {
+    private fun openEditProfileDialog(draft: Bundle? = null) {
         val dialog = Dialog(requireContext()).apply { setCancelable(false) }
         editProfileDialog = dialog
         val binding = EditProfileDialogBinding.inflate(LayoutInflater.from(requireContext()))
+        editProfileBinding = binding
+        dialog.setOnDismissListener {
+            if (editProfileDialog === dialog) {
+                editProfileDialog = null
+                editProfileBinding = null
+            }
+        }
         dialog.setContentView(binding.root)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
 
         populateUserFields(binding)
@@ -280,8 +341,13 @@ class UserProfileFragment : Fragment() {
         setupGender(binding)
         setupDatePicker(binding)
         setupSaveButton(dialog, binding)
+        draft?.let { applyEditDraft(binding, it) }
 
         binding.btnCancel.setOnClickListener {
+            dialog.dismiss()
+            editProfileDialog = null
+        }
+        binding.btnClose.setOnClickListener {
             dialog.dismiss()
             editProfileDialog = null
         }
@@ -306,8 +372,8 @@ class UserProfileFragment : Fragment() {
         val languages = resources.getStringArray(language)
         val languageList: MutableList<String?> = ArrayList(listOf(*languages))
         languageList.add(0, getString(R.string.language))
-        val adapter = ArrayAdapter(requireContext(), R.layout.spinner_item, languageList)
-        adapter.setDropDownViewResource(R.layout.spinner_item)
+        val adapter = ArrayAdapter(requireContext(), R.layout.spinner_item_profile, languageList)
+        adapter.setDropDownViewResource(R.layout.spinner_item_profile)
         binding.language.adapter = adapter
         model?.language?.let { lang ->
             val position = languageList.indexOf(lang)
@@ -323,19 +389,20 @@ class UserProfileFragment : Fragment() {
     }
 
     private fun setupLevelSpinner(binding: EditProfileDialogBinding) {
-        val levels = resources.getStringArray(subject_level).toMutableList().apply { remove("All") }
-        levels.add(0, getString(R.string.select_level))
-        selectedLevel = Utilities.checkNA(model?.level)
-        val levelAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, levels)
-        levelAdapter.setDropDownViewResource(R.layout.spinner_item)
+        val englishLevels = CoursesFilterFragment.englishValues(requireContext(), subject_level).drop(1)
+        val localizedLevels = resources.getStringArray(subject_level).drop(1)
+        val levels = listOf(getString(R.string.select_level)) + localizedLevels
+        val currentLevel = StringUtils.checkNA(model?.level)
+        val levelIndex = englishLevels.indexOf(currentLevel).takeIf { it >= 0 } ?: localizedLevels.indexOf(currentLevel)
+        selectedLevel = englishLevels.getOrElse(levelIndex) { "" }
+        val levelAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item_profile, levels)
+        levelAdapter.setDropDownViewResource(R.layout.spinner_item_profile)
         binding.level.adapter = levelAdapter
-
-        val levelPosition = levels.indexOf(selectedLevel)
-        if (levelPosition > 0) binding.level.setSelection(levelPosition) else binding.level.setSelection(0)
+        binding.level.setSelection(levelIndex + 1)
 
         binding.level.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                selectedLevel = if (position == 0) "" else levels[position]
+                selectedLevel = englishLevels.getOrElse(position - 1) { "" }
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -343,9 +410,11 @@ class UserProfileFragment : Fragment() {
     }
 
     private fun setupGender(binding: EditProfileDialogBinding) {
-        when (model?.gender?.lowercase(Locale.US)) {
+        selectedGender = model?.gender?.takeIf { it.isNotBlank() }
+        when (selectedGender?.lowercase(Locale.US)) {
             "male" -> binding.rbMale.isChecked = true
             "female" -> binding.rbFemale.isChecked = true
+            "other" -> binding.rbOther.isChecked = true
         }
     }
 
@@ -392,6 +461,7 @@ class UserProfileFragment : Fragment() {
             selectedGender = when {
                 binding.rbMale.isChecked -> "male"
                 binding.rbFemale.isChecked -> "female"
+                binding.rbOther.isChecked -> "other"
                 else -> selectedGender
             }
 
@@ -438,7 +508,7 @@ class UserProfileFragment : Fragment() {
                 binding.dateOfBirth.error = getString(R.string.compulsory_date_of_birth)
                 false
             }
-            binding.rdGender.checkedRadioButtonId == -1 -> {
+            binding.rdGender.checkedRadioButtonId == -1 && selectedGender == null -> {
                 Snackbar.make(binding.root, getString(R.string.gender_not_picked), Snackbar.LENGTH_SHORT).show()
                 false
             }
@@ -446,19 +516,23 @@ class UserProfileFragment : Fragment() {
         }
     }
     private fun configureGuestView() {
-        if (model?.id?.startsWith("guest") == true) {
-            binding.btEditProfile.visibility = View.GONE
-            binding.btProfilePic.visibility = View.GONE
-        }
+        val isGuest = model?.id?.startsWith("guest") == true
+        binding.btEditProfile.visibility = if (isGuest) View.GONE else View.VISIBLE
+        binding.btProfilePic.visibility = if (isGuest) View.GONE else View.VISIBLE
+        binding.guestPill.visibility = if (isGuest) View.VISIBLE else View.GONE
+    }
+
+    private fun communityCode(): String {
+        return model?.planetCode?.takeIf { it.isNotBlank() } ?: viewModel.connectedCommunityCode.value
     }
 
     private fun createStatsMap(): LinkedHashMap<String, String?> {
         return linkedMapOf(
-            getString(R.string.community_name) to Utilities.checkNA(model?.planetCode),
-            getString(R.string.last_login) to viewModel.lastVisit.value?.let { TimeUtils.getRelativeTime(it, timeProvider) },
+            getString(R.string.community_name) to StringUtils.checkNA(communityCode()),
+            getString(R.string.last_login) to viewModel.lastVisit.value?.let { TimeUtils.getRelativeTime(requireContext(), it, timeProvider) },
             getString(R.string.total_visits_overall) to viewModel.offlineVisits.value.toString(),
-            getString(R.string.most_opened_resource) to Utilities.checkNA(viewModel.maxOpenedResource.value),
-            getString(R.string.number_of_resources_opened) to Utilities.checkNA(viewModel.numberOfResourceOpen.value)
+            getString(R.string.most_opened_resource) to StringUtils.checkNA(viewModel.maxOpenedResource.value),
+            getString(R.string.number_of_resources_opened) to StringUtils.checkNA(viewModel.numberOfResourceOpen.value)
         )
     }
 
@@ -468,58 +542,78 @@ class UserProfileFragment : Fragment() {
     }
 
     private fun searchForPhoto() {
-        val options = arrayOf(getString(R.string.capture_image), getString(R.string.select_gallery))
-        val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-        builder.setTitle(getString(R.string.choose_an_option))
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, options)
-        builder.setAdapter(adapter) { _, which ->
-            when (which) {
-                0 -> takePhoto()
-                1 -> pickFromGallery()
-            }
-        }
+        val sheet = BottomSheetDialog(requireContext())
+        val sheetBinding = DialogPhotoPickerBinding.inflate(LayoutInflater.from(requireContext()))
+        sheet.setContentView(sheetBinding.root)
+        sheet.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
+            ?.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.transparent))
 
-        val dialog = builder.create()
-        dialog.setOnShowListener {
-            dialog.listView.children.forEach { item ->
-                (item as TextView).setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-            }
+        sheetBinding.optionCaptureImage.setOnClickListener {
+            sheet.dismiss()
+            takePhoto()
         }
+        sheetBinding.optionSelectGallery.setOnClickListener {
+            sheet.dismiss()
+            pickFromGallery()
+        }
+        sheetBinding.optionCancel.setOnClickListener { sheet.dismiss() }
 
-        dialog.show()
+        sheet.show()
     }
 
     private fun pickFromGallery() {
-        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
+        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+            type = "image/*"
+        }
         pickImageLauncher.launch(intent)
     }
 
     private fun takePhoto() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
-            != PackageManager.PERMISSION_GRANTED){
+        if (requireContext().hasPermission(Manifest.permission.CAMERA)) {
+            capturePhoto()
+        } else {
             requestCameraLauncher.launch(Manifest.permission.CAMERA)
-            return
         }
-        val values = ContentValues().apply {
-            put(MediaStore.Images.Media.TITLE, "Photo_${UUID.randomUUID()}")
-            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/ole/photo")
-            }
-        }
-        photoURI = requireActivity().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-        photoURI?.let { captureImageLauncher.launch(it) }
     }
 
-    private fun startIntent(uri: Uri?) {
-        val path = uri?.toString()
+    private fun capturePhoto() {
+        val context = requireContext()
+        viewLifecycleOwner.lifecycleScope.launch {
+            photoURI = withContext(dispatcherProvider.io) {
+                val directory = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "ole/photo")
+                if (!directory.exists()) {
+                    directory.mkdirs()
+                }
+                val photoFile = File(directory, "Photo_${UUID.randomUUID()}.jpg")
+                FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", photoFile)
+            }
+            photoURI?.let { captureImageLauncher.launch(it) }
+        }
+    }
+
+    private fun startIntent(path: String?) {
         viewModel.updateCurrentUserProfileImage(path)
     }
 
     override fun onDestroyView() {
         editProfileDialog?.dismiss()
         editProfileDialog = null
-        _binding = null
+        editProfileBinding = null
         super.onDestroyView()
+    }
+
+    private companion object {
+        const val KEY_PHOTO_URI = "photo_uri"
+        const val KEY_EDIT_DRAFT = "edit_profile_draft"
+        const val DRAFT_FIRST_NAME = "firstName"
+        const val DRAFT_MIDDLE_NAME = "middleName"
+        const val DRAFT_LAST_NAME = "lastName"
+        const val DRAFT_EMAIL = "email"
+        const val DRAFT_PHONE = "phoneNumber"
+        const val DRAFT_LANGUAGE = "language"
+        const val DRAFT_LEVEL = "level"
+        const val DRAFT_GENDER = "gender"
+        const val DRAFT_DATE = "date"
+        const val DRAFT_DATE_TEXT = "dateText"
     }
 }

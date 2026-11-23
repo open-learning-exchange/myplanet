@@ -5,7 +5,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
- * Room replacement for the former Realm `TeamNotification` model. Local-only (not synced or
+ * Room replacement for the former `TeamNotification` model. Local-only (not synced or
  * uploaded); persistence goes through
  * [org.ole.planet.myplanet.data.room.dao.TeamNotificationDao].
  */

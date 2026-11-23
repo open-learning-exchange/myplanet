@@ -31,7 +31,6 @@ interface SurveysRepository {
 
     suspend fun adoptSurvey(examId: String, userId: String?, teamId: String?, isTeam: Boolean)
     suspend fun getSurvey(id: String): StepExam?
-    suspend fun getSurveys(): List<StepExam>
     suspend fun getSurveys(ascending: Boolean = false): List<StepExam>
     suspend fun bulkInsertExamsFromSync(jsonArray: JsonArray)
     fun dueRemindersFlow(): Flow<List<String>>
@@ -40,6 +39,7 @@ interface SurveysRepository {
     suspend fun getLastSurveyDialogShown(): Long
     suspend fun isReminderScheduled(surveyIds: String): Boolean
     suspend fun getPendingAdoptedSurveys(): List<StepExam>
+    suspend fun markExamsUploaded(results: List<UploadedItemResult>): List<UploadedItemResult>
     suspend fun fetchPublicSurvey(baseUrl: String, teamId: String, surveyId: String): JsonObject?
     suspend fun saveSurveyFromPublicApi(surveyDoc: JsonObject)
     suspend fun submitPublicSurvey(baseUrl: String, teamId: String, surveyId: String, answers: JsonArray, respondent: JsonObject? = null): Boolean

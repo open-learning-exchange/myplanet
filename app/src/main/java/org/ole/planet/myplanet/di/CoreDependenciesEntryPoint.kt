@@ -4,12 +4,12 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
-import org.ole.planet.myplanet.data.room.dao.ApkLogDao
-import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.DiagnosticsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NotificationUtils
+import org.ole.planet.myplanet.utils.ServerReachabilityProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 
 @EntryPoint
@@ -17,10 +17,10 @@ import org.ole.planet.myplanet.utils.TimeProvider
 interface CoreDependenciesEntryPoint {
     @ApplicationScope fun applicationScope(): CoroutineScope
     fun sharedPrefManager(): SharedPrefManager
-    fun userSessionManager(): UserSessionManager
     fun serverUrlMapper(): ServerUrlMapper
     fun dispatcherProvider(): DispatcherProvider
-    fun apkLogDao(): ApkLogDao
+    fun diagnosticsRepository(): DiagnosticsRepository
+    fun serverReachabilityProvider(): ServerReachabilityProvider
     fun timeProvider(): TimeProvider
-    fun resourcesRepository(): ResourcesRepository
+    fun notificationManager(): NotificationUtils.NotificationManager
 }

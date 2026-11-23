@@ -6,39 +6,41 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PorterDuff
-import android.net.Uri
 import android.os.Build
 import android.text.TextUtils
+import android.util.Log
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.webkit.URLUtil
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.core.net.toUri
-import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BasePermissionActivity
-import org.ole.planet.myplanet.callback.OnSecurityDataListener
+import org.ole.planet.myplanet.callback.OnChangedListener
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.repository.SyncRepository
 import org.ole.planet.myplanet.repository.SyncUiState
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.showAlert
-import org.ole.planet.myplanet.utils.DialogUtils.showError
 import org.ole.planet.myplanet.utils.FileUtils.installApk
+import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {
@@ -50,13 +52,12 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     lateinit var prefData: SharedPrefManager
 
     @Inject
-    lateinit var uploadManager: UploadManager
-
-    @Inject
     lateinit var uploadToShelfService: UploadToShelfService
 
     @Inject
     lateinit var userRepository: UserRepository
+
+    private val viewModel: UserUploadViewModel by viewModels()
 
     val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
         DialogUtils.CustomProgressDialog(this)
@@ -80,17 +81,25 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     fun checkDownloadResult(download: Download?) {
-        lifecycleScope.launch(dispatcherProvider.main) {
-            if (!isFinishing && !isDestroyed) {
-                customProgressDialog.show()
-                customProgressDialog.setText("${getString(R.string.downloading)} ${download?.progress}% ${getString(R.string.complete)}")
-                customProgressDialog.setProgress(download?.progress ?: 0)
-                if (download?.completeAll == true) {
+        lifecycleScope.launch {
+            if (isFinishing || isDestroyed || download == null) return@launch
+            when {
+                download.failed -> {
+                    safelyDismissDialog()
+                    AlertDialog.Builder(this@ProcessUserDataActivity, R.style.AlertDialogTheme)
+                        .setTitle(R.string.download_failed)
+                        .setMessage(download.message)
+                        .setPositiveButton(R.string.ok, null)
+                        .show()
+                }
+                download.completeAll -> {
                     safelyDismissDialog()
                     installApk(this@ProcessUserDataActivity, download.fileUrl)
-                } else {
-                    safelyDismissDialog()
-                    showError(customProgressDialog, download?.message)
+                }
+                else -> {
+                    customProgressDialog.show()
+                    customProgressDialog.setText("${getString(R.string.downloading)} ${download.progress}% ${getString(R.string.complete)}")
+                    customProgressDialog.setProgress(download.progress)
                 }
             }
         }
@@ -101,7 +110,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             try {
                 customProgressDialog.dismiss()
             } catch (e: IllegalArgumentException) {
-                e.printStackTrace()
+                Log.w(TAG, "safelyDismissDialog failed", e)
             }
         }
     }
@@ -126,9 +135,9 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         val urlUser: String
         val urlPwd: String
         if (url.contains("@")) {
-            val userinfo = getUserInfo(uri)
-            urlUser = userinfo[0]
-            urlPwd = userinfo[1]
+            val (u, p) = UrlUtils.getUserInfo(uri.userInfo)
+            urlUser = u
+            urlPwd = p
             couchdbURL = url
         } else if (TextUtils.isEmpty(password)) {
             showAlert(this, "", getString(R.string.pin_is_required))
@@ -140,19 +149,17 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:$port"
         }
 
-        prefData.setServerPin(password)
-        prefData.setUrlScheme(uri.scheme ?: "")
-        prefData.setUrlHost(uri.host ?: "")
-        prefData.setServerUrl(url)
-        prefData.setCouchdbUrl(couchdbURL)
-        prefData.setUrlUser(urlUser)
-        prefData.setUrlPwd(urlPwd)
+        prefData.saveServerConfig(
+            serverPin = password,
+            urlScheme = uri.scheme ?: "",
+            urlHost = uri.host ?: "",
+            serverUrl = url,
+            couchdbUrl = couchdbURL,
+            urlUser = urlUser,
+            urlPwd = urlPwd
+        )
 
-        if (!couchdbURL.endsWith("db")) {
-            couchdbURL += "/db"
-        }
-
-        return couchdbURL
+        return UrlUtils.dbUrl(couchdbURL)
     }
 
     fun isUrlValid(url: String): Boolean {
@@ -167,7 +174,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         return true
     }
 
-    fun startUpload(source: String, userName: String? = null, securityCallback: OnSecurityDataListener? = null) {
+    fun startUpload(source: String, userName: String? = null, securityCallback: OnChangedListener? = null) {
         when (source) {
             "becomeMember" -> uploadMemberData(userName, securityCallback)
             "login" -> uploadLoginData()
@@ -175,7 +182,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         }
     }
 
-    private fun uploadMemberData(userName: String?, securityCallback: OnSecurityDataListener?) {
+    private fun uploadMemberData(userName: String?, securityCallback: OnChangedListener?) {
         uploadToShelfService.uploadSingleUserData(userName, object : OnSuccessListener {
             override fun onSuccess(success: String?) {
                 uploadToShelfService.uploadSingleUserHealth("org.couchdb.user:${userName}", object : OnSuccessListener {
@@ -183,7 +190,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
                         userName?.let { name ->
                             fetchAndLogUserSecurityData(name, securityCallback)
                         } ?: run {
-                            securityCallback?.onSecurityDataUpdated()
+                            securityCallback?.onChanged()
                         }
                     }
                 })
@@ -192,38 +199,39 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     private fun uploadLoginData() {
-        val liveData = syncRepository.uploadLoginData()
+        val flow = viewModel.uploadLoginData()
 
-        liveData.observe(this, object : androidx.lifecycle.Observer<SyncUiState> {
-            override fun onChanged(value: SyncUiState) {
-                if (value is SyncUiState.Success) {
-                    liveData.removeObserver(this)
-                    onSuccess(value.message)
-                } else if (value is SyncUiState.Error) {
-                    liveData.removeObserver(this)
-                }
+        collectWhenStarted(flow.takeWhile { value ->
+            if (value is SyncUiState.Success) {
+                onSuccess(value.message)
+                false
+            } else if (value is SyncUiState.Error) {
+                false
+            } else {
+                true
             }
-        })
+        }) {}
     }
 
     private fun uploadBulkData() {
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        val liveData = syncRepository.uploadBulkData()
+        val flow = viewModel.uploadBulkData()
 
-        liveData.observe(this, object : androidx.lifecycle.Observer<SyncUiState> {
-            override fun onChanged(value: SyncUiState) {
-                if (value is SyncUiState.Success) {
-                    liveData.removeObserver(this)
-                    safelyDismissDialog()
-                    Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
-                } else if (value is SyncUiState.Error) {
-                    liveData.removeObserver(this)
-                    safelyDismissDialog()
-                }
+        collectWhenStarted(flow.takeWhile { value ->
+            if (value is SyncUiState.Success) {
+                safelyDismissDialog()
+                Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+                false
+            } else if (value is SyncUiState.Error) {
+                safelyDismissDialog()
+                Toast.makeText(this@ProcessUserDataActivity, value.message ?: getString(R.string.sync_failed), Toast.LENGTH_LONG).show()
+                false
+            } else {
+                true
             }
-        })
+        }) {}
     }
 
     protected fun hideKeyboard(view: View?) {
@@ -242,27 +250,21 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     companion object {
-        fun getUserInfo(uri: Uri): Array<String> {
-            val ar = arrayOf("", "")
-            val info =
-                uri.userInfo?.split(":".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
-            if ((info?.size ?: 0) > 1) {
-                ar[0] = "${info?.get(0)}"
-                ar[1] = "${info?.get(1)}"
-            }
-            return ar
-        }
+        private const val TAG = "ProcessUserDataActivity"
+
     }
 
-    fun fetchAndLogUserSecurityData(name: String, securityCallback: OnSecurityDataListener? = null) {
+    fun fetchAndLogUserSecurityData(name: String, securityCallback: OnChangedListener? = null) {
         lifecycleScope.launch {
             try {
-                userRepository.fetchUserSecurityData(name)
+                viewModel.fetchUserSecurityData(name)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.w(TAG, "fetchAndLogUserSecurityData failed", e)
             } finally {
                 withContext(dispatcherProvider.main) {
-                    securityCallback?.onSecurityDataUpdated()
+                    securityCallback?.onChanged()
                 }
             }
         }

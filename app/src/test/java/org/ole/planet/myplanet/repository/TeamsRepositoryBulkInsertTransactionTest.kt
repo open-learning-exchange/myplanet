@@ -25,13 +25,11 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
@@ -74,7 +72,7 @@ class TeamsRepositoryBulkInsertTransactionTest {
         teamDao = spyk(db.teamDao())
 
         repository = TeamsRepositoryImpl(
-            mockk<ActivitiesRepository>(relaxed = true),
+            mockk<android.content.Context>(relaxed = true),
             mockk<UserSessionManager>(relaxed = true),
             mockk<UploadManager>(relaxed = true),
             Gson(),
@@ -84,12 +82,10 @@ class TeamsRepositoryBulkInsertTransactionTest {
             mockk<DispatcherProvider>(relaxed = true),
             mockk<UserRepository>(relaxed = true),
             mockk<dagger.Lazy<ResourcesRepository>>(relaxed = true),
-            TestTimeProvider(),
             mockk<TeamLogDao>(relaxed = true),
             mockk<TeamTaskDao>(relaxed = true),
             mockk<MyLibraryDao>(relaxed = true),
             teamDao,
-            mockk<UserDao>(relaxed = true),
             mockk<CourseDao>(relaxed = true),
             mockk<CourseStepDao>(relaxed = true),
             db,

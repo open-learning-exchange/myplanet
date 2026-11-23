@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 
@@ -64,13 +63,12 @@ object ResourceOpener {
         }
     }
 
-    fun openFileType(activity: Activity, items: MyLibrary, videoType: String, profileDbHandler: UserSessionManager) {
+    fun openFileType(activity: Activity, items: MyLibrary, videoType: String) {
         val mimetype = Utilities.getMimeType(resourcePath(items))
         if (mimetype == null) {
             Utilities.toast(activity, activity.getString(R.string.unable_to_open_resource))
             return
         }
-        profileDbHandler.setResourceOpenCount(items, UserSessionManager.KEY_RESOURCE_OPEN)
         openResource(activity, items, videoType == "online")
     }
 }

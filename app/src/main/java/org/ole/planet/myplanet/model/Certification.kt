@@ -3,10 +3,10 @@ package org.ole.planet.myplanet.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 
 /**
- * Room replacement for the former Realm `Certification` model. Read-only sync data (not
+ * Room replacement for the former `Certification` model. Read-only sync data (not
  * uploaded); persistence goes through [org.ole.planet.myplanet.data.room.dao.CertificationDao].
  * `courseIds` stores the certification's course-id array as a JSON string.
  */
@@ -19,6 +19,6 @@ open class Certification {
     var courseIds: String? = null
 
     fun setCourseIds(courseIds: JsonArray?) {
-        this.courseIds = JsonUtils.gson.toJson(courseIds)
+        this.courseIds = GsonUtils.gson.toJson(courseIds)
     }
 }

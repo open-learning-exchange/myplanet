@@ -4,26 +4,43 @@ import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : FragmentStateAdapter(fm) {
-    private val steps = mutableListOf<String>()
+    private var steps: List<String> = emptyList()
     private val itemIds = mutableMapOf<String, Long>()
     private var nextId = 1L
+    private var currentIds: Set<Long> = emptySet()
 
     companion object {
         private const val COURSE_DETAIL_ID = 0L
     }
 
     fun submitList(newSteps: List<String>) {
+        if (newSteps == steps) return
+
         newSteps.forEach { stepId ->
             if (!itemIds.containsKey(stepId)) {
                 itemIds[stepId] = nextId++
             }
         }
 
-        steps.clear()
-        steps.addAll(newSteps)
-        notifyDataSetChanged()
+        val oldItems = listOf(null) + steps
+        val newItems = listOf(null) + newSteps
+        val diffResult = DiffUtils.calculateDiff(
+            oldList = oldItems,
+            newList = newItems,
+            areItemsTheSame = { oldItem, newItem -> oldItem == newItem },
+            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+        )
+
+        steps = newSteps
+        rebuildIds()
+        diffResult.dispatchUpdatesTo(this)
+    }
+
+    private fun rebuildIds() {
+        currentIds = steps.mapNotNullTo(HashSet()) { itemIds[it] }
     }
 
     override fun createFragment(position: Int): Fragment {
@@ -49,15 +66,11 @@ class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : Fragmen
     }
 
     override fun getItemId(position: Int): Long {
-        return if (position == 0) {
-            COURSE_DETAIL_ID
-        } else {
-            itemIds[steps[position - 1]] ?: RecyclerView.NO_ID
-        }
+        if (position == 0) return COURSE_DETAIL_ID
+        return itemIds[steps[position - 1]] ?: RecyclerView.NO_ID
     }
 
     override fun containsItem(itemId: Long): Boolean {
-        if (itemId == COURSE_DETAIL_ID) return true
-        return steps.any { itemIds[it] == itemId }
+        return itemId == COURSE_DETAIL_ID || itemId in currentIds
     }
 }

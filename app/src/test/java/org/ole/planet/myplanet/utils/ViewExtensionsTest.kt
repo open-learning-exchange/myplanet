@@ -7,8 +7,11 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -56,5 +59,45 @@ class ViewExtensionsTest {
 
         job.cancel()
         verify { editText.removeTextChangedListener(listener) }
+    }
+
+    @Test
+    fun debounceDistinct_collapsesBurstWithinTimeout() = runTest {
+        val result = flow {
+            emit("a")
+            delay(100.milliseconds)
+            emit("ab")
+            delay(100.milliseconds)
+            emit("abc")
+            delay(400.milliseconds)
+        }.debounceDistinct(300).toList()
+
+        assertEquals(listOf("abc"), result)
+    }
+
+    @Test
+    fun debounceDistinct_dropsRepeatAfterDebounce() = runTest {
+        val result = flow {
+            emit("a")
+            delay(400.milliseconds)
+            emit("b")
+            delay(100.milliseconds)
+            emit("a")
+            delay(400.milliseconds)
+        }.debounceDistinct(300).toList()
+
+        assertEquals(listOf("a"), result)
+    }
+
+    @Test
+    fun debounceDistinct_emitsDistinctValuesSeparatedByTimeout() = runTest {
+        val result = flow {
+            emit("a")
+            delay(400.milliseconds)
+            emit("b")
+            delay(400.milliseconds)
+        }.debounceDistinct(300).toList()
+
+        assertEquals(listOf("a", "b"), result)
     }
 }

@@ -9,6 +9,7 @@ interface UserSyncRepository {
     suspend fun saveKeyIv(model: UserEntity, obj: JsonObject)
     suspend fun checkIfUserExists(header: String, model: UserEntity): Boolean
     suspend fun processUserAfterCreation(model: UserEntity, obj: JsonObject, updateHealthFn: suspend (String, String) -> Unit)
+    suspend fun checkAndUploadUser(model: UserEntity, password: String? = null, updateHealthFn: suspend (String, String) -> Unit)
     suspend fun uploadNewUser(model: UserEntity, updateHealthFn: suspend (String, String) -> Unit)
     suspend fun updateExistingUser(header: String, model: UserEntity)
     suspend fun saveUser(jsonDoc: JsonObject?, key: String? = null, iv: String? = null): UserEntity?
@@ -17,4 +18,7 @@ interface UserSyncRepository {
     suspend fun uploadShelfData(user: UserEntity)
     suspend fun uploadAllSyncedUsersToShelf(users: List<UserEntity>): Result<Unit>
     suspend fun checkShelfBatchForDataOptimized(shelfIds: List<String>): List<String>
+    suspend fun getSyncedUsers(): List<UserEntity>
+    suspend fun getSyncedUserByName(name: String): UserEntity?
+    suspend fun getPendingSyncUsers(limit: Int): List<UserEntity>
 }
