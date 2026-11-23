@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -24,24 +25,32 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlin.coroutines.resume
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.resume
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseExamFragment
 import org.ole.planet.myplanet.databinding.FragmentExamTakingBinding
-import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
+import org.ole.planet.myplanet.model.ExamAnswerData
+import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getString
-import org.ole.planet.myplanet.utils.JsonUtils.getStringAsJsonArray
+import org.ole.planet.myplanet.utils.GsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils.getString
+import org.ole.planet.myplanet.utils.GsonUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utils.KeyboardUtils.hideSoftKeyboard
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
+import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.Utilities.toast
 
 @AndroidEntryPoint
@@ -50,9 +59,15 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     private val binding get() = _binding!!
     private var isCertified = false
     private var isExplicitSubmission = false
+    private var isSavingAnswer = false
+    private var examTakingTextWatcher: TextWatcher? = null
     private val answerCache = mutableMapOf<String, AnswerData>()
     @Inject
+    lateinit var submissionsRepository: SubmissionsRepository
+    @Inject
     lateinit var userSessionManager: UserSessionManager
+    @Inject
+    lateinit var coursesRepository: CoursesRepository
     @Inject
     lateinit var surveysRepository: SurveysRepository
     @Inject
@@ -72,22 +87,50 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        initializeExamData()
+        savedInstanceState?.let { currentIndex = it.getInt(KEY_CURRENT_INDEX, currentIndex) }
+        if (savedInstanceState?.getBoolean(KEY_FINISHED) == true) {
+            restoreFinishedState()
+            return
+        }
+        val resumeSubmissionId = savedInstanceState?.getString(KEY_SUBMISSION_ID) ?: sub?.id
+        initializeExamData(resumeSubmissionId)
         setupListeners()
     }
 
-    private fun initializeExamData() {
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(KEY_SUBMISSION_ID, sub?.id)
+        outState.putInt(KEY_CURRENT_INDEX, currentIndex)
+        outState.putBoolean(KEY_FINISHED, isFinished)
+    }
+
+    private fun restoreFinishedState() {
+        isFinished = true
+        binding.container.visibility = View.GONE
+        binding.btnSubmit.visibility = View.GONE
+        
+        val isTeamSurvey = isTeam && type?.startsWith("survey") == true
+        if (!isTeamSurvey) {
+            showFinishDialog()
+        }
+    }
+
+    private fun computeParentId(): String? {
+        return if (!TextUtils.isEmpty(exam?.courseId)) {
+            "$id@${exam?.courseId}"
+        } else {
+            id
+        }
+    }
+
+    private fun initializeExamData(resumeSubmissionId: String?) {
         viewLifecycleOwner.lifecycleScope.launch {
             user = userSessionManager.getUserModel()
             initExam()
             questions = surveysRepository.getExamQuestions(exam?.id ?: "")
             binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
-            val parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
-                "$id@${exam?.courseId}"
-            } else {
-                id
-            }
-            if (sub == null) {
+            val parentId = computeParentId()
+            if (type != "exam" && sub == null) {
                 val submissions = submissionsRepository.getSubmissionsByParentId(
                     parentId, user?.id, "pending"
                 )
@@ -100,66 +143,74 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 false
             }
 
-            if ((questions?.size ?: 0) > 0) {
+            if (!questions.isNullOrEmpty()) {
                 if (type == "exam") {
-                    val examIdValue = exam?.id
-                    val examCourseIdValue = exam?.courseId
-                    val userIdValue = user?.id
+                    val currentExam = exam
+                    val resumed = resumeSubmissionId?.let { submissionsRepository.getSubmissionById(it) }
+                        ?.takeIf { it.status == "pending" }
+                    if (resumed != null) {
+                        sub = resumed
+                        answerCache.clear()
+                        populateCacheFromSavedAnswers(resumed)
+                        currentIndex = currentIndex.coerceIn(0, (questions?.size ?: 1) - 1)
+                        startExam(questions?.get(currentIndex))
+                        updateNavButtons()
+                    } else if (currentExam != null) {
+                        viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
+                            try {
+                                val request = CreateExamSubmissionRequest(
+                                    user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
+                                )
+                                val newSub = submissionsRepository.startExamSession(currentExam.id, parentId, user?.id, request, recreate = true)
 
-                    viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
-                        try {
-                            submissionsRepository.deleteExamSubmissions(
-                                examIdValue ?: id ?: "", examCourseIdValue, userIdValue
-                            )
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-
-                        withContext(dispatcherProvider.main) {
-                            answerCache.clear()
-                            clearAnswer()
-                            ans = ""
-                            listAns?.clear()
-                            sub = null
-                        }
-
-                        val currentExam = exam
-                        if (currentExam != null) {
-                            val newSub = submissionsRepository.createExamSubmission(
-                                user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
-                            )
-                            withContext(dispatcherProvider.main) {
-                                sub = newSub
-                                startExam(questions?.get(currentIndex))
-                                updateNavButtons()
+                                withContext(dispatcherProvider.main) {
+                                    answerCache.clear()
+                                    clearAnswer()
+                                    ans = ""
+                                    listAns?.clear()
+                                    sub = newSub
+                                    startExam(questions?.get(currentIndex))
+                                    updateNavButtons()
+                                }
+                            } catch (e: Exception) {
+                                Log.e(TAG, "startExamSession (recreate) failed", e)
+                                withContext(dispatcherProvider.main) {
+                                    Utilities.toast(requireContext(), "Failed to start exam session. Please retry.")
+                                }
                             }
                         }
                     }
                 } else {
                     val currentExam = exam
                     if (currentExam != null) {
-                        if (sub == null || isTeam) {
-                            sub = submissionsRepository.createExamSubmission(
-                                user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
-                            )
-                        } else {
-                            val resume = askResumeOrRestart()
-                            if (resume) {
-                                populateCacheFromSavedAnswers(sub)
-                                currentIndex = findFirstUnansweredIndex()
+                        try {
+                            if (sub == null || isTeam) {
+                                val request = CreateExamSubmissionRequest(
+                                    user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
+                                )
+                                sub = submissionsRepository.startExamSession(currentExam.id, parentId, user?.id, request, recreate = isTeam, deleteStale = false)
                             } else {
-                                submissionsRepository.deleteExamSubmissions(
-                                    exam?.id ?: id ?: "", exam?.courseId, user?.id
-                                )
-                                answerCache.clear()
-                                currentIndex = 0
-                                sub = submissionsRepository.createExamSubmission(
-                                    user?.id, user?.dob, user?.gender, currentExam, type, null
-                                )
+                                val resume = askResumeOrRestart()
+                                if (resume) {
+                                    populateCacheFromSavedAnswers(sub)
+                                    currentIndex = findFirstUnansweredIndex()
+                                } else {
+                                    answerCache.clear()
+                                    currentIndex = 0
+                                    val request = CreateExamSubmissionRequest(
+                                        user?.id, user?.dob, user?.gender, currentExam, type, null
+                                    )
+                                    sub = submissionsRepository.startExamSession(
+                                        currentExam.id, parentId, user?.id, request, recreate = true
+                                    )
+                                }
                             }
+                            startExam(questions?.get(currentIndex))
+                            updateNavButtons()
+                        } catch (e: Exception) {
+                            Log.e(TAG, "startExamSession failed", e)
+                            Utilities.toast(requireContext(), "Failed to start exam session. Please retry.")
                         }
-                        startExam(questions?.get(currentIndex))
-                        updateNavButtons()
                     }
                 }
             } else {
@@ -173,23 +224,41 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     private fun setupListeners() {
         binding.btnBack.setOnClickListener {
+            if (isSavingAnswer) return@setOnClickListener
+            isSavingAnswer = true
             saveCurrentAnswer()
-            lifecycleScope.launch {
-                updateAnsDb()
-                goToPreviousQuestion()
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    updateAnsDb()
+                    goToPreviousQuestion()
+                } finally {
+                    isSavingAnswer = false
+                }
             }
         }
         binding.btnNext.setOnClickListener {
+            if (isSavingAnswer) return@setOnClickListener
+            isSavingAnswer = true
             saveCurrentAnswer()
-            lifecycleScope.launch {
-                updateAnsDb()
-                goToNextQuestion()
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    val cont = updateAnsDb()
+                    if (this@ExamTakingFragment.type == "exam" && !cont) {
+                        Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
+                        return@launch
+                    }
+                    goToNextQuestion()
+                } finally {
+                    isSavingAnswer = false
+                }
             }
         }
 
 
-        binding.etAnswer.addTextChangedListener(object : TextWatcher {
+        examTakingTextWatcher = object : TextWatcher {
+            @Suppress("EmptyMethod")
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            @Suppress("EmptyMethod")
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
                 val questionsSize = questions?.size ?: 0
@@ -209,7 +278,8 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 }
                 updateNavButtons()
             }
-        })
+        }
+        examTakingTextWatcher?.let { binding.etAnswer.addTextChangedListener(it) }
     }
 
     private fun saveCurrentAnswer() {
@@ -273,7 +343,8 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         val questionId = currentQuestion?.id ?: return false
         val answerData = answerCache[questionId]
 
-        val singleOtherOptionSelected = ans == "other" || answerData?.singleAnswer == "other"
+        val singleOtherOptionSelected = ans.equals("other", ignoreCase = true) ||
+                answerData?.singleAnswer.equals("other", ignoreCase = true)
         val multipleOtherOptionSelected = listAns?.containsKey("Other") == true ||
                 answerData?.multipleAnswers?.containsKey("Other") == true
         val otherOptionSelected = singleOtherOptionSelected || multipleOtherOptionSelected
@@ -300,7 +371,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
     }
 
-    override fun startExam(question: RealmExamQuestion?) {
+    override fun startExam(question: ExamQuestion?) {
         binding.tvQuestionCount.text = getString(R.string.Q, currentIndex + 1, questions?.size)
         binding.progressBar.max = questions?.size ?: 1
         binding.progressBar.progress = currentIndex + 1
@@ -345,7 +416,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         updateNavButtons()
     }
 
-    private fun loadSavedAnswer(question: RealmExamQuestion?) {
+    private fun loadSavedAnswer(question: ExamQuestion?) {
         val questionId = question?.id ?: return
         val answerData = answerCache[questionId]
 
@@ -360,7 +431,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                     ans = answerData.singleAnswer
                     if (answerData.otherText.isNotEmpty()) {
                         binding.etAnswer.setText(answerData.otherText)
-                        if (ans == "other") {
+                        if (ans.equals("other", ignoreCase = true)) {
                             binding.etAnswer.visibility = View.VISIBLE
                         }
                     }
@@ -387,7 +458,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     private var selectedRatingButton: Button? = null
     private var dynamicRatingButtons: List<Button> = emptyList()
 
-    private fun setupRatingScale(question: RealmExamQuestion?, oldAnswer: String) {
+    private fun setupRatingScale(question: ExamQuestion?, oldAnswer: String) {
         val scaleMax = (question?.scaleMax ?: 0).let { if (it <= 0) 9 else it }
         binding.llRatingScale.removeAllViews()
         dynamicRatingButtons = emptyList()
@@ -513,7 +584,10 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
     }
 
-    private fun showCheckBoxes(question: RealmExamQuestion?, oldAnswer: String) {
+    private fun otherChoice(): JsonObject =
+        GsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
+
+    private fun showCheckBoxes(question: ExamQuestion?, oldAnswer: String) {
         val choices = getStringAsJsonArray(question?.choices)
 
         for (i in 0 until choices.size()) {
@@ -521,13 +595,11 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
 
         if (question?.hasOtherOption == true) {
-            val otherChoice = JsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
-
-            addCompoundButton(otherChoice, false, oldAnswer)
+            addCompoundButton(otherChoice(), false, oldAnswer)
         }
     }
 
-    private fun selectQuestion(question: RealmExamQuestion?, oldAnswer: String) {
+    private fun selectQuestion(question: ExamQuestion?, oldAnswer: String) {
         val choices = getStringAsJsonArray(question?.choices)
         val isRadio = question?.type != "multiple"
 
@@ -540,10 +612,8 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
 
         if (question?.hasOtherOption == true) {
-            if (choices.size() > 0 && choices[0].isJsonObject) {
-                val otherChoice = JsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
-
-                addCompoundButton(otherChoice, isRadio, oldAnswer)
+            if (!choices.isEmpty() && choices[0].isJsonObject) {
+                addCompoundButton(otherChoice(), isRadio, oldAnswer)
             } else {
                 addRadioButton("Other", oldAnswer)
             }
@@ -551,7 +621,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     }
 
     private fun addRadioButton(choice: String, oldAnswer: String) {
-        val inflater = LayoutInflater.from(activity)
+        val inflater = LayoutInflater.from(binding.root.context)
         val rdBtn = inflater.inflate(R.layout.item_radio_btn, binding.groupChoices, false) as RadioButton
         rdBtn.text = choice
         rdBtn.isChecked = choice == oldAnswer
@@ -560,7 +630,8 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
         if (choice.equals("Other", ignoreCase = true) && choice == oldAnswer) {
             binding.etAnswer.visibility = View.VISIBLE
-            binding.etAnswer.setText(oldAnswer)
+            val questionId = questions?.getOrNull(currentIndex)?.id
+            binding.etAnswer.setText(questionId?.let { answerCache[it]?.otherText }.orEmpty())
         }
     }
 
@@ -604,6 +675,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     override fun onClick(view: View) {
         if (view.id == R.id.btn_submit) {
+            if (isSavingAnswer) return
             if (questions != null && currentIndex in 0 until (questions?.size ?: 0)) {
                 val isLastQuestion = currentIndex == (questions?.size?.minus(1) ?: 0)
                 if (isLastQuestion) {
@@ -616,16 +688,21 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                     return
                 }
 
-                lifecycleScope.launch {
-                    val cont = updateAnsDb()
-                    if (this@ExamTakingFragment.type == "exam" && !cont) {
-                        Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
-                        return@launch
-                    }
+                isSavingAnswer = true
+                viewLifecycleOwner.lifecycleScope.launch {
+                    try {
+                        val cont = updateAnsDb()
+                        if (this@ExamTakingFragment.type == "exam" && !cont) {
+                            Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
+                            return@launch
+                        }
 
-                    capturePhoto()
-                    hideSoftKeyboard(requireActivity())
-                    checkAnsAndContinue(cont)
+                        capturePhoto()
+                        hideSoftKeyboard(requireActivity())
+                        checkAnsAndContinue(cont)
+                    } finally {
+                        isSavingAnswer = false
+                    }
                 }
             }
         }
@@ -634,10 +711,10 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     private fun capturePhoto() {
         try {
             if (isCertified && !isMySurvey) {
-                capturePhoto(dispatcherProvider.default, this)
+                capturePhoto(viewLifecycleOwner.lifecycleScope, this, dispatcherProvider)
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "capturePhoto failed", e)
         }
     }
 
@@ -653,15 +730,12 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             null
         }
 
-        if (sub == null) {
-            sub = submissionsRepository.getLastPendingSubmission(user?.id)
-        }
-
         val result = submissionsRepository.saveExamAnswer(
-            org.ole.planet.myplanet.model.ExamAnswerData(
+            ExamAnswerData(
                 sub, currentQuestion, ans, listAns, otherText,
                 binding.etAnswer.isVisible, type ?: "exam", currentIndex,
-                questions?.size ?: 0, isExplicitSubmission
+                questions?.size ?: 0, isExplicitSubmission,
+                user?.id
             )
         )
         return result
@@ -737,28 +811,31 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     }
 
     private suspend fun askResumeOrRestart(): Boolean = suspendCancellableCoroutine { cont ->
-        val dialog = androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-            .setTitle(R.string.resume_survey)
-            .setMessage(R.string.resume_survey_message)
-            .setPositiveButton(R.string.continuation) { _, _ -> if (cont.isActive) cont.resume(true) }
-            .setNegativeButton(R.string.start_over) { _, _ -> if (cont.isActive) cont.resume(false) }
-            .setCancelable(false)
-            .show()
+        val dialog = requireContext().confirmDialog(
+            title = getString(R.string.resume_survey),
+            message = getString(R.string.resume_survey_message),
+            cancelable = false,
+            positiveText = getString(R.string.continuation),
+            onPositive = { if (cont.isActive) cont.resume(true) },
+            negativeText = getString(R.string.start_over),
+            onNegative = { if (cont.isActive) cont.resume(false) }
+        )
         cont.invokeOnCancellation { dialog.dismiss() }
     }
 
-    private fun populateCacheFromSavedAnswers(sub: org.ole.planet.myplanet.model.RealmSubmission?) {
+    private fun populateCacheFromSavedAnswers(sub: Submission?) {
         val answers = sub?.answers ?: return
+        val questionMap = questions?.associateBy { it.id } ?: emptyMap()
         answers.forEach { answer ->
             val questionId = answer.questionId ?: return@forEach
-            val question = questions?.find { it.id == questionId } ?: return@forEach
+            val question = questionMap[questionId] ?: return@forEach
             val answerData = AnswerData()
             when (question.type) {
                 "select" -> {
                     val choices = answer.valueChoices
                     if (!choices.isNullOrEmpty()) {
                         try {
-                            val choiceJson = JsonUtils.gson.fromJson(choices[0], JsonObject::class.java)
+                            val choiceJson = GsonUtils.gson.fromJson(choices[0], JsonObject::class.java)
                             val choiceId = getString("id", choiceJson)
                             if (choiceId == "other") {
                                 answerData.singleAnswer = "other"
@@ -774,7 +851,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 "selectMultiple" -> {
                     answer.valueChoices?.forEach { choiceStr ->
                         try {
-                            val choiceJson = JsonUtils.gson.fromJson(choiceStr, JsonObject::class.java)
+                            val choiceJson = GsonUtils.gson.fromJson(choiceStr, JsonObject::class.java)
                             val choiceId = getString("id", choiceJson)
                             val choiceText = getString("text", choiceJson)
                             if (choiceId == "other") {
@@ -783,7 +860,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                             } else {
                                 answerData.multipleAnswers[choiceText] = choiceId
                             }
-                        } catch (_: Exception) {}
+                        } catch (e: Exception) {
+                            Log.e("ExamTakingFragment", "Error parsing saved answer", e)
+                        }
                     }
                 }
                 "ratingScale", "input", "textarea" -> {
@@ -809,14 +888,31 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     override fun onDestroyView() {
         super.onDestroyView()
         saveCurrentAnswer()
-        lifecycleScope.launch {
-            withContext(kotlinx.coroutines.NonCancellable) {
-                updateAnsDb()
+        val hasAnswer = ans.isNotEmpty() || !listAns.isNullOrEmpty() || binding.etAnswer.text.isNotBlank()
+        if (hasAnswer) {
+            lifecycleScope.launch {
+                withContext(NonCancellable) {
+                    updateAnsDb()
+                }
             }
         }
-        answerTextWatcher?.let { binding.etAnswer.removeTextChangedListener(it) }
+        examTakingTextWatcher?.let { binding.etAnswer.removeTextChangedListener(it) }
+        examTakingTextWatcher = null
         selectedRatingButton = null
         dynamicRatingButtons = emptyList()
         _binding = null
+    }
+
+    override fun saveCourseProgress(courseId: String?, stepNum: Int, isGraded: Boolean, userId: String?) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            coursesRepository.updateCourseProgress(courseId, stepNum, isGraded, userId)
+        }
+    }
+
+    private companion object {
+        const val TAG = "ExamTakingFragment"
+        const val KEY_SUBMISSION_ID = "exam_submission_id"
+        const val KEY_CURRENT_INDEX = "exam_current_index"
+        const val KEY_FINISHED = "exam_finished"
     }
 }

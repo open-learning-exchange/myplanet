@@ -41,6 +41,23 @@
             android:layout_marginBottom="12dp"
             android:textColor="@color/text_color"
             android:textSize="14sp" />
+        <TextView
+            android:id="@+id/availableSpaceText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:textColor="@color/text_color"
+            android:textSize="14sp" />
+        <Button
+            android:id="@+id/freeUpSpaceButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="16dp"
+            android:minHeight="48dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:theme="@style/AppThemeButton"
+            android:text="@string/freeup_space" />
         <LinearLayout
             android:id="@+id/categoryContainer"
             android:layout_width="match_parent"

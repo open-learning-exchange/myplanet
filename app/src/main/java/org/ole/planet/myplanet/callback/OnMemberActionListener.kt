@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.callback
 
-import org.ole.planet.myplanet.repository.JoinedMemberData
+import org.ole.planet.myplanet.model.JoinedMemberData
 
 interface OnMemberActionListener {
     fun onRemoveMember(member: JoinedMemberData, position: Int)

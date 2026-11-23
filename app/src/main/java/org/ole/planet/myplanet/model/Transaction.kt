@@ -5,6 +5,7 @@ data class Transaction(
     val date: Long?,
     val description: String?,
     val type: String?,
-    val amount: Int,
-    val balance: Int
+    val amount: Double,
+    val balance: Double,
+    val imageName: String? = null
 )

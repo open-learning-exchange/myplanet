@@ -11,12 +11,14 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.JsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowMyProgressBinding
+import org.ole.planet.myplanet.model.CoursesProgressRow
 import org.ole.planet.myplanet.utils.DiffUtils
 
-class CoursesProgressAdapter(private val context: Context) : ListAdapter<JsonObject, CoursesProgressAdapter.CoursesProgressViewHolder>(DiffUtils.itemCallback({ old, new -> old.asJsonObject["courseId"]?.asString == new.asJsonObject["courseId"]?.asString }, { old, new -> getCourseProgressComparisonData(old) == getCourseProgressComparisonData(new) })) {
+class CoursesProgressAdapter(private val context: Context) : ListAdapter<CoursesProgressRow, CoursesProgressAdapter.CoursesProgressViewHolder>(DIFF_CALLBACK) {
+
+    private val textColor = ContextCompat.getColor(context, R.color.daynight_textColor)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CoursesProgressViewHolder {
         val binding = RowMyProgressBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -25,29 +27,30 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<JsonObj
 
     override fun onBindViewHolder(holder: CoursesProgressViewHolder, position: Int) {
         val item = getItem(position)
-        holder.binding.tvTitle.text = item.asJsonObject["courseName"].asString
-        if (item.asJsonObject.has("progress")) {
-            holder.binding.tvDescription.text = context.getString(R.string.step_progress, item.asJsonObject["progress"].asJsonObject["current"].asInt, item.asJsonObject["progress"].asJsonObject["max"].asInt)
-            holder.itemView.setOnClickListener {
-                context.startActivity(Intent(context, CourseProgressActivity::class.java).putExtra("courseId", item.asJsonObject["courseId"].asString))
-            }
+        holder.binding.tvTitle.text = item.courseName
+        holder.binding.tvDescription.text = if (item.progressCurrent != null && item.progressMax != null) {
+            context.getString(R.string.step_progress, item.progressCurrent, item.progressMax)
+        } else {
+            ""
         }
-        if (item.asJsonObject.has("mistakes")) holder.binding.tvTotal.text =
-            item.asJsonObject["mistakes"].asString
+        if (item.mistakes != null) holder.binding.tvTotal.text = item.mistakes.toString()
         else holder.binding.tvTotal.text = context.getString(R.string.message_placeholder, "0")
-        showStepMistakes(position, holder.binding)
+        showStepMistakes(item, holder.binding)
     }
 
-    private fun showStepMistakes(position: Int, binding: RowMyProgressBinding) {
-        val item = getItem(position)
-        if (item.asJsonObject.has("stepMistake")) {
-            val stepMistake = item.asJsonObject["stepMistake"].asJsonObject
-            binding.llProgress.removeAllViews()
+    private fun showStepMistakes(item: CoursesProgressRow, binding: RowMyProgressBinding) {
+        val stepMistake = item.stepMistake
 
-            if (stepMistake.keySet().isNotEmpty()) {
-                binding.llHeader.visibility = View.VISIBLE
-                val textColor = ContextCompat.getColor(context, R.color.daynight_textColor)
-                stepMistake.keySet().forEach { stepKey ->
+        if (!stepMistake.isNullOrEmpty()) {
+            binding.llHeader.visibility = View.VISIBLE
+
+            val currentChildCount = binding.llProgress.childCount
+            val requiredChildCount = stepMistake.size
+
+            if (currentChildCount > requiredChildCount) {
+                binding.llProgress.removeViews(requiredChildCount, currentChildCount - requiredChildCount)
+            } else if (currentChildCount < requiredChildCount) {
+                for (i in currentChildCount until requiredChildCount) {
                     val row = LinearLayout(context).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.MATCH_PARENT,
@@ -59,14 +62,12 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<JsonObj
 
                     val stepView = TextView(context).apply {
                         layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                        text = "${stepKey.toInt().plus(1)}"
                         gravity = Gravity.CENTER
                         setTextColor(textColor)
                     }
 
                     val mistakeView = TextView(context).apply {
                         layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                        text = "${stepMistake[stepKey].asInt}"
                         gravity = Gravity.CENTER
                         setTextColor(textColor)
                     }
@@ -76,28 +77,49 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<JsonObj
 
                     binding.llProgress.addView(row)
                 }
-            } else {
-                binding.llHeader.visibility = View.GONE
+            }
+
+            var i = 0
+            stepMistake.forEach { (stepKey, mistakes) ->
+                val row = binding.llProgress.getChildAt(i) as LinearLayout
+                val stepView = row.getChildAt(0) as TextView
+                val mistakeView = row.getChildAt(1) as TextView
+
+                stepView.text = "${stepKey.toInt().plus(1)}"
+                mistakeView.text = "$mistakes"
+                i++
             }
         } else {
             binding.llHeader.visibility = View.GONE
+            binding.llProgress.removeAllViews()
         }
     }
 
     inner class CoursesProgressViewHolder(val binding: RowMyProgressBinding) : RecyclerView.ViewHolder(binding.root) {
         val tvTitle = binding.tvTitle
-        val tvTotal = binding.tvTotal
         val tvDescription = binding.tvDescription
+
+        init {
+            itemView.setOnClickListener {
+                val position = bindingAdapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    val item = getItem(position)
+                    if (item.progressCurrent != null && item.progressMax != null) {
+                        context.startActivity(Intent(context, CourseProgressActivity::class.java).putExtra("courseId", item.courseId))
+                    }
+                }
+            }
+        }
     }
 
     companion object {
-        private fun getCourseProgressComparisonData(item: JsonObject): List<Any?> {
-            val courseName = item.asJsonObject["courseName"]?.asString
-            val progressCurrent = item.asJsonObject["progress"]?.asJsonObject?.get("current")?.asInt
-            val progressMax = item.asJsonObject["progress"]?.asJsonObject?.get("max")?.asInt
-            val mistakes = item.asJsonObject["mistakes"]?.asInt
-            val stepMistake = item.asJsonObject["stepMistake"]?.asJsonObject
-            return listOf(courseName, progressCurrent, progressMax, mistakes, stepMistake)
-        }
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<CoursesProgressRow>(
+            areItemsTheSame = { old, new ->
+                old.courseId == new.courseId
+            },
+            areContentsTheSame = { old, new ->
+                old == new
+            }
+        )
     }
 }

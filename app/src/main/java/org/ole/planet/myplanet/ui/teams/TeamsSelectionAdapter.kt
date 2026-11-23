@@ -18,30 +18,37 @@ class TeamsSelectionAdapter(
 ) : ListAdapter<TeamSummary, TeamsSelectionAdapter.TeamSelectionViewHolder>(
         DiffUtils.itemCallback<TeamSummary>(
             { old, new -> old._id == new._id },
-            { old, new -> old.name == new.name }
+            { old, new -> old.name == new.name && old._id == new._id }
         )
     ) {
+    private var cachedTeamsLabel: String? = null
+
     inner class TeamSelectionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val textView: TextView = itemView.findViewById(R.id.textView)
         private val teamIcon: ImageView = itemView.findViewById(R.id.teamIcon)
         private val sharedIcon: ImageView = itemView.findViewById(R.id.sharedIcon)
 
+        init {
+            itemView.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                val item = getItem(pos)
+                if (item._id in sharedIds) return@setOnClickListener
+                onClick(item)
+            }
+        }
+
         fun bind(item: TeamSummary) {
             textView.text = item.name
-            if (section == itemView.context.getString(R.string.teams)) {
+            val teamsLabel = cachedTeamsLabel ?: itemView.context.getString(R.string.teams).also { cachedTeamsLabel = it }
+            if (section == teamsLabel) {
                 teamIcon.setImageResource(R.drawable.team)
             } else {
                 teamIcon.setImageResource(R.drawable.business)
             }
             val alreadyShared = item._id in sharedIds
             sharedIcon.visibility = if (alreadyShared) View.VISIBLE else View.GONE
-            if (alreadyShared) {
-                itemView.setOnClickListener(null)
-                itemView.isClickable = false
-            } else {
-                itemView.isClickable = true
-                itemView.setOnClickListener { onClick(item) }
-            }
+            itemView.isClickable = !alreadyShared
         }
     }
 

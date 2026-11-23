@@ -13,21 +13,25 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.PersonalsRepository
+import org.ole.planet.myplanet.repository.UserRepository
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AddResourceViewModelTest {
 
     private lateinit var viewModel: AddResourceViewModel
     private val personalsRepository = mockk<PersonalsRepository>(relaxed = true)
+    private val userRepository = mockk<UserRepository>(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        viewModel = AddResourceViewModel(personalsRepository)
+        viewModel = AddResourceViewModel(personalsRepository, userRepository)
     }
 
     @After
@@ -98,5 +102,22 @@ class AddResourceViewModelTest {
         viewModel.resetState()
         val state = viewModel.state.first()
         assertEquals(AddResourceState.Idle, state)
+    }
+
+    @Test
+    fun `currentUser returns UserEntity from userRepository`() = runTest {
+        val mockUser = UserEntity(id = "user123", name = "Test User")
+        coEvery { userRepository.getUserModel() } returns mockUser
+
+        val result = viewModel.currentUser()
+        assertEquals(mockUser, result)
+    }
+
+    @Test
+    fun `currentUser returns null when userRepository returns null`() = runTest {
+        coEvery { userRepository.getUserModel() } returns null
+
+        val result = viewModel.currentUser()
+        assertNull(result)
     }
 }

@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.callback
 
-import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.model.Personal
 
 interface OnPersonalSelectedListener {
-    fun onUpload(personal: RealmMyPersonal?)
+    fun onUpload(personal: Personal?)
     fun onAddedResource()
-    fun onEditPersonal(personal: RealmMyPersonal)
-    fun onDeletePersonal(personal: RealmMyPersonal)
+    fun onEditPersonal(personal: Personal)
+    fun onDeletePersonal(personal: Personal)
 }

@@ -1,185 +1,228 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import dagger.Lazy
 import java.util.Calendar
 import java.util.Date
+import java.util.LinkedHashSet
+import java.util.Locale
+import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import org.ole.planet.myplanet.data.room.dao.NotificationDao
+import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
+import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
+import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.NotificationPayload
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.model.RealmTeamNotification
-import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.TaskNotificationResult
+import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.model.TeamNotificationInfo
+import org.ole.planet.myplanet.utils.TaskNotificationUtils
+import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.toSyncDocuments
+
+private const val STORAGE_WARNING_AVAILABLE_PERCENT = 10
 
 class NotificationsRepositoryImpl @Inject constructor(
-        databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
-    private val userRepository: Lazy<UserRepository>
-) : RealmRepository(databaseService, realmDispatcher), NotificationsRepository {
-    override suspend fun refresh() {
-        withRealm { it.refresh() }
-    }
+    private val userRepository: Lazy<UserRepository>,
+    private val teamsRepository: Lazy<TeamsNotificationsRepository>,
+    private val timeProvider: TimeProvider,
+    private val teamNotificationDao: TeamNotificationDao,
+    private val notificationDao: NotificationDao,
+    private val voicesRepository: VoicesRepository,
+    private val removedLogDao: RemovedLogDao
+) : NotificationsRepository {
+    override suspend fun refresh() = Unit
 
     override suspend fun markNotificationAsRead(notificationId: String, userId: String?) {
         if (notificationId.startsWith("summary_")) {
             val type = notificationId.removePrefix("summary_")
-            executeTransaction { realm ->
-                realm.where(RealmNotification::class.java)
-                    .equalTo("userId", userId)
-                    .equalTo("type", type)
-                    .equalTo("isRead", false)
-                    .findAll()
-                    .forEach { it.isRead = true; it.needsSync = it.isFromServer }
-            }
+            notificationDao.markSummaryAsRead(userId, type)
         } else {
-            executeTransaction { realm ->
-                val notification = realm.where(RealmNotification::class.java)
-                    .equalTo("id", notificationId)
-                    .findFirst()
-                notification?.isRead = true
-                notification?.needsSync = notification.isFromServer == true
-            }
+            notificationDao.markAsRead(notificationId)
         }
     }
 
     override suspend fun getUnreadCount(userId: String?, isAdmin: Boolean): Int {
         if (userId == null) return 0
 
-        return count(RealmNotification::class.java) {
-            beginGroup()
-            equalTo("userId", userId)
-            if (isAdmin) {
-                or()
-                equalTo("userId", "SYSTEM")
-            }
-            endGroup()
-            equalTo("isRead", false)
-        }.toInt()
+        return notificationDao.getUnreadCount(userId, isAdmin)
     }
 
     override suspend fun updateResourceNotification(userId: String?, resourceCount: Int) {
+        updateCountNotification(
+            userId = userId,
+            idSuffix = "resource:count",
+            type = "resource",
+            relatedId = "$resourceCount",
+            parsePrevious = { it?.toIntOrNull() ?: 0 },
+            formatMessage = { "$it" },
+            value = resourceCount,
+            isHealthy = resourceCount <= 0
+        )
+    }
+
+    override suspend fun updateStorageNotification(userId: String?, availablePercent: Int) {
+        updateCountNotification(
+            userId = userId,
+            idSuffix = "storage",
+            type = "storage",
+            relatedId = "storage",
+            parsePrevious = { it?.replace("%", "")?.toIntOrNull() },
+            formatMessage = { "$it%" },
+            value = availablePercent,
+            isHealthy = availablePercent > STORAGE_WARNING_AVAILABLE_PERCENT
+        )
+    }
+
+    private suspend fun updateCountNotification(
+        userId: String?,
+        idSuffix: String,
+        type: String,
+        relatedId: String,
+        parsePrevious: (String?) -> Int?,
+        formatMessage: (Int) -> String,
+        value: Int,
+        isHealthy: Boolean
+    ) {
         userId ?: return
 
-        val notificationId = "$userId:resource:count"
-        val existingNotification = findByField(RealmNotification::class.java, "id", notificationId)
+        val notificationId = "$userId:$idSuffix"
+        val existingNotification = notificationDao.getById(notificationId)
 
-        if (resourceCount > 0) {
-            val previousCount = existingNotification?.message?.toIntOrNull() ?: 0
-            val countChanged = previousCount != resourceCount
+        if (!isHealthy) {
+            val previousValue = parsePrevious(existingNotification?.message)
+            val valueChanged = previousValue != value
+
+            val formattedMessage = formatMessage(value)
+            if (existingNotification != null && existingNotification.message == formattedMessage && existingNotification.relatedId == relatedId) return
 
             val notification = existingNotification?.apply {
-                message = "$resourceCount"
-                relatedId = "$resourceCount"
-                if (countChanged) {
+                message = formattedMessage
+                this.relatedId = relatedId
+                if (valueChanged) {
                     this.isRead = false
-                    this.createdAt = Date()
+                    this.createdAt = Date(timeProvider.now())
                 }
-            } ?: RealmNotification().apply {
+            } ?: AppNotification().apply {
                 this.id = notificationId
                 this.userId = userId
-                this.type = "resource"
-                this.message = "$resourceCount"
-                this.relatedId = "$resourceCount"
-                this.createdAt = Date()
+                this.type = type
+                this.message = formattedMessage
+                this.relatedId = relatedId
+                this.createdAt = Date(timeProvider.now())
             }
-            save(notification)
+            notificationDao.upsert(notification)
         } else {
-            existingNotification?.let { delete(RealmNotification::class.java, "id", it.id) }
+            existingNotification?.let { notificationDao.deleteById(it.id) }
         }
     }
 
     override suspend fun markNotificationsAsRead(notificationIds: Set<String>): Set<String> {
         if (notificationIds.isEmpty()) return emptySet()
-
-        val updatedIds = mutableSetOf<String>()
-        val now = Date()
-        executeTransaction { realm ->
-            val notifications = realm.where(RealmNotification::class.java)
-                .`in`("id", notificationIds.toTypedArray())
-                .findAll()
-
-            notifications.forEach { notification ->
-                notification.isRead = true
-                notification.createdAt = now
-                if (notification.isFromServer) notification.needsSync = true
-                updatedIds.add(notification.id)
-            }
-        }
-        return updatedIds
+        return notificationDao.markExistingAsRead(notificationIds.toList()).toSet()
     }
 
-    override suspend fun markAllUnreadAsRead(userId: String?): Set<String> {
+    override suspend fun markAllUnreadAsRead(userId: String?, isAdmin: Boolean): Set<String> {
         val actualUserId = userId ?: return emptySet()
-        val updatedIds = mutableSetOf<String>()
-        val now = Date()
-        executeTransaction { realm ->
-            realm.where(RealmNotification::class.java)
-                .equalTo("userId", actualUserId)
-                .equalTo("isRead", false)
-                .findAll()
-                ?.forEach { notification ->
-                    notification.isRead = true
-                    notification.createdAt = now
-                    if (notification.isFromServer) notification.needsSync = true
-                    updatedIds.add(notification.id)
-                }
-        }
-        return updatedIds
+        return notificationDao.markAllUnreadAsReadReturningIds(actualUserId, isAdmin).toSet()
     }
 
-    override suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean): List<NotificationPayload> {
-        return queryList(RealmNotification::class.java) {
-            beginGroup()
-            equalTo("userId", userId)
-            if (isAdmin) {
-                or()
-                equalTo("userId", "SYSTEM")
+    suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean = false): List<NotificationPayload> {
+        val normalizedFilter = when (filter) {
+            "read", "unread" -> filter
+            else -> ""
+        }
+        return notificationDao.getNotifications(userId, normalizedFilter, isAdmin)
+    }
+
+    override suspend fun getEnrichedNotifications(userId: String, filter: String, isAdmin: Boolean): EnrichedNotifications {
+        val payloadNotifications = getNotifications(userId, filter, isAdmin)
+
+        val taskNotifications = mutableListOf<NotificationPayload>()
+        val joinRequestNotifications = mutableListOf<NotificationPayload>()
+        for (notification in payloadNotifications) {
+            if (notification.type.equals("task", ignoreCase = true)) {
+                taskNotifications.add(notification)
+            } else if (notification.type.equals("join_request", ignoreCase = true)) {
+                joinRequestNotifications.add(notification)
             }
-            endGroup()
-            notEqualTo("message", "INVALID")
-            isNotEmpty("message")
-            when (filter) {
-                "read" -> equalTo("isRead", true)
-                "unread" -> equalTo("isRead", false)
+        }
+
+        val taskIds = taskNotifications
+            .mapNotNull { it.relatedId }
+            .distinct()
+
+        val parsedTaskDates: Map<String, Pair<String, String>?> =
+            taskNotifications.associateBy({ it.id }, { TaskNotificationUtils.splitTitleAndDate(it.message) })
+
+        val taskTitles = taskNotifications
+            .mapNotNull { parsedTaskDates[it.id]?.first }
+            .distinct()
+
+        val joinRequestIds = joinRequestNotifications
+            .mapNotNull { it.relatedId }
+            .distinct()
+
+        val joinRequestsWithoutRelatedId = joinRequestNotifications
+            .filter { it.relatedId.isNullOrEmpty() }
+
+        val (taskTeamNames, joinRequestDetails, unreadCount) = coroutineScope {
+            val taskTeamNamesByIdsDeferred = async {
+                getTaskTeamNamesByTaskIds(taskIds)
             }
-            sort("isRead", io.realm.Sort.ASCENDING, "createdAt", io.realm.Sort.DESCENDING)
-        }.map {
-            NotificationPayload(
-                id = it.id,
-                userId = it.userId,
-                message = it.message,
-                isRead = it.isRead,
-                createdAt = it.createdAt.time,
-                type = it.type,
-                relatedId = it.relatedId,
-                title = it.title,
-                link = it.link,
-                priority = it.priority,
-                isFromServer = it.isFromServer,
-                rev = it.rev,
-                needsSync = it.needsSync
+
+            val taskTeamNamesByTitlesDeferred = async {
+                if (taskTitles.isNotEmpty()) {
+                    getTaskTeamNamesByTaskTitles(taskTitles)
+                } else {
+                    emptyMap()
+                }
+            }
+
+            val joinRequestDetailsDeferred = async {
+                val details = getJoinRequestDetailsBatch(joinRequestIds).toMutableMap()
+                if (joinRequestsWithoutRelatedId.isNotEmpty()) {
+                    val fallbackDetail = getJoinRequestDetails(null)
+                    details[""] = fallbackDetail
+                }
+                details
+            }
+
+            val unreadCountDeferred = async {
+                getUnreadCount(userId, isAdmin)
+            }
+
+            val combinedTaskTeamNames = taskTeamNamesByTitlesDeferred.await().toMutableMap().apply {
+                putAll(taskTeamNamesByIdsDeferred.await())
+            }
+
+            Triple(
+                combinedTaskTeamNames,
+                joinRequestDetailsDeferred.await(),
+                unreadCountDeferred.await()
             )
         }
-    }
 
-    override suspend fun getSurveyId(relatedId: String?): String? {
-        return relatedId?.let {
-            findByField(org.ole.planet.myplanet.model.RealmStepExam::class.java, "name", it)?.id
-        }
+        return EnrichedNotifications(
+            payloads = payloadNotifications,
+            taskTeamNames = taskTeamNames,
+            joinRequestDetails = joinRequestDetails,
+            parsedTaskDates = parsedTaskDates,
+            unreadCount = unreadCount
+        )
     }
 
     override suspend fun getTaskDetails(relatedId: String?): TaskNotificationResult? {
         return relatedId?.let {
-            val task = findByField(org.ole.planet.myplanet.model.RealmTeamTask::class.java, "id", it)
+            val task = teamsRepository.get().getTaskById(it)
             val linkJson = org.json.JSONObject(task?.link ?: "{}")
             val teamId = linkJson.optString("teams")
             if (teamId.isNotEmpty()) {
-                val teamObject = findByField(org.ole.planet.myplanet.model.RealmMyTeam::class.java, "_id", teamId)
+                val teamObject = teamsRepository.get().getTeamLabelInfo(teamId)
                 TaskNotificationResult(teamId, teamObject?.name, teamObject?.type)
             } else {
                 null
@@ -194,52 +237,31 @@ class NotificationsRepositoryImpl @Inject constructor(
             } else {
                 it
             }
-            queryList(org.ole.planet.myplanet.model.RealmMyTeam::class.java) {
-                equalTo("_id", actualJoinRequestId)
-                equalTo("docType", "request")
-            }.firstOrNull()?.teamId
+            teamsRepository.get().getJoinRequestInfo(actualJoinRequestId)?.teamId
         }
     }
 
-    override suspend fun getJoinRequestDetails(relatedId: String?): Pair<String, String> {
-        val joinRequest = queryList(RealmMyTeam::class.java) {
-            equalTo("_id", relatedId)
-            equalTo("docType", "request")
-        }.firstOrNull()
-        val team = joinRequest?.teamId?.let { tid ->
-            findByField(RealmMyTeam::class.java, "_id", tid)
-        }
+    private suspend fun getJoinRequestDetails(relatedId: String?): Pair<String, String> {
+        val joinRequest = teamsRepository.get().getJoinRequestInfo(relatedId)
+        val teamName = joinRequest?.teamId?.let { tid ->
+            teamsRepository.get().getTeamLabelInfo(tid)?.name
+        } ?: "Unknown Team"
         val uid = joinRequest?.userId
-        val teamName = team?.name ?: "Unknown Team"
 
         val requester = uid?.let { userRepository.get().getUserById(it) }
         return Pair(requester?.name ?: "Unknown User", teamName)
     }
 
-    override suspend fun getTaskTeamNamesByTaskIds(taskIds: List<String>): Map<String, String> {
+    private suspend fun getTaskTeamNamesByTaskIds(taskIds: List<String>): Map<String, String> {
         if (taskIds.isEmpty()) return emptyMap()
         val map = mutableMapOf<String, String>()
 
-        val tasks = queryList(RealmTeamTask::class.java) {
-            beginGroup()
-            taskIds.forEachIndexed { index, taskId ->
-                if (index > 0) or()
-                equalTo("id", taskId)
-            }
-            endGroup()
-        }
+        val tasks = teamsRepository.get().getTasksByIds(taskIds)
 
-        val teamIds = tasks.mapNotNull { it.teamId }.filter { it.isNotEmpty() }.distinct()
+        val teamIds = LinkedHashSet<String>()
+        tasks.forEach { task -> task.teamId?.takeIf { it.isNotEmpty() }?.let { teamIds.add(it) } }
         if (teamIds.isNotEmpty()) {
-            val teams = queryList(RealmMyTeam::class.java) {
-                beginGroup()
-                teamIds.forEachIndexed { index, id ->
-                    if (index > 0) or()
-                    equalTo("_id", id)
-                }
-                endGroup()
-            }
-            val teamMap = teams.associateBy({ it._id ?: "" }, { it.name ?: "" })
+            val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds.toList())
 
             tasks.forEach { task ->
                 val taskId = task.id
@@ -254,92 +276,55 @@ class NotificationsRepositoryImpl @Inject constructor(
         return map
     }
 
-    override suspend fun getJoinRequestDetailsBatch(relatedIds: List<String>): Map<String, Pair<String, String>> {
+    private suspend fun getJoinRequestDetailsBatch(relatedIds: List<String>): Map<String, Pair<String, String>> {
         if (relatedIds.isEmpty()) return emptyMap()
 
-        val joinRequests = queryList(RealmMyTeam::class.java) {
-            equalTo("docType", "request")
-            beginGroup()
-            relatedIds.forEachIndexed { index, id ->
-                if (index > 0) or()
-                equalTo("_id", id)
+        val joinRequests = teamsRepository.get().getJoinRequestsInfo(relatedIds)
+
+        val teamIds = LinkedHashSet<String>()
+        val userIds = LinkedHashSet<String>()
+
+        for (jr in joinRequests) {
+            if (jr.teamId.isNotEmpty()) {
+                teamIds.add(jr.teamId)
             }
-            endGroup()
+            if (jr.id.isNotEmpty() && jr.userId.isNotEmpty()) {
+                userIds.add(jr.userId)
+            }
         }
 
-        val teamIds = joinRequests.mapNotNull { it.teamId }.distinct()
+        val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds.toList())
 
-        val teamMap = if (teamIds.isNotEmpty()) {
-            val teams = queryList(RealmMyTeam::class.java) {
-                beginGroup()
-                teamIds.forEachIndexed { index, id ->
-                    if (index > 0) or()
-                    equalTo("_id", id)
-                }
-                endGroup()
-            }
-            teams.associateBy({ it._id ?: "" }, { it.name ?: "Unknown Team" })
-        } else emptyMap()
-
-        val intermediateList = mutableListOf<Triple<String, String, String>>()
-        joinRequests.forEach { jr ->
-            val id = jr._id
-            if (!id.isNullOrEmpty()) {
-                val tName = teamMap[jr.teamId ?: ""] ?: "Unknown Team"
-                intermediateList.add(Triple(id, jr.userId ?: "", tName))
+        val userMap = mutableMapOf<String, String>()
+        if (userIds.isNotEmpty()) {
+            val users = userRepository.get().getUsersByIds(userIds.toList())
+            for (user in users) {
+                userMap[user.id] = user.name ?: "Unknown User"
             }
         }
 
         val map = mutableMapOf<String, Pair<String, String>>()
-        val userIds = intermediateList.map { it.second }.filter { it.isNotEmpty() }.distinct()
-        val userMap = mutableMapOf<String, String>()
-        if (userIds.isNotEmpty()) {
-            val users = userRepository.get().getUsersByIds(userIds)
-            for (user in users) {
-                user.id?.let { id ->
-                    userMap[id] = user.name ?: "Unknown User"
-                }
-            }
-        }
-
-        for (triple in intermediateList) {
-            val uName = if (triple.second.isNotEmpty()) userMap[triple.second] ?: "Unknown User" else "Unknown User"
-            map[triple.first] = Pair(uName, triple.third)
+        for (jr in joinRequests) {
+            val id = jr.id
+            if (id.isEmpty()) continue
+            val teamName = teamMap[jr.teamId] ?: "Unknown Team"
+            val userName = if (jr.userId.isNotEmpty()) userMap[jr.userId] ?: "Unknown User" else "Unknown User"
+            map[id] = Pair(userName, teamName)
         }
 
         return map
     }
 
-    override suspend fun getTaskTeamName(taskTitle: String): String? {
-        val taskObj = findByField(RealmTeamTask::class.java, "title", taskTitle)
-        val team = taskObj?.teamId?.let { findByField(RealmMyTeam::class.java, "_id", it) }
-        return team?.name
-    }
-
-    override suspend fun getTaskTeamNamesByTaskTitles(taskTitles: List<String>): Map<String, String> {
+    private suspend fun getTaskTeamNamesByTaskTitles(taskTitles: List<String>): Map<String, String> {
         if (taskTitles.isEmpty()) return emptyMap()
         val map = mutableMapOf<String, String>()
 
-        val tasks = queryList(RealmTeamTask::class.java) {
-            beginGroup()
-            taskTitles.forEachIndexed { index, title ->
-                if (index > 0) or()
-                equalTo("title", title)
-            }
-            endGroup()
-        }
+        val tasks = teamsRepository.get().getTasksByTitles(taskTitles)
 
-        val teamIds = tasks.mapNotNull { it.teamId }.filter { it.isNotEmpty() }.distinct()
+        val teamIds = LinkedHashSet<String>()
+        tasks.forEach { task -> task.teamId?.takeIf { it.isNotEmpty() }?.let { teamIds.add(it) } }
         if (teamIds.isNotEmpty()) {
-            val teams = queryList(RealmMyTeam::class.java) {
-                beginGroup()
-                teamIds.forEachIndexed { index, id ->
-                    if (index > 0) or()
-                    equalTo("_id", id)
-                }
-                endGroup()
-            }
-            val teamMap = teams.associateBy({ it._id ?: "" }, { it.name ?: "" })
+            val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds.toList())
 
             tasks.forEach { task ->
                 val taskTitle = task.title
@@ -354,31 +339,15 @@ class NotificationsRepositoryImpl @Inject constructor(
         return map
     }
 
-    override suspend fun getTeamNotificationInfo(teamId: String, userId: String): TeamNotificationInfo {
-        val current = System.currentTimeMillis()
-        val tomorrow = Calendar.getInstance()
-        tomorrow.add(Calendar.DAY_OF_YEAR, 1)
-
-        val notification = queryList(RealmTeamNotification::class.java) {
-            equalTo("parentId", teamId)
-            equalTo("type", "chat")
-        }.firstOrNull()
-
-        val chatCount = count(RealmNews::class.java) {
-            equalTo("viewableBy", "teams")
-            equalTo("viewableId", teamId)
+    override suspend fun updateTeamNotification(teamId: String, count: Int) {
+        if (teamNotificationDao.updateCount(teamId, "chat", count) == 0) {
+            teamNotificationDao.insert(TeamNotification().apply {
+                id = UUID.randomUUID().toString()
+                parentId = teamId
+                type = "chat"
+                lastCount = count
+            })
         }
-
-        val hasChat = notification != null && notification.lastCount < chatCount
-
-        val tasks = queryList(RealmTeamTask::class.java) {
-            equalTo("assignee", userId)
-            between("deadline", current, tomorrow.timeInMillis)
-        }
-
-        val hasTask = tasks.isNotEmpty()
-
-        return TeamNotificationInfo(hasTask, hasChat)
     }
 
     override suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo> {
@@ -387,124 +356,138 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
         val notificationMap = mutableMapOf<String, TeamNotificationInfo>()
 
-        // 1. Fetch all relevant notifications in a single query
-        val notificationsResult = queryList(RealmTeamNotification::class.java) {
-            equalTo("type", "chat")
-            beginGroup()
-            teamIds.forEachIndexed { index, id ->
-                if (index > 0) or()
-                equalTo("parentId", id)
-            }
-            endGroup()
-        }
-        val notificationsById = mutableMapOf<String, RealmTeamNotification>()
+        val notificationsResult = teamNotificationDao.getByTypeAndParentIds("chat", teamIds)
+        val notificationsById = mutableMapOf<String, TeamNotification>()
         notificationsResult.forEach {
             it.parentId?.let { parentId ->
                 notificationsById[parentId] = it
             }
         }
 
-        // 2. Fetch all relevant chat counts in a single query
-        val chatsResult = queryList(RealmNews::class.java) {
-            equalTo("viewableBy", "teams")
-            beginGroup()
-            teamIds.forEachIndexed { index, id ->
-                if (index > 0) or()
-                equalTo("viewableId", id)
-            }
-            endGroup()
-        }
-        val chatCountsById = mutableMapOf<String, Long>()
-        chatsResult.forEach {
-            it.viewableId?.let { viewableId ->
-                val currentCount = chatCountsById[viewableId] ?: 0
-                chatCountsById[viewableId] = currentCount + 1
-            }
-        }
+        val chatCountsById = voicesRepository.countTopLevelByTeams(notificationsById.keys.toList())
 
-        // 3. Fetch all relevant tasks once
-        val current = System.currentTimeMillis()
+        val current = timeProvider.now()
         val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
-        val tasks = queryList(RealmTeamTask::class.java) {
-            equalTo("assignee", userId)
-            between("deadline", current, tomorrow.timeInMillis)
-        }
-        val hasTask = tasks.isNotEmpty()
+        val tasks = teamsRepository.get().getTasksForUserBetween(userId, current, tomorrow.timeInMillis)
+        val taskTeamIds = tasks.mapNotNull { it.teamId }.toSet()
 
-        // 4. Combine the results in memory
         for (teamId in teamIds) {
             val notification = notificationsById[teamId]
             val chatCount = chatCountsById[teamId] ?: 0L
             val hasChat = notification != null && notification.lastCount < chatCount
-            notificationMap[teamId] = TeamNotificationInfo(hasTask, hasChat)
+            notificationMap[teamId] = TeamNotificationInfo(teamId in taskTeamIds, hasChat)
         }
         return notificationMap
     }
 
-    override suspend fun getPendingSyncNotifications(): List<RealmNotification> {
-        return queryList(RealmNotification::class.java) {
-            equalTo("needsSync", true)
-            isNotNull("rev")
-        }
+    override suspend fun getPendingSyncNotifications(): List<AppNotification> {
+        return notificationDao.getPendingSyncNotifications()
     }
 
     override suspend fun markNotificationsSynced(syncResults: List<Pair<String, String?>>) {
         if (syncResults.isEmpty()) return
-        val ids = syncResults.map { it.first }.toTypedArray()
-        val revMap = syncResults.toMap()
-        executeTransaction { realm ->
-            val notifications = realm.where(RealmNotification::class.java)
-                .`in`("id", ids)
-                .findAll()
+        notificationDao.markSynced(syncResults)
+    }
 
-            notifications.forEach { notification ->
-                notification.needsSync = false
-                revMap[notification.id]?.let { newRev ->
-                    notification.rev = newRev
-                }
+    override fun resolveType(type: String, message: String, subType: String?): String {
+        val lowerType = type.lowercase(Locale.ROOT)
+        if (lowerType in NotificationsRepository.KNOWN_TYPES) return lowerType
+        val lower = message.lowercase(Locale.ROOT)
+        if (lowerType == "team") {
+            if (subType != null) return subType.lowercase(Locale.ROOT)
+            return when {
+                lower.contains("requested to join") || lower.contains("wants to join") ||
+                    lower.contains("solicitado unirse") -> "join_request"
+                lower.contains("posted a message on") || lower.contains("posted a new voice") ||
+                    lower.contains("new voice in") || lower.contains("posted in") -> "chat"
+                else -> "team_join"
             }
         }
-    }
-
-    override suspend fun insert(doc: com.google.gson.JsonObject) {
-        executeTransaction { realm ->
-            internalInsert(realm, doc)
+        if (lowerType == "newtask") return "task"
+        if (lowerType == "newresource") return "resource"
+        return when {
+            lower.contains("requested to join") || lower.contains("wants to join") -> "join_request"
+            lower.contains("added you to") || lower.contains("you've been added") || lower.contains("you have been added") -> "team_join"
+            lower.contains("replied to your") || lower.contains("replied on your") || lower.contains("new reply to") -> "voice_reply"
+            lower.contains("posted a new voice") || lower.contains("new voice in") || lower.contains("posted in") -> "chat"
+            lower.contains("is due") || lower.contains("due:") -> "task"
+            lower.contains("storage") -> "storage"
+            lower.contains("resource") -> "resource"
+            else -> "notification"
         }
     }
 
-    private fun internalInsert(mRealm: io.realm.Realm, doc: com.google.gson.JsonObject) {
-        val id = doc.get("_id")?.asString ?: return
-        val notification = mRealm.where(RealmNotification::class.java)
-            .equalTo("id", id).findFirst()
-            ?: mRealm.createObject(RealmNotification::class.java, id)
-        notification.apply {
+    private fun parseNotification(doc: JsonObject): AppNotification? {
+        val id = doc.get("_id")?.asString ?: return null
+        val rawType = doc.get("type")?.asString ?: ""
+        val message = doc.get("message")?.asString ?: ""
+        val link = doc.get("link")?.asString
+        return AppNotification().apply {
+            this.id = id
             userId = doc.get("user")?.asString ?: ""
-            message = doc.get("message")?.asString ?: ""
-            type = doc.get("type")?.asString ?: ""
-            link = doc.get("link")?.asString
+            this.message = message
+            type = rawType
+            subType = extractTeamSubtype(rawType, doc)
+            relatedId = extractRelatedId(rawType, link, doc)
+            this.link = link
             priority = doc.get("priority")?.asInt ?: 0
             rev = doc.get("_rev")?.asString
-            // Preserve local read state if a change is pending upload
-            if (!needsSync) {
-                isRead = doc.get("status")?.asString != "unread"
-            }
-            createdAt = doc.get("time")?.let { java.util.Date(it.asLong) } ?: java.util.Date()
+            isRead = doc.get("status")?.asString != "unread"
+            createdAt = doc.get("time")?.let { Date(it.asLong) } ?: Date(timeProvider.now())
             isFromServer = true
         }
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
+    private fun extractTeamSubtype(rawType: String, doc: JsonObject): String? {
+        if (rawType != "team") return null
+        val activeTab = doc.getAsJsonObject("linkParams")?.get("activeTab")?.asString
+        return if (activeTab == "applicantTab") "join_request" else null
+    }
+
+    private fun extractRelatedId(rawType: String, link: String?, doc: JsonObject): String? {
+        return when (rawType) {
+            "team" -> doc.get("item")?.asString
+            "replyMessage" -> doc.get("replyTo")?.asString
+            "newTask" -> extractIdFromLink(link)
+            else -> null
         }
-        documentList.forEach { jsonDoc ->
-            internalInsert(realm, jsonDoc)
+    }
+
+    private fun extractIdFromLink(link: String?): String? {
+        if (link.isNullOrBlank()) return null
+        val segments = link.trim('/').split('/')
+        val viewIndex = segments.indexOf("view")
+        return if (viewIndex in 0 until segments.lastIndex) segments[viewIndex + 1] else null
+    }
+
+    override suspend fun insert(doc: JsonObject) {
+        val parsed = parseNotification(doc) ?: return
+        notificationDao.upsertPreservingPendingRead(parsed)
+    }
+
+    override suspend fun deleteNotifications(ids: Set<String>): Set<String> {
+        if (ids.isEmpty()) return emptySet()
+        val serverIds = notificationDao.getByIds(ids.toList()).filter { it.isFromServer }.map { it.id }
+        if (serverIds.isNotEmpty()) {
+            removedLogDao.insertAll(serverIds.map { serverId ->
+                RemovedLog().apply {
+                    id = UUID.randomUUID().toString()
+                    type = DELETED_NOTIFICATION_TYPE
+                    docId = serverId
+                }
+            })
         }
+        return notificationDao.deleteExisting(ids.toList()).toSet()
+    }
+
+    override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
+        val deletedIds = removedLogDao.getRemovedDocIds(DELETED_NOTIFICATION_TYPE, null).toHashSet()
+        val documentList = jsonArray.toSyncDocuments().map { it.second }
+        val parsedList = documentList.mapNotNull { parseNotification(it) }.filterNot { it.id in deletedIds }
+        notificationDao.upsertAllPreservingPendingRead(parsedList)
+    }
+
+    private companion object {
+        const val DELETED_NOTIFICATION_TYPE = "notification"
     }
 }

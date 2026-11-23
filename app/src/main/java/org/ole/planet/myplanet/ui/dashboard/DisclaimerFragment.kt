@@ -2,31 +2,16 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import androidx.core.text.HtmlCompat
-import androidx.fragment.app.Fragment
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.FragmentDisclaimerBinding
 
-class DisclaimerFragment : Fragment() {
-    private var _binding: FragmentDisclaimerBinding? = null
-    private val binding get() = _binding!!
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentDisclaimerBinding.inflate(inflater, container, false)
-        return binding.root
-    }
-
+class DisclaimerFragment : BaseBindingFragment<FragmentDisclaimerBinding>(FragmentDisclaimerBinding::inflate) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.tvDisclaimer.text = HtmlCompat.fromHtml(getString(R.string.disclaimer), HtmlCompat.FROM_HTML_MODE_LEGACY)
         binding.tvDisclaimer.movementMethod = LinkMovementMethod.getInstance()
-    }
-
-    override fun onDestroyView() {
-        _binding = null
-        super.onDestroyView()
     }
 }

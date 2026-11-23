@@ -1,7 +1,10 @@
 package org.ole.planet.myplanet.utils
 
+import java.util.Locale
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -111,9 +114,95 @@ class AndroidDecrypterTest {
         // Use the same logic as in the function to get the expected hash
         val p = de.rtner.security.auth.spi.PBKDF2Parameters("HmacSHA1", "utf-8", salt.toByteArray(), 10)
         val dk = de.rtner.security.auth.spi.PBKDF2Engine(p).deriveKey(password, 20)
-        val expectedHash = de.rtner.misc.BinTools.bin2hex(dk).lowercase(java.util.Locale.ROOT)
+        val expectedHash = de.rtner.misc.BinTools.bin2hex(dk).lowercase(Locale.ROOT)
 
         val result = AndroidDecrypter.androidDecrypter(userId, password, expectedHash, salt)
         assertTrue(result)
+    }
+
+    @Test
+    fun testDecryptMalformedHexReturnsNull() {
+        val key = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        val iv = "abcdef0123456789abcdef0123456789"
+        val malformedEncryptedHex = "invalid_hex"
+
+        val result = AndroidDecrypter.decrypt(malformedEncryptedHex, key, iv)
+        assertNull(result)
+    }
+
+    @Test
+    fun testAndroidDecrypterInvalidDbPwdKeyValueReturnsFalse() {
+        val userId = "testUser"
+        val password = "password123"
+        val salt = "someSalt"
+
+        val result = AndroidDecrypter.androidDecrypter(userId, password, "invalid_hex_db_pwd", salt)
+        assertFalse(result)
+    }
+
+    @Test
+    fun testGenerateIvAndGenerateKeyNonBlank() {
+        val iv = AndroidDecrypter.generateIv()
+        assertTrue(iv.isNotBlank())
+        assertEquals(32, iv.length) // 16 bytes = 32 hex chars
+
+        val key = AndroidDecrypter.generateKey()
+        assertNotNull(key)
+        assertTrue(key!!.isNotBlank())
+        assertEquals(64, key.length) // 32 bytes = 64 hex chars
+    }
+
+    @Test
+    fun generateIv_returnsDistinctLowercaseHex() {
+        val regex = Regex("^[0-9a-f]{32}$")
+        val results = mutableSetOf<String>()
+        repeat(100) {
+            val iv = AndroidDecrypter.generateIv()
+            assertTrue(regex.matches(iv))
+            results.add(iv)
+        }
+        assertEquals(100, results.size)
+    }
+
+    @Test
+    fun generateIv_isSafeUnderConcurrentCalls() {
+        val threadCount = 8
+        val callsPerThread = 125 // 8 * 125 = 1,000 total calls
+        val executor = java.util.concurrent.Executors.newFixedThreadPool(threadCount)
+        val regex = Regex("^[0-9a-f]{32}$")
+
+        val tasks = List(threadCount) {
+            java.util.concurrent.Callable {
+                val list = mutableListOf<String>()
+                repeat(callsPerThread) {
+                    list.add(AndroidDecrypter.generateIv())
+                }
+                list
+            }
+        }
+
+        val futures = executor.invokeAll(tasks)
+        val allIvs = futures.flatMap { it.get() }
+        executor.shutdown()
+
+        assertEquals(1000, allIvs.size)
+        allIvs.forEach { iv ->
+            assertTrue(regex.matches(iv))
+        }
+        val uniqueIvs = allIvs.toSet()
+        assertEquals(1000, uniqueIvs.size)
+    }
+
+    @Test
+    fun generateIv_roundTripsThroughEncryptDecrypt() {
+        val key = AndroidDecrypter.generateKey()!!
+        val iv = AndroidDecrypter.generateIv()
+        val plainText = "hello"
+
+        val encrypted = AndroidDecrypter.encrypt(plainText, key, iv)
+        assertNotNull(encrypted)
+
+        val decrypted = AndroidDecrypter.decrypt(encrypted, key, iv)
+        assertEquals(plainText, decrypted)
     }
 }
