@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
@@ -272,6 +273,10 @@ class DashboardViewModel @Inject constructor(
                 e.printStackTrace()
             }
         }
+    }
+
+    suspend fun getAssignedSurveyCount(userId: String): Int = withContext(dispatcherProvider.io) {
+        surveysRepository.getAssignedSurveys(userId).size
     }
 
     fun handleSurveyNavigation(surveyId: String) {

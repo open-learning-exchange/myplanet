@@ -9,5 +9,7 @@ data class SubmissionUiModel(
     val userId: String?,
     val submitterName: String,
     val examTitle: String,
-    val submissionCount: Int
+    val submissionCount: Int,
+    val isTeam: Boolean = false,
+    val teamId: String? = null
 )

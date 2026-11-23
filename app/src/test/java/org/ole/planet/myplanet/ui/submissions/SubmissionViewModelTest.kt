@@ -19,10 +19,12 @@ import org.mockito.ArgumentMatchers.anyMap
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
+import org.ole.planet.myplanet.model.AssignedSurvey
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.SubmissionRowProjection
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
@@ -38,6 +40,7 @@ class SubmissionViewModelTest {
     }
 
     private lateinit var submissionsRepository: SubmissionsRepository
+    private lateinit var surveysRepository: SurveysRepository
     private lateinit var userRepository: UserRepository
     private lateinit var viewModel: SubmissionViewModel
 
@@ -45,6 +48,7 @@ class SubmissionViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         submissionsRepository = mock(SubmissionsRepository::class.java)
+        surveysRepository = mock(SurveysRepository::class.java)
         userRepository = mock(UserRepository::class.java)
 
         runBlocking {
@@ -115,6 +119,11 @@ class SubmissionViewModelTest {
         val s3 = createSubmission("3", "p3", "exam", "complete", 300L)
         val subList = listOf(s1, s2, s3)
 
+        val assignedSurveys = listOf(
+            AssignedSurvey(StepExam().apply { id = "p1"; name = "Survey P1" }, false, null),
+            AssignedSurvey(StepExam().apply { id = "p2"; name = "Survey P2" }, false, null)
+        )
+
         `when`(userRepository.getActiveUserIdSuspending()).thenReturn("user1")
         `when`(userRepository.getUsersByIds(listOf("user1"))).thenReturn(emptyList())
         `when`(submissionsRepository.getSubmissionsFlow("user1")).thenReturn(flowOf(subList))
@@ -122,8 +131,9 @@ class SubmissionViewModelTest {
         `when`(submissionsRepository.getNormalizedSubmitterName(s1)).thenReturn("John Doe")
         `when`(submissionsRepository.getNormalizedSubmitterName(s2)).thenReturn("John Doe")
         `when`(submissionsRepository.getNormalizedSubmitterName(s3)).thenReturn("John Doe")
+        `when`(surveysRepository.getAssignedSurveys("user1")).thenReturn(assignedSurveys)
 
-        viewModel = SubmissionViewModel(submissionsRepository, userRepository, testDispatcherProvider)
+        viewModel = SubmissionViewModel(submissionsRepository, surveysRepository, userRepository, testDispatcherProvider)
 
         // Setup observers for StateFlow to be active
         val job = launch {
@@ -132,11 +142,11 @@ class SubmissionViewModelTest {
 
         advanceUntilIdle()
 
-        // Test "survey" type
+        // Test "survey" type (My Surveys): catalog of assigned surveys, not raw submissions
         viewModel.setFilter("survey", "")
         advanceUntilIdle()
         var subs = viewModel.submissions.value
-        assertEquals("survey mode: ${subs.map{it.id}}", 2, subs.size) // s1 and s2
+        assertEquals("survey mode: ${subs.map{it.id}}", 2, subs.size) // p1 and p2
 
         // Test "survey_submission" type
         viewModel.setFilter("survey_submission", "")
@@ -175,7 +185,7 @@ class SubmissionViewModelTest {
         `when`(submissionsRepository.getNormalizedSubmitterName(s2)).thenReturn("John Doe")
         `when`(submissionsRepository.getNormalizedSubmitterName(s3)).thenReturn("John Doe")
 
-        viewModel = SubmissionViewModel(submissionsRepository, userRepository, testDispatcherProvider)
+        viewModel = SubmissionViewModel(submissionsRepository, surveysRepository, userRepository, testDispatcherProvider)
         val job = launch {
             viewModel.submissions.collect { }
         }
@@ -215,7 +225,7 @@ class SubmissionViewModelTest {
         `when`(submissionsRepository.getNormalizedSubmitterName(s2)).thenReturn("John Doe")
         `when`(submissionsRepository.getNormalizedSubmitterName(s3)).thenReturn("John Doe")
 
-        viewModel = SubmissionViewModel(submissionsRepository, userRepository, testDispatcherProvider)
+        viewModel = SubmissionViewModel(submissionsRepository, surveysRepository, userRepository, testDispatcherProvider)
         val job = launch {
             viewModel.submissions.collect { }
         }
@@ -249,7 +259,7 @@ class SubmissionViewModelTest {
         `when`(submissionsRepository.getNormalizedSubmitterName(s2)).thenReturn("John Doe")
         `when`(submissionsRepository.getNormalizedSubmitterName(s3)).thenReturn("John Doe")
 
-        viewModel = SubmissionViewModel(submissionsRepository, userRepository, testDispatcherProvider)
+        viewModel = SubmissionViewModel(submissionsRepository, surveysRepository, userRepository, testDispatcherProvider)
         val job = launch {
             viewModel.submissions.collect { }
         }
@@ -286,7 +296,7 @@ class SubmissionViewModelTest {
         `when`(submissionsRepository.getNormalizedSubmitterName(s1)).thenReturn("John Doe")
         `when`(submissionsRepository.getNormalizedSubmitterName(s1_dup)).thenReturn("John Doe")
 
-        viewModel = SubmissionViewModel(submissionsRepository, userRepository, testDispatcherProvider)
+        viewModel = SubmissionViewModel(submissionsRepository, surveysRepository, userRepository, testDispatcherProvider)
 
         var emissions = 0
         val job = launch {

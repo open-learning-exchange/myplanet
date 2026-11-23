@@ -302,15 +302,11 @@ open class BaseDashboardFragment : DashboardPluginFragment() {
             }
             return
         }
+        val surveyCount = viewModel.getAssignedSurveyCount(userId)
         for (items in visibleItems) {
             val dashboardItem = DashboardItem(items._id, items.title, items.imageId, ItemType.LIFE)
-            flexboxLayout.addView(getLayout(dashboardItem, 0), createChipLayoutParams())
+            flexboxLayout.addView(getLayout(dashboardItem, surveyCount), createChipLayoutParams())
         }
-        updateMyLifeSurveyCount()
-    }
-
-    private fun updateMyLifeSurveyCount() {
-        // Update views with survey count if needed
     }
 
     private fun myLibraryItemClickAction(textView: TextView, items: MyLibrary?) {

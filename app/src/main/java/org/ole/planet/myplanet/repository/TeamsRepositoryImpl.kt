@@ -217,6 +217,13 @@ class TeamsRepositoryImpl @Inject constructor(
         }.flowOn(dispatcherProvider.default)
     }
 
+    override suspend fun getActiveMembershipTeamIds(userId: String): List<String> {
+        return teamDao.getByUserId(userId)
+            .filter { it.docType == "membership" && !it.isDeletePending }
+            .mapNotNull { it.teamId }
+            .distinct()
+    }
+
     private suspend fun getMemberTeamIds(userId: String): Set<String> {
         return teamDao.getByUserId(userId)
             .filter { it.docType == "membership" }

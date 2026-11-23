@@ -5,6 +5,7 @@ import org.ole.planet.myplanet.model.UserEntity
 
 interface TeamsMembersRepository {
     suspend fun isMember(userId: String?, teamId: String): Boolean
+    suspend fun getActiveMembershipTeamIds(userId: String): List<String>
     suspend fun isTeamLeader(teamId: String, userId: String?): Boolean
     suspend fun hasPendingRequest(teamId: String, userId: String?): Boolean
     suspend fun requestToJoin(teamId: String, userId: String?, userPlanetCode: String?, teamType: String?)

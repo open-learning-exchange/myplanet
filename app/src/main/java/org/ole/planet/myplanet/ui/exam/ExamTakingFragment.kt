@@ -184,11 +184,16 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                     val currentExam = exam
                     if (currentExam != null) {
                         try {
-                            if (sub == null || isTeam) {
+                            val isCompletedSurvey = type == "survey" &&
+                                (sub?.status == "complete" || sub?.status == "requires grading")
+                            if (sub == null || isTeam || isCompletedSurvey) {
                                 val request = CreateExamSubmissionRequest(
                                     user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
                                 )
-                                sub = submissionsRepository.startExamSession(currentExam.id, parentId, user?.id, request, recreate = isTeam, deleteStale = false)
+                                sub = submissionsRepository.startExamSession(
+                                    currentExam.id, parentId, user?.id, request,
+                                    recreate = isTeam || isCompletedSurvey, deleteStale = false
+                                )
                             } else {
                                 val resume = askResumeOrRestart()
                                 if (resume) {
