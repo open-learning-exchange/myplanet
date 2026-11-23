@@ -11,11 +11,13 @@ import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.CourseStepDao
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
+import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.CourseProgress
 import org.ole.planet.myplanet.model.CourseProgressState
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.CoursesProgressRow
+import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -76,6 +78,12 @@ class ProgressRepositoryImpl @Inject constructor(
                     null
                 }
             }
+        
+        val allSubmissionIds = submissionsByCourseId.filterKeys { it != null }.values.flatten().map { it.id }
+        val allAnswers = if (allSubmissionIds.isEmpty()) emptyList() else submissionsRepositoryLazy.get().getAnswersBySubmissionIds(allSubmissionIds)
+        val answersBySubmissionId = allAnswers.groupBy { it.submissionId }
+        val questionIds = allAnswers.mapNotNull { it.questionId }.distinct()
+        val questionsMap = if (questionIds.isEmpty()) emptyMap() else questionDao.getByIds(questionIds).associateBy { it.id }
 
         mycourses.forEach { course ->
             val obj = JsonObject()
@@ -98,7 +106,7 @@ class ProgressRepositoryImpl @Inject constructor(
             val examIds: List<String> = exams.map { it.id }
 
             if (submissions.isNotEmpty()) {
-                submissionMap(submissions, examIds, obj)
+                submissionMap(submissions, examIds, answersBySubmissionId, questionsMap, obj)
             }
             arr.add(obj)
         }
@@ -248,8 +256,12 @@ class ProgressRepositoryImpl @Inject constructor(
         return i - 1
     }
 
-    private suspend fun submissionMap(
-        submissions: List<Submission>, examIds: List<String>, obj: JsonObject
+    private fun submissionMap(
+        submissions: List<Submission>,
+        examIds: List<String>,
+        answersBySubmissionId: Map<String?, List<Answer>>,
+        questionsMap: Map<String, ExamQuestion>,
+        obj: JsonObject
     ) {
         val examIndexMap = HashMap<String, String>()
         examIds.forEachIndexed { index, id ->
@@ -257,15 +269,6 @@ class ProgressRepositoryImpl @Inject constructor(
                 examIndexMap[id] = index.toString()
             }
         }
-
-        val submissionIds = submissions.map { it.id }
-        val allAnswers = if (submissionIds.isEmpty()) emptyList() else submissionsRepositoryLazy.get().getAnswersBySubmissionIds(submissionIds)
-
-        val questionIds = allAnswers.mapNotNull { it.questionId }.distinct()
-        val allQuestions = if (questionIds.isEmpty()) emptyList() else questionDao.getByIds(questionIds)
-        val questionsMap = allQuestions.associateBy { it.id }
-
-        val answersBySubmissionId = allAnswers.groupBy { it.submissionId }
 
         var totalMistakes = 0
         val mistakesMap = HashMap<String, Int>()
@@ -304,20 +307,15 @@ class ProgressRepositoryImpl @Inject constructor(
         myCourses.forEach { course ->
             val hasValidId = !course.courseId.isNullOrBlank()
             val hasValidTitle = !course.courseTitle.isNullOrBlank()
-
-            // Get progress records for this specific course
             val courseProgressRecords = progressByCourse[course.courseId].orEmpty()
 
-            // Count UNIQUE steps that are passed (matches web: step.passed === true)
             val passedSteps = courseProgressRecords
                 .mapNotNullTo(HashSet()) { if (it.passed) it.stepNum else null }
                 .size
-            val totalSteps = course.courseSteps?.size ?: 0
+            val totalSteps = course.getNumberOfSteps()
 
-            // Web logic: ALL steps must be passed AND course must have at least one step
             val allStepsPassed = passedSteps == totalSteps && totalSteps > 0
 
-            // Match web behavior: Show badge if ALL steps are passed AND course has steps
             if (allStepsPassed && hasValidId && hasValidTitle) {
                 completedCourses.add(CourseCompletion(course.courseId, course.courseTitle))
             }

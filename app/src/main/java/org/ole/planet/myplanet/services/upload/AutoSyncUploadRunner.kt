@@ -25,6 +25,10 @@ class AutoSyncUploadRunner @Inject constructor(
                 firstError.compareAndSet(null, e)
             }
 
+            fun check(label: String, result: UploadResult<*>) {
+                if (result.hasRetryableFailure) recordFailure(UploadFailedException(label))
+            }
+
             suspend fun runGroup(block: suspend () -> Unit) {
                 semaphore.withPermit {
                     try {
@@ -40,8 +44,8 @@ class AutoSyncUploadRunner @Inject constructor(
             val groupA = async {
                 runGroup {
                     uploadManager.uploadExamResult(listener)
-                    uploadManager.uploadAdoptedSurveys()
-                    uploadManager.uploadSubmissions()
+                    check("adopted surveys", uploadManager.uploadAdoptedSurveys())
+                    check("submissions", uploadManager.uploadSubmissions())
                 }
             }
 
@@ -49,19 +53,19 @@ class AutoSyncUploadRunner @Inject constructor(
             // private resources, and uploadTeams must see them in the same sync.
             val groupB = async {
                 runGroup {
-                    uploadManager.uploadResourceActivities("")
-                    uploadManager.uploadRating()
+                    check("resource activities", uploadManager.uploadResourceActivities(""))
+                    check("ratings", uploadManager.uploadRating())
                     uploadManager.uploadResource(listener)
                     uploadManager.uploadUserActivities(listener)
                     uploadManager.uploadTeams()
-                    uploadManager.uploadTeamTask()
-                    uploadManager.uploadMeetups()
+                    check("team tasks", uploadManager.uploadTeamTask())
+                    check("meetups", uploadManager.uploadMeetups())
                 }
             }
 
             val feedback = async {
                 runGroup {
-                    uploadManager.uploadFeedback()
+                    check("feedback", uploadManager.uploadFeedback())
                 }
             }
 
@@ -73,13 +77,13 @@ class AutoSyncUploadRunner @Inject constructor(
 
             val courseActivities = async {
                 runGroup {
-                    uploadManager.uploadCourseActivities()
+                    check("course activities", uploadManager.uploadCourseActivities())
                 }
             }
 
             val searchActivity = async {
                 runGroup {
-                    uploadManager.uploadSearchActivity()
+                    check("search activity", uploadManager.uploadSearchActivity())
                 }
             }
 
@@ -91,7 +95,7 @@ class AutoSyncUploadRunner @Inject constructor(
 
             val crashLog = async {
                 runGroup {
-                    uploadManager.uploadCrashLog()
+                    check("crash logs", uploadManager.uploadCrashLog())
                 }
             }
 
@@ -111,6 +115,8 @@ class AutoSyncUploadRunner @Inject constructor(
             firstError.get()
         }
     }
+
+    class UploadFailedException(label: String) : Exception("Some $label failed to upload")
 
     companion object {
         // Each group can fan out to UploadCoordinator, PhotoUploader or

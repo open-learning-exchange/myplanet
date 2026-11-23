@@ -52,6 +52,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     private var examination: HealthExamination? = null
     private var conditionsMap: Map<String, Boolean> = emptyMap()
     private var savedCreatedBy: String? = null
+    private var restoredForm = false
     private fun initViews() {
         binding.btnAddDiag.setOnClickListener {
             val text = binding.etOtherDiag.text.toString().trim()
@@ -73,6 +74,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         customDiag = HashSet()
         initViews()
         mapConditions = HashMap()
+        if (savedInstanceState != null) restoreForm(savedInstanceState)
         userId = intent.getStringExtra("userId")
         val btnSave = findViewById<View>(R.id.btn_save)
         btnSave.isEnabled = false
@@ -96,7 +98,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             health = state.health
             examination = state.examination
             conditionsMap = state.conditionsMap
-            seedSavedConditions()
+            if (!restoredForm) seedSavedConditions()
 
             initExamination()
             validateFields()
@@ -117,8 +119,27 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         }
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        val conditions = mapConditions.orEmpty().filterKeys { it != null }
+        outState.putStringArray(STATE_CONDITION_KEYS, conditions.keys.map { it.orEmpty() }.toTypedArray())
+        outState.putBooleanArray(STATE_CONDITION_VALUES, conditions.values.toBooleanArray())
+        outState.putStringArrayList(STATE_CUSTOM_DIAGNOSES, ArrayList(customDiag.orEmpty().filterNotNull()))
+    }
+
+    private fun restoreForm(state: Bundle) {
+        val keys = state.getStringArray(STATE_CONDITION_KEYS) ?: return
+        val values = state.getBooleanArray(STATE_CONDITION_VALUES) ?: return
+        keys.forEachIndexed { i, key -> values.getOrNull(i)?.let { mapConditions?.set(key, it) } }
+        state.getStringArrayList(STATE_CUSTOM_DIAGNOSES)?.let { customDiag?.addAll(it) }
+        restoredForm = true
+    }
+
     private fun initExamination() {
-        if (examination != null) {
+        if (examination != null && restoredForm) {
+            val encrypted = user?.let { examination?.getEncryptedDataAsJson(it) }
+            savedCreatedBy = encrypted?.let { runCatching { GsonUtils.gson.fromJson(it, Examination::class.java) }.getOrNull() }?.createdBy
+        } else if (examination != null) {
             binding.etTemperature.setText("%.1f".format(Locale.ROOT, examination?.temperature))
             binding.etPulseRate.setText(getString(R.string.number_placeholder, examination?.pulse))
             binding.etBloodpressure.setText(examination?.bp?.takeUnless { it == "null" }.orEmpty())
@@ -139,8 +160,8 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             binding.etLabtest.setText(saved?.tests.orEmpty())
             binding.etReferrals.setText(saved?.referrals.orEmpty())
         }
-        showCheckbox(examination)
-        preloadCustomDiagnosis()
+        showCheckbox()
+        if (!restoredForm) preloadCustomDiagnosis()
         showOtherDiagnosis()
     }
 
@@ -220,7 +241,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         }
     }
 
-    private fun showCheckbox(examination: HealthExamination?) {
+    private fun showCheckbox() {
         val keys = diagnosisKeys(this)
         val labels = resources.getStringArray(R.array.diagnosis_list)
         binding.containerCheckbox.removeAllViews()
@@ -232,9 +253,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             c.buttonTintList = textColorStateList
             c.setTextColor(textColor)
 
-            if (examination != null) {
-                c.isChecked = savedCondition(key, labels[i]) ?: false
-            }
+            c.isChecked = mapConditions?.get(key) ?: false
             c.setPadding(padding, padding, padding, padding)
             c.text = labels[i]
             c.tag = key
@@ -418,6 +437,9 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
 
     companion object {
         private const val TAG = "HealthExaminationActivity"
+        private const val STATE_CONDITION_KEYS = "conditionKeys"
+        private const val STATE_CONDITION_VALUES = "conditionValues"
+        private const val STATE_CUSTOM_DIAGNOSES = "customDiagnoses"
 
         fun diagnosisKeys(context: Context): Array<String> {
             val english = Configuration(context.resources.configuration).apply { setLocale(Locale.ENGLISH) }

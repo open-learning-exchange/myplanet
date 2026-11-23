@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
@@ -27,6 +28,7 @@ import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.NewsShare
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ChatRepository
@@ -50,6 +52,12 @@ data class ChatUiState(
     val aiProvidersLoading: Boolean = false,
     val aiProvidersError: Boolean = false
 )
+
+sealed class ChatRequestState {
+    object Idle : ChatRequestState()
+    data class Sending(val requestId: Long, val query: String) : ChatRequestState()
+    data class Done(val requestId: Long, val query: String, val result: ChatResult) : ChatRequestState()
+}
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
@@ -137,8 +145,8 @@ class ChatViewModel @Inject constructor(
         loadDataJob = viewModelScope.launch {
             val result = RetryUtils.retry(maxAttempts = 3, delayMs = 2000L) {
                 val currentUser = cachedUser ?: userRepository.getUserModel().also { cachedUser = it }
-                val (newsMessages, chatHistory) = coroutineScope {
-                    val newsDeferred = async { voicesRepository.getPlanetNewsMessages(currentUser?.planetCode) }
+                val (shares, chatHistory) = coroutineScope {
+                    val newsDeferred = async { voicesRepository.getPlanetMessageShares(currentUser?.planetCode) }
                     val historyDeferred = async { chatRepository.getChatHistoryForUser(currentUser?.name) }
                     Pair(newsDeferred.await(), historyDeferred.await())
                 }
@@ -146,9 +154,9 @@ class ChatViewModel @Inject constructor(
                 allChats = chatHistory
                 searchIndex = null
                 val sharedViewInIds = withContext(dispatcherProvider.default) {
-                    chatRepository.extractSharedViewInIds(newsMessages)
+                    chatRepository.extractSharedViewInIds(shares)
                 }
-                ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets, sharedViewInIds)
+                ChatHistoryScreenData(currentUser, chatHistory, targets, sharedViewInIds)
             }
             result?.let { data ->
                 _screenData.value = data
@@ -279,6 +287,52 @@ class ChatViewModel @Inject constructor(
     suspend fun getLatestRev(id: String): String? {
         return chatRepository.getLatestRev(id)
     }
+
+    private val _chatRequest = MutableStateFlow<ChatRequestState>(ChatRequestState.Idle)
+    val chatRequest: StateFlow<ChatRequestState> = _chatRequest.asStateFlow()
+    private var nextRequestId = 0L
+
+    fun sendChat(query: String, displayQuery: String, userName: String?, aiProvider: AiProvider,
+        conversationId: String, rev: String, refreshRev: Boolean, beforeSend: suspend () -> Unit = {}
+    ): Boolean {
+        if (_chatRequest.value is ChatRequestState.Sending) return false
+        val requestId = ++nextRequestId
+        _chatRequest.value = ChatRequestState.Sending(requestId, displayQuery)
+        viewModelScope.launch {
+            val result = try {
+                beforeSend()
+                if (conversationId.isEmpty()) {
+                    chatRepository.sendNewChatRequest(query, userName, aiProvider)
+                } else {
+                    val latestRev = if (refreshRev) {
+                        try {
+                            chatRepository.getLatestRev(conversationId)
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (_: Exception) {
+                            null
+                        } ?: rev
+                    } else {
+                        rev
+                    }
+                    chatRepository.sendContinueChatRequest(query, userName, aiProvider, conversationId, latestRev)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                ChatResult.Error(e.message ?: "")
+            }
+            _chatRequest.value = ChatRequestState.Done(requestId, displayQuery, result)
+        }
+        return true
+    }
+
+    fun consumeChatResult(requestId: Long) {
+        val state = _chatRequest.value
+        if (state is ChatRequestState.Done && state.requestId == requestId) {
+            _chatRequest.value = ChatRequestState.Idle
+        }
+    }
     suspend fun sendNewChatRequest(query: String, userName: String?, aiProvider: AiProvider): ChatResult {
         return chatRepository.sendNewChatRequest(query, userName, aiProvider)
     }
@@ -288,7 +342,7 @@ class ChatViewModel @Inject constructor(
     suspend fun getUserById(userId: String): UserEntity? {
         return userRepository.getUserById(userId)
     }
-    fun extractSharedViewInIds(sharedNewsMessages: List<News>): Map<String, Set<String>> {
-        return chatRepository.extractSharedViewInIds(sharedNewsMessages)
+    fun extractSharedViewInIds(shares: List<NewsShare>): Map<String, Set<String>> {
+        return chatRepository.extractSharedViewInIds(shares)
     }
 }

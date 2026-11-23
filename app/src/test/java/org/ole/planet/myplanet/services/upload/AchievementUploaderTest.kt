@@ -16,7 +16,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -54,6 +56,7 @@ class AchievementUploaderTest {
         every { UrlUtils.header } returns "Basic mock-header"
         every { Log.e(any(), any()) } returns 0
         every { Log.e(any(), any(), any()) } returns 0
+        every { Log.w(any(), any<String>()) } returns 0
 
         achievementUploader = AchievementUploader(
             context,
@@ -132,5 +135,67 @@ class AchievementUploaderTest {
         }
 
         assertTrue("Expected CancellationException to be caught", caughtCancellation)
+    }
+
+    @Test
+    fun `uploadAchievement stores the rev from the CV upload`() = runTest(testDispatcher) {
+        val achievement = JsonObject().apply {
+            addProperty("_id", "ach1")
+            addProperty("resumeFileName", "resume.pdf")
+        }
+        coEvery { userAchievementsRepository.getAchievementsForUpload() } returns listOf(achievement)
+        coEvery { uploadRepository.putUpload("http://mock.url/achievements/ach1", achievement) } returns
+            Response.success(JsonObject().apply { addProperty("rev", "1-doc") })
+        val olePath = temporaryFolder.root.absolutePath + "/"
+        every { FileUtils.getOlePath(context) } returns olePath
+        File(olePath + org.ole.planet.myplanet.model.Achievement.resolveCvRelativePath(olePath, "ach1", "resume.pdf")).apply {
+            parentFile?.mkdirs()
+            createNewFile()
+        }
+        coEvery { uploadRepository.uploadResource(any(), any(), any()) } returns
+            Response.success(JsonObject().apply { addProperty("rev", "2-cv") })
+
+        achievementUploader.uploadAchievement()
+
+        coVerify(exactly = 1) { userAchievementsRepository.markAchievementUploaded("ach1", "2-cv") }
+        coVerify(exactly = 0) { userAchievementsRepository.markAchievementUploaded("ach1", "1-doc") }
+    }
+
+    @Test
+    fun `uploadAchievement re-sends local content on top of the server rev after a 409`() = runTest(testDispatcher) {
+        val achievement = JsonObject().apply {
+            addProperty("_id", "ach1")
+            addProperty("_rev", "1-stale")
+            addProperty("purpose", "local edit")
+        }
+        val url = "http://mock.url/achievements/ach1"
+        coEvery { userAchievementsRepository.getAchievementsForUpload() } returns listOf(achievement)
+        val sent = mutableListOf<JsonObject>()
+        coEvery { uploadRepository.putUpload(url, capture(sent)) } returnsMany listOf(
+            Response.error(409, "".toResponseBody(null)),
+            Response.success(JsonObject().apply { addProperty("rev", "4-rebased") })
+        )
+        coEvery { uploadRepository.fetchExistingDoc(url) } returns
+            Response.success(JsonObject().apply { addProperty("_rev", "3-server") })
+
+        achievementUploader.uploadAchievement()
+
+        assertEquals("3-server", sent.last().get("_rev").asString)
+        assertEquals("local edit", sent.last().get("purpose").asString)
+        coVerify(exactly = 1) { userAchievementsRepository.markAchievementUploaded("ach1", "4-rebased") }
+    }
+
+    @Test
+    fun `uploadAchievement leaves the row pending when the conflict retry fails`() = runTest(testDispatcher) {
+        val achievement = JsonObject().apply { addProperty("_id", "ach1") }
+        val url = "http://mock.url/achievements/ach1"
+        coEvery { userAchievementsRepository.getAchievementsForUpload() } returns listOf(achievement)
+        coEvery { uploadRepository.putUpload(url, any()) } returns Response.error(409, "".toResponseBody(null))
+        coEvery { uploadRepository.fetchExistingDoc(url) } returns
+            Response.success(JsonObject().apply { addProperty("_rev", "3-server") })
+
+        achievementUploader.uploadAchievement()
+
+        coVerify(exactly = 0) { userAchievementsRepository.markAchievementUploaded(any(), any()) }
     }
 }

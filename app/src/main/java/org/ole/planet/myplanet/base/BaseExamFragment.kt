@@ -58,6 +58,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var submitId = ""
     var isTeam: Boolean = false
     var teamId: String? = null
+    var isFinished = false
+    private var finishDialog: AlertDialog? = null
     private var answerTextWatcher: MarkdownPreRenderer? = null
     private var currentAnswerEditText: EditText? = null
     private var markwonExecutor: ExecutorService? = null
@@ -134,24 +136,31 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         if (currentIndex < (questions?.size ?: 0)) {
             startExam(questions?.get(currentIndex))
         } else if (isTeam && type?.startsWith("survey") == true) {
+            isFinished = true
             showUserInfoDialog()
         } else {
+            isFinished = true
             saveCourseProgress(exam?.courseId, stepNumber, sub?.status == "graded", user?.id)
-            val titleView = TextView(requireContext()).apply {
-                text = "${getString(R.string.thank_you_for_taking_this)}$type! ${getString(R.string.we_wish_you_all_the_best)}"
-                textSize = 18f
-                setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-                setTypeface(null, Typeface.BOLD)
-                gravity = Gravity.CENTER
-                setPadding(20, 25, 20, 0)
-            }
-
-            AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
-                .setCustomTitle(titleView)
-                .setPositiveButton(getString(R.string.finish)) { _: DialogInterface?, _: Int ->
-                    FragmentNavigator.popBackStack(parentFragmentManager)
-                }.setCancelable(false).show()
+            showFinishDialog()
         }
+    }
+
+    fun showFinishDialog() {
+        if (finishDialog?.isShowing == true) return
+        val titleView = TextView(requireContext()).apply {
+            text = "${getString(R.string.thank_you_for_taking_this)}$type! ${getString(R.string.we_wish_you_all_the_best)}"
+            textSize = 18f
+            setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+            setTypeface(null, Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setPadding(20, 25, 20, 0)
+        }
+
+        finishDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+            .setCustomTitle(titleView)
+            .setPositiveButton(getString(R.string.finish)) { _: DialogInterface?, _: Int ->
+                FragmentNavigator.popBackStack(parentFragmentManager)
+            }.setCancelable(false).show()
     }
 
     abstract fun saveCourseProgress(courseId: String?, stepNum: Int, isGraded: Boolean, userId: String?)
@@ -224,6 +233,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        finishDialog?.dismiss()
+        finishDialog = null
         releaseAnswerTextWatcher()
         currentAnswerEditText = null
     }

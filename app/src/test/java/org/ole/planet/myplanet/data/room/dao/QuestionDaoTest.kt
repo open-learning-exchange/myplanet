@@ -202,4 +202,46 @@ class QuestionDaoTest {
         val remainingIds = questionDao.getByExamId("exam1").map { it.id }.toSet()
         assertEquals(setOf("q1", "q2"), remainingIds)
     }
+
+    @Test
+    fun countByExamIds_handlesTwoExamsAndAbsentExam() = runBlocking {
+        questionDao.upsertAll(
+            listOf(
+                ExamQuestion(id = "q1", examId = "exam1"),
+                ExamQuestion(id = "q2", examId = "exam1"),
+                ExamQuestion(id = "q3", examId = "exam2"),
+            )
+        )
+
+        val counts = questionDao.countByExamIds(listOf("exam1", "exam2", "absentExam"))
+
+        assertEquals(2, counts["exam1"])
+        assertEquals(1, counts["exam2"])
+        assertEquals(false, counts.containsKey("absentExam"))
+        assertEquals(0, counts["absentExam"] ?: 0)
+        assertEquals(2, counts.size)
+    }
+
+    @Test
+    fun countByExamIds_handlesMoreThan900IdsAndDuplicates() = runBlocking {
+        val questions = (0 until 1200).map { i ->
+            ExamQuestion(id = "question_$i", examId = "exam_$i")
+        }
+        questionDao.upsertAll(questions)
+
+        val examIds = (0 until 1200).map { "exam_$it" }
+        val examIdsWithDuplicates = examIds + examIds.take(150) + listOf("absent_exam")
+
+        val result = questionDao.countByExamIds(examIdsWithDuplicates)
+
+        assertEquals(1200, result.size)
+        assertEquals(1, result["exam_0"])
+        assertEquals(1, result["exam_899"])
+        assertEquals(1, result["exam_900"])
+        assertEquals(1, result["exam_1199"])
+        assertEquals(false, result.containsKey("absent_exam"))
+
+        val emptyResult = questionDao.countByExamIds(emptyList())
+        assertEquals(0, emptyResult.size)
+    }
 }

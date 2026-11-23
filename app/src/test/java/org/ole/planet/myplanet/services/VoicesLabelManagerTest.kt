@@ -31,6 +31,7 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.TeamVoiceLabel
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.robolectric.RobolectricTestRunner
@@ -214,6 +215,15 @@ class VoicesLabelManagerTest {
     }
 
     @Test
+    fun testShowChips_DuplicateLabels_CanManage() {
+        voice.labels = listOf("offer", "offer", "offer")
+
+        voicesLabelManager.showChips(binding, voice, true)
+
+        assertEquals(View.VISIBLE, btnAddLabel.visibility)
+    }
+
+    @Test
     fun testShowChips_UnchangedLabels_SkipsRedundantRebuild() {
         voice.labels = listOf("offer")
 
@@ -308,4 +318,61 @@ class VoicesLabelManagerTest {
     }
 
     private fun addRebuildSentinel(): View = View(context).also { fbChips.addView(it) }
+
+    @Test
+    fun testAddLabelMenu_IncludesCustomLabels_AndAddsStoredName() = runTest {
+        voicesLabelManager.customLabels = listOf(
+            TeamVoiceLabel("announcement", "pink"),
+            TeamVoiceLabel("Offer", "lime"),
+        )
+        voicesLabelManager.setupAddLabelMenu(binding, voice, true)
+
+        btnAddLabel.performClick()
+        val popupMenu = ShadowPopupMenu.getLatestPopupMenu()
+        val titles = (0 until popupMenu.menu.size()).map { popupMenu.menu.getItem(it).title.toString() }
+        assertEquals(Constants.LABELS.keys.toList() + "Announcement", titles)
+
+        shadowOf(popupMenu).onMenuItemClickListener.onMenuItemClick(popupMenu.menu.getItem(titles.indexOf("Announcement")))
+        scope.advanceUntilIdle()
+
+        coVerify(timeout = 1000) { addLabelFn("test-id", "announcement") }
+    }
+
+    @Test
+    fun testShowChips_CustomLabel_UsesConfiguredColor() {
+        voicesLabelManager.customLabels = listOf(TeamVoiceLabel("announcement", "pink"))
+        voice.labels = listOf("Announcement", "offer")
+
+        voicesLabelManager.showChips(binding, voice, true)
+
+        val custom = fbChips.getChildAt(0) as Chip
+        assertEquals("Announcement", custom.text)
+        assertEquals(context.getColor(R.color.voice_label_pink), custom.chipBackgroundColor?.defaultColor)
+        val builtIn = fbChips.getChildAt(1) as Chip
+        assertFalse(builtIn.chipBackgroundColor?.defaultColor == context.getColor(R.color.voice_label_pink))
+    }
+
+    @Test
+    fun testShowChips_RebuildsWhenCustomLabelsArrive() {
+        voice.labels = listOf("event")
+        voicesLabelManager.showChips(binding, voice, true)
+        val before = fbChips.getChildAt(0) as Chip
+
+        voicesLabelManager.customLabels = listOf(TeamVoiceLabel("event", "lime"))
+        voicesLabelManager.showChips(binding, voice, true)
+
+        val after = fbChips.getChildAt(0) as Chip
+        assertFalse(before === after)
+        assertEquals(context.getColor(R.color.voice_label_lime), after.chipBackgroundColor?.defaultColor)
+    }
+
+    @Test
+    fun testShowChips_AllBuiltInUsed_StillOffersCustomLabels() {
+        voicesLabelManager.customLabels = listOf(TeamVoiceLabel("event"))
+        voice.labels = Constants.LABELS.values.toList()
+
+        voicesLabelManager.showChips(binding, voice, true)
+
+        assertEquals(View.VISIBLE, btnAddLabel.visibility)
+    }
 }

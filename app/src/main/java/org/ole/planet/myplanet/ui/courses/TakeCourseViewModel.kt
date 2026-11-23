@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -17,7 +19,7 @@ import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 
 sealed interface RatingPromptDecision {
     object Show : RatingPromptDecision
@@ -41,7 +43,7 @@ class TakeCourseViewModel @Inject constructor(
     private val coursesRepository: CoursesRepository,
     private val activitiesRepository: ActivitiesRepository,
     private val progressRepository: ProgressRepository,
-    private val userRepository: UserRepository,
+    private val userRepository: UserReadRepository,
     private val ratingsRepository: RatingsRepository
 ) : ViewModel() {
 
@@ -119,15 +121,21 @@ class TakeCourseViewModel @Inject constructor(
             try {
                 _uiState.value = TakeCourseUiState.Loading
 
-                val userModel = userRepository.getUserModel()
-                val course = coursesRepository.getCourseById(courseId)
+                val (userModel, course) = coroutineScope {
+                    val user = async { userRepository.getUserModel() }
+                    val courseDeferred = async { coursesRepository.getCourseById(courseId) }
+                    user.await() to courseDeferred.await()
+                }
                 if (course == null) {
                     _uiState.value = TakeCourseUiState.NotFound
                     return@launch
                 }
 
-                val steps = coursesRepository.getCourseSteps(courseId)
-                val progressMap = progressRepository.getCourseProgress(listOf(courseId), userModel?.id)
+                val (steps, progressMap) = coroutineScope {
+                    val stepsDeferred = async { coursesRepository.getCourseSteps(courseId) }
+                    val progressDeferred = async { progressRepository.getCourseProgress(listOf(courseId), userModel?.id) }
+                    stepsDeferred.await() to progressDeferred.await()
+                }
                 val progress = progressMap[courseId]?.current ?: 0
                 val blockingStepIndex = getBlockingStepIndex(steps, userModel, courseId)
 

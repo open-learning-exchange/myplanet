@@ -118,6 +118,41 @@ class RetryInterceptorTest {
     }
 
     @Test
+    fun testNoNetworkRetryTagFailsNetworkErrorsImmediately() {
+        val request = Request.Builder().url("http://example.com").tag(NoNetworkRetry::class.java, NoNetworkRetry).build()
+
+        val chain = mockk<Interceptor.Chain>()
+        every { chain.request() } returns request
+        every { chain.proceed(request) } throws SocketTimeoutException("timeout")
+
+        try {
+            retryInterceptor.intercept(chain)
+            fail("Expected the network error to surface without retries")
+        } catch (e: IOException) {
+            assertTrue(e is SocketTimeoutException)
+        }
+
+        verify(exactly = 1) { chain.proceed(request) }
+        verify(exactly = 0) { broadcastService.trySendRetryEvent(any(), any(), any()) }
+    }
+
+    @Test
+    fun testNoNetworkRetryTagStillRetries5xx() {
+        val request = Request.Builder().url("http://example.com").tag(NoNetworkRetry::class.java, NoNetworkRetry).build()
+        val errorResponse = createResponse(request, 503)
+
+        val chain = mockk<Interceptor.Chain>()
+        every { chain.request() } returns request
+        every { chain.proceed(request) } returns errorResponse
+        every { chain.call() } returns notCancelledCall()
+
+        val result = retryInterceptor.intercept(chain)
+
+        assertEquals(503, result.code)
+        verify(exactly = 4) { chain.proceed(request) }
+    }
+
+    @Test
     fun testSuccessAfterIOException() {
         val request = Request.Builder().url("http://example.com").build()
         val successResponse = createResponse(request, 200)

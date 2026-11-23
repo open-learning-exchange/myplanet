@@ -1078,10 +1078,15 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun bulkInsertAchievementsFromSync(jsonArray: JsonArray) {
         val locallyUpdatedIds = achievementDao.getUpdatedIds().toHashSet()
-        val achievements = jsonArray.toSyncDocuments()
+        val (pending, fresh) = jsonArray.toSyncDocuments()
             .map { (_, doc) -> Achievement.fromJson(doc) }
-            .filterNot { it._id in locallyUpdatedIds }
-        achievementDao.upsertAll(achievements)
+            .partition { it._id in locallyUpdatedIds }
+        achievementDao.upsertAll(fresh)
+        pending.forEach { server ->
+            val id = server._id
+            val rev = server._rev
+            if (id.isNotEmpty() && !rev.isNullOrEmpty()) achievementDao.rebasePendingRev(id, rev)
+        }
     }
 
     override suspend fun insertUsersFromSync(docs: List<JsonObject>) {
