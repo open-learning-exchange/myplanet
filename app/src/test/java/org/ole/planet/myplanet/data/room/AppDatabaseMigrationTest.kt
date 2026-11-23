@@ -10,6 +10,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.News
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
@@ -27,14 +28,15 @@ class AppDatabaseMigrationTest {
     }
 
     private fun build() = Room.databaseBuilder(context, AppDatabase::class.java, dbName)
-        .addMigrations(AppDatabase.MIGRATION_20_21)
+        .addMigrations(AppDatabase.MIGRATION_20_21, AppDatabase.MIGRATION_21_22)
         .fallbackToDestructiveMigration(true)
         .allowMainThreadQueries()
         .build()
 
     @Test
     fun `in-place migration ends at the current database version`() {
-        assertEquals(AppDatabase.VERSION, AppDatabase.MIGRATION_20_21.endVersion)
+        assertEquals(AppDatabase.VERSION, AppDatabase.MIGRATION_21_22.endVersion)
+        assertEquals(AppDatabase.MIGRATION_20_21.endVersion, AppDatabase.MIGRATION_21_22.startVersion)
     }
 
     @Test
@@ -47,6 +49,8 @@ class AppDatabaseMigrationTest {
             listOf("courseId", "stepId", "resourceLocalAddress").forEach {
                 raw.execSQL("DROP INDEX `index_my_library_$it`")
             }
+            raw.execSQL("ALTER TABLE `news` DROP COLUMN `videoUrls`")
+            raw.execSQL("ALTER TABLE `news` DROP COLUMN `videos`")
             raw.version = 20
         }
 
@@ -63,5 +67,28 @@ class AppDatabaseMigrationTest {
             "index_my_library_stepId",
             "index_my_library_resourceLocalAddress"
         )))
+    }
+
+    @Test
+    fun `upgrading from 21 adds the news video columns and keeps unsynced rows`() = runBlocking {
+        build().apply {
+            newsDao().upsert(News().apply { id = "pending"; message = "Not uploaded yet" })
+            close()
+        }
+        SQLiteDatabase.openDatabase(context.getDatabasePath(dbName).path, null, SQLiteDatabase.OPEN_READWRITE).use { raw ->
+            raw.execSQL("ALTER TABLE `news` DROP COLUMN `videoUrls`")
+            raw.execSQL("ALTER TABLE `news` DROP COLUMN `videos`")
+            raw.version = 21
+        }
+
+        val db = build()
+        val columns = db.openHelper.readableDatabase
+            .query("PRAGMA table_info(`news`)")
+            .use { c -> buildList { while (c.moveToNext()) add(c.getString(c.getColumnIndexOrThrow("name"))) } }
+        val row = db.newsDao().getById("pending")
+        db.close()
+
+        assertEquals("Not uploaded yet", row?.message)
+        assertTrue(columns.containsAll(listOf("videoUrls", "videos")))
     }
 }

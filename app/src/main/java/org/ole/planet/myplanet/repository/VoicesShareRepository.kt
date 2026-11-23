@@ -6,6 +6,6 @@ import org.ole.planet.myplanet.model.UserEntity
 
 interface VoicesShareRepository {
     suspend fun isAlreadyShared(chatId: String, viewInId: String): Boolean
-    suspend fun createNews(map: HashMap<String?, String>, user: UserEntity?, imageList: List<String>?): News
+    suspend fun createNews(map: HashMap<String?, String>, user: UserEntity?, imageList: List<String>?, videoList: List<String>? = null): News
     suspend fun getPlanetMessageShares(planetCode: String?): List<NewsShare>
 }

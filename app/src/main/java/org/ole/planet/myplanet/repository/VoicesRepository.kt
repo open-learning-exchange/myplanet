@@ -13,7 +13,8 @@ data class NewsUploadData(
     val message: String?,
     val imageUrls: List<String>,
     val newsJson: JsonObject,
-    val pendingReactions: String? = null
+    val pendingReactions: String? = null,
+    val videoUrls: List<String> = emptyList()
 )
 
 data class NewsUpdateData(
@@ -22,7 +23,8 @@ data class NewsUpdateData(
     val _rev: String?,
     val imagesArray: JsonArray,
     val pendingReactions: String? = null,
-    val message: String? = null
+    val message: String? = null,
+    val videosArray: JsonArray = JsonArray()
 )
 
 interface VoicesRepository : VoicesEditor, VoicesShareRepository {
@@ -32,7 +34,7 @@ interface VoicesRepository : VoicesEditor, VoicesShareRepository {
     suspend fun markNewsDeletionsUploaded(remoteIds: List<String>)
     suspend fun getCommunityNews(userIdentifier: String): Flow<List<News>>
     suspend fun getNewsWithReplies(newsId: String): Pair<News?, List<News>>
-    suspend fun createTeamNews(newsData: HashMap<String?, String>, user: UserEntity, imageList: List<String>?): Boolean
+    suspend fun createTeamNews(newsData: HashMap<String?, String>, user: UserEntity, imageList: List<String>?, videoList: List<String>? = null): Boolean
     suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<News>>
     suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit>
     suspend fun getFilteredNews(teamId: String): List<News>

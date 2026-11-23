@@ -44,7 +44,7 @@ class VoicesUploader @Inject constructor(
     private val dispatcherProvider: DispatcherProvider
 ) {
 
-    private fun createImage(user: UserEntity?, fileName: String): JsonObject {
+    private fun createMedia(user: UserEntity?, fileName: String, mediaType: String): JsonObject {
         val `object` = JsonObject()
         `object`.addProperty("title", fileName)
         `object`.addProperty("createdDate", timeProvider.now())
@@ -58,13 +58,13 @@ class VoicesUploader @Inject constructor(
         `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
         `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
         `object`.add("privateFor", object1)
-        `object`.addProperty("mediaType", "image")
+        `object`.addProperty("mediaType", mediaType)
         return `object`
     }
 
     private suspend fun putImage(user: UserEntity?, resourceId: String, fileName: String, imageFile: File) {
         val mimeType = FileUtils.getMimeType(fileName) ?: "application/octet-stream"
-        val doc = createImage(user, fileName)
+        val doc = createMedia(user, fileName, "image")
         val attachment = JsonObject().apply {
             addProperty("content_type", mimeType)
             addProperty("data", Base64.getEncoder().encodeToString(imageFile.readBytes()))
@@ -76,7 +76,35 @@ class VoicesUploader @Inject constructor(
         }
     }
 
-    private class PreparedNews(val news: NewsUploadData, val imagesArray: JsonArray, val files: List<File>)
+    // Videos are too large to inline as base64, so the resource doc is PUT first and the file is
+    // streamed as a separate attachment. A 409 means an earlier attempt created the doc; reuse its
+    // rev, and skip the attachment entirely if that attempt already got it up.
+    private suspend fun putVideo(user: UserEntity?, resourceId: String, fileName: String, videoFile: File) {
+        val url = "${UrlUtils.getUrl()}/resources/$resourceId"
+        val created = uploadRepository.putUpload(url, createMedia(user, fileName, "video"))
+        val rev = when (created.code()) {
+            201, 202 -> getString("rev", created.body())
+            409 -> {
+                val existing = uploadRepository.fetchExistingDoc(url)
+                val body = existing.body()?.takeIf { existing.isSuccessful }
+                    ?: throw IOException("Video lookup for $resourceId failed: HTTP ${existing.code()}")
+                if ((body.get("_attachments") as? JsonObject)?.has(fileName) == true) return
+                getString("_rev", body)
+            }
+            else -> throw IOException("Video upload for $resourceId failed: HTTP ${created.code()}")
+        }
+        val code = uploadRepository.uploadAttachment(videoFile, "%s/resources/%s/%s", resourceId, rev, fileName).code()
+        if (code != 201 && code != 202) {
+            throw IOException("Video attachment for $resourceId failed: HTTP $code")
+        }
+    }
+
+    private class PreparedNews(
+        val news: NewsUploadData,
+        val imagesArray: JsonArray,
+        val videosArray: JsonArray,
+        val files: List<File>
+    )
 
     suspend fun uploadNews() {
         val user = userRepository.getUserModel()
@@ -91,7 +119,8 @@ class VoicesUploader @Inject constructor(
                 batch.forEach { news ->
                     try {
                         val imagesArray = (news.newsJson.get("images") as? JsonArray)?.deepCopy() ?: JsonArray()
-                        val messageWithImages = StringBuilder(news.message ?: "")
+                        val videosArray = (news.newsJson.get("videos") as? JsonArray)?.deepCopy() ?: JsonArray()
+                        val messageWithMedia = StringBuilder(news.message ?: "")
 
                         val files = mutableListOf<File>()
                         news.imageUrls.forEach { imageUrl ->
@@ -113,16 +142,38 @@ class VoicesUploader @Inject constructor(
                             resourceObject.addProperty("markdown", markdown)
                             imagesArray.add(resourceObject)
 
-                            messageWithImages.append("\n").append(markdown)
+                            messageWithMedia.append("\n").append(markdown)
+                        }
+
+                        news.videoUrls.forEach { videoUrl ->
+                            val vidObject = gson.fromJson(videoUrl, JsonObject::class.java)
+                            val videoFile = File(getString("videoUrl", vidObject))
+                            if (!videoFile.isFile) {
+                                Log.w(TAG, "Dropping video ${videoFile.name} from voice ${news.id}: file is gone")
+                                return@forEach
+                            }
+                            val resourceId = getString("resourceId", vidObject).ifEmpty { legacyResourceId(news, videoUrl) }
+                            val fileName = safeFileName(videoFile.name, "video.mp4")
+                            putVideo(user, resourceId, fileName, videoFile)
+
+                            val resourceObject = JsonObject()
+                            resourceObject.addProperty("resourceId", resourceId)
+                            resourceObject.addProperty("filename", fileName)
+                            val markdown = "![](resources/$resourceId/$fileName)"
+                            resourceObject.addProperty("markdown", markdown)
+                            videosArray.add(resourceObject)
+
+                            messageWithMedia.append("\n").append(markdown)
                         }
 
                         val newsJson = news.newsJson
-                        newsJson.addProperty("message", messageWithImages.toString())
+                        newsJson.addProperty("message", messageWithMedia.toString())
                         newsJson.add("images", imagesArray)
+                        newsJson.add("videos", videosArray)
 
-                        processedNews.add(PreparedNews(news, imagesArray, files))
+                        processedNews.add(PreparedNews(news, imagesArray, videosArray, files))
                     } catch (e: Exception) {
-                        Log.e(TAG, "Exception in VoicesUploader processing images for news", e)
+                        Log.e(TAG, "Exception in VoicesUploader processing media for news", e)
                         val isCreate = TextUtils.isEmpty(news._id)
                         queueNewsRetry(news, news.newsJson, null, if (isCreate) "POST" else "PUT", e)
                     }
@@ -143,6 +194,7 @@ class VoicesUploader @Inject constructor(
                                     _id = getString("id", outcome.element),
                                     _rev = getString("rev", outcome.element),
                                     imagesArray = prepared.imagesArray,
+                                    videosArray = prepared.videosArray,
                                     pendingReactions = news.pendingReactions,
                                     message = getString("message", news.newsJson)
                                 )
@@ -172,8 +224,8 @@ class VoicesUploader @Inject constructor(
     private fun legacyResourceId(news: NewsUploadData, imageEntry: String): String =
         UUID.nameUUIDFromBytes("${news.id}:$imageEntry".toByteArray()).toString()
 
-    private fun safeFileName(name: String): String =
-        name.replace(UNSAFE_FILE_NAME_CHARS, "_").trim('_', '.').ifEmpty { "image.jpg" }
+    private fun safeFileName(name: String, fallback: String = "image.jpg"): String =
+        name.replace(UNSAFE_FILE_NAME_CHARS, "_").trim('_', '.').ifEmpty { fallback }
 
     private fun deleteLocalCopies(files: List<File>) {
         val context = MainApplication.context
