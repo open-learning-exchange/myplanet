@@ -7,12 +7,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.News
-
-data class TeamNewsMembership(
-    val viewableBy: String?,
-    val viewableId: String?,
-    val viewIn: String?
-)
+import org.ole.planet.myplanet.model.NewsShare
 
 @Dao
 interface NewsDao {
@@ -65,8 +60,11 @@ interface NewsDao {
     @Query("WITH RECURSIVE thread(id) AS (SELECT :newsId UNION SELECT news.id FROM news JOIN thread ON news.replyTo = thread.id) SELECT id FROM thread")
     suspend fun getNewsAndRepliesIds(newsId: String): List<String>
 
-    @Query("SELECT * FROM news WHERE docType = 'message' COLLATE NOCASE AND createdOn = :planetCode COLLATE NOCASE")
-    suspend fun getPlanetMessages(planetCode: String): List<News>
+    @Query(
+        "SELECT newsId, viewIn FROM news WHERE docType = 'message' COLLATE NOCASE " +
+            "AND createdOn = :planetCode COLLATE NOCASE AND newsId IS NOT NULL"
+    )
+    suspend fun getPlanetMessageShares(planetCode: String): List<NewsShare>
 
     @Query(
         "SELECT COUNT(*) FROM (SELECT DISTINCT strftime('%Y-%m-%d', time / 1000, 'unixepoch', 'localtime') " +
@@ -90,14 +88,6 @@ interface NewsDao {
 
     @Query("SELECT COUNT(*) FROM news WHERE (replyTo IS NULL OR replyTo = '') AND ((viewableBy = 'teams' COLLATE NOCASE AND viewableId = :teamId COLLATE NOCASE) OR viewIn LIKE :teamPattern ESCAPE '\\')")
     suspend fun countTopLevelByTeam(teamId: String, teamPattern: String): Long
-
-    @Query(
-        "SELECT viewableBy, viewableId, viewIn FROM news " +
-            "WHERE (replyTo IS NULL OR replyTo = '') " +
-            "AND ((viewableBy = 'teams' COLLATE NOCASE AND viewableId COLLATE NOCASE IN (:teamIds)) " +
-            "OR viewIn LIKE '%\"_id\":\"%')"
-    )
-    suspend fun getTopLevelTeamMembership(teamIds: List<String>): List<TeamNewsMembership>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(news: News)

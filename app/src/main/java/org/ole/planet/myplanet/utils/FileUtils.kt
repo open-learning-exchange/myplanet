@@ -159,6 +159,25 @@ object FileUtils {
 
     fun getIdFromUrl(url: String?): String = getIdFromSegments(parseUrlSegments(url))
 
+    private val htmlExtensions = setOf("html", "htm", "xhtml")
+
+    fun isHtmlFileName(address: String?): Boolean = getFileExtension(address) in htmlExtensions
+
+    fun isHtmlStandIn(file: File): Boolean {
+        if (isHtmlFileName(file.name) || !file.isFile) return false
+        return try {
+            val head = file.inputStream().use { input ->
+                val buffer = ByteArray(64)
+                val read = input.read(buffer)
+                if (read <= 0) "" else String(buffer, 0, read, Charsets.UTF_8)
+            }
+            val start = head.trimStart('\uFEFF', ' ', '\t', '\r', '\n').lowercase()
+            start.startsWith("<!doctype html") || start.startsWith("<html")
+        } catch (e: IOException) {
+            false
+        }
+    }
+
     fun getFileExtension(address: String?): String {
         if (address.isNullOrBlank()) return ""
         val cleanAddress = if (address.startsWith("http://", ignoreCase = true) || address.startsWith("https://", ignoreCase = true)) {

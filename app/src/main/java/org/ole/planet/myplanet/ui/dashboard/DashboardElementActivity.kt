@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
+import org.ole.planet.myplanet.ui.ratings.RatingsFragment
 import org.ole.planet.myplanet.ui.ratings.RatingsFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.sync.LoginActivity
@@ -130,8 +131,13 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
 
     fun showRatingDialog(type: String?, resourceId: String?, title: String?, listener: OnRatingChangeListener?) {
         val f = newInstance(type, resourceId, title)
-        f.setListener(listener)
-        f.show(supportFragmentManager, "")
+        val host = (listener as? Fragment)?.takeIf { it.isAdded && !it.childFragmentManager.isStateSaved }
+        if (host != null) {
+            f.show(host.childFragmentManager, RatingsFragment.TAG)
+        } else {
+            f.setListener(listener)
+            f.show(supportFragmentManager, "")
+        }
     }
 
     override fun onBackStackChanged() {

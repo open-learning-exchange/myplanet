@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.utils.textChanges
 class VoicesFragment : BaseVoicesFragment() {
     private var _binding: FragmentVoicesBinding? = null
     private var shouldScrollToTopNextUpdate = false
+    private var labelManager: VoicesLabelManager? = null
     private val binding get() = _binding!!
     var user: UserEntity? = null
     private val voicesViewModel: VoicesViewModel by viewModels()
@@ -114,6 +115,14 @@ class VoicesFragment : BaseVoicesFragment() {
         collectLatestWhenStarted(combinedFlow) { (labels, selected) ->
             if (_binding != null) {
                 updateLabelSpinner(labels, selected)
+            }
+        }
+
+        collectLatestWhenStarted(voicesViewModel.customLabels) { custom ->
+            val adapter = adapterNews ?: return@collectLatestWhenStarted
+            if (labelManager?.customLabels != custom) {
+                labelManager?.customLabels = custom
+                adapter.notifyItemRangeChanged(0, adapter.itemCount)
             }
         }
 
@@ -212,7 +221,8 @@ class VoicesFragment : BaseVoicesFragment() {
             dispatcherProvider = dispatcherProvider,
             addLabelFn = { newsId, label -> voicesViewModel.addLabel(newsId, label) },
             removeLabelFn = { newsId, label -> voicesViewModel.removeLabel(newsId, label) }
-        )
+        ).apply { customLabels = voicesViewModel.customLabels.value }
+        this.labelManager = labelManager
         adapterNews = VoicesAdapter(
             context = requireActivity(),
             currentUser = user,

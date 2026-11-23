@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import org.junit.Assert.assertNull
+import okhttp3.MediaType.Companion.toMediaType
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -21,6 +23,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.api.NoNetworkRetry
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
@@ -60,6 +63,27 @@ class DownloadRepositoryImplTest {
         assertTrue(result is DownloadResult.Success)
         val successResult = result as DownloadResult.Success
         assertTrue(successResult.body == mockResponseBody)
+    }
+
+    @Test
+    fun `downloadFileResponse tags the request to skip network retries only when asked`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns testDispatcher
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+        val url = "http://example.com/file"
+        val authHeader = "auth"
+        coEvery { mockApiInterface.downloadFile(authHeader, url, null, null, any()) } answers {
+            Response.success("content".toResponseBody(null))
+        }
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
+
+        repository.downloadFileResponse(url, authHeader, retryNetworkErrors = false)
+        repository.downloadFileResponse(url, authHeader)
+
+        coVerify(exactly = 1) { mockApiInterface.downloadFile(authHeader, url, null, null, NoNetworkRetry) }
+        coVerify(exactly = 1) { mockApiInterface.downloadFile(authHeader, url, null, null, null) }
     }
 
     @Test
@@ -529,5 +553,38 @@ class DownloadRepositoryImplTest {
         coVerify(exactly = 0) {
             diagnosticsRepository.saveLogToRoom(any(), any(), any())
         }
+    }
+
+    @Test
+    fun `downloadFileResponse rejects an HTML page served for a non-HTML file`() = runTest {
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns UnconfinedTestDispatcher(testScheduler)
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+        val url = "https://clone.planet.gt/resources/abc/post.jpg"
+        val html = "<!doctype html><html></html>".toResponseBody("text/html; charset=utf-8".toMediaType())
+        coEvery { mockApiInterface.downloadFile("auth", url, null, null) } returns Response.success(html)
+
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
+        val result = repository.downloadFileResponse(url, "auth", 0L, null)
+
+        assertTrue(result is DownloadResult.Error)
+        assertNull((result as DownloadResult.Error).code)
+    }
+
+    @Test
+    fun `downloadFileResponse accepts HTML for an HTML resource`() = runTest {
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns UnconfinedTestDispatcher(testScheduler)
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+        val url = "https://clone.planet.gt/db/resources/abc/index.html"
+        val html = "<!doctype html><html></html>".toResponseBody("text/html".toMediaType())
+        coEvery { mockApiInterface.downloadFile("auth", url, null, null) } returns Response.success(html)
+
+        val repository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider, diagnosticsRepository, timeProvider)
+        val result = repository.downloadFileResponse(url, "auth", 0L, null)
+
+        assertTrue(result is DownloadResult.Success)
     }
 }

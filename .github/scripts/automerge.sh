@@ -334,13 +334,10 @@ wait_base_green() {
 
 # Cause the warn annotation later reads as failed -- ask playstore.sh whether the track actually is ok.
 publish_failed() {
-    local sha=$1 run_id job_id note
+    local sha=$1 job_id note
     [ -n "$PUBLISH_JOB" ] || return 1
-    for run_id in $(gh api "repos/$REPO/actions/runs?head_sha=$sha&per_page=100" \
-                      --jq '.workflow_runs[] | select(.status == "completed") | .id' 2>/dev/null || true); do
-        job_id=$(gh api "repos/$REPO/actions/runs/$run_id/jobs?per_page=100" \
-                   --jq ".jobs[] | select(.name == \"$PUBLISH_JOB\") | .id" 2>/dev/null | head -n 1 || true)
-        [ -n "$job_id" ] || continue
+    for job_id in $(gh api "repos/$REPO/commits/$sha/check-runs?per_page=100" \
+                      --jq ".check_runs[] | select(.status == \"completed\" and .name == \"$PUBLISH_JOB\") | .id" 2>/dev/null || true); do
         note=$(gh api "repos/$REPO/check-runs/$job_id/annotations?per_page=100" \
                  --jq "[.[] | select(.annotation_level == \"warning\") | .message | select(startswith(\"$PUBLISH_FAIL_MARKER\"))] | first" 2>/dev/null || true)
         if [ -n "$note" ] && [ "$note" != "null" ]; then

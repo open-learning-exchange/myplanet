@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.ReplyActivity
 import org.ole.planet.myplanet.ui.voices.VoicesActions
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
+import org.ole.planet.myplanet.ui.voices.VoicesAdapterHelper
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.VoiceImagePreparer
@@ -73,6 +74,11 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
                 }
             }
         }
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        VoicesAdapterHelper.refreshOnImageDownloads(viewLifecycleOwner, broadcastService.events) { adapterNews }
     }
 
     override fun onDataChanged() {

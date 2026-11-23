@@ -43,12 +43,12 @@ object JsonUtils {
 
     fun getDouble(fieldName: String, jsonObject: JsonObject?): Double {
         val primitive = field(fieldName, jsonObject) as? JsonPrimitive ?: return 0.0
-        return primitive.doubleOrNull ?: primitive.content.toDoubleOrNull() ?: 0.0
+        return primitive.doubleOrNull ?: 0.0
     }
 
     fun getFloat(fieldName: String, jsonObject: JsonObject?): Float {
         val primitive = field(fieldName, jsonObject) as? JsonPrimitive ?: return 0f
-        return primitive.floatOrNull ?: primitive.content.toFloatOrNull() ?: 0f
+        return primitive.floatOrNull ?: 0f
     }
 
     fun getJsonObject(fieldName: String, jsonObject: JsonObject?): JsonObject =

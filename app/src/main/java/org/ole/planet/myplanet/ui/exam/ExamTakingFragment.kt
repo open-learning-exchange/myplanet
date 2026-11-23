@@ -88,6 +88,10 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         savedInstanceState?.let { currentIndex = it.getInt(KEY_CURRENT_INDEX, currentIndex) }
+        if (savedInstanceState?.getBoolean(KEY_FINISHED) == true) {
+            restoreFinishedState()
+            return
+        }
         val resumeSubmissionId = savedInstanceState?.getString(KEY_SUBMISSION_ID) ?: sub?.id
         initializeExamData(resumeSubmissionId)
         setupListeners()
@@ -97,6 +101,18 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         super.onSaveInstanceState(outState)
         outState.putString(KEY_SUBMISSION_ID, sub?.id)
         outState.putInt(KEY_CURRENT_INDEX, currentIndex)
+        outState.putBoolean(KEY_FINISHED, isFinished)
+    }
+
+    private fun restoreFinishedState() {
+        isFinished = true
+        binding.container.visibility = View.GONE
+        binding.btnSubmit.visibility = View.GONE
+        
+        val isTeamSurvey = isTeam && type?.startsWith("survey") == true
+        if (!isTeamSurvey) {
+            showFinishDialog()
+        }
     }
 
     private fun computeParentId(): String? {
@@ -568,6 +584,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
     }
 
+    private fun otherChoice(): JsonObject =
+        GsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
+
     private fun showCheckBoxes(question: ExamQuestion?, oldAnswer: String) {
         val choices = getStringAsJsonArray(question?.choices)
 
@@ -576,9 +595,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
 
         if (question?.hasOtherOption == true) {
-            val otherChoice = GsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
-
-            addCompoundButton(otherChoice, false, oldAnswer)
+            addCompoundButton(otherChoice(), false, oldAnswer)
         }
     }
 
@@ -596,9 +613,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
         if (question?.hasOtherOption == true) {
             if (!choices.isEmpty() && choices[0].isJsonObject) {
-                val otherChoice = GsonUtils.gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
-
-                addCompoundButton(otherChoice, isRadio, oldAnswer)
+                addCompoundButton(otherChoice(), isRadio, oldAnswer)
             } else {
                 addRadioButton("Other", oldAnswer)
             }
@@ -606,7 +621,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     }
 
     private fun addRadioButton(choice: String, oldAnswer: String) {
-        val inflater = LayoutInflater.from(activity)
+        val inflater = LayoutInflater.from(binding.root.context)
         val rdBtn = inflater.inflate(R.layout.item_radio_btn, binding.groupChoices, false) as RadioButton
         rdBtn.text = choice
         rdBtn.isChecked = choice == oldAnswer
@@ -898,5 +913,6 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         const val TAG = "ExamTakingFragment"
         const val KEY_SUBMISSION_ID = "exam_submission_id"
         const val KEY_CURRENT_INDEX = "exam_current_index"
+        const val KEY_FINISHED = "exam_finished"
     }
 }

@@ -634,4 +634,19 @@ class FileUtilsTest {
         assertNull(FileUtils.getMimeType(""))
         assertNull(FileUtils.getMimeType(null))
     }
+
+    @Test
+    fun `isHtmlStandIn flags an HTML page saved under an image name`() {
+        tempDir.mkdirs()
+        val file = File(tempDir, "post.jpg").apply { writeText("\uFEFF\n<!DOCTYPE html>\n<html lang=\"en\">") }
+        assertTrue(FileUtils.isHtmlStandIn(file))
+    }
+
+    @Test
+    fun `isHtmlStandIn ignores real HTML files and non-HTML content`() {
+        tempDir.mkdirs()
+        assertFalse(FileUtils.isHtmlStandIn(File(tempDir, "index.html").apply { writeText("<!doctype html>") }))
+        assertFalse(FileUtils.isHtmlStandIn(File(tempDir, "photo.jpg").apply { writeBytes(byteArrayOf(-1, -40, -1, -32)) }))
+        assertFalse(FileUtils.isHtmlStandIn(File(tempDir, "missing.jpg")))
+    }
 }
