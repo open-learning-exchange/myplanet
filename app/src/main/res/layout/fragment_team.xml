@@ -140,8 +140,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/_10dp"
+        android:layout_margin="@dimen/padding_large"
         android:contentDescription="@string/add"
-        android:padding="@dimen/padding_normal"
-        app:srcCompat="@drawable/ic_add_white" />
+        app:srcCompat="@drawable/ic_add_white"
+        app:tint="@color/md_white_1000" />
 </FrameLayout>

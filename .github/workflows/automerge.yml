@@ -1,0 +1,97 @@
+name: myPlanet automerge
+
+# Queue drainer, started by hand: for each PR labelled `automerge`, merge the
+# base in, bump the version, wait for build + test, squash merge. A PR that
+# conflicts or goes red is relabelled and skipped; the queue keeps draining.
+# Needs AUTOMERGE_TOKEN. Logic, and what does stop it: .github/scripts/automerge.sh
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '🧪 dry run — change nothing'
+        required: false
+        default: false
+        type: boolean
+      max_merges:
+        description: '🔢 stop after N merges (0 = all)'
+        required: false
+        default: '0'
+        type: string
+      labels:
+        description: '🏷️ labels: queue,prio,conflict,fail'
+        required: false
+        default: 'automerge,priority,conflict,failing'
+        type: string
+      retries:
+        description: '🔁 re-runs before a red sticks'
+        required: false
+        default: '1'
+        type: choice
+        options: ['0', '1', '2', '3']
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+  statuses: read
+  actions: write
+
+concurrency:
+  group: automerge
+  cancel-in-progress: false
+
+env:
+  BASE: master                                          # 🌿 branch the queue merges into
+  GRADLE_FILE: app/build.gradle                         # 📄 file the version bump edits
+  OWNER_LOGIN: dogi                                     # 🙏 credited on PRs they did not author
+  REQUIRE_CHECKS: 'true'                                # ✅ never merge an unverified commit
+  REQUIRED_WORKFLOWS: 'myPlanet build, myPlanet test'   # 🔍 must be green on it
+  PUBLISH_JOB: 'myPlanet release (lite)'                # 📦 its refusal warning stops the drain
+  DELETE_BRANCH: 'true'                                 # 🧹 drop each head branch after merging
+  WAIT_TIMEOUT_MIN: '45'                                # ⏱️ per commit, build and test
+
+jobs:
+  automerge:
+    name: myPlanet automerge
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    steps:
+      - name: checkout repository code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          filter: blob:none
+          token: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+
+      - name: stage helper scripts outside the work tree
+        id: stage
+        shell: bash
+        run: |
+          # PR branches get checked out; run from a copy they cannot swap.
+          mkdir -p "$RUNNER_TEMP/scripts"
+          cp .github/scripts/automerge.sh \
+             .github/scripts/version.sh \
+             .github/scripts/coauthors.sh \
+             .github/scripts/playstore-quota.sh \
+             .github/scripts/playstore.sh "$RUNNER_TEMP/scripts/"
+          chmod +x "$RUNNER_TEMP/scripts/"*.sh
+          echo "dir=$RUNNER_TEMP/scripts" >> "$GITHUB_OUTPUT"
+
+      - name: drain the automerge queue
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+          SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+          USING_PAT: ${{ secrets.AUTOMERGE_TOKEN != '' }}
+          REPO: ${{ github.repository }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          MAX_MERGES: ${{ inputs.max_merges }}
+          LABELS: ${{ inputs.labels }}
+          BASE_RERUN_ATTEMPTS: ${{ inputs.retries }}
+          HEAD_RERUN_ATTEMPTS: ${{ inputs.retries }}
+          VERSION_SH: ${{ steps.stage.outputs.dir }}/version.sh
+          COAUTHORS_SH: ${{ steps.stage.outputs.dir }}/coauthors.sh
+          QUOTA_SH: ${{ steps.stage.outputs.dir }}/playstore-quota.sh
+          PLAYSTORE_SH: ${{ steps.stage.outputs.dir }}/playstore.sh
+        run: '${{ steps.stage.outputs.dir }}/automerge.sh'

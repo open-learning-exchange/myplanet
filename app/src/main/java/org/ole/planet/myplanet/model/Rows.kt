@@ -1,5 +1,8 @@
 package org.ole.planet.myplanet.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 class Rows {
     var id: String? = null
     var key: String? = null

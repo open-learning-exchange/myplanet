@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utils
 
 import android.app.Activity
+import android.app.AlertDialog as AndroidAlertDialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
@@ -8,36 +9,35 @@ import android.provider.Settings
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.Toast
+import androidx.annotation.StyleRes
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogProgressBinding
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.services.DownloadService
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.sync.SyncActivity
-import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
+import org.ole.planet.myplanet.ui.user.LearnerRegistrationActivity
 
 object DialogUtils {
-    @JvmStatic
     fun getProgressDialog(context: Context): CustomProgressDialog {
         val prgDialog = CustomProgressDialog(context)
         prgDialog.setTitle(context.getString(R.string.downloading_file))
         prgDialog.setMax(100)
         prgDialog.setNegativeButton(context.getString(R.string.stop_download), isVisible = true) {
-            context.stopService(Intent(context, DownloadService::class.java))
+            DownloadUtils.stopDownloads(context)
             prgDialog.dismiss()
+            Utilities.toast(context, context.getString(R.string.download_stopped), Toast.LENGTH_SHORT)
         }
         return prgDialog
     }
 
-    fun guestDialog(context: Context, profileDbHandler: UserSessionManager) {
-        val builder = android.app.AlertDialog.Builder(context, R.style.CustomAlertDialog)
+    fun guestDialog(context: Context) {
+        val builder = AndroidAlertDialog.Builder(context, R.style.CustomAlertDialog)
         builder.setTitle(context.getString(R.string.become_a_member))
         builder.setMessage(context.getString(R.string.to_access_this_feature_become_a_member))
         builder.setCancelable(false)
@@ -47,32 +47,64 @@ object DialogUtils {
         val dialog = builder.create()
         dialog.show()
 
-        val becomeMember = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)
-        val cancel = dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE)
+        val becomeMember = dialog.getButton(AndroidAlertDialog.BUTTON_POSITIVE)
+        val cancel = dialog.getButton(AndroidAlertDialog.BUTTON_NEGATIVE)
         becomeMember.contentDescription = context.getString(R.string.confirm_membership)
         cancel.contentDescription = context.getString(R.string.cancel)
 
         becomeMember.setOnClickListener {
             val guest = true
-            MainApplication.applicationScope.launch(Dispatchers.Main) {
-                val intent = Intent(context, BecomeMemberActivity::class.java)
-                intent.putExtra("username", profileDbHandler.getUserModel()?.name)
-                intent.putExtra("guest", guest)
-                context.startActivity(intent)
-            }
+            val intent = Intent(context, LearnerRegistrationActivity::class.java)
+            intent.putExtra("guest", guest)
+            context.startActivity(intent)
         }
         cancel.setOnClickListener {
             dialog.dismiss()
         }
     }
 
-    @JvmStatic
+    fun Context.confirmDialog(
+        message: CharSequence,
+        title: CharSequence? = null,
+        @StyleRes styleRes: Int = R.style.AlertDialogTheme,
+        cancelable: Boolean = true,
+        positiveText: CharSequence = getString(R.string.yes),
+        positiveContentDescription: CharSequence = positiveText,
+        onPositive: (() -> Unit)? = null,
+        negativeText: CharSequence = getString(R.string.no),
+        negativeContentDescription: CharSequence = negativeText,
+        onNegative: (() -> Unit)? = null
+    ): AlertDialog {
+        val builder = AlertDialog.Builder(this, styleRes)
+        title?.let { builder.setTitle(it) }
+        builder.setMessage(message)
+        builder.setCancelable(cancelable)
+        builder.setPositiveButton(positiveText, null)
+        builder.setNegativeButton(negativeText, null)
+
+        val dialog = builder.show()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).apply {
+            contentDescription = positiveContentDescription
+            setOnClickListener {
+                dialog.dismiss()
+                onPositive?.invoke()
+            }
+        }
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).apply {
+            contentDescription = negativeContentDescription
+            setOnClickListener {
+                dialog.dismiss()
+                onNegative?.invoke()
+            }
+        }
+        return dialog
+    }
+
     fun showError(prgDialog: CustomProgressDialog?, message: String?) {
         prgDialog?.setTitle(message)
         prgDialog?.disableNegativeButton()
     }
 
-    @JvmStatic
     fun showWifiSettingDialog(context: Context) {
         if (!NetworkUtils.isWifiBluetoothEnabled()) return
         showDialog(context)
@@ -81,18 +113,24 @@ object DialogUtils {
     private fun showDialog(context: Context) {
         if (MainApplication.syncFailedCount > 3) {
             val pd = AlertDialog.Builder(context, R.style.AlertDialogTheme)
-            var message = ""
-            if (NetworkUtils.isBluetoothEnabled()) message += "Bluetooth"
-            if (NetworkUtils.isWifiEnabled()) {
-                if (message.isNotEmpty()) message += " and "
-                    message += "Wi-Fi"
+            val isBluetoothEnabled = NetworkUtils.isBluetoothEnabled()
+            val isWifiEnabled = NetworkUtils.isWifiEnabled()
+
+            val message = buildString {
+                if (isBluetoothEnabled) append("Bluetooth")
+                if (isWifiEnabled) {
+                    if (isBluetoothEnabled) append(" and ")
+                    append("Wi-Fi")
+                }
             }
-            if (message.isNotEmpty()) {
-            message += context.getString(R.string.is_on_please_turn_of_to_save_battery)
+
+            val suffix = context.getString(R.string.is_on_please_turn_of_to_save_battery)
+            val finalMessage = if (message.isNotEmpty()) {
+                "$message$suffix"
             } else {
-            message = context.getString(R.string.is_on_please_turn_of_to_save_battery)
+                suffix
             }
-            pd.setMessage(message)
+            pd.setMessage(finalMessage)
             pd.setPositiveButton(context.getString(R.string.go_to_settings)) { _, _ ->
                 MainApplication.syncFailedCount = 0
                 val intent = Intent(Settings.ACTION_WIFI_SETTINGS)
@@ -104,14 +142,12 @@ object DialogUtils {
         }
     }
 
-    @JvmStatic
     fun showSnack(v: View?, s: String?) {
         if (v != null) {
             s?.let { Snackbar.make(v, it, Snackbar.LENGTH_LONG).show() }
         }
     }
 
-    @JvmStatic
     fun showAlert(context: Context?, title: String?, message: String?) {
         if (context is Activity && !context.isFinishing) {
             AlertDialog.Builder(context, R.style.AlertDialogTheme)
@@ -126,7 +162,6 @@ object DialogUtils {
         }
     }
 
-    @JvmStatic
     fun getDialog(
         context: Context,
         message: String,
@@ -141,7 +176,6 @@ object DialogUtils {
             .create()
     }
 
-    @JvmStatic
     fun getDialog(context: Context, title: String, v: View): AlertDialog {
         return AlertDialog.Builder(ContextThemeWrapper(context, R.style.CustomAlertDialog))
             .setTitle(title)
@@ -152,37 +186,35 @@ object DialogUtils {
             .create()
     }
 
-    @JvmStatic
     fun getUpdateDialog(
         context: Context,
         info: MyPlanet?,
         progressDialog: CustomProgressDialog?,
         scope: CoroutineScope,
-        configurationsRepository: ConfigurationsRepository
+        checkCheckSum: suspend (String) -> Boolean
     ): AlertDialog.Builder {
         return AlertDialog.Builder(context, R.style.CustomAlertDialog)
             .setTitle(R.string.new_version_of_my_planet_available)
             .setMessage(R.string.download_first_to_continue)
             .setNeutralButton(R.string.upgrade_local) { _, _ ->
-                startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), progressDialog, scope, configurationsRepository)
+                startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), progressDialog, scope, checkCheckSum)
             }
             .setPositiveButton(R.string.upgrade) { _, _ ->
                 info?.apkpath?.let { path ->
-                    startDownloadUpdate(context, path, progressDialog, scope, configurationsRepository)
+                    startDownloadUpdate(context, path, progressDialog, scope, checkCheckSum)
                 }
             }
     }
 
-    @JvmStatic
     fun startDownloadUpdate(
         context: Context,
         path: String,
         progressDialog: CustomProgressDialog?,
         scope: CoroutineScope,
-        configurationsRepository: ConfigurationsRepository
+        checkCheckSum: suspend (String) -> Boolean
     ) {
         scope.launch {
-            val checksumMatch = configurationsRepository.checkCheckSum(path)
+            val checksumMatch = checkCheckSum(path)
             if (checksumMatch) {
                 Utilities.toast(context, context.getString(R.string.apk_already_exists))
                 FileUtils.installApk(context, path)
@@ -198,7 +230,6 @@ object DialogUtils {
         }
     }
 
-    @JvmStatic
     fun getCustomProgressDialog(context: Context): CustomProgressDialog {
         return CustomProgressDialog(context)
     }
@@ -250,10 +281,6 @@ object DialogUtils {
 
         fun setCancelable(state: Boolean) {
             dialog?.setCancelable(state)
-        }
-
-        private fun setIndeterminate() {
-            progressBar.isIndeterminate = false
         }
 
         fun setMax(maxValue: Int) {

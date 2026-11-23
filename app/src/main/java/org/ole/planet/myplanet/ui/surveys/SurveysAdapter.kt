@@ -7,77 +7,44 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnSurveyAdoptListener
 import org.ole.planet.myplanet.databinding.RowSurveyBinding
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.SurveyFormState
-import org.ole.planet.myplanet.model.SurveyInfo
+import org.ole.planet.myplanet.model.SurveyRow
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.StableIdGenerator
 
 class SurveysAdapter(
     private val context: Context,
     private val userId: String?,
     private val isTeam: Boolean,
     val teamId: String?,
-    private val onAdoptSurveyListener: OnSurveyAdoptListener,
-    private val surveyInfoMap: Map<String, SurveyInfo>,
-    private val bindingDataMap: Map<String, SurveyFormState>
-) : ListAdapter<RealmStepExam, SurveysAdapter.SurveysViewHolder>(DiffUtils.itemCallback(
-    { oldItem, newItem -> oldItem.id == newItem.id },
-    { oldItem, newItem -> oldItem == newItem }
-)), OnDiffRefreshListener {
-    override fun refreshWithDiff() {
-        submitList(currentList.toList())
+    private val onAdoptSurveyListener: OnSurveyAdoptListener
+) : ListAdapter<SurveyRow, SurveysAdapter.SurveysViewHolder>(DiffUtils.itemCallback(
+    { oldItem, newItem -> oldItem.exam.id == newItem.exam.id },
+    { oldItem, newItem ->
+        oldItem.exam.name == newItem.exam.name &&
+                oldItem.exam.description == newItem.exam.description &&
+                oldItem.exam.isTeamShareAllowed == newItem.exam.isTeamShareAllowed &&
+                oldItem.exam.isFromNation == newItem.exam.isFromNation &&
+                oldItem.surveyInfo == newItem.surveyInfo &&
+                oldItem.formState == newItem.formState
     }
-
+)) {
     private var listener: OnHomeItemClickListener? = null
-    private var isTitleAscending = true
-    private var sortStrategy: (List<RealmStepExam>) -> List<RealmStepExam> = { list ->
-        sortSurveyList(false, list)
-    }
 
     init {
         if (context is OnHomeItemClickListener) {
             listener = context
         }
+        setHasStableIds(true)
     }
 
-    private fun sortSurveyList(
-        isAscend: Boolean,
-        list: List<RealmStepExam>
-    ): List<RealmStepExam> {
-        return if (isAscend) {
-            list.sortedBy { it.createdDate }
-        } else {
-            list.sortedByDescending { it.createdDate }
-        }
-    }
-
-    fun sortByDate(isAscend: Boolean) {
-        sortStrategy = { list -> sortSurveyList(isAscend, list) }
-        val sortedList = sortStrategy(currentList)
-        submitList(sortedList)
-    }
-
-    private fun sortSurveyListByName(
-        isAscend: Boolean,
-        list: List<RealmStepExam>
-    ): List<RealmStepExam> {
-        return if (isAscend) {
-            list.sortedBy { it.name?.lowercase() }
-        } else {
-            list.sortedByDescending { it.name?.lowercase() }
-        }
-    }
-
-    fun toggleTitleSortOrder() {
-        isTitleAscending = !isTitleAscending
-        sortStrategy = { list -> sortSurveyListByName(isTitleAscending, list) }
-        val sortedList = sortStrategy(currentList)
-        submitList(sortedList)
+    override fun getItemId(position: Int): Long {
+        val item = getItem(position)
+        val id = StableIdGenerator.generateStringId(item.exam.id)
+        return if (id != RecyclerView.NO_ID) id else StableIdGenerator.generateFallbackId(item)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SurveysViewHolder {
@@ -94,39 +61,50 @@ class SurveysAdapter(
             binding.startSurvey.visibility = View.VISIBLE
             binding.sendSurvey.visibility = View.GONE
             binding.sendSurvey.setOnClickListener {
-                val current = getItem(bindingAdapterPosition)
-                listener?.sendSurvey(current)
+                val pos = bindingAdapterPosition
+                if (pos != RecyclerView.NO_POSITION) {
+                    val current = getItem(pos)
+                    listener?.sendSurvey(current.exam)
+                }
+            }
+            binding.startSurvey.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                val row = getItem(pos)
+                val exam = row.exam
+                val teamSubmission = row.formState?.teamSubmission
+                val shouldAdopt = exam.isTeamShareAllowed && teamSubmission == null
+                if (shouldAdopt) {
+                    onAdoptSurveyListener.onAdoptSurvey(exam.id.orEmpty())
+                } else {
+                    SubmissionsAdapter.openSurvey(listener, exam.id, false, isTeam, teamId)
+                }
             }
         }
 
-        fun bind(exam: RealmStepExam) {
+        fun bind(row: SurveyRow) {
+            val exam = row.exam
             binding.apply {
                 startSurvey.visibility = View.VISIBLE
                 tvTitle.text = exam.name
                 if (exam.description?.isNotEmpty() == true) {
                     tvDescription.visibility = View.VISIBLE
                     tvDescription.text = exam.description
+                } else {
+                    tvDescription.visibility = View.GONE
+                    tvDescription.text = null
                 }
 
-                val bindingData = bindingDataMap[exam.id]
+                val bindingData = row.formState
                 val teamSubmission = bindingData?.teamSubmission
                 val questionCount = bindingData?.questionCount ?: 0
-
-                startSurvey.setOnClickListener {
-                    val shouldAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
-                    if (shouldAdopt) {
-                        onAdoptSurveyListener.onAdoptSurvey(exam.id.orEmpty())
-                    } else {
-                        SubmissionsAdapter.openSurvey(listener, exam.id, false, isTeam, teamId)
-                    }
-                }
 
                 if (questionCount == 0) {
                     sendSurvey.visibility = View.GONE
                     startSurvey.visibility = View.GONE
                 }
 
-                val shouldShowAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
+                val shouldShowAdopt = exam.isTeamShareAllowed && teamSubmission == null
 
                 startSurvey.text = when {
                     shouldShowAdopt -> context.getString(R.string.adopt_survey)
@@ -138,7 +116,7 @@ class SurveysAdapter(
                     startSurvey.visibility = View.GONE
                 }
 
-                val surveyInfo = surveyInfoMap[exam.id]
+                val surveyInfo = row.surveyInfo
                 tvNoSubmissions.text = surveyInfo?.submissionCount ?: ""
                 tvDateCompleted.text = surveyInfo?.lastSubmissionDate ?: ""
                 tvDate.text = surveyInfo?.creationDate ?: ""

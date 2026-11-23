@@ -1,19 +1,16 @@
 package org.ole.planet.myplanet.ui.courses
 
-import android.app.AlertDialog
-import android.content.DialogInterface
 import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.TextView
-import androidx.appcompat.view.ContextThemeWrapper
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.utils.DialogUtils.confirmDialog
 
 class CourseSelectionController(
     private val rootView: View,
     private val isMyCourseLib: Boolean,
     private val isGuest: Boolean,
-    private val isArchivedView: Boolean,
     private val onRemoveConfirmed: () -> Unit,
     private val onArchiveConfirmed: () -> Unit,
     private val onUnarchiveConfirmed: () -> Unit,
@@ -21,6 +18,12 @@ class CourseSelectionController(
     private val onSelectAllToggled: (checked: Boolean) -> Unit
 ) {
     private lateinit var btnUnarchive: Button
+    var isArchivedView: Boolean = false
+        set(value) {
+            if (field == value) return
+            field = value
+            if (::btnArchive.isInitialized) refreshActionVisibility()
+        }
     lateinit var selectAll: CheckBox
         private set
     private lateinit var tvAddToLib: TextView
@@ -40,6 +43,7 @@ class CourseSelectionController(
             tvAddToLib.visibility = View.GONE
             btnRemove.visibility = View.GONE
             btnArchive.visibility = View.GONE
+            btnUnarchive.visibility = View.GONE
             selectAll.visibility = View.GONE
             return
         }
@@ -83,6 +87,7 @@ class CourseSelectionController(
         currentSelectedCount = selectedCount
         val hasSelection = selectedCount > 0
         btnArchive.isEnabled = hasSelection
+        btnUnarchive.isEnabled = hasSelection
         btnRemove.isEnabled = hasSelection
         tvAddToLib.isEnabled = hasSelection
         refreshActionVisibility()
@@ -90,13 +95,14 @@ class CourseSelectionController(
     }
 
     fun onListChanged(isEmpty: Boolean, hasSelectableItems: Boolean) {
-        if (isEmpty) {
+        if (isEmpty || !hasSelectableItems || isGuest) {
             selectAll.visibility = View.GONE
             tvAddToLib.visibility = View.GONE
             btnRemove.visibility = View.GONE
             btnArchive.visibility = View.GONE
-        } else if (!isGuest) {
-            selectAll.visibility = if (hasSelectableItems) View.VISIBLE else View.GONE
+            btnUnarchive.visibility = View.GONE
+        } else {
+            selectAll.visibility = View.VISIBLE
         }
     }
 
@@ -105,6 +111,11 @@ class CourseSelectionController(
         currentSelectedCount = 0
         syncSelectAll(false)
         refreshActionVisibility()
+        if (adapter != null) {
+            val isEmpty = adapter.currentList.isEmpty()
+            val hasSelectableItems = if (isMyCourseLib) !isEmpty else adapter.currentList.any { !it.isMyCourse }
+            onListChanged(isEmpty, hasSelectableItems)
+        }
     }
 
     private fun refreshActionVisibility() {
@@ -139,10 +150,10 @@ class CourseSelectionController(
     }
 
     private fun showConfirmDialog(messageRes: Int, onConfirmed: () -> Unit) {
-        AlertDialog.Builder(ContextThemeWrapper(rootView.context, R.style.CustomAlertDialog))
-            .setMessage(messageRes)
-            .setPositiveButton(R.string.yes) { _: DialogInterface, _: Int -> onConfirmed() }
-            .setNegativeButton(R.string.no, null)
-            .show()
+        rootView.context.confirmDialog(
+            message = rootView.context.getString(messageRes),
+            styleRes = R.style.CustomAlertDialog,
+            onPositive = onConfirmed
+        )
     }
 }

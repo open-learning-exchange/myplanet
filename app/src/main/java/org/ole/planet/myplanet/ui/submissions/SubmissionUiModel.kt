@@ -7,5 +7,7 @@ data class SubmissionUiModel(
     val lastUpdateTime: Long,
     val parentId: String?,
     val userId: String?,
-    val submitterName: String
+    val submitterName: String,
+    val examTitle: String,
+    val submissionCount: Int
 )

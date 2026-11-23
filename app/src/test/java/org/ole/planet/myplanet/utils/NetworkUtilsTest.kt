@@ -1,64 +1,120 @@
 package org.ole.planet.myplanet.utils
 
+import android.app.Application
 import android.content.Context
-import android.net.wifi.WifiManager
+import android.net.ConnectivityManager
+import android.os.Build
+import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
-import dagger.hilt.android.testing.HiltAndroidRule
-import dagger.hilt.android.testing.HiltAndroidTest
-import dagger.hilt.android.testing.HiltTestApplication
+import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
 import org.robolectric.util.ReflectionHelpers
 
-@HiltAndroidTest
 @RunWith(RobolectricTestRunner::class)
-@Config(application = HiltTestApplication::class, sdk = [33])
+@Config(application = Application::class)
 @LooperMode(LooperMode.Mode.PAUSED)
 class NetworkUtilsTest {
 
-    @get:Rule
-    val hiltRule = HiltAndroidRule(this)
-
     @Before
     fun init() {
-        hiltRule.inject()
-        // Initialize MainApplication.context which is required by NetworkUtils to avoid UninitializedPropertyAccessException
-        // It is needed here because NetworkUtils gets system service from it directly
-        org.ole.planet.myplanet.MainApplication.context = ApplicationProvider.getApplicationContext()
+        org.ole.planet.myplanet.MainApplication.testContext = ApplicationProvider.getApplicationContext()
+        VersionUtils.resetAndroidIdCacheForTesting()
+        NetworkUtils.resetForTesting()
+    }
+
+    @After
+    fun tearDown() {
+        NetworkUtils.resetForTesting()
     }
 
     @Test
-    fun testIsWifiEnabled() {
+    fun startListenNetworkState_isIdempotent() {
+        val connectivityManager = ApplicationProvider.getApplicationContext<Context>().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val shadowConnectivityManager = shadowOf(connectivityManager)
+
+        val initialSize = shadowConnectivityManager.networkCallbacks.size
+
+        NetworkUtils.startListenNetworkState()
+        assertEquals(initialSize + 1, shadowConnectivityManager.networkCallbacks.size)
+
+        NetworkUtils.startListenNetworkState()
+        assertEquals(initialSize + 1, shadowConnectivityManager.networkCallbacks.size)
+
+        NetworkUtils.stopListenNetworkState()
+        assertEquals(initialSize, shadowConnectivityManager.networkCallbacks.size)
+    }
+
+    @Test
+    fun getDeviceName_cachesValueAndUpdatesOnReset() {
+        ReflectionHelpers.setStaticField(Build::class.java, "MANUFACTURER", "TestBrand")
+        ReflectionHelpers.setStaticField(Build::class.java, "MODEL", "TestDevice")
+
+        val initialDeviceName = NetworkUtils.getDeviceName()
+        assertEquals("TESTBRAND TESTDEVICE", initialDeviceName)
+
+        // Mutate Build properties without calling resetForTesting
+        ReflectionHelpers.setStaticField(Build::class.java, "MANUFACTURER", "NewBrand")
+        ReflectionHelpers.setStaticField(Build::class.java, "MODEL", "NewDevice")
+
+        // Should return cached value
+        assertEquals("TESTBRAND TESTDEVICE", NetworkUtils.getDeviceName())
+
+        // After reset, recomputed value should be fetched
+        NetworkUtils.resetForTesting()
+        assertEquals("NEWBRAND NEWDEVICE", NetworkUtils.getDeviceName())
+    }
+
+    @Test
+    fun getUniqueIdentifier_cachesValueAndUpdatesOnReset() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
 
-        wifiManager.isWifiEnabled = true
-        assertTrue(NetworkUtils.isWifiEnabled())
+        Settings.Secure.putString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID,
+            "id_1"
+        )
+        ReflectionHelpers.setStaticField(Build::class.java, "ID", "build_1")
 
-        wifiManager.isWifiEnabled = false
-        assertFalse(NetworkUtils.isWifiEnabled())
+        val initialUniqueId = NetworkUtils.getUniqueIdentifier()
+        assertEquals("id_1_build_1", initialUniqueId)
+
+        // Change underlying values without reset
+        Settings.Secure.putString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID,
+            "id_2"
+        )
+        ReflectionHelpers.setStaticField(Build::class.java, "ID", "build_2")
+
+        // Should return cached value
+        assertEquals("id_1_build_1", NetworkUtils.getUniqueIdentifier())
+
+        // Reset both VersionUtils and NetworkUtils caches
+        VersionUtils.resetAndroidIdCacheForTesting()
+        NetworkUtils.resetForTesting()
+
+        assertEquals("id_2_build_2", NetworkUtils.getUniqueIdentifier())
     }
 
     @Test
     fun getUniqueIdentifier_returnsExpectedFormat() {
         val context = ApplicationProvider.getApplicationContext<Context>()
 
-        android.provider.Settings.Secure.putString(
+        Settings.Secure.putString(
             context.contentResolver,
-            android.provider.Settings.Secure.ANDROID_ID,
+            Settings.Secure.ANDROID_ID,
             "test_android_id"
         )
 
-        ReflectionHelpers.setStaticField(android.os.Build::class.java, "ID", "test_build_id")
+        ReflectionHelpers.setStaticField(Build::class.java, "ID", "test_build_id")
 
         val uniqueId = NetworkUtils.getUniqueIdentifier()
 
@@ -69,13 +125,13 @@ class NetworkUtilsTest {
     fun getUniqueIdentifier_withNullAndroidId_returnsExpectedFormat() {
         val context = ApplicationProvider.getApplicationContext<Context>()
 
-        android.provider.Settings.Secure.putString(
+        Settings.Secure.putString(
             context.contentResolver,
-            android.provider.Settings.Secure.ANDROID_ID,
+            Settings.Secure.ANDROID_ID,
             null
         )
 
-        ReflectionHelpers.setStaticField(android.os.Build::class.java, "ID", "test_build_id")
+        ReflectionHelpers.setStaticField(Build::class.java, "ID", "test_build_id")
 
         val uniqueId = NetworkUtils.getUniqueIdentifier()
 
@@ -135,5 +191,35 @@ class NetworkUtilsTest {
     @Test
     fun extractProtocol_withHttpUrlWithoutDomain() {
         assertEquals("http://", NetworkUtils.extractProtocol("http://"))
+    }
+
+    @Test
+    fun extractProtocol_withSpaceInsideProtocol() {
+        assertNull(NetworkUtils.extractProtocol("http ://example.com"))
+    }
+
+    @Test
+    fun extractProtocol_withSpaceAfterProtocol() {
+        assertEquals("http://", NetworkUtils.extractProtocol("http:// example.com"))
+    }
+
+    @Test
+    fun extractProtocol_withMultipleSpaces() {
+        assertNull(NetworkUtils.extractProtocol("h t t p://example.com"))
+    }
+
+    @Test
+    fun extractProtocol_withOnlySpaces() {
+        assertNull(NetworkUtils.extractProtocol("   "))
+    }
+
+    @Test
+    fun extractProtocol_withProtocolContainingNumbers() {
+        assertEquals("http2://", NetworkUtils.extractProtocol("http2://example.com"))
+    }
+
+    @Test
+    fun extractProtocol_withSpaceReturnedByUriParse() {
+        assertNull(NetworkUtils.extractProtocol("my scheme://example.com"))
     }
 }
