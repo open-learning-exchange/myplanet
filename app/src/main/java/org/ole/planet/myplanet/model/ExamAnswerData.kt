@@ -10,5 +10,6 @@ data class ExamAnswerData(
     val type: String,
     val index: Int,
     val total: Int,
-    val isExplicitSubmission: Boolean
+    val isExplicitSubmission: Boolean,
+    val userId: String? = null
 )

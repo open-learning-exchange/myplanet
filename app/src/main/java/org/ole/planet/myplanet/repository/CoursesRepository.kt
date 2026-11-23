@@ -15,7 +15,7 @@ interface CoursesRepository {
     suspend fun getAllCourses(): List<MyCourse>
     fun getMyCourses(userId: String?, courses: List<MyCourse>): List<MyCourse>
     suspend fun getMyCourses(userId: String): List<MyCourse>
-    suspend fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>>
+    fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>>
     suspend fun getCourseById(courseId: String): MyCourse?
     fun getCourseByCourseIdFlow(courseId: String): Flow<MyCourse?>
     fun getCourseDetailModel(courseId: String): Flow<CourseDetailModel?>
@@ -48,17 +48,16 @@ interface CoursesRepository {
     suspend fun getCourseProgress(courseId: String, userId: String?): CourseProgressData?
     suspend fun getCourseTitleById(courseId: String): String?
     suspend fun isCourseCertified(courseId: String): Boolean
-    suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean)
+    suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean, userId: String?)
     suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData
     suspend fun getMyCourseIds(userId: String): JsonArray
     suspend fun removeCourseFromShelf(courseId: String, userId: String)
     suspend fun removeCoursesFromShelf(courseIds: List<String>, userId: String)
-    suspend fun logCourseVisit(courseId: String, title: String, userId: String)
     suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean
     suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean
     suspend fun getCourseTagsBulk(courseIds: List<String>): Map<String, List<TagEntity>>
-    suspend fun deleteCourseProgress(courseId: String?)
+    suspend fun deleteCoursesProgress(courseIds: List<String>)
     suspend fun bulkInsertFromSync(jsonArray: JsonArray)
     suspend fun flushPendingCourseResources()
     suspend fun insertCertificationsFromSync(jsonArray: JsonArray)

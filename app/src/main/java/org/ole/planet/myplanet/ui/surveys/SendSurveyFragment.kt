@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.surveys
 
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -26,7 +25,7 @@ class SendSurveyFragment : BaseDialogFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentSendSurveyBinding = FragmentSendSurveyBinding.inflate(inflater, container, false)
-        if (TextUtils.isEmpty(id)) {
+        if (id.isNullOrEmpty()) {
             dismiss()
             return fragmentSendSurveyBinding.root
         }
@@ -46,10 +45,17 @@ class SendSurveyFragment : BaseDialogFragment() {
                 dismiss()
             }
         }
+        collectWhenStarted(viewModel.isSendingSurvey) { sending ->
+            fragmentSendSurveyBinding.sendSurvey.isEnabled = !sending
+        }
+        collectWhenStarted(viewModel.surveySendFailed) {
+            Utilities.toast(activity, getString(R.string.request_failed_please_retry))
+        }
         viewModel.loadUsers()
 
         fragmentSendSurveyBinding.sendSurvey.setOnClickListener {
             val surveyId = id ?: return@setOnClickListener
+            it.isEnabled = false
             val selectedItems = (fragmentSendSurveyBinding.listUsers.adapter as CheckboxAdapter).selectedItemsList
             val selectedUserIds = selectedItems.mapNotNull { users.getOrNull(it)?.id }
             viewModel.sendSurveyToUsers(surveyId, selectedUserIds)

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.data.api
 
-import android.content.Intent
 import java.io.IOException
 import javax.inject.Inject
 import kotlin.math.pow
@@ -8,8 +7,9 @@ import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response
 import org.ole.planet.myplanet.services.BroadcastService
-import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.TimeProvider
+
+object NoNetworkRetry
 
 class RetryInterceptor @Inject constructor(
     private val broadcastService: BroadcastService,
@@ -32,9 +32,10 @@ class RetryInterceptor @Inject constructor(
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
         val retryAllowed = isRetrySafe(request)
+        val retryNetworkErrors = request.tag(NoNetworkRetry::class.java) == null
         var tryCount = 0
         var response: Response? = null
-        var lastError: IOException? = null
+        var lastError: IOException?
 
         while (true) {
             response?.close()
@@ -48,7 +49,7 @@ class RetryInterceptor @Inject constructor(
                     return response
                 }
             } catch (e: IOException) {
-                // Network failures (e.g. SocketTimeoutException) are retried like 5xx.
+                if (!retryNetworkErrors) throw e
                 lastError = e
             }
 
@@ -59,13 +60,7 @@ class RetryInterceptor @Inject constructor(
 
             val delay = (initialDelay * factor.pow(tryCount - 1)).toLong()
 
-            val intent = Intent(Constants.ACTION_RETRY_EVENT).apply {
-                putExtra("url", request.url.toString())
-                putExtra("attempt", tryCount)
-                putExtra("delay", delay)
-            }
-
-            broadcastService.trySendBroadcast(intent)
+            broadcastService.trySendRetryEvent(request.url.encodedPath, tryCount, delay)
 
             backoff(chain, delay)
         }
@@ -85,7 +80,7 @@ class RetryInterceptor @Inject constructor(
                 if (remaining <= 0) {
                     return
                 }
-                Thread.sleep(minOf(remaining, MAX_BACKOFF_SLICE_MS))
+                timeProvider.sleep(minOf(remaining, MAX_BACKOFF_SLICE_MS))
             }
         } catch (e: InterruptedException) {
             Thread.currentThread().interrupt()

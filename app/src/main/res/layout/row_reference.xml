@@ -29,7 +29,7 @@
             android:layout_gravity="center"
             android:foregroundGravity="center"
             android:gravity="center"
-            android:padding="@dimen/eight_dp"
+            android:padding="@dimen/padding_normal"
             android:text="@string/references"
             android:textColor="@color/daynight_textColor"
             android:textStyle="bold" />

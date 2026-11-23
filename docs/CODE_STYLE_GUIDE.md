@@ -38,12 +38,12 @@ Always import a type and use its simple name. Never reference a class by its ful
 
 ```kotlin
 // Good
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 
-val title = JsonUtils.getString("title", doc)
+val title = GsonUtils.getString("title", doc)
 
 // BAD - inline fully-qualified name
-val title = org.ole.planet.myplanet.utils.JsonUtils.getString("title", doc)
+val title = org.ole.planet.myplanet.utils.GsonUtils.getString("title", doc)
 ```
 
 **On a name collision, use an import alias** instead of falling back to the fully-qualified name:
@@ -124,7 +124,7 @@ when (view.id) {
 
 ### Object Declarations
 
-Use `object` for singletons and utility holders. The codebase uses this extensively for utilities (`DialogUtils`, `JsonUtils`, `Constants`, `Utilities`). Don't create stateless classes where `object` would do.
+Use `object` for singletons and utility holders. The codebase uses this extensively for utilities (`DialogUtils`, `GsonUtils`, `Constants`, `Utilities`). Don't create stateless classes where `object` would do.
 
 ```kotlin
 object DialogUtils {
@@ -210,7 +210,7 @@ companion object {
 | Repository interface | `*Repository.kt` | `CoursesRepository.kt` |
 | Repository implementation | `*RepositoryImpl.kt` | `CoursesRepositoryImpl.kt` |
 | Room entity | plain name in `model/` | `MyCourse.kt`, `Submission.kt`, `UserEntity.kt` |
-| Room DAO | `*Dao.kt` in `data/room/dao/` | `RatingDao.kt` (several small DAOs share `LegacyEntityDaos.kt`) |
+| Room DAO | `*Dao.kt` in `data/room/dao/` | `RatingDao.kt` — one DAO per file (37 interfaces, 37 files) |
 | Worker | `*Worker.kt` | `AutoSyncWorker.kt` |
 | Callback interface | `On` prefix | `OnCourseItemSelectedListener.kt` |
 | DI module | `Module` suffix | `RepositoryModule.kt` |
@@ -401,7 +401,7 @@ For internal-only network calls use `NetworkResult<T>` (the sealed class in `dat
 
 ## Room Database
 
-All local persistence goes through Room: `AppDatabase` (`data/room/AppDatabase.kt`, 37 entities, `version = 6`), DAOs in `data/room/dao/`, and `Converters` (`data/room/Converters.kt`). There is no other local store.
+All local persistence goes through Room: `AppDatabase` (`data/room/AppDatabase.kt`, 38 entities, `version = 12`), DAOs in `data/room/dao/`, and `Converters` (`data/room/Converters.kt`). There is no other local store.
 
 ### Entity Classes
 
@@ -424,7 +424,7 @@ open class MyCourse(
 - `@PrimaryKey` for the key; `indices = [Index(...)]` on `@Entity` for frequently queried columns.
 - `@ColumnInfo(name = "_id")` / `"_rev"` map the CouchDB field names to Kotlin-friendly property names.
 - Non-persisted, computed, or in-memory-only fields use `@Ignore` (often combined with `@Transient`).
-- Multi-valued fields (`List<String>`, nested lists, `Date`) persist via `Converters` — Gson-serialized JSON strings, using the shared `JsonUtils.gson`.
+- Multi-valued fields (`List<String>`, nested lists, `Date`) persist via `Converters` — Gson-serialized JSON strings, using the shared `GsonUtils.gson`.
 
 ### DAOs
 
@@ -518,7 +518,7 @@ If you need a dependency not in an existing entry point, add it there — don't 
 
 ### Existing Qualifiers
 
-`@StandardHttpClient` / `@StandardRetrofit` (NetworkModule), `@ApplicationScope` (ServiceModule), `@AppPreferences` / `@DefaultPreferences` / `@DownloadPreferences` (SharedPreferencesModule). There are no dispatcher qualifiers — dispatchers come from the unqualified `DispatcherProvider`.
+`@StandardHttpClient` / `@ReachabilityHttpClient` / `@StandardRetrofit` / `@PlainGson` (NetworkModule), `@ApplicationScope` (ServiceModule), `@AppPreferences` / `@DefaultPreferences` / `@DownloadPreferences` (SharedPreferencesModule). There are no dispatcher qualifiers — dispatchers come from the unqualified `DispatcherProvider`.
 
 ---
 
@@ -698,7 +698,7 @@ Branches follow the `{prefix}/{slug}` pattern, where the slug is kebab-case deri
 | AI agent (Copilot) | `copilot/` | `copilot/fix-notification-badge-count` |
 | Human contributor | `{number}-{description}` | `13755-add-ability-to-edit-meetups` |
 
-(The full field guide to summoning AI agents on PRs — reviewers vs doers, incantations, side effects — lives in `docs/AGENT_SPELLBOOK.md`; the Laws of Summoning live in `CLAUDE.md` → "The Agent Spellbook".)
+(The full field guide to summoning AI agents on PRs — reviewers vs doers, incantations, side effects, and the Laws of Summoning — is the `agents-summoning` skill: `.agents/skills/agents-summoning/SKILL.md`, or the `agents-summoning@summoning` plugin in a Claude Code session.)
 
 **Push flag:** Always use `-u` on the first push: `git push -u origin <branch-name>`.
 
@@ -731,7 +731,7 @@ Before opening a PR:
 
 ### PR Reviews
 
-Besides a human reviewer and a Claude session, several bots can review a PR — the full roster and their side effects are in `docs/AGENT_SPELLBOOK.md`. **CodeRabbit** is the default: it auto-reviews every non-draft push, and `@coderabbitai` in a PR comment re-summons it. It's the token-cheap shortcut — an incremental automated review without spending a human's time or a Claude session's context.
+Besides a human reviewer and a Claude session, several bots can review a PR — the full roster and their side effects are in the `agents-summoning` skill (`.agents/skills/agents-summoning/SKILL.md`). **CodeRabbit** is the default reviewer, but it is opt-in here: label a PR `review` and it reviews every push after that, drafts included. On an unlabelled PR `@coderabbitai review` still summons one by hand. It's the token-cheap shortcut — an incremental automated review without spending a human's time or a Claude session's context.
 
 Useful commands (as PR comments):
 
@@ -784,3 +784,5 @@ These are real patterns that have caused bugs in this codebase before.
 **Don't swallow `CancellationException` in coroutines** — it breaks cooperative cancellation.
 
 **Don't block the main thread** with database queries, file I/O, or network calls. Use `withContext(dispatcherProvider.io)`.
+
+**Don't add `@Index` to fields storing JSON lists (like `userId`) if queried using `LIKE` with wildcards.** B-tree indices cannot optimize leading-wildcard queries (e.g. `LIKE '%"id"%'`). Adding an index will do nothing for performance but will trigger a database version bump and destructive migration, wiping local unsynced data.

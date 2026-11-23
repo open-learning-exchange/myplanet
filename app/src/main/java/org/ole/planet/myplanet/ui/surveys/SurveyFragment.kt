@@ -9,11 +9,9 @@ import android.widget.ArrayAdapter
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ListAdapter
-import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -24,31 +22,19 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnSurveyAdoptListener
 import org.ole.planet.myplanet.databinding.FragmentSurveyBinding
 import org.ole.planet.myplanet.model.StepExam
-import org.ole.planet.myplanet.model.SurveyFormState
-import org.ole.planet.myplanet.model.SurveyInfo
-import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
-import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
-import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.debounceDistinct
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
-class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener, RealtimeSyncMixin {
+class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener {
     private var _binding: FragmentSurveyBinding? = null
     private val binding get() = _binding!!
     private var adapter: SurveysAdapter? = null
-    private val mutex = Mutex()
     private var isTeam: Boolean = false
     private var teamId: String? = null
-    private val surveyInfoMap = mutableMapOf<String, SurveyInfo>()
-    private val bindingDataMap = mutableMapOf<String, SurveyFormState>()
     private val viewModel: SurveysViewModel by viewModels()
 
-    @Inject
-    lateinit var realtimeSyncManager: RealtimeSyncManager
-
-    private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private val adapterMutex = Mutex()
 
     override fun getLayout(): Int = R.layout.fragment_survey
@@ -82,9 +68,7 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
                     userProfileModel?.id,
                     isTeam,
                     teamId,
-                    this@SurveyFragment,
-                    surveyInfoMap,
-                    bindingDataMap
+                    this@SurveyFragment
                 )
             }
         }
@@ -93,11 +77,10 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        realtimeSyncHelper = RealtimeSyncHelper(this, this, realtimeSyncManager)
-        realtimeSyncHelper.setupRealtimeSync()
         initializeViews()
         binding.layoutSearch.etSearch.textChanges()
-            .debounce(300)
+            .drop(1)
+            .debounceDistinct(300)
             .onEach { text -> viewModel.search(text?.toString() ?: "") }
             .launchIn(viewLifecycleOwner.lifecycleScope)
         viewLifecycleOwner.lifecycleScope.launch {
@@ -105,20 +88,25 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
         }
         setupRecyclerView()
         setupListeners()
-        viewModel.loadSurveys(isTeam, teamId, false)
-        showHideRadioButton()
+        showHideRadioButton(isFirstLaunch = savedInstanceState == null)
         setupObservers()
     }
 
-    override fun onResume() {
-        super.onResume()
-        viewModel.loadSurveys(isTeam, teamId, viewModel.isTeamShareAllowed.value)
+    override fun onViewStateRestored(savedInstanceState: Bundle?) {
+        super.onViewStateRestored(savedInstanceState)
+        if (isTeam && !binding.rbAdoptSurvey.isChecked && !binding.rbTeamSurvey.isChecked) {
+            binding.rbTeamSurvey.isChecked = true
+        }
+        
+        viewModel.loadSurveys(isTeam, teamId, isTeam && binding.rbAdoptSurvey.isChecked)
     }
 
-    private fun showHideRadioButton() {
+    private fun showHideRadioButton(isFirstLaunch: Boolean) {
         if (isTeam) {
             binding.rgSurvey.visibility = View.VISIBLE
-            binding.rbTeamSurvey.isChecked = true
+            if (isFirstLaunch) {
+                binding.rbTeamSurvey.isChecked = true
+            }
         }
     }
 
@@ -174,22 +162,13 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
                 updateUIState()
             }
         }
-        collectWhenStarted(viewModel.surveyInfos) { infos ->
-            surveyInfoMap.clear()
-            surveyInfoMap.putAll(infos)
-            getAdapter().notifyDataSetChanged()
-        }
-        collectWhenStarted(viewModel.bindingData) { data ->
-            bindingDataMap.clear()
-            bindingDataMap.putAll(data)
-            getAdapter().notifyDataSetChanged()
-        }
         collectWhenStarted(viewModel.isLoading) { isLoading ->
             binding.loadingSpinner.visibility = if (isLoading) View.VISIBLE else View.GONE
         }
         collectWhenStarted(viewModel.errorMessage) { message ->
             message?.let {
                 Snackbar.make(binding.root, it, Snackbar.LENGTH_LONG).show()
+                viewModel.onErrorMessageShown()
             }
         }
         collectWhenStarted(viewModel.userMessage) { message ->
@@ -198,6 +177,7 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
                 if (it == "Survey adopted successfully") {
                      binding.rbTeamSurvey.isChecked = true
                 }
+                viewModel.onUserMessageShown()
             }
         }
     }
@@ -208,22 +188,6 @@ class SurveyFragment : BaseRecyclerFragment<StepExam?>(), OnSurveyAdoptListener,
             _binding?.spnSort?.visibility = if (itemCount == 0) View.GONE else View.VISIBLE
             showNoData(tvMessage, itemCount, "survey")
         }
-    }
-
-    override fun getWatchedTables(): List<String> {
-        return listOf("exams")
-    }
-
-    override fun onDataUpdated(table: String, update: TableDataUpdate) {
-        if (table == "exams" && update.shouldRefreshUI) {
-            viewModel.loadSurveys(isTeam, teamId, viewModel.isTeamShareAllowed.value)
-        }
-    }
-
-    override fun shouldAutoRefresh(table: String): Boolean = false
-
-    override fun getSyncRecyclerView(): RecyclerView? {
-        return if (::recyclerView.isInitialized) recyclerView else null
     }
 
     override fun onDestroyView() {

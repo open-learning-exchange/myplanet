@@ -2,28 +2,29 @@ package org.ole.planet.myplanet.ui.courses
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.gson.JsonArray
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.model.CoursesProgressRow
 import org.ole.planet.myplanet.repository.ProgressRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
 
 @HiltViewModel
 class ProgressViewModel @Inject constructor(
     private val progressRepository: ProgressRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserReadRepository
 ) : ViewModel() {
 
-    private val _courseData = MutableStateFlow<JsonArray?>(null)
-    val courseData: StateFlow<JsonArray?> = _courseData
+    private val _courseData = MutableStateFlow<List<CoursesProgressRow>>(emptyList())
+    val courseData: StateFlow<List<CoursesProgressRow>> = _courseData.asStateFlow()
 
     fun loadCourseData() {
         viewModelScope.launch {
             val user = userRepository.getUserModel()
-            _courseData.value = progressRepository.fetchCourseData(user?.id)
+            _courseData.value = progressRepository.getCourseProgressRows(user?.id)
         }
     }
 }

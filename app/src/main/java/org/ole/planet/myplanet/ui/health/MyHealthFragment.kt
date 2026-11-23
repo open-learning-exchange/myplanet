@@ -3,21 +3,20 @@ package org.ole.planet.myplanet.ui.health
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
-import android.text.TextUtils
-import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.AdapterView.OnItemSelectedListener
 import android.widget.Button
 import android.widget.EditText
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.core.content.ContextCompat
-import androidx.core.widget.doAfterTextChanged
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -25,61 +24,60 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseBindingFragment
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
-import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
-import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
-import org.ole.planet.myplanet.utils.ImageUtils
-import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.model.effectiveId
+import org.ole.planet.myplanet.ui.user.LearnerRegistrationActivity
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.ImageUtils
+import org.ole.planet.myplanet.utils.StringUtils
+import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
-class MyHealthFragment : Fragment() {
+@OptIn(FlowPreview::class)
+class MyHealthFragment : BaseBindingFragment<FragmentVitalSignBinding>(FragmentVitalSignBinding::inflate) {
 
     private val viewModel: HealthViewModel by viewModels()
 
+    private companion object {
+        const val SEARCH_DEBOUNCE_MS = 300L
+    }
+
+    private val editHealthLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        viewModel.refreshSelectedPatient()
+    }
 
     @Inject
-    lateinit var realtimeSyncManager: RealtimeSyncManager
-    @Inject
     lateinit var dispatcherProvider: DispatcherProvider
-    private var _binding: FragmentVitalSignBinding? = null
-    private val binding get() = _binding!!
-    private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
     private var alertHealthListBinding: AlertHealthListBinding? = null
     var userId: String? = null
     var userModel: UserEntity? = null
     var loggedInUser: UserEntity? = null
-    lateinit var userModelList: List<UserEntity>
     lateinit var adapter: HealthUsersAdapter
     private lateinit var healthAdapter: HealthExaminationAdapter
     var dialog: AlertDialog? = null
 
-    private var textWatcher: TextWatcher? = null
+    private var searchJob: Job? = null
+    private var memberQuery = ""
+    private var memberSortField = "joinDate"
+    private var memberSortDescending = false
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = FragmentVitalSignBinding.inflate(inflater, container, false)
-        return binding.root
-    }
-
-    private fun refreshHealthData() {
-        if (!isAdded || requireActivity().isFinishing) return
-        viewModel.loadInitialPatient()
-    }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
-        setupRealtimeSync()
-        alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context))
 
         val allowDateEdit = false
         if(allowDateEdit) {
@@ -107,6 +105,16 @@ class MyHealthFragment : Fragment() {
 
     private fun observeData() {
 
+        viewLifecycleOwner.lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onStart(owner: LifecycleOwner) {
+                viewModel.setSyncActive(true)
+            }
+
+            override fun onStop(owner: LifecycleOwner) {
+                viewModel.setSyncActive(false)
+            }
+        })
+
         collectWhenStarted(viewModel.loggedInUser) { user ->
             loggedInUser = user
             setupButtons()
@@ -127,7 +135,7 @@ class MyHealthFragment : Fragment() {
             if (currentUser != null) {
                 userModel = currentUser
                 binding.lblHealthName.text = getDisplayName(currentUser)
-                userId = if (currentUser._id.isNullOrEmpty()) currentUser.id else currentUser._id
+                userId = currentUser.effectiveId
                 setupButtons()
             } else {
                 userModel = null
@@ -153,23 +161,24 @@ class MyHealthFragment : Fragment() {
             binding.layoutUserDetail.visibility = View.VISIBLE
             binding.tvMessage.visibility = View.GONE
             binding.txtFullName.text = getDisplayName(currentUser)
-            ImageUtils.loadPlaceholderImage(currentUser.userImage, binding.userImage)
-            binding.txtEmail.text = Utilities.checkNA(currentUser.email)
-            binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
+            val userImageSize = binding.userImage.context.resources.getDimensionPixelSize(R.dimen.user_image_size)
+            ImageUtils.loadPlaceholderImage(currentUser.userImage, binding.userImage, userImageSize)
+            binding.txtEmail.text = StringUtils.checkNA(currentUser.email)
+            binding.txtLanguage.text = StringUtils.checkNA(currentUser.language)
             binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { "dd-MM-yyyy" }
 
             if (healthRecord != null) {
                 val (mh, mm, list, userMap) = healthRecord
                 val myHealths = mm.profile
-                binding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
-                binding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
-                binding.txtBirthPlace.text = Utilities.checkNA(currentUser.birthPlace)
+                binding.txtOtherNeed.text = StringUtils.checkNA(myHealths?.notes)
+                binding.txtSpecialNeeds.text = StringUtils.checkNA(myHealths?.specialNeeds)
+                binding.txtBirthPlace.text = StringUtils.checkNA(currentUser.birthPlace)
                 val contact = myHealths?.emergencyContact?.takeIf { it.isNotBlank() }
                 binding.txtEmergencyContact.text = getString(
                     R.string.emergency_contact_details,
-                    Utilities.checkNA(myHealths?.emergencyContactName),
-                    Utilities.checkNA(myHealths?.emergencyContactType),
-                    Utilities.checkNA(contact)
+                    StringUtils.checkNA(myHealths?.emergencyContactName),
+                    StringUtils.checkNA(AddHealthActivity.contactTypeLabel(requireContext(), myHealths?.emergencyContactType)),
+                    StringUtils.checkNA(contact)
                 ).trimIndent()
 
                 if (list.isNotEmpty()) {
@@ -178,13 +187,17 @@ class MyHealthFragment : Fragment() {
                     binding.tvDataPlaceholder.visibility = View.VISIBLE
 
                     if (!::healthAdapter.isInitialized) {
-                        healthAdapter = HealthExaminationAdapter(requireActivity(), mh, currentUser, userMap, dispatcherProvider)
+                        healthAdapter = HealthExaminationAdapter(requireActivity(), mh, currentUser, userMap, dispatcherProvider) { intent ->
+                            editHealthLauncher.launch(intent)
+                        }
                     }
                     healthAdapter.updateData(mh, currentUser, userMap, list)
-                    binding.rvRecords.apply {
-                        layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
-                        isNestedScrollingEnabled = false
-                        adapter = healthAdapter
+                    if (binding.rvRecords.adapter !== healthAdapter) {
+                        binding.rvRecords.apply {
+                            layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
+                            isNestedScrollingEnabled = false
+                            adapter = healthAdapter
+                        }
                     }
 
                     binding.rvRecords.post {
@@ -238,27 +251,19 @@ class MyHealthFragment : Fragment() {
         binding.updateHealth.visibility = View.VISIBLE
 
         binding.addNewRecord.setOnClickListener {
-            startActivity(Intent(activity, HealthExaminationActivity::class.java).putExtra("userId", userId))
+            editHealthLauncher.launch(Intent(activity, HealthExaminationActivity::class.java).putExtra("userId", userId))
         }
 
         binding.updateHealth.setOnClickListener {
-            startActivity(Intent(activity, AddHealthActivity::class.java).putExtra("userId", userId))
+            editHealthLauncher.launch(Intent(activity, AddHealthActivity::class.java).putExtra("userId", userId))
         }
 
-        binding.txtDob.text = if (TextUtils.isEmpty(userModel?.dob)) getString(R.string.birth_date) else TimeUtils.formatDateToDDMMYYYY(userModel?.dob)
-    }
-
-    private fun setupRealtimeSync() {
-        collectWhenStarted(realtimeSyncManager.dataUpdateFlow) { update ->
-            if (update.table == "health" && update.shouldRefreshUI) {
-                refreshHealthData()
-            }
-        }
+        binding.txtDob.text = if (userModel?.dob.isNullOrEmpty()) getString(R.string.birth_date) else TimeUtils.formatDateToDDMMYYYY(userModel?.dob)
     }
 
     private fun selectPatient() {
         adapter = HealthUsersAdapter { selected ->
-            userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
+            userId = selected.effectiveId
             val normalizedId = userId?.trim()
             if (!normalizedId.isNullOrEmpty()) {
                 viewModel.selectPatient(normalizedId)
@@ -266,11 +271,9 @@ class MyHealthFragment : Fragment() {
             dialog?.dismiss()
         }
 
-        viewModel.loadPatients()
-
         alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(context))
         alertHealthListBinding?.btnAddMember?.setOnClickListener {
-            startActivity(Intent(requireContext(), BecomeMemberActivity::class.java))
+            startActivity(Intent(requireContext(), LearnerRegistrationActivity::class.java))
         }
 
         alertHealthListBinding?.let { binding ->
@@ -290,21 +293,31 @@ class MyHealthFragment : Fragment() {
             override fun onNothingSelected(p0: AdapterView<*>?) {}
 
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-                val (sortBy, sort) = when (p2) {
-                    0 -> "joinDate" to true
-                    1 -> "joinDate" to false
+                val (sortBy, descending) = when (p2) {
+                    0 -> "joinDate" to false
+                    1 -> "joinDate" to true
                     2 -> "name" to false
                     else -> "name" to true
                 }
-                viewModel.loadPatients(sortBy, sort)
+                memberSortField = sortBy
+                memberSortDescending = descending
+                viewModel.searchPatients(memberQuery, memberSortField, memberSortDescending)
             }
         }
     }
 
     private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, rv: RecyclerView) {
-        textWatcher = etSearch.doAfterTextChanged { editable ->
-            viewModel.searchPatients(editable?.toString() ?: "", "joinDate", true)
-        }
+        searchJob?.cancel()
+        memberQuery = ""
+        searchJob = etSearch.textChanges()
+            .drop(1)
+            .debounce(SEARCH_DEBOUNCE_MS.milliseconds)
+            .distinctUntilChanged()
+            .onEach { query ->
+                memberQuery = query?.toString().orEmpty()
+                viewModel.searchPatients(memberQuery, memberSortField, memberSortDescending)
+            }
+            .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 
     override fun onResume() {
@@ -334,10 +347,9 @@ class MyHealthFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        alertHealthListBinding?.etSearch?.removeTextChangedListener(textWatcher)
-        textWatcher = null
+        searchJob?.cancel()
+        searchJob = null
 
-        _binding = null
         super.onDestroyView()
     }
 

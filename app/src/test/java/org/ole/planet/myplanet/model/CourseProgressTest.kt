@@ -1,9 +1,26 @@
 package org.ole.planet.myplanet.model
 
+import io.mockk.every
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 class CourseProgressTest {
+
+    @Before
+    fun setup() {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "uniqueIdentifier"
+    }
+
+    @After
+    fun tearDown() {
+        unmockkObject(NetworkUtils)
+    }
 
     @Test
     fun testSerializeProgress() {
@@ -28,5 +45,15 @@ class CourseProgressTest {
         assertEquals("2023-01-01", jsonObject.get("createdOn").asString)
         assertEquals(1672531200000L, jsonObject.get("createdDate").asLong)
         assertEquals(1672617600000L, jsonObject.get("updatedDate").asLong)
+        assertEquals("uniqueIdentifier", jsonObject.get("androidId").asString)
+        assertEquals("myplanet", jsonObject.get("app").asString)
+    }
+
+    @Test
+    fun serializeProgress_sendsTheDocIdAndRevOnceUploaded() {
+        val jsonObject = CourseProgress.serializeProgress(CourseProgress().apply { _id = "doc1"; _rev = "1-abc"; passed = true })
+
+        assertEquals("doc1", jsonObject.get("_id").asString)
+        assertEquals("1-abc", jsonObject.get("_rev").asString)
     }
 }

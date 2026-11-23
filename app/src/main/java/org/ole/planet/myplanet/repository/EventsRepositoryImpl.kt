@@ -1,10 +1,12 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.data.room.dao.NewsDao
@@ -12,7 +14,7 @@ import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.GsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 
 @Singleton
@@ -20,12 +22,20 @@ class EventsRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider,
     private val meetupDao: MeetupDao,
     private val newsDao: NewsDao,
-    private val userRepository: UserRepository,
     private val gson: Gson
 ) : EventsRepository, EventsSyncWriter {
 
+    override suspend fun getMeetupsForUser(userId: String): List<Meetup> {
+        return meetupDao.getByUserId(userId)
+    }
+
     override suspend fun getMeetupsForTeam(teamId: String): List<Meetup> {
         return meetupDao.getByTeamId(teamId)
+    }
+
+    override suspend fun getMeetupsForTeams(teamIds: List<String>): List<Meetup> {
+        if (teamIds.isEmpty()) return emptyList()
+        return meetupDao.getByTeamIds(teamIds)
     }
 
     override suspend fun updateMeetup(
@@ -48,8 +58,10 @@ class EventsRepositoryImpl @Inject constructor(
             meetup.updated = true
             meetupDao.upsert(meetup)
             true
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "updateMeetup failed", e)
             false
         }
     }
@@ -70,29 +82,15 @@ class EventsRepositoryImpl @Inject constructor(
         if (meetupId.isBlank()) {
             return emptyList()
         }
-        val memberIds = meetupDao.getMembersByMeetupId(meetupId)
-            .mapNotNull { member -> member.userId?.takeUnless { it.isBlank() } }
-            .distinct()
-        if (memberIds.isEmpty()) {
-            return emptyList()
-        }
-        val memberIdSet = memberIds.toSet()
-        return userRepository.getAllUsers()
-            .filter { user ->
-                memberIdSet.contains(user.id) || user._id?.let(memberIdSet::contains) == true
-            }
-            .map { it }
+        return meetupDao.getJoinedMembersByMeetupId(meetupId)
     }
 
-    override suspend fun toggleCurrentUserAttendance(meetupId: String): Meetup? {
+    override suspend fun toggleAttendance(meetupId: String, userId: String): Meetup? {
         if (meetupId.isBlank()) {
             return null
         }
 
-        val currentUser = userRepository.getUserModel()
-        val currentUserId = currentUser?.id
-
-        if (currentUserId.isNullOrBlank()) {
+        if (userId.isBlank()) {
             return getMeetupById(meetupId)
         }
 
@@ -101,34 +99,46 @@ class EventsRepositoryImpl @Inject constructor(
         if (isJoined) {
             meetup.userId = ""
         } else {
-            meetup.userId = currentUserId
+            meetup.userId = userId
         }
         meetupDao.upsert(meetup)
 
-        return getMeetupById(meetupId)
+        return meetup
+    }
+
+    override suspend fun insertMeetupsFromSync(docs: List<JsonObject>) {
+        if (docs.isEmpty()) return
+        val ids = docs.map { GsonUtils.getString("_id", it) }
+        val existingRows = meetupDao.getByMeetupIds(ids)
+        val existingByMeetupId = existingRows.groupBy { it.meetupId }
+            .mapValues { (_, rows) ->
+                rows.firstOrNull { it.updated } ?: rows.firstOrNull { it.id != it.meetupId } ?: rows.first()
+            }
+        val duplicateIds = existingRows
+            .filter { !it.updated && it.id != existingByMeetupId[it.meetupId]?.id }
+            .map { it.id }
+
+        val meetupsToInsert = docs.mapNotNull { meetupDoc ->
+            val id = GsonUtils.getString("_id", meetupDoc)
+            val existing = existingByMeetupId[id]
+            if (existing?.updated == true) {
+                null
+            } else {
+                Meetup.fromJson(meetupDoc, "", existing).apply { existing?.let { this.id = it.id } }
+            }
+        }
+        meetupDao.replaceSyncedMeetups(duplicateIds, meetupsToInsert)
     }
 
     override suspend fun batchInsertMeetups(documents: List<JsonObject>): Int {
         if (documents.isEmpty()) return 0
         return try {
-            val ids = documents.map { JsonUtils.getString("_id", it) }
-            val existingByMeetupId = meetupDao.getByMeetupIds(ids).associateBy { it.meetupId }
-
-            val meetupsToInsert = documents.mapNotNull { meetupDoc ->
-                val id = JsonUtils.getString("_id", meetupDoc)
-                val existing = existingByMeetupId[id]
-                if (existing?.updated == true) {
-                    null
-                } else {
-                    Meetup.fromJson(meetupDoc, "", existing)
-                }
-            }
-            if (meetupsToInsert.isNotEmpty()) {
-                meetupDao.upsertAll(meetupsToInsert)
-            }
+            insertMeetupsFromSync(documents)
             documents.size
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "batchInsertMeetups failed", e)
             0
         }
     }
@@ -162,8 +172,10 @@ class EventsRepositoryImpl @Inject constructor(
         return try {
             meetupDao.upsert(meetup)
             true
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "createMeetup failed", e)
             false
         }
     }
@@ -206,7 +218,7 @@ class EventsRepositoryImpl @Inject constructor(
             viewableId = teamId ?: ""
             userId = user?.id
             replyTo = parentId
-            this.user = if (user != null) JsonUtils.gson.toJson(user.serialize()) else ""
+            this.user = if (user != null) gson.toJson(user.serialize()) else ""
             imageUrls = emptyList()
         }
         newsDao.upsert(news)
@@ -215,5 +227,9 @@ class EventsRepositoryImpl @Inject constructor(
 
     override suspend fun deleteComment(commentId: String) {
         newsDao.deleteById(commentId)
+    }
+
+    companion object {
+        private const val TAG = "EventsRepository"
     }
 }

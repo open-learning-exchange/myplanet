@@ -33,7 +33,8 @@ class CourseProgressViewModelTest {
         val courseId = "id"
         val userId = "userId"
         val user = UserEntity()
-        user._id = userId
+        user.id = userId
+        user._id = "org.couchdb.user:learner"
         coEvery { userRepository.getUserModel() } returns user
 
         val expectedProgressData = mockk<CourseProgressData>()
@@ -49,7 +50,8 @@ class CourseProgressViewModelTest {
         val courseId = "id"
         val userId = "userId"
         val user = UserEntity()
-        user._id = userId
+        user.id = userId
+        user._id = "org.couchdb.user:learner"
         coEvery { userRepository.getUserModel() } returns user
 
         val expectedProgressData = mockk<CourseProgressData>()

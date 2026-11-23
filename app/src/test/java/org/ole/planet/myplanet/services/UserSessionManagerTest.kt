@@ -2,11 +2,15 @@ package org.ole.planet.myplanet.services
 
 import android.content.Context
 import android.util.Log
+import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
+import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -43,8 +47,6 @@ class UserSessionManagerTest {
         mockkStatic(Log::class)
         every { Log.e(any(), any(), any()) } returns 0
 
-        every { sharedPrefManager.getUserName() } returns "test_user"
-
         userSessionManager = UserSessionManager(
             context = context,
             sharedPrefManager = sharedPrefManager,
@@ -62,17 +64,11 @@ class UserSessionManagerTest {
     }
 
     @Test
-    fun `init retrieves user name successfully`() {
-        verify { sharedPrefManager.getUserName() }
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun `init throws IllegalArgumentException when sharedPrefManager throws`() {
-        every { sharedPrefManager.getUserName() } throws IllegalArgumentException("Mock error")
-
+    fun `constructs successfully with unstubbed SharedPrefManager mock`() {
+        val unstubbedPrefManager: SharedPrefManager = mockk()
         UserSessionManager(
             context = context,
-            sharedPrefManager = sharedPrefManager,
+            sharedPrefManager = unstubbedPrefManager,
             applicationScope = testScope,
             userRepository = userRepository,
             activitiesRepository = activitiesRepository,
@@ -289,5 +285,39 @@ class UserSessionManagerTest {
         advanceUntilIdle()
 
         verify { Log.e("UserSessionManager", "Error in setResourceOpenCount", any()) }
+    }
+
+    @Test
+    fun `saveUserInfoPref saves credentials and updates user info via SharedPrefManager`() = testScope.runTest {
+        mockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
+        every { org.ole.planet.myplanet.utils.SecurePrefs.saveCredentials(any(), any(), any(), any()) } just Runs
+
+        val user = UserEntity(
+            id = "u123",
+            name = "johndoe",
+            firstName = "John",
+            lastName = "Doe",
+            middleName = "A",
+            userAdmin = false
+        )
+
+        userSessionManager.saveUserInfoPref("secret", user)
+
+        coVerify {
+            org.ole.planet.myplanet.utils.SecurePrefs.saveCredentials(context, sharedPrefManager.rawPreferences, "johndoe", "secret")
+        }
+        verify {
+            sharedPrefManager.saveUserInfo(
+                userId = "u123",
+                userName = "johndoe",
+                firstName = "John",
+                lastName = "Doe",
+                middleName = "A",
+                isUserAdmin = false,
+                lastLogin = 0L
+            )
+        }
+
+        unmockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
     }
 }

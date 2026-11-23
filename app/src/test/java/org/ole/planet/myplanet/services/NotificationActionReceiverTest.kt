@@ -6,26 +6,30 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
+import io.mockk.clearAllMocks
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.spyk
-import io.mockk.unmockkAll
+import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.currentTime
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import org.junit.After
+import org.junit.AfterClass
+import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NotificationUtils
@@ -33,7 +37,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], application = Application::class)
+@Config(application = Application::class)
 @OptIn(ExperimentalCoroutinesApi::class)
 class NotificationActionReceiverTest {
 
@@ -43,17 +47,32 @@ class NotificationActionReceiverTest {
     private lateinit var testScope: TestScope
 
     private val mockNotificationsRepository: NotificationsRepository = mockk(relaxed = true)
+    private val mockBroadcastService: BroadcastService = mockk(relaxed = true)
     private var mockDispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private lateinit var mockNotificationUtils: NotificationUtils.NotificationManager
 
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setUpClass() {
+            mockkObject(NotificationUtils)
+        }
+
+        @AfterClass
+        @JvmStatic
+        fun tearDownClass() {
+            unmockkObject(NotificationUtils)
+        }
+    }
+
     @Before
     fun setUp() {
+        clearAllMocks()
+
         testDispatcher = StandardTestDispatcher()
         testScope = TestScope(testDispatcher)
 
-        MainApplication.applicationScope = testScope
-
-        mockContext = spyk(ApplicationProvider.getApplicationContext<Context>())
+        mockContext = spyk(ApplicationProvider.getApplicationContext())
         every { mockContext.startActivity(any()) } returns Unit
 
         every { mockDispatcherProvider.main } returns testDispatcher
@@ -62,15 +81,13 @@ class NotificationActionReceiverTest {
         every { mockDispatcherProvider.unconfined } returns testDispatcher
 
         mockNotificationUtils = mockk(relaxed = true)
-        mockkObject(NotificationUtils)
         every { NotificationUtils.getInstance(any()) } returns mockNotificationUtils
-
-        mockkStatic("org.ole.planet.myplanet.di.ServiceDependenciesEntryPointKt")
-        every { getBroadcastService(any()) } returns mockk(relaxed = true)
 
         receiver = spyk(NotificationActionReceiver().apply {
             notificationsRepository = mockNotificationsRepository
+            broadcastService = mockBroadcastService
             dispatcherProvider = mockDispatcherProvider
+            applicationScope = testScope
         })
         try {
             val injectedField = Hilt_NotificationActionReceiver::class.java.getDeclaredField("injected")
@@ -79,11 +96,6 @@ class NotificationActionReceiverTest {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-    }
-
-    @After
-    fun tearDown() {
-        unmockkAll()
     }
 
     @Test
@@ -95,6 +107,7 @@ class NotificationActionReceiverTest {
         advanceUntilIdle()
 
         coVerify { mockNotificationsRepository.markNotificationsAsRead(setOf(notificationId)) }
+        coVerify { mockBroadcastService.sendBroadcast(match { it.action == "org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM_LOCAL" }) }
     }
 
     @Test
@@ -162,5 +175,55 @@ class NotificationActionReceiverTest {
 
         verify { mockNotificationUtils.clearNotification(notificationId) }
         verify { pendingResult.finish() }
+    }
+
+    @Test
+    fun `test onReceive calls finish when notification action throws exception`() = testScope.runTest {
+        val notificationId = "test_id"
+        val mockIntent = Intent(NotificationUtils.ACTION_MARK_AS_READ)
+        mockIntent.putExtra(NotificationUtils.EXTRA_NOTIFICATION_ID, notificationId)
+
+        mockkStatic(android.util.Log::class)
+        try {
+            every { android.util.Log.e(any(), any(), any()) } returns 0
+
+            every { mockNotificationUtils.clearNotification(notificationId) } throws RuntimeException("Clear error")
+
+            val pendingResult = mockk<BroadcastReceiver.PendingResult>(relaxed = true)
+            every { receiver.goAsync() } returns pendingResult
+
+            receiver.onReceive(mockContext, mockIntent)
+            advanceUntilIdle()
+
+            verify { android.util.Log.e("NotificationActionReceiver", "broadcast work failed", any()) }
+            verify { pendingResult.finish() }
+        } finally {
+            unmockkStatic(android.util.Log::class)
+        }
+    }
+
+    @Test
+    fun `test markNotificationAsRead dispatches system broadcast immediately without virtual time delay`() = testScope.runTest {
+        val notificationId = "id"
+
+        receiver.markNotificationAsRead(mockContext, notificationId)
+        runCurrent()
+
+        verify {
+            mockContext.sendBroadcast(match {
+                it.action == "org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM" &&
+                        it.getStringExtra("notification_id") == notificationId
+            })
+        }
+        assertEquals(0L, currentTime)
+    }
+
+    @Test
+    fun `test markNotificationAsRead with null notificationId does not send broadcast`() = testScope.runTest {
+        receiver.markNotificationAsRead(mockContext, null)
+        runCurrent()
+
+        verify(exactly = 0) { mockContext.sendBroadcast(any()) }
+        assertEquals(0L, currentTime)
     }
 }

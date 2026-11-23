@@ -22,11 +22,18 @@
             android:text="@string/all_task"
             android:textColor="@color/toggle_text_color" />
         <com.nex3z.togglebuttongroup.button.LabelToggle
-            android:id="@+id/btn_my"
+            android:id="@+id/btn_todo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
-            android:text="@string/my_task"
+            android:text="@string/status_todo"
+            android:textColor="@color/toggle_text_color" />
+        <com.nex3z.togglebuttongroup.button.LabelToggle
+            android:id="@+id/btn_in_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/padding_normal"
+            android:text="@string/status_in_progress"
             android:textColor="@color/toggle_text_color" />
         <com.nex3z.togglebuttongroup.button.LabelToggle
             android:id="@+id/btn_completed"
@@ -34,6 +41,13 @@
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
             android:text="@string/completed"
+            android:textColor="@color/toggle_text_color" />
+        <com.nex3z.togglebuttongroup.button.LabelToggle
+            android:id="@+id/btn_my"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/padding_normal"
+            android:text="@string/my_task"
             android:textColor="@color/toggle_text_color" />
     </com.nex3z.togglebuttongroup.SingleSelectToggleGroup>
 

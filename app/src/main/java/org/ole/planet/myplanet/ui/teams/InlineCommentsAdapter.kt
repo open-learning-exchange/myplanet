@@ -42,7 +42,7 @@ class InlineCommentsAdapter(
             "Anonymous"
         }
 
-        binding.tvTime.text = TimeUtils.getRelativeTime(comment.time)
+        binding.tvTime.text = TimeUtils.getRelativeTime(binding.root.context, comment.time)
         binding.tvMessage.text = comment.message ?: ""
         ImageUtils.loadImage(null, binding.imgUser)
 

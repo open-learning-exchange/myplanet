@@ -1,9 +1,13 @@
 package org.ole.planet.myplanet.ui.courses
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -11,9 +15,16 @@ import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
-import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.repository.RatingsRepository
+import org.ole.planet.myplanet.repository.UserReadRepository
+
+sealed interface RatingPromptDecision {
+    object Show : RatingPromptDecision
+    object Skip : RatingPromptDecision
+}
 
 sealed interface TakeCourseUiState {
     object Loading : TakeCourseUiState
@@ -22,15 +33,18 @@ sealed interface TakeCourseUiState {
         val course: MyCourse,
         val steps: List<CourseStep>,
         val userModel: UserEntity?,
-        val courseProgress: Int
+        val courseProgress: Int,
+        val blockingStepIndex: Int = -1
     ) : TakeCourseUiState
 }
 
 @HiltViewModel
 class TakeCourseViewModel @Inject constructor(
     private val coursesRepository: CoursesRepository,
+    private val activitiesRepository: ActivitiesRepository,
     private val progressRepository: ProgressRepository,
-    private val userSessionManager: UserSessionManager
+    private val userRepository: UserReadRepository,
+    private val ratingsRepository: RatingsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<TakeCourseUiState>(TakeCourseUiState.Loading)
@@ -46,11 +60,16 @@ class TakeCourseViewModel @Inject constructor(
     }
 
     suspend fun logCourseVisit(courseId: String, courseTitle: String, userName: String) {
-        coursesRepository.logCourseVisit(courseId, courseTitle, userName)
+        activitiesRepository.logCourseVisit(courseId, courseTitle, userName)
     }
 
     suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int {
         return coursesRepository.getCurrentProgress(steps, userId, courseId)
+    }
+
+    suspend fun getBlockingStepIndex(steps: List<CourseStep?>?, userModel: UserEntity?, courseId: String?): Int {
+        progressRepository.saveEarnedExamPasses(steps, userModel?.id, userModel?.planetCode, userModel?.parentCode, courseId)
+        return progressRepository.getBlockingStepIndex(steps, userModel?.id, courseId)
     }
 
     suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData {
@@ -77,6 +96,22 @@ class TakeCourseViewModel @Inject constructor(
         return coursesRepository.hasUnfinishedSurveys(courseId, userId)
     }
 
+    suspend fun getRatingPromptDecision(courseId: String?, userId: String?): RatingPromptDecision {
+        if (courseId.isNullOrEmpty() || userId.isNullOrEmpty()) {
+            return RatingPromptDecision.Skip
+        }
+        val hasRated = try {
+            val summary = ratingsRepository.getRatingSummary("course", courseId, userId)
+            summary.userRating != null || summary.existingRating != null
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to read the rating summary for course $courseId", e)
+            false
+        }
+        return if (hasRated) RatingPromptDecision.Skip else RatingPromptDecision.Show
+    }
+
     fun loadCourse(courseId: String, forceRefresh: Boolean = false) {
         if (!forceRefresh && loadedCourseId == courseId && _uiState.value is TakeCourseUiState.Success) {
             return
@@ -86,21 +121,35 @@ class TakeCourseViewModel @Inject constructor(
             try {
                 _uiState.value = TakeCourseUiState.Loading
 
-                val userModel = userSessionManager.getUserModel()
-                val course = coursesRepository.getCourseById(courseId)
+                val (userModel, course) = coroutineScope {
+                    val user = async { userRepository.getUserModel() }
+                    val courseDeferred = async { coursesRepository.getCourseById(courseId) }
+                    user.await() to courseDeferred.await()
+                }
                 if (course == null) {
                     _uiState.value = TakeCourseUiState.NotFound
                     return@launch
                 }
 
-                val steps = coursesRepository.getCourseSteps(courseId)
-                val progressMap = progressRepository.getCourseProgress(listOf(courseId), userModel?.id)
+                val (steps, progressMap) = coroutineScope {
+                    val stepsDeferred = async { coursesRepository.getCourseSteps(courseId) }
+                    val progressDeferred = async { progressRepository.getCourseProgress(listOf(courseId), userModel?.id) }
+                    stepsDeferred.await() to progressDeferred.await()
+                }
                 val progress = progressMap[courseId]?.current ?: 0
+                val blockingStepIndex = getBlockingStepIndex(steps, userModel, courseId)
 
-                _uiState.value = TakeCourseUiState.Success(course, steps, userModel, progress)
+                _uiState.value = TakeCourseUiState.Success(course, steps, userModel, progress, blockingStepIndex)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to load course $courseId", e)
+                _uiState.value = TakeCourseUiState.NotFound
             }
         }
+    }
+
+    companion object {
+        private const val TAG = "TakeCourseViewModel"
     }
 }

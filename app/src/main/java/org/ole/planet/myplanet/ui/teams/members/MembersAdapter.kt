@@ -12,13 +12,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnMemberActionListener
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
-import org.ole.planet.myplanet.repository.JoinedMemberData
+import org.ole.planet.myplanet.model.JoinedMemberData
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ImageUtils
@@ -30,8 +27,9 @@ class MembersAdapter(
     private val actionListener: OnMemberActionListener
 ) : ListAdapter<JoinedMemberData, MembersAdapter.MembersViewHolder>(DIFF_CALLBACK) {
     private val avatarSize: Int by lazy { context.resources.getDimensionPixelSize(R.dimen._40dp) }
+    private val teamLeaderLabel: String by lazy { context.getString(R.string.team_leader) }
+    private val noVisitLabel: String by lazy { context.getString(R.string.no_visit) }
     private var isLoggedInUserTeamLeader: Boolean = false
-    private val dateFormatter = DateTimeFormatter.ofPattern(TimeUtils.DATE_FORMAT).withZone(ZoneId.systemDefault())
 
     fun setUserId(userId: String?) {
         this.currentUserId = userId
@@ -78,14 +76,14 @@ class MembersAdapter(
                             val isLeader = payload.getBoolean(PAYLOAD_KEY_LEADER)
                             holder.binding.tvIsLeader.visibility = if (isLeader) View.VISIBLE else View.GONE
                             if (isLeader) {
-                                holder.binding.tvIsLeader.text = context.getString(R.string.team_leader)
+                                holder.binding.tvIsLeader.text = teamLeaderLabel
                             }
                         } else {
                             unhandled = true
                         }
                     }
                     PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED -> {
-                        checkUserAndShowOverflowMenu(holder.binding, position)
+                        checkUserAndShowOverflowMenu(holder, position)
                     }
                     else -> unhandled = true
                 }
@@ -103,16 +101,16 @@ class MembersAdapter(
         val member = memberData.user
         val binding = holder.binding
 
-        binding.tvTitle.text = if (member.toString() == " ") member.name else member.toString()
+        binding.tvTitle.text = member.name
         binding.tvDescription.text = context.getString(
             R.string.member_description,
             member.getRoleAsString(),
             memberData.visitCount
         )
         val lastVisitDate = if (memberData.lastVisitDate != null) {
-            dateFormatter.format(Instant.ofEpochMilli(memberData.lastVisitDate))
+            TimeUtils.getFormattedShortDate(memberData.lastVisitDate)
         } else {
-            context.getString(R.string.no_visit)
+            noVisitLabel
         }
         binding.tvLastVisit.text = context.getString(
             R.string.last_visit,
@@ -122,30 +120,16 @@ class MembersAdapter(
 
         if (memberData.isLeader) {
             binding.tvIsLeader.visibility = View.VISIBLE
-            binding.tvIsLeader.text = context.getString(R.string.team_leader)
+            binding.tvIsLeader.text = teamLeaderLabel
         } else {
             binding.tvIsLeader.visibility = View.GONE
         }
 
-        checkUserAndShowOverflowMenu(binding, position)
+        checkUserAndShowOverflowMenu(holder, position)
 
         holder.itemView.setOnClickListener {
             val activity = it.context as AppCompatActivity
-            val userName = "${member.firstName} ${member.lastName}".trim().ifBlank {
-                member.name
-            }
-            val fragment = MembersDetailFragment.newInstance(
-                userName.toString(),
-                member.email.toString(),
-                member.dob.toString().substringBefore("T"),
-                member.language.toString(),
-                member.phoneNumber.toString(),
-                "${memberData.visitCount}",
-                memberData.profileLastVisit,
-                "${member.firstName} ${member.lastName}",
-                member.level.toString(),
-                member.userImage
-            )
+            val fragment = MembersDetailFragment.newInstance(MembersDetailInfo.fromUser(member))
             FragmentNavigator.replaceFragment(
                 activity.supportFragmentManager,
                 R.id.fragment_container,
@@ -155,7 +139,8 @@ class MembersAdapter(
         }
     }
 
-    private fun checkUserAndShowOverflowMenu(binding: RowJoinedUserBinding, position: Int) {
+    private fun checkUserAndShowOverflowMenu(holder: MembersViewHolder, position: Int) {
+        val binding = holder.binding
         val currentMember = getItem(position)
         val isOwnCard = currentMember.user.id == currentUserId
 
@@ -179,9 +164,12 @@ class MembersAdapter(
                             0 -> actionListener.onLeaveTeam()
                         }
                     } else {
+                        val currentPosition = holder.bindingAdapterPosition
+                        if (currentPosition == RecyclerView.NO_POSITION) return@setAdapter
+                        val member = getItem(currentPosition)
                         when (i) {
-                            0 -> actionListener.onRemoveMember(getItem(position), position)
-                            1 -> actionListener.onMakeLeader(getItem(position))
+                            0 -> actionListener.onRemoveMember(member, currentPosition)
+                            1 -> actionListener.onMakeLeader(member)
                         }
                     }
                 }.setNegativeButton(R.string.dismiss, null).show()
@@ -193,8 +181,9 @@ class MembersAdapter(
 
     fun updateData(newList: List<JoinedMemberData>, isLoggedInUserTeamLeader: Boolean) {
         val leaderStatusChanged = this.isLoggedInUserTeamLeader != isLoggedInUserTeamLeader
+        val menuAvailabilityChanged = (itemCount > 1) != (newList.size > 1)
         this.isLoggedInUserTeamLeader = isLoggedInUserTeamLeader
-        if (leaderStatusChanged) {
+        if (leaderStatusChanged || menuAvailabilityChanged) {
             submitList(newList) { notifyItemRangeChanged(0, itemCount, PAYLOAD_KEY_LOGGED_IN_USER_LEADER_CHANGED) }
         } else {
             submitList(newList)

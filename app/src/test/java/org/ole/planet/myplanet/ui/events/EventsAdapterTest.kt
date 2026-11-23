@@ -2,10 +2,10 @@ package org.ole.planet.myplanet.ui.events
 
 import android.app.Application
 import android.content.Context
-import android.os.Build
 import android.widget.LinearLayout
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -15,7 +15,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [Build.VERSION_CODES.P], application = Application::class)
+@Config(application = Application::class)
 class EventsAdapterTest {
 
     private lateinit var context: Context
@@ -27,9 +27,9 @@ class EventsAdapterTest {
     fun setup() {
         context = ApplicationProvider.getApplicationContext()
         context.setTheme(androidx.appcompat.R.style.Theme_AppCompat)
-        adapter = EventsAdapter { meetup ->
+        adapter = EventsAdapter(onMeetupClick = { meetup ->
             clickedMeetup = meetup
-        }
+        })
     }
 
     @Test
@@ -152,5 +152,30 @@ class EventsAdapterTest {
         assertEquals("m1", sentId)
         assertEquals("Hello meetup", sentMsg)
         assertEquals("", holder.binding.etComment.text.toString())
+    }
+
+    @Test
+    @Config(qualifiers = "fr")
+    fun `recurring key is shown in the device language and older stored labels are left as stored`() {
+        val keyed = Meetup().apply { id = "1"; title = "Keyed"; recurring = "daily" }
+        val legacyEnglish = Meetup().apply { id = "2"; title = "Legacy"; recurring = "Daily" }
+        val legacyTranslated = Meetup().apply { id = "3"; title = "Translated"; recurring = "Quotidienne" }
+
+        var committed = false
+        adapter.submitList(listOf(keyed, legacyEnglish, legacyTranslated)) { committed = true }
+        while (!committed) {
+            ShadowLooper.idleMainLooper()
+        }
+
+        val parent = LinearLayout(context)
+        fun recurringText(position: Int): String {
+            val holder = adapter.onCreateViewHolder(parent, 0)
+            adapter.onBindViewHolder(holder, position)
+            return holder.binding.tvRecurring.text.toString()
+        }
+
+        assertTrue(recurringText(0).contains("Quotidien"))
+        assertTrue(recurringText(1).contains("Quotidien"))
+        assertTrue(recurringText(2).contains("Quotidienne"))
     }
 }
