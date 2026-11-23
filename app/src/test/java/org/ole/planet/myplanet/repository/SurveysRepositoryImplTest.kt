@@ -393,4 +393,28 @@ class SurveysRepositoryImplTest {
         coVerify { examDao.upsertAll(listOf(existingExam)) }
     }
 
+    @Test
+    fun `getSurveyFormState uses questionDao countByExamIds and handles team submissions and missing counts`() = runTest {
+        val survey1 = StepExam(id = "survey1")
+        val survey2 = StepExam(id = "survey2")
+        val surveys = listOf(survey1, survey2)
+
+        val teamId = "team-1"
+        val submission1 = Submission(id = "sub1", parentId = "survey1")
+        coEvery { submissionDao.getByParentIdsAndTeamId(listOf("survey1", "survey2"), teamId) } returns listOf(submission1)
+        coEvery { questionDao.countByExamIds(listOf("survey1", "survey2")) } returns mapOf("survey1" to 5)
+
+        val formStates = repository.getSurveyFormState(surveys, teamId)
+
+        assertEquals(2, formStates.size)
+        assertEquals(submission1, formStates["survey1"]?.teamSubmission)
+        assertEquals(5, formStates["survey1"]?.questionCount)
+
+        assertEquals(null, formStates["survey2"]?.teamSubmission)
+        assertEquals(0, formStates["survey2"]?.questionCount)
+
+        coVerify(exactly = 1) { questionDao.countByExamIds(listOf("survey1", "survey2")) }
+        coVerify(exactly = 0) { questionDao.getByExamIds(any()) }
+    }
+
 }

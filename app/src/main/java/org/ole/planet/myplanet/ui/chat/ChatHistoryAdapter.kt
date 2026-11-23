@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatSharePayload
 import org.ole.planet.myplanet.model.ChatShareTargets
-import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.teams.TeamsSelectionAdapter
@@ -31,7 +30,6 @@ class ChatHistoryAdapter(
     private val context: Context,
     chatHistoryList: List<ChatHistory>,
     private var currentUser: UserEntity?,
-    private var newsList: List<News>,
     private var cachedSharedViewInIds: Map<String, Set<String>>,
     private var shareTargets: ChatShareTargets,
     diffConfig: AsyncDifferConfig<ChatHistory>? = null,
@@ -57,9 +55,8 @@ class ChatHistoryAdapter(
         submitList(chatHistoryList)
     }
 
-    fun updateCachedData(user: UserEntity?, sharedNews: List<News>, sharedViewInIds: Map<String, Set<String>>) {
+    fun updateCachedData(user: UserEntity?, sharedViewInIds: Map<String, Set<String>>) {
         currentUser = user
-        newsList = sharedNews
         cachedSharedViewInIds = sharedViewInIds
     }
 

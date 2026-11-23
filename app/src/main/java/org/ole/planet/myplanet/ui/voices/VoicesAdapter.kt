@@ -2,9 +2,9 @@ package org.ole.planet.myplanet.ui.voices
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.net.Uri
 import android.os.Build
 import android.text.Spanned
-import android.text.TextUtils
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -21,15 +21,14 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.noties.markwon.image.AsyncDrawableScheduler
 import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.ChatMessage
-import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
@@ -117,7 +116,7 @@ class VoicesAdapter(
             // Every field checked in areContentsTheSame is covered by the buckets above.
             // If payloads is empty here, it means a future field was added to areContentsTheSame
             // without a corresponding bucket. We MUST return null to trigger a full rebind to prevent stale UI.
-            if (payloads.isNotEmpty()) payloads else null
+            payloads.ifEmpty { null }
         }
     )
 ) {
@@ -133,6 +132,7 @@ class VoicesAdapter(
         const val PAYLOAD_IMAGES_CHANGED = "PAYLOAD_IMAGES_CHANGED"
         const val PAYLOAD_VIEW_IN_CHANGED = "PAYLOAD_VIEW_IN_CHANGED"
         const val PAYLOAD_REACTIONS_CHANGED = "PAYLOAD_REACTIONS_CHANGED"
+        const val PAYLOAD_RESOURCE_DOWNLOADED = "PAYLOAD_RESOURCE_DOWNLOADED"
     }
 
     private data class RowState(
@@ -337,6 +337,11 @@ class VoicesAdapter(
                         setMessageAndDate(holder, news, sharedTeamName)
                     }
                     PAYLOAD_REACTIONS_CHANGED -> showReactions(holder, news)
+                    PAYLOAD_RESOURCE_DOWNLOADED -> {
+                        loadImage(holder.binding, news)
+                        val sharedTeamName = news.parsedSharedTeamName ?: GsonUtils.extractSharedTeamName(news)
+                        setMessageAndDate(holder, news, sharedTeamName)
+                    }
                 }
             }
         }
@@ -398,6 +403,15 @@ class VoicesAdapter(
             notifyItemChanged(0, PAYLOAD_REPLY_COUNT)
         }
         listener?.onDataChanged()
+    }
+
+    fun onResourceDownloaded(resourceId: String) {
+        if (resourceId.isEmpty()) return
+        currentList.forEachIndexed { index, news ->
+            val referenced = news.images?.contains(resourceId) == true ||
+                news.message?.contains("resources/$resourceId/") == true
+            if (referenced) safeNotifyItemChanged(index, PAYLOAD_RESOURCE_DOWNLOADED)
+        }
     }
 
     fun updateReplyBadge(newsId: String?) {
@@ -473,8 +487,13 @@ class VoicesAdapter(
     }
 
     private fun setMessageAndDate(holder: VoicesViewHolder, news: News, sharedTeamName: String) {
-        val markdownContentWithLocalPaths = prependBaseUrlToImages(
+        val withoutAttachments = VoicesAdapterHelper.stripAttachedImages(
             news.message,
+            VoicesAdapterHelper.attachedResourceIds(news.imagesArray)
+        )
+        val message = VoicesAdapterHelper.stripUnavailableImages(withoutAttachments, ::isImageOnDisk)
+        val markdownContentWithLocalPaths = prependBaseUrlToImages(
+            message,
             "file://$externalFilesDir/ole/",
             600,
             350
@@ -492,6 +511,11 @@ class VoicesAdapter(
                 "${formatDate(news.time)} | Shared from $sharedTeamName"
             }
         holder.binding.tvEdited.visibility = if (news.isEdited) View.VISIBLE else View.GONE
+    }
+
+    private fun isImageOnDisk(resourcePath: String): Boolean {
+        val base = externalFilesDir ?: return false
+        return File(base, "ole/$resourcePath").isFile || File(base, "ole/${Uri.decode(resourcePath)}").isFile
     }
 
     private fun setMessageMarkdown(textView: TextView, news: News, markdown: String) {
@@ -615,72 +639,11 @@ class VoicesAdapter(
         super.submitList(prepareSubmitList(children))
     }
 
-    private fun parseViewIn(viewIn: String?): JsonArray? {
-        if (TextUtils.isEmpty(viewIn)) return null
-        return try {
-            GsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
-        } catch (e: Exception) {
-            Log.w(TAG, "parseViewIn failed", e)
-            null
-        }
-    }
-
-    private fun parseConversations(conversations: String?): List<Conversation>? {
-        if (conversations.isNullOrEmpty()) return null
-        return try {
-            GsonUtils.gson.fromJson(conversations, Array<Conversation>::class.java).toList()
-        } catch (e: Exception) {
-            Log.w(TAG, "parseConversations failed", e)
-            null
-        }
-    }
-
-    private fun parseImageUrls(imageUrls: List<String>?): List<JsonObject>? {
-        if (imageUrls.isNullOrEmpty()) return null
-        return try {
-            imageUrls.map { GsonUtils.gson.fromJson(it, JsonObject::class.java) }
-        } catch (e: Exception) {
-            Log.w(TAG, "parseImageUrls failed", e)
-            null
-        }
-    }
-
     private fun preParseNews(news: News?) {
-        news?.let {
-            try {
-                if ((it.parsedViewIn == null || it.rawViewIn != it.viewIn) && !TextUtils.isEmpty(it.viewIn)) {
-                    val parsed = parseViewIn(it.viewIn)
-                    if (parsed != null) {
-                        it.parsedViewIn = parsed
-                        it.rawViewIn = it.viewIn
-                    }
-                }
-                if ((it.parsedConversations == null || it.rawConversations != it.conversations) && !it.conversations.isNullOrEmpty()) {
-                    val parsed = parseConversations(it.conversations)
-                    if (parsed != null) {
-                        it.parsedConversations = parsed
-                        it.rawConversations = it.conversations
-                    }
-                }
-
-                val currentImageUrls = it.imageUrls?.toList()
-                if (it.rawImageUrls != currentImageUrls) {
-                    if (!currentImageUrls.isNullOrEmpty()) {
-                        val parsed = parseImageUrls(currentImageUrls)
-                        if (parsed != null) {
-                            it.parsedImageUrls = parsed
-                            it.rawImageUrls = currentImageUrls
-                        }
-                    } else {
-                        it.parsedImageUrls = null
-                        it.rawImageUrls = null
-                    }
-                }
-                it.parsedSharedTeamName = GsonUtils.extractSharedTeamName(it)
-            } catch (e: Exception) {
-                // Catch any parsing exceptions so one bad row doesn't break submitList
-                Log.w(TAG, "preParseNews failed", e)
-            }
+        try {
+            news?.preParse()
+        } catch (e: Exception) {
+            Log.w(TAG, "preParseNews failed", e)
         }
     }
 
@@ -1014,6 +977,11 @@ class VoicesAdapter(
         fetchingUserIds.clear()
     }
 
+    override fun onViewAttachedToWindow(holder: RecyclerView.ViewHolder) {
+        super.onViewAttachedToWindow(holder)
+        if (holder is VoicesViewHolder) AsyncDrawableScheduler.schedule(holder.binding.tvMessage)
+    }
+
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
         super.onViewRecycled(holder)
         if (holder is VoicesViewHolder) {
@@ -1056,7 +1024,7 @@ class VoicesAdapter(
         val imagesToLoad = news?.imagesArray
         imagesToLoad?.let { imagesArray ->
             val size = imagesArray.size()
-            if (!imagesArray.isEmpty()) {
+            if (!imagesArray.isEmpty) {
                 if (size == 1) {
                     val ob = imagesArray[0]?.asJsonObject
                     val resourceId = GsonUtils.getString("resourceId", ob)

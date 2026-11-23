@@ -373,9 +373,29 @@
         <item>Order By Name - Desc</item>
     </string-array>
 
-    <string-array name="grade_level">
+    <string-array name="grade_level_values" translatable="false">
         <item>All</item>
         <item>Pre-Kindergarten</item>
+        <item>Kindergarten</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
+        <item>10</item>
+        <item>11</item>
+        <item>12</item>
+        <item>College</item>
+        <item>Post-Graduate</item>
+    </string-array>
+
+    <string-array name="grade_level">
+        <item>All</item>
+        <item>Open</item>
         <item>Kindergarten</item>
         <item>1</item>
         <item>2</item>
@@ -982,6 +1002,9 @@
     <string name="no_join_request_available">no join request available</string>
     <string name="no_description_available">No description available</string>
     <string name="no_links_available">No links available</string>
+    <string name="community_links">Community Links</string>
+    <string name="local">Local</string>
+    <string name="social_and_web">Social &amp; Web</string>
     <string name="user_requested_to_join_team">%1$s has requested to join %2$s</string>
     <string name="join_request_prefix">Join Request:</string>
     <string name="no_news">news not available</string>

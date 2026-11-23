@@ -7,11 +7,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.await
 import androidx.work.workDataOf
-import dagger.Binds
-import dagger.Module
-import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.components.SingletonComponent
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
@@ -62,14 +58,4 @@ class WorkManagerUserDataUploadScheduler @Inject constructor(
             else -> SyncUiState.Idle
         }
     }
-}
-
-@Module
-@InstallIn(SingletonComponent::class)
-abstract class UserDataUploadSchedulerModule {
-    @Binds
-    @Singleton
-    abstract fun bindUserDataUploadScheduler(
-        impl: WorkManagerUserDataUploadScheduler
-    ): UserDataUploadScheduler
 }

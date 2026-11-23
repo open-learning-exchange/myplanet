@@ -109,13 +109,33 @@ class LoginViewModelTest {
 
     @Test
     fun `saveUsers calls upsertSavedUser on repository`() = runTest {
+        coEvery { userRepository.getUserModel() } returns null
         coEvery { userRepository.upsertSavedUser(any(), any(), any(), any(), any()) } just Runs
 
         val viewModel = createViewModel()
-        viewModel.saveUsers("guest1", "encrypted", "guest", null, null)
+        viewModel.saveUsers("guest1", "encrypted", "guest")
 
         coVerify(exactly = 1) {
-            userRepository.upsertSavedUser("guest1", "encrypted", "guest", null, null)
+            userRepository.upsertSavedUser("guest1", "encrypted", "guest", "", null)
+        }
+        // verify reload
+        coVerify(exactly = 2) { userRepository.getSavedUsers() } // init + reload
+    }
+
+    @Test
+    fun `saveUsers populates profile image and name from user model`() = runTest {
+        val user = UserEntity().apply {
+            userImage = "img"
+            name = "n"
+        }
+        coEvery { userRepository.getUserModel() } returns user
+        coEvery { userRepository.upsertSavedUser(any(), any(), any(), any(), any()) } just Runs
+
+        val viewModel = createViewModel()
+        viewModel.saveUsers("guest1", "encrypted", "guest")
+
+        coVerify(exactly = 1) {
+            userRepository.upsertSavedUser("guest1", "encrypted", "guest", "img", "n")
         }
         // verify reload
         coVerify(exactly = 2) { userRepository.getSavedUsers() } // init + reload

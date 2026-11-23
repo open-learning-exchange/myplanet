@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.utils
 
 import java.io.File
+import java.security.MessageDigest
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -51,5 +53,29 @@ class Sha256UtilsTest {
 
         // Restore read permission so it can be deleted
         file.setReadable(true)
+    }
+
+    @Test
+    fun getCheckSumFromFile_largeFile_matchesDirectSha512() {
+        val file = File.createTempFile("large_test", ".bin")
+        file.deleteOnExit()
+
+        // 200 KiB file (larger than 64 KiB buffer)
+        val data = ByteArray(200 * 1024) { (it % 251).toByte() }
+        file.writeBytes(data)
+
+        val checksum = Sha256Utils().getCheckSumFromFile(file)
+
+        val digest = MessageDigest.getInstance("SHA-512")
+        val expectedHash = digest.digest(data)
+        val hexChars = "0123456789abcdef".toCharArray()
+        val expectedHex = CharArray(expectedHash.size * 2)
+        for (i in expectedHash.indices) {
+            val v = expectedHash[i].toInt() and 0xFF
+            expectedHex[i * 2] = hexChars[v ushr 4]
+            expectedHex[i * 2 + 1] = hexChars[v and 0x0F]
+        }
+
+        assertEquals(String(expectedHex), checksum)
     }
 }

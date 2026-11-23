@@ -27,7 +27,6 @@ import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.NewsDao
-import org.ole.planet.myplanet.data.room.dao.TeamNewsMembership
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -187,6 +186,32 @@ class VoicesRepositoryImplTest {
     }
 
     @Test
+    fun `getDiscussionsByTeamIdFlow hands out posts already parsed so the adapter does no JSON work`() = testScope.runTest {
+        val viewIn = """[{"_id":"team1","section":"teams","name":"Gardeners"},{"_id":"c1","section":"community"}]"""
+        val post = News().apply {
+            id = "n1"
+            this.viewIn = viewIn
+            conversations = """[{"query":"hi","response":"hello"}]"""
+            imageUrls = mutableListOf("""{"imageUrl":"a.jpg"}""")
+        }
+        every { newsDao.getTopLevelByTeamFlow(any(), any()) } returns flowOf(listOf(post))
+
+        val emitted = repository.getDiscussionsByTeamIdFlow("team1").toList().single().single()
+
+        assertEquals(2, emitted.parsedViewIn?.size())
+        assertEquals(viewIn, emitted.rawViewIn)
+        assertEquals("Gardeners", emitted.parsedSharedTeamName)
+        assertEquals(1, emitted.parsedConversations?.size)
+        assertEquals("a.jpg", emitted.parsedImageUrls?.single()?.get("imageUrl")?.asString)
+
+        val cachedViewIn = emitted.parsedViewIn
+        val cachedImages = emitted.parsedImageUrls
+        emitted.preParse()
+        assertTrue(cachedViewIn === emitted.parsedViewIn)
+        assertTrue(cachedImages === emitted.parsedImageUrls)
+    }
+
+    @Test
     fun `getFilteredNews filters top-level posts by team`() = testScope.runTest {
         val news1 = News().apply {
             viewableBy = "teams"
@@ -307,22 +332,15 @@ class VoicesRepositoryImplTest {
     }
 
     @Test
-    fun `countTopLevelByTeams fetches membership once and tallies per team`() = testScope.runTest {
-        val teamIds = listOf("teamA", "teamB", "teamC")
-        val rows = listOf(
-            TeamNewsMembership(viewableBy = "teams", viewableId = "teamA", viewIn = null),
-            TeamNewsMembership(viewableBy = null, viewableId = null, viewIn = "[{\"_id\":\"teamA\",\"section\":\"teams\"}]"),
-            TeamNewsMembership(viewableBy = null, viewableId = null, viewIn = "[{\"_id\":\"teamB\",\"section\":\"teams\"}]"),
-            TeamNewsMembership(viewableBy = null, viewableId = null, viewIn = "[{\"_id\":\"teamOther\",\"section\":\"teams\"}]")
-        )
-        coEvery { newsDao.getTopLevelTeamMembership(teamIds) } returns rows
+    fun `countTopLevelByTeams counts each requested team in the database`() = testScope.runTest {
+        coEvery { newsDao.countTopLevelByTeam("teamA", "%\"_id\":\"teamA\"%") } returns 2L
+        coEvery { newsDao.countTopLevelByTeam("teamB", "%\"_id\":\"teamB\"%") } returns 1L
+        coEvery { newsDao.countTopLevelByTeam("team_C", "%\"_id\":\"team\\_C\"%") } returns 0L
 
-        val counts = repository.countTopLevelByTeams(teamIds)
+        val counts = repository.countTopLevelByTeams(listOf("teamA", "teamB", "team_C", "teamA"))
 
-        assertEquals(2L, counts["teamA"])
-        assertEquals(1L, counts["teamB"])
-        assertEquals(0L, counts["teamC"])
-        coVerify(exactly = 1) { newsDao.getTopLevelTeamMembership(teamIds) }
+        assertEquals(mapOf("teamA" to 2L, "teamB" to 1L, "team_C" to 0L), counts)
+        coVerify(exactly = 1) { newsDao.countTopLevelByTeam("teamA", any()) }
     }
 
     @Test
@@ -330,30 +348,7 @@ class VoicesRepositoryImplTest {
         val counts = repository.countTopLevelByTeams(emptyList())
 
         assertTrue(counts.isEmpty())
-        coVerify(exactly = 0) { newsDao.getTopLevelTeamMembership(any()) }
-    }
-
-    @Test
-    fun `countTopLevelByTeams handles mixed case viewIn and Teams viewableBy correctly`() = testScope.runTest {
-        val teamIds = listOf("team1", "Team2", "team3")
-        val rows = listOf(
-            TeamNewsMembership(
-                viewableBy = "Teams",
-                viewableId = "TEAM1",
-                viewIn = null
-            ),
-            TeamNewsMembership(
-                viewableBy = null,
-                viewableId = null,
-                viewIn = "[{\"_ID\":\"team1\"},{\"_id\":\"TEAM2\"}]"
-            )
-        )
-        coEvery { newsDao.getTopLevelTeamMembership(teamIds) } returns rows
-
-        val counts = repository.countTopLevelByTeams(teamIds)
-
-        val expected = mapOf("team1" to 2L, "Team2" to 1L, "team3" to 0L)
-        assertEquals(expected, counts)
+        coVerify(exactly = 0) { newsDao.countTopLevelByTeam(any(), any()) }
     }
 
     @Test

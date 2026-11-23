@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.Data
-import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.NewsShare
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.GsonUtils
@@ -220,7 +220,7 @@ class ChatRepositoryImpl @Inject constructor(
         chatDao.update(chatHistory)
     }
 
-    override fun extractSharedViewInIds(sharedNews: List<News>): Map<String, Set<String>> {
+    override fun extractSharedViewInIds(sharedNews: List<NewsShare>): Map<String, Set<String>> {
         if (sharedNews.isEmpty()) return emptyMap()
         return sharedNews
             .groupBy { it.newsId }

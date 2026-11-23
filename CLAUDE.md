@@ -144,8 +144,8 @@ myplanet/
    - Location: `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt`
 
 2. **`AppDatabase.kt`** (~165 lines) — the Room database
-   - `@Database` with 38 entities, `version = 18`, `exportSchema = false`, `@TypeConverters(Converters::class)`
-   - Declares all 37 DAO accessors; provisioned by `RoomModule` with a **drop-and-resync** (`fallbackToDestructiveMigration`) strategy — no hand-written migrations; data is re-pulled from CouchDB on first launch after a schema bump
+   - `@Database` with 38 entities, `version = AppDatabase.VERSION` (21), `exportSchema = false`, `@TypeConverters(Converters::class)`
+   - Declares all 37 DAO accessors; provisioned by `RoomModule` with a **drop-and-resync** (`fallbackToDestructiveMigration`) strategy — data is re-pulled from CouchDB after a schema bump — plus one in-place `MIGRATION_20_21` that only adds `my_library` indices, so an index-only bump doesn't wipe unsynced rows
    - Location: `app/src/main/java/org/ole/planet/myplanet/data/room/AppDatabase.kt`
 
 3. **`SyncManager.kt`** (~513 lines)
@@ -271,7 +271,7 @@ There is no generic base repository; each implementation talks to its Room DAO(s
 
 **Module Structure (7 modules):**
 - `NetworkModule.kt` - Provides Retrofit, OkHttp
-- `RoomModule.kt` - Builds the `AppDatabase` (with `fallbackToDestructiveMigration`) and provides every DAO
+- `RoomModule.kt` - Builds the `AppDatabase` (`addMigrations(MIGRATION_20_21)` + `fallbackToDestructiveMigration`) and provides every DAO
 - `RepositoryModule.kt` - Binds repository interfaces to implementations
 - `ServiceModule.kt` - Provides service dependencies
 - `SharedPreferencesModule.kt` - Provides SharedPreferences
@@ -403,7 +403,7 @@ See `docs/CODE_STYLE_GUIDE.md` → "Branch & PR Standards" for commit-message an
 **Doc-only pushes start no code workflow.** `build.yml` and `test.yml` share `paths-ignore: ['docs/**', '**/*.md']`, so a push touching nothing outside those paths runs neither. A documentation-only PR therefore collects only the myPlanet labels check, and that one green check is its complete CI state — there is no build or test run pending behind it.
 
 **Build Workflow** (`.github/workflows/build.yml`)
-- Triggers: push to every branch (so `master`, `claude/**`, `codex/**`, `dependabot/**`, `jules/**` all build), minus the doc-only exclusion above; no manual dispatch. `permissions: contents: read`
+- Triggers: push to every branch except `master` (release.yml already builds there; so `claude/**`, `codex/**`, `dependabot/**`, `jules/**` all build), minus the doc-only exclusion above; no manual dispatch. `permissions: contents: read`
 - Ubuntu 24.04, 10-min job timeout; `default` + `lite` matrix with `fail-fast: false`; a new push to the same ref cancels the run in flight
 - Build command: `./gradlew assemble${FLAVOR^}Debug --configuration-cache-problems=warn --warning-mode all --stacktrace --parallel --max-workers=4`
 
@@ -540,7 +540,7 @@ suspend fun upsertAll(items: List<Rating>)
 - Inject the specific DAO into a repository. For an atomic multi-DAO transaction, use Room's `withTransaction` on the `AppDatabase`.
 - DAO methods are `suspend` (Room runs the query off the main thread via its own executors, so they're safe to call from any dispatcher) or `Flow`-returning — never block the main thread with DB work. `DictionaryActivity` also uses a DAO (`DictionaryDao`) now; there is no raw-DB escape hatch.
 - Use `IS` (not `=`) in DAO `@Query` predicates when a `null` argument should match `NULL` rows (`=` never matches `NULL` in SQL).
-- **Migration strategy is drop-and-resync**: `RoomModule` builds the DB with `fallbackToDestructiveMigration(true)`. On any schema change bump `version` in `AppDatabase`; there are **no** hand-written `Migration` objects — data is re-pulled from the Planet/CouchDB server on the **next sync** (login-triggered or scheduled auto-sync; the rebuild itself does not start one). ⚠️ The rebuild also discards **unsynced local writes** (pending uploads, drafts) — a schema bump ships that loss to any device that hasn't synced, so treat version bumps as releases that need pending data uploaded first.
+- **Migration strategy is drop-and-resync**: `RoomModule` builds the DB with `fallbackToDestructiveMigration(true)`. On any schema change bump `AppDatabase.VERSION` (check `master` first — two branches claiming the same number merge cleanly and then crash). There is one hand-written migration, `MIGRATION_20_21` (index-only, keeps unsynced rows); a bump with no new migration falls back to drop-and-resync, so either add the next link in the chain or remove the stale one — `AppDatabaseMigrationTest` fails until you do. Otherwise data is re-pulled from the Planet/CouchDB server on the **next sync** (login-triggered or scheduled auto-sync; the rebuild itself does not start one). ⚠️ The rebuild also discards **unsynced local writes** (pending uploads, drafts) — a schema bump ships that loss to any device that hasn't synced, so treat version bumps as releases that need pending data uploaded first.
 - Inject `DispatcherProvider` (don't hard-code `Dispatchers.IO`) so tests can substitute deterministic dispatchers.
 
 ### Localization
@@ -674,7 +674,7 @@ When making changes, verify:
 ## Troubleshooting
 
 **Issue: Room schema mismatch / "Room cannot verify the data integrity"**
-- The app uses drop-and-resync: bump `version` in `AppDatabase` after any entity change. `RoomModule` already builds with `fallbackToDestructiveMigration(true)`, so the local DB is rebuilt and re-pulled from the server — no hand-written `Migration` needed.
+- The app uses drop-and-resync: bump `AppDatabase.VERSION` after any entity change. `RoomModule` already builds with `fallbackToDestructiveMigration(true)`, so with no migration path the local DB is rebuilt and re-pulled from the server. If a `Migration` does cover the old version, Room validates the result against every entity — a migration that misses a changed table throws `Migration didn't properly handle: <table>` at startup.
 
 **Issue: KSP annotation processing errors**
 - `./gradlew clean`, remove `.gradle/`, rebuild.

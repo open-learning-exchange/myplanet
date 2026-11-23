@@ -94,7 +94,7 @@ class CoursesFilterFragment : BaseBindingBottomSheetFragment<FragmentCoursesFilt
         adapter.setDropDownViewResource(R.layout.custom_simple_list_item_1)
         spinner.adapter = adapter
         if (initialValue.isNotEmpty()) {
-            val index = englishValues(ctx, arrayRes).indexOf(initialValue)
+            val index = filterValues(ctx, arrayRes).indexOf(initialValue)
                 .takeIf { it >= 0 } ?: resources.getStringArray(arrayRes).indexOf(initialValue)
             if (index >= 0) spinner.setSelection(index)
         }
@@ -102,7 +102,7 @@ class CoursesFilterFragment : BaseBindingBottomSheetFragment<FragmentCoursesFilt
 
     private fun selectedValue(spinner: Spinner, arrayRes: Int): String {
         val position = spinner.selectedItemPosition
-        return if (position <= 0) "" else englishValues(requireContext(), arrayRes).getOrElse(position) { "" }
+        return if (position <= 0) "" else filterValues(requireContext(), arrayRes).getOrElse(position) { "" }
     }
 
     private fun notifyChange() {
@@ -113,6 +113,13 @@ class CoursesFilterFragment : BaseBindingBottomSheetFragment<FragmentCoursesFilt
     }
 
     companion object {
+        fun filterValues(context: Context, arrayRes: Int): Array<String> =
+            if (arrayRes == R.array.grade_level) {
+                context.resources.getStringArray(R.array.grade_level_values)
+            } else {
+                englishValues(context, arrayRes)
+            }
+
         fun englishValues(context: Context, arrayRes: Int): Array<String> {
             val english = Configuration(context.resources.configuration).apply { setLocale(Locale.ENGLISH) }
             return context.createConfigurationContext(english).resources.getStringArray(arrayRes)
