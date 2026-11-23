@@ -56,7 +56,9 @@ object RoomModule {
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
         return Room.databaseBuilder(context, AppDatabase::class.java, "myplanet_room.db")
             // Drop-and-resync migration strategy: on any schema change the local Room store is
-            // rebuilt and repopulated from the server, so no hand-written migrations are needed.
+            // rebuilt and repopulated from the server. Index-only changes get a small in-place
+            // migration instead, so they don't wipe rows that haven't been uploaded yet.
+            .addMigrations(AppDatabase.MIGRATION_20_21)
             .fallbackToDestructiveMigration(true)
             .build()
     }

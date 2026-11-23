@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.notifications
 
-import android.content.Context
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -43,10 +42,19 @@ class NotificationsViewModelTest {
     private lateinit var repository: NotificationsRepository
     private lateinit var viewModel: NotificationsViewModel
 
+    private val fakeStrings = NotificationStrings(
+        storageRunningLow = "Storage running low:",
+        storageAvailable = "Storage available:",
+        joinRequestPrefix = "Join Request",
+        resourceCount = { "res:$it" },
+        taskDue = { title, date -> "$title is due in $date" },
+        userRequestedToJoin = { user, team -> "$user requested to join $team" }
+    )
+
     @Before
     fun setup() {
         repository = mockk(relaxed = true)
-        viewModel = NotificationsViewModel(repository, mockk<Context>(relaxed = true), TestDispatcherProvider(testDispatcher))
+        viewModel = NotificationsViewModel(repository, TestDispatcherProvider(testDispatcher))
     }
 
     @Test
@@ -185,7 +193,7 @@ class NotificationsViewModelTest {
         every { repository.resolveType("team", "whatever", "join_request") } returns "join_request"
         backgroundScope.launch { viewModel.groupedItems.collect {} }
 
-        viewModel.loadNotifications(USER_ID, FILTER_ALL)
+        viewModel.loadNotifications(USER_ID, FILTER_ALL, strings = fakeStrings)
         advanceUntilIdle()
 
         assertEquals("join_request", item("1").notification.type)
@@ -251,7 +259,7 @@ class NotificationsViewModelTest {
         coEvery { repository.getEnrichedNotifications(USER_ID, FILTER_ALL, false) } returns enrichment
 
         backgroundScope.launch { viewModel.groupedItems.collect {} }
-        viewModel.loadNotifications(USER_ID, FILTER_ALL)
+        viewModel.loadNotifications(USER_ID, FILTER_ALL, strings = fakeStrings)
         advanceUntilIdle()
 
         assertEquals(3, viewModel.unreadCount.value)
@@ -397,14 +405,22 @@ class NotificationsViewModelTest {
         coEvery { repository.getEnrichedNotifications(USER_ID, "filterB", false) } returns resultB
         every { repository.resolveType(any(), any(), any()) } answers { firstArg<String>().lowercase() }
 
-        viewModel.loadNotifications(USER_ID, "filterA")
-        viewModel.loadNotifications(USER_ID, "filterB")
+        viewModel.loadNotifications(USER_ID, "filterA", strings = fakeStrings)
+        viewModel.loadNotifications(USER_ID, "filterB", strings = fakeStrings)
 
         advanceUntilIdle()
 
         val currentNotifications = viewModel.notifications.value
         assertEquals(1, currentNotifications.size)
         assertEquals("2", currentNotifications[0].id)
+    }
+
+    @Test
+    fun testResourceRowWithMessageCountRendersWithResourceCountTemplate() = runTest(testDispatcher) {
+        val resourcePayload = notification(id = "res1", type = "resource", isRead = false, message = "3")
+        loadNotifications(resourcePayload)
+
+        assertEquals("res:3", item("res1").notification.formattedText)
     }
 
     private fun item(id: String): NotificationListItem.Item =
@@ -431,7 +447,7 @@ class NotificationsViewModelTest {
             firstArg<String>().lowercase()
         }
         backgroundScope.launch { viewModel.groupedItems.collect {} }
-        viewModel.loadNotifications(USER_ID, filter)
+        viewModel.loadNotifications(USER_ID, filter, strings = fakeStrings)
         advanceUntilIdle()
     }
 
@@ -463,5 +479,81 @@ class NotificationsViewModelTest {
             needsSync = false,
             subType = subType
         )
+    }
+
+    @Test
+    fun testGroupingAndFlatteningRunOnComputeDispatcherAcrossMutations() = runTest(testDispatcher) {
+        val computeDispatcher = StandardTestDispatcher(testScheduler)
+        val customDispatcherProvider = object : org.ole.planet.myplanet.utils.DispatcherProvider {
+            override val main = testDispatcher
+            override val mainImmediate = testDispatcher
+            override val io = testDispatcher
+            override val default = computeDispatcher
+            override val unconfined = testDispatcher
+        }
+        val customViewModel = NotificationsViewModel(
+            notificationsRepository = repository,
+            dispatcherProvider = customDispatcherProvider
+        )
+
+        backgroundScope.launch { customViewModel.groupedItems.collect {} }
+
+        val task1 = notification(id = "t1", type = "task", isRead = false, message = "Task 1")
+        val task2 = notification(id = "t2", type = "task", isRead = true, message = "Task 2")
+        val resource1 = notification(id = "r1", type = "resource", isRead = true, message = "Resource 1")
+
+        val enrichment = EnrichedNotifications(
+            payloads = listOf(task1, task2, resource1),
+            taskTeamNames = emptyMap(),
+            joinRequestDetails = emptyMap(),
+            parsedTaskDates = emptyMap(),
+            unreadCount = 1
+        )
+        coEvery { repository.getEnrichedNotifications(USER_ID, FILTER_ALL, false) } returns enrichment
+        every { repository.resolveType(any(), any(), any()) } answers { firstArg<String>().lowercase() }
+
+        customViewModel.loadNotifications(USER_ID, FILTER_ALL, strings = fakeStrings)
+        advanceUntilIdle()
+
+        assertEquals(4, customViewModel.groupedItems.value.size)
+        val initialHeaderTask = customViewModel.groupedItems.value[0] as NotificationListItem.Header
+        assertEquals("task", initialHeaderTask.type)
+        assertEquals(1, initialHeaderTask.unreadCount)
+        assertTrue(initialHeaderTask.isExpanded)
+
+        customViewModel.toggleSelection("t1")
+        advanceUntilIdle()
+
+        val selectedItem = customViewModel.groupedItems.value.filterIsInstance<NotificationListItem.Item>().first { it.notification.id == "t1" }
+        assertTrue(selectedItem.isSelected)
+        assertTrue(selectedItem.isSelectionMode)
+
+        customViewModel.toggleGroupExpansion("resource")
+        advanceUntilIdle()
+
+        val expandedResourceHeader = customViewModel.groupedItems.value.filterIsInstance<NotificationListItem.Header>().first { it.type == "resource" }
+        assertTrue(expandedResourceHeader.isExpanded)
+        val resourceItem = customViewModel.groupedItems.value.filterIsInstance<NotificationListItem.Item>().first { it.notification.id == "r1" }
+        assertFalse(resourceItem.isSelected)
+        assertTrue(resourceItem.isSelectionMode)
+
+        coEvery { repository.markNotificationsAsRead(setOf("t1")) } returns setOf("t1")
+        customViewModel.markSelectedAsRead()
+        advanceUntilIdle()
+
+        val finalHeaders = customViewModel.groupedItems.value.filterIsInstance<NotificationListItem.Header>()
+        assertEquals(2, finalHeaders.size)
+        assertEquals("task", finalHeaders[0].type)
+        assertEquals(0, finalHeaders[0].unreadCount)
+        assertFalse(finalHeaders[0].isExpanded)
+        assertEquals("resource", finalHeaders[1].type)
+        assertEquals(0, finalHeaders[1].unreadCount)
+        assertTrue(finalHeaders[1].isExpanded)
+
+        val finalItems = customViewModel.groupedItems.value.filterIsInstance<NotificationListItem.Item>()
+        assertEquals(1, finalItems.size)
+        assertEquals("r1", finalItems[0].notification.id)
+        assertFalse(finalItems[0].isSelected)
+        assertFalse(finalItems[0].isSelectionMode)
     }
 }

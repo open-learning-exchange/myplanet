@@ -573,17 +573,28 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun downloadResources(resources: List<MyLibrary>): Boolean {
         return try {
-            val urls = resources.mapNotNull { if (!it.isResourceOffline()) it.resourceRemoteAddress else null }
-            if (urls.isEmpty()) {
-                return false
-            }
             withContext(dispatcherProvider.io) {
+                val urls = resources.mapNotNull { library ->
+                    val url = library.resourceRemoteAddress ?: return@mapNotNull null
+                    url.takeIf { !library.isResourceOffline() || discardHtmlStandIn(url) }
+                }
+                if (urls.isEmpty()) return@withContext false
                 DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
+                true
             }
-            true
         } catch (_: Exception) {
             false
         }
+    }
+
+    private fun discardHtmlStandIn(url: String): Boolean = try {
+        val file = FileUtils.getSDPathFromUrl(context, url)
+        FileUtils.isHtmlStandIn(file) && file.delete().also {
+            Log.w("ResourcesRepository", "Discarded HTML page saved in place of ${file.name}; re-downloading")
+        }
+    } catch (e: Exception) {
+        Log.w("ResourcesRepository", "Could not check the saved file for ${UrlUtils.redactForLog(url)}", e)
+        false
     }
 
     override suspend fun downloadResourcesPriority(resources: List<MyLibrary>): Boolean {

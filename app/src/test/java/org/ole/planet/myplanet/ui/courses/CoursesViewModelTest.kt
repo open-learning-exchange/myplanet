@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.ui.courses
 
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -278,5 +280,23 @@ class CoursesViewModelTest {
 
         dates = viewModel.coursesState.value.courses.map { it.createdDate }
         assertEquals(listOf(1000L, 2000L), dates)
+    }
+
+    @Test
+    fun `a slow older filter does not overwrite a newer one`() = runTest {
+        coEvery { coursesRepository.filterCourses("a", any(), any(), any()) } coAnswers {
+            delay(1_000)
+            listOf(MyCourse(id = "1", courseId = "1", courseTitle = "Old result"))
+        }
+        coEvery { coursesRepository.filterCourses("ab", any(), any(), any()) } coAnswers {
+            delay(10)
+            listOf(MyCourse(id = "2", courseId = "2", courseTitle = "New result"))
+        }
+
+        viewModel.filterCourses(false, "u1", "a", "", "", emptyList())
+        viewModel.filterCourses(false, "u1", "ab", "", "", emptyList())
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf("New result"), viewModel.coursesState.value.courses.map { it.courseTitle })
     }
 }

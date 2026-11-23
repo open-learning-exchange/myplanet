@@ -20,6 +20,8 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.repository.HealthRepository
+import org.ole.planet.myplanet.services.upload.UploadError
+import org.ole.planet.myplanet.services.upload.UploadResult
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserDataWorkerTest {
@@ -101,7 +103,7 @@ class UserDataWorkerTest {
         }
 
         // 4. uploadFeedback returns true
-        coEvery { uploadManager.uploadFeedback() } returns true
+        coEvery { uploadManager.uploadFeedback() } returns UploadResult.Empty
 
         // 5. uploadResource completes
         coEvery { uploadManager.uploadResource(any()) } answers {
@@ -123,7 +125,12 @@ class UserDataWorkerTest {
 
         val result = worker.doWork()
 
-        assertEquals(Result.success(), result)
+        // The stuck step is reported, so the user isn't told everything uploaded.
+        assertTrue(result is Result.Failure)
+        assertEquals(
+            listOf("user activities"),
+            (result as Result.Failure).outputData.getStringArray(UserDataWorker.KEY_FAILED_STEPS)?.toList()
+        )
 
         // Verify that subsequent uploads were still executed in order
         coVerifyOrder {
@@ -155,15 +162,14 @@ class UserDataWorkerTest {
             events.add("healthSync")
         }
 
-        val result = worker.doWork()
+        worker.doWork()
 
-        assertEquals(Result.success(), result)
         coVerify(exactly = 1) { healthRepository.syncPendingHealthExaminations() }
         assertEquals(listOf("uploadUserDataCallback", "healthSync"), events)
     }
 
     @Test
-    fun `doWork for UPLOAD_TYPE_BULK does not fail when the health sync throws`() = runTest {
+    fun `doWork for UPLOAD_TYPE_BULK keeps going when the health sync throws but reports it`() = runTest {
         val inputData = Data.Builder()
             .putString(UserDataWorker.KEY_UPLOAD_TYPE, UserDataWorker.UPLOAD_TYPE_BULK)
             .build()
@@ -174,11 +180,17 @@ class UserDataWorkerTest {
             listener.onSuccess("Shelf sync ok")
         }
         coEvery { healthRepository.syncPendingHealthExaminations() } throws RuntimeException("health upload failed")
+        stubCallbackStepsToComplete()
 
         val result = worker.doWork()
 
-        assertEquals(Result.success(), result)
+        assertTrue(result is Result.Failure)
+        assertEquals(
+            listOf("health examinations"),
+            (result as Result.Failure).outputData.getStringArray(UserDataWorker.KEY_FAILED_STEPS)?.toList()
+        )
         coVerify(exactly = 1) { healthRepository.syncPendingHealthExaminations() }
+        coVerify(exactly = 1) { uploadManager.uploadFeedback() }
     }
 
     @Test
@@ -200,5 +212,48 @@ class UserDataWorkerTest {
         coVerify(exactly = 1) { uploadManager.uploadAchievement() }
         coVerify(exactly = 0) { uploadManager.uploadNews() }
         coVerify(exactly = 0) { uploadManager.uploadResourceActivities(any()) }
+    }
+
+    private fun bulkInput() {
+        every { workerParams.inputData } returns Data.Builder()
+            .putString(UserDataWorker.KEY_UPLOAD_TYPE, UserDataWorker.UPLOAD_TYPE_BULK)
+            .build()
+    }
+
+    private fun stubCallbackStepsToComplete() {
+        coEvery { uploadToShelfService.uploadUserData(any()) } answers { firstArg<OnSuccessListener>().onSuccess("ok") }
+        coEvery { uploadManager.uploadUserActivities(any()) } answers { firstArg<OnSuccessListener>().onSuccess("ok") }
+        coEvery { uploadManager.uploadExamResult(any()) } answers { firstArg<OnSuccessListener>().onSuccess("ok") }
+        coEvery { uploadManager.uploadResource(any()) } answers { firstArg<OnSuccessListener?>()?.onSuccess("ok") }
+        coEvery { uploadManager.uploadSubmitPhotos(any()) } answers { firstArg<OnSuccessListener?>()?.onSuccess("ok") }
+        coEvery { uploadManager.uploadActivities(any()) } answers { firstArg<OnSuccessListener?>()?.onSuccess("ok") }
+    }
+
+    @Test
+    fun `doWork for UPLOAD_TYPE_BULK succeeds when every step uploads`() = runTest {
+        bulkInput()
+        stubCallbackStepsToComplete()
+        coEvery { uploadManager.uploadSubmissions(any()) } returns UploadResult.Empty
+
+        assertEquals(Result.success(), worker.doWork())
+    }
+
+    @Test
+    fun `doWork for UPLOAD_TYPE_BULK fails when the server rejects submissions`() = runTest {
+        bulkInput()
+        stubCallbackStepsToComplete()
+        coEvery { uploadManager.uploadSubmissions(any()) } returns UploadResult.Failure(
+            listOf(UploadError("sub1", java.io.IOException("server unreachable"), retryable = true))
+        )
+
+        val result = worker.doWork()
+
+        assertTrue(result is Result.Failure)
+        assertEquals(
+            listOf("submissions"),
+            (result as Result.Failure).outputData.getStringArray(UserDataWorker.KEY_FAILED_STEPS)?.toList()
+        )
+        // Later steps still run after a failure.
+        coVerify(exactly = 1) { uploadManager.uploadActivities(any()) }
     }
 }

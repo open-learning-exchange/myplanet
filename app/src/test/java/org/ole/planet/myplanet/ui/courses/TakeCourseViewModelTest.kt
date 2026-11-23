@@ -6,6 +6,7 @@ import io.mockk.coVerifyOrder
 import io.mockk.mockk
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -108,6 +109,67 @@ class TakeCourseViewModelTest {
             progressRepository.saveEarnedExamPasses(steps, "user_1", "planet", "parent", courseId)
             progressRepository.getBlockingStepIndex(steps, "user_1", courseId)
         }
+    }
+
+    @Test
+    fun loadCourse_readsIndependentRepositoriesConcurrently() = runTest {
+        val userGate = CompletableDeferred<Unit>()
+        val courseGate = CompletableDeferred<Unit>()
+        val stepsGate = CompletableDeferred<Unit>()
+        val progressGate = CompletableDeferred<Unit>()
+        val user = UserEntity().apply { id = "user_1" }
+        val course = MyCourse().apply { courseId = this@TakeCourseViewModelTest.courseId }
+
+        var userStarted = false
+        var courseStarted = false
+        var stepsStarted = false
+        var progressStarted = false
+
+        coEvery { userRepository.getUserModel() } coAnswers {
+            userStarted = true
+            userGate.await()
+            user
+        }
+        coEvery { coursesRepository.getCourseById(this@TakeCourseViewModelTest.courseId) } coAnswers {
+            courseStarted = true
+            courseGate.await()
+            course
+        }
+        coEvery { coursesRepository.getCourseSteps(this@TakeCourseViewModelTest.courseId) } coAnswers {
+            stepsStarted = true
+            stepsGate.await()
+            emptyList()
+        }
+        coEvery { progressRepository.getCourseProgress(listOf(this@TakeCourseViewModelTest.courseId), "user_1") } coAnswers {
+            progressStarted = true
+            progressGate.await()
+            hashMapOf<String, org.ole.planet.myplanet.model.CourseProgressState>()
+        }
+        coEvery { progressRepository.saveEarnedExamPasses(any(), any(), any(), any(), any()) } returns Unit
+        coEvery { progressRepository.getBlockingStepIndex(any(), any(), any()) } returns -1
+
+        viewModel.loadCourse(courseId)
+        advanceUntilIdle()
+
+        // Both reads of the first pair have started before either has finished.
+        assertTrue(userStarted)
+        assertTrue(courseStarted)
+        assertFalse(stepsStarted)
+        assertFalse(progressStarted)
+
+        userGate.complete(Unit)
+        courseGate.complete(Unit)
+        advanceUntilIdle()
+
+        // The course was found, so both reads of the second pair now start before either finishes.
+        assertTrue(stepsStarted)
+        assertTrue(progressStarted)
+
+        stepsGate.complete(Unit)
+        progressGate.complete(Unit)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is TakeCourseUiState.Success)
     }
 
     @Test

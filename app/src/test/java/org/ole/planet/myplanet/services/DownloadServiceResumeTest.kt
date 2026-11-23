@@ -38,6 +38,7 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.robolectric.RobolectricTestRunner
@@ -108,7 +109,34 @@ class DownloadServiceResumeTest {
         coEvery { resourcesRepository.markResourceOfflineByUrl(any()) } just Runs
         setDeclaredField("resourcesRepository", service, resourcesRepository)
 
+        val serverUrlMapper = mockk<ServerUrlMapper>()
+        every { serverUrlMapper.processUrl(any()) } answers { ServerUrlMapper.UrlMapping(firstArg()) }
+        setDeclaredField("fallbackUrlResolver", service, FallbackUrlResolver(serverUrlMapper, mockk(relaxed = true)))
+
         return service
+    }
+
+    private fun withAlternative(service: DownloadService, primaryBase: String, altBase: String) {
+        val serverUrlMapper = mockk<ServerUrlMapper>()
+        every { serverUrlMapper.processUrl(any()) } answers {
+            ServerUrlMapper.UrlMapping(firstArg(), alternativeUrl = altBase, extractedBaseUrl = primaryBase)
+        }
+        setDeclaredField("fallbackUrlResolver", service, FallbackUrlResolver(serverUrlMapper, mockk(relaxed = true)))
+    }
+
+    private fun invokeInitDownload(service: DownloadService, url: String): Any? {
+        val method = DownloadService::class.java.getDeclaredMethod(
+            "initDownload",
+            String::class.java,
+            Boolean::class.javaPrimitiveType,
+            Continuation::class.java
+        )
+        method.isAccessible = true
+        val completion = object : Continuation<Any?> {
+            override val context = EmptyCoroutineContext
+            override fun resumeWith(result: Result<Any?>) {}
+        }
+        return method.invoke(service, url, false, completion)
     }
 
     private fun invokeDownloadFile(service: DownloadService, body: ResponseBody, isPartial: Boolean, validator: String? = null) {
@@ -317,24 +345,75 @@ class DownloadServiceResumeTest {
             DownloadResult.Success("fresh-full-file".toByteArray().toResponseBody(null), 200)
         setDeclaredField("downloadRepository", service, downloadRepository)
 
-        val method = DownloadService::class.java.getDeclaredMethod(
-            "initDownload",
-            String::class.java,
-            Boolean::class.javaPrimitiveType,
-            Continuation::class.java
-        )
-        method.isAccessible = true
-        val completion = object : Continuation<Any?> {
-            override val context = EmptyCoroutineContext
-            override fun resumeWith(result: Result<Any?>) {}
-        }
-        val succeeded = method.invoke(service, url, false, completion)
+        val succeeded = invokeInitDownload(service, url)
 
         assertEquals("a 416 on resume should fall back to a full download, not a failure", true, succeeded)
         coVerify(exactly = 1) { downloadRepository.downloadFileResponse(url, any(), 0L, null) }
         assertEquals("fresh-full-file", finalFile.readText())
         assertFalse(tempFile.exists())
         assertFalse(validatorFile.exists())
+    }
+
+    @Test
+    fun `initDownload fails over without retries and sends the rest of the run to the alternative`() {
+        val primaryBase = "http://example.com"
+        val altBase = "http://alt.example.com"
+        val secondUrl = "$primaryBase/resources/other.zip"
+
+        mockkObject(UrlUtils)
+        every { UrlUtils.header } returns "Basic dGVzdDp0ZXN0"
+        every { FileUtils.externalMemoryAvailable() } returns true
+        every { FileUtils.availableExternalMemorySize } returns Long.MAX_VALUE
+        every { FileUtils.checkFileExist(any(), any()) } returns false
+
+        val service = newService()
+        withAlternative(service, primaryBase, altBase)
+        val downloadRepository = mockk<DownloadRepository>()
+        coEvery { downloadRepository.downloadFileResponse(match { it.startsWith(primaryBase) }, any(), any(), any(), any()) } returns
+            DownloadResult.Error("Connection timed out")
+        coEvery { downloadRepository.downloadFileResponse(match { it.startsWith(altBase) }, any(), any(), any(), any()) } answers {
+            DownloadResult.Success("from-alternative".toByteArray().toResponseBody(null), 200)
+        }
+        setDeclaredField("downloadRepository", service, downloadRepository)
+
+        assertEquals(true, invokeInitDownload(service, url))
+        assertEquals(true, invokeInitDownload(service, secondUrl))
+
+        coVerify(exactly = 1) { downloadRepository.downloadFileResponse(url, any(), any(), any(), false) }
+        coVerify(exactly = 0) { downloadRepository.downloadFileResponse(url, any(), any(), any(), true) }
+        coVerify(exactly = 0) { downloadRepository.downloadFileResponse(secondUrl, any(), any(), any(), any()) }
+        coVerify(exactly = 1) { downloadRepository.downloadFileResponse("$altBase/db/resources/course.zip", any(), any(), any(), any()) }
+        coVerify(exactly = 1) { downloadRepository.downloadFileResponse("$altBase/db/resources/other.zip", any(), any(), any(), any()) }
+        assertEquals(primaryBase, service.unreachablePrimaryBase)
+    }
+
+    @Test
+    fun `initDownload goes back to the primary when the remembered alternative stops answering`() {
+        val primaryBase = "http://example.com"
+        val altBase = "http://alt.example.com"
+
+        mockkObject(UrlUtils)
+        every { UrlUtils.header } returns "Basic dGVzdDp0ZXN0"
+        every { FileUtils.externalMemoryAvailable() } returns true
+        every { FileUtils.availableExternalMemorySize } returns Long.MAX_VALUE
+        every { FileUtils.checkFileExist(any(), any()) } returns false
+
+        val service = newService()
+        withAlternative(service, primaryBase, altBase)
+        service.unreachablePrimaryBase = primaryBase
+        val downloadRepository = mockk<DownloadRepository>()
+        coEvery { downloadRepository.downloadFileResponse(match { it.startsWith(altBase) }, any(), any(), any(), any()) } returns
+            DownloadResult.Error("Connection refused")
+        coEvery { downloadRepository.downloadFileResponse(url, any(), any(), any(), any()) } returns
+            DownloadResult.Success("from-primary".toByteArray().toResponseBody(null), 200)
+        setDeclaredField("downloadRepository", service, downloadRepository)
+
+        assertEquals(true, invokeInitDownload(service, url))
+
+        coVerify(exactly = 1) { downloadRepository.downloadFileResponse(url, any(), any(), any(), true) }
+        coVerify(exactly = 1) { downloadRepository.downloadFileResponse(match { it.startsWith(altBase) }, any(), any(), any(), any()) }
+        assertEquals(null, service.unreachablePrimaryBase)
+        assertEquals("from-primary", finalFile.readText())
     }
 
     @Test

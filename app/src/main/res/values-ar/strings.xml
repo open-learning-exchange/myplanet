@@ -396,7 +396,7 @@
 
     <string-array name="grade_level">
         <item>الكل</item>
-        <item>رياض الأطفال</item>
+        <item>مفتوح</item>
         <item>روضة الأطفال</item>
         <item>1</item>
         <item>2</item>
@@ -999,6 +999,9 @@
     <string name="no_join_request_available">لا تتوفر طلبات الانضمام</string>
     <string name="no_description_available">لا تتوفر وصف</string>
     <string name="no_links_available">لا تتوفر روابط</string>
+    <string name="community_links">روابط المجتمع</string>
+    <string name="local">محلي</string>
+    <string name="social_and_web">التواصل الاجتماعي والويب</string>
     <string name="user_requested_to_join_team">%1$s قد طلب الانضمام إلى %2$s</string>
     <string name="join_request_prefix">طلب الانضمام:</string>
     <string name="no_news">لا تتوفر أخبار</string>

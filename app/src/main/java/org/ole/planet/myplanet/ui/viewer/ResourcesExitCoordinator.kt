@@ -10,6 +10,13 @@ class ResourcesExitCoordinator(
     private val viewModel: ResourceViewerViewModel,
 ) {
     private var handled = false
+    
+    fun register() {
+        activity.supportFragmentManager.setFragmentResultListener(
+            RatingsFragment.REQUEST_KEY_DISMISSED,
+            activity
+        ) { _, _ -> activity.finish() }
+    }
 
     fun handleBackNavigation(resourceId: String?, title: String?, isResourceFinished: Boolean = true) {
         if (handled) return
@@ -26,7 +33,6 @@ class ResourcesExitCoordinator(
             val showDialog = viewModel.shouldShowResourceRatingDialog(resourceId)
             if (showDialog && !activity.supportFragmentManager.isStateSaved) {
                 val dialog = RatingsFragment.newInstance("resource", resourceId, title)
-                dialog.setOnDismissListener { activity.finish() }
                 viewModel.setRatingPrompted(resourceId)
                 dialog.show(activity.supportFragmentManager, RatingsFragment.TAG)
             } else {

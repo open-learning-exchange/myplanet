@@ -396,7 +396,7 @@
 
     <string-array name="grade_level">
         <item>Todos</item>
-        <item>Pre-Jardín de infancia</item>
+        <item>Abierto</item>
         <item>Jardín de infantes</item>
         <item>1</item>
         <item>2</item>
@@ -995,6 +995,9 @@
     <string name="no_join_request_available">no hay solicitud de unirse disponible</string>
     <string name="no_description_available">No hay descripción disponible</string>
     <string name="no_links_available">No hay enlaces disponibles</string>
+    <string name="community_links">Enlaces de la comunidad</string>
+    <string name="local">Local</string>
+    <string name="social_and_web">Redes sociales y web</string>
     <string name="user_requested_to_join_team">%1$s ha solicitado unirse a %2$s</string>
     <string name="join_request_prefix">Solicitud de Unión:</string>
     <string name="no_news">noticias no disponibles</string>

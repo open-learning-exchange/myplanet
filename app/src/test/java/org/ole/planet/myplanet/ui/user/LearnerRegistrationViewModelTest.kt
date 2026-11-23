@@ -103,4 +103,36 @@ class LearnerRegistrationViewModelTest {
         coVerify(exactly = 1) { userRepository.validateUsername("user1") }
         coVerify(exactly = 1) { userRepository.cleanupDuplicateUsers() }
     }
+
+    @Test
+    fun `register creates the member once even when asked again after rotation`() = runTest {
+        val info = LearnerRegistrationInfo("user1", "pass123", "pass123", "John", "Doe", "", "", "en", "level1", "", "2000-01-01", "male")
+        coEvery { userRepository.createMember(info) } returns Pair(true, "Created")
+
+        viewModel.register(info)
+        assertEquals(RegistrationState.Creating, viewModel.registration.value)
+        viewModel.register(info)
+        advanceUntilIdle()
+        viewModel.register(info)
+        advanceUntilIdle()
+
+        assertEquals(RegistrationState.Created(info, "Created"), viewModel.registration.value)
+        coVerify(exactly = 1) { userRepository.createMember(info) }
+    }
+
+    @Test
+    fun `a failed registration can be retried once the failure is shown`() = runTest {
+        val info = LearnerRegistrationInfo("user1", "pass123", "pass123", "John", "Doe", "", "", "en", "level1", "", "2000-01-01", "male")
+        coEvery { userRepository.createMember(info) } returns Pair(false, "Exists")
+
+        viewModel.register(info)
+        advanceUntilIdle()
+        assertEquals(RegistrationState.Failed("Exists"), viewModel.registration.value)
+
+        viewModel.failureShown()
+        assertEquals(RegistrationState.Idle, viewModel.registration.value)
+        viewModel.register(info)
+        advanceUntilIdle()
+        coVerify(exactly = 2) { userRepository.createMember(info) }
+    }
 }

@@ -354,7 +354,7 @@ class SurveysRepositoryImpl @Inject constructor(
             submissionDao.getByParentIdsAndTeamId(surveyIds, teamId)
                 .associateBy { it.parentId }
         }
-        val questionCounts = questionDao.getByExamIds(surveyIds).groupingBy { it.examId }.eachCount()
+        val questionCounts = questionDao.countByExamIds(surveyIds)
 
         return surveys.mapNotNull { survey ->
             val surveyId = survey.id

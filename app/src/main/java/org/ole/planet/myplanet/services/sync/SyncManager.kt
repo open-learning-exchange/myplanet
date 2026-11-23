@@ -187,12 +187,12 @@ class SyncManager @Inject constructor(
 
             _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_resources), 2, 4)
             syncTimeLogger.startProcess("resource_sync")
-            resourceTransactionSync()
+            if (!resourceTransactionSync()) failedTables.add("resources")
             syncTimeLogger.endProcess("resource_sync")
 
             _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_library), 3, 4)
             syncTimeLogger.startProcess("library_sync")
-            myLibraryTransactionSync()
+            if (!myLibraryTransactionSync()) failedTables.add("library")
             syncTimeLogger.endProcess("library_sync")
 
             _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_finalizing), 4, 4)
@@ -288,7 +288,7 @@ class SyncManager @Inject constructor(
         listener = null
     }
 
-    private suspend fun resourceTransactionSync() {
+    private suspend fun resourceTransactionSync(): Boolean {
         val resourceSyncStartTime = SystemClock.elapsedRealtime()
         syncPerf { "  ▶ Starting resource sync" }
 
@@ -303,6 +303,7 @@ class SyncManager @Inject constructor(
             var totalRows: Int
             var countKnown: Boolean
             var hadBatchFailure = false
+            var hadPageFailure = false
 
             syncTimeLogger.startProcess("resource_get_total_count")
             val countApiStartTime = SystemClock.elapsedRealtime()
@@ -337,6 +338,7 @@ class SyncManager @Inject constructor(
                     if (rows == null) {
                         batchSizer.recordFailure()
                         hadBatchFailure = true
+                        hadPageFailure = true
                         syncTimeLogger.logApiCall("$url/resources/_all_docs (batch $batchCount)", batchApiDuration, false, 0)
                         if (!countKnown) break
                         skip += batchSize
@@ -395,6 +397,7 @@ class SyncManager @Inject constructor(
                     Log.e("SyncManager", "Resource batch failed", e)
                     batchSizer.recordFailure()
                     hadBatchFailure = true
+                    hadPageFailure = true
                     syncTimeLogger.logDetail("resource_sync", "Batch $batchCount failed: ${e.message}")
                     if (!countKnown) break
                     skip += batchSize
@@ -427,6 +430,7 @@ class SyncManager @Inject constructor(
             val minutes = resourceSyncTime / 60000
             val seconds = (resourceSyncTime % 60000) / 1000
             syncPerf { "  ✓ Resources sync completed: ${minutes}m ${seconds}s - $processedItems items" }
+            return !hadPageFailure
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -434,6 +438,7 @@ class SyncManager @Inject constructor(
             syncTimeLogger.endProcess("resource_sync_main", processedItems)
             val resourceSyncEndTime = SystemClock.elapsedRealtime()
             syncPerf { "  ✗ Resources sync failed after ${resourceSyncEndTime - resourceSyncStartTime}ms: ${e.message}" }
+            return false
         }
     }
 
@@ -444,7 +449,7 @@ class SyncManager @Inject constructor(
         _syncStatus.value = SyncStatus.Error(message ?: "Unknown error")
     }
 
-    private suspend fun myLibraryTransactionSync() {
+    private suspend fun myLibraryTransactionSync(): Boolean {
 
         val librarySyncStartTime = SystemClock.elapsedRealtime()
         syncPerf { "  ▶ Starting library sync" }
@@ -463,7 +468,7 @@ class SyncManager @Inject constructor(
             if (shelvesWithData.isEmpty()) {
                 syncTimeLogger.logDetail("library_sync", "No shelves with data found, skipping library sync")
                 syncTimeLogger.endProcess("library_sync_main", 0)
-                return
+                return true
             }
 
             syncTimeLogger.startProcess("library_process_shelves")
@@ -501,6 +506,7 @@ class SyncManager @Inject constructor(
 
             val totalDuration = SystemClock.elapsedRealtime() - librarySyncStartTime
             syncPerf { "  ✓ Library sync completed: ${totalDuration}ms - $processedItems items from ${shelvesWithData.size} shelves" }
+            return true
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -508,6 +514,7 @@ class SyncManager @Inject constructor(
             syncTimeLogger.endProcess("library_sync_main", processedItems)
             val failDuration = SystemClock.elapsedRealtime() - librarySyncStartTime
             syncPerf { "  ✗ Library sync failed after ${failDuration}ms: ${e.message}" }
+            return false
         }
     }
 }

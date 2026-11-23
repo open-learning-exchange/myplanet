@@ -9,13 +9,19 @@ import org.ole.planet.myplanet.model.Personal
 
 @Dao
 interface PersonalDao {
-    // COLLATE NOCASE mirrors Realm's Case.INSENSITIVE title match. A null/blank userId matches any
-    // user, mirroring the original conditional userId filter.
-    @Query(
-        "SELECT COUNT(*) FROM my_personal WHERE title = :title COLLATE NOCASE " +
-            "AND (:userId IS NULL OR :userId = '' OR userId = :userId)"
-    )
-    suspend fun countByTitle(title: String, userId: String?): Int
+    @Query("SELECT COUNT(*) FROM my_personal WHERE title = :title COLLATE NOCASE")
+    suspend fun countByTitle(title: String): Int
+
+    @Query("SELECT COUNT(*) FROM my_personal WHERE title = :title COLLATE NOCASE AND userId = :userId")
+    suspend fun countByTitleAndUserId(title: String, userId: String): Int
+
+    suspend fun countByTitle(title: String, userId: String?): Int {
+        return if (userId.isNullOrEmpty()) {
+            countByTitle(title)
+        } else {
+            countByTitleAndUserId(title, userId)
+        }
+    }
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: Personal)
