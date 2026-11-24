@@ -266,7 +266,7 @@ dependencies {
     implementation(libs.pdfbox.android) { exclude group: 'org.bouncycastle' }
 }
 // From DefaultSdkProvider; dependabot cannot bump these. See docs/TESTING.md.
-def robolectricSdkJarsFrom = '4.18'
+def robolectricSdkJarsFrom = '4.18.1'
 def robolectricPinned = libs.versions.robolectric.get()
 def robolectricSdkJars = [
     26: '8.0.0_r4-robolectric-r1-i7',
