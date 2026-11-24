@@ -21,7 +21,7 @@ internal object HealthExaminationItemMapper {
             val (resolvedName, isSelfExamination) = if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {
                 val name = displayNameCache.getOrPut(createdBy) {
                     val model = userMap[createdBy]
-                    model?.getFullName() ?: createdBy.substringAfter(':', "").takeIf { it.isNotBlank() } ?: createdBy
+                    model?.getFullName()?.takeIf { it.isNotEmpty() } ?: createdBy.substringAfter(':', "").takeIf { it.isNotBlank() } ?: createdBy
                 }
                 name to false
             } else {

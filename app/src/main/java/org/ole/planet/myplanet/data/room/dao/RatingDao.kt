@@ -51,6 +51,14 @@ interface RatingDao {
     )
     suspend fun markUploaded(id: String, remoteId: String?, remoteRev: String?): Int
     
+    @Query(
+        "UPDATE rating SET " +
+            "_rev = COALESCE(NULLIF(:remoteRev, ''), _rev), " +
+            "isUpdated = CASE WHEN time = :uploadedTime THEN 0 ELSE isUpdated END " +
+            "WHERE id = :id"
+    )
+    suspend fun markRetryUploaded(id: String, remoteRev: String?, uploadedTime: Long?): Int
+
     @Query("DELETE FROM rating WHERE _id IS NULL AND isUpdated = 0")
     suspend fun deleteUploadedWithoutServerId()
 
