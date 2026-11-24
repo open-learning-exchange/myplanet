@@ -141,7 +141,7 @@
     <string name="what_would">¿Qué te gustaría compartir?</string>
     <string name="delete_record">¿Estás seguro de que quieres eliminar lo siguiente?</string>
     <string name="edit_post">Editar publicación</string>
-    <string name="get_started">EMPEZAR</string>
+    <string name="get_started">Empezar</string>
     <string name="year">Año</string>
     <string name="publisher">Editor</string>
     <string name="link_to_license">Enlace a la licencia</string>
@@ -661,7 +661,10 @@
     <string name="self_examination">%s\nAutoexamen</string>
     <string name="pending_survey_notification">tienes una encuesta pendiente:</string>
     <string name="task_notification">%1$s vence en %2$s</string>
-    <string name="resource_notification">Tienes %1$d recursos no descargados</string>
+    <plurals name="resource_notification">
+        <item quantity="one">Tienes %d recurso no descargado</item>
+        <item quantity="other">Tienes %d recursos no descargados</item>
+    </plurals>
 
     <string name="vitals_format">
         Temperatura: %1$s\n
@@ -980,7 +983,7 @@
     <string name="social_and_web">Redes sociales y web</string>
     <string name="user_requested_to_join_team">%1$s ha solicitado unirse a %2$s</string>
     <string name="join_request_prefix">Solicitud de Unión:</string>
-    <string name="no_news">noticias no disponibles</string>
+    <string name="no_news">Aún no hay mensajes</string>
     <string name="no_surveys">encuestas no disponibles</string>
     <string name="edit_image">editar imagen de perfil</string>
     <string name="compulsory_first_name">nombre requerido</string>
@@ -1028,7 +1031,6 @@
     <string name="course_progress">Progreso %1$s de %2$s</string>
     <string name="tag_selected">Seleccionado: %s</string>
     <string name="resources_size">Recursos [%d]</string>
-    <string name="user_role">- %s</string>
     <string name="user_name">%1$s (%2$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
@@ -1119,7 +1121,7 @@
     <string name="most_opened_resource">Recurso más abierto : </string>
     <string name="number_of_resources_opened">Número de recursos abiertos : </string>
     <string name="kindly_enter_reply_message">Por favor, ingrese el mensaje de respuesta</string>
-    <string name="start">iniciar</string>
+    <string name="start">Iniciar</string>
     <string name="continuation">continuar</string>
     <string name="please_complete_survey">por favor completa la encuesta para terminar el curso</string>
     <string name="export_cancelled">exportación cancelada.</string>
@@ -1427,4 +1429,12 @@
 
     <string name="playback_speed">Velocidad de reproducción</string>
     <string name="playback_speed_format">%1$sx</string>
+    <plurals name="reply_count">
+        <item quantity="one">%d respuesta</item>
+        <item quantity="other">%d respuestas</item>
+    </plurals>
+    <plurals name="most_opened_resource_value">
+        <item quantity="one">%1$s (abierto %2$d vez)</item>
+        <item quantity="other">%1$s (abierto %2$d veces)</item>
+    </plurals>
 </resources>

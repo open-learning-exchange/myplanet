@@ -141,7 +141,7 @@
     <string name="what_would">maxaad jeceshahay inaad wadaagto?</string>
     <string name="delete_record">Ma hubtaa inaad rabto inaad tirtirto kuwa soo socda?</string>
     <string name="edit_post">wax ka beddel boostada</string>
-    <string name="get_started">BILAAB</string>
+    <string name="get_started">Bilaab</string>
     <string name="year">Sannad</string>
     <string name="publisher">Daabace</string>
     <string name="link_to_license">Link to shatiga</string>
@@ -661,7 +661,10 @@
     <string name="self_examination">%s\nIs-imtixaanid</string>
     <string name="pending_survey_notification">waxaad leedahay su\'aal weydiin sugaya:</string>
     <string name="task_notification">%1$s waa inuu dhamaadaa %2$s</string>
-    <string name="resource_notification">Waxaad haysataa %1$d agab aan la soo dejisan</string>
+    <plurals name="resource_notification">
+        <item quantity="one">Waxaad haysataa %d agab aan la soo dejisan</item>
+        <item quantity="other">Waxaad haysataa %d agab aan la soo dejisan</item>
+    </plurals>
 
     <string name="vitals_format">
         Heerkulka: %1$s\n
@@ -980,7 +983,7 @@
     <string name="social_and_web">Baraha Bulshada iyo Websaydhka</string>
     <string name="user_requested_to_join_team">%1$s ayaa codsaday ku biirista %2$s</string>
     <string name="join_request_prefix">Codsi ku biirid:</string>
-    <string name="no_news">warka ma jiraan</string>
+    <string name="no_news">Weli fariin ma jirto</string>
     <string name="no_surveys">saamayn ma jiraan</string>
     <string name="edit_image">tubinta sawirka xogta muuqaalka</string>
     <string name="compulsory_first_name">magaca hore loo baahan yahay</string>
@@ -1028,7 +1031,6 @@
     <string name="course_progress">Habka %1$s ee %2$s</string>
     <string name="tag_selected">Xulo: %s</string>
     <string name="resources_size">Xogta [%d]</string>
-    <string name="user_role">- %s</string>
     <string name="user_name">%1$s (%2$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
@@ -1119,7 +1121,7 @@
     <string name="most_opened_resource">Kheyraadka Ugu Badan ee La Furay : </string>
     <string name="number_of_resources_opened">Tirada Kheyraadka La Furay : </string>
     <string name="kindly_enter_reply_message">Fadlan geli farriinta jawaabta</string>
-    <string name="start">bilow</string>
+    <string name="start">Bilow</string>
     <string name="continuation">sii wad</string>
     <string name="please_complete_survey">fadlan dhameystir sahanka si aad u dhameystirto koorsada</string>
     <string name="export_cancelled">dhoofinta waa la joojiyay.</string>
@@ -1424,4 +1426,12 @@
 
     <string name="playback_speed">Xawaaraha dib-u-daawashada</string>
     <string name="playback_speed_format">%1$sx</string>
+    <plurals name="reply_count">
+        <item quantity="one">%d jawaab</item>
+        <item quantity="other">%d jawaabood</item>
+    </plurals>
+    <plurals name="most_opened_resource_value">
+        <item quantity="one">%1$s (la furay %2$d jeer)</item>
+        <item quantity="other">%1$s (la furay %2$d jeer)</item>
+    </plurals>
 </resources>

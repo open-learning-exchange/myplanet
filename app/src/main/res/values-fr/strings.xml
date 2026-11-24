@@ -141,7 +141,7 @@
     <string name="what_would">Que souhaitez-vous partager ?</string>
     <string name="delete_record">Êtes-vous sûr de vouloir supprimer les éléments suivants ?</string>
     <string name="edit_post">Modifier la publication</string>
-    <string name="get_started">COMMENCER</string>
+    <string name="get_started">Commencer</string>
     <string name="year">Année</string>
     <string name="publisher">Éditeur</string>
     <string name="link_to_license">Lien vers la licence</string>
@@ -661,7 +661,11 @@
     <string name="self_examination">%s\nAuto-examen</string>
     <string name="pending_survey_notification">vous avez une enquête en attente :</string>
     <string name="task_notification">%1$s est dû le %2$s</string>
-    <string name="resource_notification">Vous avez %1$d ressources non téléchargées</string>
+    <plurals name="resource_notification">
+        <item quantity="one">Vous avez %d ressource non téléchargée</item>
+        <item quantity="many">Vous avez %d ressources non téléchargées</item>
+        <item quantity="other">Vous avez %d ressources non téléchargées</item>
+    </plurals>
 
     <string name="vitals_format">
         Température : %1$s\n
@@ -981,7 +985,7 @@
     <string name="social_and_web">Réseaux sociaux et web</string>
     <string name="user_requested_to_join_team">%1$s a demandé à rejoindre %2$s</string>
     <string name="join_request_prefix">Demande d\'adhésion :</string>
-    <string name="no_news">aucune nouvelle disponible</string>
+    <string name="no_news">Aucun message pour le moment</string>
     <string name="no_surveys">aucun sondage disponible</string>
     <string name="edit_image">modifier l\'image de profil</string>
     <string name="compulsory_first_name">prénom requis</string>
@@ -1029,7 +1033,6 @@
     <string name="course_progress">Progression %1$s sur %2$s</string>
     <string name="tag_selected">Sélectionné : %s</string>
     <string name="resources_size">Ressources [%d]</string>
-    <string name="user_role">- %s</string>
     <string name="user_name">%1$s (%2$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
@@ -1120,7 +1123,7 @@
     <string name="most_opened_resource">Ressource La Plus Consultée : </string>
     <string name="number_of_resources_opened">Nombre de Ressources Ouvertes : </string>
     <string name="kindly_enter_reply_message">Veuillez entrer le message de réponse</string>
-    <string name="start">démarrer</string>
+    <string name="start">Démarrer</string>
     <string name="continuation">continuer</string>
     <string name="please_complete_survey">veuillez compléter le sondage pour terminer le cours</string>
     <string name="export_cancelled">exportation annulée.</string>
@@ -1428,4 +1431,14 @@
 
     <string name="playback_speed">Vitesse de lecture</string>
     <string name="playback_speed_format">%1$sx</string>
+    <plurals name="reply_count">
+        <item quantity="one">%d réponse</item>
+        <item quantity="many">%d réponses</item>
+        <item quantity="other">%d réponses</item>
+    </plurals>
+    <plurals name="most_opened_resource_value">
+        <item quantity="one">%1$s (ouvert %2$d fois)</item>
+        <item quantity="many">%1$s (ouvert %2$d fois)</item>
+        <item quantity="other">%1$s (ouvert %2$d fois)</item>
+    </plurals>
 </resources>

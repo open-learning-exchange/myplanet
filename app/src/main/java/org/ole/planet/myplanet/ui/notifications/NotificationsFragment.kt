@@ -46,14 +46,13 @@ class NotificationsFragment : BaseBindingFragment<FragmentNotificationsBinding>(
 
     private fun buildNotificationStrings(): NotificationStrings {
         val locale = resources.configuration.locales[0]
-        val resourceTemplate = getString(R.string.resource_notification)
         val taskTemplate = getString(R.string.task_notification)
         val joinTemplate = getString(R.string.user_requested_to_join_team)
         return NotificationStrings(
             storageRunningLow = getString(R.string.storage_running_low),
             storageAvailable = getString(R.string.storage_available),
             joinRequestPrefix = getString(R.string.join_request_prefix),
-            resourceCount = { count -> String.format(locale, resourceTemplate, count) },
+            resourceCount = { count -> resources.getQuantityString(R.plurals.resource_notification, count, count) },
             taskDue = { title, date -> String.format(locale, taskTemplate, title, date) },
             userRequestedToJoin = { user, team -> String.format(locale, joinTemplate, user, team) }
         )
