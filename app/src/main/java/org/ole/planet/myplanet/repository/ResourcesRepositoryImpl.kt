@@ -864,6 +864,8 @@ class ResourcesRepositoryImpl @Inject constructor(
         val library = myLibraryDao.getById(localId) ?: return false
         library._id = remoteId
         library._rev = remoteRev
+        
+        if (library.resourceOffline) library.downloadedRev = remoteRev
 
         val rekey = remoteId.isNotBlank() && library.id != remoteId && moveResourceFolder(localId, remoteId)
         if (rekey) {
