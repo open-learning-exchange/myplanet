@@ -11,11 +11,7 @@ enum class CourseSubject {
     GENERAL
 }
 
-// Planet courses carry no subject: subjectLevel is the difficulty (Beginner … Expert), so it
-// can't be classified. The title is the only signal, and course titles mix English, Spanish and
-// French, so match clear keywords in all three and fall back to GENERAL instead of guessing.
 object CourseSubjectClassifier {
-    // Matched anywhere in the title, after lowercasing and stripping accents
     private val stems = listOf(
         CourseSubject.MATHEMATICS to listOf(
             "math", "matemat", "mathemat", "algebra", "geometr", "calculus", "calculo", "arithmet",
@@ -42,7 +38,6 @@ object CourseSubjectClassifier {
         )
     )
 
-    // Too short to match inside other words ("tic" in "statistics"), so whole words only
     private val words = mapOf(
         "ict" to CourseSubject.TECHNOLOGY,
         "tic" to CourseSubject.TECHNOLOGY,
