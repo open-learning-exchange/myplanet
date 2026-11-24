@@ -83,6 +83,7 @@
     <color name="subject_literacy">#EF5350</color>
     <color name="subject_health">#66BB6A</color>
     <color name="subject_social_studies">#BA68C8</color>
+    <color name="subject_general">#90A4AE</color>
     <color name="subject_technology">#64B5F6</color>
 
     <color name="progress_track_bg">#6E6F71</color>
