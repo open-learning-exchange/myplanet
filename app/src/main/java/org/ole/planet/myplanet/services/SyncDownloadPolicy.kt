@@ -19,12 +19,17 @@ class SyncDownloadPolicy @Inject constructor(
     /** True while the user wants sync downloads on Wi-Fi only and the active connection is metered. */
     fun mustWaitForWifi(): Boolean = sharedPrefManager.isSyncDownloadWifiOnly() && isOnMeteredNetwork()
 
+    /** True when a sync download of [totalBytes] is bigger than the user's limit. */
+    fun isOverSizeLimit(totalBytes: Long): Boolean = exceedsLimit(totalBytes, sharedPrefManager.getSyncDownloadMaxBytes())
+
     private fun isOnMeteredNetwork(): Boolean {
         val connectivityManager = context.getSystemService(ConnectivityManager::class.java) ?: return false
         return connectivityManager.isActiveNetworkMetered
     }
 
     companion object {
+        fun exceedsLimit(totalBytes: Long, limitBytes: Long): Boolean = limitBytes > 0 && totalBytes > limitBytes
+
         fun isSyncOwned(downloadPreferences: SharedPreferences, url: String): Boolean =
             downloadPreferences.getStringSet(DownloadService.SYNC_DOWNLOADS_KEY, emptySet())?.contains(url) == true
     }

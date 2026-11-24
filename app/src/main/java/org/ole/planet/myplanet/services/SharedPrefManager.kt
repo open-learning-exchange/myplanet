@@ -25,6 +25,7 @@ class SharedPrefManager @Inject constructor(
 
     companion object {
         const val KEY_SYNC_DOWNLOAD_WIFI_ONLY = "sync_download_wifi_only"
+        const val KEY_SYNC_DOWNLOAD_MAX_MB = "sync_download_max_mb"
         private val userListType = object : TypeToken<List<User>>() {}.type
         private const val SAVED_USERS = "savedUsers"
         const val MANUAL_CONFIG = "manualConfig"
@@ -333,6 +334,13 @@ class SharedPrefManager @Inject constructor(
 
     fun isSyncDownloadWifiOnly(): Boolean =
         PreferenceManager.getDefaultSharedPreferences(context).getBoolean(KEY_SYNC_DOWNLOAD_WIFI_ONLY, false)
+
+    /** Largest file sync may download on its own, in bytes; 0 means no limit. */
+    fun getSyncDownloadMaxBytes(): Long {
+        val megabytes = PreferenceManager.getDefaultSharedPreferences(context)
+            .getString(KEY_SYNC_DOWNLOAD_MAX_MB, "0")?.toLongOrNull() ?: 0L
+        return megabytes.coerceAtLeast(0L) * 1024 * 1024
+    }
 
     fun getVersionDetail(): String? = pref.getString(VERSION_DETAIL, null)
     fun setVersionDetail(json: String) = pref.edit { putString(VERSION_DETAIL, json) }

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <Preference
         android:key="text_size"
         android:title="@string/text_size" />
@@ -19,6 +20,13 @@
             android:key="sync_download_wifi_only"
             android:summary="@string/sync_download_wifi_only_summary"
             android:title="@string/sync_download_wifi_only" />
+        <ListPreference
+            android:defaultValue="0"
+            android:entries="@array/sync_download_max_size_entries"
+            android:entryValues="@array/sync_download_max_size_values"
+            android:key="sync_download_max_mb"
+            android:title="@string/sync_download_max_size"
+            app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
     <PreferenceCategory
         android:dependency="auto_sync_with_server"

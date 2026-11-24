@@ -35,6 +35,7 @@ import okio.Timeout
 import okio.buffer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -478,6 +479,35 @@ class DownloadWorkerTest {
         assertTrue(result is androidx.work.ListenableWorker.Result.Success)
         coVerify(exactly = 0) { downloadRepository.downloadFileResponse(any(), any(), any(), any(), any()) }
         verify(exactly = 0) { preferences.edit() }
+    }
+
+    @Test
+    fun `a sync-owned file over the size limit leaves the queue without its body being read`() = runTest(testDispatcher) {
+        val url = "http://example.com/resources/1/big-video.mp4"
+        every { preferences.getStringSet(any(), any()) } returns setOf(url)
+        val editor = mockk<SharedPreferences.Editor>(relaxed = true)
+        every { preferences.edit() } returns editor
+        every { editor.putStringSet(any(), any()) } returns editor
+        every { workerParams.inputData.getString("urls_key") } returns "url_list_key"
+        every { syncDownloadPolicy.isOverSizeLimit(any()) } returns true
+
+        val outputFile = File(temporaryFolder.newFolder("big"), "big-video.mp4")
+        mockkObject(FileUtils)
+        every { FileUtils.checkFileExist(any(), url) } returns false
+        every { FileUtils.getSDPathFromUrl(any(), url) } returns outputFile
+        val body = mockk<ResponseBody>(relaxed = true)
+        every { body.contentLength() } returns 200L * 1024 * 1024
+        coEvery { downloadRepository.downloadFileResponse(url, any(), any(), any(), any()) } returns DownloadResult.Success(body, 200)
+
+        worker.doWork()
+
+        verify(exactly = 0) { body.byteStream() }
+        verify(exactly = 0) { body.source() }
+        verify { body.close() }
+        verify { editor.putStringSet("url_list_key", emptySet()) }
+        assertFalse(outputFile.exists())
+
+        unmockkObject(FileUtils)
     }
 
     @Test

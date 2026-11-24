@@ -1075,6 +1075,8 @@
     <string name="sync_downloads">التنزيلات أثناء المزامنة</string>
     <string name="sync_download_wifi_only">التنزيل عبر Wi-Fi فقط</string>
     <string name="sync_download_wifi_only_summary">تنتظر الملفات التي تجلبها المزامنة اتصال Wi-Fi</string>
+    <string name="sync_download_max_size">أكبر ملف يُنزَّل أثناء المزامنة</string>
+    <string name="sync_download_no_limit">بلا حد</string>
     <string name="course_steps">خطوات الدورة</string>
     <string name="to_access_this_feature_become_a_member">أنت حاليًا مستخدم ضيف. للوصول إلى هذه الميزة، كن عضوًا.</string>
     <string name="sales">المبيعات</string>

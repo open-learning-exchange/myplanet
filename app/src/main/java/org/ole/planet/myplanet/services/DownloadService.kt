@@ -100,6 +100,7 @@ class DownloadService : Service() {
 
     @Volatile
     private var stopped = false
+    private var skippedOverSizeLimit = false
 
     @VisibleForTesting
     internal var unreachablePrimaryBase: String? = null
@@ -171,7 +172,10 @@ class DownloadService : Service() {
 
             isCurrentDownloadPriority = nextUrl.isPriority
             updateNotificationForBatchDownload()
+            skippedOverSizeLimit = false
             val succeeded = initDownload(nextUrl.url, fromSync)
+            // A file over the sync size limit is dropped on purpose, so it does not count as a failed download.
+            if (skippedOverSizeLimit) sessionTotalCount--
             Log.d(TAG, "processDownloadQueue: [${sessionTotalCount}] succeeded=$succeeded completed=$sessionCompletedCount")
 
             if (succeeded) sessionCompletedCount++
@@ -350,6 +354,19 @@ class DownloadService : Service() {
         val isPartial = result.code == 206
         val contentLength = result.body.contentLength()
         Log.d(TAG, "tryDownload [$source]: $fileName responded contentLength=${if (contentLength == -1L) "unknown" else "${contentLength}B"} partial=$isPartial")
+
+        val totalBytes = if (isPartial) resumeOffset + contentLength else contentLength
+        if (contentLength >= 0 && SyncDownloadPolicy.isSyncOwned(preferences, originalDownloadUrl) &&
+            syncDownloadPolicy.isOverSizeLimit(totalBytes)
+        ) {
+            // Leaves the queue without reading the body; the resource still shows as not downloaded.
+            Log.d(TAG, "tryDownload [$source]: $fileName is ${totalBytes}B, over the sync download limit, skipping")
+            result.body.close()
+            deleteTempFile(url)
+            deleteValidatorFile(url)
+            skippedOverSizeLimit = true
+            return false
+        }
 
         val storageError = getStorageError(contentLength)
         if (storageError != null) {

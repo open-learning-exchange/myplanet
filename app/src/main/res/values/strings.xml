@@ -1095,6 +1095,22 @@
     <string name="sync_downloads">Downloads during sync</string>
     <string name="sync_download_wifi_only">Download only on Wi-Fi</string>
     <string name="sync_download_wifi_only_summary">Files that sync fetches wait for a Wi-Fi connection</string>
+    <string name="sync_download_max_size">Largest file to download during sync</string>
+    <string name="sync_download_no_limit">No limit</string>
+    <string-array name="sync_download_max_size_entries" translatable="false">
+        <item>@string/sync_download_no_limit</item>
+        <item>5 MB</item>
+        <item>20 MB</item>
+        <item>50 MB</item>
+        <item>100 MB</item>
+    </string-array>
+    <string-array name="sync_download_max_size_values" translatable="false">
+        <item>0</item>
+        <item>5</item>
+        <item>20</item>
+        <item>50</item>
+        <item>100</item>
+    </string-array>
     <string name="course_steps">Course Steps</string>
     <string name="to_access_this_feature_become_a_member">You are currently a guest user. To access this feature, become a member.</string>
     <string name="sales">Sales</string>

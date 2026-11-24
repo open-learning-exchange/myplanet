@@ -1071,6 +1071,8 @@
     <string name="sync_downloads">Descargas durante la sincronización</string>
     <string name="sync_download_wifi_only">Descargar solo con Wi-Fi</string>
     <string name="sync_download_wifi_only_summary">Los archivos de la sincronización esperan a una conexión Wi-Fi</string>
+    <string name="sync_download_max_size">Archivo más grande para descargar durante la sincronización</string>
+    <string name="sync_download_no_limit">Sin límite</string>
     <string name="course_steps">Pasos del curso</string>
     <string name="to_access_this_feature_become_a_member">Actualmente eres un usuario invitado. Para acceder a esta función, hazte miembro.</string>
     <string name="sales">Ventas</string>

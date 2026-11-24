@@ -143,6 +143,13 @@ class DownloadWorker @AssistedInject constructor(
 
             when (val response = fetch(url, authHeader, partial)) {
                 is DownloadResult.Success -> {
+                    if (isOverSyncSizeLimit(url, response, partial)) {
+                        // Dropped from the queue without reading the body; the resource still shows as not downloaded.
+                        Log.d(TAG, "Skipping ${getFileNameFromUrl(url)}: over the sync download size limit")
+                        response.body.close()
+                        partial.discard()
+                        return true
+                    }
                     downloadFileBody(response, url, partial, index, total)
                     true
                 }
@@ -157,6 +164,13 @@ class DownloadWorker @AssistedInject constructor(
             Log.e(TAG, "Failed to download file: ${UrlUtils.redactForLog(url)}", e)
             false
         }
+    }
+
+    private fun isOverSyncSizeLimit(url: String, response: DownloadResult.Success, partial: PartialFiles): Boolean {
+        val contentLength = response.body.contentLength()
+        if (contentLength < 0 || !SyncDownloadPolicy.isSyncOwned(preferences, url)) return false
+        val totalBytes = if (response.code == 206) partial.resumeOffset() + contentLength else contentLength
+        return syncDownloadPolicy.isOverSizeLimit(totalBytes)
     }
 
     private suspend fun fetch(url: String, authHeader: String, partial: PartialFiles): DownloadResult {
