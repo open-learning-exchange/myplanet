@@ -43,7 +43,6 @@ internal object CoursesItemUtils {
         CourseSubject.GENERAL -> R.drawable.ic_type_book
     }
 
-    // GENERAL has no label: a subject the course doesn't have shouldn't be printed on its cover
     fun subjectLabelRes(subject: CourseSubject): Int? = when (subject) {
         CourseSubject.MATHEMATICS -> R.string.subject_label_mathematics
         CourseSubject.LITERACY -> R.string.subject_label_literacy
