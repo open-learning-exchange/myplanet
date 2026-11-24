@@ -65,11 +65,12 @@ class TeamsVoicesViewModel @Inject constructor(
     }
 
     fun markDiscussionsSeen(teamId: String) {
-        viewModelScope.launch { recordDiscussionsSeen(teamId) }
+        viewModelScope.launch { recordDiscussionsSeen(teamId, userRepository.getUserModel()?.id) }
     }
 
-    private suspend fun recordDiscussionsSeen(teamId: String) {
-        notificationsRepository.updateTeamNotification(teamId, voicesRepository.countTopLevelByTeam(teamId).toInt())
+    // Counts other people's posts only, matching what the dashboard compares against.
+    private suspend fun recordDiscussionsSeen(teamId: String, userId: String?) {
+        notificationsRepository.updateTeamNotification(teamId, voicesRepository.countTopLevelByTeam(teamId, userId).toInt())
     }
 
     fun observeDiscussions(teamId: String) {
@@ -84,7 +85,7 @@ class TeamsVoicesViewModel @Inject constructor(
     fun createTeamNews(map: HashMap<String?, String>, user: UserEntity, imageList: List<String>) {
         viewModelScope.launch {
             val success = voicesRepository.createTeamNews(map, user, imageList)
-            if (success) map["viewInId"]?.takeIf { it.isNotBlank() }?.let { recordDiscussionsSeen(it) }
+            if (success) map["viewInId"]?.takeIf { it.isNotBlank() }?.let { recordDiscussionsSeen(it, user.id) }
             _createNewsSuccess.send(success)
         }
     }

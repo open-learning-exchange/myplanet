@@ -128,6 +128,21 @@ class TeamChatBadgeIntegrationTest {
     }
 
     @Test
+    fun `the viewer's own synced post does not light the badge but someone else's does`() = runBlocking {
+        val teamId = "teamE"
+        val viewer = "org.couchdb.user:dewie"
+        newsDao.upsertAll(listOf(topLevel(viewableBy = "teams", viewableId = teamId)))
+        notificationsRepository.updateTeamNotification(teamId, voicesRepository.countTopLevelByTeam(teamId, viewer).toInt())
+
+        // The viewer's post made on another device arrives by sync.
+        newsDao.upsertAll(listOf(topLevel(viewableBy = "teams", viewableId = teamId).apply { userId = viewer }))
+        assertFalse(notificationsRepository.getTeamNotifications(listOf(teamId), viewer)[teamId]?.hasChat == true)
+
+        newsDao.upsertAll(listOf(topLevel(viewableBy = "teams", viewableId = teamId).apply { userId = "org.couchdb.user:okuro" }))
+        assertTrue(notificationsRepository.getTeamNotifications(listOf(teamId), viewer)[teamId]?.hasChat == true)
+    }
+
+    @Test
     fun `badge tracks the top-level feed, not replies`() = runBlocking {
         val teamId = "teamC"
         val root = topLevel(viewIn = "[{\"_id\":\"$teamId\",\"section\":\"teams\"}]")
