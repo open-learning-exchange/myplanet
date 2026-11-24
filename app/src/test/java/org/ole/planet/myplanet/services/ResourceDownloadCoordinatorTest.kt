@@ -100,6 +100,17 @@ class ResourceDownloadCoordinatorTest {
     }
 
     @Test
+    fun `startAutoDownload queues files as sync-owned so the sync download settings apply`() = runTest(testDispatcher) {
+        coEvery { configurationsRepository.checkServerAvailability() } returns true
+        val urls = arrayListOf("http://example.com/file.pdf")
+
+        coordinator.startAutoDownload(urls)
+        advanceUntilIdle()
+
+        verify(exactly = 1) { DownloadUtils.openDownloadService(context, urls, true) }
+    }
+
+    @Test
     fun `runPostSyncDownloads executes queued downloads then beta auto download in order`() = runTest(testDispatcher) {
         val queuedLinks = arrayListOf("http://example.com/queued1.pdf", "http://example.com/queued2.pdf")
         val libraries = listOf(mockk<MyLibrary>(relaxed = true))
@@ -121,7 +132,7 @@ class ResourceDownloadCoordinatorTest {
             resourcesRepository.getAllLibrariesToSync()
             DownloadUtils.downloadAllFiles(libraries)
             configurationsRepository.checkServerAvailability()
-            DownloadUtils.openDownloadService(context, downloadedUrls, false)
+            DownloadUtils.openDownloadService(context, downloadedUrls, true)
         }
     }
 
@@ -139,8 +150,9 @@ class ResourceDownloadCoordinatorTest {
         coordinator.runPostSyncDownloads()
         advanceUntilIdle()
 
-        verify(exactly = 0) { DownloadUtils.openDownloadService(context, any(), true) }
-        verify(exactly = 1) { DownloadUtils.openDownloadService(context, downloadedUrls, false) }
+        // Only the beta auto-download is queued; nothing for the empty post-sync queue.
+        verify(exactly = 1) { DownloadUtils.openDownloadService(context, any(), true) }
+        verify(exactly = 1) { DownloadUtils.openDownloadService(context, downloadedUrls, true) }
     }
 
     @Test

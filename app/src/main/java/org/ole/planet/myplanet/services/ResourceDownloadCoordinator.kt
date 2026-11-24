@@ -25,10 +25,22 @@ class ResourceDownloadCoordinator @Inject constructor(
     @ApplicationScope private val applicationScope: CoroutineScope
 ) {
     fun startBackgroundDownload(urls: ArrayList<String>) {
+        startDownload(urls, fromSync = false)
+    }
+
+    /**
+     * The beta "auto-download resources" option. Queued as sync-owned so the "Downloads during sync"
+     * settings (Wi-Fi only, size limit) apply to it like to any other download the user did not start.
+     */
+    fun startAutoDownload(urls: ArrayList<String>) {
+        startDownload(urls, fromSync = true)
+    }
+
+    private fun startDownload(urls: ArrayList<String>, fromSync: Boolean) {
         applicationScope.launch {
             if (configurationsRepository.checkServerAvailability()) {
                 if (urls.isNotEmpty()) {
-                    DownloadUtils.openDownloadService(context, urls, false)
+                    DownloadUtils.openDownloadService(context, urls, fromSync)
                 }
             }
         }
@@ -51,7 +63,7 @@ class ResourceDownloadCoordinator @Inject constructor(
 
             val betaAutoDownload = prefData.getBetaAutoDownload()
             if (betaAutoDownload) {
-                startBackgroundDownload(
+                startAutoDownload(
                     DownloadUtils.downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
                 )
             }
