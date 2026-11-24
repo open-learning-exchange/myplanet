@@ -65,9 +65,11 @@ class TeamsVoicesViewModel @Inject constructor(
     }
 
     fun markDiscussionsSeen(teamId: String) {
-        viewModelScope.launch {
-            notificationsRepository.updateTeamNotification(teamId, voicesRepository.countTopLevelByTeam(teamId).toInt())
-        }
+        viewModelScope.launch { recordDiscussionsSeen(teamId) }
+    }
+
+    private suspend fun recordDiscussionsSeen(teamId: String) {
+        notificationsRepository.updateTeamNotification(teamId, voicesRepository.countTopLevelByTeam(teamId).toInt())
     }
 
     fun observeDiscussions(teamId: String) {
@@ -82,6 +84,7 @@ class TeamsVoicesViewModel @Inject constructor(
     fun createTeamNews(map: HashMap<String?, String>, user: UserEntity, imageList: List<String>) {
         viewModelScope.launch {
             val success = voicesRepository.createTeamNews(map, user, imageList)
+            if (success) map["viewInId"]?.takeIf { it.isNotBlank() }?.let { recordDiscussionsSeen(it) }
             _createNewsSuccess.send(success)
         }
     }

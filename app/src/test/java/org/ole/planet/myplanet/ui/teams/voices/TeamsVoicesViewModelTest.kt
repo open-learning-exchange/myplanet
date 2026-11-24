@@ -72,6 +72,20 @@ class TeamsVoicesViewModelTest {
     }
 
     @Test
+    fun `createTeamNews marks the team chat seen so the poster's own message is not unread`() = runTest(testDispatcher) {
+        val teamId = "team123"
+        val map = hashMapOf<String?, String>("viewInId" to teamId, "message" to "hi")
+        val user = UserEntity().apply { id = "org.couchdb.user:dewie" }
+        coEvery { voicesRepository.createTeamNews(map, user, emptyList()) } returns true
+        coEvery { voicesRepository.countTopLevelByTeam(teamId) } returns 6L
+
+        viewModel.createTeamNews(map, user, emptyList())
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { notificationsRepository.updateTeamNotification(teamId, 6) }
+    }
+
+    @Test
     fun `getCommunityLeaders delegates to configurationsRepository`() {
         val mockLeaders = listOf(UserEntity().apply { name = "Leader 1" })
         coEvery { configurationsRepository.getCommunityLeaders() } returns mockLeaders
