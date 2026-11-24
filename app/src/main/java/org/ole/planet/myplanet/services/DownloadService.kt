@@ -62,6 +62,9 @@ class DownloadService : Service() {
     @Inject
     lateinit var fallbackUrlResolver: FallbackUrlResolver
 
+    @Inject
+    lateinit var syncDownloadPolicy: SyncDownloadPolicy
+
     private var data = ByteArray(BUFFER_SIZE)
     private var outputFile: File? = null
     private var notificationBuilder: NotificationCompat.Builder? = null
@@ -157,6 +160,11 @@ class DownloadService : Service() {
             }
 
             processedUrls.add(nextUrl.url)
+            if (SyncDownloadPolicy.isSyncOwned(preferences, nextUrl.url) && syncDownloadPolicy.mustWaitForWifi()) {
+                // Left in the queue, not counted: a later sync on Wi-Fi picks it up.
+                Log.d(TAG, "processDownloadQueue: ${nextUrl.url.substringAfterLast('/')} waits for Wi-Fi")
+                continue
+            }
             sessionTotalCount++
             cachedRemainingCount = getRemainingCount()
             Log.d(TAG, "processDownloadQueue: [${sessionTotalCount}] ${nextUrl.url.substringAfterLast('/')} priority=${nextUrl.isPriority} remaining=$cachedRemainingCount")

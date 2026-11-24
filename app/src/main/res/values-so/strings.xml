@@ -1068,6 +1068,9 @@
     <string name="server_address_content_description">cinwaanka serverka: %1$s</string>
     <string name="select_theme_mode">dooro qaabka mawduuca</string>
     <string name="beta_resources_auto_download">Soo dejinta otomaatiga ah ee khayraadka beta</string>
+    <string name="sync_downloads">Soo dejinta inta lagu jiro isku-xidhka</string>
+    <string name="sync_download_wifi_only">Ku soo deji Wi-Fi oo keliya</string>
+    <string name="sync_download_wifi_only_summary">Faylasha isku-xidhku keeno waxay sugaan xidhiidh Wi-Fi</string>
     <string name="course_steps">Talaabooyinka Koorsada</string>
     <string name="to_access_this_feature_become_a_member">hadda waxaad tahay isticmaale marti ah. si aad u hesho helitaanka astaamahan, noqo xubin.</string>
     <string name="sales">Iibka</string>

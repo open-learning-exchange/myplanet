@@ -1068,6 +1068,9 @@
     <string name="server_address_content_description">सर्भर ठेगाना: %1$s</string>
     <string name="select_theme_mode">थिम मोड चयन गर्नुहोस्</string>
     <string name="beta_resources_auto_download">बीटा स्रोतहरू स्वत: डाउनलोड</string>
+    <string name="sync_downloads">सिङ्कको बेला डाउनलोडहरू</string>
+    <string name="sync_download_wifi_only">Wi-Fi मा मात्र डाउनलोड गर्नुहोस्</string>
+    <string name="sync_download_wifi_only_summary">सिङ्कले ल्याउने फाइलहरू Wi-Fi जडानको प्रतीक्षा गर्छन्</string>
     <string name="course_steps">पाठ्यक्रम चरणहरू</string>
     <string name="to_access_this_feature_become_a_member">तपाईं हाल अतिथि प्रयोगकर्ता हुनुहुन्छ। यो सुविधा प्रयोग गर्न, सदस्य बन्नुहोस्।</string>
     <string name="sales">बिक्री</string>

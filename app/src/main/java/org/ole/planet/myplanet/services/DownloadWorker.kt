@@ -44,7 +44,8 @@ class DownloadWorker @AssistedInject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val resourcesRepository: ResourcesRepository,
     @DownloadPreferences private val preferences: SharedPreferences,
-    private val fallbackUrlResolver: FallbackUrlResolver
+    private val fallbackUrlResolver: FallbackUrlResolver,
+    private val syncDownloadPolicy: SyncDownloadPolicy
 ) : CoroutineWorker(context, workerParams) {
     internal var unreachablePrimaryBase: String? = null
 
@@ -61,7 +62,12 @@ class DownloadWorker @AssistedInject constructor(
                 return@withContext Result.failure()
             }
 
-            val urls = urlSet.toTypedArray()
+            // Sync-owned files wait in the queue for Wi-Fi when the user asked for that.
+            val waitForWifi = syncDownloadPolicy.mustWaitForWifi()
+            val urls = urlSet.filterNot { waitForWifi && SyncDownloadPolicy.isSyncOwned(preferences, it) }.toTypedArray()
+            if (urls.isEmpty()) {
+                return@withContext Result.success()
+            }
             DownloadUtils.createChannels(context)
 
             showProgressNotification(0, urls.size, context.getString(R.string.starting_downloads), -1)

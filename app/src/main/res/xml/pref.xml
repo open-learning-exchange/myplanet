@@ -11,6 +11,16 @@
         android:title="@string/storage_breakdown"
         android:summary="@string/storage_breakdown_summary" />
     <PreferenceCategory
+        android:key="sync_downloads"
+        android:title="@string/sync_downloads">
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="sync_download_wifi_only"
+            android:summary="@string/sync_download_wifi_only_summary"
+            android:title="@string/sync_download_wifi_only" />
+    </PreferenceCategory>
+    <PreferenceCategory
         android:dependency="auto_sync_with_server"
         android:title="@string/auto_sync">
 

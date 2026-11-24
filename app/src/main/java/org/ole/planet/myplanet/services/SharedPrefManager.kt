@@ -24,6 +24,7 @@ class SharedPrefManager @Inject constructor(
     val rawPreferences: SharedPreferences get() = pref
 
     companion object {
+        const val KEY_SYNC_DOWNLOAD_WIFI_ONLY = "sync_download_wifi_only"
         private val userListType = object : TypeToken<List<User>>() {}.type
         private const val SAVED_USERS = "savedUsers"
         const val MANUAL_CONFIG = "manualConfig"
@@ -329,6 +330,9 @@ class SharedPrefManager @Inject constructor(
         val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         defaultPreferences.edit { putBoolean("beta_auto_download", enabled) }
     }
+
+    fun isSyncDownloadWifiOnly(): Boolean =
+        PreferenceManager.getDefaultSharedPreferences(context).getBoolean(KEY_SYNC_DOWNLOAD_WIFI_ONLY, false)
 
     fun getVersionDetail(): String? = pref.getString(VERSION_DETAIL, null)
     fun setVersionDetail(json: String) = pref.edit { putString(VERSION_DETAIL, json) }
