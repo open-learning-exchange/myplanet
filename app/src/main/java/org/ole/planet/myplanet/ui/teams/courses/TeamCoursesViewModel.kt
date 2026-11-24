@@ -47,7 +47,6 @@ class TeamCoursesViewModel @Inject constructor(
         }
     }
 
-    // Same as adding: drop the row at once, write in the background, put it back on failure.
     suspend fun removeCourse(teamId: String, courseId: String): Result<Unit> {
         val previous = _uiState.value
         if (previous != null) {
@@ -57,8 +56,6 @@ class TeamCoursesViewModel @Inject constructor(
             .onFailure { if (_uiState.value?.courses?.none { it.courseId == courseId } == true) _uiState.value = previous }
     }
 
-    // Show the picked courses at once and write in the background; waiting on the write and a
-    // full reload before the list changed is what made adding feel slow. Rolled back on failure.
     suspend fun addCourses(teamId: String, courses: List<MyCourse>): Result<Unit> {
         val previous = _uiState.value
         val current = previous ?: TeamCoursesUiState()
