@@ -13,7 +13,6 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Calendar
 import java.util.Date
-import java.util.LinkedHashSet
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -1209,15 +1208,21 @@ class TeamsRepositoryImpl @Inject constructor(
         return ob
     }
 
-    private fun processDescription(description: String?) {
+    // Description images are fetched only for teams the current user has joined, not for every team on the server.
+    private suspend fun queueJoinedTeamImages(docs: List<JsonObject>) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
-        val links = DownloadUtils.extractLinks(description ?: "")
+        val userId = sharedPrefManager.getUserId().takeIf { it.isNotBlank() } ?: return
+        val joinedTeamIds = teamDao.getByUserId(userId)
+            .filter { it.docType == "membership" && !it.isDeletePending }
+            .mapNotNull { it.teamId?.takeIf { id -> id.isNotBlank() } }
+            .toSet()
+        val teamIds = joinedTeamsIn(docs, joinedTeamIds)
+        if (teamIds.isEmpty()) return
         val baseUrl = UrlUtils.getUrl()
-        val concatenatedLinks = LinkedHashSet<String>()
-        for (link in links) {
-            concatenatedLinks.add("$baseUrl/$link")
+        val links = teamDao.getByIds(teamIds.toList()).flatMap { teamImageUrls(it.description, baseUrl) }.distinct()
+        if (links.isNotEmpty()) {
+            DownloadUtils.openDownloadService(MainApplication.context, ArrayList(links), true)
         }
-        DownloadUtils.openDownloadService(MainApplication.context, ArrayList(concatenatedLinks), true)
     }
 
     override suspend fun batchInsertMyTeams(documents: List<JsonObject>): Int {
@@ -1245,6 +1250,7 @@ class TeamsRepositoryImpl @Inject constructor(
                     Log.e(TAG, "Failed to insert team document", e)
                 }
             }
+            queueJoinedTeamImages(validDocuments)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -1255,6 +1261,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun insertMyTeam(doc: JsonObject) {
         insertMyTeam(doc, null)
+        queueJoinedTeamImages(listOf(doc))
     }
 
     private suspend fun insertMyTeam(doc: JsonObject, existingTeams: MutableMap<String, MyTeam>?) {
@@ -1293,7 +1300,6 @@ class TeamsRepositoryImpl @Inject constructor(
         }
         val model = existingTeam ?: MyTeam().apply { _id = teamId }
         MyTeam.populateTeamFields(doc, model)
-        processDescription(model.description)
         teamDao.upsert(model)
         existingTeams?.put(teamId, model)
     }
@@ -1431,5 +1437,23 @@ class TeamsRepositoryImpl @Inject constructor(
 
     companion object {
         private const val TAG = "TeamsRepository"
+
+        /**
+         * Teams touched by [docs] — a team document itself, or a membership document pointing at it —
+         * that are among [joinedTeamIds]. A membership arriving in a later batch than its team still counts.
+         */
+        internal fun joinedTeamsIn(docs: List<JsonObject>, joinedTeamIds: Set<String>): Set<String> {
+            if (joinedTeamIds.isEmpty()) return emptySet()
+            return docs.mapNotNull { doc ->
+                if (GsonUtils.getString("docType", doc) == "membership") {
+                    GsonUtils.getString("teamId", doc)
+                } else {
+                    GsonUtils.getString("_id", doc)
+                }.takeIf { it.isNotBlank() && it in joinedTeamIds }
+            }.toSet()
+        }
+
+        internal fun teamImageUrls(description: String?, baseUrl: String): List<String> =
+            DownloadUtils.extractLinks(description.orEmpty()).map { "$baseUrl/$it" }.distinct()
     }
 }
