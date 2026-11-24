@@ -13,6 +13,14 @@ import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 @HiltWorker
 class NetworkMonitorWorker @AssistedInject constructor(
@@ -38,6 +46,14 @@ class NetworkMonitorWorker @AssistedInject constructor(
             WorkManager.getInstance(context)
                 .enqueueUniqueWork(WORK_TAG, ExistingWorkPolicy.KEEP, workRequest)
         }
+        
+        fun observeReconnects(context: Context, isConnected: Flow<Boolean>, scope: CoroutineScope): Job =
+            isConnected
+                .distinctUntilChanged()
+                .drop(1)
+                .filter { it }
+                .onEach { start(context) }
+                .launchIn(scope)
     }
 
     override suspend fun doWork(): Result {
