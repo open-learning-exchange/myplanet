@@ -76,4 +76,20 @@ class WebViewActivityTest {
 
         assertNull(WebViewActivity.encodedEntryPath(resourceDir, "../secret.html"))
     }
+
+    @Test
+    fun `header keeps the resource name over the page title`() {
+        assertNull(WebViewActivity.headerTitle("MATH GAME", "AMEY THAKUR"))
+    }
+
+    @Test
+    fun `page title fills the header when no name was passed`() {
+        assertEquals("Planet Help", WebViewActivity.headerTitle(null, "Planet Help"))
+        assertEquals("Planet Help", WebViewActivity.headerTitle("  ", "Planet Help"))
+    }
+
+    @Test
+    fun `a blank page title never replaces the header`() {
+        assertNull(WebViewActivity.headerTitle(null, ""))
+    }
 }

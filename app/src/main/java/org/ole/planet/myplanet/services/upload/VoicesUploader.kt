@@ -76,7 +76,9 @@ class VoicesUploader @Inject constructor(
         }
     }
 
-    private class PreparedNews(val news: NewsUploadData, val imagesArray: JsonArray, val files: List<File>)
+    private class UploadedImage(val file: File, val resourceId: String, val fileName: String)
+
+    private class PreparedNews(val news: NewsUploadData, val imagesArray: JsonArray, val files: List<UploadedImage>)
 
     suspend fun uploadNews() {
         val user = userRepository.getUserModel()
@@ -86,14 +88,14 @@ class VoicesUploader @Inject constructor(
             newsItems.processInBatches { batch ->
                 val successfulUpdates = mutableListOf<NewsUpdateData>()
                 val processedNews = mutableListOf<PreparedNews>()
-                val uploadedFiles = mutableListOf<File>()
+                val uploadedFiles = mutableListOf<UploadedImage>()
 
                 batch.forEach { news ->
                     try {
                         val imagesArray = (news.newsJson.get("images") as? JsonArray)?.deepCopy() ?: JsonArray()
                         val messageWithImages = StringBuilder(news.message ?: "")
 
-                        val files = mutableListOf<File>()
+                        val files = mutableListOf<UploadedImage>()
                         news.imageUrls.forEach { imageUrl ->
                             val imgObject = gson.fromJson(imageUrl, JsonObject::class.java)
                             val imageFile = File(getString("imageUrl", imgObject))
@@ -104,7 +106,7 @@ class VoicesUploader @Inject constructor(
                             val resourceId = getString("resourceId", imgObject).ifEmpty { legacyResourceId(news, imageUrl) }
                             val fileName = safeFileName(imageFile.name)
                             putImage(user, resourceId, fileName, imageFile)
-                            files.add(imageFile)
+                            files.add(UploadedImage(imageFile, resourceId, fileName))
 
                             val resourceObject = JsonObject()
                             resourceObject.addProperty("resourceId", resourceId)
@@ -162,7 +164,7 @@ class VoicesUploader @Inject constructor(
 
                 if (successfulUpdates.isNotEmpty()) {
                     voicesRepository.markNewsUploaded(successfulUpdates)
-                    deleteLocalCopies(uploadedFiles)
+                    keepAsResourceCopies(uploadedFiles)
                 }
             }
             uploadNewsDeletions()
@@ -175,13 +177,22 @@ class VoicesUploader @Inject constructor(
     private fun safeFileName(name: String): String =
         name.replace(UNSAFE_FILE_NAME_CHARS, "_").trim('_', '.').ifEmpty { "image.jpg" }
 
-    private fun deleteLocalCopies(files: List<File>) {
+    private fun keepAsResourceCopies(images: List<UploadedImage>) {
         val context = MainApplication.context
-        files.forEach { file ->
+        val externalFilesDir = FileUtils.getExternalFilesDir(context)
+        images.forEach { image ->
             try {
-                if (VoiceImagePreparer.isOwnedFile(context, file)) file.delete()
+                val owned = VoiceImagePreparer.isOwnedFile(context, image.file)
+                if (externalFilesDir != null) {
+                    val target = FileUtils.getLibraryFile(externalFilesDir, image.resourceId, image.fileName)
+                    if (!target.isFile) {
+                        target.parentFile?.mkdirs()
+                        if (!(owned && image.file.renameTo(target))) image.file.copyTo(target, overwrite = true)
+                    }
+                }
+                if (owned && image.file.exists()) image.file.delete()
             } catch (e: Exception) {
-                Log.w(TAG, "Could not delete uploaded image ${file.name}", e)
+                Log.w(TAG, "Could not keep uploaded image ${image.fileName}", e)
             }
         }
     }

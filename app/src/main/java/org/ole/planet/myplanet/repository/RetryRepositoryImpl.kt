@@ -8,7 +8,12 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.RetryDao
 import org.ole.planet.myplanet.model.RetryFailure
@@ -19,12 +24,14 @@ import org.ole.planet.myplanet.utils.UrlUtils
 class RetryRepositoryImpl @Inject constructor(
     private val retryDao: RetryDao,
     private val apiInterface: ApiInterface,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val ratingsRepository: RatingsRepository
 ) : RetryRepository {
 
     companion object {
         private const val TAG = "RetryRepository"
         private const val PREVIEW_LIMIT = 10
+        private const val RATING_MODEL = "Rating"
     }
 
     private val isProcessing = AtomicBoolean(false)
@@ -107,6 +114,9 @@ class RetryRepositoryImpl @Inject constructor(
             }
 
             if (response.isSuccessful) {
+                if (operation.modelClassName == RATING_MODEL) {
+                    writeBackRating(operation, payload, response.body())
+                }
                 markCompleted(operation.id)
                 RetryOperationResult.Success
             } else if (response.code() == 409) {
@@ -133,6 +143,23 @@ class RetryRepositoryImpl @Inject constructor(
             markFailed(operation.id, e.message, null)
             Log.e(TAG, "Unexpected error during retry for ${operation.id}", e)
             RetryOperationResult.RetryableFailure(e.message, null)
+        }
+    }
+
+    // Without the new _rev locally, the next PUT of the same document is rejected with 409.
+    private suspend fun writeBackRating(
+        operation: RetryOperation,
+        payload: JsonObject,
+        body: JsonObject?
+    ) {
+        try {
+            val remoteRev = (body?.get("rev") as? JsonPrimitive)?.contentOrNull
+            val uploadedTime = payload["time"]?.jsonPrimitive?.longOrNull
+            ratingsRepository.markRatingRetryUploaded(operation.itemId, remoteRev, uploadedTime)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to record retried upload for ${operation.id}", e)
         }
     }
 
