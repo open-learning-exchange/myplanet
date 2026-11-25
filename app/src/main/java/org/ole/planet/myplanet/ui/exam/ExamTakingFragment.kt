@@ -50,7 +50,6 @@ import org.ole.planet.myplanet.utils.GsonUtils.getString
 import org.ole.planet.myplanet.utils.GsonUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utils.KeyboardUtils.hideSoftKeyboard
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
-import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.Utilities.toast
 
 @AndroidEntryPoint
@@ -92,8 +91,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             restoreFinishedState()
             return
         }
-        val resumeSubmissionId = savedInstanceState?.getString(KEY_SUBMISSION_ID) ?: sub?.id
-        initializeExamData(resumeSubmissionId)
+        val restoredSubmissionId = savedInstanceState?.getString(KEY_SUBMISSION_ID)
+        val resumeSubmissionId = restoredSubmissionId ?: sub?.id
+        initializeExamData(resumeSubmissionId, restoredSubmissionId)
         setupListeners()
     }
 
@@ -123,7 +123,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
     }
 
-    private fun initializeExamData(resumeSubmissionId: String?) {
+    private fun initializeExamData(resumeSubmissionId: String?, restoredSubmissionId: String?) {
         viewLifecycleOwner.lifecycleScope.launch {
             user = userSessionManager.getUserModel()
             initExam()
@@ -175,7 +175,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                             } catch (e: Exception) {
                                 Log.e(TAG, "startExamSession (recreate) failed", e)
                                 withContext(dispatcherProvider.main) {
-                                    Utilities.toast(requireContext(), "Failed to start exam session. Please retry.")
+                                    toast(requireContext(), "Failed to start exam session. Please retry.")
                                 }
                             }
                         }
@@ -184,32 +184,44 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                     val currentExam = exam
                     if (currentExam != null) {
                         try {
-                            if (sub == null || isTeam) {
-                                val request = CreateExamSubmissionRequest(
-                                    user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
-                                )
-                                sub = submissionsRepository.startExamSession(currentExam.id, parentId, user?.id, request, recreate = isTeam, deleteStale = false)
-                            } else {
-                                val resume = askResumeOrRestart()
-                                if (resume) {
-                                    populateCacheFromSavedAnswers(sub)
-                                    currentIndex = findFirstUnansweredIndex()
-                                } else {
+                            val restored = restoredSubmissionId
+                                ?.let { submissionsRepository.getSubmissionById(it) }
+                                ?.takeIf { it.status == "pending" }
+                            when (surveyStart(restored, sub, isTeam)) {
+                                SurveyStart.CONTINUE_RESTORED -> {
+                                    sub = restored
                                     answerCache.clear()
-                                    currentIndex = 0
+                                    populateCacheFromSavedAnswers(restored)
+                                    currentIndex = currentIndex.coerceIn(0, (questions?.size ?: 1) - 1)
+                                }
+                                SurveyStart.START_SESSION -> {
                                     val request = CreateExamSubmissionRequest(
-                                        user?.id, user?.dob, user?.gender, currentExam, type, null
+                                        user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
                                     )
-                                    sub = submissionsRepository.startExamSession(
-                                        currentExam.id, parentId, user?.id, request, recreate = true
-                                    )
+                                    sub = submissionsRepository.startExamSession(currentExam.id, parentId, user?.id, request, recreate = isTeam, deleteStale = false)
+                                }
+                                SurveyStart.ASK_RESUME -> {
+                                    val resume = askResumeOrRestart()
+                                    if (resume) {
+                                        populateCacheFromSavedAnswers(sub)
+                                        currentIndex = findFirstUnansweredIndex()
+                                    } else {
+                                        answerCache.clear()
+                                        currentIndex = 0
+                                        val request = CreateExamSubmissionRequest(
+                                            user?.id, user?.dob, user?.gender, currentExam, type, null
+                                        )
+                                        sub = submissionsRepository.startExamSession(
+                                            currentExam.id, parentId, user?.id, request, recreate = true
+                                        )
+                                    }
                                 }
                             }
                             startExam(questions?.get(currentIndex))
                             updateNavButtons()
                         } catch (e: Exception) {
                             Log.e(TAG, "startExamSession failed", e)
-                            Utilities.toast(requireContext(), "Failed to start exam session. Please retry.")
+                            toast(requireContext(), "Failed to start exam session. Please retry.")
                         }
                     }
                 }
@@ -287,7 +299,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         if (currentIndex !in 0..<questionsSize) return
 
         val currentQuestion = questions?.get(currentIndex) ?: return
-        val questionId = currentQuestion.id ?: return
+        val questionId = currentQuestion.id
         val answerData = answerCache.getOrPut(questionId) { AnswerData() }
 
 
@@ -612,7 +624,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
 
         if (question?.hasOtherOption == true) {
-            if (!choices.isEmpty() && choices[0].isJsonObject) {
+            if (!choices.isEmpty && choices[0].isJsonObject) {
                 addCompoundButton(otherChoice(), isRadio, oldAnswer)
             } else {
                 addRadioButton("Other", oldAnswer)
@@ -909,7 +921,15 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
     }
 
-    private companion object {
+    internal enum class SurveyStart { CONTINUE_RESTORED, START_SESSION, ASK_RESUME }
+
+    internal companion object {
+        internal fun surveyStart(restored: Submission?, existing: Submission?, isTeam: Boolean): SurveyStart = when {
+            restored != null -> SurveyStart.CONTINUE_RESTORED
+            existing == null || isTeam -> SurveyStart.START_SESSION
+            else -> SurveyStart.ASK_RESUME
+        }
+
         const val TAG = "ExamTakingFragment"
         const val KEY_SUBMISSION_ID = "exam_submission_id"
         const val KEY_CURRENT_INDEX = "exam_current_index"

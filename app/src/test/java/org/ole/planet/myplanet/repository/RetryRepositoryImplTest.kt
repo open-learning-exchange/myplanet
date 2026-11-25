@@ -18,7 +18,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -39,6 +41,7 @@ class RetryRepositoryImplTest {
     private lateinit var retryDao: RetryDao
     private lateinit var apiInterface: ApiInterface
     private lateinit var repository: RetryRepositoryImpl
+    private lateinit var ratingsRepository: RatingsRepository
     private val timeProvider = TestTimeProvider(currentTime = 1_700_000_000_000L)
 
     @After
@@ -58,7 +61,8 @@ class RetryRepositoryImplTest {
         mockkObject(UrlUtils)
         every { UrlUtils.getUrl() } returns "http://mock.url"
         every { UrlUtils.header } returns "mockHeader"
-        repository = RetryRepositoryImpl(retryDao, apiInterface, timeProvider)
+        ratingsRepository = mockk(relaxed = true)
+        repository = RetryRepositoryImpl(retryDao, apiInterface, timeProvider, ratingsRepository)
     }
 
     @Test
@@ -431,5 +435,52 @@ class RetryRepositoryImplTest {
 
         assertEquals(true, result)
         coVerify(exactly = 1) { retryDao.deletePendingAndAbandoned() }
+    }
+
+    private fun ratingPutOperation() = RetryOperation().apply {
+        id = "op1"
+        itemId = "rating1"
+        modelClassName = "Rating"
+        serializedPayload = """{"_id":"rating1","_rev":"1-old","rate":5,"time":1234}"""
+        endpoint = "ratings"
+        httpMethod = "PUT"
+        dbId = "rating1"
+    }
+
+    @Test
+    fun `executeOperation successful rating PUT writes the new rev back to the rating`() = runTest {
+        val body = buildJsonObject {
+            put("ok", true)
+            put("id", "rating1")
+            put("rev", "2-new")
+        }
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } returns Response.success(body)
+
+        val result = repository.executeOperation(ratingPutOperation())
+
+        assertTrue(result is RetryOperationResult.Success)
+        coVerify(exactly = 1) { ratingsRepository.markRatingRetryUploaded("rating1", "2-new", 1234L) }
+        coVerify { retryDao.markCompleted("op1", timeProvider.now()) }
+    }
+
+    @Test
+    fun `executeOperation failed rating PUT leaves the rating untouched`() = runTest {
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } returns Response.error(500, "Server Error".toResponseBody(null))
+
+        repository.executeOperation(ratingPutOperation())
+
+        coVerify(exactly = 0) { ratingsRepository.markRatingRetryUploaded(any(), any(), any()) }
+    }
+
+    @Test
+    fun `executeOperation rating write-back failure still completes the operation`() = runTest {
+        coEvery { apiInterface.putDoc(any(), any(), any(), any()) } returns
+            Response.success(buildJsonObject { put("rev", "2-new") })
+        coEvery { ratingsRepository.markRatingRetryUploaded(any(), any(), any()) } throws RuntimeException("db closed")
+
+        val result = repository.executeOperation(ratingPutOperation())
+
+        assertTrue(result is RetryOperationResult.Success)
+        coVerify { retryDao.markCompleted("op1", timeProvider.now()) }
     }
 }
